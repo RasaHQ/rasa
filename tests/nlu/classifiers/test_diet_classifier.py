@@ -1,11 +1,10 @@
+import copy
 from pathlib import Path
-from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.constants import TOKENS_NAMES
 import numpy as np
 import pytest
 import random
 from unittest.mock import Mock
-from typing import List, Text, Dict, Any, Optional
+from typing import List, Text, Dict, Any, Optional, Tuple
 from _pytest.monkeypatch import MonkeyPatch
 import itertools
 
@@ -48,6 +47,8 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     LINEAR_NORM,
 )
+from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import (
@@ -66,80 +67,6 @@ from rasa.utils.tensorflow.model_data_utils import FeatureArray
 from rasa.utils.tensorflow.exceptions import RasaModelConfigException
 
 
-def get_dummy_feature_value(
-    attribute: Text, featurizer: Text, feature_type: Text, text: Text
-) -> float:
-    return float(hash(f"{attribute}{featurizer}{feature_type}{text}"))
-
-
-def add_dense_dummy_features_to_messages(
-    messages: List[Message],
-    attributes: Optional[List[Text]] = None,
-    seq_len: int = 1,
-    sentence_feature_dim: int = 3,
-    sequence_feature_dim: int = 4,
-    featurizers: Optional[List[Text]] = None,
-) -> None:
-    """Creates dense dummy features """
-    attributes = attributes or [TEXT]
-    featurizers = featurizers or [""]
-    for message, attribute, featurizer in itertools.product(
-        messages, attributes, featurizers
-    ):
-        for shape, feature_type in [
-            ((1, sentence_feature_dim), FEATURE_TYPE_SENTENCE),
-            ((seq_len, sequence_feature_dim), FEATURE_TYPE_SEQUENCE),
-        ]:
-            feature = Features(
-                features=np.full(
-                    shape=shape,
-                    fill_value=get_dummy_feature_value(
-                        attribute, featurizer, feature_type, message.get(attribute)
-                    ),
-                ),
-                attribute=attribute,
-                feature_type=feature_type,
-                origin=featurizer,
-            )
-            message.features.append(feature)
-
-
-def construct_expected_concatenation_of_dummy_features(
-    messages: List[Message],
-    attribute: Text,
-    seq_len: int,
-    sentence_feature_dim: int,
-    sequence_feature_dim: int,
-    used_featurizers: List[Text],
-) -> Dict[Text, np.array]:
-    expected = dict()
-    for key, shape, feature_type in [
-        (SENTENCE, (1, sentence_feature_dim), FEATURE_TYPE_SENTENCE),
-        (SEQUENCE, (seq_len, sequence_feature_dim), FEATURE_TYPE_SEQUENCE),
-    ]:
-        expected[key] = np.stack(
-            [
-                np.concatenate(
-                    [
-                        np.full(
-                            shape,
-                            get_dummy_feature_value(
-                                attribute=attribute,
-                                featurizer=featurizer,
-                                feature_type=feature_type,
-                                text=message.get(attribute),
-                            ),
-                        )
-                        for featurizer in used_featurizers
-                    ],
-                    axis=-1,
-                )
-                for message in messages
-            ]
-        )
-    return expected
-
-
 def test_init_raises_when_there_is_no_target():
     with pytest.raises(RasaModelConfigException, match="Model is neither asked to"):
         DIETClassifier(
@@ -147,224 +74,383 @@ def test_init_raises_when_there_is_no_target():
         )
 
 
-# TODO: test_create_label_id_to_index_mapping
-# TODO: test_invert_mapping
-# TODO: test_create_label_data
+class TestDIETDataPipeline:
+    @staticmethod
+    def get_dummy_feature_value(
+        attribute: Optional[Text], featurizer: Text, feature_type: Text, text: Text
+    ) -> float:
+        return float(hash(f"{attribute}{featurizer}{feature_type}{text}"))
 
+    @staticmethod
+    def add_dense_dummy_features_to_messages(
+        messages: List[Message],
+        attributes: Optional[List[Text]] = None,
+        seq_len: int = 1,
+        sentence_feature_dim: int = 3,
+        sequence_feature_dim: int = 4,
+        featurizers: Optional[List[Text]] = None,
+    ) -> None:
+        """Creates dense dummy features with specific feature values.
 
-@pytest.mark.parametrize(
-    "training,intent_classification,entity_recognition,features_for_label_given",
-    # TODO: add bilou tagging
-    itertools.product([True, False], repeat=4),
-)
-def test_create_model_data(
-    training: bool,
-    intent_classification: bool,
-    entity_recognition: bool,
-    features_for_label_given: bool,
-):
-    # Reduce the number of combinations a bit:
-    if not intent_classification and not entity_recognition:
-        # see: `test_init_raises_when_there_is_no_target`
-        return
+        For each message, attribute and featurizer, this method constructs a dense
+        dummy feature with a specific feature value.
 
-    # Some constants first:
-    # batch_size will be 3
-    # number of intents will be 2
-    seq_len = 6
-    sentence_feature_dim = 7
-    sequence_feature_dim = 9
-    featurizers = ["1", "2", "3"]
-    used_featurizers = ["1", "2"]
+        The feature value is created via the `get_dummy_feature_value` function that
+        creates a value based on the attribute values in the given message, the
+        attribute itself, the featurizer and feature type.
+        This enables us later to identify the single features after they're
+        concatenated.
 
-    # Create messages:
-    messages = [
-        Message(
-            data={
-                TEXT: "bla",
-                INTENT: "intent1",
-                TOKENS_NAMES[TEXT]: [Token(text="bla", start=0)],
-            },
-            ENTITIES=[],
-        ),
-        Message(
-            data={
-                TEXT: "blub",
-                INTENT: "intent2",
-                TOKENS_NAMES[TEXT]: [Token(text="blub", start=0)],
-            },
-            ENTITIES=[],
-        ),
-        Message(
-            data={
-                TEXT: "bla blub",
-                INTENT: "intent2",
-                TOKENS_NAMES[TEXT]: [
-                    Token(text="bla", start=0),
-                    Token(text="blub", start=4),
-                ],
-                ENTITIES: [
-                    {
-                        ENTITY_ATTRIBUTE_START: 0,
-                        ENTITY_ATTRIBUTE_END: 3,
-                        ENTITY_ATTRIBUTE_TYPE: "entity1",
-                    },
-                    {
-                        ENTITY_ATTRIBUTE_START: 4,
-                        ENTITY_ATTRIBUTE_END: 7,
-                        ENTITY_ATTRIBUTE_TYPE: "entity2",
-                    },
-                ],
-                # TODO: BILOU_ENTITIES
-            }
-        ),
-    ]
-    attributes_with_features = [TEXT] + ([INTENT] if features_for_label_given else [])
-    add_dense_dummy_features_to_messages(
-        messages,
-        attributes=attributes_with_features,
-        seq_len=seq_len,
-        sequence_feature_dim=sequence_feature_dim,
-        sentence_feature_dim=sentence_feature_dim,
-        featurizers=featurizers,
-    )
-    training_data = TrainingData(messages)
+        Args:
+            messages: a list of messages
+            attributes: a list of attributes for which we want to create dummy features
+            seq_len: length of all sequence features
+            sentence_feature_dim: "units" of all sentence features (these could differ,
+            but for the sake of simplicity we fix it)
+            sequence_feature_dim: "units" of all sentence features (these could differ,
+            but for the sake of simplicity we fix it)
+        """
+        attributes = attributes or [TEXT]
+        featurizers = featurizers or [None]
+        for message, attribute, featurizer in itertools.product(
+            messages, attributes, featurizers
+        ):
+            for shape, feature_type in [
+                ((1, sentence_feature_dim), FEATURE_TYPE_SENTENCE),
+                ((seq_len, sequence_feature_dim), FEATURE_TYPE_SEQUENCE),
+            ]:
+                feature = Features(
+                    features=np.full(
+                        shape=shape,
+                        fill_value=TestDIETDataPipeline.get_dummy_feature_value(
+                            attribute,
+                            featurizer,
+                            feature_type,
+                            str(message.get(attribute)),
+                        ),
+                    ),
+                    attribute=attribute,
+                    feature_type=feature_type,
+                    origin=featurizer,
+                )
+                message.features.append(feature)
 
-    classifier = DIETClassifier(
-        component_config={
-            INTENT_CLASSIFICATION: intent_classification,
-            ENTITY_RECOGNITION: entity_recognition,
-            FEATURIZERS: used_featurizers,
-            BILOU_FLAG: False,  # TODO: test for BILOU_FLAG=True
-        }
-    )
+    @staticmethod
+    def construct_expected_concatenation_of_dummy_features(
+        messages: List[Message],
+        attribute: Text,
+        seq_len: int,
+        sentence_feature_dim: int,
+        sequence_feature_dim: int,
+        used_featurizers: List[Text],
+    ) -> Dict[Text, np.array]:
+        """Creates and concatenates dummy features.
 
-    # Note: we can't create_data e.g. without label_data
-    if training and intent_classification:
-        with pytest.raises(ValueError, match="Expected label data"):
-            classifier._create_model_data(
-                messages=messages, training=training, label_id_dict={}
+        For each given message, given featurizer and each possible feature type, dense
+        dummy features are created using value of the specified `attribute`.
+        All dummy features that are of the same type (sequence and sentence) are
+        concatenated together to a 2d matrix where the first axis corresponds to the
+        messages and the second axis corresponds to the respective dummy features
+        concatenated (in the order specified by the `used_featurizers`).
+        """
+        expected = dict()
+        for key, shape, feature_type in [
+            (SENTENCE, (1, sentence_feature_dim), FEATURE_TYPE_SENTENCE),
+            (SEQUENCE, (seq_len, sequence_feature_dim), FEATURE_TYPE_SEQUENCE),
+        ]:
+            expected[key] = np.stack(
+                [
+                    np.concatenate(
+                        [
+                            np.full(
+                                shape,
+                                TestDIETDataPipeline.get_dummy_feature_value(
+                                    attribute=attribute,
+                                    featurizer=featurizer,
+                                    feature_type=feature_type,
+                                    text=message.get(attribute),
+                                ),
+                            )
+                            for featurizer in used_featurizers
+                        ],
+                        axis=-1,
+                    )
+                    for message in messages
+                ]
             )
+        return expected
 
-    # Preparations:
-    # TODO: if self.component_config[BILOU_FLAG]:
-    #         bilou_utils.apply_bilou_schema(training_data)
-    if intent_classification:
-        label_id_index_mapping = classifier._create_label_id_to_index_mapping(
-            training_data,
-        )
-        classifier.index_label_id_mapping = classifier._invert_mapping(
-            label_id_index_mapping
-        )
-        classifier._label_data = classifier._create_label_data(
-            training_data, label_id_index_mapping,
-        )
-    classifier._entity_tag_specs = classifier._create_entity_tag_specs(training_data)
+    @staticmethod
+    def get_input_and_expected_output(
+        features_for_label_given: bool, label: Text, used_featurizers: List[Text]
+    ) -> Tuple[List[Message], Dict[Text, Dict[Text, np.array]]]:
 
-    # Create Data!
-    if training and intent_classification and not features_for_label_given:
-        # Remember that _create_data only attempts to create features via the
-        # label_id_dict if no features for labels are given (and we want to
-        # predict something).
-        # Assert that we cannot handle arbitrary label id dicts:
-        # TODO: this could be simplified in DIET
-        with pytest.raises(IndexError, match="index 3 is out of bounds"):
-            classifier._create_model_data(
-                messages=messages,
-                training=training,
-                label_id_dict={"intent1": 3, "intent2": 1},
-            )
+        # Some constants first:
+        # batch_size will be 3
+        # number of intents will be 2
+        seq_len = 6
+        sentence_feature_dim = 7
+        sequence_feature_dim = 9
+        featurizers = ["1", "2", "3"]
 
-    # ... Create Data!
-    model_data = classifier._create_model_data(
-        messages=messages,
-        training=training,
-        label_id_dict={"intent1": 0, "intent2": 1},
-    )
+        # Create messages:
+        messages = [
+            Message(
+                data={
+                    TEXT: "bla",
+                    INTENT: "intent1",
+                    TOKENS_NAMES[TEXT]: [Token(text="bla", start=0)],
+                    "other": "unrelated-attribute1",
+                },
+                ENTITIES=[],
+            ),
+            Message(
+                data={
+                    TEXT: "blub",
+                    INTENT: "intent2",
+                    TOKENS_NAMES[TEXT]: [Token(text="blub", start=0)],
+                    "other": "unrelated-attribute2",
+                },
+                ENTITIES=[],
+            ),
+            Message(
+                data={
+                    TEXT: "bla blub",
+                    INTENT: "intent2",
+                    TOKENS_NAMES[TEXT]: [
+                        Token(text="bla", start=0),
+                        Token(text="blub", start=4),
+                    ],
+                    "other": "unrelated-attribute3",
+                    ENTITIES: [
+                        {
+                            ENTITY_ATTRIBUTE_START: 0,
+                            ENTITY_ATTRIBUTE_END: 3,
+                            ENTITY_ATTRIBUTE_TYPE: "entity1",
+                        },
+                        {
+                            ENTITY_ATTRIBUTE_START: 4,
+                            ENTITY_ATTRIBUTE_END: 7,
+                            ENTITY_ATTRIBUTE_TYPE: "entity2",
+                        },
+                    ],
+                }
+            ),
+        ]
 
-    # Check size and attributes
-    assert model_data.number_of_examples() == len(messages)
-    expected_keys = {TEXT}
-    if training and intent_classification:
-        expected_keys.add(LABEL)
-    if training and entity_recognition:
-        expected_keys.add(ENTITIES)
-    assert set(model_data.keys()) == expected_keys
+        # we add features for some unrelated attribute to illustrate that this
+        # attribute will not show up in the final model data
+        attributes_with_features = ["other", TEXT]
 
-    # Check subkeys for TEXT
-    expected_text_sub_keys = {MASK, SENTENCE, SEQUENCE, SEQUENCE_LENGTH}
-    assert set(model_data.get(TEXT).keys()) == expected_text_sub_keys
-    text_features = model_data.get(TEXT)
-    for key in expected_text_sub_keys:
-        assert len(text_features.get(key)) == 1
-        assert isinstance(text_features.get(key)[0], FeatureArray)
-    assert text_features.get(MASK)[0].shape == (len(messages), 1, 1)
-    expected = construct_expected_concatenation_of_dummy_features(
-        messages=messages,
-        attribute=TEXT,
-        seq_len=seq_len,
-        sentence_feature_dim=sentence_feature_dim,
-        sequence_feature_dim=sequence_feature_dim,
-        used_featurizers=used_featurizers,
-    )
-    for feature_type in expected:
-        feature_array = text_features.get(feature_type)[0]
-        # feature arrays cannot be compared with np arrays without the `np.array()`:
-        assert np.all(np.array(feature_array) == expected[feature_type])
-
-    # TODO: check sparse feature sizes?
-
-    # Check subkeys for LABEL
-    if training and intent_classification:
-        expected_label_subkeys = {LABEL_SUB_KEY, MASK, SENTENCE}
+        # we add features for the labels only if specified
         if features_for_label_given:
-            expected_label_subkeys.update({SEQUENCE, SEQUENCE_LENGTH})
-        label_features = model_data.get(LABEL_KEY)
-        assert set(label_features.keys()) == expected_label_subkeys
-        for key in expected_label_subkeys:
-            assert len(label_features.get(key)) == 1
-            assert isinstance(label_features.get(key)[0], FeatureArray)
-        # because message have intent1, intent2, intent2 and our label to id mapping
-        # maps intent1 to 0 and intent2 to 1 we expect:
-        assert np.all(
-            np.array(label_features.get(LABEL_SUB_KEY)[0].flatten()) == [0, 1, 1]
+            attributes_with_features.append(label)
+
+        # ... add the features!
+        TestDIETDataPipeline.add_dense_dummy_features_to_messages(
+            messages,
+            attributes=attributes_with_features,
+            seq_len=seq_len,
+            sequence_feature_dim=sequence_feature_dim,
+            sentence_feature_dim=sentence_feature_dim,
+            featurizers=featurizers,
         )
 
-        # we create features for LABEL on the fly if and only if no features for labels
-        # are contained in the given messages
-        if not features_for_label_given:
-            assert np.all(
-                np.array(label_features.get(SENTENCE)[0])
-                == [[[1, 0]], [[0, 1]], [[0, 1]]]
-            )
-        else:
-            expected = construct_expected_concatenation_of_dummy_features(
+        expected_outputs = dict()
+        for attribute in [TEXT, INTENT]:
+            expected_outputs[
+                attribute
+            ] = TestDIETDataPipeline.construct_expected_concatenation_of_dummy_features(
                 messages=messages,
-                attribute=INTENT,
+                attribute=attribute,
                 seq_len=seq_len,
                 sentence_feature_dim=sentence_feature_dim,
                 sequence_feature_dim=sequence_feature_dim,
                 used_featurizers=used_featurizers,
             )
+
+        return messages, expected_outputs
+
+    @staticmethod
+    def preprocess_train_data_and_create_data_for_prediction(
+        model: DIETClassifier, features_for_label_given: bool, label: Text,
+    ):
+
+        intent_classification = model.component_config.get(INTENT_CLASSIFICATION, False)
+        entity_recognition = model.component_config.get(ENTITY_RECOGNITION, False)
+        bilou_tagging = model.component_config.get(BILOU_FLAG, False)
+        used_featurizers = model.component_config.get(FEATURIZERS, None)
+        if used_featurizers is None:
+            used_featurizers = ["1", "2", "3"]  # must be all from input data
+
+        messages, expected_outputs = TestDIETDataPipeline.get_input_and_expected_output(
+            features_for_label_given=features_for_label_given,
+            used_featurizers=used_featurizers,
+            label=label,
+        )
+
+        # Preprocess Training Data
+        messages_for_training = copy.deepcopy(messages)
+        model_data_for_training = model.preprocess_train_data(
+            training_data=TrainingData(messages_for_training)
+        )
+
+        # Imitate Creation of Model Data during Predict
+        messages_for_prediction = copy.deepcopy(messages)
+        model_data_for_prediction = model._create_model_data(
+            messages=messages_for_prediction,
+            training=False,
+            label_id_dict=model.index_label_id_mapping,
+        )
+
+        # Compare with expected results
+        for model_data, training in [
+            (model_data_for_training, True),
+            (model_data_for_prediction, False),
+        ]:
+
+            # Check size and attributes
+            assert model_data.number_of_examples() == len(messages)
+            expected_keys = {TEXT}
+            if training and intent_classification:
+                expected_keys.add(LABEL)
+            if training and entity_recognition:
+                expected_keys.add(ENTITIES)
+            assert set(model_data.keys()) == expected_keys
+
+            # Check subkeys for TEXT
+            expected_text_sub_keys = {MASK, SENTENCE, SEQUENCE, SEQUENCE_LENGTH}
+            assert set(model_data.get(TEXT).keys()) == expected_text_sub_keys
+            text_features = model_data.get(TEXT)
+            for key in expected_text_sub_keys:
+                assert len(text_features.get(key)) == 1
+                assert isinstance(text_features.get(key)[0], FeatureArray)
+            assert text_features.get(MASK)[0].shape == (len(messages), 1, 1)
+            expected = expected_outputs[TEXT]
             for feature_type in expected:
-                feature_array = label_features.get(feature_type)[0]
+                feature_array = text_features.get(feature_type)[0]
+                # feature arrays cannot be compared with np arrays without
+                # the `np.array()`
                 assert np.all(np.array(feature_array) == expected[feature_type])
 
-        # TODO: if entity recognition, check features for entities
-        if entity_recognition:
-            entity_features = model_data.get(ENTITIES)["entity"][0]  # TODO: "entity"?
-            assert len(entity_features) == len(messages)
-            # no entity
-            assert np.all(np.array(entity_features[0]).flatten() == [0])
-            # no entity
-            assert np.all(np.array(entity_features[1]).flatten() == [0])
-            # entity1, entity2
-            assert np.all(np.array(entity_features[2]).flatten() == [1, 2])
+            # TODO: check sparse feature sizes
+
+            # Check subkeys for LABEL
+            if training and intent_classification:
+
+                expected_label_subkeys = {LABEL_SUB_KEY, MASK, SENTENCE}
+                if features_for_label_given:
+                    expected_label_subkeys.update({SEQUENCE, SEQUENCE_LENGTH})
+                label_features = model_data.get(LABEL_KEY)
+                assert set(label_features.keys()) == expected_label_subkeys
+                for key in expected_label_subkeys:
+                    assert len(label_features.get(key)) == 1
+                    assert isinstance(label_features.get(key)[0], FeatureArray)
+                # because message have intent1, intent2, intent2 and our label
+                # to id mapping maps intent1 to 0 and intent2 to 1 we expect:
+                assert np.all(
+                    np.array(label_features.get(LABEL_SUB_KEY)[0].flatten())
+                    == [0, 1, 1]
+                )
+
+                if not features_for_label_given:
+                    # we create features for LABEL on the fly if and only if no
+                    # features for labels are contained in the given messages
+                    assert np.all(
+                        np.array(label_features.get(SENTENCE)[0])
+                        == [[[1, 0]], [[0, 1]], [[0, 1]]]
+                    )
+                    # where (1,0) is the one-hot encoding of label1 which is mapped
+                    # to index 0 and (0,1) is the one-hot encoding of label2 which
+                    # is mapped to index 1
+                else:
+                    # otherwise, the same features as in the data must be there:
+                    expected = expected_outputs[INTENT]
+                    for feature_type in expected:
+                        feature_array = label_features.get(feature_type)[0]
+                        assert np.all(np.array(feature_array) == expected[feature_type])
+
+            if training and entity_recognition:
+                entity_features = model_data.get(ENTITIES)[ENTITY_ATTRIBUTE_TYPE][0]
+
+                assert len(entity_features) == len(messages)
+
+                # message 0: no entity
+                assert np.all(np.array(entity_features[0]).flatten() == [0])
+                # message 1: no entity
+                assert np.all(np.array(entity_features[1]).flatten() == [0])
+                # message 2: entity1, entity2
+                if not bilou_tagging:
+                    expected_entity_features = [1, 2]
+                else:
+                    expected_entity_features = [4, 0]  # TODO: this looks buggy
+                assert np.all(
+                    np.array(entity_features[2]).flatten() == expected_entity_features
+                )
+
+    @pytest.mark.parametrize(
+        "component_config, features_for_labels_given",
+        [
+            (
+                {
+                    INTENT_CLASSIFICATION: intent,
+                    ENTITY_RECOGNITION: entities,
+                    FEATURIZERS: ["1", "2"],
+                    BILOU_FLAG: bilou,
+                },
+                features_for_labels_given,
+            )
+            for intent, entities, features_for_labels_given, bilou in itertools.product(
+                [True, False], repeat=4
+            )
+            if (intent or entities)  # see: `test_init_raises_when_there_is_no_target`
+            and (
+                not bilou or entities
+            )  # can skip bilou if no entities recognition enabled
+        ],
+    )
+    def test_preprocess_train_data_and_create_data_for_prediction(
+        self, component_config: Dict[Text, Any], features_for_labels_given: bool
+    ):
+        classifier = DIETClassifier(component_config=component_config,)
+        self.preprocess_train_data_and_create_data_for_prediction(
+            model=classifier,
+            features_for_label_given=features_for_labels_given,
+            label=INTENT,
+        )
 
 
 # TODO: test_create_model_data: raises_if_expected_features_are_missing()
-# TODO: test_create_model_data:
 # TODO: test_create_model_data: extracts entities only from "non-core" messages
+
+
+@pytest.mark.parametrize(
+    "should_raise", [True, False],
+)
+def test_preprocess_training_data_raises_if_sentence_features_are_missing(
+    should_raise: bool,
+):
+    classifier = DIETClassifier({"intent_classification": True})
+    sequence_feature = Features(
+        features=np.zeros((2, 1)), attribute=TEXT, feature_type=SEQUENCE, origin=""
+    )
+    features = [sequence_feature]
+    if not should_raise:
+        sentence_feature = Features(
+            features=np.zeros((1, 1)), attribute=TEXT, feature_type=SENTENCE, origin=""
+        )
+        features.append(sentence_feature)
+    message = Message(
+        data={TEXT: "dummy_text", INTENT: "dummy_intent"}, features=features
+    )
+    training_data = TrainingData([message])
+
+    if should_raise:
+        message = "Expected all featurizers to produce sentence features."
+        with pytest.raises(RasaModelConfigException, match=message):
+            classifier.preprocess_train_data(training_data)
+    else:
+        classifier.preprocess_train_data(training_data)
 
 
 @pytest.mark.parametrize("num_messages_per_label", ([1, 4], [4, 0], [0, 4]))
@@ -491,7 +577,9 @@ def test_model_data_signature_with_entities(
     classifier = DIETClassifier({"BILOU_flag": False})
 
     training_data = TrainingData(messages)
-    add_dense_dummy_features_to_messages(training_data.intent_examples)
+    TestDIETDataPipeline.add_dense_dummy_features_to_messages(
+        training_data.intent_examples
+    )
 
     # create tokens for entity parsing inside DIET
     tokenizer = WhitespaceTokenizer()
@@ -500,36 +588,6 @@ def test_model_data_signature_with_entities(
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()
     assert entity_exists == entity_expected
-
-
-@pytest.mark.parametrize(
-    "should_raise", [True, False],
-)
-def test_preprocess_training_data_raises_if_sentence_features_are_missing(
-    should_raise: bool,
-):
-    classifier = DIETClassifier({"intent_classification": True})
-    sequence_feature = Features(
-        features=np.zeros((2, 1)), attribute=TEXT, feature_type=SEQUENCE, origin=""
-    )
-    features = [sequence_feature]
-    if not should_raise:
-        sentence_feature = Features(
-            features=np.zeros((1, 1)), attribute=TEXT, feature_type=SENTENCE, origin=""
-        )
-        features.append(sentence_feature)
-    message = Message(
-        data={TEXT: "dummy_text", INTENT: "dummy_intent"}, features=features
-    )
-    training_data = TrainingData([message])
-
-    if should_raise:
-        with pytest.raises(
-            RasaModelConfigException, match="Expected sentence level features"
-        ):
-            classifier.preprocess_train_data(training_data)
-    else:
-        classifier.preprocess_train_data(training_data)
 
 
 async def _train_persist_load_with_different_settings(

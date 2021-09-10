@@ -429,10 +429,17 @@ class ResponseSelector(DIETClassifier):
                 "all retrieval intents."
             )
 
-        label_id_index_mapping = self._create_label_id_to_index_mapping(training_data,)
-
         self.responses = training_data.responses
 
+        training_messages = [
+            message
+            for message in training_data.intent_examples
+            if self.label_attribute in message.data
+        ]
+
+        label_id_index_mapping = self._create_label_id_to_index_mapping(
+            training_messages
+        )
         if not label_id_index_mapping:
             # no labels are present to train
             return RasaModelData()
@@ -440,13 +447,11 @@ class ResponseSelector(DIETClassifier):
         self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
         self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping,
+            training_messages, label_id_index_mapping, self.label_attribute,
         )
 
         model_data = self._create_model_data(
-            training_data.intent_examples,
-            training=True,
-            label_id_dict=label_id_index_mapping,
+            training_messages, training=True, label_id_dict=label_id_index_mapping,
         )
 
         self._check_input_dimension_consistency(model_data)

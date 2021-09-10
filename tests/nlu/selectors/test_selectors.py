@@ -42,9 +42,8 @@ from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from tests.nlu.classifiers.test_diet_classifier import (
-    add_dense_dummy_features_to_messages,
+    TestDIETDataPipeline,
     as_pipeline,
-    add_dummy_features_to_messages,
 )
 
 
@@ -174,7 +173,9 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
         "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
-    add_dummy_features_to_messages(training_data.intent_examples)
+    TestDIETDataPipeline.add_dense_dummy_features_to_messages(
+        training_data.intent_examples
+    )
 
     response_selector = ResponseSelector(
         component_config={"use_text_as_label": use_text_as_label}
@@ -208,7 +209,7 @@ def test_resolve_intent_response_key_from_label(
     training_data = training_data.merge(training_data_responses)
 
     # add dummy features
-    add_dense_dummy_features_to_messages(training_data)
+    TestDIETDataPipeline.add_dense_dummy_features_to_messages(training_data)
 
     response_selector = ResponseSelector(
         component_config={"use_text_as_label": train_on_text}

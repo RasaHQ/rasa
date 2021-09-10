@@ -28,6 +28,7 @@ from rasa.utils.tensorflow.model_data import (
 )
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
+    FEATURE_TYPE_SEQUENCE,
     TEXT,
     INTENT,
     ENTITIES,
@@ -401,12 +402,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     # training data helpers:
     def _create_label_id_to_index_mapping(
-        self, training_data: TrainingData,
+        self, messages: List[Message],
     ) -> Dict[Text, int]:
         """Create a label id dictionary from the intent examples in the given data."""
         distinct_label_ids = {
-            example.get(self.label_attribute)
-            for example in training_data.intent_examples
+            example.get(self.label_attribute) for example in messages
         } - {None}
         return {
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
@@ -529,7 +529,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ]
 
     def _create_label_data(
-        self, training_data: TrainingData, label_id_dict: Dict[Text, int],
+        self,
+        messages: List[Message],
+        label_id_dict: Dict[Text, int],
+        label_attribute: Text,
     ) -> RasaModelData:
         """Creates a rasa data model that represents the specified labels.
 
@@ -545,9 +548,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         with subkey `ID`.
 
         Args:
-            training_data: a training data object holding messages
-            label_attribute: the message attribute which corresponds to the label
+            messages: messages used for training
             label_id_dict: a dictionary mapping all relevant labels to some index
+            label_attribute: the message attribute which corresponds to the label
 
         Returns:
             a RasaDataModel that contains, for each kind of feature (see above),
@@ -557,9 +560,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             a `ValueError` if some label is not supported by any training example
         """
         label_indices, label_examples = self._collect_one_example_per_label(
-            messages=training_data.intent_examples,
+            messages=messages,
             label_id_dict=label_id_dict,
-            label_attribute=self.label_attribute,
+            label_attribute=label_attribute,
         )
 
         sequence_features, sentence_features = None, None
@@ -567,7 +570,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Collect the features from the collected examples, if there are any features
         all_label_examples_contain_some_features = all(
             example.features_present(
-                attribute=self.label_attribute,
+                attribute=label_attribute,
                 featurizers=self.component_config[FEATURIZERS],
             )
             for example in label_examples
@@ -578,7 +581,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 sentence_features,
             ) = model_data_utils.combine_attribute_features_from_all_messages(
                 messages=label_examples,
-                attribute=self.label_attribute,
+                attribute=label_attribute,
                 featurizers=self.component_config[FEATURIZERS],
             )
 
@@ -590,7 +593,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if sequence_features and needs_sentence_features:
                 rasa.shared.utils.io.raise_warning(
                     f"Expected sentence level features but only received "
-                    f"sequence level features for `{self.label_attribute}` attribute. "
+                    f"sequence level features for `{label_attribute}` attribute. "
                     f"Falling back to using default one-hot embedding vectors. "
                 )
             sequence_features = None
@@ -707,15 +710,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
            training data that contains features for labels if and only if
            `training` had been set to `True`
         """
-        if training and self.label_attribute is not None:
-            # only use those training examples that have the label_attribute set
-            messages = [
-                example for example in messages if self.label_attribute in example.data
-            ]
-
-        if not messages:
-            return RasaModelData()
-
         # Create RasaModelData
         model_data = RasaModelData(
             label_key=self.label_key, label_sub_key=self.label_sub_key,
@@ -797,23 +791,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 else FEATURE_TYPE_SENTENCE
             ),
         )
-
-        # NOTE: This check is a last sanity check but it doesn't solve every problem.
-        # We need the list of featurizers for this component and need to raise an
-        # error if `LexicalSyntacticFeaturizer` is included on it's own - or together
-        # with other featurizers. The latter is not checked by the following.
-        # If it is included, then e.g. the last token of the sequence of features
-        # generated by this featurizer will be interpreted as the sentence/`__CLS__`
-        # token.
-        if self._needs_sentence_features_for_input_text() and any(
-            all(f.type != FEATURE_TYPE_SENTENCE for f in feats[TEXT])
-            for feats in features
-        ):
-            raise RasaModelConfigException(
-                f"Expected sentence level features for `{TEXT}` attribute "
-                f"but found None. Please add a featurizer that produces "
-                f"sentence-level features."
-            )
 
         # (2) add feature for the labels and entities if in training mode
         if training:
@@ -905,6 +882,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """
         if self.label_attribute is None:
             return []
+
         if label_id_dict is None:
             raise ValueError("Expected some label id mapping.")
         if self._label_data is None:
@@ -916,7 +894,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_ids = []
         for example in messages:
             if example.get(self.label_attribute):
-                label_ids.append(label_id_dict[example.get(self.label_attribute)])
+                label_ids.append(label_id_dict[example.get(self.label_attribute, "")])
 
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
@@ -939,35 +917,108 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         Returns:
           the training data required to train this component
         """
+        if not training_data.nlu_examples:
+            return RasaModelData()
+
+        # apply bilou tagging to all messages
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
+        self._entity_tag_specs = self._create_entity_tag_specs(training_data)
 
+        # filter messages and extract labels
+        training_messages = training_data.nlu_examples
         if self.label_attribute is not None:
+            # keep only the messages that have a label
+            training_messages = [
+                example
+                for example in training_messages
+                if self.label_attribute in example.data
+            ]
+            # construct a label to index mapping
             label_id_index_mapping = self._create_label_id_to_index_mapping(
-                training_data,
+                training_messages,
             )
-
+            # give up if no messages/labels are there:
             if not label_id_index_mapping:
                 # no labels are present to train
                 return RasaModelData()
 
             self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
-
             self._label_data = self._create_label_data(
-                training_data, label_id_index_mapping,
+                training_messages, label_id_index_mapping, self.label_attribute
+            )
+        else:
+            # TODO: check that at least some entities are contained... ?
+
+            # Create this dummy label data, because the `RasaModel` cannot deal
+            # with empty label data at the moment:
+            label_id_index_mapping = {"0": 0}
+            self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
+            self._label_data = self._create_label_data(
+                messages=[Message(data={"dummy": "0"})],
+                label_id_dict=label_id_index_mapping,
+                label_attribute="dummy",
             )
 
-        self._entity_tag_specs = self._create_entity_tag_specs(training_data)
+        # sanity checks
+        self._check_training_messages(messages=training_messages)
 
+        # create model data from filtered list of messages
         model_data = self._create_model_data(
-            training_data.nlu_examples,
-            label_id_dict=label_id_index_mapping,
-            training=True,
+            training_messages, training=True, label_id_dict=label_id_index_mapping,
         )
 
         self._check_input_dimension_consistency(model_data)
 
         return model_data
+
+    def _check_training_messages(self, messages: List[Message]) -> None:
+        """Runs sanity checks for the training messages.
+
+        Note that this check assumes that all messages where featurized by the same
+        featurizers and hence contain the same features.
+        """
+        first_message = messages[0]  # because we assume they all look alike
+        featurizers = self.component_config[FEATURIZERS]
+
+        # we don't use ".get_dense_features" etc. from message because that
+        # method concatenates features and we loose the origin information
+        relevant_features = [
+            feature
+            for feature in first_message.features
+            if (not featurizers) or feature.origin in featurizers
+        ]
+        relevant_features_by_type = {
+            type: [] for type in [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE]
+        }
+        for feature in relevant_features:
+            relevant_features_by_type.setdefault(feature.type, []).append(feature)
+
+        if self._needs_sentence_features_for_input_text():
+            if not any(
+                feature.attribute == TEXT
+                for feature in relevant_features_by_type[FEATURE_TYPE_SENTENCE]
+            ):
+                raise RasaModelConfigException(
+                    "Expected all featurizers to produce sentence features."
+                )
+
+        if self._uses_sequence_features_for_input_text():
+            # there should be a sentence feature for every sequence feature
+            # because DIET will try to append the sentence feature to the sequence
+            # ... but we don't want to break things running with LexicalSyntactic
+            # so just warn.
+            if not set(
+                feature.origin
+                for feature in relevant_features_by_type[FEATURE_TYPE_SENTENCE]
+            ) == set(
+                feature.origin
+                for feature in relevant_features_by_type[FEATURE_TYPE_SEQUENCE]
+            ):
+                rasa.shared.utils.io.raise_warning(
+                    "Expected all featurizers to produce sequence "
+                    "and sentence features. Continuing nonetheless."
+                )
 
     @staticmethod
     def _check_enough_labels(model_data: RasaModelData) -> bool:
