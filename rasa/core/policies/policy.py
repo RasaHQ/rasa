@@ -554,9 +554,6 @@ class PolicyPrediction:
         self.hide_rule_turn = hide_rule_turn
         self.action_metadata = action_metadata
 
-    def __repr__(self):
-        return f"[{self.policy_name}, nouser= {self.is_no_user_prediction}, e2e={self.is_end_to_end_prediction}, probs= {self.probabilities}, prio={self.policy_priority}]"
-
     @staticmethod
     def for_action_name(
         domain: Domain,
@@ -642,3 +639,26 @@ def confidence_scores_for(
 
 class InvalidPolicyConfig(RasaException):
     """Exception that can be raised when policy config is not valid."""
+
+
+def _get_featurizer_from_config(
+    config: List[Dict[Text, Any]], policy_name: Text, lookup_path: Text
+) -> Callable[..., TrackerFeaturizer]:
+    """Gets the featurizer initializer and its arguments from a policy config."""
+    # Only 1 featurizer is allowed
+    if len(config) > 1:
+        featurizer_names = [
+            featurizer_config.get("name") for featurizer_config in config
+        ]
+        raise InvalidPolicyConfig(
+            f"Every policy can only have 1 featurizer but '{policy_name}' "
+            f"uses {len(config)} featurizers ('{', '.join(featurizer_names)}')."
+        )
+
+    featurizer_config = config[0]
+    featurizer_name = featurizer_config.pop("name")
+    featurizer_func = rasa.shared.utils.common.class_from_module_path(
+        featurizer_name, lookup_path=lookup_path
+    )
+
+    return featurizer_func
