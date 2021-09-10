@@ -313,17 +313,6 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
             sparse_feature_sizes=sparse_feature_sizes,
         )
 
-    @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> ResponseSelectorGraphComponent:
-        """Creates a new untrained component (see parent class for full docstring)."""
-        return cls(config, model_storage, resource, execution_context)
-
     @property
     def label_key(self) -> Text:
         """Returns label key."""
@@ -331,10 +320,12 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
 
     @property
     def label_sub_key(self) -> Text:
+        """Returns label sub_key."""
         return LABEL_SUB_KEY
 
     @staticmethod
     def model_class(use_text_as_label: bool) -> Type[RasaModel]:
+        """Returns model class."""
         if use_text_as_label:
             return DIET2DIET
         else:

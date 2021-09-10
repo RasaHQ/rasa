@@ -314,13 +314,13 @@ def _train_persist_load_with_different_settings(
     for component in loaded_pipeline:
         component.train(training_data)
 
-    if should_finetune:
-        default_execution_context.is_finetuning = True
-
     response_selector = create_response_selector(
         config_params, default_model_storage, default_execution_context
     )
     response_selector.train(training_data=training_data)
+
+    if should_finetune:
+        default_execution_context.is_finetuning = True
 
     message = Message(data={TEXT: "Rasa is great!"})
 
@@ -357,13 +357,9 @@ def test_train_persist_load(
         pipeline, config_params, default_model_storage, default_execution_context, False
     )
 
-    # _train_persist_load_with_different_settings(
-    #     pipeline,
-    #     config_params,
-    #     default_model_storage,
-    #     default_execution_context,
-    #     True
-    # )
+    _train_persist_load_with_different_settings(
+        pipeline, config_params, default_model_storage, default_execution_context, True
+    )
 
 
 async def test_process_gives_diagnostic_data(
@@ -936,6 +932,8 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
 
     classified_message = response_selector.process([message])[0]
 
+    default_execution_context.is_finetuning = True
+
     loaded_selector = ResponseSelectorGraphComponent.load(
         {**ResponseSelectorGraphComponent.get_default_config(), **{EPOCHS: 1}},
         default_model_storage,
@@ -947,20 +945,20 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
 
     assert classified_message2.fingerprint() == classified_message.fingerprint()
 
-    # if should_raise_exception:
-    #     with pytest.raises(Exception) as exec_info:
-    #         importer2 = RasaFileImporter(training_data_paths=[iter2_path])
-    #         training_data2 = importer2.get_nlu_data()
-    #
-    #         for component in loaded_pipeline:
-    #             component.train(training_data2)
-    #         response_selector.train(training_data=training_data2)
-    #     assert "Sparse feature sizes have decreased" in str(exec_info.value)
-    # else:
-    #     importer2 = RasaFileImporter(training_data_paths=[iter2_path])
-    #     training_data2 = importer2.get_nlu_data()
-    #
-    #     for component in loaded_pipeline:
-    #         component.train(training_data2)
-    #     response_selector.train(training_data=training_data2)
-    #     assert response_selector.model
+    if should_raise_exception:
+        with pytest.raises(Exception) as exec_info:
+            importer2 = RasaFileImporter(training_data_paths=[iter2_path])
+            training_data2 = importer2.get_nlu_data()
+
+            for component in loaded_pipeline:
+                component.train(training_data2)
+            loaded_selector.train(training_data=training_data2)
+        assert "Sparse feature sizes have decreased" in str(exec_info.value)
+    else:
+        importer2 = RasaFileImporter(training_data_paths=[iter2_path])
+        training_data2 = importer2.get_nlu_data()
+
+        for component in loaded_pipeline:
+            component.train(training_data2)
+        loaded_selector.train(training_data=training_data2)
+        assert loaded_selector.model
