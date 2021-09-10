@@ -14,48 +14,24 @@ import variables from './variables.json';
 The best time to deploy your assistant and make it available to test users is once it can handle the most
 important happy paths or is what we call a [minimum viable assistant](./glossary.mdx).
 
-The recommended deployment methods described below make it easy to share your assistant
+The recommended deployment method described below make it easy to share your assistant
 with test users via the [share your assistant feature in
 Rasa X](https://rasa.com/docs/rasa-x/user-guide/share-assistant#share-your-bot).
 Then, when you're ready to make your assistant available via one or more [Messaging and Voice Channels](./messaging-and-voice-channels.mdx),
 you can easily add them to your existing deployment set up.
 
-## Recommended Deployment Methods
+## Recommended Deployment Method
 
-The recommended way to deploy an assistant is using either the Server Quick-Install or Helm Chart
-options we support. Both deploy Rasa X and your assistant. They are the easiest ways to deploy your assistant,
-allow you to use Rasa X to view conversations and turn them into training data, and are production-ready.
-For more details on deployment methods see the [Rasa X Installation Guide](https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/).
+The recommended way to deploy an assistant is using Helm Chart option we support.
+Both deploy Rasa X and your assistant. It is the easiest way to deploy your assistant,
+allow you to connect Rasa OSS with Rasa X where you can view conversations and turn them into training data, and
+is production-ready.
 
-### Server Quick-Install
-
-The Server Quick-Install script is the easiest way to deploy Rasa X and your assistant. It installs a Kubernetes
-cluster on your machine with sensible defaults, getting you up and running in one command.
-
-* Default: Make sure you meet the [OS Requirements](https://rasa.com/docs/rasa-x/installation-and-setup/install/quick-install-script/#hardware-os-requirements),
-  then run:
-
-  ```bash
-  curl -s get-rasa-x.rasa.com | sudo bash
-  ```
-
-* Custom: See [Customizing the Script](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#server-quick-install)
-  and the [Server Quick-Install docs](https://rasa.com/docs/rasa-x/installation-and-setup/install/quick-install-script) docs.
-
-### Helm Chart
-
-For assistants that will receive a lot of user traffic, setting up a Kubernetes or Openshift deployment via
-our Helm charts is the best option. This provides a scalable architecture that is also straightforward to deploy.
-However, you can also customize the Helm charts if you have specific requirements.
-
-* Default: Read the [Helm Chart Installation](https://rasa.com/docs/rasa-x/installation-and-setup/install/helm-chart/) docs.
-
-* Custom: Read the above, as well as the [Advanced Configuration](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#helm-chart)
-  documentation, and customize the [open source Helm charts](https://github.com/RasaHQ/rasa-x-helm) to your needs.
+For more details on Rasa X deployment methods see the [Rasa X Installation Guide](https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/).
 
 ## Deploying a Rasa Open Source Assistant
 
-While the above deployment methods involve deploying an assistant with Rasa X, the following instructions describe how to deploy a Rasa Open Source server only
+The following instructions describe how to deploy a Rasa Open Source server
 by using the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) in a scalable cluster environment using OpenShift or Kubernetes (K8S).
 
 ### Cluster Requirements
@@ -320,18 +296,10 @@ Visit [the Rasa helm chart README](https://github.com/RasaHQ/helm-charts/tree/ma
 
 #### Next Steps
 
-Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration and learn how to e.g. integrate your Rasa Open Source deployment with Rasa X.
+- Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration
+- Visit the Rasa X docs and learn how to integrate your Rasa Open Source deployment with Rasa X.
 
 ## Alternative Deployment Methods
-
-### Docker Compose
-
-You can also run Rasa X in a Docker Compose setup, without the cluster environment. We have an install script
-for doing so, as well as manual instructions for any custom setups.
-
-* Default: Read the [Docker Compose Install Script](https://rasa.com/docs/rasa-x/installation-and-setup/install/docker-compose/#docker-compose-install-script) docs or watch the [Masterclass Video](https://www.youtube.com/watch?v=IUYdwy8HPVc) on deploying Rasa X.
-
-* Custom: Read the [Docker Compose Manual Install](https://rasa.com/docs/rasa-x/installation-and-setup/install/docker-compose/#docker-compose-manual-install) documentation for full customization options.
 
 ### Rasa Open Source Only Deployment
 
@@ -511,10 +479,6 @@ your chosen container registry.
 How you reference the custom action image will depend on your deployment. Pick the relevant documentation for
 your deployment:
 
-* [Server Quick-Install](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#quick-install-script-customizing)
-
 * [Helm Chart](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#adding-a-custom-action-server)
-
-* [Docker Compose](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#connecting-a-custom-action-server)
 
 * [Rasa Open Source Only](./docker/deploying-in-docker-compose.mdx#using-docker-compose-to-run-multiple-services)
