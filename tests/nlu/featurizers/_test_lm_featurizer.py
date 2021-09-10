@@ -46,31 +46,6 @@ def create_language_model_featurizer(
     return inner
 
 
-def test_create(
-    default_model_storage: ModelStorage,
-    resource_language_model_featurizer,
-    default_execution_context: ExecutionContext,
-):
-    x = LanguageModelFeaturizerGraphComponent.create(
-        config=LanguageModelFeaturizerGraphComponent.get_default_config(),
-        model_storage=default_model_storage,
-        resource=resource_language_model_featurizer,
-        execution_context=default_execution_context,
-    )
-    assert isinstance(x, LanguageModelFeaturizerGraphComponent)
-
-
-def test_create_callable(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
-):
-    x = create_language_model_featurizer(
-        LanguageModelFeaturizerGraphComponent.get_default_config()
-    )
-    assert isinstance(x, LanguageModelFeaturizerGraphComponent)
-
-
 def skip_on_CI(model_name: Text, model_weights: Text) -> bool:
     """Checks whether to skip this configuration on CI.
 
@@ -107,7 +82,7 @@ def create_pretrained_transformers_config(
     return config
 
 
-def train_texts(
+def process_training_text(
     texts: List[Text],
     model_name: Text,
     model_weights: Text,
@@ -115,6 +90,7 @@ def train_texts(
         [Dict[Text, Any]], create_language_model_featurizer
     ],
 ) -> List[Message]:
+    """ Creates a featurizer and process training data """
     config = create_pretrained_transformers_config(model_name, model_weights)
     whitespace_tokenizer = WhitespaceTokenizer()
     lm_featurizer = create_language_model_featurizer(config)
@@ -127,7 +103,7 @@ def train_texts(
     return messages
 
 
-def process_texts(
+def process_messages(
     texts: List[Text],
     model_name: Text,
     model_weights: Text,
@@ -135,6 +111,7 @@ def process_texts(
         [Dict[Text, Any]], create_language_model_featurizer
     ],
 ) -> List[Message]:
+    """ Creates a featurizer and processes messages """
     config = create_pretrained_transformers_config(model_name, model_weights)
     whitespace_tokenizer = WhitespaceTokenizer()
     lm_featurizer = create_language_model_featurizer(config)
@@ -146,6 +123,34 @@ def process_texts(
         messages.append(message)
     lm_featurizer.process(messages)
     return messages
+
+
+def test_create(
+    default_model_storage: ModelStorage,
+    resource_language_model_featurizer,
+    default_execution_context: ExecutionContext,
+):
+    """ Test new create function """
+    x = LanguageModelFeaturizerGraphComponent.create(
+        config=LanguageModelFeaturizerGraphComponent.get_default_config(),
+        model_storage=default_model_storage,
+        resource=resource_language_model_featurizer,
+        execution_context=default_execution_context,
+    )
+    assert isinstance(x, LanguageModelFeaturizerGraphComponent)
+
+
+def test_create_callable(
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], create_language_model_featurizer
+    ],
+):
+    """ Test create function as a callable
+    This notation will be used for the remaining tests """
+    x = create_language_model_featurizer(
+        LanguageModelFeaturizerGraphComponent.get_default_config()
+    )
+    assert isinstance(x, LanguageModelFeaturizerGraphComponent)
 
 
 @pytest.mark.parametrize(
@@ -332,7 +337,7 @@ def process_texts(
 )
 class TestShapeValuesTrainAndProcess:
     @staticmethod
-    def evaluate_message_shape_values(
+    def evaluate_message_shapes(
         messages: List[Message],
         expected_shape: List[tuple],
         expected_sequence_vec: List[List[float]],
@@ -375,7 +380,7 @@ class TestShapeValuesTrainAndProcess:
             assert intent_sequence_vec is None
             assert intent_sentence_vec is None
 
-    def test_lm_featurizer_shape_values_train(
+    def test_lm_featurizer_shapes_in_process_training_data(
         self,
         model_name: Text,
         model_weights: Text,
@@ -387,14 +392,14 @@ class TestShapeValuesTrainAndProcess:
             [Dict[Text, Any]], create_language_model_featurizer
         ],
     ):
-        messages = train_texts(
+        messages = process_training_text(
             texts, model_name, model_weights, create_language_model_featurizer
         )
-        self.evaluate_message_shape_values(
+        self.evaluate_message_shapes(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
 
-    def test_lm_featurizer_shape_values_process(
+    def test_lm_featurizer_shapes_in_process_messages(
         self,
         model_name: Text,
         model_weights: Text,
@@ -406,8 +411,10 @@ class TestShapeValuesTrainAndProcess:
             [Dict[Text, Any]], create_language_model_featurizer
         ],
     ):
-        messages = process_texts(texts, model_name, model_weights, create_language_model_featurizer)
-        self.evaluate_message_shape_values(
+        messages = process_messages(
+            texts, model_name, model_weights, create_language_model_featurizer
+        )
+        self.evaluate_message_shapes(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
 
@@ -563,6 +570,7 @@ class TestSubTokensTrainAndProcess:
         messages: List[Message],
         expected_number_of_sub_tokens: List[List[float]],
     ):
+        """ Check we get the correct number of sub tokens """
         whitespace_tokenizer = WhitespaceTokenizer()
         for index, message in enumerate(messages):
             assert [
@@ -572,24 +580,38 @@ class TestSubTokensTrainAndProcess:
                 whitespace_tokenizer.tokenize(Message.build(text=texts[index]), TEXT)
             )
 
-    def test_lm_featurizer_number_of_sub_tokens_train(
+    def test_lm_featurizer_num_sub_tokens_process_training_data(
         self,
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
         expected_number_of_sub_tokens: List[List[float]],
+        create_language_model_featurizer: Callable[
+            [Dict[Text, Any]], create_language_model_featurizer
+        ],
     ):
-        messages = train_texts(texts, model_name, model_weights)
+        """ Test the number of sub tokens when calling the function
+        process training data """
+        messages = process_training_text(
+            texts, model_name, model_weights, create_language_model_featurizer
+        )
         self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
 
-    def test_lm_featurizer_number_of_sub_tokens_process(
+    def test_lm_featurizer_num_sub_tokens_process_messages(
         self,
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
         expected_number_of_sub_tokens: List[List[float]],
+        create_language_model_featurizer: Callable[
+            [Dict[Text, Any]], create_language_model_featurizer
+        ],
     ):
-        messages = process_texts(texts, model_name, model_weights)
+        """ Test the number of sub tokens when calling the function
+        process (messages) """
+        messages = process_messages(
+            texts, model_name, model_weights, create_language_model_featurizer
+        )
         self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
 
 
@@ -598,12 +620,12 @@ class TestSubTokensTrainAndProcess:
     [(20, "bert", False), (1000, "bert", True), (1000, "xlnet", False)],
 )
 def test_sequence_length_overflow_train(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
     input_sequence_length: int,
     model_name: Text,
     should_overflow: bool,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], create_language_model_featurizer
+    ],
 ):
     component = create_language_model_featurizer(
         {"model_name": model_name, "skip_model_load": "True"}
@@ -629,13 +651,13 @@ def test_sequence_length_overflow_train(
     ],
 )
 def test_long_sequences_extra_padding(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
     sequence_embeddings: np.ndarray,
     actual_sequence_lengths: List[int],
     model_name: Text,
     padding_needed: bool,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], create_language_model_featurizer
+    ],
 ):
     component = create_language_model_featurizer(
         {"model_name": model_name, "skip_model_load": True}
@@ -666,13 +688,13 @@ def test_long_sequences_extra_padding(
     ],
 )
 def test_input_padding(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
     token_ids: List[List[int]],
     max_sequence_length_model: int,
     resulting_length: int,
     padding_added: bool,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], create_language_model_featurizer
+    ],
 ):
     component = create_language_model_featurizer(
         {"model_name": "bert", "skip_model_load": True}
@@ -693,14 +715,14 @@ def test_input_padding(
     ],
 )
 def test_log_longer_sequence(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
     sequence_length: int,
     model_name: Text,
     model_weights: Text,
     should_overflow: bool,
     caplog: LogCaptureFixture,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], create_language_model_featurizer
+    ],
 ):
     config = {"model_name": model_name, "model_weights": model_weights}
 
@@ -712,7 +734,7 @@ def test_log_longer_sequence(
     td = TrainingData([message])
     tokenizer.train(td)
     caplog.set_level(logging.DEBUG)
-    featurizer.process(message)
+    featurizer.process([message])
     if should_overflow:
         assert "hi hi hi" in caplog.text
     assert len(message.features) >= 2
@@ -723,12 +745,12 @@ def test_log_longer_sequence(
     [(256, 512, 256), (700, 700, 700), (700, 512, 512)],
 )
 def test_attention_mask(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
     actual_sequence_length: int,
     max_input_sequence_length: int,
     zero_start_index: int,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], create_language_model_featurizer
+    ],
 ):
     component = create_language_model_featurizer(
         {"model_name": "bert", "skip_model_load": True}
@@ -755,12 +777,12 @@ def test_attention_mask(
     ],
 )
 def test_lm_featurizer_correctly_handle_whitespace_token(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
     text: Text,
     tokens: List[Tuple[Text, int]],
     expected_feature_tokens: List[Tuple[Text, int]],
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], create_language_model_featurizer
+    ],
 ):
 
     config = {
