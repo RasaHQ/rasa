@@ -1,10 +1,12 @@
 import copy
-from pathlib import Path
+import logging
 
 import pytest
 import numpy as np
 from typing import List, Dict, Text, Any, Optional, Union
 from unittest.mock import Mock
+
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
@@ -13,10 +15,8 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu import registry
-from rasa.nlu.components import ComponentBuilder
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data import util
-from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.nlu.training_data.loading
 from rasa.utils.tensorflow.constants import (
     EPOCHS,
@@ -239,59 +239,68 @@ def test_resolve_intent_response_key_from_label(
     )
 
 
-async def test_train_model_checkpointing(
-    component_builder: ComponentBuilder, tmpdir: Path
+def test_train_model_checkpointing(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    caplog: LogCaptureFixture,
 ):
-    from pathlib import Path
+    config_params = {
+        EPOCHS: 5,
+        MODEL_CONFIDENCE: "linear_norm",
+        CONSTRAIN_SIMILARITIES: True,
+        CHECKPOINT_MODEL: True,
+    }
 
-    model_name = "rs-checkpointed-model"
-    best_model_file = Path(str(tmpdir), model_name)
-    assert not best_model_file.exists()
+    response_selector = create_response_selector(
+        config_params, default_model_storage, default_execution_context
+    )
 
-    _config = RasaNLUModelConfig(
+    with caplog.at_level(logging.WARNING):
+        ResponseSelectorGraphComponent.load(
+            {**ResponseSelectorGraphComponent.get_default_config(), **config_params},
+            default_model_storage,
+            Resource("response_selector"),
+            default_execution_context,
+        )
+
+    assert any(
+        "Failed to load ResponseSelectorGraphComponent from model storage." in message
+        for message in caplog.messages
+    )
+
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
         {
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {
-                    "name": "CountVectorsFeaturizer",
-                    "analyzer": "char_wb",
-                    "min_ngram": 3,
-                    "max_ngram": 17,
-                    "max_features": 10,
-                    "min_df": 5,
-                },
-                {
-                    "name": "ResponseSelector",
-                    EPOCHS: 5,
-                    MODEL_CONFIDENCE: "linear_norm",
-                    CONSTRAIN_SIMILARITIES: True,
-                    CHECKPOINT_MODEL: True,
-                },
-            ],
-            "language": "en",
-        }
+            "name": "CountVectorsFeaturizer",
+            "analyzer": "char_wb",
+            "min_ngram": 3,
+            "max_ngram": 17,
+            "max_features": 10,
+            "min_df": 5,
+        },
+    ]
+
+    loaded_pipeline = [
+        registry.get_component_class(component.pop("name"))(component)
+        for component in copy.deepcopy(pipeline)
+    ]
+
+    importer = RasaFileImporter(training_data_paths=["data/test_selectors"])
+    training_data = importer.get_nlu_data()
+
+    for component in loaded_pipeline:
+        component.train(training_data)
+
+    response_selector.train(training_data=training_data)
+
+    loaded_selector = ResponseSelectorGraphComponent.load(
+        {**ResponseSelectorGraphComponent.get_default_config(), **config_params},
+        default_model_storage,
+        Resource("response_selector"),
+        default_execution_context,
     )
 
-    await rasa.nlu.train.train(
-        _config,
-        path=str(tmpdir),
-        data="data/test_selectors",
-        component_builder=component_builder,
-        fixed_model_name=model_name,
-    )
-
-    assert best_model_file.exists()
-
-    """
-    Tricky to validate the *exact* number of files that should be there, however there
-    must be at least the following:
-        - metadata.json
-        - checkpoint
-        - component_1_CountVectorsFeaturizer (as per the pipeline above)
-        - component_2_ResponseSelector files (more than 1 file)
-    """
-    all_files = list(best_model_file.rglob("*.*"))
-    assert len(all_files) > 4
+    assert loaded_selector.model
 
 
 def _train_persist_load_with_different_settings(
