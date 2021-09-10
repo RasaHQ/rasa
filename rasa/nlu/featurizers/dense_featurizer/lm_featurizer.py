@@ -68,9 +68,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             execution_context.node_name, config
         )
         self._config = {**self.get_default_config(), **config}
-        self._model_storage = model_storage
-        self._resource = resource
-        self._execution_context = execution_context
         self._check_language_is_supported()
         self._load_model_metadata()
         self._load_model_instance(self._config["skip_model_load"])
@@ -127,10 +124,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         """Returns the extra python dependencies required for LanguageModelFeaturizer."""
         return ["transformers"]
 
-    @staticmethod
-    def required_components(cls) -> List[Type[Component]]:
-        """Returns packages to be installed."""
-        return [Tokenizer]
 
     def _check_language_is_supported(self) -> None:
         if "language" in self._config:
@@ -803,7 +796,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             if message:
                 self._process_message(message)
 
-    def _process_message(self, message: Message, **kwargs: Any) -> None:
+    def _process_message(self, message: Message) -> None:
         """
         Processes an incoming message by computing its
         tokens and dense features.
