@@ -97,7 +97,8 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     ) -> "LanguageModelFeaturizerGraphComponent":
         """Creates a LanguageModelFeaturizer.
 
-        Loads the model specified in the config."""
+        Loads the model specified in the config.
+        """
         return cls(config, execution_context)
 
     @staticmethod
@@ -755,16 +756,14 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         return training_data
 
     def process(self, messages: List[Message]) -> List[Message]:
-        """Processes incoming messages by computing tokens and dense features.
-        """
+        """Processes messages by computing tokens and dense features."""
         for message in messages:
             if message:
                 self._process_message(message)
         return messages
 
     def _process_message(self, message: Message) -> Message:
-        """Processes an incoming message by computing tokens and dense features.
-        """
+        """Processes a message by computing tokens and dense features."""
         # processing featurizers operates only on TEXT and ACTION_TEXT attributes,
         # because all other attributes are labels which are featurized during
         # training and their features are stored by the model itself.
