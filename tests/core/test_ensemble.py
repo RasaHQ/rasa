@@ -71,7 +71,7 @@ def test_default_predict_excludes_rejected_action(
 
 
 @pytest.mark.parametrize(
-    "predictions_and_expected_winner_idx,last_action_was_action_listen",
+    "predictions_and_expected_winner_idx, last_action_was_action_listen",
     itertools.product(
         [
             (
