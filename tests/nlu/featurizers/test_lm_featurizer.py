@@ -35,14 +35,13 @@ def create_language_model_featurizer(
     resource_language_model_featurizer,
     default_execution_context: ExecutionContext,
 ) -> Callable[[Dict[Text, Any]], LanguageModelFeaturizerGraphComponent]:
-    def inner(config: Dict[Text, Any]):
+    def inner(config: Dict[Text, Any]) -> LanguageModelFeaturizerGraphComponent:
         return LanguageModelFeaturizerGraphComponent.create(
             config=config,
             model_storage=default_model_storage,
             resource=resource_language_model_featurizer,
             execution_context=default_execution_context,
         )
-
     return inner
 
 
