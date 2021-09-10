@@ -198,8 +198,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _add_lm_specific_special_tokens(
         self, token_ids: List[List[int]]
     ) -> List[List[int]]:
-        """Adds language special model-specific tokens which were used during
-        their training.
+        """Adds the language and model-specific tokens used during training.
 
         Args:
             token_ids: List of token ids for each example in the batch.

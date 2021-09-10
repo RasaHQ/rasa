@@ -37,7 +37,7 @@ def create_language_model_featurizer(
 ) -> Callable[[Dict[Text, Any]], LanguageModelFeaturizerGraphComponent]:
     def inner(config: Dict[Text, Any]) -> LanguageModelFeaturizerGraphComponent:
         return LanguageModelFeaturizerGraphComponent.create(
-            config=config,
+            config={**LanguageModelFeaturizerGraphComponent.get_default_config(), **config},
             model_storage=default_model_storage,
             resource=resource_language_model_featurizer,
             execution_context=default_execution_context,
