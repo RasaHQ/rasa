@@ -1,22 +1,15 @@
 import argparse
-import filecmp
 import os
 from pathlib import Path
 from unittest.mock import Mock
 import pytest
 from collections import namedtuple
-from typing import Callable, Text, Dict, List
+from typing import Callable, Text
 
 from _pytest.monkeypatch import MonkeyPatch
-from _pytest.pytester import RunResult, Testdir
+from _pytest.pytester import RunResult
 from rasa.cli import data
-from rasa.core.constants import (
-    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
-    DEFAULT_NLU_FALLBACK_THRESHOLD,
-    DEFAULT_CORE_FALLBACK_THRESHOLD,
-)
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DEFAULT_DATA_PATH
-from rasa.shared.core.domain import Domain
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
 import rasa.shared.utils.io
@@ -257,93 +250,3 @@ def test_validate_files_invalid_domain():
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
         with pytest.warns(UserWarning) as w:
             assert "Please migrate to RulePolicy." in str(w[0].message)
-
-
-def test_rasa_data_convert_responses(
-    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
-):
-    converted_data_folder = "converted_data"
-    os.mkdir(converted_data_folder)
-    expected_data_folder = "expected_data"
-    os.mkdir(expected_data_folder)
-
-    domain = (
-        "version: '2.0'\n"
-        "session_config:\n"
-        "  session_expiration_time: 60\n"
-        "  carry_over_slots_to_new_session: true\n"
-        "actions:\n"
-        "- respond_chitchat\n"
-        "- utter_greet\n"
-        "- utter_cheer_up"
-    )
-
-    expected_domain = (
-        "version: '2.0'\n"
-        "session_config:\n"
-        "  session_expiration_time: 60\n"
-        "  carry_over_slots_to_new_session: true\n"
-        "actions:\n"
-        "- utter_chitchat\n"
-        "- utter_greet\n"
-        "- utter_cheer_up\n"
-    )
-
-    with open(f"{expected_data_folder}/domain.yml", "w") as f:
-        f.write(expected_domain)
-
-    with open("domain.yml", "w") as f:
-        f.write(domain)
-
-    stories = (
-        "stories:\n"
-        "- story: sad path\n"
-        "  steps:\n"
-        "  - intent: greet\n"
-        "  - action: utter_greet\n"
-        "  - intent: mood_unhappy\n"
-        "- story: chitchat\n"
-        "  steps:\n"
-        "  - intent: chitchat\n"
-        "  - action: respond_chitchat\n"
-    )
-
-    expected_stories = (
-        'version: "2.0"\n'
-        "stories:\n"
-        "- story: sad path\n"
-        "  steps:\n"
-        "  - intent: greet\n"
-        "  - action: utter_greet\n"
-        "  - intent: mood_unhappy\n"
-        "- story: chitchat\n"
-        "  steps:\n"
-        "  - intent: chitchat\n"
-        "  - action: utter_chitchat\n"
-    )
-
-    with open(f"{expected_data_folder}/stories.yml", "w") as f:
-        f.write(expected_stories)
-
-    with open("data/stories.yml", "w") as f:
-        f.write(stories)
-
-    run_in_simple_project(
-        "data",
-        "convert",
-        "responses",
-        "--data",
-        "data",
-        "--out",
-        converted_data_folder,
-    )
-
-    assert filecmp.cmp(
-        Path(converted_data_folder) / "domain_converted.yml",
-        Path(expected_data_folder) / "domain.yml",
-    )
-
-    assert filecmp.cmp(
-        Path(converted_data_folder) / "stories_converted.yml",
-        Path(expected_data_folder) / "stories.yml",
-    )
