@@ -39,7 +39,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
-    from rasa.core.policies.policy import SupportedData
+    from rasa.core.policies.policy import SupportedData, PolicyPrediction
 
 logger = logging.getLogger(__name__)
 

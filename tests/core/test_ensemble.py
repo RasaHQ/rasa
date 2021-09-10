@@ -1,4 +1,3 @@
-from rasa.core.policies.rule_policy import RulePolicy
 import pytest
 import itertools
 from typing import List, Tuple

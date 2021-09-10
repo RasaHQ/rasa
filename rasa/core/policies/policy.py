@@ -518,6 +518,7 @@ class PolicyPrediction:
         action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
+
         Args:
             probabilities: The probabilities for each action.
             policy_name: Name of the policy which made the prediction.
@@ -563,12 +564,14 @@ class PolicyPrediction:
         action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
         """Create a prediction for a given action.
+
         Args:
             domain: The current model domain
             action_name: The action which should be predicted.
             policy_name: The policy which did the prediction.
             confidence: The prediction confidence.
             action_metadata: Additional metadata to be attached with the prediction.
+
         Returns:
             The prediction.
         """
@@ -580,8 +583,10 @@ class PolicyPrediction:
 
     def __eq__(self, other: Any) -> bool:
         """Checks if the two objects are equal.
+
         Args:
             other: Any other object.
+
         Returns:
             `True` if other has the same type and the values are the same.
         """
@@ -605,6 +610,7 @@ class PolicyPrediction:
     @property
     def max_confidence_index(self) -> int:
         """Gets the index of the action prediction with the highest confidence.
+
         Returns:
             The index of the action with the highest confidence.
         """
@@ -613,6 +619,7 @@ class PolicyPrediction:
     @property
     def max_confidence(self) -> float:
         """Gets the highest predicted confidence.
+
         Returns:
             The highest predicted confidence.
         """
@@ -623,10 +630,12 @@ def confidence_scores_for(
     action_name: Text, value: float, domain: Domain
 ) -> List[float]:
     """Returns confidence scores if a single action is predicted.
+
     Args:
         action_name: the name of the action for which the score should be set
         value: the confidence for `action_name`
         domain: the :class:`rasa.shared.core.domain.Domain`
+
     Returns:
         the list of the length of the number of actions
     """

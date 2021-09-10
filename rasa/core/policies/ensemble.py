@@ -1,47 +1,22 @@
 from abc import abstractmethod
-from typing import Text, Optional, Tuple, List, Dict, Any
+from typing import Text, List, Dict, Any
 import logging
-import copy
 
 from rasa.engine.graph import GraphComponent
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.runner.interface import ExecutionContext
-import rasa.core
-import rasa.core.training.training
-from rasa.core.policies.policy import (
-    InvalidPolicyConfig,
-    Policy,
-    SupportedData,
-    PolicyPrediction,
-)
-from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies._ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.shared.exceptions import RasaException, InvalidConfigException
-import rasa.shared.utils.common
-import rasa.shared.utils.io
-from rasa.shared.constants import (
-    DOCS_URL_RULES,
-    DOCS_URL_POLICIES,
-    DEFAULT_CONFIG_PATH,
-    DOCS_URL_DEFAULT_ACTIONS,
-)
-from rasa.shared.core.constants import (
-    ACTION_LISTEN_NAME,
-    USER_INTENT_BACK,
-    USER_INTENT_RESTART,
-    ACTION_RESTART_NAME,
-    ACTION_BACK_NAME,
-)
-from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecutionRejected,
     ActionExecuted,
     DefinePrevUserUtteredFeaturization,
-    Event,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-import rasa.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +162,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
 
         if best_index < 0:
             raise InvalidConfigException(
-                f"No best prediction found. Please check " f"your model configuration."
+                "No best prediction found. Please check your model configuration."
             )
 
         best_prediction = predictions[best_index]
@@ -223,16 +198,6 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         Returns:
             The winning policy prediction.
         """
-        # NOTE: previously this method did find rejected action before running the
-        # policies "because some of them might add events"
-        # - if this comment is obsolete and no prediction modifies trackers during
-        #   predictions, then the following is fine
-        # - if this comment is not obsolete then we have to invent a new
-        #   GraphComponent/node that runs before the policies predict -- and the
-        #   we need to make sure policies are run in the exact same order as before
-        #   since otherwise they modify the tracker in different order than in the
-        #   old version
-
         last_action_event = next(
             (
                 event
