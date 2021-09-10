@@ -3,15 +3,12 @@ import logging
 
 from typing import Any, Optional, Text, List, Type, Dict, Tuple
 
-import rasa.core.utils
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.components import Component, UnsupportedLanguageError
+from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
-from rasa.nlu.model import Metadata
-import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -56,11 +53,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """
 
     def __init__(
-        self,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
+        self, config: Dict[Text, Any], execution_context: ExecutionContext,
     ) -> None:
         """Initializes LanguageModelFeaturizer with the model
         specified in the config."""
@@ -109,14 +102,13 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     ) -> "LanguageModelFeaturizerGraphComponent":
         """Creates a LanguageModelFeaturizer by loading the model
         specified in the config."""
-        return cls(config, model_storage, resource, execution_context)
+        return cls(config, execution_context)
 
     @staticmethod
     def required_packages() -> List[Text]:
         """Returns the extra python dependencies required for
         LanguageModelFeaturizer."""
         return ["transformers"]
-
 
     def _check_language_is_supported(self) -> None:
         if "language" in self._config:
@@ -188,25 +180,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         # Also, this does not hurt the model predictions since we use an attention mask
         # while feeding input.
         self.pad_token_id = self.tokenizer.unk_token_id
-
-    @classmethod
-    def cache_key(
-        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
-    ) -> Optional[Text]:
-        """Caches the component for future use.
-
-        Args:
-            component_meta: configuration for the component.
-            model_metadata: configuration for the whole pipeline.
-
-        Returns: key of the cache for future retrievals.
-        """
-        weights = component_meta.get("model_weights", {})
-
-        return (
-            f"{cls.__name__}-{component_meta.get('model_name')}-"
-            f"{rasa.shared.utils.io.deep_container_fingerprint(weights)}"
-        )
 
     def _lm_tokenize(self, text: Text) -> Tuple[List[int], List[Text]]:
         """Passes the text through the tokenizer of the language model.
@@ -528,10 +501,10 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         attribute: Text,
         inference_mode: bool = False,
     ) -> None:
-        """Validates if sequence lengths of all inputs are less the max sequence
-        length the model can handle.
+        """Checks if sequence lengths of all inputs are less than
+        the max sequence length the model can handle.
 
-        This method should throw an error during training, whereas log a debug
+        This method should throw an error during training, and log a debug
         message during inference if any of the input examples have a length
         greater than maximum sequence length allowed.
 
@@ -539,7 +512,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             actual_sequence_lengths: original sequence length of all inputs
             batch_examples: all message instances in the batch
             attribute: attribute of message object to be processed
-            inference_mode: Whether this is during training or during inferencing
+            inference_mode: whether this is during training or inference
         """
         if self.max_model_sequence_length == NO_LENGTH_RESTRICTION:
             # There is no restriction on sequence length from the model

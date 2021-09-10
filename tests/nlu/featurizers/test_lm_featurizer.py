@@ -42,6 +42,7 @@ def create_language_model_featurizer(
             resource=resource_language_model_featurizer,
             execution_context=default_execution_context,
         )
+
     return inner
 
 
