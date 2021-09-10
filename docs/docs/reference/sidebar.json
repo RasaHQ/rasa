@@ -247,6 +247,7 @@
         },
         {
           "items": [
+            "reference/rasa/nlu/extractors/_crf_entity_extractor",
             "reference/rasa/nlu/extractors/_duckling_entity_extractor",
             "reference/rasa/nlu/extractors/_extractor",
             "reference/rasa/nlu/extractors/_mitie_entity_extractor",
