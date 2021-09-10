@@ -183,10 +183,17 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         """Any extra python dependencies required for this component to run."""
         return ["sklearn_crfsuite", "sklearn"]
 
-    def process_training_data(
-        self, training_data: TrainingData,
-    ) -> List[List[CRFToken]]:
-        """Returns processed dataset."""
+    def train(self, training_data: TrainingData) -> Resource:
+        """Trains the extractor on a data set."""
+        # checks whether there is at least one
+        # example with an entity annotation
+        if not training_data.entity_examples:
+            logger.debug(
+                "No training examples with entities present. Skip training"
+                "of 'CRFEntityExtractor'."
+            )
+            return self._resource
+
         self.check_correct_entity_annotations(training_data)
 
         if self.component_config[BILOU_FLAG]:
@@ -199,21 +206,6 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         entity_examples = self.filter_trainable_entities(training_data.nlu_examples)
 
         dataset = [self._convert_to_crf_tokens(example) for example in entity_examples]
-
-        return dataset
-
-    def train(self, training_data: TrainingData) -> Resource:
-        """Trains the extractor on a data set."""
-        # checks whether there is at least one
-        # example with an entity annotation
-        if not training_data.entity_examples:
-            logger.debug(
-                "No training examples with entities present. Skip training"
-                "of 'CRFEntityExtractor'."
-            )
-            return self._resource
-
-        dataset = self.process_training_data(training_data)
 
         self._train_model(dataset)
 
