@@ -6,7 +6,8 @@ from typing import Any, Dict, Optional, Text, Generator
 
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String
+from sqlalchemy import Text as SqlAlchemyText  # to avoid name clash with typing.Text
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.utils.endpoints import EndpointConfig
@@ -29,7 +30,7 @@ class SQLEventBroker(EventBroker):
         __tablename__ = "events"
         id = Column(Integer, primary_key=True)
         sender_id = Column(String(255))
-        data = Column(Text)
+        data = Column(SqlAlchemyText)
 
     def __init__(
         self,
