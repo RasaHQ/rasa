@@ -108,12 +108,12 @@ def create_pretrained_transformers_config(
 
 
 def train_texts(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
     texts: List[Text],
     model_name: Text,
     model_weights: Text,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], create_language_model_featurizer
+    ],
 ) -> List[Message]:
     config = create_pretrained_transformers_config(model_name, model_weights)
     whitespace_tokenizer = WhitespaceTokenizer()
@@ -128,12 +128,12 @@ def train_texts(
 
 
 def process_texts(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
     texts: List[Text],
     model_name: Text,
     model_weights: Text,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], create_language_model_featurizer
+    ],
 ) -> List[Message]:
     config = create_pretrained_transformers_config(model_name, model_weights)
     whitespace_tokenizer = WhitespaceTokenizer()
@@ -383,8 +383,13 @@ class TestShapeValuesTrainAndProcess:
         expected_shape: List[Tuple[int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
+        create_language_model_featurizer: Callable[
+            [Dict[Text, Any]], create_language_model_featurizer
+        ],
     ):
-        messages = train_texts(texts, model_name, model_weights)
+        messages = train_texts(
+            texts, model_name, model_weights, create_language_model_featurizer
+        )
         self.evaluate_message_shape_values(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
@@ -397,8 +402,11 @@ class TestShapeValuesTrainAndProcess:
         expected_shape: List[Tuple[int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
+        create_language_model_featurizer: Callable[
+            [Dict[Text, Any]], create_language_model_featurizer
+        ],
     ):
-        messages = process_texts(texts, model_name, model_weights)
+        messages = process_texts(texts, model_name, model_weights, create_language_model_featurizer)
         self.evaluate_message_shape_values(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )

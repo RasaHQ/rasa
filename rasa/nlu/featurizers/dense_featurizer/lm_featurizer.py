@@ -71,8 +71,9 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         self._model_storage = model_storage
         self._resource = resource
         self._execution_context = execution_context
+        self._check_language_is_supported()
         self._load_model_metadata()
-        self._load_model_instance(config["skip_model_load"])
+        self._load_model_instance(self._config["skip_model_load"])
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -112,10 +113,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     ) -> "LanguageModelFeaturizerGraphComponent":
         """Creates a LanguageModelFeaturizer by loading the model
         specified in the config."""
-        if "language" in config:
-            language = config["language"]
-            if cls.supported_languages() is not None and language not in cls.supported_languages():
-                raise UnsupportedLanguageError(cls.__name__, language)
         return cls(config, model_storage, resource, execution_context)
 
     @staticmethod
@@ -134,6 +131,13 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def required_components(cls) -> List[Type[Component]]:
         """Returns packages to be installed."""
         return [Tokenizer]
+
+    def _check_language_is_supported(self) -> None:
+        if "language" in self._config:
+            language = self._config["language"]
+            supported_languages = self.supported_languages()
+            if supported_languages is not None and language not in supported_languages:
+                raise UnsupportedLanguageError(self.__name__, language)
 
     def _load_model_metadata(self) -> None:
         """Loads the metadata for the specified model and set them as properties.
