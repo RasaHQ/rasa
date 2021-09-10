@@ -41,6 +41,7 @@ class SQLEventBroker(EventBroker):
         username: Optional[Text] = None,
         password: Optional[Text] = None,
     ) -> None:
+        """Initializes `SQLBrokerEvent`."""
         from rasa.core.tracker_store import SQLTrackerStore
         import sqlalchemy.orm
 
