@@ -142,7 +142,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         entity_taggers: Optional[Dict[Text, "CRF"]] = None,
     ) -> None:
-        """Declare instance variables with default values."""
+        """Creates an instance of entity extractor."""
         self.component_config = config
         self._model_storage = model_storage
         self._resource = resource
