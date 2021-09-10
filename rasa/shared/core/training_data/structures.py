@@ -187,7 +187,10 @@ class StoryStep:
                 )
 
         result = " OR ".join(
-            [StoryStep._event_to_story_string(element, e2e) for element in story_step_element]
+            [
+                StoryStep._event_to_story_string(element, e2e)
+                for element in story_step_element
+            ]
         )
         return f"* {result}\n"
 
