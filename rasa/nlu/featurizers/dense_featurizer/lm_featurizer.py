@@ -55,8 +55,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def __init__(
         self, config: Dict[Text, Any], execution_context: ExecutionContext,
     ) -> None:
-        """Initializes LanguageModelFeaturizer with the model
-        specified in the config."""
+        """Initializes the featurizer with the model in the config."""
         super(LanguageModelFeaturizerGraphComponent, self).__init__(
             execution_context.node_name, config
         )
@@ -82,14 +81,14 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
-        """Validates that the component is configured properly."""
+        """Validates the configuration."""
         pass
 
     @classmethod
     def validate_compatibility_with_tokenizer(
         cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
     ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
+        """Checks that the featurizer and tokenizer are compatible."""
         pass
 
     @classmethod
@@ -100,14 +99,14 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> "LanguageModelFeaturizerGraphComponent":
-        """Creates a LanguageModelFeaturizer by loading the model
-        specified in the config."""
+        """Creates a LanguageModelFeaturizer.
+
+        Loads the model specified in the config."""
         return cls(config, execution_context)
 
     @staticmethod
     def required_packages() -> List[Text]:
-        """Returns the extra python dependencies required for
-        LanguageModelFeaturizer."""
+        """Returns the extra python dependencies required."""
         return ["transformers"]
 
     def _check_language_is_supported(self) -> None:
@@ -119,6 +118,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
     def _load_model_metadata(self) -> None:
         """Loads the metadata for the specified model and set them as properties.
+
         This includes the model name, model weights, cache directory and the
         maximum sequence length the model can handle.
         """
@@ -500,7 +500,9 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         attribute: Text,
         inference_mode: bool = False,
     ) -> None:
-        """Checks if sequence lengths of all inputs are less than
+        """Validates sequence length.
+
+        Checks if sequence lengths of inputs are less than
         the max sequence length the model can handle.
 
         This method should throw an error during training, and log a debug
@@ -757,8 +759,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         return training_data
 
     def process(self, messages: List[Message]) -> List[Message]:
-        """Processes a list of incoming message by computing their
-        tokens and dense features.
+        """Processes incoming messages by computing tokens and dense features.
         """
         for message in messages:
             if message:
@@ -766,12 +767,11 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         return messages
 
     def _process_message(self, message: Message) -> Message:
-        """Processes an incoming message by computing its
-        tokens and dense features.
+        """Processes an incoming message by computing tokens and dense features.
         """
         # processing featurizers operates only on TEXT and ACTION_TEXT attributes,
-        # because all other attributes are labels which are featurized during training
-        # and their features are stored by the model itself.
+        # because all other attributes are labels which are featurized during
+        # training and their features are stored by the model itself.
         for attribute in {TEXT, ACTION_TEXT}:
             if message.get(attribute):
                 self._set_lm_features(
@@ -790,17 +790,9 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         sequence_features = doc[SEQUENCE_FEATURES]
         sentence_features = doc[SENTENCE_FEATURES]
 
-        final_sequence_features = Features(
-            sequence_features,
-            FEATURE_TYPE_SEQUENCE,
-            attribute,
-            self._config[FEATURIZER_CLASS_ALIAS],
+        self.add_features_to_message(
+            sequence=sequence_features,
+            sentence=sentence_features,
+            attribute=attribute,
+            message=message,
         )
-        message.add_features(final_sequence_features)
-        final_sentence_features = Features(
-            sentence_features,
-            FEATURE_TYPE_SENTENCE,
-            attribute,
-            self._config[FEATURIZER_CLASS_ALIAS],
-        )
-        message.add_features(final_sentence_features)
