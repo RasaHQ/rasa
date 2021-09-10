@@ -140,13 +140,14 @@ class RegexMessageHandler(GraphComponent):
         # Add the results to the message.
         intent_data = {
             INTENT_NAME_KEY: intent_name,
-            INTENT_RANKING_KEY: {
-                INTENT_NAME_KEY: intent_name,
-                PREDICTED_CONFIDENCE_KEY: confidence,
-            },
+            PREDICTED_CONFIDENCE_KEY: confidence,
         }
+        intent_ranking = [
+            {INTENT_NAME_KEY: intent_name, PREDICTED_CONFIDENCE_KEY: confidence,}
+        ]
         message_data = {}
         message_data[INTENT] = intent_data
+        message_data[INTENT_RANKING_KEY] = intent_ranking
         message_data[ENTITIES] = entities
         return Message(message_data, output_properties=set(message_data.keys()))
 

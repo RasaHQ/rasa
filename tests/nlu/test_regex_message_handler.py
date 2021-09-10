@@ -138,14 +138,18 @@ def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
 
     assert not unpacked_message.features
 
-    assert set(unpacked_message.data.keys()) == {INTENT, ENTITIES}
+    assert set(unpacked_message.data.keys()) == {INTENT, INTENT_RANKING_KEY, ENTITIES}
+
     assert set(unpacked_message.data[INTENT].keys()) == {
         INTENT_NAME_KEY,
-        INTENT_RANKING_KEY,
+        PREDICTED_CONFIDENCE_KEY,
     }
-
     assert unpacked_message.data[INTENT][INTENT_NAME_KEY] == expected_intent
-    intent_ranking = unpacked_message.data[INTENT][INTENT_RANKING_KEY]
+    assert (
+        unpacked_message.data[INTENT][PREDICTED_CONFIDENCE_KEY] == expected_confidence
+    )
+
+    intent_ranking = unpacked_message.data[INTENT_RANKING_KEY]
     assert len(intent_ranking) == 1
     assert intent_ranking[0] == {
         INTENT_NAME_KEY: expected_intent,
