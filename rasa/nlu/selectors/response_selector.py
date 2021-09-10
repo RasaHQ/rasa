@@ -7,8 +7,6 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
-from rasa.utils import train_utils
-
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -654,29 +652,12 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
         **kwargs: Any,
     ) -> ResponseSelectorGraphComponent:
         """Loads the trained model from the provided directory."""
+        model: ResponseSelectorGraphComponent = super().load(
+            config, model_storage, resource, execution_context, **kwargs
+        )
+
         try:
             with model_storage.read_from(resource) as model_path:
-                (
-                    index_label_id_mapping,
-                    entity_tag_specs,
-                    label_data,
-                    data_example,
-                    sparse_feature_sizes,
-                ) = cls._load_from_files(model_path)
-
-                config = train_utils.update_confidence_type(config)
-                config = train_utils.update_similarity_type(config)
-                config = train_utils.update_deprecated_loss_type(config)
-
-                model = cls._load_model(
-                    entity_tag_specs,
-                    label_data,
-                    config,
-                    data_example,
-                    model_path,
-                    finetune_mode=execution_context.is_finetuning,
-                )
-
                 file_name = cls.__name__
                 responses = rasa.shared.utils.io.read_json_file(
                     model_path / f"{file_name}.responses.json"
@@ -684,18 +665,9 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
                 all_retrieval_intents = rasa.shared.utils.io.read_json_file(
                     model_path / f"{file_name}.retrieval_intents.json"
                 )
-                return cls(
-                    config,
-                    model_storage,
-                    resource,
-                    execution_context,
-                    index_label_id_mapping,
-                    entity_tag_specs,
-                    model,
-                    all_retrieval_intents,
-                    responses,
-                    sparse_feature_sizes,
-                )
+                model.responses = responses
+                model.all_retrieval_intents = all_retrieval_intents
+                return model
         except ValueError:
             logger.warning(
                 f"Failed to load {cls.__name__} from model storage. Resource "
