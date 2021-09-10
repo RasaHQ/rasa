@@ -9,7 +9,6 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
-from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -17,15 +16,12 @@ from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
-    FEATURIZER_CLASS_ALIAS,
     NO_LENGTH_RESTRICTION,
     NUMBER_OF_SUB_TOKENS,
     TOKENS_NAMES,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
 )
 from rasa.utils import train_utils
