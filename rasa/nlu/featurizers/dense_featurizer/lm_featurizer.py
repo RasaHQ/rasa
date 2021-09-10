@@ -67,7 +67,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         super(LanguageModelFeaturizerGraphComponent, self).__init__(
             execution_context.node_name, config
         )
-        self._config = {**self.get_default_config(), **config}
         self._model_storage = model_storage
         self._resource = resource
         self._execution_context = execution_context
@@ -116,15 +115,9 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         return cls(config, model_storage, resource, execution_context)
 
     @staticmethod
-    def supported_languages() -> Optional[List[Text]]:
-        """Returns list of supported languages."""
-        # return ["en"]
-        # None means all languages are supported
-        return None  # TODO: check which language are supported
-
-    @staticmethod
     def required_packages() -> List[Text]:
-        """Returns the extra python dependencies required for LanguageModelFeaturizer."""
+        """Returns the extra python dependencies required for
+        LanguageModelFeaturizer."""
         return ["transformers"]
 
     @staticmethod

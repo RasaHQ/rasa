@@ -62,7 +62,7 @@ def skip_on_CI(model_name: Text, model_weights: Text) -> bool:
 def create_pretrained_transformers_config(
     model_name: Text, model_weights: Text
 ) -> Dict[Text, Text]:
-    """Create a config for LanguageModelFeaturizer.
+    """Creates a config for LanguageModelFeaturizer.
 
     If CI, skips model/model_weight combinations that are too large (bert with
     LaBSE).
@@ -123,34 +123,6 @@ def process_messages(
         messages.append(message)
     lm_featurizer.process(messages)
     return messages
-
-
-def test_create(
-    default_model_storage: ModelStorage,
-    resource_language_model_featurizer,
-    default_execution_context: ExecutionContext,
-):
-    """ Test new create function """
-    x = LanguageModelFeaturizerGraphComponent.create(
-        config=LanguageModelFeaturizerGraphComponent.get_default_config(),
-        model_storage=default_model_storage,
-        resource=resource_language_model_featurizer,
-        execution_context=default_execution_context,
-    )
-    assert isinstance(x, LanguageModelFeaturizerGraphComponent)
-
-
-def test_create_callable(
-    create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
-    ],
-):
-    """ Test create function as a callable
-    This notation will be used for the remaining tests """
-    x = create_language_model_featurizer(
-        LanguageModelFeaturizerGraphComponent.get_default_config()
-    )
-    assert isinstance(x, LanguageModelFeaturizerGraphComponent)
 
 
 @pytest.mark.parametrize(
@@ -570,7 +542,7 @@ class TestSubTokensTrainAndProcess:
         messages: List[Message],
         expected_number_of_sub_tokens: List[List[float]],
     ):
-        """ Check we get the correct number of sub tokens """
+        """ Checks that we get the correct number of sub tokens """
         whitespace_tokenizer = WhitespaceTokenizer()
         for index, message in enumerate(messages):
             assert [
@@ -590,7 +562,7 @@ class TestSubTokensTrainAndProcess:
             [Dict[Text, Any]], create_language_model_featurizer
         ],
     ):
-        """ Test the number of sub tokens when calling the function
+        """ Tests the number of sub tokens when calling the function
         process training data """
         messages = process_training_text(
             texts, model_name, model_weights, create_language_model_featurizer
@@ -607,7 +579,7 @@ class TestSubTokensTrainAndProcess:
             [Dict[Text, Any]], create_language_model_featurizer
         ],
     ):
-        """ Test the number of sub tokens when calling the function
+        """ Tests the number of sub tokens when calling the function
         process (messages) """
         messages = process_messages(
             texts, model_name, model_weights, create_language_model_featurizer
