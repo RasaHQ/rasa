@@ -28,7 +28,7 @@ from rasa.engine.storage.resource import Resource
 @pytest.fixture
 def create_or_load_convert_featurizer(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
-) -> Callable[[Dict[Text, Any]], ConveRTFeaturizerGraphComponent]:
+) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizerGraphComponent]:
     def inner(config: Dict[Text, Any], load: bool =False) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizerGraphComponent]::
         if load:
             constructor = ConveRTFeaturizerGraphComponent.load
