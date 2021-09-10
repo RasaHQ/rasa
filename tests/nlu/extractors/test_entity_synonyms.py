@@ -75,6 +75,6 @@ def test_synonym_mapper_with_ints():
     message = Message(data={TEXT: "He was 6 feet away", ENTITIES: entities})
 
     # This doesn't break
-    mapper.process(message)
+    mapper.process([message])
 
     assert message.get(ENTITIES) == entities
