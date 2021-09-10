@@ -643,6 +643,8 @@ def test_or_statement_trackers_length(domain: Domain):
         remove_duplicates=False,
     )
     assert len(training_trackers) == 2
+    assert training_trackers[0].events[3] == SlotSet(key="name", value="peter")
+    assert training_trackers[1].events[3] == SlotSet(key="name", value="bob")
 
 
 @pytest.mark.parametrize(
