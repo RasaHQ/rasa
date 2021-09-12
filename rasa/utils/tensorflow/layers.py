@@ -730,7 +730,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Normalization of confidence values during inference.
-                One possible value is `SOFTMAX`.
+                Currently, the only possible value is `SOFTMAX`.
             similarity_type: Similarity measure to use, either `cosine` or `inner`.
             name: Optional name of the layer.
 
@@ -891,7 +891,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
                 sigmoid loss term is added to the total loss to ensure that similarity
                 values are approximately bounded.
             model_confidence: Normalization of confidence values during inference.
-                One possible value is `SOFTMAX`.
+                Currently, the only possible value is `SOFTMAX`.
         """
         super().__init__(
             num_candidates,
@@ -1255,7 +1255,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Normalization of confidence values during inference.
-                One possible value is `SOFTMAX`.
+                Currently, the only possible value is `SOFTMAX`.
         """
         super().__init__(
             num_candidates,

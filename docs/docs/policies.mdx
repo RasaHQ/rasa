@@ -363,7 +363,7 @@ However, additional parameters exist that can be adapted.
 |                                       |                        | Used only when `loss_type=cross_entropy`.                    |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | model_confidence                      | "softmax"              | Affects how model's confidence for each action               |
-|                                       |                        | is computed. It can take one value:                          |
+|                                       |                        | is computed. Currently, only one value is supported:         |
 |                                       |                        | 1. `softmax` - Similarities between input and action         |
 |                                       |                        | embeddings are post-processed with a softmax function,       |
 |                                       |                        | as a result of which confidence for all labels sum up to 1.  |

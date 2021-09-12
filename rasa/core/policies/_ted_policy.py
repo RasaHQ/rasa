@@ -387,8 +387,12 @@ class TEDPolicy(Policy):
         """Takes care of deprecations and compatibility of parameters."""
         self.config = rasa.utils.train_utils.update_confidence_type(self.config)
         rasa.utils.train_utils.validate_configuration_settings(self.config)
+        self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
+        self.config = rasa.utils.train_utils.update_deprecated_sparsity_to_density(
+            self.config
+        )
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
@@ -1103,5 +1107,6 @@ class TEDPolicy(Policy):
         meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
         meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
+        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
 
         return meta

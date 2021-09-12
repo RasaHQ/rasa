@@ -318,6 +318,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     def _auto_update_configuration(self) -> None:
         self.config = train_utils.update_evaluation_parameters(self.config)
+        self.config = train_utils.update_deprecated_sparsity_to_density(self.config)
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
