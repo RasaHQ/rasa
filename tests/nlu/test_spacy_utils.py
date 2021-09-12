@@ -1,33 +1,96 @@
+from typing import Optional, Text
+
 import pytest
 
+import spacy.tokens.doc
+
+from rasa.nlu.constants import DENSE_FEATURIZABLE_ATTRIBUTES, SPACY_DOCS
 from rasa.nlu.model import InvalidModelError
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.utils.spacy_utils import SpacyNLP
+from rasa.nlu.utils.spacy_utils import SpacyModelProvider, SpacyPreprocessor
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import ACTION_TEXT, RESPONSE, TEXT
+from rasa.shared.nlu.training_data.message import Message
+
+
+def create_provider_component(
+    model_name: Text = "en_core_web_md",
+) -> SpacyModelProvider:
+    component = SpacyModelProvider.create({"model": model_name}, None, None, None)
+    return component
+
+
+def create_preprocessor(case_sensitive: Optional[bool] = None) -> SpacyPreprocessor:
+    preprocessor = SpacyPreprocessor.create(
+        {"case_sensitive": case_sensitive}, None, None, None
+    )
+    return preprocessor
 
 
 @pytest.mark.parametrize(
-    "params,msg",
+    "model_name,msg",
     [
         (
-            {"model": "dinosaurhead"},
+            "dinosaurhead",
             "Please confirm that dinosaurhead is an available spaCy model",
         ),
-        ({}, "Missing model configuration for `SpacyNLP` in `config.yml`"),
+        (None, "Missing model configuration for `SpacyNLP` in `config.yml`"),
     ],
 )
-def test_model_raises_error_not_exist(params, msg):
+def test_model_raises_error_not_exist(model_name, msg):
     """It should throw a direct error when a bad model setting goes in."""
     with pytest.raises(InvalidModelError) as err:
-        SpacyNLP.create(params, RasaNLUModelConfig())
+        create_provider_component(model_name)
     assert msg in str(err.value)
 
 
-def test_cache_key_raises_error():
-    """
-    The cache_key is created before the rest of the model.
-    Error also needs to be raised there.
-    """
-    with pytest.raises(InvalidModelError) as err:
-        SpacyNLP.cache_key(component_meta={}, model_metadata={})
-    msg = "Missing model configuration for `SpacyNLP` in `config.yml`"
-    assert msg in str(err.value)
+def test_spacy_spacy_model_provider():
+    provider_component = create_provider_component()
+    spacy_model = provider_component.provide()
+    assert spacy_model.model
+    assert spacy_model.model_name == "en_core_web_md"
+
+
+@pytest.mark.parametrize("case_sensitive", [True, False])
+def test_spacy_preprocessor_adds_attributes_when_processing(case_sensitive: bool):
+    provider_component = create_provider_component()
+    spacy_model = provider_component.provide()
+    preprocessor = create_preprocessor(case_sensitive)
+    message_data = {
+        TEXT: "Hello my name is Joe",
+        RESPONSE: "Some response",
+        ACTION_TEXT: "Action Text",
+    }
+    message = Message(data=message_data)
+    preprocessor.process([message], spacy_model)
+
+    for attr, text in message_data.items():
+        doc = message.data[SPACY_DOCS[attr]]
+
+        assert isinstance(doc, spacy.tokens.doc.Doc)
+
+        if case_sensitive:
+            assert doc.text == text
+        else:
+            assert doc.text == text.lower()
+
+
+def test_spacy_preprocessor_process_training_data():
+    training_data = TrainingDataImporter.load_from_dict(
+        training_data_paths=[
+            "data/test_e2ebot/data/nlu.yml",
+            "data/test_e2ebot/data/stories.yml",
+        ]
+    ).get_nlu_data()
+
+    provider_component = create_provider_component()
+    spacy_model = provider_component.provide()
+    preprocessor = create_preprocessor()
+    preprocessor.process_training_data(training_data, spacy_model)
+
+    for message in training_data.training_examples:
+        for attr in DENSE_FEATURIZABLE_ATTRIBUTES:
+            attr_text = message.data.get(attr)
+            if attr_text:
+                doc = message.data[SPACY_DOCS[attr]]
+                assert isinstance(doc, spacy.tokens.doc.Doc)
+                assert doc.text == attr_text.lower()
