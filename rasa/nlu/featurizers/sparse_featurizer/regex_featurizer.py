@@ -86,6 +86,17 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                 "You can omit specifying `number_additional_patterns` in future runs."
             )
 
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> RegexFeaturizerGraphComponent:
+        """Creates a new untrained component (see parent class for full docstring)."""
+        return cls(config, model_storage, resource, execution_context)
+
     def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]) -> None:
         """Updates already known patterns with new patterns extracted from data.
 
