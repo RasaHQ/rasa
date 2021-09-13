@@ -102,6 +102,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
 
     @staticmethod
     def required_packages() -> List[Text]:
+        """Any extra python dependencies required for this component to run."""
         return ["sklearn"]
 
     def _load_count_vect_params(self) -> None:
@@ -656,9 +657,20 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
 
         return self._resource
 
-    def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
-        """Process incoming message and compute and set features"""
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
+        """Processes the training examples in the given training data in-place.
 
+        Args:
+          training_data: the training data
+
+        Returns:
+          same training data after processing
+        """
+        self.process(training_data.training_examples)
+        return training_data
+
+    def process(self, messages: List[Message]) -> List[Message]:
+        """Processes incoming message and compute and set features."""
         if self.vectorizers is None:
             logger.error(
                 "There is no trained CountVectorizer: "
@@ -685,8 +697,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         return messages
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
-        """Get vocabulary for all attributes"""
-
+        """Gets vocabulary for all attributes."""
         attribute_vocabularies = {}
         for attribute in self._attributes:
             attribute_vocabularies[attribute] = self._get_attribute_vocabulary(
