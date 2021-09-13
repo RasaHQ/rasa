@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 import logging
 
@@ -94,7 +95,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "LanguageModelFeaturizerGraphComponent":
+    ) -> LanguageModelFeaturizerGraphComponent:
         """Creates a LanguageModelFeaturizer.
 
         Loads the model specified in the config.
