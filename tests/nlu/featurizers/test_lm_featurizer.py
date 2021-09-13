@@ -90,7 +90,7 @@ def process_training_text(
     model_name: Text,
     model_weights: Text,
     create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
+        [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
 ) -> List[Message]:
     """ Creates a featurizer and process training data """
@@ -111,7 +111,7 @@ def process_messages(
     model_name: Text,
     model_weights: Text,
     create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
+        [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
 ) -> List[Message]:
     """ Creates a featurizer and processes messages """
@@ -364,7 +364,7 @@ class TestShapeValuesTrainAndProcess:
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
         create_language_model_featurizer: Callable[
-            [Dict[Text, Any]], create_language_model_featurizer
+            [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
     ):
         messages = process_training_text(
@@ -383,7 +383,7 @@ class TestShapeValuesTrainAndProcess:
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
         create_language_model_featurizer: Callable[
-            [Dict[Text, Any]], create_language_model_featurizer
+            [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
     ):
         messages = process_messages(
@@ -562,7 +562,7 @@ class TestSubTokensTrainAndProcess:
         texts: List[Text],
         expected_number_of_sub_tokens: List[List[float]],
         create_language_model_featurizer: Callable[
-            [Dict[Text, Any]], create_language_model_featurizer
+            [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
     ):
         """ Tests the number of sub tokens when calling the function
@@ -579,7 +579,7 @@ class TestSubTokensTrainAndProcess:
         texts: List[Text],
         expected_number_of_sub_tokens: List[List[float]],
         create_language_model_featurizer: Callable[
-            [Dict[Text, Any]], create_language_model_featurizer
+            [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
     ):
         """ Tests the number of sub tokens when calling the function
@@ -599,7 +599,7 @@ def test_sequence_length_overflow_train(
     model_name: Text,
     should_overflow: bool,
     create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
+        [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
 ):
     component = create_language_model_featurizer(
@@ -631,7 +631,7 @@ def test_long_sequences_extra_padding(
     model_name: Text,
     padding_needed: bool,
     create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
+        [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
 ):
     component = create_language_model_featurizer(
@@ -668,7 +668,7 @@ def test_input_padding(
     resulting_length: int,
     padding_added: bool,
     create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
+        [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
 ):
     component = create_language_model_featurizer(
@@ -696,7 +696,7 @@ def test_log_longer_sequence(
     should_overflow: bool,
     caplog: LogCaptureFixture,
     create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
+        [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
 ):
     config = {"model_name": model_name, "model_weights": model_weights}
@@ -724,7 +724,7 @@ def test_attention_mask(
     max_input_sequence_length: int,
     zero_start_index: int,
     create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
+        [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
 ):
     component = create_language_model_featurizer(
@@ -756,7 +756,7 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     tokens: List[Tuple[Text, int]],
     expected_feature_tokens: List[Tuple[Text, int]],
     create_language_model_featurizer: Callable[
-        [Dict[Text, Any]], create_language_model_featurizer
+        [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
 ):
 
