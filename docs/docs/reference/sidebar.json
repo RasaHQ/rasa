@@ -269,6 +269,7 @@
             {
               "items": [
                 "reference/rasa/nlu/featurizers/dense_featurizer/_convert_featurizer",
+                "reference/rasa/nlu/featurizers/dense_featurizer/_lm_featurizer",
                 "reference/rasa/nlu/featurizers/dense_featurizer/convert_featurizer",
                 "reference/rasa/nlu/featurizers/dense_featurizer/dense_featurizer",
                 "reference/rasa/nlu/featurizers/dense_featurizer/lm_featurizer",
