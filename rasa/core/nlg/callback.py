@@ -3,7 +3,8 @@ from typing import Text, Any, Dict, Optional
 
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg.generator import NaturalLanguageGenerator
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -21,46 +22,24 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
             "elements": {"type": ["array", "null"], "items": {"type": "object"}},
             "attachment": {"type": ["object", "null"]},
             "image": {"type": ["string", "null"]},
-        },
-    }
-
-
-def nlg_request_format_spec() -> Dict[Text, Any]:
-    """Expected request schema for requests sent to an NLG endpoint."""
-
-    return {
-        "type": "object",
-        "properties": {
-            "template": {"type": "string"},
-            "arguments": {"type": "object"},
-            "tracker": {
-                "type": "object",
-                "properties": {
-                    "sender_id": {"type": "string"},
-                    "slots": {"type": "object"},
-                    "latest_message": {"type": "object"},
-                    "latest_event_time": {"type": "number"},
-                    "paused": {"type": "boolean"},
-                    "events": {"type": "array"},
-                },
-            },
-            "channel": {"type": "object", "properties": {"name": {"type": "string"}}},
+            "custom": {"type": "object"},
         },
     }
 
 
 def nlg_request_format(
-    template_name: Text,
+    utter_action: Text,
     tracker: DialogueStateTracker,
     output_channel: Text,
     **kwargs: Any,
 ) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
-
     tracker_state = tracker.current_state(EventVerbosity.ALL)
 
+    # TODO: Remove `template` by Rasa Open Source 3.0.
     return {
-        "template": template_name,
+        "response": utter_action,
+        "template": utter_action,
         "arguments": kwargs,
         "tracker": tracker_state,
         "channel": {"name": output_channel},
@@ -81,33 +60,31 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
     async def generate(
         self,
-        template_name: Text,
+        utter_action: Text,
         tracker: DialogueStateTracker,
         output_channel: Text,
         **kwargs: Any,
     ) -> Dict[Text, Any]:
-        """Retrieve a named template from the domain using an endpoint."""
-
-        body = nlg_request_format(template_name, tracker, output_channel, **kwargs)
+        """Retrieve a named response from the domain using an endpoint."""
+        body = nlg_request_format(utter_action, tracker, output_channel, **kwargs)
 
         logger.debug(
             "Requesting NLG for {} from {}."
-            "".format(template_name, self.nlg_endpoint.url)
+            "".format(utter_action, self.nlg_endpoint.url)
         )
 
         response = await self.nlg_endpoint.request(
             method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT
         )
 
-        if self.validate_response(response):
+        if isinstance(response, dict) and self.validate_response(response):
             return response
         else:
-            raise Exception("NLG web endpoint returned an invalid response.")
+            raise RasaException("NLG web endpoint returned an invalid response.")
 
     @staticmethod
     def validate_response(content: Optional[Dict[Text, Any]]) -> bool:
         """Validate the NLG response. Raises exception on failure."""
-
         from jsonschema import validate
         from jsonschema import ValidationError
 
@@ -119,11 +96,10 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                 validate(content, nlg_response_format_spec())
                 return True
         except ValidationError as e:
-            e.message += (
-                ". Failed to validate NLG response from API, make sure your "
-                "response from the NLG endpoint is valid. "
-                "For more information about the format please consult the "
-                "`nlg_response_format_spec` function from this same module: "
-                "https://github.com/RasaHQ/rasa/blob/master/rasa/core/nlg/callback.py#L12"
+            raise RasaException(
+                f"{e.message}. Failed to validate NLG response from API, make sure "
+                f"your response from the NLG endpoint is valid. "
+                f"For more information about the format please consult the "
+                f"`nlg_response_format_spec` function from this same module: "
+                f"https://github.com/RasaHQ/rasa/blob/main/rasa/core/nlg/callback.py"
             )
-            raise e

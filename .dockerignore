@@ -4,3 +4,7 @@ docs
 **/*.pyc
 **/__pycache__
 !docker/configs
+rasa/tests
+rasa/scripts
+data/
+examples/

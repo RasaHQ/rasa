@@ -3,18 +3,19 @@ import logging
 import typing
 from typing import List, Text, Optional
 
-import rasa.cli.utils as cli_utils
-import rasa.core.utils as rasa_core_utils
+from rasa import telemetry
+from rasa.cli import SubParsersAction
+import rasa.core.utils
+import rasa.shared.utils.cli
+import rasa.utils.common
 from rasa.cli.arguments import export as arguments
-from rasa.constants import DOCS_URL_TRACKER_STORES, DOCS_URL_EVENT_BROKERS
-from rasa.exceptions import (
-    PublishingError,
-    RasaException,
-)
+from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORES
+from rasa.exceptions import PublishingError
+from rasa.shared.exceptions import RasaException
+from rasa.core.brokers.pika import PikaEventBroker
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
-    from rasa.core.brokers.pika import PikaEventBroker
     from rasa.core.tracker_store import TrackerStore
     from rasa.core.exporter import Exporter
     from rasa.core.utils import AvailableEndpoints
@@ -22,9 +23,8 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     """Add subparser for `rasa export`.
 
@@ -59,7 +59,7 @@ def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
 
     """
     if not endpoints.tracker_store:
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Could not find a `tracker_store` section in the supplied "
             f"endpoints file. Instructions on how to configure a tracker store "
             f"can be found here: {DOCS_URL_TRACKER_STORES}. "
@@ -71,7 +71,7 @@ def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
     return TrackerStore.create(endpoints.tracker_store)
 
 
-def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventBroker"]:
+async def _get_event_broker(endpoints: "AvailableEndpoints") -> "EventBroker":
     """Get `EventBroker` from `endpoints`.
 
     Prints an error and exits if no event broker could be loaded.
@@ -83,16 +83,17 @@ def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventBroker"
         Initialized event broker.
 
     """
-    if not endpoints.event_broker:
-        cli_utils.print_error_and_exit(
+    from rasa.core.brokers.broker import EventBroker
+
+    broker = await EventBroker.create(endpoints.event_broker)
+
+    if not broker:
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Could not find an `event_broker` section in the supplied "
             f"endpoints file. Instructions on how to configure an event broker "
             f"can be found here: {DOCS_URL_EVENT_BROKERS}. Exiting."
         )
-
-    from rasa.core.brokers.broker import EventBroker
-
-    return EventBroker.create(endpoints.event_broker)
+    return broker
 
 
 def _get_requested_conversation_ids(
@@ -135,14 +136,16 @@ def _assert_max_timestamp_is_greater_than_min_timestamp(
         and max_timestamp is not None
         and max_timestamp < min_timestamp
     ):
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Maximum timestamp '{max_timestamp}' is smaller than minimum "
             f"timestamp '{min_timestamp}'. Exiting."
         )
 
 
 def _prepare_event_broker(event_broker: "EventBroker") -> None:
-    """Sets `should_keep_unpublished_messages` flag to `False` if
+    """Prepares event broker to export tracker events.
+
+    Sets `should_keep_unpublished_messages` flag to `False` if
     `self.event_broker` is a `PikaEventBroker`.
 
     If publishing of events fails, the `PikaEventBroker` instance should not keep a
@@ -153,14 +156,12 @@ def _prepare_event_broker(event_broker: "EventBroker") -> None:
     In addition, wait until the event broker reports a `ready` state.
 
     """
-    from rasa.core.brokers.pika import PikaEventBroker
-
     if isinstance(event_broker, PikaEventBroker):
         event_broker.should_keep_unpublished_messages = False
         event_broker.raise_on_failure = True
 
     if not event_broker.is_ready():
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Event broker of type '{type(event_broker)}' is not ready. Exiting."
         )
 
@@ -170,13 +171,17 @@ def export_trackers(args: argparse.Namespace) -> None:
 
     Args:
         args: Command-line arguments to process.
-
     """
+    rasa.utils.common.run_in_loop(_export_trackers(args))
+
+
+async def _export_trackers(args: argparse.Namespace) -> None:
+
     _assert_max_timestamp_is_greater_than_min_timestamp(args)
 
-    endpoints = rasa_core_utils.read_endpoints_from_path(args.endpoints)
+    endpoints = rasa.core.utils.read_endpoints_from_path(args.endpoints)
     tracker_store = _get_tracker_store(endpoints)
-    event_broker = _get_event_broker(endpoints)
+    event_broker = await _get_event_broker(endpoints)
     _prepare_event_broker(event_broker)
     requested_conversation_ids = _get_requested_conversation_ids(args.conversation_ids)
 
@@ -192,21 +197,22 @@ def export_trackers(args: argparse.Namespace) -> None:
     )
 
     try:
-        published_events = exporter.publish_events()
-        cli_utils.print_success(
+        published_events = await exporter.publish_events()
+        telemetry.track_tracker_export(published_events, tracker_store, event_broker)
+        rasa.shared.utils.cli.print_success(
             f"Done! Successfully published {published_events} events 🎉"
         )
 
     except PublishingError as e:
         command = _get_continuation_command(exporter, e.timestamp)
-        cli_utils.print_error_and_exit(
+        rasa.shared.utils.cli.print_error_and_exit(
             f"Encountered error while publishing event with timestamp '{e}'. To "
             f"continue where I left off, run the following command:"
             f"\n\n\t{command}\n\nExiting."
         )
 
     except RasaException as e:
-        cli_utils.print_error_and_exit(str(e))
+        rasa.shared.utils.cli.print_error_and_exit(str(e))
 
 
 def _get_continuation_command(exporter: "Exporter", timestamp: float) -> Text:

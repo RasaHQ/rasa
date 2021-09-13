@@ -1,0 +1,38 @@
+stories:
+- story: utter greet
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - checkpoint: get_name
+
+- story: user no name
+  steps:
+  - checkpoint: get_name
+  - intent: default
+    entities:
+    - name: null
+  - checkpoint: process_name
+
+- story: user sends name
+  steps:
+  - checkpoint: get_name
+  - intent: default
+    entities:
+    - name: "Josh"
+  - checkpoint: process_name
+
+- story: goodbye
+  steps:
+  - checkpoint: process_name
+    slot_was_set:
+    - name: "Josh"
+  - action: utter_goodbye
+  - action: action_restart
+
+- story: utter default
+  steps:
+  - checkpoint: process_name
+    slot_was_set:
+    - name: null
+  - action: utter_default
+  - checkpoint: get_name

@@ -1,0 +1,11 @@
+
+rules:
+ - rule: provide_weather
+   steps:
+   - intent: ask_weather
+   - action: utter_weather
+
+ - rule: greet
+   steps:
+     - intent: greet
+     - action: utter_greet

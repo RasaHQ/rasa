@@ -18,12 +18,18 @@ dictionaries:
 excluded_files:
   - "*.py"
   - "*.css"
+  - "*.scss"
   - "*.yml"
   - "*.yaml"
   - "*.html"
   - "*.json"
+  - "*.lock"
+  - "*.js"
+  - "*.jsx"
+  - "*.ts"
+  - "*.tsx"
   - "*.md"
-  - "CHANGELOG.rst"
+  - "CHANGELOG.mdx"
   - "CODE_OF_CONDUCT.md"
   - "CONTRIBUTING.md"
   - "Dockerfile"
@@ -32,7 +38,6 @@ excluded_files:
   - "NOTICE"
   - "README.md"
   - "cloudbuild.yaml"
-  - "poetry.lock"
   - "pyproject.toml"
   - "secrets.tar.enc"
   - "setup.cfg"
@@ -61,6 +66,8 @@ excluded_words:
   - asyncio
   - bot
   - bot's
+  - cdd
+  - CDD
   - cmdline
   - conveRT
   - ConveRTFeaturizer
@@ -70,6 +77,7 @@ excluded_words:
   - daksh
   - db's
   - deque
+  - docusaurus
   - non-latin
   - deduplicate
   - deduplication
@@ -84,6 +92,10 @@ excluded_words:
   - featurizes
   - featurizing
   - forni
+  - gzip
+  - gzipped
+  - hftransformersnlp
+  - initializer
   - instaclient
   - jwt
   - jwt's
@@ -100,11 +112,14 @@ excluded_words:
   - memoization
   - miniconda
   - mitie
+  - mitiefeaturizer
   - mitie's
+  - mitienlp
   - dataset
   - mongod
   - mrkdown
   - mrkdwn
+  - myio
   - mymodelname
   - myuser
   - numpy
@@ -116,6 +131,7 @@ excluded_words:
   - pika's
   - jieba
   - pretrained
+  - prototyper
   - pycodestyle
   - pykwalify
   - pymessenger
@@ -127,13 +143,17 @@ excluded_words:
   - rasa
   - rasa's
   - readthedocs
+  - regularizer
   - repo
   - rst
   - sanic
   - sanitization
   - scipy
   - sklearn
+  - socketio
   - spacy
+  - spacyfeaturizer
+  - spacynlp
   - ish
   - spaCy
   - spaCy's
@@ -149,10 +169,28 @@ excluded_words:
   - tokenization
   - tokenizer
   - tokenizers
+  - tokenizing
   - typoci
   - unfeaturized
   - unschedule
   - wsgi
   - ruamel
+  - prototyper
+  - hallo
+  - crypto
+  - regexes
+  - walkthroughs
+  - webexteams
+  - venv
+  - regexfeaturizer
+  - crfentityextractor
+  - Comerica
+  - entitysynonymmapper
+  - memoizationpolicy
+  - NLG
+  - nlg
+  - Juste
+  - Tanja
+  - Vova
 
 spellcheck_filenames: false

@@ -1,17 +1,6 @@
 from typing import Optional, Text
 
-from rasa.exceptions import RasaException
-
-
-class RasaCoreException(RasaException):
-    """Basic exception for errors raised by Rasa Core."""
-
-
-class StoryParseError(RasaCoreException, ValueError):
-    """Raised if there is an error while parsing a story file."""
-
-    def __init__(self, message) -> None:
-        self.message = message
+from rasa.shared.exceptions import RasaCoreException
 
 
 class UnsupportedDialogueModelError(RasaCoreException):
@@ -22,8 +11,10 @@ class UnsupportedDialogueModelError(RasaCoreException):
     """
 
     def __init__(self, message: Text, model_version: Optional[Text] = None) -> None:
+        """Initialize message and model_version attributes."""
         self.message = message
         self.model_version = model_version
+        super(UnsupportedDialogueModelError, self).__init__()
 
     def __str__(self) -> Text:
         return self.message
@@ -37,4 +28,14 @@ class AgentNotReady(RasaCoreException):
     will be thrown."""
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
+        super(AgentNotReady, self).__init__()
+
+
+class ChannelConfigError(RasaCoreException):
+    """Raised if a channel is not configured correctly."""
+
+
+class InvalidTrackerFeaturizerUsageError(RasaCoreException):
+    """Raised if a tracker featurizer is incorrectly used."""

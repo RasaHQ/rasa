@@ -1,30 +1,45 @@
 import argparse
 import logging
 import os
-from typing import List
+from typing import List, Optional, Text, Dict, Union, Any
 
+from rasa.cli import SubParsersAction
+import rasa.shared.data
+from rasa.shared.exceptions import YamlException
+import rasa.shared.utils.io
+import rasa.shared.utils.cli
 from rasa.cli.arguments import test as arguments
-from rasa.constants import (
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_DATA_PATH,
-    DEFAULT_E2E_TESTS_PATH,
-    DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_MODELS_PATH,
-    DEFAULT_RESULTS_PATH,
-    CONFIG_SCHEMA_FILE,
+from rasa.core.constants import (
+    FAILED_STORIES_FILE,
+    SUCCESSFUL_STORIES_FILE,
+    STORIES_WITH_WARNINGS_FILE,
 )
-import rasa.utils.validation as validation_utils
-import rasa.cli.utils as cli_utils
-import rasa.utils.io as io_utils
+from rasa.shared.constants import (
+    CONFIG_SCHEMA_FILE,
+    DEFAULT_E2E_TESTS_PATH,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_MODELS_PATH,
+    DEFAULT_DATA_PATH,
+    DEFAULT_RESULTS_PATH,
+    DEFAULT_DOMAIN_PATH,
+)
+import rasa.shared.utils.validation as validation_utils
+import rasa.cli.utils
+import rasa.utils.common
+from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
-    """Adds a test subparser."""
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all test parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     test_parser = subparsers.add_parser(
         "test",
         parents=parents,
@@ -58,103 +73,191 @@ def add_subparser(
     test_parser.set_defaults(func=test, stories=DEFAULT_E2E_TESTS_PATH)
 
 
+def _print_core_test_execution_info(args: argparse.Namespace) -> None:
+    output = args.out or DEFAULT_RESULTS_PATH
+
+    if args.successes:
+        rasa.shared.utils.cli.print_info(
+            f"Successful stories written to "
+            f"'{os.path.join(output, SUCCESSFUL_STORIES_FILE)}'"
+        )
+    if not args.no_errors:
+        rasa.shared.utils.cli.print_info(
+            f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
+        )
+    if not args.no_warnings:
+        rasa.shared.utils.cli.print_info(
+            f"Stories with prediction warnings written to "
+            f"'{os.path.join(output, STORIES_WITH_WARNINGS_FILE)}'"
+        )
+
+
 def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
-    from rasa import data
-    from rasa.test import test_core_models_in_directory, test_core, test_core_models
-
-    endpoints = cli_utils.get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+    from rasa.model_testing import (
+        test_core_models_in_directory,
+        test_core,
+        test_core_models,
     )
-    stories = cli_utils.get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
-    stories = data.get_core_directory(stories)
+
+    stories = rasa.cli.utils.get_validated_path(
+        args.stories, "stories", DEFAULT_DATA_PATH
+    )
+
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
+    args.warnings = not args.no_warnings
 
-    io_utils.create_directory(output)
+    rasa.shared.utils.io.create_directory(output)
 
     if isinstance(args.model, list) and len(args.model) == 1:
         args.model = args.model[0]
 
+    if args.model is None:
+        rasa.shared.utils.cli.print_error(
+            "No model provided. Please make sure to specify "
+            "the model to test with '--model'."
+        )
+        return
+
     if isinstance(args.model, str):
-        model_path = cli_utils.get_validated_path(
+        model_path = rasa.cli.utils.get_validated_path(
             args.model, "model", DEFAULT_MODELS_PATH
         )
 
         if args.evaluate_model_directory:
-            test_core_models_in_directory(args.model, stories, output)
+            test_core_models_in_directory(
+                args.model, stories, output, use_conversation_test_files=args.e2e
+            )
         else:
             test_core(
                 model=model_path,
                 stories=stories,
-                endpoints=endpoints,
                 output=output,
                 additional_arguments=vars(args),
+                use_conversation_test_files=args.e2e,
             )
 
     else:
-        test_core_models(args.model, stories, output)
+        test_core_models(
+            args.model, stories, output, use_conversation_test_files=args.e2e
+        )
+
+    _print_core_test_execution_info(args)
 
 
-def run_nlu_test(args: argparse.Namespace) -> None:
-    """Run NLU tests."""
-    from rasa import data
-    from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
+async def run_nlu_test_async(
+    config: Optional[Union[Text, List[Text]]],
+    data_path: Text,
+    models_path: Text,
+    output_dir: Text,
+    cross_validation: bool,
+    percentages: List[int],
+    runs: int,
+    no_errors: bool,
+    all_args: Dict[Text, Any],
+) -> None:
+    """Runs NLU tests.
 
-    nlu_data = cli_utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
-    nlu_data = data.get_nlu_directory(nlu_data)
-    output = args.out or DEFAULT_RESULTS_PATH
-    args.errors = not args.no_errors
+    Args:
+        all_args: all arguments gathered in a Dict so we can pass it as one argument
+                  to other functions.
+        config: it refers to the model configuration file. It can be a single file or
+                a list of multiple files or a folder with multiple config files inside.
+        data_path: path for the nlu data.
+        models_path: path to a trained Rasa model.
+        output_dir: output path for any files created during the evaluation.
+        cross_validation: indicates if it should test the model using cross validation
+                          or not.
+        percentages: defines the exclusion percentage of the training data.
+        runs: number of comparison runs to make.
+        no_errors: indicates if incorrect predictions should be written to a file
+                   or not.
+    """
+    from rasa.model_testing import (
+        compare_nlu_models,
+        perform_nlu_cross_validation,
+        test_nlu,
+    )
 
-    io_utils.create_directory(output)
+    data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
+    test_data_importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
+    )
+    nlu_data = test_data_importer.get_nlu_data()
 
-    if args.config is not None and len(args.config) == 1:
-        args.config = os.path.abspath(args.config[0])
-        if os.path.isdir(args.config):
-            args.config = io_utils.list_files(args.config)
+    output = output_dir or DEFAULT_RESULTS_PATH
+    all_args["errors"] = not no_errors
+    rasa.shared.utils.io.create_directory(output)
 
-    if isinstance(args.config, list):
+    if config is not None and len(config) == 1:
+        config = os.path.abspath(config[0])
+        if os.path.isdir(config):
+            config = rasa.shared.utils.io.list_files(config)
+
+    if isinstance(config, list):
         logger.info(
             "Multiple configuration files specified, running nlu comparison mode."
         )
 
         config_files = []
-        for file in args.config:
+        for file in config:
             try:
                 validation_utils.validate_yaml_schema(
-                    io_utils.read_file(file),
-                    CONFIG_SCHEMA_FILE,
-                    show_validation_errors=False,
+                    rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE,
                 )
                 config_files.append(file)
-            except validation_utils.InvalidYamlFileError:
-                logger.debug(
+            except YamlException:
+                rasa.shared.utils.io.raise_warning(
                     f"Ignoring file '{file}' as it is not a valid config file."
                 )
                 continue
-
-        compare_nlu_models(
+        await compare_nlu_models(
             configs=config_files,
-            nlu=nlu_data,
+            test_data=nlu_data,
             output=output,
-            runs=args.runs,
-            exclusion_percentages=args.percentages,
+            runs=runs,
+            exclusion_percentages=percentages,
         )
-    elif args.cross_validation:
+    elif cross_validation:
         logger.info("Test model using cross validation.")
-        config = cli_utils.get_validated_path(
-            args.config, "config", DEFAULT_CONFIG_PATH
+        config = rasa.cli.utils.get_validated_path(
+            config, "config", DEFAULT_CONFIG_PATH
         )
-        perform_nlu_cross_validation(config, nlu_data, output, vars(args))
+        config_importer = TrainingDataImporter.load_from_dict(config_path=config)
+
+        config_dict = config_importer.get_config()
+        perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
     else:
-        model_path = cli_utils.get_validated_path(
-            args.model, "model", DEFAULT_MODELS_PATH
+        model_path = rasa.cli.utils.get_validated_path(
+            models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        test_nlu(model_path, nlu_data, output, vars(args))
+        test_nlu(model_path, data_path, output, all_args)
 
 
-def test(args: argparse.Namespace):
+def run_nlu_test(args: argparse.Namespace) -> None:
+    """Runs NLU tests.
+
+    Args:
+        args: the parsed CLI arguments for 'rasa test nlu'.
+    """
+    rasa.utils.common.run_in_loop(
+        run_nlu_test_async(
+            args.config,
+            args.nlu,
+            args.model,
+            args.out,
+            args.cross_validation,
+            args.percentages,
+            args.runs,
+            args.no_errors,
+            vars(args),
+        )
+    )
+
+
+def test(args: argparse.Namespace) -> None:
     """Run end-to-end tests."""
     setattr(args, "e2e", True)
     run_core_test(args)

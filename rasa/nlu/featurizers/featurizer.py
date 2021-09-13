@@ -1,126 +1,111 @@
-import numpy as np
-import scipy.sparse
-from typing import Text, Union, Optional, Dict, Any
+from __future__ import annotations
+from abc import abstractmethod, ABC
+from collections import Counter
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from typing import Generic, Iterable, Text, Optional, Dict, Any, TypeVar, Type
 
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
-from rasa.nlu.components import Component
-from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+
+# TODO: remove after all featurizers have been migrated
+from rasa.nlu.featurizers._featurizer import (
+    Featurizer,
+    SparseFeaturizer,
+    DenseFeaturizer,
+)
+
+Featurizer = Featurizer
+SparseFeaturizer = SparseFeaturizer
+DenseFeaturizer = DenseFeaturizer
+
+FeatureType = TypeVar("FeatureType")
 
 
-class Features:
-    """Stores the features produces by any featurizer."""
+class Featurizer2(Generic[FeatureType], ABC):
+    """Base class for all featurizers."""
 
-    def __init__(
-        self,
-        features: Union[np.ndarray, scipy.sparse.spmatrix],
-        message_attribute: Text,
-        origin: Text,
-    ) -> None:
-        self.features = features
-        self.type = type
-        self.origin = origin
-        self.message_attribute = message_attribute
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config."""
+        return {FEATURIZER_CLASS_ALIAS: None}
 
-    def is_sparse(self) -> bool:
-        """Checks if features are sparse or not.
-
-        Returns:
-            True, if features are sparse, false otherwise.
-        """
-        return isinstance(self.features, scipy.sparse.spmatrix)
-
-    def is_dense(self) -> bool:
-        """Checks if features are dense or not.
-
-        Returns:
-            True, if features are dense, false otherwise.
-        """
-        return not self.is_sparse()
-
-    def combine_with_features(
-        self, additional_features: Optional[Union[np.ndarray, scipy.sparse.spmatrix]]
-    ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
-        """Combine the incoming features with this instance's features.
+    def __init__(self, name: Text, config: Dict[Text, Any]) -> None:
+        """Instantiates a new featurizer.
 
         Args:
-            additional_features: additional features to add
-
-        Returns:
-            Combined features.
+          config: configuration
+          name: a name that can be used as identifier, in case the configuration does
+            not specify an `alias` (or this `alias` is None)
         """
-        if additional_features is None:
-            return self.features
+        super().__init__()
+        self.validate_config(config)
+        self._config = config
+        self._identifier = self._config[FEATURIZER_CLASS_ALIAS] or name
 
-        if self.is_dense() and isinstance(additional_features, np.ndarray):
-            return self._combine_dense_features(self.features, additional_features)
+    @classmethod
+    @abstractmethod
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
+        """Validates that the component is configured properly."""
+        ...
 
-        if self.is_sparse() and isinstance(additional_features, scipy.sparse.spmatrix):
-            return self._combine_sparse_features(self.features, additional_features)
+    @classmethod
+    @abstractmethod
+    def validate_compatibility_with_tokenizer(
+        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
+    ) -> None:
+        """Validates that the featurizer is compatible with the given tokenizer."""
+        # TODO: add (something like) this to recipe validation
+        # TODO: replace tokenizer by config of tokenizer to enable static check
+        ...
 
-        raise ValueError("Cannot combine sparse and dense features.")
+    def add_features_to_message(
+        self,
+        sequence: FeatureType,
+        sentence: Optional[FeatureType],
+        attribute: Text,
+        message: Message,
+    ) -> None:
+        """Adds sequence and sentence features for the attribute to the given message.
+
+        Args:
+          sequence: sequence feature matrix
+          sentence: sentence feature matrix
+          attribute: the attribute which both features describe
+          message: the message to which we want to add those features
+        """
+        for type, features in [
+            (FEATURE_TYPE_SEQUENCE, sequence),
+            (FEATURE_TYPE_SENTENCE, sentence),
+        ]:
+            if features is not None:
+                wrapped_feature = Features(features, type, attribute, self._identifier,)
+                message.add_features(wrapped_feature)
 
     @staticmethod
-    def _combine_dense_features(
-        features: np.ndarray, additional_features: np.ndarray
-    ) -> np.ndarray:
-        if features.ndim != additional_features.ndim:
-            raise ValueError(
-                f"Cannot combine dense features as sequence dimensions do not "
-                f"match: {features.ndim} != {additional_features.ndim}."
-            )
+    def validate_configs_compatible(
+        featurizer_configs: Iterable[Dict[Text, Any]]
+    ) -> None:
+        """Validates that the given configurations of featurizers can be used together.
 
-        return np.concatenate((features, additional_features), axis=-1)
-
-    @staticmethod
-    def _combine_sparse_features(
-        features: scipy.sparse.spmatrix, additional_features: scipy.sparse.spmatrix
-    ) -> scipy.sparse.spmatrix:
-        from scipy.sparse import hstack
-
-        if features.shape[0] != additional_features.shape[0]:
-            raise ValueError(
-                f"Cannot combine sparse features as sequence dimensions do not "
-                f"match: {features.shape[0]} != {additional_features.shape[0]}."
-            )
-
-        return hstack([features, additional_features])
-
-
-class Featurizer(Component):
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        if not component_config:
-            component_config = {}
-
-        # makes sure the alias name is set
-        component_config.setdefault(FEATURIZER_CLASS_ALIAS, self.name)
-
-        super().__init__(component_config)
-
-
-class DenseFeaturizer(Featurizer):
-    @staticmethod
-    def _calculate_cls_vector(
-        features: np.ndarray, pooling_operation: Text
-    ) -> np.ndarray:
-        # take only non zeros feature vectors into account
-        non_zero_features = np.array([f for f in features if f.any()])
-
-        # if features are all zero just return a vector with all zeros
-        if non_zero_features.size == 0:
-            return np.zeros([1, features.shape[-1]])
-
-        if pooling_operation == MEAN_POOLING:
-            return np.mean(non_zero_features, axis=0, keepdims=True)
-
-        if pooling_operation == MAX_POOLING:
-            return np.max(non_zero_features, axis=0, keepdims=True)
-
-        raise ValueError(
-            f"Invalid pooling operation specified. Available operations are "
-            f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
-            f"'{pooling_operation}'."
+        Raises:
+          `InvalidConfigException` if the given featurizers should not be used in
+            the same graph.
+        """
+        # NOTE: this assumes the names given via the execution context are unique
+        alias_counter = Counter(
+            config[FEATURIZER_CLASS_ALIAS]
+            for config in featurizer_configs
+            if FEATURIZER_CLASS_ALIAS in config
         )
-
-
-class SparseFeaturizer(Featurizer):
-    pass
+        if not alias_counter:  # no alias found
+            return
+        if alias_counter.most_common(1)[0][1] > 1:
+            raise InvalidConfigException(
+                f"Expected the featurizers to have unique names but found "
+                f" (name, count): {alias_counter.most_common()}. "
+                f"Please update your config such that each featurizer has a unique "
+                f"alias."
+            )

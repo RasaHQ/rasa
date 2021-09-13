@@ -1,0 +1,69 @@
+{{- /*
+
+The template reads an issue/a PR comment and transforms a YAML code block into JSON.
+
+*/ -}}
+{{ define "check_config_type" -}}
+{{- if has (datasource "mapping").configurations.nlu . -}}
+nlu
+{{- else if has (datasource "mapping").configurations.core . -}}
+core
+{{- end -}}
+{{- end -}}
+{{- $config := ((datasource "github").body | regexp.Find "```(?s)(.*)```" | regexp.ReplaceLiteral "```.*|\r" "" | yaml | toJSON | json) -}}
+{{- $dataset_branch := "main" -}}
+{{- /* if a branch name for dataset repository is not defined use the main branch */ -}}
+{{- if has $config "dataset_branch" -}}
+{{- $dataset_branch = $config.dataset_branch -}}
+{{- end -}}
+{"include":[
+{{- $inc := coll.Slice -}}
+{{- $dataset := coll.Slice -}}
+{{- range $pair := $config.include -}}
+{{- /* use all available datasets if value is equal to all */ -}}
+{{- if eq (index $pair.dataset 0) "all" -}}
+{{ $dataset = (coll.Keys (datasource "mapping").datasets) }}
+{{- else if eq (index $pair.dataset 0) "all-core" -}}
+{{- range $dataset_name, $dataset_spec := (datasource "mapping").datasets -}}
+{{- if has $dataset_spec "domain" -}}
+{{ $dataset = (coll.Append $dataset_name $dataset) -}}
+{{- end -}}
+{{- end -}}
+{{- else if eq (index $pair.dataset 0) "all-nlu" -}}
+{{- range $dataset_name, $dataset_spec := (datasource "mapping").datasets -}}
+{{- if not (has $dataset_spec "domain") -}}
+{{ $dataset = (coll.Append $dataset_name $dataset) -}}
+{{- end -}}
+{{- end -}}
+{{- else -}}
+{{- $dataset = $pair.dataset -}}
+{{- end -}}
+{{- range $index_dataset, $value_dataset := $dataset -}}
+{{- range $index_config, $value_config := $pair.config -}}
+{{- /* use all available configurations if value is equal to all */ -}}
+{{- if eq $value_config "all" -}}
+{{- range $config_type := (coll.Keys (datasource "mapping").configurations) -}}
+{{- range $config_name, $config_file := (index (datasource "mapping").configurations $config_type ) -}}
+{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" $config_type | toJSON) $inc) -}}
+{{- end -}}
+{{- end -}}
+{{- else if eq $value_config "all-core" -}}
+{{- range $config_name, $config_file := (datasource "mapping").configurations.core -}}
+{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" "core" | toJSON) $inc) -}}
+{{- end -}}
+{{- else if eq $value_config "all-nlu" -}}
+{{- range $config_name, $config_file := (datasource "mapping").configurations.nlu -}}
+{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" "nlu" | toJSON) $inc) -}}
+{{- end -}}
+{{- else -}}
+{{- if has (datasource "mapping").configurations.nlu $value_config -}}
+{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $value_config "type" "nlu" | toJSON) $inc) -}}
+{{- else if has (datasource "mapping").configurations.core $value_config -}}
+{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $value_config "type" "core" | toJSON) $inc) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- join $inc "," -}}
+]}

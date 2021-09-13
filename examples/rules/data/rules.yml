@@ -1,0 +1,116 @@
+version: "2.0"
+rules:
+
+- rule: Greet
+  # This rule only applies to the start of a session.
+  conversation_start: True
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+- rule: Activate form 'q_form'
+  steps:
+  - intent: activate_q_form
+  - action: loop_q_form
+  - active_loop: loop_q_form
+
+- rule: Example of an unhappy path for the 'loop_q_form'
+  condition:
+  # Condition that form is active.
+  - active_loop: loop_q_form
+  - slot_was_set:
+    - requested_slot: some_slot
+  steps:
+  # This unhappy path handles the case of an intent `explain`.
+  - intent: explain
+  - action: utter_explain_some_slot
+  # Return to form after handling the `explain` intent
+  - action: loop_q_form
+  - active_loop: loop_q_form
+
+- rule: Submit form
+  condition:
+  - active_loop: loop_q_form
+  steps:
+  - action: loop_q_form
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+  # The action we want to run when the form is submitted.
+  - action: utter_stop
+
+- rule: FAQ question
+  steps:
+  - intent: ask_possibilities
+  - action: utter_list_possibilities
+
+- rule: FAQ simple
+  condition:
+  - slot_was_set:
+    - detailed_faq: false
+  steps:
+  - intent: faq
+  - action: utter_faq
+
+- rule: FAQ detailed
+  condition:
+  - slot_was_set:
+    - detailed_faq: true
+  steps:
+  - intent: faq
+  - action: utter_faq
+  # Don't predict `action_listen` after running `utter_faq`
+  wait_for_user_input: False
+
+- rule: FAQ helped - continue
+  condition:
+  - slot_was_set:
+    - detailed_faq: true
+  steps:
+  - action: utter_faq
+  - action: utter_ask_did_help
+  - intent: affirm
+  - action: utter_continue
+
+- rule: FAQ did not help
+  condition:
+  - slot_was_set:
+    - detailed_faq: true
+  steps:
+  - action: utter_faq
+  - action: utter_ask_did_help
+  - intent: deny
+  - action: utter_detailed_faq
+  # Don't predict `action_listen` after running `utter_faq`
+  wait_for_user_input: False
+
+- rule: Detailed FAQ did not help
+  condition:
+  - slot_was_set:
+    - detailed_faq: true
+  steps:
+  - action: utter_detailed_faq
+  - action: utter_ask_did_help
+  - intent: deny
+  - action: utter_ask_stop
+
+- rule: User decides to stop
+  steps:
+  - action: utter_ask_stop
+  - intent: affirm
+  - action: utter_stop
+
+- rule: User decides to continue
+  steps:
+  - action: utter_ask_stop
+  - intent: deny
+  - action: utter_continue
+
+- rule: Implementation of the TwoStageFallbackPolicy
+  steps:
+  # This intent is automatically triggered by the `FallbackClassifier` in the NLU
+  # pipeline in case the intent confidence was below the specified threshold.
+  - intent: nlu_fallback
+  # The Fallback is implemented as now implemented as form.
+  - action: action_two_stage_fallback
+  - active_loop: action_two_stage_fallback

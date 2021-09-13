@@ -1,29 +1,38 @@
+import asyncio
 import logging
 import os
 import shutil
 import warnings
+from pathlib import Path
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Text, Type
-
-import rasa.core.utils
-import rasa.utils.io
-from rasa.cli import utils
-from rasa.cli.utils import bcolors
-from rasa.constants import (
-    DEFAULT_LOG_LEVEL,
-    DEFAULT_LOG_LEVEL_LIBRARIES,
-    ENV_LOG_LEVEL,
-    ENV_LOG_LEVEL_LIBRARIES,
-    GLOBAL_USER_CONFIG_PATH,
+from typing import (
+    Any,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Type,
+    TypeVar,
+    Union,
+    ContextManager,
+    Set,
 )
+
+import rasa.utils.io
+from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
+from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar("T")
 
-class TempDirectoryPath(str):
-    """Represents a path to an temporary directory. When used as a context
-    manager, it erases the contents of the directory on exit.
 
+class TempDirectoryPath(str, ContextManager):
+    """Represents a path to an temporary directory.
+
+    When used as a context manager, it erases the contents of the directory on exit.
     """
 
     def __enter__(self) -> "TempDirectoryPath":
@@ -34,33 +43,31 @@ class TempDirectoryPath(str):
         _exc: Optional[Type[BaseException]],
         _value: Optional[Exception],
         _tb: Optional[TracebackType],
-    ) -> bool:
+    ) -> None:
         if os.path.exists(self):
             shutil.rmtree(self)
 
 
-def arguments_of(func: Callable) -> List[Text]:
-    """Return the parameters of the function `func` as a list of names."""
-    import inspect
+def read_global_config(path: Text) -> Dict[Text, Any]:
+    """Read global Rasa configuration.
 
-    return list(inspect.signature(func).parameters.keys())
-
-
-def read_global_config() -> Dict[Text, Any]:
-    """Read global Rasa configuration."""
+    Args:
+        path: Path to the configuration
+    Returns:
+        The global configuration
+    """
     # noinspection PyBroadException
     try:
-        return rasa.utils.io.read_config_file(GLOBAL_USER_CONFIG_PATH)
+        return rasa.shared.utils.io.read_config_file(path)
     except Exception:
         # if things go south we pretend there is no config
         return {}
 
 
-def set_log_level(log_level: Optional[int] = None):
+def set_log_level(log_level: Optional[int] = None) -> None:
     """Set log level of Rasa and Tensorflow either to the provided log level or
     to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
     a default log level will be used."""
-    import logging
 
     if not log_level:
         log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
@@ -70,6 +77,7 @@ def set_log_level(log_level: Optional[int] = None):
 
     update_tensorflow_log_level()
     update_asyncio_log_level()
+    update_matplotlib_log_level()
     update_apscheduler_log_level()
     update_socketio_log_level()
 
@@ -102,31 +110,22 @@ def update_socketio_log_level() -> None:
 
 
 def update_tensorflow_log_level() -> None:
-    """Set the log level of Tensorflow to the log level specified in the environment
-    variable 'LOG_LEVEL_LIBRARIES'."""
-
-    # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support). This variable needs to be set before the
+    """Sets Tensorflow log level based on env variable 'LOG_LEVEL_LIBRARIES'."""
+    # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support).
+    # This variable needs to be set before the
     # first import since some warnings are raised on the first import.
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-    import tensorflow as tf
-
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
-    if log_level == "DEBUG":
-        tf_log_level = tf.compat.v1.logging.DEBUG
-    elif log_level == "INFO":
-        tf_log_level = tf.compat.v1.logging.INFO
-    elif log_level == "WARNING":
-        tf_log_level = tf.compat.v1.logging.WARN
-    else:
-        tf_log_level = tf.compat.v1.logging.ERROR
+    if not log_level:
+        log_level = "ERROR"
 
-    tf.compat.v1.logging.set_verbosity(tf_log_level)
+    logging.getLogger("tensorflow").setLevel(log_level)
     logging.getLogger("tensorflow").propagate = False
 
 
-def update_sanic_log_level(log_file: Optional[Text] = None):
+def update_sanic_log_level(log_file: Optional[Text] = None) -> None:
     """Set the log level of sanic loggers to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     from sanic.log import logger, error_logger, access_logger
@@ -158,24 +157,26 @@ def update_asyncio_log_level() -> None:
     logging.getLogger("asyncio").setLevel(log_level)
 
 
-def obtain_verbosity() -> int:
-    """Returns a verbosity level according to the set log level."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
-    verbosity = 0
-    if log_level == "DEBUG":
-        verbosity = 2
-    if log_level == "INFO":
-        verbosity = 1
-
-    return verbosity
+def update_matplotlib_log_level() -> None:
+    """Set the log level of matplotlib to the log level specified in the environment
+    variable 'LOG_LEVEL_LIBRARIES'."""
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
+    logging.getLogger("matplotlib.backends.backend_pdf").setLevel(log_level)
+    logging.getLogger("matplotlib.colorbar").setLevel(log_level)
+    logging.getLogger("matplotlib.font_manager").setLevel(log_level)
+    logging.getLogger("matplotlib.ticker").setLevel(log_level)
 
 
-def is_logging_disabled() -> bool:
-    """Returns true, if log level is set to WARNING or ERROR, false otherwise."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+def set_log_and_warnings_filters() -> None:
+    """
+    Set log filters on the root logger, and duplicate filters for warnings.
 
-    return log_level == "ERROR" or log_level == "WARNING"
+    Filters only propagate on handlers, not loggers.
+    """
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(RepeatedLogFilter())
+
+    warnings.filterwarnings("once", category=UserWarning)
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
@@ -183,103 +184,53 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     return sorted(dicts, key=lambda d: list(d.keys())[0])
 
 
-# noinspection PyUnresolvedReferences
-def class_from_module_path(
-    module_path: Text, lookup_path: Optional[Text] = None
-) -> Any:
-    """Given the module name and path of a class, tries to retrieve the class.
-
-    The loaded class can be used to instantiate new objects. """
-    import importlib
-
-    # load the module, will raise ImportError if module cannot be loaded
-    if "." in module_path:
-        module_name, _, class_name = module_path.rpartition(".")
-        m = importlib.import_module(module_name)
-        # get the class, will raise AttributeError if class cannot be found
-        return getattr(m, class_name)
-    else:
-        module = globals().get(module_path, locals().get(module_path))
-        if module is not None:
-            return module
-
-        if lookup_path:
-            # last resort: try to import the class from the lookup path
-            m = importlib.import_module(lookup_path)
-            return getattr(m, module_path)
-        else:
-            raise ImportError(f"Cannot retrieve class from path {module_path}.")
-
-
-def minimal_kwargs(
-    kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
-) -> Dict[Text, Any]:
-    """Returns only the kwargs which are required by a function. Keys, contained in
-    the exception list, are not included.
+def write_global_config_value(name: Text, value: Any) -> bool:
+    """Read global Rasa configuration.
 
     Args:
-        kwargs: All available kwargs.
-        func: The function which should be called.
-        excluded_keys: Keys to exclude from the result.
+        name: Name of the configuration key
+        value: Value the configuration key should be set to
 
     Returns:
-        Subset of kwargs which are accepted by `func`.
-
+        `True` if the operation was successful.
     """
-
-    excluded_keys = excluded_keys or []
-
-    possible_arguments = arguments_of(func)
-
-    return {
-        k: v
-        for k, v in kwargs.items()
-        if k in possible_arguments and k not in excluded_keys
-    }
-
-
-def write_global_config_value(name: Text, value: Any) -> None:
-    """Read global Rasa configuration."""
-
+    # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
+    # in tests
+    config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
     try:
-        os.makedirs(os.path.dirname(GLOBAL_USER_CONFIG_PATH), exist_ok=True)
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
-        c = read_global_config()
+        c = read_global_config(config_path)
         c[name] = value
-        rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
+        rasa.shared.utils.io.write_yaml(c, rasa.constants.GLOBAL_USER_CONFIG_PATH)
+        return True
     except Exception as e:
         logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
+        return False
 
 
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
     """Read a value from the global Rasa configuration."""
 
-    def not_found():
+    def not_found() -> None:
         if unavailable_ok:
             return None
         else:
             raise ValueError(f"Configuration '{name}' key not found.")
 
-    if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
+    # need to use `rasa.constants.GLOBAL_USER_CONFIG_PATH` to allow patching
+    # in tests
+    config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
+
+    if not os.path.exists(config_path):
         return not_found()
 
-    c = read_global_config()
+    c = read_global_config(config_path)
 
     if name in c:
         return c[name]
     else:
         return not_found()
-
-
-def mark_as_experimental_feature(feature_name: Text) -> None:
-    """Warns users that they are using an experimental feature."""
-
-    logger.warning(
-        f"The {feature_name} is currently experimental and might change or be "
-        "removed in the future 🔬 Please share your feedback on it in the "
-        "forum (https://forum.rasa.com) to help us make this feature "
-        "ready for production."
-    )
 
 
 def update_existing_keys(
@@ -297,69 +248,157 @@ def update_existing_keys(
     return updated
 
 
-def lazy_property(function: Callable) -> Any:
-    """Allows to avoid recomputing a property over and over.
+class RepeatedLogFilter(logging.Filter):
+    """Filter repeated log records."""
 
-    The result gets stored in a local var. Computation of the property
-    will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property."""
+    last_log = None
 
-    attr_name = "_lazy_" + function.__name__
-
-    @property
-    def _lazyprop(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, function(self))
-        return getattr(self, attr_name)
-
-    return _lazyprop
-
-
-def raise_warning(
-    message: Text,
-    category: Optional[Type[Warning]] = None,
-    docs: Optional[Text] = None,
-    **kwargs: Any,
-) -> None:
-    """Emit a `warnings.warn` with sensible defaults and a colored warning msg."""
-
-    original_formatter = warnings.formatwarning
-
-    def should_show_source_line() -> bool:
-        if "stacklevel" not in kwargs:
-            if category == UserWarning or category is None:
-                return False
-            if category == FutureWarning:
-                return False
-        return True
-
-    def formatwarning(
-        message: Text,
-        category: Optional[Type[Warning]],
-        filename: Text,
-        lineno: Optional[int],
-        line: Optional[Text] = None,
-    ):
-        """Function to format a warning the standard way."""
-
-        if not should_show_source_line():
-            if docs:
-                line = f"More info at {docs}"
-            else:
-                line = ""
-
-        formatted_message = original_formatter(
-            message, category, filename, lineno, line
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Determines whether current log is different to last log."""
+        current_log = (
+            record.levelno,
+            record.pathname,
+            record.lineno,
+            record.msg,
+            record.args,
         )
-        return utils.wrap_with_color(formatted_message, color=bcolors.WARNING)
+        if current_log != self.last_log:
+            self.last_log = current_log
+            return True
+        return False
 
-    if "stacklevel" not in kwargs:
-        # try to set useful defaults for the most common warning categories
-        if category == DeprecationWarning:
-            kwargs["stacklevel"] = 3
-        elif category in (UserWarning, FutureWarning):
-            kwargs["stacklevel"] = 2
 
-    warnings.formatwarning = formatwarning
-    warnings.warn(message, category=category, **kwargs)
-    warnings.formatwarning = original_formatter
+def run_in_loop(
+    f: Coroutine[Any, Any, T], loop: Optional[asyncio.AbstractEventLoop] = None
+) -> T:
+    """Execute the awaitable in the passed loop.
+
+    If no loop is passed, the currently existing one is used or a new one is created
+    if no loop has been started in the current context.
+
+    After the awaitable is finished, all remaining tasks on the loop will be
+    awaited as well (background tasks).
+
+    WARNING: don't use this if there are never ending background tasks scheduled.
+        in this case, this function will never return.
+
+    Args:
+       f: function to execute
+       loop: loop to use for the execution
+
+    Returns:
+        return value from the function
+    """
+
+    if loop is None:
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(f)
+
+    # Let's also finish all running tasks:
+    pending = asyncio.all_tasks(loop)
+    loop.run_until_complete(asyncio.gather(*pending))
+
+    return result
+
+
+async def call_potential_coroutine(
+    coroutine_or_return_value: Union[Any, Coroutine]
+) -> Any:
+    """Awaits coroutine or returns value directly if it's not a coroutine.
+
+    Args:
+        coroutine_or_return_value: Either the return value of a synchronous function
+            call or a coroutine which needs to be await first.
+
+    Returns:
+        The return value of the function.
+    """
+    if asyncio.iscoroutine(coroutine_or_return_value):
+        return await coroutine_or_return_value
+
+    return coroutine_or_return_value
+
+
+def directory_size_in_mb(
+    path: Path, filenames_to_exclude: Optional[List[Text]] = None
+) -> float:
+    """Calculates the size of a directory.
+
+    Args:
+        path: The path to the directory.
+        filenames_to_exclude: Allows excluding certain files from the calculation.
+
+    Returns:
+        Directory size in MiB.
+    """
+    filenames_to_exclude = filenames_to_exclude or []
+    size = 0.0
+    for root, _dirs, files in os.walk(path):
+        for filename in files:
+            if filename in filenames_to_exclude:
+                continue
+            size += (Path(root) / filename).stat().st_size
+
+    # bytes to MiB
+    return size / 1_048_576
+
+
+def copy_directory(source: Path, destination: Path) -> None:
+    """Copies the content of one directory into another.
+
+    Unlike `shutil.copytree` this doesn't raise if `destination` already exists.
+
+    # TODO: Drop this in favor of `shutil.copytree(..., dirs_exist_ok=True)` when
+    # dropping Python 3.7.
+
+    Args:
+        source: The directory whose contents should be copied to `destination`.
+        destination: The directory which should contain the content `source` in the end.
+
+    Raises:
+        ValueError: If destination is not empty.
+    """
+    if not destination.exists():
+        destination.mkdir(parents=True)
+
+    if list(destination.glob("*")):
+        raise ValueError(
+            f"Destination path '{destination}' is not empty. Directories "
+            f"can only be copied to empty directories."
+        )
+
+    for item in source.glob("*"):
+        if item.is_dir():
+            shutil.copytree(item, destination / item.name)
+        else:
+            shutil.copy2(item, destination / item.name)
+
+
+def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
+    """Tries to import all package names and returns the packages where it failed.
+
+    Args:
+        package_names: The package names to import.
+
+    Returns:
+        Package names that could not be imported.
+    """
+    import importlib
+
+    failed_imports = set()
+    for package in package_names:
+        try:
+            importlib.import_module(package)
+        except ImportError:
+            failed_imports.add(package)
+
+    return failed_imports
+
+
+def module_path_from_class(clazz: Type) -> Text:
+    """Return the module path of an instance's class."""
+    return clazz.__module__ + "." + clazz.__name__

@@ -15,11 +15,9 @@ venv
 .ipynb_checkpoints
 .ruby-version
 .tox
-.pytype
+.mypy_cache/
 dist/
 pip-wheel-metadata
-docs/nlu/_build
-docs/_build
 server/
 scala/
 mongodb/
@@ -39,6 +37,7 @@ lastmile_ai/learn/plots/
 .coverage
 .coveralls.yml
 .idea/
+.venv/
 *.iml
 out/
 .vscode/
@@ -47,15 +46,11 @@ tmp_training_data.json
 models/
 .mypy_cache/
 *.tar.gz
-docs/nlu/key
-docs/nlu/key.pub
 secrets.tar
 .pytest_cache
-src
 test_download.zip
 bower_components/
 build/lib/
-docs/core/_build
 /models/
 node_modules/
 npm-debug.log
@@ -70,11 +65,9 @@ debug.md
 examples/moodbot/*.png
 examples/moodbot/errors.json
 examples/formbot/models*
-examples/concertbot/data*
 examples/concertbot/models*
 examples/moodbot/models*
-docs/core/key 
-docs/core/key.pub
+examples/e2ebot/results/*
 failed_stories.md
 errors.json
 pip-wheel-metadata/*
@@ -89,4 +82,9 @@ rasa.db-wal
 env
 .dir-locals.el
 .history
+rasa/segment_key
+rasa/keys
+/results/
+# Local Netlify folder
+.netlify
 rasa/cli/deployment/.terraform/

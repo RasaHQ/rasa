@@ -8,6 +8,8 @@ exemptLabels:
   - "type:enhancement :sparkles:"
   - "type:discussion 👨‍👧‍👦"
   - "type:discussion :family_man_girl_boy:"
+  - "type:docs 📖"
+  - "type:docs :book:"
 # Label to use when marking an issue as stale
 staleLabel: stale
 # Comment to post when marking an issue as stale. Set to `false` to disable

@@ -1,110 +1,171 @@
 import numpy as np
+import logging
 import typing
-from typing import Any, List, Text, Optional, Dict, Type, Tuple
+from typing import Any, List, Text, Dict, Tuple, Type
 
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer, Features
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
+from rasa.nlu.featurizers.dense_featurizer._mitie_featurizer import MitieFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    TEXT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
+    TOKENS_NAMES,
 )
+from rasa.nlu.utils.mitie_utils import MitieModel
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
-import rasa.utils.train_utils as train_utils
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
     import mitie
 
+logger = logging.getLogger(__name__)
 
-class MitieFeaturizer(DenseFeaturizer):
-    @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [MitieNLP, Tokenizer]
+# TODO: This is a workaround around until we have all components migrated to
+# `GraphComponent`.
+MitieFeaturizer = MitieFeaturizer
 
-    defaults = {
-        # Specify what pooling operation should be used to calculate the vector of
-        # the CLS token. Available options: 'mean' and 'max'
-        POOLING: MEAN_POOLING
-    }
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        super().__init__(component_config)
+class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
+    """A class that featurizes using Mitie."""
 
-        self.pooling_operation = self.component_config["pooling"]
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config."""
+        return {
+            **DenseFeaturizer2.get_default_config(),
+            # Specify what pooling operation should be used to calculate the vector of
+            # the complete utterance. Available options: 'mean' and 'max'
+            POOLING: MEAN_POOLING,
+        }
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
+        """Any extra python dependencies required for this component to run."""
         return ["mitie", "numpy"]
 
+    def __init__(
+        self, config: Dict[Text, Any], execution_context: ExecutionContext,
+    ) -> None:
+        """Instantiates a new `MitieFeaturizerGraphComponent` instance."""
+        super().__init__(execution_context.node_name, config)
+        self.pooling_operation = self._config[POOLING]
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> "MitieFeaturizerGraphComponent":
+        """Creates a new untrained component (see parent class for full docstring)."""
+        return cls(config, execution_context)
+
+    @classmethod
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
+        """Validates that the component is configured properly."""
+        pass
+
+    @classmethod
+    def validate_compatibility_with_tokenizer(
+        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
+    ) -> None:
+        """Validate a configuration for this component in the context of a recipe."""
+        pass
+
     def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
+        """Returns the number of dimensions."""
         return feature_extractor.num_dimensions
 
-    def train(
+    def process(self, messages: List[Message], model: MitieModel) -> List[Message]:
+        """Featurizes all given messages in-place.
+
+        Returns:
+          The given list of messages which have been modified in-place.
+        """
+        for message in messages:
+            self._process_message(message, model)
+        return messages
+
+    def process_training_data(
+        self, training_data: TrainingData, model: MitieModel
+    ) -> TrainingData:
+        """Processes the training examples in the given training data in-place.
+
+        Args:
+          training_data: Training data.
+          model: A Mitie model.
+
+        Returns:
+          Same training data after processing.
+        """
+        self.process(training_data.training_examples, model)
+        return training_data
+
+    def _process_message(self, message: Message, model: MitieModel) -> None:
+        """Processes a message."""
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            self._process_training_example(
+                message, attribute, model.word_feature_extractor
+            )
+
+    def _process_training_example(
         self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
+        example: Message,
+        attribute: Text,
+        mitie_feature_extractor: "mitie.total_word_feature_extractor",
     ) -> None:
+        tokens = example.get(TOKENS_NAMES[attribute])
 
-        mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        for example in training_data.intent_examples:
-            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-                self.process_training_example(
-                    example, attribute, mitie_feature_extractor
-                )
-
-    def process_training_example(
-        self, example: Message, attribute: Text, mitie_feature_extractor: Any
-    ):
-        tokens = train_utils.tokens_without_cls(example, attribute)
-
-        if tokens is not None:
-            features = self.features_for_tokens(tokens, mitie_feature_extractor)
-
-            final_features = Features(
-                features, attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
+        if tokens:
+            sequence_features, sentence_features = self.features_for_tokens(
+                tokens, mitie_feature_extractor
             )
-            example.add_features(final_features)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
-        tokens = train_utils.tokens_without_cls(message)
-        features = self.features_for_tokens(tokens, mitie_feature_extractor)
+            self._set_features(example, sequence_features, sentence_features, attribute)
 
-        final_features = Features(
-            features, TEXT, self.component_config[FEATURIZER_CLASS_ALIAS]
+    def _set_features(
+        self,
+        message: Message,
+        sequence_features: np.ndarray,
+        sentence_features: np.ndarray,
+        attribute: Text,
+    ) -> None:
+        final_sequence_features = Features(
+            sequence_features,
+            FEATURE_TYPE_SEQUENCE,
+            attribute,
+            self._config[FEATURIZER_CLASS_ALIAS],
         )
-        message.add_features(final_features)
+        message.add_features(final_sequence_features)
 
-    def _mitie_feature_extractor(self, **kwargs) -> Any:
-        mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
-        if not mitie_feature_extractor:
-            raise Exception(
-                "Failed to train 'MitieFeaturizer'. "
-                "Missing a proper MITIE feature extractor. "
-                "Make sure this component is preceded by "
-                "the 'MitieNLP' component in the pipeline "
-                "configuration."
-            )
-        return mitie_feature_extractor
+        final_sentence_features = Features(
+            sentence_features,
+            FEATURE_TYPE_SENTENCE,
+            attribute,
+            self._config[FEATURIZER_CLASS_ALIAS],
+        )
+        message.add_features(final_sentence_features)
 
     def features_for_tokens(
         self,
         tokens: List[Token],
         feature_extractor: "mitie.total_word_feature_extractor",
-    ) -> np.ndarray:
-        # calculate features
-        features = []
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Calculates features."""
+        sequence_features = []
         for token in tokens:
-            features.append(feature_extractor.get_feature_vector(token.text))
-        features = np.array(features)
+            sequence_features.append(feature_extractor.get_feature_vector(token.text))
+        sequence_features = np.array(sequence_features)
 
-        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
+        sentence_fetaures = self.aggregate_sequence_features(
+            sequence_features, self.pooling_operation
+        )
 
-        features = np.concatenate([features, cls_token_vec])
-
-        return features
+        return sequence_features, sentence_fetaures

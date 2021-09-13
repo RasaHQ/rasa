@@ -1,5 +1,7 @@
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.shared.nlu.constants import TEXT, ENTITIES
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
 
 
 def test_entity_synonyms():
@@ -29,22 +31,22 @@ def test_unintentional_synonyms_capitalized(
 
     examples = [
         Message(
-            "Any Mexican restaurant will do",
-            {
+            data={
+                TEXT: "Any Mexican restaurant will do",
                 "intent": "restaurant_search",
                 "entities": [
                     {"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}
                 ],
-            },
+            }
         ),
         Message(
-            "I want Tacos!",
-            {
+            data={
+                TEXT: "I want Tacos!",
                 "intent": "restaurant_search",
                 "entities": [
                     {"start": 7, "end": 12, "value": "Mexican", "entity": "cuisine"}
                 ],
-            },
+            }
         ),
     ]
 
@@ -54,3 +56,25 @@ def test_unintentional_synonyms_capitalized(
 
     assert ner_syn.synonyms.get("mexican") is None
     assert ner_syn.synonyms.get("tacos") == "Mexican"
+
+
+def test_synonym_mapper_with_ints():
+    mapper = EntitySynonymMapper()
+    entities = [
+        {
+            "start": 21,
+            "end": 22,
+            "text": "5",
+            "value": 5,
+            "confidence": 1.0,
+            "additional_info": {"value": 5, "type": "value"},
+            "entity": "number",
+            "extractor": "DucklingEntityExtractorComponent",
+        }
+    ]
+    message = Message(data={TEXT: "He was 6 feet away", ENTITIES: entities})
+
+    # This doesn't break
+    mapper.process(message)
+
+    assert message.get(ENTITIES) == entities

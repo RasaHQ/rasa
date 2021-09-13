@@ -1,26 +1,33 @@
 import argparse
 import logging
 import os
-from typing import List, Text
+from typing import List, Text, NoReturn
 
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
-from rasa.cli.utils import get_validated_path, print_error
-from rasa.constants import (
-    DEFAULT_ACTIONS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_ENDPOINTS_PATH,
-    DEFAULT_MODELS_PATH,
+import rasa.cli.utils
+import rasa.shared.utils.cli  # noqa: F401
+from rasa.shared.constants import (
     DOCS_BASE_URL,
+    DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_ACTIONS_PATH,
+    DEFAULT_MODELS_PATH,
 )
 from rasa.exceptions import ModelNotFound
 
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    """Add all run parsers.
+
+    Args:
+        subparsers: subparser we are going to attach to
+        parents: Parent parsers, needed to ensure tree structure in argparse
+    """
     run_parser = subparsers.add_parser(
         "run",
         parents=parents,
@@ -44,7 +51,7 @@ def add_subparser(
     arguments.set_run_action_arguments(sdk_subparser)
 
 
-def run_actions(args: argparse.Namespace):
+def run_actions(args: argparse.Namespace) -> None:
     import rasa_sdk.__main__ as sdk
 
     args.actions = args.actions or DEFAULT_ACTIONS_PATH
@@ -52,7 +59,7 @@ def run_actions(args: argparse.Namespace):
     sdk.main_from_args(args)
 
 
-def _validate_model_path(model_path: Text, parameter: Text, default: Text):
+def _validate_model_path(model_path: Text, parameter: Text, default: Text) -> Text:
 
     if model_path is not None and not os.path.exists(model_path):
         reason_str = f"'{model_path}' not found."
@@ -67,13 +74,18 @@ def _validate_model_path(model_path: Text, parameter: Text, default: Text):
     return model_path
 
 
-def run(args: argparse.Namespace):
-    import rasa.run
+def run(args: argparse.Namespace) -> NoReturn:
+    """Entrypoint for `rasa run`.
 
-    args.endpoints = get_validated_path(
+    Args:
+        args: The CLI arguments.
+    """
+    import rasa
+
+    args.endpoints = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
-    args.credentials = get_validated_path(
+    args.credentials = rasa.cli.utils.get_validated_path(
         args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
     )
 
@@ -87,7 +99,7 @@ def run(args: argparse.Namespace):
     # make sure either a model server, a remote storage, or a local model is
     # configured
 
-    from rasa.model import get_model
+    import rasa.model
     from rasa.core.utils import AvailableEndpoints
 
     # start server if remote storage is configured
@@ -106,7 +118,7 @@ def run(args: argparse.Namespace):
     args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)
     local_model_set = True
     try:
-        get_model(args.model)
+        rasa.model.get_local_model(args.model)
     except ModelNotFound:
         local_model_set = False
 
@@ -114,15 +126,13 @@ def run(args: argparse.Namespace):
         rasa.run(**vars(args))
         return
 
-    print_error(
-        "No model found. You have three options to provide a model:\n"
-        "1. Configure a model server in the endpoint configuration and provide "
-        "the configuration via '--endpoints'.\n"
-        "2. Specify a remote storage via '--remote-storage' to load the model "
-        "from.\n"
-        "3. Train a model before running the server using `rasa train` and "
-        "use '--model' to provide the model path.\n"
-        "For more information check {}.".format(
-            DOCS_BASE_URL + "/user-guide/configuring-http-api/"
-        )
+    rasa.shared.utils.cli.print_error(
+        f"No model found. You have three options to provide a model:\n"
+        f"1. Configure a model server in the endpoint configuration and provide "
+        f"the configuration via '--endpoints'.\n"
+        f"2. Specify a remote storage via '--remote-storage' to load the model "
+        f"from.\n"
+        f"3. Train a model before running the server using `rasa train` and "
+        f"use '--model' to provide the model path.\n"
+        f"For more information check {DOCS_BASE_URL}/model-storage."
     )

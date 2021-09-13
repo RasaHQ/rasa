@@ -7,11 +7,8 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, Dict, Any, List, Callable, Awaitable, Optional
 
-from rasa.constants import DOCS_URL_CONNECTORS
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
-
-from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +33,7 @@ class MattermostBot(OutputChannel):
             return None
 
     def __init__(
-        self, url: Text, token: Text, bot_channel: Text, webhook_url: Optional[Text],
+        self, url: Text, token: Text, bot_channel: Text, webhook_url: Optional[Text]
     ) -> None:
         self.url = url
         self.token = token
@@ -45,12 +42,12 @@ class MattermostBot(OutputChannel):
 
         super(MattermostBot, self).__init__()
 
-    def _post_message_to_channel(self, channel_id: Text, message: Text):
+    def _post_message_to_channel(self, channel_id: Text, message: Text) -> Response:
         return self._post_data_to_channel(
             {"channel_id": channel_id, "message": message}
         )
 
-    def _post_data_to_channel(self, data) -> Response:
+    def _post_data_to_channel(self, data: Dict[Text, Any]) -> Response:
         """Send a message to a mattermost channel."""
 
         headers = {"Authorization": "Bearer " + self.token}
@@ -96,9 +93,8 @@ class MattermostBot(OutputChannel):
         **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
-
         # buttons are a list of objects: [(option_name, payload)]
-        # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons
+        # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons # noqa: E501, W505
 
         actions = [
             {
@@ -130,24 +126,9 @@ class MattermostInput(InputChannel):
         if credentials is None:
             cls.raise_missing_credentials_exception()
 
-        # pytype: disable=attribute-error
-        if credentials.get("pw") is not None or credentials.get("user") is not None:
-            raise_warning(
-                "Mattermost recently switched to bot accounts. 'user' and 'pw' "
-                "should not be used anymore, you should rather convert your "
-                "account to a bot account and use a token. Password based "
-                "authentication will be removed in a future Rasa Open Source version.",
-                FutureWarning,
-                docs=DOCS_URL_CONNECTORS + "mattermost/",
-            )
-            token = MattermostBot.token_from_login(
-                credentials.get("url"), credentials.get("user"), credentials.get("pw")
-            )
-        else:
-            token = credentials.get("token")
+        token = credentials.get("token")
 
-        return cls(credentials.get("url"), token, credentials.get("webhook_url"),)
-        # pytype: enable=attribute-error
+        return cls(credentials.get("url"), token, credentials.get("webhook_url"))
 
     def __init__(self, url: Text, token: Text, webhook_url: Text) -> None:
         """Create a Mattermost input channel.
@@ -204,10 +185,10 @@ class MattermostInput(InputChannel):
         bot_channel: Text,
         metadata: Optional[Dict],
         on_new_message: Callable[[UserMessage], Awaitable[None]],
-    ):
+    ) -> None:
         try:
             out_channel = MattermostBot(
-                self.url, self.token, bot_channel, self.webhook_url,
+                self.url, self.token, bot_channel, self.webhook_url
             )
             user_msg = UserMessage(
                 message,

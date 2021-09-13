@@ -7,9 +7,9 @@ from sanic.request import Request
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     UserMessage,
-    RestInput,
     InputChannel,
 )
+from rasa.core.channels.rest import RestInput
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from sanic.response import HTTPResponse
 
@@ -64,7 +64,7 @@ class CallbackInput(RestInput):
         callback_webhook = Blueprint("callback_webhook", __name__)
 
         @callback_webhook.route("/", methods=["GET"])
-        async def health(_: Request):
+        async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @callback_webhook.route("/webhook", methods=["POST"])

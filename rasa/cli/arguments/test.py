@@ -1,7 +1,7 @@
 import argparse
 from typing import Union
 
-from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_RESULTS_PATH
+from rasa.shared.constants import DEFAULT_MODELS_PATH, DEFAULT_RESULTS_PATH
 
 from rasa.cli.arguments.default_arguments import (
     add_stories_param,
@@ -13,7 +13,7 @@ from rasa.cli.arguments.default_arguments import (
 from rasa.model import get_latest_model
 
 
-def set_test_arguments(parser: argparse.ArgumentParser):
+def set_test_arguments(parser: argparse.ArgumentParser) -> None:
     add_model_param(parser, add_positional_arg=False)
 
     core_arguments = parser.add_argument_group("Core Test Arguments")
@@ -31,12 +31,12 @@ def set_test_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def set_test_core_arguments(parser: argparse.ArgumentParser):
+def set_test_core_arguments(parser: argparse.ArgumentParser) -> None:
     add_test_core_model_param(parser)
     add_test_core_argument_group(parser, include_e2e_argument=True)
 
 
-def set_test_nlu_arguments(parser: argparse.ArgumentParser):
+def set_test_nlu_arguments(parser: argparse.ArgumentParser) -> None:
     add_model_param(parser, add_positional_arg=False)
     add_test_nlu_argument_group(parser)
 
@@ -44,7 +44,7 @@ def set_test_nlu_arguments(parser: argparse.ArgumentParser):
 def add_test_core_argument_group(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
     include_e2e_argument: bool = False,
-):
+) -> None:
     add_stories_param(parser, "test")
     parser.add_argument(
         "--max-stories", type=int, help="Maximum number of stories to test on."
@@ -95,7 +95,7 @@ def add_test_core_argument_group(
 
 def add_test_nlu_argument_group(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
+) -> None:
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
 
     add_out_param(
@@ -151,7 +151,7 @@ def add_test_nlu_argument_group(
     add_errors_success_params(parser)
 
 
-def add_test_core_model_param(parser: argparse.ArgumentParser):
+def add_test_core_model_param(parser: argparse.ArgumentParser) -> None:
     default_path = get_latest_model(DEFAULT_MODELS_PATH)
     parser.add_argument(
         "-m",
@@ -160,8 +160,8 @@ def add_test_core_model_param(parser: argparse.ArgumentParser):
         default=[default_path],
         help="Path to a pre-trained model. If it is a 'tar.gz' file that model file "
         "will be used. If it is a directory, the latest model in that directory "
-        "will be used (exception: '--evaluate-model-directory' flag is set). If multiple "
-        "'tar.gz' files are provided, all those models will be compared.",
+        "will be used (exception: '--evaluate-model-directory' flag is set). "
+        "If multiple 'tar.gz' files are provided, all those models will be compared.",
     )
 
 
@@ -190,4 +190,10 @@ def add_errors_success_params(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         default=False,
         help="If set incorrect predictions will NOT be written to a file.",
+    )
+    parser.add_argument(
+        "--no-warnings",
+        action="store_true",
+        default=False,
+        help="If set prediction warnings will NOT be written to a file.",
     )

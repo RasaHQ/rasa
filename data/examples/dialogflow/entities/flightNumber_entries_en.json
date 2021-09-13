@@ -1,0 +1,8 @@
+[
+  {
+    "value": "flight [A-Z]{2} [0-9]{4}",
+    "synonyms": [
+      "flight [A-Z]{2} [0-9]{4}"
+    ]
+  }
+]

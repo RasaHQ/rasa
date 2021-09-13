@@ -10,13 +10,13 @@ import os
 from _pytest.pytester import Testdir, RunResult
 
 from rasa.cli import scaffold
-from rasa.utils.io import write_yaml_file
+from rasa.shared.utils.io import write_yaml
 
 
 @pytest.fixture
 def run(testdir: Testdir) -> Callable[..., RunResult]:
     def do_run(*args):
-        args = ["rasa"] + list(args)
+        args = [shutil.which("rasa")] + list(args)
         return testdir.run(*args)
 
     return do_run
@@ -25,7 +25,7 @@ def run(testdir: Testdir) -> Callable[..., RunResult]:
 @pytest.fixture
 def run_with_stdin(testdir: Testdir) -> Callable[..., RunResult]:
     def do_run(*args, stdin):
-        args = ["rasa"] + list(args)
+        args = [shutil.which("rasa")] + list(args)
         return testdir.run(*args, stdin=stdin)
 
     return do_run
@@ -37,12 +37,12 @@ def create_simple_project(path: Path):
     # create a config file
     # for the cli test the resulting model is not important, use components that are
     # fast to train
-    write_yaml_file(
+    write_yaml(
         {
             "language": "en",
             "pipeline": [{"name": "KeywordIntentClassifier"}],
             "policies": [
-                {"name": "MappingPolicy"},
+                {"name": "RulePolicy"},
                 {"name": "MemoizationPolicy", "max_history": 3},
             ],
         },
@@ -58,7 +58,7 @@ def trained_simple_project(tmpdir_factory: TempdirFactory) -> Text:
 
     os.environ["LOG_LEVEL"] = "ERROR"
 
-    check_call(["rasa", "train"], cwd=path.strpath)
+    check_call([shutil.which("rasa"), "train"], cwd=path.strpath)
 
     return path.strpath
 
@@ -70,7 +70,7 @@ def run_in_simple_project(testdir: Testdir) -> Callable[..., RunResult]:
     create_simple_project(testdir.tmpdir)
 
     def do_run(*args):
-        args = ["rasa"] + list(args)
+        args = [shutil.which("rasa")] + list(args)
         return testdir.run(*args)
 
     return do_run
@@ -91,7 +91,7 @@ def run_in_simple_project_with_model(
             shutil.copytree(full_file_name, str(testdir.tmpdir / file_name))
 
     def do_run(*args):
-        args = ["rasa"] + list(args)
+        args = [shutil.which("rasa")] + list(args)
         result = testdir.run(*args)
         os.environ["LOG_LEVEL"] = "INFO"
         return result

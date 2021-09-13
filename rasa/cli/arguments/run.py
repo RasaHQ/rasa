@@ -5,21 +5,36 @@ from rasa.cli.arguments.default_arguments import add_model_param, add_endpoint_p
 from rasa.core import constants
 
 
-def set_run_arguments(parser: argparse.ArgumentParser):
+def set_run_arguments(parser: argparse.ArgumentParser) -> None:
     """Arguments for running Rasa directly using `rasa run`."""
     add_model_param(parser)
     add_server_arguments(parser)
 
 
-def set_run_action_arguments(parser: argparse.ArgumentParser):
+def set_run_action_arguments(parser: argparse.ArgumentParser) -> None:
     """Set arguments for running Rasa SDK."""
     import rasa_sdk.cli.arguments as sdk
 
     sdk.add_endpoint_arguments(parser)
 
 
+def add_interface_argument(
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+) -> None:
+    """Binds the RASA process to a network interface."""
+    parser.add_argument(
+        "-i",
+        "--interface",
+        default=constants.DEFAULT_SERVER_INTERFACE,
+        type=str,
+        help="Network interface to run the server on.",
+    )
+
+
 # noinspection PyProtectedMember
-def add_port_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]):
+def add_port_argument(
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+) -> None:
     """Add an argument for port."""
     parser.add_argument(
         "-p",
@@ -30,7 +45,7 @@ def add_port_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentG
     )
 
 
-def add_server_arguments(parser: argparse.ArgumentParser):
+def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for running API endpoint."""
     parser.add_argument(
         "--log-file",
@@ -47,6 +62,8 @@ def add_server_arguments(parser: argparse.ArgumentParser):
     )
 
     server_arguments = parser.add_argument_group("Server Settings")
+
+    add_interface_argument(server_arguments)
 
     add_port_argument(server_arguments)
 
@@ -87,7 +104,8 @@ def add_server_arguments(parser: argparse.ArgumentParser):
     )
     server_arguments.add_argument(
         "--ssl-ca-file",
-        help="If your SSL certificate needs to be verified, you can specify the CA file "
+        help="If your SSL certificate needs to be verified, "
+        "you can specify the CA file "
         "using this parameter.",
     )
     server_arguments.add_argument(
@@ -113,7 +131,8 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         help="Public key for asymmetric JWT methods or shared secret"
         "for symmetric methods. Please also make sure to use "
         "--jwt-method to select the method of the signature, "
-        "otherwise this argument will be ignored.",
+        "otherwise this argument will be ignored."
+        "Note that this key is meant for securing the HTTP API.",
     )
     jwt_auth.add_argument(
         "--jwt-method",

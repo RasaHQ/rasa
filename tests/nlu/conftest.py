@@ -1,30 +1,8 @@
-from typing import Text
-
 import pytest
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-from tests.nlu.utilities import write_file_config
-
-DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
-
-
-@pytest.fixture(scope="session")
-def component_builder():
-    return ComponentBuilder()
-
-
-@pytest.fixture(scope="session")
-def spacy_nlp(component_builder, blank_config):
-    spacy_nlp_config = {"name": "SpacyNLP"}
-    return component_builder.create_component(spacy_nlp_config, blank_config).nlp
-
-
-@pytest.fixture(scope="session")
-def spacy_nlp_component(component_builder, blank_config):
-    spacy_nlp_config = {"name": "SpacyNLP"}
-    return component_builder.create_component(spacy_nlp_config, blank_config)
 
 
 @pytest.fixture(scope="session")
@@ -38,43 +16,13 @@ def blank_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig({"language": "en", "pipeline": []})
 
 
-@pytest.fixture(scope="session")
-def config_path() -> Text:
-    return write_file_config(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
-            ],
-        }
-    ).name
-
-
-@pytest.fixture(scope="session")
-def config_path_duplicate() -> Text:
-    return write_file_config(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
-            ],
-        }
-    ).name
-
-
 @pytest.fixture()
 def pretrained_embeddings_spacy_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig(
         {
             "language": "en",
             "pipeline": [
-                {"name": "SpacyNLP"},
+                {"name": "SpacyNLP", "model": "en_core_web_md"},
                 {"name": "SpacyTokenizer"},
                 {"name": "SpacyFeaturizer"},
                 {"name": "RegexFeaturizer"},
@@ -115,7 +63,7 @@ def pretrained_embeddings_convert_config() -> RasaNLUModelConfig:
         {
             "language": "en",
             "pipeline": [
-                {"name": "ConveRTTokenizer"},
+                {"name": "WhitespaceTokenizer"},
                 {"name": "ConveRTFeaturizer"},
                 {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
             ],

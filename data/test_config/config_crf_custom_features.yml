@@ -2,10 +2,10 @@ language: "en"
 
 pipeline:
 - name: "SpacyNLP"
-  model: "en"
+  model: "en_core_web_md"
 - name: "SpacyTokenizer"
 - name: "SpacyEntityExtractor"
-- name: "DucklingHTTPExtractor"
+- name: "DucklingEntityExtractor"
   url: "http://duckling:8000"
   dimensions:
   - "NUMBER"

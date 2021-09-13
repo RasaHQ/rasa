@@ -1,12 +1,13 @@
-import asyncio
 import logging
 import typing
 from typing import Optional, Text
 
-from rasa.cli.utils import print_success
-from rasa.core.interpreter import INTENT_MESSAGE_PREFIX, RegexInterpreter
+from rasa.shared.utils.cli import print_info, print_success
+from rasa.shared.nlu.interpreter import RegexInterpreter
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.model import Interpreter
-from rasa.nlu.utils import json_to_string
+from rasa.shared.utils.io import json_to_string
+import rasa.utils.common
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import ComponentBuilder
@@ -23,19 +24,15 @@ def run_cmdline(
     print_success("NLU model loaded. Type a message and press enter to parse it.")
     while True:
         print_success("Next message:")
-        message = input().strip()
+        try:
+            message = input().strip()
+        except (EOFError, KeyboardInterrupt):
+            print_info("Wrapping up command line chat...")
+            break
+
         if message.startswith(INTENT_MESSAGE_PREFIX):
-            loop = asyncio.get_event_loop()
-            result = loop.run_until_complete(regex_interpreter.parse(message))
+            result = rasa.utils.common.run_in_loop(regex_interpreter.parse(message))
         else:
             result = interpreter.parse(message)
 
         print(json_to_string(result))
-
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.nlu.run` directly is no longer supported. "
-        "Please use `rasa run` to start a Rasa server or `rasa shell` to use your "
-        "NLU model to interpret text via the command line."
-    )

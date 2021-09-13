@@ -11,7 +11,9 @@
       "parameters": [],
       "messages": [
         {
-          "type": 0,
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
           "lang": "es",
           "speech": [
             "Ups, no he entendido a que te refieres.",
@@ -19,10 +21,13 @@
             "¿Disculpa?",
             "¿Decías?",
             "¿Cómo?"
-          ]
+          ],
+          "condition": ""
         },
         {
-          "type": 0,
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
           "lang": "en",
           "speech": [
             "I didn\u0027t get that. Can you say it again?",
@@ -37,17 +42,19 @@
             "Say that again?",
             "I didn\u0027t get that.",
             "I missed that."
-          ]
+          ],
+          "condition": ""
         }
       ],
-      "defaultResponsePlatforms": {},
       "speech": []
     }
   ],
   "priority": 500000,
   "webhookUsed": false,
   "webhookForSlotFilling": false,
-  "lastUpdate": 1507539905,
   "fallbackIntent": true,
-  "events": []
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
 }

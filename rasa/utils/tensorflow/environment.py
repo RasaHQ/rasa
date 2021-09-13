@@ -2,7 +2,8 @@ import logging
 import os
 from typing import Text, Dict
 import typing
-import rasa.utils.common as rasa_utils
+
+import rasa.shared.utils.io
 from rasa.constants import (
     ENV_GPU_CONFIG,
     ENV_CPU_INTER_OP_CONFIG,
@@ -16,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def _setup_gpu_environment() -> None:
-    """Set configuration for TensorFlow GPU environment based on the environment variable set."""
-
+    """Sets configuration for TensorFlow GPU environment based on env variable."""
     gpu_memory_config = os.getenv(ENV_GPU_CONFIG)
 
     if not gpu_memory_config:
@@ -35,8 +35,9 @@ def _setup_gpu_environment() -> None:
             _allocate_gpu_memory(physical_gpus[gpu_id], gpu_id_memory)
 
     else:
-        rasa_utils.raise_warning(
-            f"You have an environment variable '{ENV_GPU_CONFIG}' set but no GPUs were detected to configure."
+        rasa.shared.utils.io.raise_warning(
+            f"You have an environment variable '{ENV_GPU_CONFIG}' set but no GPUs were "
+            f"detected to configure."
         )
 
 
@@ -47,7 +48,8 @@ def _allocate_gpu_memory(
 
     Args:
         gpu_instance: PhysicalDevice instance of a GPU device.
-        logical_memory: Absolute amount of memory to be allocated to the new logical device.
+        logical_memory: Absolute amount of memory to be allocated to the new logical
+            device.
     """
 
     from tensorflow import config as tf_config
@@ -77,33 +79,34 @@ def _parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
         gpu_memory_config: String containing the configuration for GPU usage.
 
     Returns:
-        Parsed configuration as a dictionary with GPU IDs as keys and requested memory as the value.
+        Parsed configuration as a dictionary with GPU IDs as keys and requested memory
+        as the value.
     """
 
     # gpu_config is of format "gpu_id_1:gpu_id_1_memory, gpu_id_2: gpu_id_2_memory"
     # Parse it and store in a dictionary
-    parsed_gpu_config = {}
+    parsed_gpu_config: Dict[int, int] = {}
 
     try:
         for instance in gpu_memory_config.split(","):
             instance_gpu_id, instance_gpu_mem = instance.split(":")
-            instance_gpu_id = int(instance_gpu_id)
-            instance_gpu_mem = int(instance_gpu_mem)
+            parsed_instance_gpu_id = int(instance_gpu_id)
+            parsed_instance_gpu_mem = int(instance_gpu_mem)
 
-            parsed_gpu_config[instance_gpu_id] = instance_gpu_mem
+            parsed_gpu_config[parsed_instance_gpu_id] = parsed_instance_gpu_mem
     except ValueError:
         # Helper explanation of where the error comes from
         raise ValueError(
-            f"Error parsing GPU configuration. Please cross-check the format of '{ENV_GPU_CONFIG}' "
-            f"at https://rasa.com/docs/rasa/api/tensorflow_usage.html#restricting-absolute-gpu-memory-available ."
+            f"Error parsing GPU configuration. Please cross-check the format of "
+            f"'{ENV_GPU_CONFIG}' at https://rasa.com/docs/rasa/tuning-your-model"
+            f"#restricting-absolute-gpu-memory-available ."
         )
 
     return parsed_gpu_config
 
 
 def _setup_cpu_environment() -> None:
-    """Set configuration for the CPU environment based on the environment variable set."""
-
+    """Set configuration for the CPU environment based on environment variable."""
     inter_op_parallel_threads = os.getenv(ENV_CPU_INTER_OP_CONFIG)
     intra_op_parallel_threads = os.getenv(ENV_CPU_INTRA_OP_CONFIG)
 
@@ -117,8 +120,8 @@ def _setup_cpu_environment() -> None:
             inter_op_parallel_threads = int(inter_op_parallel_threads.strip())
         except ValueError:
             raise ValueError(
-                f"Error parsing the environment variable '{ENV_CPU_INTER_OP_CONFIG}'. Please "
-                f"cross-check the value."
+                f"Error parsing the environment variable '{ENV_CPU_INTER_OP_CONFIG}'. "
+                f"Please cross-check the value."
             )
 
         tf_config.threading.set_inter_op_parallelism_threads(inter_op_parallel_threads)
@@ -128,8 +131,8 @@ def _setup_cpu_environment() -> None:
             intra_op_parallel_threads = int(intra_op_parallel_threads.strip())
         except ValueError:
             raise ValueError(
-                f"Error parsing the environment variable '{ENV_CPU_INTRA_OP_CONFIG}'. Please "
-                f"cross-check the value."
+                f"Error parsing the environment variable '{ENV_CPU_INTRA_OP_CONFIG}'. "
+                f"Please cross-check the value."
             )
 
         tf_config.threading.set_intra_op_parallelism_threads(intra_op_parallel_threads)

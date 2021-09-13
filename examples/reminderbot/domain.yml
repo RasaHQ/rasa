@@ -1,38 +1,32 @@
+version: "2.0"
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
 intents:
-- greet:
-    triggers: action_set_reminder
-- ask_remind_call:
-    triggers: action_set_reminder
-- ask_forget_reminders:
-    triggers: action_forget_reminders
-- bye:
-    triggers: utter_goodbye
-- ask_id:
-    triggers: action_tell_id
-- EXTERNAL_dry_plant:
-    triggers: action_warn_dry
-- EXTERNAL_reminder:
-    triggers: action_react_to_reminder
+- greet
+- ask_remind_call
+- ask_forget_reminders
+- bye
+- ask_id
+- EXTERNAL_dry_plant
+- EXTERNAL_reminder
 - EXT_reminder
-
 entities:
-- name
+- PERSON
 - plant
-
+slots:
+  PERSON:
+    type: text
+    influence_conversation: false
 responses:
   utter_what_can_do:
   - text: What can I do for you?
-
   utter_goodbye:
   - text: Bye
-
 actions:
 - action_set_reminder
 - action_forget_reminders
 - action_react_to_reminder
 - action_tell_id
 - action_warn_dry
-
-session_config:
-  session_expiration_time: 60  # value in minutes
-  carry_over_slots_to_new_session: true

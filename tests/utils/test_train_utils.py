@@ -1,8 +1,34 @@
+from typing import Any, Dict
+
 import numpy as np
+import pytest
+from typing import Text
 
 import rasa.utils.train_utils as train_utils
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.nlu.constants import (
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+    SPLIT_ENTITIES_BY_COMMA,
+)
+from rasa.utils.tensorflow.constants import (
+    MODEL_CONFIDENCE,
+    SIMILARITY_TYPE,
+    LOSS_TYPE,
+    COSINE,
+    SOFTMAX,
+    INNER,
+    CROSS_ENTROPY,
+    MARGIN,
+    AUTO,
+    LINEAR_NORM,
+    TOLERANCE,
+    CHECKPOINT_MODEL,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    EPOCHS,
+)
+from rasa.shared.exceptions import InvalidConfigException
 
 
 def test_align_token_features():
@@ -26,3 +52,243 @@ def test_align_token_features():
     assert np.all(actual_features[0][3] == np.mean(token_features[0][3:5], axis=0))
     # embedding is split into 4 sub-tokens
     assert np.all(actual_features[0][4] == np.mean(token_features[0][5:10], axis=0))
+
+
+@pytest.mark.parametrize(
+    "input_values, ranking_length, output_values",
+    [
+        ([0.2, 0.7, 0.1], 2, [0.2222222, 0.77777778, 0.0]),
+        ([0.1, 0.7, 0.1], 5, [0.11111111, 0.77777778, 0.11111111]),
+    ],
+)
+def test_normalize(input_values, ranking_length, output_values):
+    normalized_values = train_utils.normalize(np.array(input_values), ranking_length)
+    assert np.allclose(normalized_values, np.array(output_values), atol=1e-5)
+
+
+@pytest.mark.parametrize(
+    "split_entities_config, expected_initialized_config",
+    [
+        (
+            SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+            {SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE},
+        ),
+        (
+            {"address": False, "ingredients": True},
+            {
+                "address": False,
+                "ingredients": True,
+                SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+            },
+        ),
+    ],
+)
+def test_init_split_entities_config(
+    split_entities_config: Any, expected_initialized_config: Dict[(str, bool)],
+):
+    assert (
+        train_utils.init_split_entities(
+            split_entities_config, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+        )
+        == expected_initialized_config
+    )
+
+
+@pytest.mark.parametrize(
+    "component_config, raises_exception",
+    [
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, True),
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: SOFTMAX}, False),
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: SOFTMAX}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, False),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: MARGIN}, True),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: SOFTMAX}, True),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: CROSS_ENTROPY}, True),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: MARGIN}, True),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: SOFTMAX}, True),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: CROSS_ENTROPY}, True),
+    ],
+)
+def test_confidence_loss_settings(
+    component_config: Dict[Text, Any], raises_exception: bool
+):
+    component_config[SIMILARITY_TYPE] = INNER
+    if raises_exception:
+        with pytest.raises(InvalidConfigException):
+            train_utils._check_confidence_setting(component_config)
+    else:
+        train_utils._check_confidence_setting(component_config)
+
+
+@pytest.mark.parametrize(
+    "component_config, raises_exception",
+    [
+        ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: INNER}, False),
+        ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: COSINE}, True),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, SIMILARITY_TYPE: INNER}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, SIMILARITY_TYPE: COSINE}, False),
+    ],
+)
+def test_confidence_similarity_settings(
+    component_config: Dict[Text, Any], raises_exception: bool
+):
+    component_config[LOSS_TYPE] = SOFTMAX
+    if raises_exception:
+        with pytest.raises(InvalidConfigException):
+            train_utils._check_confidence_setting(component_config)
+    else:
+        train_utils._check_confidence_setting(component_config)
+
+
+@pytest.mark.parametrize(
+    "component_config, model_confidence",
+    [
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, AUTO),
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, SOFTMAX),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, LINEAR_NORM,),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, AUTO),
+    ],
+)
+def test_update_confidence_type(
+    component_config: Dict[Text, Text], model_confidence: Text
+):
+    component_config = train_utils.update_confidence_type(component_config)
+    assert component_config[MODEL_CONFIDENCE] == model_confidence
+
+
+def test_warn_deprecated_model_confidences():
+
+    component_config = {MODEL_CONFIDENCE: LINEAR_NORM}
+
+    with pytest.warns(FutureWarning):
+        train_utils._check_confidence_setting(component_config)
+
+
+@pytest.mark.parametrize(
+    "component_config, raises_exception",
+    [
+        ({TOLERANCE: 0.5}, False),
+        ({TOLERANCE: 0.0}, False),
+        ({TOLERANCE: 1.0}, False),
+        ({TOLERANCE: -1.0}, True),
+        ({TOLERANCE: 2.0}, True),
+        ({}, False),
+    ],
+)
+def test_tolerance_setting(
+    component_config: Dict[Text, float], raises_exception: bool,
+):
+    if raises_exception:
+        with pytest.raises(InvalidConfigException):
+            train_utils._check_tolerance_setting(component_config)
+    else:
+        train_utils._check_tolerance_setting(component_config)
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        (
+            {
+                CHECKPOINT_MODEL: True,
+                EVAL_NUM_EPOCHS: -2,
+                EVAL_NUM_EXAMPLES: 10,
+                EPOCHS: 5,
+            }
+        ),
+        (
+            {
+                CHECKPOINT_MODEL: True,
+                EVAL_NUM_EPOCHS: 0,
+                EVAL_NUM_EXAMPLES: 10,
+                EPOCHS: 5,
+            }
+        ),
+    ],
+)
+def test_warning_incorrect_eval_num_epochs(component_config: Dict[Text, Text]):
+    with pytest.warns(UserWarning) as record:
+        train_utils._check_evaluation_setting(component_config)
+        assert len(record) == 1
+        assert (
+            f"'{EVAL_NUM_EPOCHS}' is not -1 or greater than 0. Training will fail"
+            in record[0].message.args[0]
+        )
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 10, EPOCHS: 5}),
+        ({CHECKPOINT_MODEL: False, EVAL_NUM_EPOCHS: 10, EPOCHS: 5}),
+    ],
+)
+def test_warning_eval_num_epochs_greater_than_epochs(
+    component_config: Dict[Text, Text]
+):
+    warning = (
+        f"the value of '{EVAL_NUM_EPOCHS}' is greater than the value of "
+        f"'{EPOCHS}'. No evaluation will occur."
+    )
+    with pytest.warns(UserWarning) as record:
+        train_utils._check_evaluation_setting(component_config)
+        assert len(record) == 1
+        if component_config[CHECKPOINT_MODEL]:
+            warning = (
+                f"You have opted to save the best model, but {warning} "
+                "No checkpoint model will be saved."
+            )
+        assert warning in record[0].message.args[0]
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 0, EPOCHS: 5}),
+        (
+            {
+                CHECKPOINT_MODEL: True,
+                EVAL_NUM_EPOCHS: 1,
+                EVAL_NUM_EXAMPLES: -1,
+                EPOCHS: 5,
+            }
+        ),
+    ],
+)
+def test_warning_incorrect_eval_num_examples(component_config: Dict[Text, Text]):
+    with pytest.warns(UserWarning) as record:
+        train_utils._check_evaluation_setting(component_config)
+        assert len(record) == 1
+        assert (
+            f"'{EVAL_NUM_EXAMPLES}' is not greater than 0. No checkpoint model "
+            f"will be saved"
+        ) in record[0].message.args[0]
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        (
+            {
+                CHECKPOINT_MODEL: False,
+                EVAL_NUM_EPOCHS: 0,
+                EVAL_NUM_EXAMPLES: 0,
+                EPOCHS: 5,
+            }
+        ),
+        (
+            {
+                CHECKPOINT_MODEL: True,
+                EVAL_NUM_EPOCHS: 1,
+                EVAL_NUM_EXAMPLES: 10,
+                EPOCHS: 5,
+            }
+        ),
+    ],
+)
+def test_no_warning_correct_checkpoint_setting(component_config: Dict[Text, Text]):
+    with pytest.warns(None) as record:
+        train_utils._check_evaluation_setting(component_config)
+        assert len(record) == 0

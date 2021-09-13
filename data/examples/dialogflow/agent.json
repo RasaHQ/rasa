@@ -1,6 +1,11 @@
 {
   "description": "",
   "language": "en",
+  "shortDescription": "",
+  "examples": "",
+  "linkToDocs": "",
+  "disableInteractionLogs": false,
+  "disableStackdriverLogs": true,
   "googleAssistant": {
     "googleAssistantCompatible": false,
     "project": "rasanlu-development",
@@ -10,23 +15,40 @@
     "endIntentIds": [],
     "oAuthLinking": {
       "required": false,
+      "providerId": "",
+      "authorizationUrl": "",
+      "tokenUrl": "",
+      "scopes": "",
+      "privacyPolicyUrl": "",
       "grantType": "AUTH_CODE_GRANT"
     },
     "voiceType": "MALE_1",
     "capabilities": [],
-    "protocolVersion": "V2"
+    "env": "",
+    "protocolVersion": "V2",
+    "autoPreviewEnabled": false,
+    "isDeviceAgent": false
   },
   "defaultTimezone": "Asia/Hong_Kong",
   "webhook": {
+    "url": "",
+    "username": "",
+    "headers": {},
     "available": false,
     "useForDomains": false,
     "cloudFunctionsEnabled": false,
     "cloudFunctionsInitialized": false
   },
   "isPrivate": true,
-  "customClassifierMode": "use.after",
   "mlMinConfidence": 0.3,
   "supportedLanguages": [
     "es"
-  ]
+  ],
+  "enableOnePlatformApi": true,
+  "onePlatformApiVersion": "v2",
+  "analyzeQueryTextSentiment": false,
+  "enabledKnowledgeBaseNames": [],
+  "knowledgeServiceConfidenceAdjustment": 0.0,
+  "dialogBuilderMode": false,
+  "baseActionPackagesUrl": ""
 }

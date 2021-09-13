@@ -1,0 +1,43 @@
+{{- /*
+
+The template maps dataset name and configuration name for the model
+regression tests into paths where files are located. As a result,
+the template returns two environment variables `DATASET` and `CONFIG`
+which contain paths to file/directory.
+
+ */ -}}
+{{- $mapping := (datasource "mapping") -}}
+{{- $dataset := (index $mapping.datasets (getenv "DATASET_NAME")) -}}
+{{- $config := $mapping.configurations -}}
+{{- if has $dataset "repository" }}
+export DATASET="{{ $dataset.repository }}"
+export IS_EXTERNAL="true"
+echo "::add-mask::{{ $dataset.repository }}"
+{{ if has $dataset "repository_branch" }}
+export EXTERNAL_DATASET_REPOSITORY_BRANCH="{{ $dataset.repository_branch }}"
+{{ else }}
+export EXTERNAL_DATASET_REPOSITORY_BRANCH="main"
+{{ end }}
+{{- else if has $dataset "path" }}
+export DATASET="{{ $dataset.path }}"
+export IS_EXTERNAL="false"
+echo "::add-mask::{{ $dataset.path }}"
+{{ end }}
+
+{{- if has $dataset "train" }}
+export TRAIN_DIR="{{ $dataset.train }}"
+{{ end }}
+{{- if has $dataset "test" }}
+export TEST_DIR="{{ $dataset.test }}"
+{{ end }}
+{{- if has $dataset "domain" }}
+export DOMAIN_FILE="{{ $dataset.domain }}"
+{{ end }}
+
+{{- if (has $config.nlu (getenv "CONFIG_NAME")) }}
+export CONFIG="{{ $dataset.language }}/nlu/{{ index $config.nlu (getenv "CONFIG_NAME") }}"
+echo "::add-mask::{{ $dataset.language }}/nlu/{{ index $config.nlu (getenv "CONFIG_NAME") }}"
+{{ else if (has $config.core (getenv "CONFIG_NAME")) }}
+export CONFIG="{{ $dataset.language }}/core/{{ index $config.core (getenv "CONFIG_NAME") }}"
+echo "::add-mask::{{ $dataset.language }}/core/{{ index $config.core (getenv "CONFIG_NAME") }}"
+{{ end -}}

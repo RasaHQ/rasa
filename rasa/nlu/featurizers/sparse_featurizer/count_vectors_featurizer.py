@@ -1,33 +1,48 @@
+from __future__ import annotations
 import logging
-import os
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text, Type, Tuple
+from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set
 
-from rasa.constants import DOCS_URL_COMPONENTS
-import rasa.utils.common as common_utils
+import rasa.shared.utils.io
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.utils.spacy_utils import SpacyModel
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
 from sklearn.feature_extraction.text import CountVectorizer
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer, Features
-from rasa.nlu.model import Metadata
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaException, FileIOException
 from rasa.nlu.constants import (
-    TEXT,
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    INTENT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    RESPONSE,
-    FEATURIZER_CLASS_ALIAS,
 )
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    INTENT_RESPONSE_KEY,
+    RESPONSE,
+    ACTION_TEXT,
+    ACTION_NAME,
+)
+from rasa.nlu.featurizers.sparse_featurizer._count_vectors_featurizer import (
+    CountVectorsFeaturizer,
+)
+
+# TODO: remove after all references to old featurizer have been removed
+CountVectorsFeaturizer = CountVectorsFeaturizer
+
+BUFFER_SLOTS_PREFIX = "buf_"
 
 logger = logging.getLogger(__name__)
 
 
-class CountVectorsFeaturizer(SparseFeaturizer):
+class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
     All tokens which consist only of digits (e.g. 123 and 99
@@ -38,128 +53,131 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     from https://arxiv.org/abs/1810.07150.
     """
 
-    @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [Tokenizer]
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config."""
+        return {
+            **SparseFeaturizer2.get_default_config(),
+            # whether to use a shared vocab
+            "use_shared_vocab": False,
+            # the parameters are taken from
+            # sklearn's CountVectorizer
+            # whether to use word or character n-grams
+            # 'char_wb' creates character n-grams inside word boundaries
+            # n-grams at the edges of words are padded with space.
+            "analyzer": "word",  # use 'char' or 'char_wb' for character
+            # remove accents during the preprocessing step
+            "strip_accents": None,  # {'ascii', 'unicode', None}
+            # list of stop words
+            "stop_words": None,  # string {'english'}, list, or None (default)
+            # min document frequency of a word to add to vocabulary
+            # float - the parameter represents a proportion of documents
+            # integer - absolute counts
+            "min_df": 1,  # float in range [0.0, 1.0] or int
+            # max document frequency of a word to add to vocabulary
+            # float - the parameter represents a proportion of documents
+            # integer - absolute counts
+            "max_df": 1.0,  # float in range [0.0, 1.0] or int
+            # set range of ngrams to be extracted
+            "min_ngram": 1,  # int
+            "max_ngram": 1,  # int
+            # limit vocabulary size
+            "max_features": None,  # int or None
+            # if convert all characters to lowercase
+            "lowercase": True,  # bool
+            # handling Out-Of-Vocabulary (OOV) words
+            # will be converted to lowercase if lowercase is True
+            "OOV_token": None,  # string or None
+            "OOV_words": [],  # string or list of strings
+            # indicates whether the featurizer should use the lemma of a word for
+            # counting (if available) or not
+            "use_lemma": True,
+            # Additional vocabulary size to be kept reserved for finetuning
+            "additional_vocabulary_size": {
+                TEXT: None,
+                RESPONSE: None,
+                ACTION_TEXT: None,
+            },
+        }
 
-    defaults = {
-        # whether to use a shared vocab
-        "use_shared_vocab": False,
-        # the parameters are taken from
-        # sklearn's CountVectorizer
-        # whether to use word or character n-grams
-        # 'char_wb' creates character n-grams inside word boundaries
-        # n-grams at the edges of words are padded with space.
-        "analyzer": "word",  # use 'char' or 'char_wb' for character
-        # regular expression for tokens
-        # only used if analyzer == 'word'
-        # WARNING this pattern is used during training
-        # but not currently used during inference!
-        "token_pattern": r"(?u)\b\w\w+\b",
-        # remove accents during the preprocessing step
-        "strip_accents": None,  # {'ascii', 'unicode', None}
-        # list of stop words
-        "stop_words": None,  # string {'english'}, list, or None (default)
-        # min document frequency of a word to add to vocabulary
-        # float - the parameter represents a proportion of documents
-        # integer - absolute counts
-        "min_df": 1,  # float in range [0.0, 1.0] or int
-        # max document frequency of a word to add to vocabulary
-        # float - the parameter represents a proportion of documents
-        # integer - absolute counts
-        "max_df": 1.0,  # float in range [0.0, 1.0] or int
-        # set range of ngrams to be extracted
-        "min_ngram": 1,  # int
-        "max_ngram": 1,  # int
-        # limit vocabulary size
-        "max_features": None,  # int or None
-        # if convert all characters to lowercase
-        "lowercase": True,  # bool
-        # handling Out-Of-Vocabulary (OOV) words
-        # will be converted to lowercase if lowercase is True
-        "OOV_token": None,  # string or None
-        "OOV_words": [],  # string or list of strings
-    }
-
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
+        """Any extra python dependencies required for this component to run."""
         return ["sklearn"]
 
     def _load_count_vect_params(self) -> None:
 
         # Use shared vocabulary between text and all other attributes of Message
-        self.use_shared_vocab = self.component_config["use_shared_vocab"]
+        self.use_shared_vocab = self._config["use_shared_vocab"]
 
         # set analyzer
-        self.analyzer = self.component_config["analyzer"]
-
-        # regular expression for tokens
-        self.token_pattern = self.component_config["token_pattern"]
+        self.analyzer = self._config["analyzer"]
 
         # remove accents during the preprocessing step
-        self.strip_accents = self.component_config["strip_accents"]
+        self.strip_accents = self._config["strip_accents"]
 
         # list of stop words
-        self.stop_words = self.component_config["stop_words"]
+        self.stop_words = self._config["stop_words"]
 
         # min number of word occurancies in the document to add to vocabulary
-        self.min_df = self.component_config["min_df"]
+        self.min_df = self._config["min_df"]
 
         # max number (fraction if float) of word occurancies
         # in the document to add to vocabulary
-        self.max_df = self.component_config["max_df"]
+        self.max_df = self._config["max_df"]
 
         # set ngram range
-        self.min_ngram = self.component_config["min_ngram"]
-        self.max_ngram = self.component_config["max_ngram"]
+        self.min_ngram = self._config["min_ngram"]
+        self.max_ngram = self._config["max_ngram"]
 
         # limit vocabulary size
-        self.max_features = self.component_config["max_features"]
+        self.max_features = self._config["max_features"]
 
         # if convert all characters to lowercase
-        self.lowercase = self.component_config["lowercase"]
+        self.lowercase = self._config["lowercase"]
 
-    # noinspection PyPep8Naming
-    def _load_OOV_params(self) -> None:
-        self.OOV_token = self.component_config["OOV_token"]
+        # use the lemma of the words or not
+        self.use_lemma = self._config["use_lemma"]
 
-        self.OOV_words = self.component_config["OOV_words"]
-        if self.OOV_words and not self.OOV_token:
+    def _load_vocabulary_params(self) -> Tuple[Text, List[Text]]:
+        OOV_token = self._config["OOV_token"]
+
+        OOV_words = self._config["OOV_words"]
+        if OOV_words and not OOV_token:
             logger.error(
                 "The list OOV_words={} was given, but "
                 "OOV_token was not. OOV words are ignored."
-                "".format(self.OOV_words)
+                "".format(OOV_words)
             )
             self.OOV_words = []
 
-        if self.lowercase and self.OOV_token:
+        if self.lowercase and OOV_token:
             # convert to lowercase
-            self.OOV_token = self.OOV_token.lower()
-            if self.OOV_words:
-                self.OOV_words = [w.lower() for w in self.OOV_words]
+            OOV_token = OOV_token.lower()
+            if OOV_words:
+                OOV_words = [w.lower() for w in OOV_words]
+        additional_size_attributes = [
+            key
+            for key, value in self._config["additional_vocabulary_size"].items()
+            if value
+        ]
+        if additional_size_attributes:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The parameter `additional_vocabulary_size` has been specified for "
+                f"attributes - `{additional_size_attributes}`. The parameter has been "
+                f"deprecated since the pipeline no longer creates an extra buffer for "
+                f"additional vocabulary. Any value assigned to "
+                f"this parameter will be ignored. You can omit specifying "
+                f"`additional_vocabulary_size` in future runs."
+            )
 
-    def _check_attribute_vocabulary(self, attribute: Text) -> bool:
-        """Check if trained vocabulary exists in attribute's count vectorizer"""
-        try:
-            return hasattr(self.vectorizers[attribute], "vocabulary_")
-        except (AttributeError, TypeError):
-            return False
+        return OOV_token, OOV_words
 
     def _get_attribute_vocabulary(self, attribute: Text) -> Optional[Dict[Text, int]]:
-        """Get trained vocabulary from attribute's count vectorizer"""
-
+        """Gets trained vocabulary from attribute's count vectorizer."""
         try:
             return self.vectorizers[attribute].vocabulary_
-        except (AttributeError, TypeError):
-            return None
-
-    def _get_attribute_vocabulary_tokens(self, attribute: Text) -> Optional[List[Text]]:
-        """Get all keys of vocabulary of an attribute"""
-
-        attribute_vocabulary = self._get_attribute_vocabulary(attribute)
-        try:
-            return list(attribute_vocabulary.keys())
-        except TypeError:
+        except (AttributeError, TypeError, KeyError):
             return None
 
     def _check_analyzer(self) -> None:
@@ -193,18 +211,29 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
+        oov_token: Optional[Text] = None,
+        oov_words: Optional[List[Text]] = None,
     ) -> None:
-        """Construct a new count vectorizer using the sklearn framework."""
+        """Constructs a new count vectorizer using the sklearn framework."""
+        super().__init__(execution_context.node_name, config)
 
-        super().__init__(component_config)
+        self._model_storage = model_storage
+        self._resource = resource
 
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()
 
         # handling Out-Of-Vocabulary (OOV) words
-        self._load_OOV_params()
+        if oov_token and oov_words:
+            self.OOV_token = oov_token
+            self.OOV_words = oov_words
+        else:
+            self.OOV_token, self.OOV_words = self._load_vocabulary_params()
 
         # warn that some of config parameters might be ignored
         self._check_analyzer()
@@ -213,22 +242,37 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self._attributes = self._attributes_for(self.analyzer)
 
         # declare class instance for CountVectorizer
-        self.vectorizers = vectorizers
+        self.vectorizers = vectorizers or {}
 
-    @staticmethod
+        self.finetune_mode = execution_context.is_finetuning
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> CountVectorsFeaturizerGraphComponent:
+        """Creates a new untrained component (see parent class for full docstring)."""
+        return cls(config, model_storage, resource, execution_context)
+
     def _get_message_tokens_by_attribute(
-        message: "Message", attribute: Text
+        self, message: "Message", attribute: Text
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
         if message.get(TOKENS_NAMES[attribute]):
-            return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
-
-        return message.get(attribute).split()
+            return [
+                t.lemma if self.use_lemma else t.text
+                for t in message.get(TOKENS_NAMES[attribute])
+            ]
+        else:
+            return []
 
     def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute == INTENT:
+        if attribute in [INTENT, ACTION_NAME, INTENT_RESPONSE_KEY]:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
@@ -244,18 +288,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _replace_with_oov_token(
         self, tokens: List[Text], attribute: Text
     ) -> List[Text]:
-        """Replace OOV words with OOV token"""
-
+        """Replace OOV words with OOV token."""
         if self.OOV_token and self.analyzer == "word":
-            vocabulary_exists = self._check_attribute_vocabulary(attribute)
-            if vocabulary_exists and self.OOV_token in self._get_attribute_vocabulary(
-                attribute
-            ):
+            attribute_vocab = self._get_attribute_vocabulary(attribute)
+            if attribute_vocab is not None and self.OOV_token in attribute_vocab:
                 # CountVectorizer is trained, process for prediction
+                attribute_vocabulary_tokens = set(attribute_vocab.keys())
                 tokens = [
-                    t
-                    if t in self._get_attribute_vocabulary_tokens(attribute)
-                    else self.OOV_token
+                    t if t in attribute_vocabulary_tokens else self.OOV_token
                     for t in tokens
                 ]
             elif self.OOV_words:
@@ -297,10 +337,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             training_data_type = "NLU" if attribute == TEXT else "ResponseSelector"
 
             # if there is some text in tokens, warn if there is no oov token
-            common_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
                 f"could not be found in any one of the {training_data_type} "
-                f"training examples. All unseen words will be ignored during prediction.",
+                f"training examples. All unseen words will be "
+                f"ignored during prediction.",
                 docs=DOCS_URL_COMPONENTS + "#countvectorsfeaturizer",
             )
 
@@ -330,163 +371,273 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         for attribute in attribute_tokens.keys():
             list_of_tokens = attribute_tokens[attribute]
-            if attribute in [RESPONSE, TEXT]:
-                # vocabulary should not contain CLS token
-                list_of_tokens = [tokens[:-1] for tokens in list_of_tokens]
             attribute_texts[attribute] = [" ".join(tokens) for tokens in list_of_tokens]
 
         return attribute_texts
 
-    def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]):
-        """Construct the vectorizers and train them with a shared vocab"""
+    def _update_vectorizer_vocabulary(
+        self, attribute: Text, new_vocabulary: Set[Text]
+    ) -> None:
+        """Updates the existing vocabulary of the vectorizer with new unseen words.
 
-        self.vectorizers = self._create_shared_vocab_vectorizers(
-            {
-                "token_pattern": self.token_pattern,
-                "strip_accents": self.strip_accents,
-                "lowercase": self.lowercase,
-                "stop_words": self.stop_words,
-                "min_ngram": self.min_ngram,
-                "max_ngram": self.max_ngram,
-                "max_df": self.max_df,
-                "min_df": self.min_df,
-                "max_features": self.max_features,
-                "analyzer": self.analyzer,
-            }
-        )
+        Args:
+            attribute: Message attribute for which vocabulary should be updated.
+            new_vocabulary: Set of words to expand the vocabulary with if they are
+                unseen.
+        """
+        existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
+        self._merge_new_vocabulary_tokens(existing_vocabulary, new_vocabulary)
+        self._set_vocabulary(attribute, existing_vocabulary)
 
-        combined_cleaned_texts = []
-        for attribute in self._attributes:
-            combined_cleaned_texts += attribute_texts[attribute]
+    def _merge_new_vocabulary_tokens(
+        self, existing_vocabulary: Dict[Text, int], vocabulary: Set[Text]
+    ) -> None:
+        """Merges new vocabulary tokens with the existing vocabulary.
 
-        try:
-            self.vectorizers[TEXT].fit(combined_cleaned_texts)
-        except ValueError:
-            logger.warning(
-                "Unable to train a shared CountVectorizer. "
-                "Leaving an untrained CountVectorizer"
-            )
+        New vocabulary items should always be added to the end of the existing
+        vocabulary and the order of the existing vocabulary should not be disturbed.
+
+        Args:
+            existing_vocabulary: existing vocabulary
+            vocabulary: set of new tokens
+
+        Raises:
+            RasaException: if `use_shared_vocab` is set to True and there are new
+                           vocabulary items added during incremental training.
+        """
+        for token in vocabulary:
+            if token not in existing_vocabulary:
+                if self.use_shared_vocab:
+                    raise RasaException(
+                        "Using a shared vocabulary in `CountVectorsFeaturizer` is not "
+                        "supported during incremental training since it requires "
+                        "dynamically adjusting layers that correspond to label "
+                        f"attributes such as {INTENT_RESPONSE_KEY}, {INTENT}, etc. "
+                        "This is currently not possible. In order to avoid this "
+                        "exception we suggest to set `use_shared_vocab=False` or train"
+                        " from scratch."
+                    )
+                existing_vocabulary[token] = len(existing_vocabulary)
+
+    def _set_vocabulary(
+        self, attribute: Text, original_vocabulary: Dict[Text, int]
+    ) -> None:
+        """Sets the vocabulary of the vectorizer of attribute.
+
+        Args:
+            attribute: Message attribute for which vocabulary should be set
+            original_vocabulary: Vocabulary for the attribute to be set.
+        """
+        self.vectorizers[attribute].vocabulary_ = original_vocabulary
+        self.vectorizers[attribute]._validate_vocabulary()
+
+    @staticmethod
+    def _construct_vocabulary_from_texts(
+        vectorizer: CountVectorizer, texts: List[Text]
+    ) -> Set:
+        """Applies vectorizer's preprocessor on texts to get the vocabulary from texts.
+
+        Args:
+            vectorizer: Sklearn's count vectorizer which has been pre-configured.
+            texts: Examples from which the vocabulary should be constructed
+
+        Returns:
+            Unique vocabulary words extracted.
+        """
+        analyzer = vectorizer.build_analyzer()
+        vocabulary_words = set()
+        for example in texts:
+            example_vocabulary: List[Text] = analyzer(example)
+            vocabulary_words.update(example_vocabulary)
+        return vocabulary_words
 
     @staticmethod
     def _attribute_texts_is_non_empty(attribute_texts: List[Text]) -> bool:
         return any(attribute_texts)
 
-    def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
-        """Construct the vectorizers and train them with an independent vocab"""
+    def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]) -> None:
+        """Constructs the vectorizers and train them with a shared vocab."""
+        combined_cleaned_texts = []
+        for attribute in self._attributes:
+            combined_cleaned_texts += attribute_texts[attribute]
 
-        self.vectorizers = self._create_independent_vocab_vectorizers(
-            {
-                "token_pattern": self.token_pattern,
-                "strip_accents": self.strip_accents,
-                "lowercase": self.lowercase,
-                "stop_words": self.stop_words,
-                "min_ngram": self.min_ngram,
-                "max_ngram": self.max_ngram,
-                "max_df": self.max_df,
-                "min_df": self.min_df,
-                "max_features": self.max_features,
-                "analyzer": self.analyzer,
-            }
-        )
+        # To train a shared vocabulary, we use TEXT as the
+        # attribute for which a combined vocabulary is built.
+        if not self.finetune_mode:
+            self.vectorizers = self._create_shared_vocab_vectorizers(
+                {
+                    "strip_accents": self.strip_accents,
+                    "lowercase": self.lowercase,
+                    "stop_words": self.stop_words,
+                    "min_ngram": self.min_ngram,
+                    "max_ngram": self.max_ngram,
+                    "max_df": self.max_df,
+                    "min_df": self.min_df,
+                    "max_features": self.max_features,
+                    "analyzer": self.analyzer,
+                }
+            )
+            self._fit_vectorizer_from_scratch(TEXT, combined_cleaned_texts)
+        else:
+            self._fit_loaded_vectorizer(TEXT, combined_cleaned_texts)
+        self._log_vocabulary_stats(TEXT)
 
+    def _train_with_independent_vocab(
+        self, attribute_texts: Dict[Text, List[Text]]
+    ) -> None:
+        """Constructs the vectorizers and train them with an independent vocab."""
+        if not self.finetune_mode:
+            self.vectorizers = self._create_independent_vocab_vectorizers(
+                {
+                    "strip_accents": self.strip_accents,
+                    "lowercase": self.lowercase,
+                    "stop_words": self.stop_words,
+                    "min_ngram": self.min_ngram,
+                    "max_ngram": self.max_ngram,
+                    "max_df": self.max_df,
+                    "min_df": self.min_df,
+                    "max_features": self.max_features,
+                    "analyzer": self.analyzer,
+                }
+            )
         for attribute in self._attributes:
             if self._attribute_texts_is_non_empty(attribute_texts[attribute]):
-                try:
-                    self.vectorizers[attribute].fit(attribute_texts[attribute])
-                except ValueError:
-                    logger.warning(
-                        f"Unable to train CountVectorizer for message "
-                        f"attribute {attribute}. Leaving an untrained "
-                        f"CountVectorizer for it."
+                if not self.finetune_mode:
+                    self._fit_vectorizer_from_scratch(
+                        attribute, attribute_texts[attribute]
                     )
+                else:
+                    self._fit_loaded_vectorizer(attribute, attribute_texts[attribute])
+
+                self._log_vocabulary_stats(attribute)
             else:
                 logger.debug(
                     f"No text provided for {attribute} attribute in any messages of "
                     f"training data. Skipping training a CountVectorizer for it."
                 )
 
-    def _create_sequence(
-        self, attribute: Text, all_tokens: List[List[Text]]
-    ) -> List[Optional[scipy.sparse.coo_matrix]]:
+    def _log_vocabulary_stats(self, attribute: Text) -> None:
+        """Logs number of vocabulary items that were created for a specified attribute.
 
-        X = []
+        Args:
+            attribute: Message attribute for which vocabulary stats are logged.
+        """
+        if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            vocabulary_size = len(self.vectorizers[attribute].vocabulary_)
+            logger.info(
+                f"{vocabulary_size} vocabulary items "
+                f"were created for {attribute} attribute."
+            )
+
+    def _fit_loaded_vectorizer(
+        self, attribute: Text, attribute_texts: List[Text]
+    ) -> None:
+        """Fits training texts to a previously trained count vectorizer.
+
+        We do not use the `.fit()` method because the new unseen
+        words should occupy the buffer slots of the vocabulary.
+
+        Args:
+            attribute: Message attribute for which the vectorizer is to be trained.
+            attribute_texts: Training texts for the attribute
+        """
+        # Get vocabulary words by the preprocessor
+        new_vocabulary = self._construct_vocabulary_from_texts(
+            self.vectorizers[attribute], attribute_texts
+        )
+        # update the vocabulary of vectorizer with new vocabulary
+        self._update_vectorizer_vocabulary(attribute, new_vocabulary)
+
+    def _fit_vectorizer_from_scratch(
+        self, attribute: Text, attribute_texts: List[Text]
+    ) -> None:
+        """Fits training texts to an untrained count vectorizer.
+
+        Args:
+            attribute: Message attribute for which the vectorizer is to be trained.
+            attribute_texts: Training texts for the attribute
+        """
+        try:
+            self.vectorizers[attribute].fit(attribute_texts)
+        except ValueError:
+            logger.warning(
+                f"Unable to train CountVectorizer for message "
+                f"attribute {attribute} since the call to sklearn's "
+                f"`.fit()` method failed. Leaving an untrained "
+                f"CountVectorizer for it."
+            )
+
+    def _create_features(
+        self, attribute: Text, all_tokens: List[List[Text]]
+    ) -> Tuple[
+        List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
+    ]:
+        if not self.vectorizers.get(attribute):
+            return [None], [None]
+
+        sequence_features = []
+        sentence_features = []
 
         for i, tokens in enumerate(all_tokens):
             if not tokens:
                 # nothing to featurize
-                X.append(None)
+                sequence_features.append(None)
+                sentence_features.append(None)
                 continue
 
             # vectorizer.transform returns a sparse matrix of size
             # [n_samples, n_features]
             # set input to list of tokens if sequence should be returned
             # otherwise join all tokens to a single string and pass that as a list
-            tokens_without_cls = tokens
-            if attribute in [TEXT, RESPONSE]:
-                tokens_without_cls = tokens[:-1]
-
-            if not tokens_without_cls:
+            if not tokens:
                 # attribute is not set (e.g. response not present)
-                X.append(None)
+                sequence_features.append(None)
+                sentence_features.append(None)
                 continue
 
-            seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
+            seq_vec = self.vectorizers[attribute].transform(tokens)
             seq_vec.sort_indices()
 
-            if attribute in [TEXT, RESPONSE]:
-                tokens_text = [" ".join(tokens_without_cls)]
-                cls_vec = self.vectorizers[attribute].transform(tokens_text)
-                cls_vec.sort_indices()
+            sequence_features.append(seq_vec.tocoo())
 
-                x = scipy.sparse.vstack([seq_vec, cls_vec])
+            if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+                tokens_text = [" ".join(tokens)]
+                sentence_vec = self.vectorizers[attribute].transform(tokens_text)
+                sentence_vec.sort_indices()
+
+                sentence_features.append(sentence_vec.tocoo())
             else:
-                x = seq_vec
+                sentence_features.append(None)
 
-            X.append(x.tocoo())
-
-        return X
+        return sequence_features, sentence_features
 
     def _get_featurized_attribute(
         self, attribute: Text, all_tokens: List[List[Text]]
-    ) -> Optional[List[Optional[scipy.sparse.coo_matrix]]]:
-        """Return features of a particular attribute for complete data"""
-
-        if self._check_attribute_vocabulary(attribute):
+    ) -> Tuple[
+        List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
+    ]:
+        """Returns features of a particular attribute for complete data."""
+        if self._get_attribute_vocabulary(attribute) is not None:
             # count vectorizer was trained
-            return self._create_sequence(attribute, all_tokens)
+            return self._create_features(attribute, all_tokens)
         else:
-            return None
-
-    def _set_attribute_features(
-        self, attribute: Text, attribute_features: List, training_data: TrainingData
-    ) -> None:
-        """Set computed features of the attribute to corresponding message objects"""
-        for i, message in enumerate(training_data.training_examples):
-            # create bag for each example
-            if attribute_features[i] is not None:
-                final_features = Features(
-                    attribute_features[i],
-                    attribute,
-                    self.component_config[FEATURIZER_CLASS_ALIAS],
-                )
-                message.add_features(final_features)
+            return [], []
 
     def train(
-        self,
-        training_data: TrainingData,
-        cfg: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
-        """Train the featurizer.
+        self, training_data: TrainingData, spacy_nlp: Optional[SpacyModel] = None,
+    ) -> Resource:
+        """Trains the featurizer.
 
         Take parameters from config and
         construct a new count vectorizer using the sklearn framework.
         """
-
-        spacy_nlp = kwargs.get("spacy_nlp")
         if spacy_nlp is not None:
             # create spacy lemma_ for OOV_words
-            self.OOV_words = [t.lemma_ for w in self.OOV_words for t in spacy_nlp(w)]
+            self.OOV_words = [
+                t.lemma_ if self.use_lemma else t.text
+                for w in self.OOV_words
+                for t in spacy_nlp.model(w)
+            ]
 
         # process sentences and collect data for all attributes
         processed_attribute_tokens = self._get_all_attributes_processed_tokens(
@@ -502,45 +653,51 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         else:
             self._train_with_independent_vocab(attribute_texts)
 
-        # transform for all attributes
-        for attribute in self._attributes:
-            attribute_features = self._get_featurized_attribute(
-                attribute, processed_attribute_tokens[attribute]
-            )
+        self.persist()
 
-            if attribute_features is not None:
-                self._set_attribute_features(
-                    attribute, attribute_features, training_data
-                )
+        return self._resource
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        """Process incoming message and compute and set features"""
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
+        """Processes the training examples in the given training data in-place.
 
+        Args:
+          training_data: the training data
+
+        Returns:
+          same training data after processing
+        """
+        self.process(training_data.training_examples)
+        return training_data
+
+    def process(self, messages: List[Message]) -> List[Message]:
+        """Processes incoming message and compute and set features."""
         if self.vectorizers is None:
             logger.error(
                 "There is no trained CountVectorizer: "
                 "component is either not trained or "
                 "didn't receive enough training data"
             )
-            return
+            return messages
 
-        attribute = TEXT
-        message_tokens = self._get_processed_message_tokens_by_attribute(
-            message, attribute
-        )
+        for message in messages:
+            for attribute in self._attributes:
 
-        # features shape (1, seq, dim)
-        features = self._create_sequence(attribute, [message_tokens])
+                message_tokens = self._get_processed_message_tokens_by_attribute(
+                    message, attribute
+                )
 
-        if features[0] is not None:
-            final_features = Features(
-                features[0], attribute, self.component_config[FEATURIZER_CLASS_ALIAS]
-            )
-            message.add_features(final_features)
+                # features shape (1, seq, dim)
+                sequence_features, sentence_features = self._create_features(
+                    attribute, [message_tokens]
+                )
+                self.add_features_to_message(
+                    sequence_features[0], sentence_features[0], attribute, message
+                )
+
+        return messages
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
-        """Get vocabulary for all attributes"""
-
+        """Gets vocabulary for all attributes."""
         attribute_vocabularies = {}
         for attribute in self._attributes:
             attribute_vocabularies[attribute] = self._get_attribute_vocabulary(
@@ -549,25 +706,27 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         return attribute_vocabularies
 
     @staticmethod
-    def _is_any_model_trained(attribute_vocabularies) -> bool:
+    def _is_any_model_trained(
+        attribute_vocabularies: Dict[Text, Optional[Dict[Text, int]]]
+    ) -> bool:
         """Check if any model got trained"""
 
         return any(value is not None for value in attribute_vocabularies.values())
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self) -> None:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again.
         """
+        if not self.vectorizers:
+            return
 
-        file_name = file_name + ".pkl"
-
-        if self.vectorizers:
+        with self._model_storage.write_to(self._resource) as model_dir:
             # vectorizer instance was not None, some models could have been trained
             attribute_vocabularies = self._collect_vectorizer_vocabularies()
             if self._is_any_model_trained(attribute_vocabularies):
                 # Definitely need to persist some vocabularies
-                featurizer_file = os.path.join(model_dir, file_name)
+                featurizer_file = model_dir / "vocabularies.pkl"
 
                 if self.use_shared_vocab:
                     # Only persist vocabulary from one attribute. Can be loaded and
@@ -578,7 +737,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
                 io_utils.json_pickle(featurizer_file, vocab)
 
-        return {"file": file_name}
+                # Dump OOV words separately as they might have been modified during
+                # training
+                rasa.shared.utils.io.dump_obj_as_json_to_file(
+                    model_dir / "oov_words.json", self.OOV_words
+                )
 
     @classmethod
     def _create_shared_vocab_vectorizers(
@@ -587,7 +750,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Create vectorizers for all attributes with shared vocabulary"""
 
         shared_vectorizer = CountVectorizer(
-            token_pattern=parameters["token_pattern"],
+            token_pattern=r"(?u)\b\w+\b" if parameters["analyzer"] == "word" else None,
             strip_accents=parameters["strip_accents"],
             lowercase=parameters["lowercase"],
             stop_words=parameters["stop_words"],
@@ -619,7 +782,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             attribute_vocabulary = vocabulary[attribute] if vocabulary else None
 
             attribute_vectorizer = CountVectorizer(
-                token_pattern=parameters["token_pattern"],
+                token_pattern=r"(?u)\b\w+\b"
+                if parameters["analyzer"] == "word"
+                else None,
                 strip_accents=parameters["strip_accents"],
                 lowercase=parameters["lowercase"],
                 stop_words=parameters["stop_words"],
@@ -637,36 +802,69 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
-        model_metadata: Optional[Metadata] = None,
-        cached_component: Optional["CountVectorsFeaturizer"] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "CountVectorsFeaturizer":
+    ) -> CountVectorsFeaturizerGraphComponent:
+        """Loads trained component (see parent class for full docstring)."""
+        try:
+            with model_storage.read_from(resource) as model_dir:
+                featurizer_file = model_dir / "vocabularies.pkl"
+                vocabulary = io_utils.json_unpickle(featurizer_file)
 
-        file_name = meta.get("file")
-        featurizer_file = os.path.join(model_dir, file_name)
+                share_vocabulary = config["use_shared_vocab"]
 
-        if not os.path.exists(featurizer_file):
-            return cls(meta)
+                if share_vocabulary:
+                    vectorizers = cls._create_shared_vocab_vectorizers(
+                        config, vocabulary=vocabulary
+                    )
+                else:
+                    vectorizers = cls._create_independent_vocab_vectorizers(
+                        config, vocabulary=vocabulary
+                    )
 
-        vocabulary = io_utils.json_unpickle(featurizer_file)
+                oov_words = rasa.shared.utils.io.read_json_file(
+                    model_dir / "oov_words.json"
+                )
 
-        share_vocabulary = meta["use_shared_vocab"]
+                ftr = cls(
+                    config,
+                    model_storage,
+                    resource,
+                    execution_context,
+                    vectorizers=vectorizers,
+                    oov_token=config["OOV_token"],
+                    oov_words=oov_words,
+                )
 
-        if share_vocabulary:
-            vectorizers = cls._create_shared_vocab_vectorizers(
-                meta, vocabulary=vocabulary
+                # make sure the vocabulary has been loaded correctly
+                for attribute in vectorizers:
+                    ftr.vectorizers[attribute]._validate_vocabulary()
+
+                return ftr
+
+        except (ValueError, FileNotFoundError, FileIOException):
+            logger.warning(
+                f"Failed to load `{cls.__class__.__name__}` from model storage. "
+                f"Resource '{resource.name}' doesn't exist."
             )
-        else:
-            vectorizers = cls._create_independent_vocab_vectorizers(
-                meta, vocabulary=vocabulary
+            return cls(
+                config=config,
+                model_storage=model_storage,
+                resource=resource,
+                execution_context=execution_context,
             )
 
-        ftr = cls(meta, vectorizers)
+    @classmethod
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
+        """Validates that the component is configured properly."""
+        pass
 
-        # make sure the vocabulary has been loaded correctly
-        for attribute in vectorizers:
-            ftr.vectorizers[attribute]._validate_vocabulary()
-
-        return ftr
+    @classmethod
+    def validate_compatibility_with_tokenizer(
+        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
+    ) -> None:
+        """Validates that the featurizer is compatible with the given tokenizer."""
+        pass

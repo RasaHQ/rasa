@@ -7,8 +7,6 @@ intents:
   - mood_unhappy
   - bot_challenge
   - chitchat
-  - chitchat/ask_name
-  - chitchat/ask_weather
 
 responses:
   utter_greet:
@@ -24,12 +22,3 @@ responses:
     - text: Bye
   utter_iamabot:
     - text: I am a bot, powered by Rasa.
-
-actions:
-  - respond_chitchat
-  - utter_greet
-  - utter_cheer_up
-  - utter_did_that_help
-  - utter_happy
-  - utter_goodbye
-  - utter_iamabot

@@ -1,0 +1,71 @@
+---
+id: messaging-and-voice-channels
+sidebar_label: Connecting to a Channel
+title: Connecting to Messaging and Voice Channels
+description: Check out how to make your Rasa assistant available on platforms like Facebook Messenger, Slack, Telegram or even your very own website.
+abstract: Rasa Open Source provides many built-in connectors to connect to common messaging and voice channels.
+  You can also connect to your website or app with pre-configured REST channels or build your own custom connector.
+---
+
+## Connecting to A Channel
+
+Learn how to make your assistant available on:
+
+* [Your Own Website](./connectors/your-own-website.mdx)
+
+* [Facebook Messenger](./connectors/facebook-messenger.mdx)
+
+* [Slack](./connectors/slack.mdx)
+
+* [Telegram](./connectors/telegram.mdx)
+
+* [Twilio](./connectors/twilio.mdx)
+
+* [Microsoft Bot Framework](./connectors/microsoft-bot-framework.mdx)
+
+* [Cisco Webex Teams](./connectors/cisco-webex-teams.mdx)
+
+* [RocketChat](./connectors/rocketchat.mdx)
+
+* [Mattermost](./connectors/mattermost.mdx)
+
+* [Google Hangouts Chat](./connectors/hangouts.mdx)
+
+* [Custom Connectors](./connectors/custom-connectors.mdx)
+
+
+## Testing Channels on Your Local Machine
+
+If you're running Rasa X Local mode or a Rasa Open Source server on `localhost`, 
+most external channels won't be able to find your server URL, since `localhost` is not open to the internet. 
+
+To make a port on your local machine publicly available on the internet, 
+you can use [ngrok](https://ngrok.com/).
+
+After installing ngrok, run:
+
+```bash
+ngrok http 5005; rasa run
+```
+
+When you follow the instructions to make your assistant available on a channel, use the ngrok URL.
+Specifically, wherever the instructions say to use `https://<host>:<port>/webhooks/<CHANNEL>/webhook`,
+use `<ngrok_url>/<CHANNEL>/webhook`, replacing `<ngrok_url>` with the randomly generated
+URL displayed in your ngrok terminal window. For example, if connecting your bot to Slack, 
+your URL should resemble `https://26e7e7744191.ngrok.io/webhooks/slack/webhook`.
+
+:::caution
+With the free-tier of ngrok, you can run into limits on how many connections you can make per minute.
+As of writing this, it is set to 40 connections / minute.
+
+:::
+
+Alternatively you can make your assistent listen on a specific address using the `-i` command line
+option:
+
+```bash
+rasa run -p 5005 -i 192.168.69.150
+```
+
+This is particulary useful when your internet facing machines connect to backend servers using a VPN 
+interface.

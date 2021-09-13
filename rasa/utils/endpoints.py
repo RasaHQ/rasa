@@ -1,3 +1,5 @@
+import ssl
+
 import aiohttp
 import logging
 import os
@@ -5,6 +7,8 @@ from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
 from typing import Any, Optional, Text, Dict
 
+from rasa.shared.exceptions import FileNotFoundException
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
 
@@ -17,17 +21,17 @@ def read_endpoint_config(
 ) -> Optional["EndpointConfig"]:
     """Read an endpoint configuration file from disk and extract one
 
-    config. """
+    config."""
     if not filename:
         return None
 
     try:
-        content = rasa.utils.io.read_config_file(filename)
+        content = rasa.shared.utils.io.read_config_file(filename)
 
-        if endpoint_type in content:
-            return EndpointConfig.from_dict(content[endpoint_type])
-        else:
+        if content.get(endpoint_type) is None:
             return None
+
+        return EndpointConfig.from_dict(content[endpoint_type])
     except FileNotFoundError:
         logger.error(
             "Failed to read endpoint configuration "
@@ -72,24 +76,28 @@ class EndpointConfig:
 
     def __init__(
         self,
-        url: Text = None,
-        params: Dict[Text, Any] = None,
-        headers: Dict[Text, Any] = None,
-        basic_auth: Dict[Text, Text] = None,
+        url: Optional[Text] = None,
+        params: Optional[Dict[Text, Any]] = None,
+        headers: Optional[Dict[Text, Any]] = None,
+        basic_auth: Optional[Dict[Text, Text]] = None,
         token: Optional[Text] = None,
         token_name: Text = "token",
-        **kwargs,
-    ):
+        cafile: Optional[Text] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Creates an `EndpointConfig` instance."""
         self.url = url
-        self.params = params if params else {}
-        self.headers = headers if headers else {}
-        self.basic_auth = basic_auth
+        self.params = params or {}
+        self.headers = headers or {}
+        self.basic_auth = basic_auth or {}
         self.token = token
         self.token_name = token_name
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
+        self.cafile = cafile
         self.kwargs = kwargs
 
     def session(self) -> aiohttp.ClientSession:
+        """Creates and returns a configured aiohttp client session."""
         # create authentication parameters
         if self.basic_auth:
             auth = aiohttp.BasicAuth(
@@ -141,12 +149,24 @@ class EndpointConfig:
             del kwargs["headers"]
 
         url = concat_url(self.url, subpath)
+
+        sslcontext = None
+        if self.cafile:
+            try:
+                sslcontext = ssl.create_default_context(cafile=self.cafile)
+            except FileNotFoundError as e:
+                raise FileNotFoundException(
+                    f"Failed to find certificate file, "
+                    f"'{os.path.abspath(self.cafile)}' does not exist."
+                ) from e
+
         async with self.session() as session:
             async with session.request(
                 method,
                 url,
                 headers=headers,
                 params=self.combine_parameters(kwargs),
+                ssl=sslcontext,
                 **kwargs,
             ) as response:
                 if response.status >= 400:
@@ -159,7 +179,7 @@ class EndpointConfig:
                     return None
 
     @classmethod
-    def from_dict(cls, data) -> "EndpointConfig":
+    def from_dict(cls, data: Dict[Text, Any]) -> "EndpointConfig":
         return EndpointConfig(**data)
 
     def copy(self) -> "EndpointConfig":
@@ -173,7 +193,7 @@ class EndpointConfig:
             **self.kwargs,
         )
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(self, type(other)):
             return (
                 other.url == self.url
@@ -186,7 +206,7 @@ class EndpointConfig:
         else:
             return False
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
 
@@ -199,22 +219,38 @@ class ClientResponseError(aiohttp.ClientError):
 
 
 def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
-    """Return a passed boolean argument of the request or a default.
+    """Returns a passed boolean argument of the request or a default.
 
     Checks the `name` parameter of the request if it contains a valid
-    boolean value. If not, `default` is returned."""
+    boolean value. If not, `default` is returned.
 
-    return request.args.get(name, str(default)).lower() == "true"
+    Args:
+        request: Sanic request.
+        name: Name of argument.
+        default: Default value for `name` argument.
+
+    Returns:
+        A bool value if `name` is a valid boolean, `default` otherwise.
+    """
+    return str(request.args.get(name, default)).lower() == "true"
 
 
 def float_arg(
     request: Request, key: Text, default: Optional[float] = None
 ) -> Optional[float]:
-    """Return a passed argument cast as a float or None.
+    """Returns a passed argument cast as a float or None.
 
-    Checks the `name` parameter of the request if it contains a valid
-    float value. If not, `None` is returned."""
+    Checks the `key` parameter of the request if it contains a valid
+    float value. If not, `default` is returned.
 
+    Args:
+        request: Sanic request.
+        key: Name of argument.
+        default: Default value for `key` argument.
+
+    Returns:
+        A float value if `key` is a valid float, `default` otherwise.
+    """
     arg = request.args.get(key, default)
 
     if arg is default:
@@ -224,4 +260,32 @@ def float_arg(
         return float(str(arg))
     except (ValueError, TypeError):
         logger.warning(f"Failed to convert '{arg}' to float.")
+        return default
+
+
+def int_arg(
+    request: Request, key: Text, default: Optional[int] = None
+) -> Optional[int]:
+    """Returns a passed argument cast as an int or None.
+
+    Checks the `key` parameter of the request if it contains a valid
+    int value. If not, `default` is returned.
+
+    Args:
+        request: Sanic request.
+        key: Name of argument.
+        default: Default value for `key` argument.
+
+    Returns:
+        An int value if `key` is a valid integer, `default` otherwise.
+    """
+    arg = request.args.get(key, default)
+
+    if arg is default:
+        return arg
+
+    try:
+        return int(str(arg))
+    except (ValueError, TypeError):
+        logger.warning(f"Failed to convert '{arg}' to int.")
         return default

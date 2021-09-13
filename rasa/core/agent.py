@@ -1,52 +1,66 @@
+from asyncio import CancelledError
 import logging
 import os
 import shutil
 import tempfile
+from pathlib import Path
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+)
 import uuid
-from asyncio import CancelledError
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
 import aiohttp
-from sanic import Sanic
+from aiohttp import ClientError
 
 import rasa
-import rasa.utils.io
-import rasa.core.utils
-from rasa.constants import (
+import rasa.utils
+from rasa.core import jobs, training
+from rasa.core.channels.channel import OutputChannel, UserMessage
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.shared.core.domain import Domain
+from rasa.core.exceptions import AgentNotReady
+import rasa.core.interpreter
+from rasa.shared.constants import (
+    DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
-    LEGACY_DOCS_BASE_URL,
-    ENV_SANIC_BACKLOG,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
-from rasa.core import constants, jobs, training
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
-from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.domain import Domain
-from rasa.core.exceptions import AgentNotReady
-from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.lock_store import LockStore, InMemoryLockStore
+from rasa.shared.exceptions import InvalidParameterException
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
+    FailSafeTrackerStore,
     InMemoryTrackerStore,
     TrackerStore,
-    FailSafeTrackerStore,
 )
-from rasa.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker
+import rasa.core.utils
 from rasa.exceptions import ModelNotFound
-from rasa.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.model import (
-    get_model_subdirectories,
     get_latest_model,
-    unpack_model,
     get_model,
+    get_model_subdirectories,
+    unpack_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import raise_warning, update_sanic_log_level
+import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
+import rasa.utils.io
+
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 
@@ -71,42 +85,69 @@ async def load_from_server(agent: "Agent", model_server: EndpointConfig) -> "Age
     return agent
 
 
+def _load_interpreter(
+    agent: "Agent", nlu_path: Optional[Text]
+) -> NaturalLanguageInterpreter:
+    """Load the NLU interpreter at `nlu_path`.
+
+    Args:
+        agent: Instance of `Agent` to inspect for an interpreter if `nlu_path` is
+            `None`.
+        nlu_path: NLU model path.
+
+    Returns:
+        The NLU interpreter.
+    """
+    if nlu_path:
+        return rasa.core.interpreter.create_interpreter(nlu_path)
+
+    return agent.interpreter or RegexInterpreter()
+
+
+def _load_domain_and_policy_ensemble(
+    core_path: Optional[Text],
+) -> Tuple[Optional[Domain], Optional[PolicyEnsemble]]:
+    """Load the domain and policy ensemble from the model at `core_path`.
+
+    Args:
+        core_path: Core model path.
+
+    Returns:
+        An instance of `Domain` and `PolicyEnsemble` if `core_path` is not `None`.
+    """
+    policy_ensemble = None
+    domain = None
+
+    if core_path:
+        policy_ensemble = PolicyEnsemble.load(core_path)
+        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
+        domain = Domain.load(domain_path)
+
+    return domain, policy_ensemble
+
+
 def _load_and_set_updated_model(
     agent: "Agent", model_directory: Text, fingerprint: Text
-):
-    """Load the persisted model into memory and set the model on the agent."""
+) -> None:
+    """Load the persisted model into memory and set the model on the agent.
 
+    Args:
+        agent: Instance of `Agent` to update with the new model.
+        model_directory: Rasa model directory.
+        fingerprint: Fingerprint of the supplied model at `model_directory`.
+    """
     logger.debug(f"Found new model with fingerprint {fingerprint}. Loading...")
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
-    if nlu_path:
-        from rasa.core.interpreter import RasaNLUInterpreter
+    interpreter = _load_interpreter(agent, nlu_path)
+    domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
 
-        interpreter = RasaNLUInterpreter(model_directory=nlu_path)
-    else:
-        interpreter = (
-            agent.interpreter if agent.interpreter is not None else RegexInterpreter()
-        )
+    agent.update_model(
+        domain, policy_ensemble, fingerprint, interpreter, model_directory
+    )
 
-    domain = None
-    if core_path:
-        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
-        domain = Domain.load(domain_path)
-
-    try:
-        policy_ensemble = None
-        if core_path:
-            policy_ensemble = PolicyEnsemble.load(core_path)
-        agent.update_model(
-            domain, policy_ensemble, fingerprint, interpreter, model_directory
-        )
-        logger.debug("Finished updating agent to new model.")
-    except Exception:
-        logger.exception(
-            "Failed to load policy and update agent. "
-            "The previous model will stay loaded instead."
-        )
+    logger.debug("Finished updating agent to new model.")
 
 
 async def _update_model_from_server(
@@ -117,25 +158,44 @@ async def _update_model_from_server(
     if not is_url(model_server.url):
         raise aiohttp.InvalidURL(model_server.url)
 
-    model_directory_and_fingerprint = await _pull_model_and_fingerprint(
-        model_server, agent.fingerprint
-    )
-    if model_directory_and_fingerprint:
-        model_directory, new_model_fingerprint = model_directory_and_fingerprint
-        _load_and_set_updated_model(agent, model_directory, new_model_fingerprint)
-    else:
-        logger.debug(f"No new model found at URL {model_server.url}")
+    model_directory = tempfile.mkdtemp()
+    remove_dir = True
+
+    try:
+        new_fingerprint = await _pull_model_and_fingerprint(
+            model_server, agent.fingerprint, model_directory
+        )
+
+        if new_fingerprint:
+            _load_and_set_updated_model(agent, model_directory, new_fingerprint)
+            remove_dir = False
+        else:
+            logger.debug(f"No new model found at URL {model_server.url}")
+    except Exception:  # skipcq: PYL-W0703
+        # TODO: Make this exception more specific, possibly print different log
+        # for each one.
+        logger.exception(
+            "Failed to update model. The previous model will stay loaded instead."
+        )
+    finally:
+        if remove_dir:
+            shutil.rmtree(model_directory)
 
 
 async def _pull_model_and_fingerprint(
-    model_server: EndpointConfig, fingerprint: Optional[Text]
-) -> Optional[Tuple[Text, Text]]:
+    model_server: EndpointConfig, fingerprint: Optional[Text], model_directory: Text
+) -> Optional[Text]:
     """Queries the model server.
 
-    Returns the temporary model directory and value of the response's <ETag> header
-    which contains the model hash. Returns `None` if no new model is found.
-    """
+    Args:
+        model_server: Model server endpoint information.
+        fingerprint: Current model fingerprint.
+        model_directory: Directory where to download model to.
 
+    Returns:
+        Value of the response's <ETag> header which contains the model
+        hash. Returns `None` if no new model is found.
+    """
     headers = {"If-None-Match": fingerprint}
 
     logger.debug(f"Requesting model from server {model_server.url}...")
@@ -175,16 +235,13 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
-                model_directory = tempfile.mkdtemp()
                 rasa.utils.io.unarchive(await resp.read(), model_directory)
                 logger.debug(
                     "Unzipped model to '{}'".format(os.path.abspath(model_directory))
                 )
 
-                # get the new fingerprint
-                new_fingerprint = resp.headers.get("ETag")
-                # return new tmp model directory and new fingerprint
-                return model_directory, new_fingerprint
+                # return the new fingerprint
+                return resp.headers.get("ETag")
 
         except aiohttp.ClientError as e:
             logger.debug(
@@ -203,7 +260,7 @@ async def _run_model_pulling_worker(
         await _update_model_from_server(model_server, agent)
     except CancelledError:
         logger.warning("Stopping model pulling (cancelled).")
-    except Exception:
+    except ClientError:
         logger.exception(
             "An exception was raised while fetching a model. Continuing anyways..."
         )
@@ -211,7 +268,7 @@ async def _run_model_pulling_worker(
 
 async def schedule_model_pulling(
     model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
-):
+) -> None:
     (await jobs.scheduler()).add_job(
         _run_model_pulling_worker,
         "interval",
@@ -219,6 +276,33 @@ async def schedule_model_pulling(
         args=[model_server, agent],
         id="pull-model-from-server",
         replace_existing=True,
+    )
+
+
+def create_agent(model: Text, endpoints: Text = None) -> "Agent":
+    """Create an agent instance based on a stored model.
+
+    Args:
+        model: file path to the stored model
+        endpoints: file path to the used endpoint configuration
+    """
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.brokers.broker import EventBroker
+    import rasa.utils.common
+
+    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
+
+    _broker = rasa.utils.common.run_in_loop(EventBroker.create(_endpoints.event_broker))
+    _tracker_store = TrackerStore.create(_endpoints.tracker_store, event_broker=_broker)
+    _lock_store = LockStore.create(_endpoints.lock_store)
+
+    return Agent.load(
+        model,
+        generator=_endpoints.nlg,
+        tracker_store=_tracker_store,
+        lock_store=_lock_store,
+        action_endpoint=_endpoints.action,
     )
 
 
@@ -231,7 +315,23 @@ async def load_agent(
     tracker_store: Optional[TrackerStore] = None,
     lock_store: Optional[LockStore] = None,
     action_endpoint: Optional[EndpointConfig] = None,
-):
+) -> Optional["Agent"]:
+    """Loads agent from server, remote storage or disk.
+
+    Args:
+        model_path: Path to the model if it's on disk.
+        model_server: Configuration for a potential server which serves the model.
+        remote_storage: URL of remote storage for model.
+        interpreter: NLU interpreter to parse incoming messages.
+        generator: Optional response generator.
+        tracker_store: TrackerStore for persisting the conversation history.
+        lock_store: LockStore to avoid that a conversation is modified by concurrent
+            actors.
+        action_endpoint: Action server configuration for executing custom actions.
+
+    Returns:
+        The instantiated `Agent` or `None`.
+    """
     try:
         if model_server is not None:
             return await load_from_server(
@@ -272,7 +372,9 @@ async def load_agent(
             )
 
         else:
-            raise_warning("No valid configuration given to load agent.")
+            rasa.shared.utils.io.raise_warning(
+                "No valid configuration given to load agent."
+            )
             return None
 
     except Exception as e:
@@ -282,10 +384,10 @@ async def load_agent(
 
 class Agent:
     """The Agent class provides a convenient interface for the most important
-     Rasa functionality.
+    Rasa functionality.
 
-     This includes training, handling messages, loading a dialogue model,
-     getting the next action, and handling a channel."""
+    This includes training, handling messages, loading a dialogue model,
+    getting the next action, and handling a channel."""
 
     def __init__(
         self,
@@ -306,16 +408,11 @@ class Agent:
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
 
-        if self.domain is not None:
-            self.domain.add_requested_slot()
-            self.domain.add_knowledge_base_slots()
-            self.domain.add_categorical_slot_default_value()
-
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
         )
 
-        self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        self.interpreter = rasa.core.interpreter.create_interpreter(interpreter)
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
@@ -340,21 +437,21 @@ class Agent:
         self.policy_ensemble = policy_ensemble
 
         if interpreter:
-            self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+            self.interpreter = rasa.core.interpreter.create_interpreter(interpreter)
 
         self._set_fingerprint(fingerprint)
 
         # update domain on all instances
         self.tracker_store.domain = domain
-        if hasattr(self.nlg, "templates"):
-            self.nlg.templates = domain.templates if domain else {}
+        if hasattr(self.nlg, "responses"):
+            self.nlg.responses = domain.responses if domain else {}
 
         self.model_directory = model_directory
 
     @classmethod
     def load(
         cls,
-        model_path: Text,
+        model_path: Union[Text, Path],
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
         tracker_store: Optional[TrackerStore] = None,
@@ -363,35 +460,47 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         path_to_model_archive: Optional[Text] = None,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         try:
             if not model_path:
                 raise ModelNotFound("No path specified.")
-            elif not os.path.exists(model_path):
+            if not os.path.exists(model_path):
                 raise ModelNotFound(f"No file or directory at '{model_path}'.")
-            elif os.path.isfile(model_path):
-                model_path = get_model(model_path)
-        except ModelNotFound:
-            raise ValueError(
-                "You are trying to load a MODEL from '{}', which is not possible. \n"
-                "The model path should be a 'tar.gz' file or a directory "
-                "containing the various model files in the sub-directories 'core' "
-                "and 'nlu'. \n\nIf you want to load training data instead of "
-                "a model, use `agent.load_data(...)` instead.".format(model_path)
+            if os.path.isfile(model_path):
+                model_path = get_model(str(model_path))
+        except ModelNotFound as e:
+            raise ModelNotFound(
+                f"You are trying to load a model from '{model_path}', "
+                f"which is not possible. \n"
+                f"The model path should be a 'tar.gz' file or a directory "
+                f"containing the various model files in the sub-directories "
+                f"'core' and 'nlu'. \n\n"
+                f"If you want to load training data instead of a model, use "
+                f"`agent.load_data(...)` instead. {e}"
             )
 
         core_model, nlu_model = get_model_subdirectories(model_path)
 
         if not interpreter and nlu_model:
-            interpreter = NaturalLanguageInterpreter.create(nlu_model)
+            interpreter = rasa.core.interpreter.create_interpreter(nlu_model)
 
         domain = None
         ensemble = None
 
         if core_model:
             domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-            ensemble = PolicyEnsemble.load(core_model) if core_model else None
+            ensemble = (
+                PolicyEnsemble.load(
+                    core_model,
+                    new_config=new_config,
+                    finetuning_epoch_fraction=finetuning_epoch_fraction,
+                )
+                if core_model
+                else None
+            )
 
             # ensures the domain hasn't changed between test and train
             domain.compare_with_specification(core_model)
@@ -411,8 +520,7 @@ class Agent:
         )
 
     def is_core_ready(self) -> bool:
-        """Check if all necessary components and policies are ready to use the agent.
-        """
+        """Check if all necessary components and policies are ready to use the agent."""
         return self.is_ready() and self.policy_ensemble is not None
 
     def is_ready(self) -> bool:
@@ -452,29 +560,18 @@ class Agent:
 
         processor = self.create_processor()
         message = UserMessage(message_data)
-        return await processor._parse_message(message, tracker)
+        return await processor.parse_message(message, tracker)
 
     async def handle_message(
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
-
-        if not isinstance(message, UserMessage):
-            # DEPRECATION EXCEPTION - remove in 2.1
-            raise Exception(
-                "Passing a text to `agent.handle_message(...)` is "
-                "not supported anymore. Rather use `agent.handle_text(...)`.",
-            )
-
-        def noop(_):
+        if not self.is_ready():
             logger.info("Ignoring message as there is no agent to handle it.")
             return None
-
-        if not self.is_ready():
-            return noop(message)
 
         processor = self.create_processor(message_preprocessor)
 
@@ -498,8 +595,8 @@ class Agent:
         **kwargs: Any,
     ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
-
         processor = self.create_processor(message_preprocessor)
+
         return await processor.log_message(message)
 
     async def execute_action(
@@ -507,14 +604,16 @@ class Agent:
         sender_id: Text,
         action: Text,
         output_channel: OutputChannel,
-        policy: Text,
-        confidence: float,
-    ) -> DialogueStateTracker:
+        policy: Optional[Text],
+        confidence: Optional[float],
+    ) -> Optional[DialogueStateTracker]:
         """Handle a single message."""
-
         processor = self.create_processor()
+        prediction = PolicyPrediction.for_action_name(
+            self.domain, action, policy, confidence or 0.0
+        )
         return await processor.execute_action(
-            sender_id, action, output_channel, self.nlg, policy, confidence
+            sender_id, action, output_channel, self.nlg, prediction
         )
 
     async def trigger_intent(
@@ -528,7 +627,7 @@ class Agent:
 
         processor = self.create_processor()
         await processor.trigger_external_user_uttered(
-            intent_name, entities, tracker, output_channel,
+            intent_name, entities, tracker, output_channel
         )
 
     async def handle_text(
@@ -536,7 +635,7 @@ class Agent:
         text_message: Union[Text, Dict[Text, Any]],
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         output_channel: Optional[OutputChannel] = None,
-        sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID,
+        sender_id: Optional[Text] = DEFAULT_SENDER_ID,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message.
 
@@ -566,33 +665,14 @@ class Agent:
 
         return await self.handle_message(msg, message_preprocessor)
 
-    def toggle_memoization(self, activate: bool) -> None:
-        """Toggles the memoization on and off.
-
-        If a memoization policy is present in the ensemble, this will toggle
-        the prediction of that policy. When set to ``False`` the Memoization
-        policies present in the policy ensemble will not make any predictions.
-        Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. ``TEDPolicy``). Useful to test
-        prediction
-        capabilities of an ensemble when ignoring memorized turns from the
-        training data."""
-
-        if not self.policy_ensemble:
-            return
-
-        for p in self.policy_ensemble.policies:
-            # explicitly ignore inheritance (e.g. augmented memoization policy)
-            if type(p) == MemoizationPolicy:
-                p.toggle(activate)
-
     def _max_history(self) -> int:
         """Find maximum max_history."""
-
         max_histories = [
             policy.featurizer.max_history
             for policy in self.policy_ensemble.policies
-            if hasattr(policy.featurizer, "max_history")
+            if policy.featurizer
+            and hasattr(policy.featurizer, "max_history")
+            and policy.featurizer.max_history is not None
         ]
 
         return max(max_histories or [0])
@@ -600,15 +680,19 @@ class Agent:
     def _are_all_featurizers_using_a_max_history(self) -> bool:
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
-        def has_max_history_featurizer(policy):
-            return policy.featurizer and hasattr(policy.featurizer, "max_history")
+        def has_max_history_featurizer(policy: Policy) -> bool:
+            return bool(
+                policy.featurizer
+                and hasattr(policy.featurizer, "max_history")
+                and policy.featurizer.max_history is not None
+            )
 
         for p in self.policy_ensemble.policies:
             if p.featurizer and not has_max_history_featurizer(p):
                 return False
         return True
 
-    async def load_data(
+    def load_data(
         self,
         training_resource: Union[Text, TrainingDataImporter],
         remove_duplicates: bool = True,
@@ -618,9 +702,8 @@ class Agent:
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
         exclusion_percentage: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
+    ) -> List["TrackerWithCachedStates"]:
         """Load training data from a resource."""
-
         max_history = self._max_history()
 
         if unique_last_num_states is None:
@@ -632,7 +715,7 @@ class Agent:
                 unique_last_num_states = max_history
         elif unique_last_num_states < max_history:
             # possibility of data loss
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"unique_last_num_states={unique_last_num_states} but "
                 f"maximum max_history={max_history}. "
                 f"Possibility of data loss. "
@@ -641,7 +724,7 @@ class Agent:
                 f"at least maximum max_history."
             )
 
-        return await training.load_data(
+        return training.load_data(
             training_resource,
             self.domain,
             remove_duplicates,
@@ -666,41 +749,11 @@ class Agent:
         if not self.is_core_ready():
             raise AgentNotReady("Can't train without a policy ensemble.")
 
-        # deprecation tests
-        if kwargs.get("featurizer"):
-            raise Exception(
-                "Passing `featurizer` "
-                "to `agent.train(...)` is not supported anymore. "
-                "Pass appropriate featurizer directly "
-                "to the policy configuration instead. More info "
-                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
-            )
-        if (
-            kwargs.get("epochs")
-            or kwargs.get("max_history")
-            or kwargs.get("batch_size")
-        ):
-            raise Exception(
-                "Passing policy configuration parameters "
-                "to `agent.train(...)` is not supported "
-                "anymore. Specify parameters directly in the "
-                "policy configuration instead. More info "
-                "{}/core/migrations.html".format(LEGACY_DOCS_BASE_URL)
-            )
-
-        if isinstance(training_trackers, str):
-            # the user most likely passed in a file name to load training
-            # data from
-            raise Exception(
-                "Passing a file name to `agent.train(...)` is "
-                "not supported anymore. Rather load the data with "
-                "`data = agent.load_data(file_name)` and pass it "
-                "to `agent.train(data)`."
-            )
-
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
-        self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
+        self.policy_ensemble.train(
+            training_trackers, self.domain, interpreter=self.interpreter, **kwargs
+        )
         self._set_fingerprint()
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
@@ -717,7 +770,6 @@ class Agent:
         Only removes files if the directory seems to contain a previously
         persisted model. Otherwise does nothing to avoid deleting
         `/` by accident."""
-
         if not os.path.exists(model_path):
             return
 
@@ -759,20 +811,19 @@ class Agent:
         resource_name: Text,
         output_file: Text,
         max_history: Optional[int] = None,
-        nlu_training_data: Optional[Text] = None,
+        nlu_training_data: Optional[TrainingData] = None,
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:
-        from rasa.core.training.visualization import visualize_stories
-        from rasa.core.training.dsl import StoryFileReader
-
         """Visualize the loaded training data from the resource."""
+        from rasa.shared.core.training_data.visualization import visualize_stories
+        from rasa.shared.core.training_data import loading
 
         # if the user doesn't provide a max history, we will use the
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = await StoryFileReader.read_from_folder(resource_name, self.domain)
+        story_steps = loading.load_data_from_resource(resource_name, self.domain)
         await visualize_stories(
             story_steps,
             self.domain,
@@ -801,6 +852,7 @@ class Agent:
             self.policy_ensemble,
             self.domain,
             self.tracker_store,
+            self.lock_store,
             self.nlg,
             action_endpoint=self.action_endpoint,
             message_preprocessor=preprocessor,
@@ -811,17 +863,17 @@ class Agent:
 
         if isinstance(domain, str):
             domain = Domain.load(domain)
-            domain.check_missing_templates()
+            domain.check_missing_responses()
             return domain
         elif isinstance(domain, Domain):
             return domain
         elif domain is None:
             return Domain.empty()
         else:
-            raise ValueError(
-                "Invalid param `domain`. Expected a path to a domain "
-                "specification or a domain instance. But got "
-                "type '{}' with value '{}'".format(type(domain), domain)
+            raise InvalidParameterException(
+                f"Invalid param `domain`. Expected a path to a domain "
+                f"specification or a domain instance. But got "
+                f"type '{type(domain)}' with value '{domain}'."
             )
 
     @staticmethod
@@ -855,10 +907,10 @@ class Agent:
             return policies
         else:
             passed_type = type(policies).__name__
-            raise ValueError(
-                "Invalid param `policies`. Passed object is "
-                "of type '{}', but should be policy, an array of "
-                "policies, or a policy ensemble.".format(passed_type)
+            raise InvalidParameterException(
+                f"Invalid param `policies`. Passed object is "
+                f"of type '{passed_type}', but should be policy, an array of "
+                f"policies, or a policy ensemble."
             )
 
     @staticmethod
@@ -878,7 +930,9 @@ class Agent:
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            raise_warning(f"Could not load local model in '{model_path}'.")
+            rasa.shared.utils.io.raise_warning(
+                f"Could not load local model in '{model_path}'."
+            )
             return Agent()
 
         working_directory = tempfile.mkdtemp()

@@ -1,0 +1,18 @@
+name: Check if dependencies can be updated and create a pull request with updated ones.
+on:
+  schedule:
+    # Run at 05:00 on Wednesday
+    - cron:  '0 5 * * 3'
+
+jobs:
+  update_dependencies:
+    runs-on: ubuntu-20.04
+    name: Update dependencies
+    steps:
+      - uses: RasaHQ/dependabot-batch-updater@v1.0
+        with:
+          repo-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+          repository: RasaHQ/rasa
+          directory: /
+          package-manager: pip
+          batch-size: 5

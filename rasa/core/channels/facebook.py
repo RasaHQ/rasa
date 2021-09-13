@@ -5,7 +5,9 @@ from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
-from rasa.utils.common import raise_warning
+from fbmessenger.sender_actions import SenderAction
+
+import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
@@ -31,7 +33,7 @@ class Messenger:
 
         self.on_new_message = on_new_message
         self.client = MessengerClient(page_access_token)
-        self.last_message = {}  # type: Dict[Text, Any]
+        self.last_message: Dict[Text, Any] = {}
 
     def get_user_id(self) -> Text:
         return self.last_message.get("sender", {}).get("id", "")
@@ -43,6 +45,33 @@ class Messenger:
             "message" in message
             and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "audio"
+        )
+
+    @staticmethod
+    def _is_image_message(message: Dict[Text, Any]) -> bool:
+        """Check if the users message is an image."""
+        return (
+            "message" in message
+            and "attachments" in message["message"]
+            and message["message"]["attachments"][0]["type"] == "image"
+        )
+
+    @staticmethod
+    def _is_video_message(message: Dict[Text, Any]) -> bool:
+        """Check if the users message is a video."""
+        return (
+            "message" in message
+            and "attachments" in message["message"]
+            and message["message"]["attachments"][0]["type"] == "video"
+        )
+
+    @staticmethod
+    def _is_file_message(message: Dict[Text, Any]) -> bool:
+        """Check if the users message is a file."""
+        return (
+            "message" in message
+            and "attachments" in message["message"]
+            and message["message"]["attachments"][0]["type"] == "file"
         )
 
     @staticmethod
@@ -86,6 +115,15 @@ class Messenger:
         elif self._is_audio_message(message):
             attachment = message["message"]["attachments"][0]
             text = attachment["payload"]["url"]
+        elif self._is_image_message(message):
+            attachment = message["message"]["attachments"][0]
+            text = attachment["payload"]["url"]
+        elif self._is_video_message(message):
+            attachment = message["message"]["attachments"][0]
+            text = attachment["payload"]["url"]
+        elif self._is_file_message(message):
+            attachment = message["message"]["attachments"][0]
+            text = attachment["payload"]["url"]
         else:
             logger.warning(
                 "Received a message from facebook that we can not "
@@ -109,10 +147,12 @@ class Messenger:
         """Pass on the text to the dialogue engine for processing."""
 
         out_channel = MessengerBot(self.client)
+        await out_channel.send_action(sender_id, sender_action="mark_seen")
+
         user_msg = UserMessage(
             text, out_channel, sender_id, input_channel=self.name(), metadata=metadata
         )
-
+        await out_channel.send_action(sender_id, sender_action="typing_on")
         # noinspection PyBroadException
         try:
             await self.on_new_message(user_msg)
@@ -121,6 +161,8 @@ class Messenger:
                 "Exception when trying to handle webhook for facebook message."
             )
             pass
+        finally:
+            await out_channel.send_action(sender_id, sender_action="typing_off")
 
 
 class MessengerBot(OutputChannel):
@@ -158,6 +200,18 @@ class MessengerBot(OutputChannel):
 
         self.send(recipient_id, Image(url=image))
 
+    async def send_action(self, recipient_id: Text, sender_action: Text) -> None:
+        """Sends a sender action to facebook (e.g. "typing_on").
+
+        Args:
+            recipient_id: recipient
+            sender_action: action to send, e.g. "typing_on" or "mark_seen"
+        """
+
+        self.messenger_client.send_action(
+            SenderAction(sender_action).to_dict(), recipient_id
+        )
+
     async def send_text_with_buttons(
         self,
         recipient_id: Text,
@@ -169,7 +223,7 @@ class MessengerBot(OutputChannel):
 
         # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Facebook API currently allows only up to 3 buttons. "
                 "If you add more, all will be ignored."
             )
@@ -271,13 +325,11 @@ class FacebookInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        # pytype: disable=attribute-error
         return cls(
             credentials.get("verify"),
             credentials.get("secret"),
             credentials.get("page-access-token"),
         )
-        # pytype: enable=attribute-error
 
     def __init__(self, fb_verify: Text, fb_secret: Text, fb_access_token: Text) -> None:
         """Create a facebook input channel.
@@ -339,7 +391,7 @@ class FacebookInput(InputChannel):
 
     @staticmethod
     def validate_hub_signature(
-        app_secret, request_payload, hub_signature_header
+        app_secret: Text, request_payload: bytes, hub_signature_header: Text
     ) -> bool:
         """Make sure the incoming webhook requests are properly signed.
 

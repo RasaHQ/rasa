@@ -12,7 +12,7 @@
     - [Draft PRs](#draft-prs)
     - [PRs should be a reasonable length](#prs-should-be-a-reasonable-length)
     - [Code style](#code-style)
-    - [Formatting and Type Checking](#Formatting and Type Checking)
+    - [Formatting and Type Checking](#formatting-and-type-checking)
 - [How to open a PR and contribute code to Rasa Open Source](#how-to-open-a-pr-and-contribute-code-to-rasa-open-source)
   - [1. Forking the Rasa Repository](#1-forking-the-rasa-repository)
   - [2. Cloning the Forked Repository Locally](#2-cloning-the-forked-repository-locally)
@@ -85,7 +85,7 @@ If your PR is greater than 500 lines, please consider splitting it into multiple
 
 #### Code style
 
-To ensure a standardized code style we recommend using formatter black. To ensure our type annotations are correct we also suggest using the type checker pytype.
+To ensure a standardized code style we recommend using formatter black. To ensure our type annotations are correct we also suggest using the type checker `mypy`.
 
 #### Formatting and Type Checking
 
@@ -93,9 +93,9 @@ If you want to automatically format your code on every commit, you can use pre-c
 
 If you want to set it up manually, install black via `pip install -r requirements-dev.txt.` To reformat files execute `make formatter`.
 
-If you want to check types on the codebase, install pytype using `pip install -r requirements-dev.txt`. To check the types execute `make types`.
+If you want to check types on the codebase, install `mypy` using `poetry install`. To check the types execute `make types`.
 
-The CI/CD tests that we run can be found in the [continous-integration.yml](https://github.com/RasaHQ/rasa/blob/master/.github/workflows/continous-integration.yml) file. 
+The CI/CD tests that we run can be found in the [continous-integration.yml](https://github.com/RasaHQ/rasa/blob/main/.github/workflows/continous-integration.yml) file. 
 
 ---
 
@@ -130,7 +130,7 @@ Before you make any changes to your cloned repository, make sure you have the la
 ```
 cd rasa
 git remote add upstream git://github.com/RasaHQ/rasa.git
-git pull upstream master
+git pull upstream main
 ```
 
 This will update the local copy of the Rasa repository to the latest version.
@@ -166,7 +166,7 @@ Head to the forked repository and click on a _Compare & pull_ request button.
 This will open a window where you can choose the repository and branch you would like to propose your changes to, as well as specific details of your contribution. In the top panel menu choose the following details:
 
 - Base repository: `RasaHQ/rasa`
-- Base branch: `master`
+- Base branch: `main`
 - Head repository: `your-github-username/rasa`
 - Head branch: `name-of-your-new-branch`
 

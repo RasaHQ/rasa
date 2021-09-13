@@ -1,25 +1,64 @@
 import argparse
+import filecmp
 import os
+from pathlib import Path
 from unittest.mock import Mock
 import pytest
 from collections import namedtuple
-from typing import Callable, Text
+from typing import Callable, Text, Dict, List
 
 from _pytest.monkeypatch import MonkeyPatch
-from _pytest.pytester import RunResult
+from _pytest.pytester import RunResult, Testdir
 from rasa.cli import data
-from rasa.importers.importer import TrainingDataImporter
+from rasa.core.constants import (
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD,
+)
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DEFAULT_DATA_PATH
+from rasa.shared.core.domain import Domain
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
+import rasa.shared.utils.io
 
 
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
-    run_in_simple_project(
-        "data", "split", "nlu", "-u", "data/nlu.md", "--training-fraction", "0.75"
+    responses_yml = (
+        "responses:\n"
+        "  chitchat/ask_name:\n"
+        "  - text: my name is Sara, Rasa's documentation bot!\n"
+        "  chitchat/ask_weather:\n"
+        "  - text: the weather is great!\n"
     )
 
-    assert os.path.exists("train_test_split")
-    assert os.path.exists(os.path.join("train_test_split", "test_data.md"))
-    assert os.path.exists(os.path.join("train_test_split", "training_data.md"))
+    with open("data/responses.yml", "w") as f:
+        f.write(responses_yml)
+
+    run_in_simple_project(
+        "data",
+        "split",
+        "nlu",
+        "-u",
+        "data/nlu.yml",
+        "--training-fraction",
+        "0.75",
+        "--random-seed",
+        "12345",
+    )
+
+    folder = Path("train_test_split")
+    assert folder.exists()
+
+    nlu_files = [folder / "test_data.yml", folder / "training_data.yml"]
+    nlg_files = [folder / "nlg_test_data.yml", folder / "nlg_training_data.yml"]
+    for yml_file in nlu_files:
+        assert yml_file.exists(), f"{yml_file} file does not exist"
+        nlu_data = rasa.shared.utils.io.read_yaml_file(yml_file)
+        assert "version" in nlu_data
+        assert nlu_data.get("nlu")
+
+    for yml_file in nlg_files:
+        assert yml_file.exists(), f"{yml_file} file does not exist"
 
 
 def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
@@ -28,7 +67,7 @@ def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
         "convert",
         "nlu",
         "--data",
-        "data/nlu.md",
+        "data/nlu.yml",
         "--out",
         "out_nlu_data.json",
         "-f",
@@ -46,41 +85,40 @@ def test_data_split_help(run: Callable[..., RunResult]):
                            [--random-seed RANDOM_SEED] [--out OUT]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("data", "convert", "nlu", "--help")
 
-    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data DATA --out OUT
-                             [-l LANGUAGE] -f {json,md}"""
+    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,yaml}]
+                             [--data DATA [DATA ...]] [--out OUT]
+                             [-l LANGUAGE]"""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_data_validate_help(run: Callable[..., RunResult]):
     output = run("data", "validate", "--help")
 
     help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet]
-                          [--max-history MAX_HISTORY] [--fail-on-warnings]"""
+                          [--max-history MAX_HISTORY] [-c CONFIG]
+                          [--fail-on-warnings] [-d DOMAIN]
+                          [--data DATA [DATA ...]]
+                          {stories} ..."""
 
     lines = help_text.split("\n")
-
-    for i, line in enumerate(lines):
-        assert output.outlines[i] == line
-
-
-def _text_is_part_of_output_error(text: Text, output: RunResult) -> bool:
-    found_info_string = False
-    for line in output.errlines:
-        if text in line:
-            found_info_string = True
-    return found_info_string
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
 
 
 def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
@@ -88,9 +126,19 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
     subparsers = parser.add_subparsers(help="Rasa commands")
     data.add_subparser(subparsers, parents=[])
 
-    args = parser.parse_args(["data", "validate", "stories", "--max-history", 0])
+    args = parser.parse_args(
+        [
+            "data",
+            "validate",
+            "stories",
+            "--data",
+            "data/test_moodbot/data",
+            "--max-history",
+            0,
+        ]
+    )
 
-    async def mock_from_importer(importer: TrainingDataImporter) -> Validator:
+    def mock_from_importer(importer: TrainingDataImporter) -> Validator:
         return Mock()
 
     monkeypatch.setattr("rasa.validator.Validator.from_importer", mock_from_importer)
@@ -99,14 +147,498 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
         data.validate_files(args)
 
 
+@pytest.mark.parametrize(
+    ("file_type", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+def test_validate_files_action_not_found_invalid_domain(
+    file_type: Text, data_type: Text, tmp_path: Path
+):
+    file_name = tmp_path / f"{file_type}.yml"
+    file_name.write_text(
+        f"""
+        version: "2.0"
+        {file_type}:
+        - {data_type}: test path
+          steps:
+          - intent: goodbye
+          - action: action_test
+        """
+    )
+    args = {
+        "domain": "data/test_moodbot/domain.yml",
+        "data": [file_name],
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+@pytest.mark.parametrize(
+    ("file_type", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+def test_validate_files_form_not_found_invalid_domain(
+    file_type: Text, data_type: Text, tmp_path: Path
+):
+    file_name = tmp_path / f"{file_type}.yml"
+    file_name.write_text(
+        f"""
+        version: "2.0"
+        {file_type}:
+        - {data_type}: test path
+          steps:
+            - intent: request_restaurant
+            - action: restaurant_form
+            - active_loop: restaurant_form
+        """
+    )
+    args = {
+        "domain": "data/test_restaurantbot/domain.yml",
+        "data": [file_name],
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+def test_validate_files_form_slots_not_matching(tmp_path: Path):
+    domain_file_name = tmp_path / "domain.yml"
+    domain_file_name.write_text(
+        """
+        version: "2.0"
+        forms:
+          name_form:
+            required_slots:
+              first_name:
+              - type: from_text
+              last_name:
+              - type: from_text
+        slots:
+             first_name:
+                type: text
+             last_nam:
+                type: text
+        """
+    )
+    args = {
+        "domain": domain_file_name,
+        "data": None,
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
 def test_validate_files_exit_early():
     with pytest.raises(SystemExit) as pytest_e:
         args = {
             "domain": "data/test_domains/duplicate_intents.yml",
             "data": None,
             "max_history": None,
+            "config": None,
         }
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
     assert pytest_e.type == SystemExit
     assert pytest_e.value.code == 1
+
+
+def test_validate_files_invalid_domain():
+    args = {
+        "domain": "data/test_domains/default_with_mapping.yml",
+        "data": None,
+        "max_history": None,
+        "config": None,
+    }
+
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+        with pytest.warns(UserWarning) as w:
+            assert "Please migrate to RulePolicy." in str(w[0].message)
+
+
+def test_rasa_data_convert_responses(
+    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
+):
+    converted_data_folder = "converted_data"
+    os.mkdir(converted_data_folder)
+    expected_data_folder = "expected_data"
+    os.mkdir(expected_data_folder)
+
+    domain = (
+        "version: '2.0'\n"
+        "session_config:\n"
+        "  session_expiration_time: 60\n"
+        "  carry_over_slots_to_new_session: true\n"
+        "actions:\n"
+        "- respond_chitchat\n"
+        "- utter_greet\n"
+        "- utter_cheer_up"
+    )
+
+    expected_domain = (
+        "version: '2.0'\n"
+        "session_config:\n"
+        "  session_expiration_time: 60\n"
+        "  carry_over_slots_to_new_session: true\n"
+        "actions:\n"
+        "- utter_chitchat\n"
+        "- utter_greet\n"
+        "- utter_cheer_up\n"
+    )
+
+    with open(f"{expected_data_folder}/domain.yml", "w") as f:
+        f.write(expected_domain)
+
+    with open("domain.yml", "w") as f:
+        f.write(domain)
+
+    stories = (
+        "stories:\n"
+        "- story: sad path\n"
+        "  steps:\n"
+        "  - intent: greet\n"
+        "  - action: utter_greet\n"
+        "  - intent: mood_unhappy\n"
+        "- story: chitchat\n"
+        "  steps:\n"
+        "  - intent: chitchat\n"
+        "  - action: respond_chitchat\n"
+    )
+
+    expected_stories = (
+        'version: "2.0"\n'
+        "stories:\n"
+        "- story: sad path\n"
+        "  steps:\n"
+        "  - intent: greet\n"
+        "  - action: utter_greet\n"
+        "  - intent: mood_unhappy\n"
+        "- story: chitchat\n"
+        "  steps:\n"
+        "  - intent: chitchat\n"
+        "  - action: utter_chitchat\n"
+    )
+
+    with open(f"{expected_data_folder}/stories.yml", "w") as f:
+        f.write(expected_stories)
+
+    with open("data/stories.yml", "w") as f:
+        f.write(stories)
+
+    run_in_simple_project(
+        "data",
+        "convert",
+        "responses",
+        "--data",
+        "data",
+        "--out",
+        converted_data_folder,
+    )
+
+    assert filecmp.cmp(
+        Path(converted_data_folder) / "domain_converted.yml",
+        Path(expected_data_folder) / "domain.yml",
+    )
+
+    assert filecmp.cmp(
+        Path(converted_data_folder) / "stories_converted.yml",
+        Path(expected_data_folder) / "stories.yml",
+    )
+
+
+def test_convert_config(
+    run: Callable[..., RunResult], tmp_path: Path, domain_path: Text
+):
+    deprecated_config = {
+        "policies": [{"name": "MappingPolicy"}, {"name": "FallbackPolicy"}],
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    domain = Domain.from_dict(
+        {
+            "intents": [{"greet": {"triggers": "action_greet"}}, "leave"],
+            "actions": ["action_greet"],
+        }
+    )
+    domain_file = tmp_path / "domain.yml"
+    domain.persist(domain_file)
+
+    rules_file = tmp_path / "rules.yml"
+
+    result = run(
+        "data",
+        "convert",
+        "config",
+        "--config",
+        str(config_file),
+        "--domain",
+        str(domain_file),
+        "--out",
+        str(rules_file),
+    )
+
+    assert result.ret == 0
+    new_config = rasa.shared.utils.io.read_yaml_file(config_file)
+    new_domain = rasa.shared.utils.io.read_yaml_file(domain_file)
+    new_rules = rasa.shared.utils.io.read_yaml_file(rules_file)
+
+    assert new_config == {
+        "policies": [
+            {
+                "name": "RulePolicy",
+                "core_fallback_action_name": "action_default_fallback",
+                "core_fallback_threshold": DEFAULT_CORE_FALLBACK_THRESHOLD,
+            }
+        ],
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {
+                "name": "FallbackClassifier",
+                "ambiguity_threshold": DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+                "threshold": DEFAULT_NLU_FALLBACK_THRESHOLD,
+            },
+        ],
+    }
+    assert new_domain["intents"] == ["greet", "leave"]
+    assert new_rules == {
+        "rules": [
+            {
+                "rule": "Rule to map `greet` intent to `action_greet` "
+                "(automatic conversion)",
+                "steps": [{"intent": "greet"}, {"action": "action_greet"}],
+            },
+            {
+                "rule": "Rule to handle messages with low NLU confidence "
+                "(automated conversion from 'FallbackPolicy')",
+                "steps": [
+                    {"intent": "nlu_fallback"},
+                    {"action": "action_default_fallback"},
+                ],
+            },
+        ],
+        "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
+    }
+
+    domain_backup = tmp_path / "domain.yml.bak"
+    assert domain_backup.exists()
+
+    config_backup = tmp_path / "config.yml.bak"
+    assert config_backup.exists()
+
+
+def test_convert_config_if_nothing_to_migrate(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    result = run_in_simple_project("data", "convert", "config")
+
+    assert result.ret == 1
+
+    output = "\n".join(result.outlines)
+    assert "No policies were found which need migration" in output
+
+
+def test_convert_config_with_output_file_containing_data(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path, testdir: Testdir
+):
+    deprecated_config = {
+        "policies": [{"name": "FallbackPolicy"}],
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    output_file = testdir.tmpdir / DEFAULT_DATA_PATH / "rules.yml"
+    # the default project already contains rules training data
+    assert output_file.exists()
+    existing_rules = rasa.shared.utils.io.read_yaml_file(output_file)["rules"]
+    assert existing_rules
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 0
+
+    new_rules = rasa.shared.utils.io.read_yaml_file(output_file)["rules"]
+    expected_new_rule = {
+        "rule": "Rule to handle messages with low NLU confidence "
+        "(automated conversion from 'FallbackPolicy')",
+        "steps": [{"intent": "nlu_fallback"}, {"action": "action_default_fallback"}],
+    }
+
+    assert expected_new_rule in new_rules
+    assert all(existing in new_rules for existing in existing_rules)
+
+    backup_file = testdir.tmpdir / DEFAULT_DATA_PATH / "rules.yml.bak"
+    assert backup_file.exists()
+
+
+def test_convert_config_with_invalid_config_path(run: Callable[..., RunResult]):
+    result = run("data", "convert", "config", "--config", "invalid path")
+
+    assert result.ret == 1
+
+    output = "\n".join(result.outlines)
+    assert "Please provide a valid path" in output
+
+
+def test_convert_config_with_missing_nlu_pipeline_config(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    deprecated_config = {"policies": [{"name": "FallbackPolicy"}]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 1
+
+    output = "\n".join(result.outlines)
+    assert "The model configuration has to include an NLU pipeline" in output
+
+
+def test_convert_config_with_missing_nlu_pipeline_config_if_no_fallbacks(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    deprecated_config = {"policies": [{"name": "MappingPolicy"}]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 0
+
+
+@pytest.mark.parametrize(
+    "policy_config, expected_error_message",
+    [
+        (
+            [{"name": "FallbackPolicy"}, {"name": "TwoStageFallbackPolicy"}],
+            "two configured policies for handling fallbacks",
+        )
+    ],
+)
+def test_convert_config_with_invalid_policy_config(
+    run_in_simple_project: Callable[..., RunResult],
+    tmp_path: Path,
+    policy_config: List[Dict],
+    expected_error_message: Text,
+):
+    deprecated_config = {
+        "policies": policy_config,
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 1
+
+    output = "\n".join(result.outlines)
+    assert expected_error_message in output
+
+
+def test_warning_for_form_migration(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    deprecated_config = {
+        "policies": [{"name": "FallbackPolicy"}, {"name": "FormPolicy"}],
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 0
+
+    output = "\n".join(result.outlines)
+    assert "you have to migrate the 'FormPolicy' manually" in output
+
+
+@pytest.mark.parametrize(
+    "two_stage_config, expected_error_message",
+    [
+        (
+            {"deny_suggestion_intent_name": "something else"},
+            "has to use the intent 'out_of_scope'",
+        ),
+        (
+            {"fallback_nlu_action_name": "something else"},
+            "has to use the action 'action_default_fallback",
+        ),
+    ],
+)
+def test_convert_config_with_two_stage_fallback_policy(
+    run_in_simple_project: Callable[..., RunResult],
+    tmp_path: Path,
+    two_stage_config: Dict,
+    expected_error_message: Text,
+):
+    deprecated_config = {
+        "policies": [
+            {"name": "MappingPolicy"},
+            {"name": "TwoStageFallbackPolicy", **two_stage_config},
+        ],
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data", "convert", "config", "--config", str(config_file)
+    )
+
+    assert result.ret == 1
+
+    output = "\n".join(result.outlines)
+    assert expected_error_message in output
+
+
+def test_convert_config_with_invalid_domain_path(run: Callable[..., RunResult]):
+    result = run("data", "convert", "config", "--domain", "invalid path")
+
+    assert result.ret == 1
+
+    output = "\n".join(result.outlines)
+    assert "path to a valid model configuration" in output
+
+
+def test_convert_config_with_default_rules_directory(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    deprecated_config = {
+        "policies": [{"name": "FallbackPolicy"}],
+        "pipeline": [{"name": "WhitespaceTokenizer"}],
+    }
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(deprecated_config, config_file)
+
+    result = run_in_simple_project(
+        "data",
+        "convert",
+        "config",
+        "--config",
+        str(config_file),
+        "--out",
+        str(tmp_path),
+    )
+
+    assert result.ret == 1
+
+    output = "\n".join(result.outlines)
+    assert "needs to be the path to a file" in output

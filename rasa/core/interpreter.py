@@ -1,183 +1,47 @@
 import aiohttp
 
-import json
 import logging
-import re
 
 import os
-from typing import Text, List, Dict, Any, Union, Optional, Tuple
+from typing import Text, Dict, Any, Union, Optional
 
-from rasa.constants import DOCS_URL_STORIES
 from rasa.core import constants
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import INTENT_MESSAGE_PREFIX
-from rasa.utils.common import raise_warning, class_from_module_path
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
+import rasa.shared.utils.io
+import rasa.shared.utils.common
+import rasa.shared.nlu.interpreter
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
 
-class NaturalLanguageInterpreter:
-    async def parse(
-        self,
-        text: Text,
-        message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
-    ) -> Dict[Text, Any]:
-        raise NotImplementedError(
-            "Interpreter needs to be able to parse messages into structured output."
+def create_interpreter(
+    obj: Union[
+        rasa.shared.nlu.interpreter.NaturalLanguageInterpreter,
+        EndpointConfig,
+        Text,
+        None,
+    ]
+) -> "rasa.shared.nlu.interpreter.NaturalLanguageInterpreter":
+    """Factory to create a natural language interpreter."""
+
+    if isinstance(obj, rasa.shared.nlu.interpreter.NaturalLanguageInterpreter):
+        return obj
+    elif isinstance(obj, str) and os.path.exists(obj):
+        return RasaNLUInterpreter(model_directory=obj)
+    elif isinstance(obj, str):
+        # user passed in a string, but file does not exist
+        logger.warning(
+            f"No local NLU model '{obj}' found. Using RegexInterpreter instead."
         )
-
-    @staticmethod
-    def create(
-        obj: Union["NaturalLanguageInterpreter", EndpointConfig, Text, None]
-    ) -> "NaturalLanguageInterpreter":
-        """Factory to create an natural language interpreter."""
-
-        if isinstance(obj, NaturalLanguageInterpreter):
-            return obj
-        elif isinstance(obj, str) and os.path.exists(obj):
-            return RasaNLUInterpreter(model_directory=obj)
-        elif isinstance(obj, str) and not os.path.exists(obj):
-            # user passed in a string, but file does not exist
-            logger.warning(
-                f"No local NLU model '{obj}' found. Using RegexInterpreter instead."
-            )
-            return RegexInterpreter()
-        else:
-            return _create_from_endpoint_config(obj)
+        return rasa.shared.nlu.interpreter.RegexInterpreter()
+    else:
+        return _create_from_endpoint_config(obj)
 
 
-class RegexInterpreter(NaturalLanguageInterpreter):
-    @staticmethod
-    def allowed_prefixes() -> Text:
-        return INTENT_MESSAGE_PREFIX
-
-    @staticmethod
-    def _create_entities(
-        parsed_entities: Dict[Text, Union[Text, List[Text]]], sidx: int, eidx: int
-    ) -> List[Dict[Text, Any]]:
-        entities = []
-        for k, vs in parsed_entities.items():
-            if not isinstance(vs, list):
-                vs = [vs]
-            for value in vs:
-                entities.append(
-                    {
-                        "entity": k,
-                        "start": sidx,
-                        "end": eidx,  # can't be more specific
-                        "value": value,
-                    }
-                )
-        return entities
-
-    @staticmethod
-    def _parse_parameters(
-        entity_str: Text, sidx: int, eidx: int, user_input: Text
-    ) -> List[Dict[Text, Any]]:
-        if entity_str is None or not entity_str.strip():
-            # if there is nothing to parse we will directly exit
-            return []
-
-        try:
-            parsed_entities = json.loads(entity_str)
-            if isinstance(parsed_entities, dict):
-                return RegexInterpreter._create_entities(parsed_entities, sidx, eidx)
-            else:
-                raise Exception(
-                    f"Parsed value isn't a json object "
-                    f"(instead parser found '{type(parsed_entities)}')"
-                )
-        except Exception as e:
-            raise_warning(
-                f"Failed to parse arguments in line "
-                f"'{user_input}'. Failed to decode parameters "
-                f"as a json object. Make sure the intent "
-                f"is followed by a proper json object. "
-                f"Error: {e}",
-                docs=DOCS_URL_STORIES,
-            )
-            return []
-
-    @staticmethod
-    def _parse_confidence(confidence_str: Text) -> float:
-        if confidence_str is None:
-            return 1.0
-
-        try:
-            return float(confidence_str.strip()[1:])
-        except Exception as e:
-            raise_warning(
-                f"Invalid to parse confidence value in line "
-                f"'{confidence_str}'. Make sure the intent confidence is an "
-                f"@ followed by a decimal number. "
-                f"Error: {e}",
-                docs=DOCS_URL_STORIES,
-            )
-            return 0.0
-
-    def _starts_with_intent_prefix(self, text: Text) -> bool:
-        for c in self.allowed_prefixes():
-            if text.startswith(c):
-                return True
-        return False
-
-    @staticmethod
-    def extract_intent_and_entities(
-        user_input: Text,
-    ) -> Tuple[Optional[Text], float, List[Dict[Text, Any]]]:
-        """Parse the user input using regexes to extract intent & entities."""
-
-        prefixes = re.escape(RegexInterpreter.allowed_prefixes())
-        # the regex matches "slot{"a": 1}"
-        m = re.search("^[" + prefixes + "]?([^{@]+)(@[0-9.]+)?([{].+)?", user_input)
-        if m is not None:
-            event_name = m.group(1).strip()
-            confidence = RegexInterpreter._parse_confidence(m.group(2))
-            entities = RegexInterpreter._parse_parameters(
-                m.group(3), m.start(3), m.end(3), user_input
-            )
-
-            return event_name, confidence, entities
-        else:
-            logger.warning(f"Failed to parse intent end entities from '{user_input}'.")
-            return None, 0.0, []
-
-    async def parse(
-        self,
-        text: Text,
-        message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
-    ) -> Dict[Text, Any]:
-        """Parse a text message."""
-
-        return self.synchronous_parse(text, message_id, tracker)
-
-    def synchronous_parse(
-        self,
-        text: Text,
-        message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
-    ) -> Dict[Text, Any]:
-        """Parse a text message."""
-
-        intent, confidence, entities = self.extract_intent_and_entities(text)
-
-        if self._starts_with_intent_prefix(text):
-            message_text = text
-        else:
-            message_text = INTENT_MESSAGE_PREFIX + text
-
-        return {
-            "text": message_text,
-            "intent": {"name": intent, "confidence": confidence},
-            "intent_ranking": [{"name": intent, "confidence": confidence}],
-            "entities": entities,
-        }
-
-
-class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
+class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpreter):
     def __init__(self, endpoint_config: Optional[EndpointConfig] = None) -> None:
         if endpoint_config:
             self.endpoint_config = endpoint_config
@@ -188,14 +52,15 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         self,
         text: Text,
         message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
+        tracker: Optional[DialogueStateTracker] = None,
+        metadata: Optional[Dict] = None,
     ) -> Dict[Text, Any]:
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
 
         default_return = {
-            "intent": {"name": "", "confidence": 0.0},
+            "intent": {INTENT_NAME_KEY: "", "confidence": 0.0},
             "entities": [],
             "text": "",
         }
@@ -207,9 +72,10 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         self, text: Text, message_id: Optional[Text] = None
     ) -> Optional[Dict[Text, Any]]:
         """Send a text message to a running rasa NLU http server.
-        Return `None` on failure."""
 
-        if not self.endpoint_config:
+        Return `None` on failure.
+        """
+        if not self.endpoint_config or self.endpoint_config.url is None:
             logger.error(
                 f"Failed to parse text '{text}' using rasa NLU over http. "
                 f"No rasa NLU server specified!"
@@ -240,12 +106,14 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                             f"http. Error: {response_text}"
                         )
                         return None
-        except Exception:
+        except Exception:  # skipcq: PYL-W0703
+            # need to catch all possible exceptions when doing http requests
+            # (timeouts, value errors, parser errors, ...)
             logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")
             return None
 
 
-class RasaNLUInterpreter(NaturalLanguageInterpreter):
+class RasaNLUInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpreter):
     def __init__(
         self,
         model_directory: Text,
@@ -265,7 +133,8 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         self,
         text: Text,
         message_id: Optional[Text] = None,
-        tracker: DialogueStateTracker = None,
+        tracker: Optional[DialogueStateTracker] = None,
+        metadata: Optional[Dict] = None,
     ) -> Dict[Text, Any]:
         """Parse a text message.
 
@@ -273,8 +142,22 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
+
         result = self.interpreter.parse(text)
 
+        return result
+
+    def featurize_message(self, message: Message) -> Optional[Message]:
+        """Featurize message using a trained NLU pipeline.
+        Args:
+            message: storing text to process
+        Returns:
+            message containing tokens and features which are the output of the NLU
+            pipeline
+        """
+        if self.lazy_init and self.interpreter is None:
+            self._load_interpreter()
+        result = self.interpreter.featurize_message(message)
         return result
 
     def _load_interpreter(self) -> None:
@@ -285,24 +168,26 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
 def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig],
-) -> "NaturalLanguageInterpreter":
+) -> rasa.shared.nlu.interpreter.NaturalLanguageInterpreter:
     """Instantiate a natural language interpreter based on its configuration."""
 
     if endpoint_config is None:
-        return RegexInterpreter()
+        return rasa.shared.nlu.interpreter.RegexInterpreter()
     elif endpoint_config.type is None or endpoint_config.type.lower() == "http":
         return RasaNLUHttpInterpreter(endpoint_config=endpoint_config)
     else:
-        return _load_from_module_string(endpoint_config)
+        return _load_from_module_name_in_endpoint_config(endpoint_config)
 
 
-def _load_from_module_string(
+def _load_from_module_name_in_endpoint_config(
     endpoint_config: EndpointConfig,
-) -> "NaturalLanguageInterpreter":
+) -> rasa.shared.nlu.interpreter.NaturalLanguageInterpreter:
     """Instantiate an event channel based on its class name."""
 
     try:
-        nlu_interpreter_class = class_from_module_path(endpoint_config.type)
+        nlu_interpreter_class = rasa.shared.utils.common.class_from_module_path(
+            endpoint_config.type
+        )
         return nlu_interpreter_class(endpoint_config=endpoint_config)
     except (AttributeError, ImportError) as e:
         raise Exception(

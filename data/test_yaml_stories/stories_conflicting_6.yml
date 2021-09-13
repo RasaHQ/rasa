@@ -1,0 +1,28 @@
+stories:
+- story: "story 1"
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+- story: "story 2"
+  steps:
+  - intent: greet
+  - action: utter_default
+
+- story: "story 3"
+  steps:
+  - intent: greet
+  - action: utter_default
+  - intent: greet
+
+- story: "story 4"
+  steps:
+  - intent: greet
+  - action: utter_default
+  - intent: default
+
+- story: "story 5"
+  steps:
+  - intent: greet
+  - action: utter_default
+  - intent: goodbye
