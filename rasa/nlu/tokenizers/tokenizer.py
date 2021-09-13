@@ -4,7 +4,9 @@ import re
 
 from typing import Text, List, Dict, Any
 
-from rasa.engine.graph import GraphComponent
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
@@ -35,10 +37,21 @@ class TokenizerGraphComponent(GraphComponent, abc.ABC):
         # split symbol for intents
         self.intent_split_symbol = config["intent_split_symbol"]
         # token pattern to further split tokens
-        token_pattern = config["token_pattern"]
+        token_pattern = config.get("token_pattern")
         self.token_pattern_regex = None
         if token_pattern:
             self.token_pattern_regex = re.compile(token_pattern)
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> GraphComponent:
+        """Creates a new component (see parent class for full docstring)."""
+        return cls(config)
 
     @abc.abstractmethod
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
