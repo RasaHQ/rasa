@@ -19,7 +19,6 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    FEATURIZER_CLASS_ALIAS,
     TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
 )
