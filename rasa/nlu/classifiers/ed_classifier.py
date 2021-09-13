@@ -155,8 +155,10 @@ class flask_serving_classifier(IntentClassifier):
         else:
             intent = {"name": None, "confidence": 0.0}
             intent_ranking = []
-
+        print(intent)
+        print(intent_ranking)
         message.set("intent", intent, add_to_output=True)
+        message.set("eqa_response", None, add_to_output=True)
         message.set("intent_ranking", intent_ranking, add_to_output=True)
 
     def predict_prob(self, X):
