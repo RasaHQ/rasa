@@ -60,7 +60,7 @@ repository if you discover bugs or have suggestions for improvements.
 1. Check that you have installed the Kubernetes or OpenShift command line
    interface (CLI). You can check this using the following command:
 
-   <Tabs values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+   <Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
      <TabItem value="kubernetes">
 
      ```bash
@@ -91,7 +91,7 @@ repository if you discover bugs or have suggestions for improvements.
 2. Make sure that the Kubernetes / OpenShift CLI is correctly connected to
    your cluster. You can do so by using the following commands:
 
-   <Tabs values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+   <Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
      <TabItem value="kubernetes">
 
      ```bash
@@ -145,7 +145,7 @@ We recommend installing Rasa Open Source in a separate
 to avoid interfering with existing cluster deployments. To create a new namespace
 run the following command:
 
-<Tabs values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+<Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
   <TabItem value="kubernetes">
 
   ```bash
@@ -236,7 +236,7 @@ nginx:
 Then wait until the deployment is ready. If you want to check on its status, the following command
 will block until the Rasa deployment is ready:
 
-<Tabs values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+<Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
   <TabItem value="kubernetes">
 
   ```bash
@@ -271,7 +271,7 @@ will block until the Rasa deployment is ready:
 By default the Rasa deployment is exposed via the `rasa` (`<release name>`) service and accessible only within a Kubernetes cluster. You can get
 the IP address using this command:
 
-<Tabs values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+<Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
   <TabItem value="kubernetes">
 
   ```bash
