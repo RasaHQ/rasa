@@ -2,75 +2,102 @@
 sidebar_label: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
 ---
-## RegexFeaturizer Objects
+## RegexFeaturizerGraphComponent Objects
 
 ```python
-class RegexFeaturizer(SparseFeaturizer)
+class RegexFeaturizerGraphComponent(SparseFeaturizer2,  GraphComponent)
 ```
+
+Adds message features based on regex expressions.
+
+#### get\_default\_config
+
+```python
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
+```
+
+Returns the component&#x27;s default config.
 
 #### \_\_init\_\_
 
 ```python
-def __init__(component_config: Optional[Dict[Text, Any]] = None, known_patterns: Optional[List[Dict[Text, Text]]] = None, finetune_mode: bool = False) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, known_patterns: Optional[List[Dict[Text, Text]]] = None) -> None
 ```
 
 Constructs new features for regexes and lookup table using regex expressions.
 
 **Arguments**:
 
-- `component_config` - Configuration for the component
+- `config` - Configuration for the component.
+- `model_storage` - Storage which graph components can use to persist and load
+  themselves.
+- `resource` - Resource locator for this component which can be used to persist
+  and load itself from the `model_storage`.
+- `execution_context` - Information about the current graph run.
 - `known_patterns` - Regex Patterns the component should pre-load itself with.
-- `finetune_mode` - Load component in finetune mode.
+
+#### create
+
+```python
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexFeaturizerGraphComponent
+```
+
+Creates a new untrained component (see parent class for full docstring).
 
 #### train
 
 ```python
-def train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+def train(training_data: TrainingData) -> Resource
 ```
 
 Trains the component with all patterns extracted from training data.
 
-**Arguments**:
+#### process\_training\_data
 
-- `training_data` - Training data consisting of training examples and patterns
-  available.
-- `config` - NLU Pipeline config
-- `**kwargs` - Any other arguments
+```python
+def process_training_data(training_data: TrainingData) -> TrainingData
+```
+
+Processes the training examples (see parent class for full docstring).
+
+#### process
+
+```python
+def process(messages: List[Message]) -> List[Message]
+```
+
+Featurizes all given messages in-place.
+
+**Returns**:
+
+  the given list of messages which have been modified in-place
 
 #### load
 
 ```python
 @classmethod
-def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["RegexFeaturizer"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "RegexFeaturizer"
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexFeaturizerGraphComponent
 ```
 
-Loads a previously trained component.
+Loads trained component (see parent class for full docstring).
 
-**Arguments**:
-
-- `meta` - Configuration of trained component.
-- `model_dir` - Path where trained pipeline is stored.
-- `model_metadata` - Metadata for the trained pipeline.
-- `cached_component` - Previously cached component(if any).
-- `should_finetune` - Indicates whether to load the component for further
-  finetuning.
-- `**kwargs` - Any other arguments.
-
-#### persist
+#### validate\_config
 
 ```python
-def persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
+@classmethod
+def validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
-Persist this model into the passed directory.
+Validates that the component is configured properly.
 
-**Arguments**:
+#### validate\_compatibility\_with\_tokenizer
 
-- `file_name` - Prefix to add to all files stored as part of this component.
-- `model_dir` - Path where files should be stored.
-  
+```python
+@classmethod
+def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]) -> None
+```
 
-**Returns**:
-
-  Metadata necessary to load the model again.
+Validates that the featurizer is compatible with the given tokenizer.
 

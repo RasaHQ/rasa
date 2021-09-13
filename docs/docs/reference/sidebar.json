@@ -279,6 +279,7 @@
             {
               "items": [
                 "reference/rasa/nlu/featurizers/sparse_featurizer/_lexical_syntactic_featurizer",
+                "reference/rasa/nlu/featurizers/sparse_featurizer/_regex_featurizer",
                 "reference/rasa/nlu/featurizers/sparse_featurizer/count_vectors_featurizer",
                 "reference/rasa/nlu/featurizers/sparse_featurizer/lexical_syntactic_featurizer",
                 "reference/rasa/nlu/featurizers/sparse_featurizer/regex_featurizer",
