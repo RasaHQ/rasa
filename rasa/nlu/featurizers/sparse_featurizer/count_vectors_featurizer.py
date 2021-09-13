@@ -138,23 +138,23 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         # use the lemma of the words or not
         self.use_lemma = self._config["use_lemma"]
 
-    def _load_vocabulary_params(self) -> None:
-        self.OOV_token = self._config["OOV_token"]
+    def _load_vocabulary_params(self) -> Tuple[Text, List[Text]]:
+        OOV_token = self._config["OOV_token"]
 
-        self.OOV_words = self._config["OOV_words"]
-        if self.OOV_words and not self.OOV_token:
+        OOV_words = self._config["OOV_words"]
+        if OOV_words and not OOV_token:
             logger.error(
                 "The list OOV_words={} was given, but "
                 "OOV_token was not. OOV words are ignored."
-                "".format(self.OOV_words)
+                "".format(OOV_words)
             )
             self.OOV_words = []
 
-        if self.lowercase and self.OOV_token:
+        if self.lowercase and OOV_token:
             # convert to lowercase
-            self.OOV_token = self.OOV_token.lower()
-            if self.OOV_words:
-                self.OOV_words = [w.lower() for w in self.OOV_words]
+            OOV_token = OOV_token.lower()
+            if OOV_words:
+                OOV_words = [w.lower() for w in OOV_words]
         additional_size_attributes = [
             key
             for key, value in self._config["additional_vocabulary_size"].items()
@@ -169,6 +169,8 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                 f"this parameter will be ignored. You can omit specifying "
                 f"`additional_vocabulary_size` in future runs."
             )
+
+        return OOV_token, OOV_words
 
     def _get_attribute_vocabulary(self, attribute: Text) -> Optional[Dict[Text, int]]:
         """Gets trained vocabulary from attribute's count vectorizer."""
@@ -213,6 +215,8 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
+        oov_token: Optional[Text] = None,
+        oov_words: Optional[List[Text]] = None,
     ) -> None:
         """Constructs a new count vectorizer using the sklearn framework."""
         super().__init__(execution_context.node_name, config)
@@ -224,7 +228,11 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         self._load_count_vect_params()
 
         # handling Out-Of-Vocabulary (OOV) words
-        self._load_vocabulary_params()
+        if oov_token and oov_words:
+            self.OOV_token = oov_token
+            self.OOV_words = oov_words
+        else:
+            self.OOV_token, self.OOV_words = self._load_vocabulary_params()
 
         # warn that some of config parameters might be ignored
         self._check_analyzer()
@@ -809,7 +817,6 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                 oov_words = rasa.shared.utils.io.read_json_file(
                     model_dir / "oov_words.json"
                 )
-                config["OOV_words"] = oov_words
 
                 ftr = cls(
                     config,
@@ -817,6 +824,8 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                     resource,
                     execution_context,
                     vectorizers=vectorizers,
+                    oov_token=config["OOV_token"],
+                    oov_words=oov_words,
                 )
 
                 # make sure the vocabulary has been loaded correctly
