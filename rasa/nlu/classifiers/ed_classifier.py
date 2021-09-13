@@ -158,7 +158,7 @@ class flask_serving_classifier(IntentClassifier):
         print(intent)
         print(intent_ranking)
         message.set("intent", intent, add_to_output=True)
-        message.set("eqa_response", None, add_to_output=True)
+        message.set("eqa_response", "This is a dummy response for EQA.", add_to_output=True)
         message.set("intent_ranking", intent_ranking, add_to_output=True)
 
     def predict_prob(self, X):
