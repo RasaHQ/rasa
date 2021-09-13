@@ -1,5 +1,4 @@
 from __future__ import annotations
-from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 import zlib
 
 import base64
@@ -96,7 +95,9 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         lookup: Optional[Dict] = None,
     ) -> None:
         """Initialize the policy."""
-        super().__init__(config, model_storage, resource, execution_context, featurizer)
+        super().__init__(
+            config, model_storage, resource, execution_context, featurizer,
+        )
         self.lookup = lookup or {}
 
     def _create_lookup_from_states(
@@ -192,7 +193,11 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -200,6 +205,8 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
             states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             The name of the action.
@@ -226,7 +233,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -234,15 +241,19 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            precomputations: unused
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
+
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
         """
         result = self._default_predictions(domain)
 
-        states = self._prediction_states(tracker, domain)
+        states = self._prediction_states(tracker, domain, rule_only_data=rule_only_data)
         logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
-        predicted_action_name = self.recall(states, tracker, domain)
+        predicted_action_name = self.recall(
+            states, tracker, domain, rule_only_data=rule_only_data
+        )
         if predicted_action_name is not None:
             logger.debug(f"There is a memorised next action '{predicted_action_name}'")
             result = self._prediction_result(predicted_action_name, tracker, domain)
@@ -363,7 +374,11 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         return mcfly_tracker
 
     def _recall_using_delorean(
-        self, old_states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        old_states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> Optional[Text]:
         """Applies to the future idea to change the past and get the new future.
 
@@ -374,6 +389,8 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
             old_states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             The name of the action.
@@ -386,7 +403,9 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         )
         mcfly_tracker = self._back_to_the_future(mcfly_tracker)
         while mcfly_tracker is not None:
-            states = self._prediction_states(mcfly_tracker, domain,)
+            states = self._prediction_states(
+                mcfly_tracker, domain, rule_only_data=rule_only_data
+            )
 
             if old_states != states:
                 # check if we like new futures
@@ -404,7 +423,11 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         return None
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -415,6 +438,8 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
             states: List of states.
             tracker: The tracker.
             domain: The Domain.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             The name of the action.
@@ -422,7 +447,9 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(states, tracker, domain,)
+            return self._recall_using_delorean(
+                states, tracker, domain, rule_only_data=rule_only_data
+            )
         else:
             return predicted_action_name
 

@@ -355,7 +355,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
     ) -> None:
         """Declares instance variables with default values."""
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer=featurizer
+            config, model_storage, resource, execution_context, featurizer=featurizer,
         )
 
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
@@ -720,7 +720,8 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> List[List[Dict[Text, List[Features]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
@@ -732,6 +733,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             domain,
             precomputations=precomputations,
             use_text_for_last_user_input=self.only_e2e,
+            rule_only_data=rule_only_data,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -744,6 +746,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
                 domain,
                 precomputations=precomputations,
                 use_text_for_last_user_input=True,
+                rule_only_data=rule_only_data,
             )
         return tracker_state_features
 
@@ -794,6 +797,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         tracker: DialogueStateTracker,
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""
@@ -802,7 +806,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
 
         # create model data from tracker
         tracker_state_features = self._featurize_tracker(
-            tracker, domain, precomputations
+            tracker, domain, precomputations, rule_only_data=rule_only_data
         )
         model_data = self._create_model_data(tracker_state_features)
         outputs: Dict[Text, np.ndarray] = self.model.run_inference(model_data)
@@ -1000,14 +1004,14 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         try:
             with model_storage.read_from(resource) as model_path:
                 return cls._load(
-                    model_path, config, model_storage, resource, execution_context
+                    model_path, config, model_storage, resource, execution_context,
                 )
         except ValueError:
             logger.warning(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-            return cls(config, model_storage, resource, execution_context)
+            return cls(config, model_storage, resource, execution_context,)
 
     @classmethod
     def _load(
