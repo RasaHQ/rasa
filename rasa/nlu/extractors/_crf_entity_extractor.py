@@ -1,19 +1,26 @@
-from __future__ import annotations
+# flake8: noqa
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt
+#          CRFEntityExtractorGraphComponent from the regular
+#          `rasa.nlu.classifiers.crf_entity_extractor` module.
+#          This module is a workaround to defer breaking changes due to the architecture
+#          revamp in 3.0.
 import logging
+import os
 import typing
 
 import numpy as np
-from typing import Any, Dict, List, Optional, Text, Tuple, Callable
+from typing import Any, Dict, List, Optional, Text, Tuple, Type, Callable
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.shared.utils.io
-import rasa.utils.train_utils
-from rasa.engine.graph import GraphComponent, ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.components import Component
+from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -26,15 +33,9 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
-    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
-
-from rasa.nlu.extractors._crf_entity_extractor import CRFEntityExtractor
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-CRFEntityExtractor = CRFEntityExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +63,52 @@ class CRFToken:
         self.entity_group_tag = entity_group_tag
 
 
-class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
-    """Implements conditional random fields (CRF) to do named entity recognition."""
+class CRFEntityExtractor(EntityExtractor):
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [Tokenizer]
+
+    defaults = {
+        # BILOU_flag determines whether to use BILOU tagging or not.
+        # More rigorous however requires more examples per entity
+        # rule of thumb: use only if more than 100 egs. per entity
+        BILOU_FLAG: True,
+        # Split entities by comma, this makes sense e.g. for a list of ingredients
+        # in a recipie, but it doesn't make sense for the parts of an address
+        SPLIT_ENTITIES_BY_COMMA: True,
+        # crf_features is [before, token, after] array with before, token,
+        # after holding keys about which features to use for each token,
+        # for example, 'title' in array before will have the feature
+        # "is the preceding token in title case?"
+        # POS features require SpacyTokenizer
+        # pattern feature require RegexFeaturizer
+        "features": [
+            ["low", "title", "upper"],
+            [
+                "low",
+                "bias",
+                "prefix5",
+                "prefix2",
+                "suffix5",
+                "suffix3",
+                "suffix2",
+                "upper",
+                "title",
+                "digit",
+                "pattern",
+            ],
+            ["low", "title", "upper"],
+        ],
+        # The maximum number of iterations for optimization algorithms.
+        "max_iterations": 50,
+        # weight of the L1 regularization
+        "L1_c": 0.1,
+        # weight of the L2 regularization
+        "L2_c": 0.1,
+        # Name of dense featurizers to use.
+        # If list is empty all available dense features are used.
+        "featurizers": [],
+    }
 
     function_dict: Dict[Text, Callable[[CRFToken], Any]] = {
         "low": lambda crf_token: crf_token.text.lower(),
@@ -83,69 +128,20 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         "digit": lambda crf_token: crf_token.text.isdigit(),
         "pattern": lambda crf_token: crf_token.pattern,
         "text_dense_features": (
-            lambda crf_token: CRFEntityExtractorGraphComponent._convert_dense_features_for_crfsuite(  # noqa: E501
+            lambda crf_token: CRFEntityExtractor._convert_dense_features_for_crfsuite(
                 crf_token
             )
         ),
         "entity": lambda crf_token: crf_token.entity_tag,
     }
 
-    @staticmethod
-    def get_default_config() -> Dict[Text, Any]:
-        """The component's default config (see parent class for full docstring)."""
-        return {
-            # BILOU_flag determines whether to use BILOU tagging or not.
-            # More rigorous however requires more examples per entity
-            # rule of thumb: use only if more than 100 egs. per entity
-            BILOU_FLAG: True,
-            # Split entities by comma, this makes sense e.g. for a list of ingredients
-            # in a recipie, but it doesn't make sense for the parts of an address
-            SPLIT_ENTITIES_BY_COMMA: True,
-            # crf_features is [before, token, after] array with before, token,
-            # after holding keys about which features to use for each token,
-            # for example, 'title' in array before will have the feature
-            # "is the preceding token in title case?"
-            # POS features require SpacyTokenizer
-            # pattern feature require RegexFeaturizer
-            "features": [
-                ["low", "title", "upper"],
-                [
-                    "low",
-                    "bias",
-                    "prefix5",
-                    "prefix2",
-                    "suffix5",
-                    "suffix3",
-                    "suffix2",
-                    "upper",
-                    "title",
-                    "digit",
-                    "pattern",
-                ],
-                ["low", "title", "upper"],
-            ],
-            # The maximum number of iterations for optimization algorithms.
-            "max_iterations": 50,
-            # weight of the L1 regularization
-            "L1_c": 0.1,
-            # weight of the L2 regularization
-            "L2_c": 0.1,
-            # Name of dense featurizers to use.
-            # If list is empty all available dense features are used.
-            "featurizers": [],
-        }
-
     def __init__(
         self,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
+        component_config: Optional[Dict[Text, Any]] = None,
         entity_taggers: Optional[Dict[Text, "CRF"]] = None,
     ) -> None:
-        """Creates an instance of entity extractor."""
-        self.component_config = config
-        self._model_storage = model_storage
-        self._resource = resource
+
+        super().__init__(component_config)
 
         self.entity_taggers = entity_taggers
 
@@ -157,9 +153,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
         self._validate_configuration()
 
-        self.split_entities_config = rasa.utils.train_utils.init_split_entities(
-            config[SPLIT_ENTITIES_BY_COMMA], SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
-        )
+        self.split_entities_config = self.init_split_entities()
 
     def _validate_configuration(self) -> None:
         if len(self.component_config.get("features", [])) % 2 != 1:
@@ -168,23 +162,15 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             )
 
     @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> CRFEntityExtractorGraphComponent:
-        """Creates a new untrained component (see parent class for full docstring)."""
-        return cls(config, model_storage, resource)
-
-    @staticmethod
-    def required_packages() -> List[Text]:
-        """Any extra python dependencies required for this component to run."""
+    def required_packages(cls) -> List[Text]:
         return ["sklearn_crfsuite", "sklearn"]
 
-    def train(self, training_data: TrainingData) -> Resource:
-        """Trains the extractor on a data set."""
+    def train(
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
         # checks whether there is at least one
         # example with an entity annotation
         if not training_data.entity_examples:
@@ -192,7 +178,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 "No training examples with entities present. Skip training"
                 "of 'CRFEntityExtractor'."
             )
-            return self._resource
+            return
 
         self.check_correct_entity_annotations(training_data)
 
@@ -209,10 +195,6 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
         self._train_model(dataset)
 
-        self.persist()
-
-        return self._resource
-
     def _update_crf_order(self, training_data: TrainingData) -> None:
         """Train only CRFs we actually have training data for."""
         _crf_order = []
@@ -227,19 +209,14 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
         self.crf_order = _crf_order
 
-    def process(self, messages: List[Message]) -> List[Message]:
-        """Augments messages with entities."""
-        for message in messages:
-            entities = self.extract_entities(message)
-            entities = self.add_extractor_name(entities)
-            message.set(
-                ENTITIES, message.get(ENTITIES, []) + entities, add_to_output=True
-            )
-
-        return messages
+    def process(self, message: Message, **kwargs: Any) -> None:
+        entities = self.extract_entities(message)
+        entities = self.add_extractor_name(entities)
+        message.set(ENTITIES, message.get(ENTITIES, []) + entities, add_to_output=True)
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Extract entities from the given message using the trained model(s)."""
+
         if self.entity_taggers is None:
             return []
 
@@ -336,53 +313,63 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     @classmethod
     def load(
         cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
+        meta: Dict[Text, Any],
+        model_dir: Text,
+        model_metadata: Metadata = None,
+        cached_component: Optional["CRFEntityExtractor"] = None,
         **kwargs: Any,
-    ) -> CRFEntityExtractorGraphComponent:
+    ) -> "CRFEntityExtractor":
         """Loads trained component (see parent class for full docstring)."""
         import joblib
 
-        try:
-            entity_taggers = {}
-            with model_storage.read_from(resource) as model_dir:
-                file_names = list(model_dir.glob("**/*.pkl"))
-                if not file_names:
-                    logger.debug(
-                        "Failed to load model for 'CRFEntityExtractor'. "
-                        "Maybe you did not provide enough training data and "
-                        "no model was trained."
-                    )
-                    return cls(config, model_storage, resource)
+        file_names = meta.get("files")
+        entity_taggers = {}
 
-                for file_name in file_names:
-                    name = file_name.stem
-                    entity_taggers[name] = joblib.load(file_name)
-
-                return cls(config, model_storage, resource, entity_taggers)
-        except ValueError:
-            logger.warning(
-                f"Failed to load {cls.__name__} from model storage. Resource "
-                f"'{resource.name}' doesn't exist."
+        if not file_names:
+            logger.debug(
+                f"Failed to load model for 'CRFEntityExtractor'. "
+                f"Maybe you did not provide enough training data and no model was "
+                f"trained or the path '{os.path.abspath(model_dir)}' doesn't exist?"
             )
-            return cls(config, model_storage, resource)
+            return cls(component_config=meta)
 
-    def persist(self) -> None:
-        """Persist this model into the passed directory."""
+        for name, file_name in file_names.items():
+            model_file = os.path.join(model_dir, file_name)
+            if os.path.exists(model_file):
+                entity_taggers[name] = joblib.load(model_file)
+            else:
+                logger.debug(
+                    f"Failed to load model for tag '{name}' for 'CRFEntityExtractor'. "
+                    f"Maybe you did not provide enough training data and no model was "
+                    f"trained or the path '{os.path.abspath(model_file)}' doesn't "
+                    f"exist?"
+                )
+
+        return cls(meta, entity_taggers)
+
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        """Persist this model into the passed directory.
+
+        Returns the metadata necessary to load the model again."""
+
         import joblib
 
-        with self._model_storage.write_to(self._resource) as model_dir:
-            if self.entity_taggers:
-                for name, entity_tagger in self.entity_taggers.items():
-                    model_file_name = model_dir / f"{name}.pkl"
-                    joblib.dump(entity_tagger, model_file_name)
+        file_names = {}
+
+        if self.entity_taggers:
+            for name, entity_tagger in self.entity_taggers.items():
+                file_name = f"{file_name}.{name}.pkl"
+                model_file_name = os.path.join(model_dir, file_name)
+                joblib.dump(entity_tagger, model_file_name)
+                file_names[name] = file_name
+
+        return {"files": file_names}
 
     def _crf_tokens_to_features(
         self, crf_tokens: List[CRFToken], include_tag_features: bool = False
     ) -> List[Dict[Text, Any]]:
         """Convert the list of tokens into discrete features."""
+
         configured_features = self.component_config["features"]
         sentence_features = []
 
