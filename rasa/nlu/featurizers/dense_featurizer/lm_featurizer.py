@@ -74,9 +74,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             # an optional path to a specific directory to download
             # and cache the pre-trained model weights.
             "cache_dir": None,
-            "language": None,
-            # TODO: the supported language should depend on the language the model
-            #  was pre-trained on. In the future add this check to config validation.
         }
 
     @classmethod

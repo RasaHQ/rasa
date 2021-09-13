@@ -566,7 +566,7 @@ class TestSubTokensTrainAndProcess:
             [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
     ):
-        """ Tests the number of sub tokens when calling the function
+        """Tests the number of sub tokens when calling the function
         process training data """
         messages = process_training_text(
             texts, model_name, model_weights, create_language_model_featurizer
@@ -583,7 +583,7 @@ class TestSubTokensTrainAndProcess:
             [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
     ):
-        """ Tests the number of sub tokens when calling the function
+        """Tests the number of sub tokens when calling the function
         process (messages) """
         messages = process_messages(
             texts, model_name, model_weights, create_language_model_featurizer
