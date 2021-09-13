@@ -7,6 +7,7 @@ from unittest.mock import Mock
 from typing import List, Text, Dict, Any, Optional, Tuple
 from _pytest.monkeypatch import MonkeyPatch
 import itertools
+import re
 
 import rasa.model
 from rasa.shared.exceptions import InvalidConfigException
@@ -17,6 +18,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
     TEXT,
     INTENT,
     ENTITIES,
@@ -48,7 +50,7 @@ from rasa.utils.tensorflow.constants import (
     LINEAR_NORM,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.constants import BILOU_ENTITIES, TOKENS_NAMES
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import (
@@ -181,17 +183,61 @@ class TestDIETDataPipeline:
         return expected
 
     @staticmethod
-    def get_input_and_expected_output(
-        features_for_label_given: bool, label: Text, used_featurizers: List[Text]
+    def _get_input_and_expected_output(
+        features_for_label_given: bool,
+        label: Text,
+        featurizers: List[Text],
+        used_featurizers: List[Text],
+        seq_len: int = 3,
+        sentence_feature_dim: int = 4,
+        sequence_feature_dim: int = 5,
     ) -> Tuple[List[Message], Dict[Text, Dict[Text, np.array]]]:
+        """Creates input messages and concatentations of their features.
 
-        # Some constants first:
-        # batch_size will be 3
-        # number of intents will be 2
-        seq_len = 6
-        sentence_feature_dim = 7
-        sequence_feature_dim = 9
-        featurizers = ["1", "2", "3"]
+        Creates a list of dummy messages with texts, tokens, intents, and entities
+        that contain some randomly created dense features, one for each of the given
+        featurizer names given in the `featurizers` list.
+        For each attribute, the function concatenates the dense features created
+        for the `used_featurizers` and returns those separately.
+
+        Args:
+            features_for_label_given: whether or not to create features for the defined
+              `label`
+            label: the attribute that is considered to be the `label`
+            featurizers: list of all featurizers
+            used_featurizers: list of featurizers which will be considered when we're
+               concatenating features
+            seq_len: length of all sequence features
+            sentence_feature_dim: "units" of all sentence features (these could differ,
+            but for the sake of simplicity we fix it)
+            sequence_feature_dim: "units" of all sentence features (these could differ,
+            but for the sake of simplicity we fix it)
+
+        Returns:
+            the messages and dictionary mapping attributes to matrices containing
+            concatenated features
+        """
+
+        # prepare data for one of the more complex messages first
+        text = "the city of bielefeld does not exist"
+        tokens = [
+            Token(text=match.group(), start=match.start())
+            for match in re.finditer("\w+", text)
+        ]
+        entities = [
+            {
+                ENTITY_ATTRIBUTE_VALUE: "city of bielefeld",
+                ENTITY_ATTRIBUTE_START: tokens[1].start,
+                ENTITY_ATTRIBUTE_END: tokens[3].end,
+                ENTITY_ATTRIBUTE_TYPE: "city",
+            },
+            {
+                ENTITY_ATTRIBUTE_VALUE: tokens[-1].text,
+                ENTITY_ATTRIBUTE_START: tokens[-1].start,
+                ENTITY_ATTRIBUTE_END: tokens[-1].end,
+                ENTITY_ATTRIBUTE_TYPE: "what",
+            },
+        ]
 
         # Create messages:
         messages = [
@@ -215,25 +261,11 @@ class TestDIETDataPipeline:
             ),
             Message(
                 data={
-                    TEXT: "bla blub",
+                    TEXT: text,
                     INTENT: "intent2",
-                    TOKENS_NAMES[TEXT]: [
-                        Token(text="bla", start=0),
-                        Token(text="blub", start=4),
-                    ],
+                    TOKENS_NAMES[TEXT]: tokens,
                     "other": "unrelated-attribute3",
-                    ENTITIES: [
-                        {
-                            ENTITY_ATTRIBUTE_START: 0,
-                            ENTITY_ATTRIBUTE_END: 3,
-                            ENTITY_ATTRIBUTE_TYPE: "entity1",
-                        },
-                        {
-                            ENTITY_ATTRIBUTE_START: 4,
-                            ENTITY_ATTRIBUTE_END: 7,
-                            ENTITY_ATTRIBUTE_TYPE: "entity2",
-                        },
-                    ],
+                    ENTITIES: entities,
                 }
             ),
         ]
@@ -272,8 +304,8 @@ class TestDIETDataPipeline:
         return messages, expected_outputs
 
     @staticmethod
-    def preprocess_train_data_and_create_data_for_prediction(
-        model: DIETClassifier, features_for_label_given: bool, label: Text,
+    def _test_preprocess_train_data_and_create_data_for_prediction(
+        model: DIETClassifier, features_for_label_given: bool, featurizers: List[Text],
     ):
 
         intent_classification = model.component_config.get(INTENT_CLASSIFICATION, False)
@@ -281,12 +313,16 @@ class TestDIETDataPipeline:
         bilou_tagging = model.component_config.get(BILOU_FLAG, False)
         used_featurizers = model.component_config.get(FEATURIZERS, None)
         if used_featurizers is None:
-            used_featurizers = ["1", "2", "3"]  # must be all from input data
+            used_featurizers = featurizers
 
-        messages, expected_outputs = TestDIETDataPipeline.get_input_and_expected_output(
+        (
+            messages,
+            expected_outputs,
+        ) = TestDIETDataPipeline._get_input_and_expected_output(
             features_for_label_given=features_for_label_given,
+            label=INTENT,
+            featurizers=featurizers,
             used_featurizers=used_featurizers,
-            label=label,
         )
 
         # Preprocess Training Data
@@ -380,10 +416,23 @@ class TestDIETDataPipeline:
                 # message 1: no entity
                 assert np.all(np.array(entity_features[1]).flatten() == [0])
                 # message 2: entity1, entity2
+                message2 = messages_for_training[-1]
                 if not bilou_tagging:
-                    expected_entity_features = [1, 2]
+                    expected_entity_features = [0, 1, 1, 1, 0, 0, 2]
+                    # where 0 = no entity, 1 = city, 2 = what
                 else:
-                    expected_entity_features = [4, 0]  # TODO: this looks buggy
+                    assert message2.get(BILOU_ENTITIES) == [
+                        "O",
+                        "B-city",
+                        "I-city",
+                        "L-city",
+                        "O",
+                        "O",
+                        "U-what",
+                    ]
+                    expected_entity_features = [0, 1, 2, 3, 0, 0, 8]
+                    # where 0 = no entity, 1/2/3/4 = B/I/L/U-city, and
+                    # 5/6/7/8 = B/I/L/U-what
                 assert np.all(
                     np.array(entity_features[2]).flatten() == expected_entity_features
                 )
@@ -412,11 +461,12 @@ class TestDIETDataPipeline:
     def test_preprocess_train_data_and_create_data_for_prediction(
         self, component_config: Dict[Text, Any], features_for_labels_given: bool
     ):
+        featurizers = ["1", "2", "3"]
         classifier = DIETClassifier(component_config=component_config,)
-        self.preprocess_train_data_and_create_data_for_prediction(
+        self._test_preprocess_train_data_and_create_data_for_prediction(
             model=classifier,
             features_for_label_given=features_for_labels_given,
-            label=INTENT,
+            featurizers=featurizers,
         )
 
 
