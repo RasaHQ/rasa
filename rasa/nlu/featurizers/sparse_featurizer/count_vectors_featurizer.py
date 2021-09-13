@@ -26,8 +26,6 @@ from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
     INTENT_RESPONSE_KEY,
-    RESPONSE,
-    ACTION_TEXT,
     ACTION_NAME,
 )
 from rasa.nlu.featurizers.sparse_featurizer._count_vectors_featurizer import (
