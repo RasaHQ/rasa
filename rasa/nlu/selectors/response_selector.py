@@ -580,6 +580,7 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
 
             if (
                 self._execution_context.should_add_diagnostic_data
+                and out
                 and DIAGNOSTIC_DATA in out
             ):
                 message.add_diagnostic_data(
