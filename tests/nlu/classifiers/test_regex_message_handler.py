@@ -8,7 +8,7 @@ from rasa.shared.core.domain import Domain
 from rasa.engine.storage.resource import Resource
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.regex_message_handler import RegexMessageHandler
+from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandler
 import pytest
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.nlu.constants import (
