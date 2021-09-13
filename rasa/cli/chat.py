@@ -1,12 +1,15 @@
 import argparse
-import functools
+from asyncio import AbstractEventLoop
 import logging
-from typing import List
+from typing import List, Text
 import uuid
 import webbrowser
+
 from sanic import Sanic
+
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
+from rasa.core import constants
 
 logger = logging.getLogger(__name__)
 
@@ -42,17 +45,22 @@ def add_subparser(
     arguments.set_shell_arguments(chat_parser)
 
 
-async def open_browser(port, app: Sanic, loop):
-    webbrowser.open(f"http://localhost:{port}/webhooks/socketio/chat.html")
+async def open_chat_in_browser(server_url: Text) -> None:
+    """Opens the rasa chat in the default browser."""
+    webbrowser.open(f"{server_url}/webhooks/socketio/chat.html")
 
 
 def chat(args: argparse.Namespace) -> None:
+    """Chat to the bot using the most recent model."""
     import rasa.cli.run
 
     args.connector = "socketio"
 
-    args.server_listeners = [
-        (functools.partial(open_browser, args.port), "after_server_start")
-    ]
+    async def after_start_hook_open_chat(_: Sanic, __: AbstractEventLoop) -> None:
+        """Hook to open the browser on server start."""
+        server_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
+        await open_chat_in_browser(server_url)
+
+    args.server_listeners = [(after_start_hook_open_chat, "after_server_start")]
 
     rasa.cli.run.run(args)

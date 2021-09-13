@@ -12,7 +12,6 @@ import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
 from rasa import server, telemetry
-from rasa.constants import ENV_SANIC_BACKLOG, DEFAULT_SERVER_HOST
 from rasa import model, server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
@@ -233,7 +232,6 @@ def serve_application(
 
     app.run(
         host=interface,
-        host=DEFAULT_SERVER_HOST,
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),

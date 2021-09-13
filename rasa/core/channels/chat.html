@@ -15,8 +15,15 @@ running your bot! You can find more documentation on how to use the chat widget
       on your own page in the <a href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget">rasa documentation</a>
 <div
         id="rasa-chat-widget"
-        data-websocket-url="ws://localhost:5005"
+        data-websocket-url=""
         data-default-open=true></div>
+
+<script>
+  let chatDiv = document.getElementById("rasa-chat-widget");
+  let websocketUrl = window.location.origin.replace("http", "ws")
+  chatDiv.setAttribute("data-websocket-url", websocketUrl);
+</script>
+
 <script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
 </body>
 </html>
