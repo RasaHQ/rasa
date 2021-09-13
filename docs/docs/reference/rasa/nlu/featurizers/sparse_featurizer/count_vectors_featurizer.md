@@ -2,10 +2,10 @@
 sidebar_label: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer
 ---
-## CountVectorsFeaturizer Objects
+## CountVectorsFeaturizerGraphComponent Objects
 
 ```python
-class CountVectorsFeaturizer(SparseFeaturizer)
+class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2,  GraphComponent)
 ```
 
 Creates a sequence of token counts features based on sklearn&#x27;s `CountVectorizer`.
@@ -17,37 +17,81 @@ Set `analyzer` to &#x27;char_wb&#x27;
 to use the idea of Subword Semantic Hashing
 from https://arxiv.org/abs/1810.07150.
 
+#### get\_default\_config
+
+```python
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
+```
+
+Returns the component&#x27;s default config.
+
+#### required\_packages
+
+```python
+@staticmethod
+def required_packages() -> List[Text]
+```
+
+Any extra python dependencies required for this component to run.
+
 #### \_\_init\_\_
 
 ```python
-def __init__(component_config: Optional[Dict[Text, Any]] = None, vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None, finetune_mode: bool = False) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None, oov_token: Optional[Text] = None, oov_words: Optional[List[Text]] = None) -> None
 ```
 
-Construct a new count vectorizer using the sklearn framework.
+Constructs a new count vectorizer using the sklearn framework.
+
+#### create
+
+```python
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CountVectorsFeaturizerGraphComponent
+```
+
+Creates a new untrained component (see parent class for full docstring).
 
 #### train
 
 ```python
-def train(training_data: TrainingData, cfg: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+def train(training_data: TrainingData, spacy_nlp: Optional[SpacyModel] = None) -> Resource
 ```
 
-Train the featurizer.
+Trains the featurizer.
 
 Take parameters from config and
 construct a new count vectorizer using the sklearn framework.
 
+#### process\_training\_data
+
+```python
+def process_training_data(training_data: TrainingData) -> TrainingData
+```
+
+Processes the training examples in the given training data in-place.
+
+**Arguments**:
+
+- `training_data` - the training data
+  
+
+**Returns**:
+
+  same training data after processing
+
 #### process
 
 ```python
-def process(message: Message, **kwargs: Any) -> None
+def process(messages: List[Message]) -> List[Message]
 ```
 
-Process incoming message and compute and set features
+Processes incoming message and compute and set features.
 
 #### persist
 
 ```python
-def persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
+def persist() -> None
 ```
 
 Persist this model into the passed directory.
@@ -58,8 +102,26 @@ Returns the metadata necessary to load the model again.
 
 ```python
 @classmethod
-def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["CountVectorsFeaturizer"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "CountVectorsFeaturizer"
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CountVectorsFeaturizerGraphComponent
 ```
 
 Loads trained component (see parent class for full docstring).
+
+#### validate\_config
+
+```python
+@classmethod
+def validate_config(cls, config: Dict[Text, Any]) -> None
+```
+
+Validates that the component is configured properly.
+
+#### validate\_compatibility\_with\_tokenizer
+
+```python
+@classmethod
+def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]) -> None
+```
+
+Validates that the featurizer is compatible with the given tokenizer.
 
