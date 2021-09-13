@@ -148,7 +148,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         Model loading should be skipped in unit tests.
         See unit tests for examples.
         """
-
         from rasa.nlu.utils.hugging_face.registry import (
             model_class_dict,
             model_tokenizer_dict,
