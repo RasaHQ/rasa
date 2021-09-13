@@ -3,8 +3,6 @@ from typing import Text, List, Dict, Union, TYPE_CHECKING
 
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
-import rasa.shared.utils.io
-import rasa.utils.io
 import rasa.utils.io
 
 if TYPE_CHECKING:

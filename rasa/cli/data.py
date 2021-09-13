@@ -1,9 +1,6 @@
 import argparse
 import logging
-import os
-import shutil
-from pathlib import Path
-from typing import Dict, Union, List, Text, TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -14,35 +11,17 @@ import rasa.cli.utils
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
-    DOCS_URL_MIGRATION_GUIDE,
 )
 import rasa.shared.data
-from rasa.shared.core.constants import (
-    POLICY_NAME_FALLBACK,
-    POLICY_NAME_FORM,
-    POLICY_NAME_MAPPING,
-    POLICY_NAME_TWO_STAGE_FALLBACK,
-    USER_INTENT_OUT_OF_SCOPE,
-    ACTION_DEFAULT_FALLBACK_NAME,
-)
-from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-    YAMLStoryReader,
-)
-from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
-    YAMLStoryWriter,
-)
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
 import rasa.shared.utils.cli
 import rasa.utils.common
-from rasa.shared.core.domain import Domain, InvalidDomain
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:
-    from rasa.shared.core.training_data.structures import StoryStep
     from rasa.validator import Validator
-    from rasa.utils.converter import TrainingDataConverter
 
 logger = logging.getLogger(__name__)
 
