@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional, Text
+import logging
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
@@ -17,6 +18,8 @@ from rasa.engine.storage.storage import ModelStorage
 
 # This is a workaround around until we have all components migrated to `GraphComponent`.
 EntitySynonymMapper = EntitySynonymMapper
+
+logger = logging.getLogger(__name__)
 
 
 class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
@@ -69,8 +72,7 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
                 entity_val = example.get(TEXT)[entity["start"] : entity["end"]]
                 self._add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
-        if self._resource:
-            self._persist()
+        self._persist()
 
     def process(self, messages: List[Message]) -> List[Message]:
         """Modifies entities attached to message to resolve synonyms.
@@ -112,19 +114,27 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
         **kwargs: Any,
     ) -> EntitySynonymMapperComponent:
         """Loads trained component (see parent class for full docstring)."""
-        with model_storage.read_from(resource) as storage:
-            entity_synonyms_file = (
-                storage / EntitySynonymMapperComponent.SYNONYM_FILENAME
+        synonyms = None
+        try:
+            with model_storage.read_from(resource) as storage:
+                entity_synonyms_file = (
+                    storage / EntitySynonymMapperComponent.SYNONYM_FILENAME
+                )
+
+                if os.path.isfile(entity_synonyms_file):
+                    synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)
+                else:
+                    synonyms = None
+                    rasa.shared.utils.io.raise_warning(
+                        f"Failed to load synonyms file from '{entity_synonyms_file}'.",
+                        docs=DOCS_URL_TRAINING_DATA + "#synonyms",
+                    )
+        except ValueError:
+            logger.warning(
+                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"'{resource.name}' doesn't exist."
             )
 
-            if os.path.isfile(entity_synonyms_file):
-                synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)
-            else:
-                synonyms = None
-                rasa.shared.utils.io.raise_warning(
-                    f"Failed to load synonyms file from '{entity_synonyms_file}'.",
-                    docs=DOCS_URL_TRAINING_DATA + "#synonyms",
-                )
         return cls(config, model_storage, resource, synonyms)
 
     def replace_synonyms(self, entities: List[Dict[Text, Any]]) -> None:
