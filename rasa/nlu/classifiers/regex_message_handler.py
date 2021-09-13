@@ -9,8 +9,6 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
-
-# FIXME: https://rasa.com/docs/rasa/stories/ doesn't actually explain this format?...
 from rasa.shared.constants import DOCS_URL_STORIES, INTENT_MESSAGE_PREFIX
 from rasa.shared.nlu.constants import (
     ENTITIES,
