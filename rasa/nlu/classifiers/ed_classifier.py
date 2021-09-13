@@ -102,7 +102,6 @@ class flask_serving_classifier(IntentClassifier):
                         "Need at least 2 different classes. "
                         "Skipping training of intent classifier.")
         else:
-            y = self.transform_labels_str2num(labels).tolist()
 #             X = np.stack([example.get("text_features")
 #                           for example in training_data.intent_examples])
 
@@ -111,13 +110,20 @@ class flask_serving_classifier(IntentClassifier):
 #             print('ED TRAIN DATA:', training_data.intent_examples[0])
 
             X = [i.get(TEXT) for i in training_data.intent_examples]
-
+            eqa_idx = labels.index('EQA_DATA')
+            eqa_content = X[eqa_idx]
+            print(labels[eqa_idx])
+            # Remove the Label and content for EQA Module
+            del labels[eqa_idx]
+            del X[eqa_idx]
+            print(eqa_content)
+            y = self.transform_labels_str2num(labels).tolist()
             categories = [i for i in set(y)]
             host = '127.0.0.1'
             port = 9501
             url = f'http://{host}:{port}/train'
             data = {'text': X, 'labels': y, 'unique_labels': categories}
-            print('ED DATA', data)
+            # print('ED DATA', data)
             tr = requests.put(url, json=data)  ###train
             print(tr.json())
 
@@ -131,7 +137,7 @@ class flask_serving_classifier(IntentClassifier):
         logger.warn("ED CLASSIFIER PROCESS MESSAGE:")
         print('FLASK PROCESS PRINT')
         print('ED message', message.get(TEXT))
-        X = message.get(TEXT)
+        X = [message.get(TEXT)] # this inputs should be a list
         intent_ids, probabilities = self.predict(X)
         intents = self.transform_labels_num2str(np.ravel(intent_ids))
         # `predict` returns a matrix as it is supposed
