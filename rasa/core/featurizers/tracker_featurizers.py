@@ -211,67 +211,6 @@ class TrackerFeaturizer2:
                 if state.get(USER, {}).get(INTENT) and state.get(USER, {}).get(TEXT):
                     del state[USER][TEXT]
 
-    def training_states_actions_and_entities(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain,
-        omit_unset_slots: bool = False,
-        ignore_action_unlikely_intent: bool = False,
-    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms trackers to states, actions, and entity data.
-
-        Args:
-            trackers: The trackers to transform.
-            domain: The domain.
-            omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
-                 from training states.
-
-        Returns:
-            Trackers as states, actions, and entity data.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "'training_states_actions_and_entities' is being deprecated in favor of "
-            "'training_states_labels_and_entities'."
-        )
-        return self.training_states_labels_and_entities(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots,
-            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
-        )
-
-    def training_states_and_actions(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain,
-        omit_unset_slots: bool = False,
-        ignore_action_unlikely_intent: bool = False,
-    ) -> Tuple[List[List[State]], List[List[Text]]]:
-        """Transforms trackers to states and actions.
-
-        Args:
-            trackers: The trackers to transform.
-            domain: The domain.
-            omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
-                from training states.
-
-        Returns:
-            Trackers as states and actions.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "'training_states_and_actions' is being deprecated in favor of "
-            "'training_states_and_labels'."
-        )
-
-        return self.training_states_and_labels(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots,
-            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
-        )
-
     def training_states_and_labels(
         self,
         trackers: List[DialogueStateTracker],
