@@ -63,7 +63,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            **DenseFeaturizer2.get_default_config()
+            **DenseFeaturizer2.get_default_config(),
             # Remote URL/Local path to model files
             "model_url": None,
         }
