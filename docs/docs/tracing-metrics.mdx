@@ -1,0 +1,18 @@
+---
+id: tracing-metrics
+sidebar_label: Metrics
+title: Metrics
+description: How to enable metrics
+---
+
+Rasa supports provides a Prometheus `/metrics` endpoint to report metrics.
+
+
+## Prometheus Metrics
+
+To enable the prometheus integration, add the following block to your `endpoints.yml`:
+
+```yml
+prometheus:
+  enable: true
+```

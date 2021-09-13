@@ -30,6 +30,7 @@ from sanic.request import Request
 from sanic.response import HTTPResponse
 from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
+from sanic_prometheus import monitor
 
 import rasa
 import rasa.core.utils
@@ -674,6 +675,11 @@ def create_app(
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
+
+    if endpoints.prometheus:
+        monitor(
+            app
+        ).expose_endpoint()  # adds Prometheus /metrics endpoint to your Sanic server
 
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:
