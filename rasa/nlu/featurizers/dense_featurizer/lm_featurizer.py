@@ -60,7 +60,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             execution_context.node_name, config
         )
         self._load_model_metadata()
-        self._load_model_instance(self._config["skip_model_load"])
+        self._load_model_instance()
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -74,7 +74,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             # an optional path to a specific directory to download
             # and cache the pre-trained model weights.
             "cache_dir": None,
-            "skip_model_load": False,
             "language": None,
             # TODO: the supported language should depend on the language the model
             #  was pre-trained on. In the future add this check to config validation.
@@ -143,16 +142,12 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
         self.max_model_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
 
-    def _load_model_instance(self, skip_model_load: bool) -> None:
+    def _load_model_instance(self) -> None:
         """Tries to load the model instance.
 
-        Args:
-            skip_model_load: Skip loading the model instances to save time. This
-            should be True only for pytests
+        Model loading should be skipped in unit tests.
+        See unit tests for examples.
         """
-        if skip_model_load:
-            # This should be True only during pytests
-            return
 
         from rasa.nlu.utils.hugging_face.registry import (
             model_class_dict,
@@ -756,8 +751,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def process(self, messages: List[Message]) -> List[Message]:
         """Processes messages by computing tokens and dense features."""
         for message in messages:
-            if message:
-                self._process_message(message)
+            self._process_message(message)
         return messages
 
     def _process_message(self, message: Message) -> Message:

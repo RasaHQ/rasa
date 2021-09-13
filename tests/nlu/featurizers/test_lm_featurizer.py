@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import logging
 
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 
 from rasa.engine.graph import ExecutionContext
@@ -601,10 +602,12 @@ def test_sequence_length_overflow_train(
     create_language_model_featurizer: Callable[
         [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
+    monkeypatch: MonkeyPatch,
 ):
-    component = create_language_model_featurizer(
-        {"model_name": model_name, "skip_model_load": "True"}
+    monkeypatch.setattr(
+        LanguageModelFeaturizerGraphComponent, "_load_model_instance", lambda _: None,
     )
+    component = create_language_model_featurizer({"model_name": model_name})
     message = Message.build(text=" ".join(["hi"] * input_sequence_length))
     if should_overflow:
         with pytest.raises(RuntimeError):
@@ -633,10 +636,12 @@ def test_long_sequences_extra_padding(
     create_language_model_featurizer: Callable[
         [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
+    monkeypatch: MonkeyPatch,
 ):
-    component = create_language_model_featurizer(
-        {"model_name": model_name, "skip_model_load": True}
+    monkeypatch.setattr(
+        LanguageModelFeaturizerGraphComponent, "_load_model_instance", lambda _: None,
     )
+    component = create_language_model_featurizer({"model_name": model_name})
     modified_sequence_embeddings = component._add_extra_padding(
         sequence_embeddings, actual_sequence_lengths
     )
@@ -670,10 +675,12 @@ def test_input_padding(
     create_language_model_featurizer: Callable[
         [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
+    monkeypatch: MonkeyPatch,
 ):
-    component = create_language_model_featurizer(
-        {"model_name": "bert", "skip_model_load": True}
+    monkeypatch.setattr(
+        LanguageModelFeaturizerGraphComponent, "_load_model_instance", lambda _: None,
     )
+    component = create_language_model_featurizer({"model_name": "bert"})
     component.pad_token_id = 0
     padded_input = component._add_padding_to_batch(token_ids, max_sequence_length_model)
     assert len(padded_input[0]) == resulting_length
@@ -726,10 +733,12 @@ def test_attention_mask(
     create_language_model_featurizer: Callable[
         [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
+    monkeypatch: MonkeyPatch,
 ):
-    component = create_language_model_featurizer(
-        {"model_name": "bert", "skip_model_load": True}
+    monkeypatch.setattr(
+        LanguageModelFeaturizerGraphComponent, "_load_model_instance", lambda _: None,
     )
+    component = create_language_model_featurizer({"model_name": "bert"})
 
     attention_mask = component._compute_attention_mask(
         [actual_sequence_length], max_input_sequence_length
