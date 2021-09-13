@@ -6,16 +6,17 @@
     <h2>Happy chatting!</h2>
     <div>You can include the chat on your own website using</div>
     <div><code><pre>
-    &lt;div id="rasa-webchat-widget" data-websocket-url="https://example.com/"&gt;&lt;/div&gt;
-&nbsp;&nbsp;&nbsp;&nbsp;&lt;script src="https://unpkg.com/@rasahq/rasa-webchat" type="application/javascript"&gt;&lt;/script&gt;
+    &lt;div id="rasa-chat-widget" data-websocket-url="https://example.com/"&gt;&lt;/div&gt;
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"&gt;&lt;/script&gt;
     </pre></code></div>
 </div>
 make sure to replace <code>https://example.com/</code> with the URL of your server
-running your bot!
+running your bot! You can find more documentation on how to use the chat widget
+      on your own page in the <a href="https://rasa.com/docs/rasa/connectors/your-own-website#chat-widget">rasa documentation</a>
 <div
-        id="rasa-webchat-widget"
+        id="rasa-chat-widget"
         data-websocket-url="ws://localhost:5005"
         data-default-open=true></div>
-<script src="https://unpkg.com/@rasahq/rasa-webchat" type="application/javascript"></script>
+<script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
 </body>
 </html>
