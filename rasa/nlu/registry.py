@@ -30,7 +30,7 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturiz
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
-from rasa.nlu.featurizers.dense_featurizer._lm_featurizer import LanguageModelFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.selectors.response_selector import ResponseSelector

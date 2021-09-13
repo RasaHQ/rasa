@@ -8,7 +8,6 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.components import UnsupportedLanguageError
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -26,6 +25,12 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
 )
 from rasa.utils import train_utils
+from rasa.nlu.featurizers.dense_featurizer._lm_featurizer import LanguageModelFeaturizer
+
+logger = logging.getLogger(__name__)
+
+# TODO: remove after all references to old featurizer have been removed
+LanguageModelFeaturizer = LanguageModelFeaturizer
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -35,8 +40,6 @@ MAX_SEQUENCE_LENGTHS = {
     "distilbert": 512,
     "roberta": 512,
 }
-
-logger = logging.getLogger(__name__)
 
 
 class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
@@ -56,7 +59,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         super(LanguageModelFeaturizerGraphComponent, self).__init__(
             execution_context.node_name, config
         )
-        self._check_language_is_supported()
         self._load_model_metadata()
         self._load_model_instance(self._config["skip_model_load"])
 
@@ -74,6 +76,8 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             "cache_dir": None,
             "skip_model_load": False,
             "language": None,
+            # TODO: the supported language should depend on the language the model
+            #  was pre-trained on. In the future add this check to config validation.
         }
 
     @classmethod
@@ -106,13 +110,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def required_packages() -> List[Text]:
         """Returns the extra python dependencies required."""
         return ["transformers"]
-
-    def _check_language_is_supported(self) -> None:
-        if "language" in self._config:
-            language = self._config["language"]
-            supported_languages = self.supported_languages()
-            if supported_languages is not None and language not in supported_languages:
-                raise UnsupportedLanguageError(self.__name__, language)
 
     def _load_model_metadata(self) -> None:
         """Loads the metadata for the specified model and set them as properties.
