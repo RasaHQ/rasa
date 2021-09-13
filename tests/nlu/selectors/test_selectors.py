@@ -1,12 +1,10 @@
 import copy
-import logging
 
 import pytest
 import numpy as np
 from typing import List, Dict, Text, Any, Optional, Union, Callable
 from unittest.mock import Mock
 
-from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
@@ -32,6 +30,8 @@ from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     HIDDEN_LAYERS_SIZES,
     LABEL,
+    EVAL_NUM_EXAMPLES,
+    EVAL_NUM_EPOCHS,
 )
 from rasa.utils import train_utils
 from rasa.shared.nlu.constants import (
@@ -274,28 +274,8 @@ def test_train_model_checkpointing(
     create_response_selector: Callable[
         [Dict[Text, Any]], ResponseSelectorGraphComponent
     ],
-    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
     default_model_storage: ModelStorage,
-    default_response_selector_resource: Resource,
-    caplog: LogCaptureFixture,
 ):
-    config_params = {
-        EPOCHS: 5,
-        MODEL_CONFIDENCE: "linear_norm",
-        CONSTRAIN_SIMILARITIES: True,
-        CHECKPOINT_MODEL: True,
-    }
-
-    response_selector = create_response_selector(config_params)
-
-    with caplog.at_level(logging.WARNING):
-        load_response_selector(config_params)
-
-    assert any(
-        "Failed to load ResponseSelectorGraphComponent from model storage." in message
-        for message in caplog.messages
-    )
-
     pipeline = [
         {"name": "WhitespaceTokenizer"},
         {
@@ -311,18 +291,30 @@ def test_train_model_checkpointing(
     loaded_pipeline = load_pipeline(pipeline)
     training_data = train_pipeline(loaded_pipeline, ["data/test_selectors"])
 
-    response_selector.train(training_data=training_data)
+    config_params = {
+        EPOCHS: 5,
+        MODEL_CONFIDENCE: "linear_norm",
+        CONSTRAIN_SIMILARITIES: True,
+        CHECKPOINT_MODEL: True,
+        EVAL_NUM_EPOCHS: 1,
+        EVAL_NUM_EXAMPLES: 10,
+    }
 
-    load_response_selector(config_params)
+    response_selector = create_response_selector(config_params)
+    assert response_selector.component_config[CHECKPOINT_MODEL]
 
-    with default_model_storage.read_from(
-        default_response_selector_resource
-    ) as model_dir:
-        # checkpoint_dir = model_dir / "checkpoints"
+    resource = response_selector.train(training_data=training_data)
 
-        # assert checkpoint_dir.is_dir()
-        all_files = list(model_dir.rglob("*.*"))
-        assert len(all_files) > 4
+    with default_model_storage.read_from(resource) as model_dir:
+        checkpoint_dir = model_dir / "checkpoints"
+        assert checkpoint_dir.is_dir()
+        checkpoint_files = list(checkpoint_dir.rglob("*.*"))
+        """
+        there should be min 2 `tf_model` files in the `checkpoints` directory:
+        - tf_model.data
+        - tf_model.index
+        """
+        assert len(checkpoint_files) >= 2
 
 
 def _train_persist_load_with_different_settings(
