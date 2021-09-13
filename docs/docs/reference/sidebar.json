@@ -297,6 +297,7 @@
         },
         {
           "items": [
+            "reference/rasa/nlu/selectors/_response_selector",
             "reference/rasa/nlu/selectors/response_selector"
           ],
           "label": "rasa.nlu.selectors",
