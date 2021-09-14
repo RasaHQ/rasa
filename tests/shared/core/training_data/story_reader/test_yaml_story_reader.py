@@ -6,7 +6,7 @@ import sys
 
 from collections import Counter
 from pathlib import Path
-from typing import Text, List, Dict, Optional
+from typing import Text, List, Dict
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
 
