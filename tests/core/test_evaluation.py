@@ -617,6 +617,7 @@ async def test_failed_entity_extraction_comment(
 
     failed_stories = rasa.shared.utils.io.read_file(stories_path)
     assert (
-        "- intent: request_restaurant  # predicted: request_restaurant: i am looking for [greek](cuisine) food"
+        "- intent: request_restaurant"
+        "  # predicted: request_restaurant: i am looking for [greek](cuisine) food"
         in failed_stories
     )
