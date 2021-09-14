@@ -73,7 +73,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             A new reader instance.
         """
-        return cls(reader.domain, reader.source_name, reader._is_used_for_training,)
+        return cls(reader.domain, reader.source_name)
 
     def read_from_file(
         self, filename: Union[Text, Path], skip_validation: bool = False
@@ -373,7 +373,7 @@ class YAMLStoryReader(StoryReader):
                 return
 
         if events:
-            self.current_step_builder.add_events(events, self._is_used_for_training)
+            self.current_step_builder.add_events(events)
 
     def _user_intent_from_step(
         self, step: Dict[Text, Any]

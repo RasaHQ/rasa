@@ -60,35 +60,19 @@ class StoryStepBuilder:
             end_names = {e.name for s in self.current_steps for e in s.end_checkpoints}
             return [Checkpoint(name) for name in end_names]
 
-    def add_user_messages(
-        self, messages: List[UserUttered], is_used_for_training: bool = True
-    ) -> None:
+    def add_user_messages(self, messages: List[UserUttered]) -> None:
         """Adds next story steps with the user's utterances.
 
         Args:
             messages: User utterances.
-            is_used_for_training: Identifies if the user utterance is a part of
-              OR statement. This parameter is used only to simplify the conversation
-              from MD story files. Don't use it other ways, because it ends up
-              in a invalid story that cannot be user for real training.
-              Default value is `False`, which preserves the expected behavior
-              of the reader.
         """
-        self.add_events(messages, is_used_for_training)
+        self.add_events(messages)
 
-    def add_events(
-        self, events: List[Event], is_used_for_training: bool = True
-    ) -> None:
+    def add_events(self, events: List[Event]) -> None:
         """Adds next story steps with the specified list of events.
 
         Args:
             events: Events that need to be added.
-            is_used_for_training: Identifies if it's a part of OR statement.
-              This parameter is used only to simplify the conversation
-              from MD story files. Don't use it other ways, because it ends up
-              in a invalid story that cannot be user for real training.
-              Default value is `False`, which preserves the expected behavior
-              of the reader.
         """
         self.ensure_current_steps()
 
@@ -97,12 +81,6 @@ class StoryStepBuilder:
             for t in self.current_steps:
                 t.add_event(events[0])
         else:
-            # this simplifies conversion between formats, but breaks the logic
-            if not is_used_for_training:
-                for t in self.current_steps:
-                    t.add_events(events)
-                return
-
             # If there are multiple different events the
             # user can use the express the same thing
             # we need to copy the blocks and create one
@@ -159,7 +137,7 @@ class StoryStepBuilder:
         ]
         return current_turns
 
-    def _generate_checkpoint_name_for_or_statement(self, messages: List[Event]) -> str:
+    def _generate_checkpoint_name_for_or_statement(self, events: List[Event]) -> str:
         """Generates a unique checkpoint name for an or statement.
 
         The name is based on the current story/rule name,
@@ -167,7 +145,7 @@ class StoryStepBuilder:
         the name of the starting checkpoints,
         and the involved intents/e2e messages.
         """
-        messages_texts_or_intents = sorted([str(m) for m in messages])
+        sorted_events = sorted([str(m) for m in events])
         start_checkpoint_names = sorted(
             list({chk.name for s in self.current_steps for chk in s.start_checkpoints})
         )
@@ -182,7 +160,7 @@ class StoryStepBuilder:
         unique_id = (
             f"{self.name}_<>_{'@@@'.join(events)}"
             f"_<>_{'@@@'.join(start_checkpoint_names)}"
-            f"_<>_{'@@@'.join(messages_texts_or_intents)}"
+            f"_<>_{'@@@'.join(sorted_events)}"
         )
         hashed_id = rasa.shared.utils.io.get_text_hash(unique_id)[
             :GENERATED_HASH_LENGTH

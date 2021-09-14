@@ -56,37 +56,6 @@ stories:
     assert actual == expected
 
 
-def test_as_story_string_or_statement():
-    import rasa.shared.utils.io
-
-    stories = """
-    stories:
-    - story: hello world
-      steps:
-      - or:
-        - intent: intent1
-        - intent: intent2
-        - intent: intent3
-      - action: some_action
-    """
-
-    reader = YAMLStoryReader(is_used_for_training=False)
-    yaml_content = rasa.shared.utils.io.read_yaml(stories)
-
-    steps = reader.read_from_parsed_yaml(yaml_content)
-
-    assert len(steps) == 1
-
-    assert (
-        steps[0].as_story_string()
-        == """
-## hello world
-* intent1 OR intent2 OR intent3
-    - some_action
-"""
-    )
-
-
 def test_as_story_string_or_statement_with_slot_was_set():
     import rasa.shared.utils.io
 
@@ -102,21 +71,12 @@ def test_as_story_string_or_statement_with_slot_was_set():
       - action: some_action
     """
 
-    reader = YAMLStoryReader(is_used_for_training=False)
+    reader = YAMLStoryReader()
     yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     steps = reader.read_from_parsed_yaml(yaml_content)
 
-    assert len(steps) == 1
-
-    assert (
-        steps[0].as_story_string()
-        == """
-## hello world
-* slot{"name": "joe"} OR slot{"name": "bob"}
-    - some_action
-"""
-    )
+    assert len(steps) == 3
 
 
 def test_cap_length():
