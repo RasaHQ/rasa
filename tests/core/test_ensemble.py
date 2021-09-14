@@ -1,3 +1,4 @@
+from rasa.shared.exceptions import InvalidConfigException
 import pytest
 import itertools
 from typing import List, Tuple
@@ -26,20 +27,34 @@ def default_ensemble(
     )
 
 
-def test_ensemble_predict(default_ensemble: DefaultPolicyPredictionEnsemble):
+def test_default_predict_complains_if_no_predictions_given(
+    default_ensemble: DefaultPolicyPredictionEnsemble,
+):
     domain = Domain.load("data/test_domains/default.yml")
-    tracker = DialogueStateTracker.from_events("test", [UserUttered("hi")], [])
-    num_actions = len(domain.action_names_or_texts)
-    predictions = [
-        PolicyPrediction(
-            policy_name=str(idx), probabilities=[idx] * num_actions, policy_priority=idx
-        )
-        for idx in range(2)
-    ]
-    prediction = default_ensemble.combine_predictions(
-        predictions=predictions, domain=domain, tracker=tracker
+    tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=[],)
+    with pytest.raises(InvalidConfigException):
+        default_ensemble.combine_predictions_from_kwargs(domain=domain, tracker=tracker)
+
+
+def test_default_predict_ignores_other_kwargs(
+    default_ensemble: DefaultPolicyPredictionEnsemble,
+):
+    domain = Domain.load("data/test_domains/default.yml")
+    tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=[],)
+    prediction = PolicyPrediction(
+        policy_name="arbitrary", probabilities=[1.0], policy_priority=1
     )
-    assert prediction
+
+    final_prediction = default_ensemble.combine_predictions_from_kwargs(
+        domain=domain,
+        tracker=tracker,
+        **{
+            "policy-graph-component-1": prediction,
+            "another-random-component": domain,
+            "yet-another-component": tracker,
+        },
+    )
+    assert final_prediction.policy_name == prediction.policy_name
 
 
 def test_default_predict_excludes_rejected_action(
@@ -63,8 +78,10 @@ def test_default_predict_excludes_rejected_action(
         for idx in range(2)
     ]
     index_of_excluded_action = domain.index_for_action(excluded_action)
-    prediction = default_ensemble.combine_predictions(
-        predictions=predictions, domain=domain, tracker=tracker
+    prediction = default_ensemble.combine_predictions_from_kwargs(
+        domain=domain,
+        tracker=tracker,
+        **{prediction.policy_name: prediction for prediction in predictions},
     )
     assert prediction.probabilities[index_of_excluded_action] == 0.0
 
@@ -178,8 +195,10 @@ def test_default_combine_predictions(
     tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=evts)
 
     # get the best prediction!
-    best_prediction = default_ensemble.combine_predictions(
-        predictions, tracker, domain=domain
+    best_prediction = default_ensemble.combine_predictions_from_kwargs(
+        tracker,
+        domain=domain,
+        **{prediction.policy_name: prediction for prediction in predictions},
     )
 
     # compare events first ...

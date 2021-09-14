@@ -1,5 +1,6 @@
-from abc import abstractmethod
-from typing import Text, List, Dict, Any
+from __future__ import annotations
+from abc import abstractmethod, ABC
+from typing import Optional, Text, List, Dict, Any
 import logging
 
 from rasa.engine.graph import GraphComponent
@@ -17,6 +18,11 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+from rasa.core.policies.memoization import (
+    MemoizationPolicyGraphComponent,
+    AugmentedMemoizationPolicyGraphComponent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +32,41 @@ SimplePolicyEnsemble = SimplePolicyEnsemble
 PolicyEnsemble = PolicyEnsemble
 
 
+def is_not_in_training_data(
+    policy_name: Optional[Text], max_confidence: Optional[float] = None
+) -> bool:
+    """Checks whether prediction is empty or by a policy which did not memoize data.
+
+    Args:
+        policy_name: The name of the policy.
+        max_confidence: The max confidence of the policy's prediction.
+
+    Returns:
+        `False` if it's a `MemoizationPolicy` or `max_confidence` is 0, and
+        `True` otherwise.
+    """
+    if not policy_name:
+        return True
+
+    memorizing_policies = [
+        RulePolicyGraphComponent.__name__,
+        MemoizationPolicyGraphComponent.__name__,
+        AugmentedMemoizationPolicyGraphComponent.__name__,
+    ]
+    is_memorized = any(
+        policy_name.endswith(f"_{memoizing_policy}")
+        for memoizing_policy in memorizing_policies
+    )
+
+    # also check if confidence is 0, than it cannot be count as prediction
+    return not is_memorized or max_confidence == 0.0
+
+
 class InvalidPolicyEnsembleConfig(RasaException):
     """Exception that can be raised when the policy ensemble is not valid."""
 
 
-class PolicyPredictionEnsemble:
+class PolicyPredictionEnsemble(ABC):
     """Interface for any policy prediction ensemble.
 
     Given a list of predictions from policies, which include some meta data about the
@@ -49,6 +85,28 @@ class PolicyPredictionEnsemble:
     events. The ensemble decides which of the optional events should
     be passed on.
     """
+
+    def combine_predictions_from_kwargs(
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any
+    ) -> PolicyPrediction:
+        """Derives a single prediction from predictions given as kwargs.
+
+        Args:
+            tracker: dialogue state tracker holding the state of the conversation,
+              which may influence the combination of predictions as well
+            domain: the common domain
+            **kwargs: arbitrary keyword arguments. All policy predictions passed as
+              kwargs will be combined.
+
+        Returns:
+            a single prediction
+        """
+        predictions = [
+            value for value in kwargs.values() if isinstance(value, PolicyPrediction)
+        ]
+        return self.combine_predictions(
+            predictions=predictions, tracker=tracker, domain=domain,
+        )
 
     @abstractmethod
     def combine_predictions(
@@ -108,7 +166,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> GraphComponent:
+    ) -> DefaultPolicyPredictionEnsemble:
         """Creates a new instance (see parent class for full docstring)."""
         return cls()
 
