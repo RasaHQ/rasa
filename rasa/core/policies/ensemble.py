@@ -42,8 +42,8 @@ def is_not_in_training_data(
         max_confidence: The max confidence of the policy's prediction.
 
     Returns:
-        `False` if it's a `MemoizationPolicy` or `max_confidence` is 0, and
-        `True` otherwise.
+        `False` if and only if an action was predicted (i.e. `max_confidence` > 0) by
+        a `MemoizationPolicy`
     """
     if not policy_name:
         return True
