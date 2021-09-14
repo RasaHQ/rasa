@@ -35,7 +35,7 @@ PolicyEnsemble = PolicyEnsemble
 def is_not_in_training_data(
     policy_name: Optional[Text], max_confidence: Optional[float] = None
 ) -> bool:
-    """Checks whether prediction is empty or by a policy which did not memoize data.
+    """Checks whether the prediction is empty or by a policy which did not memoize data.
 
     Args:
         policy_name: The name of the policy.
