@@ -5,10 +5,6 @@ import uuid
 from pathlib import Path
 from typing import Text, Optional, Union, List, Callable, Set, Iterable
 
-from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-    YAMLStoryReader,
-)
-
 YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSIONS = [".json"]
 TRAINING_DATA_EXTENSIONS = set(JSON_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS)
@@ -52,6 +48,10 @@ def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     Returns:
         Path to temporary directory containing all found Core training files.
     """
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        YAMLStoryReader,
+    )
+
     core_files = get_data_files(paths, YAMLStoryReader.is_stories_file)
     return _copy_files_to_new_dir(core_files)
 
