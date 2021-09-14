@@ -17,7 +17,6 @@ from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
-from rasa.core.policies import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
@@ -32,13 +31,6 @@ from tests.core.utilities import tracker_from_dialogue
 class CustomSlot(Slot):
     def as_feature(self):
         return [0.5]
-
-
-# noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
-# TODO: Here
-class ExamplePolicy(Policy):
-    def __init__(self, *args, **kwargs):
-        super(ExamplePolicy, self).__init__(*args, **kwargs)
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):
