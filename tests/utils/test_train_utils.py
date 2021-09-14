@@ -21,7 +21,6 @@ from rasa.utils.tensorflow.constants import (
     CROSS_ENTROPY,
     MARGIN,
     AUTO,
-    LINEAR_NORM,
     TOLERANCE,
     CHECKPOINT_MODEL,
     EVAL_NUM_EPOCHS,
@@ -98,16 +97,10 @@ def test_init_split_entities_config(
     "component_config, raises_exception",
     [
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, True),
-        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: SOFTMAX}, False),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, False),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, False),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: SOFTMAX}, False),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, False),
         ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: MARGIN}, True),
-        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: SOFTMAX}, True),
         ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: CROSS_ENTROPY}, True),
         ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: MARGIN}, True),
-        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: SOFTMAX}, True),
         ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: CROSS_ENTROPY}, True),
     ],
 )
@@ -127,14 +120,12 @@ def test_confidence_loss_settings(
     [
         ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: INNER}, False),
         ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: COSINE}, True),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, SIMILARITY_TYPE: INNER}, False),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, SIMILARITY_TYPE: COSINE}, False),
     ],
 )
 def test_confidence_similarity_settings(
     component_config: Dict[Text, Any], raises_exception: bool
 ):
-    component_config[LOSS_TYPE] = SOFTMAX
+    component_config[LOSS_TYPE] = CROSS_ENTROPY
     if raises_exception:
         with pytest.raises(InvalidConfigException):
             train_utils._check_confidence_setting(component_config)
@@ -147,8 +138,6 @@ def test_confidence_similarity_settings(
     [
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, AUTO),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, SOFTMAX),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, LINEAR_NORM,),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, AUTO),
     ],
 )
 def test_update_confidence_type(
@@ -156,14 +145,6 @@ def test_update_confidence_type(
 ):
     component_config = train_utils.update_confidence_type(component_config)
     assert component_config[MODEL_CONFIDENCE] == model_confidence
-
-
-def test_warn_deprecated_model_confidences():
-
-    component_config = {MODEL_CONFIDENCE: LINEAR_NORM}
-
-    with pytest.warns(FutureWarning):
-        train_utils._check_confidence_setting(component_config)
 
 
 @pytest.mark.parametrize(

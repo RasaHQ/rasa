@@ -38,7 +38,6 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
-    LINEAR_NORM,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import (
@@ -399,36 +398,6 @@ async def test_softmax_normalization(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
-async def test_inner_linear_normalization(
-    monkeypatch: MonkeyPatch, create_train_load_and_process_diet: Callable[..., Message]
-):
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
-    parsed_message = create_train_load_and_process_diet(
-        {
-            RANDOM_SEED: 42,
-            EPOCHS: 1,
-            MODEL_CONFIDENCE: LINEAR_NORM,
-            RANKING_LENGTH: -1,
-        },
-    )
-    parse_data = parsed_message.data
-    intent_ranking = parse_data.get("intent_ranking")
-
-    # check whether normalization had the expected effect
-    output_sums_to_1 = sum(
-        [intent.get("confidence") for intent in intent_ranking]
-    ) == pytest.approx(1)
-    assert output_sums_to_1
-
-    # check whether the normalization of rankings is reflected in intent prediction
-    assert parse_data.get("intent") == intent_ranking[0]
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
-
-
 async def test_margin_loss_is_not_normalized(
     monkeypatch: MonkeyPatch, create_train_load_and_process_diet: Callable[..., Message]
 ):
@@ -502,7 +471,7 @@ async def test_train_tensorboard_logging(
             EPOCHS: 1,
             TENSORBOARD_LOG_LEVEL: log_level,
             TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
-            MODEL_CONFIDENCE: "linear_norm",
+            MODEL_CONFIDENCE: "softmax",
             CONSTRAIN_SIMILARITIES: True,
             EVAL_NUM_EXAMPLES: 15,
             EVAL_NUM_EPOCHS: 1,
