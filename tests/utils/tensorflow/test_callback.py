@@ -2,12 +2,17 @@ from typing import Dict, Text
 from pathlib import Path
 
 import pytest
+from _pytest.tmpdir import TempPathFactory
 
-from rasa.core.agent import Agent
+from rasa.core import training
 
-# TODO: Maybe here?
-from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
+from rasa.engine.graph import ExecutionContext, GraphSchema
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.resource import Resource
+from rasa.shared.core.domain import Domain
 from rasa.utils.tensorflow.callback import RasaModelCheckpoint
+from rasa.utils.tensorflow.constants import EPOCHS
 
 
 @pytest.mark.parametrize(
@@ -52,12 +57,22 @@ def test_does_model_improve(
     assert checkpoint._does_model_improve(current_values) == improved
 
 
-@pytest.fixture(scope="function")
-def trained_ted(mood_agent: Agent) -> TEDPolicy:
-    # use the moodbot agent to get a trained TEDPolicy
-    for policy in mood_agent.policy_ensemble.policies:
-        if isinstance(policy, TEDPolicy):
-            return policy
+@pytest.fixture(scope="module")
+def trained_ted(
+    tmp_path_factory: TempPathFactory, moodbot_domain_path: Path,
+) -> TEDPolicyGraphComponent:
+    training_files = "data/test_moodbot/data/stories.yml"
+    domain = Domain.load(moodbot_domain_path)
+    trackers = training.load_data(str(training_files), domain)
+    policy = TEDPolicyGraphComponent.create(
+        {**TEDPolicyGraphComponent.get_default_config(), EPOCHS: 1},
+        LocalModelStorage.create(tmp_path_factory.mktemp("storage")),
+        Resource("ted"),
+        ExecutionContext(GraphSchema({})),
+    )
+    policy.train(trackers, domain)
+
+    return policy
 
 
 @pytest.mark.parametrize(
@@ -71,13 +86,13 @@ def test_on_epoch_end_saves_checkpoints_file(
     previous_best: Dict[Text, float],
     current_values: Dict[Text, float],
     improved: bool,
-    tmpdir: Path,
-    trained_ted: TEDPolicy,
+    tmp_path: Path,
+    trained_ted: TEDPolicyGraphComponent,
 ):
     model_name = "checkpoint"
-    best_model_file = Path(tmpdir, model_name)
+    best_model_file = tmp_path / model_name
     assert not best_model_file.exists()
-    checkpoint = RasaModelCheckpoint(tmpdir)
+    checkpoint = RasaModelCheckpoint(tmp_path)
     checkpoint.best_metrics_so_far = previous_best
     checkpoint.model = trained_ted.model
     checkpoint.on_epoch_end(1, current_values)
