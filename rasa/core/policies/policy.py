@@ -563,7 +563,7 @@ class PolicyPrediction:
         policy_name: Optional[Text] = None,
         confidence: float = 1.0,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyPrediction:
+    ) -> "PolicyPrediction":
         """Create a prediction for a given action.
 
         Args:
@@ -599,7 +599,7 @@ class PolicyPrediction:
             and self.policy_name == other.policy_name
             and self.policy_priority == other.policy_priority
             and self.events == other.events
-            and self.optional_events == other.events
+            and self.optional_events == other.optional_events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
             and self.hide_rule_turn == other.hide_rule_turn
@@ -619,10 +619,10 @@ class PolicyPrediction:
 
     @property
     def max_confidence(self) -> float:
-        """Gets the highest predicted probability.
+        """Gets the highest predicted confidence.
 
         Returns:
-            The highest predicted probability.
+            The highest predicted confidence.
         """
         return max(self.probabilities, default=0.0)
 

@@ -94,6 +94,7 @@
         },
         {
           "items": [
+            "reference/rasa/core/policies/_ensemble",
             "reference/rasa/core/policies/_memoization",
             "reference/rasa/core/policies/_policy",
             "reference/rasa/core/policies/_rule_policy",

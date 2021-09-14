@@ -197,7 +197,7 @@ Creates a `PolicyPrediction`.
 
 ```python
 @staticmethod
-def for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> PolicyPrediction
+def for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> "PolicyPrediction"
 ```
 
 Create a prediction for a given action.
@@ -252,11 +252,11 @@ Gets the index of the action prediction with the highest confidence.
 def max_confidence() -> float
 ```
 
-Gets the highest predicted probability.
+Gets the highest predicted confidence.
 
 **Returns**:
 
-  The highest predicted probability.
+  The highest predicted confidence.
 
 #### confidence\_scores\_for
 
