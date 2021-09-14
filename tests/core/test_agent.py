@@ -22,10 +22,8 @@ from rasa.core.channels.channel import UserMessage
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
+from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
-
-# TODO: RulePolicy??
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
@@ -60,9 +58,7 @@ def model_server(
 
 def test_training_data_is_reproducible():
     training_data_file = "data/test_moodbot/data/stories.yml"
-    agent = Agent(
-        "data/test_moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
-    )
+    agent = Agent("data/test_moodbot/domain.yml")
 
     training_data = agent.load_data(training_data_file)
     # make another copy of training data
@@ -143,14 +139,11 @@ async def test_agent_handle_message(default_agent: Agent):
 
 def test_agent_wrong_use_of_load():
     training_data_file = "data/test_moodbot/data/stories.yml"
-    agent = Agent(
-        "data/test_moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
-    )
 
     with pytest.raises(ModelNotFound):
         # try to load a model file from a data path, which is nonsense and
         # should fail properly
-        agent.load(training_data_file)
+        Agent.load(training_data_file)
 
 
 async def test_agent_with_model_server_in_thread(

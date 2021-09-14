@@ -665,33 +665,6 @@ class Agent:
 
         return await self.handle_message(msg, message_preprocessor)
 
-    def _max_history(self) -> int:
-        """Find maximum max_history."""
-        max_histories = [
-            policy.featurizer.max_history
-            for policy in self.policy_ensemble.policies
-            if policy.featurizer
-            and hasattr(policy.featurizer, "max_history")
-            and policy.featurizer.max_history is not None
-        ]
-
-        return max(max_histories or [0])
-
-    def _are_all_featurizers_using_a_max_history(self) -> bool:
-        """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
-
-        def has_max_history_featurizer(policy: Policy) -> bool:
-            return bool(
-                policy.featurizer
-                and hasattr(policy.featurizer, "max_history")
-                and policy.featurizer.max_history is not None
-            )
-
-        for p in self.policy_ensemble.policies:
-            if p.featurizer and not has_max_history_featurizer(p):
-                return False
-        return True
-
     def load_data(
         self,
         training_resource: Union[Text, TrainingDataImporter],
@@ -704,35 +677,15 @@ class Agent:
         exclusion_percentage: Optional[int] = None,
     ) -> List["TrackerWithCachedStates"]:
         """Load training data from a resource."""
-        max_history = self._max_history()
-
-        if unique_last_num_states is None:
-            # for speed up of data generation
-            # automatically detect unique_last_num_states
-            # if it was not set and
-            # if all featurizers are MaxHistoryTrackerFeaturizer
-            if self._are_all_featurizers_using_a_max_history():
-                unique_last_num_states = max_history
-        elif unique_last_num_states < max_history:
-            # possibility of data loss
-            rasa.shared.utils.io.raise_warning(
-                f"unique_last_num_states={unique_last_num_states} but "
-                f"maximum max_history={max_history}. "
-                f"Possibility of data loss. "
-                f"It is recommended to set "
-                f"unique_last_num_states to "
-                f"at least maximum max_history."
-            )
-
         return training.load_data(
             training_resource,
             self.domain,
             remove_duplicates,
             unique_last_num_states,
-            augmentation_factor,
-            tracker_limit,
-            use_story_concatenation,
-            debug_plots,
+            augmentation_factor=augmentation_factor,
+            tracker_limit=tracker_limit,
+            use_story_concatenation=use_story_concatenation,
+            debug_plots=debug_plots,
             exclusion_percentage=exclusion_percentage,
         )
 
