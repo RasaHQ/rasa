@@ -113,7 +113,7 @@ def test_as_story_string_or_statement_with_slot_was_set():
         steps[0].as_story_string()
         == """
 ## hello world
-* slot{"slot_was_set": [{"name": "joe"}]} OR slot{"slot_was_set": [{"name": "bob"}]}
+* slot{"name": "joe"} OR slot{"name": "bob"}
     - some_action
 """
     )

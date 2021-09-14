@@ -15,7 +15,6 @@ from typing import (
     ValuesView,
     Union,
     Sequence,
-    cast,
 )
 
 import rasa.shared.utils.io
@@ -195,6 +194,7 @@ class StoryStep:
         return f"* {result}\n"
 
     def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
+        """Returns a story as a string."""
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
         if flat:

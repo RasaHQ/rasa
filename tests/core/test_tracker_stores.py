@@ -398,8 +398,8 @@ def test_db_url_with_query_from_endpoint_config(tmp_path: Path):
         driver: my-driver
         another: query
     """
-    stories_path = tmpdir / "stories.yml"
-    stories_path.write_text(stories_yaml, "utf8")
+    f = tmp_path / "tmp_config_file.yml"
+    f.write_text(endpoint_config)
     store_config = read_endpoint_config(str(f), "tracker_store")
 
     url = SQLTrackerStore.get_db_url(**store_config.kwargs)

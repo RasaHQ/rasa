@@ -357,7 +357,8 @@ class YAMLStoryReader(StoryReader):
                             f"Issue found in '{self.source_name}':\n"
                             f"Invalid slot: \n{slot}\n"
                             f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
-                            f"YAML dictionaries or Strings. The checkpoint will be skipped.",
+                            f"YAML dictionaries or Strings. "
+                            f"The checkpoint will be skipped.",
                             docs=self._get_docs_link(),
                         )
                         return
