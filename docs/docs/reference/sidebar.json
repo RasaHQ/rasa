@@ -230,6 +230,7 @@
             "reference/rasa/nlu/classifiers/fallback_classifier",
             "reference/rasa/nlu/classifiers/keyword_intent_classifier",
             "reference/rasa/nlu/classifiers/mitie_intent_classifier",
+            "reference/rasa/nlu/classifiers/regex_message_handler",
             "reference/rasa/nlu/classifiers/sklearn_intent_classifier"
           ],
           "label": "rasa.nlu.classifiers",
