@@ -9,6 +9,8 @@ import sys
 import uuid
 
 from _pytest.python import Function
+from spacy import Language
+
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
@@ -16,7 +18,7 @@ from sanic.request import Request
 
 from typing import Iterator, Callable, Generator
 
-from _pytest.tmpdir import TempdirFactory
+from _pytest.tmpdir import TempPathFactory
 from pathlib import Path
 from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
@@ -32,6 +34,7 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
 
 from rasa.nlu.model import Interpreter
+from rasa.nlu.utils.spacy_utils import SpacyModelProvider
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
@@ -171,9 +174,9 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 @pytest.fixture(scope="session")
 async def _trained_default_agent(
-    tmpdir_factory: TempdirFactory, stories_path: Text, trained_async: Callable
+    tmp_path_factory: TempPathFactory, stories_path: Text, trained_async: Callable
 ) -> Agent:
-    project_path = tmpdir_factory.mktemp("project")
+    project_path = tmp_path_factory.mktemp("project")
 
     config = textwrap.dedent(
         f"""
@@ -299,12 +302,12 @@ def domain(_domain: Domain) -> Domain:
 
 
 @pytest.fixture(scope="session")
-def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
+def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
     async def _train(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
     ) -> Optional[Text]:
         if output_path is None:
-            output_path = str(tmpdir_factory.mktemp("models"))
+            output_path = str(tmp_path_factory.mktemp("models"))
 
         result = await train_async(*args, output=output_path, **kwargs)
         return result.model
@@ -313,12 +316,12 @@ def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
 
 
 @pytest.fixture(scope="session")
-def trained_nlu_async(tmpdir_factory: TempdirFactory) -> Callable:
+def trained_nlu_async(tmp_path_factory: TempPathFactory) -> Callable:
     async def _train_nlu(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
     ) -> Optional[Text]:
         if output_path is None:
-            output_path = str(tmpdir_factory.mktemp("models"))
+            output_path = str(tmp_path_factory.mktemp("models"))
 
         return await train_nlu_async(*args, output=output_path, **kwargs)
 
@@ -487,9 +490,12 @@ def component_builder():
 
 
 @pytest.fixture(scope="session")
-def spacy_nlp(component_builder: ComponentBuilder, blank_config: RasaNLUModelConfig):
-    spacy_nlp_config = {"name": "SpacyNLP", "model": "en_core_web_md"}
-    return component_builder.create_component(spacy_nlp_config, blank_config).nlp
+def spacy_nlp() -> Language:
+    spacy_provider = SpacyModelProvider.create(
+        {"model": "en_core_web_md"}, Mock(), Mock(), Mock()
+    )
+
+    return spacy_provider.provide().model
 
 
 @pytest.fixture(scope="session")
