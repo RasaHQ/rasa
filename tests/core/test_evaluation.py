@@ -188,7 +188,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
     policies:
     - name: MemoizationPolicy
       max_history: 11
-    
+
     pipeline: []
     """
     )

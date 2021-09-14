@@ -1243,7 +1243,7 @@ async def test_predict_next_action_with_hidden_rules(
     training_data = textwrap.dedent(
         f"""
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-    
+
     rules:
     - rule: rule
       steps:
@@ -1251,7 +1251,7 @@ async def test_predict_next_action_with_hidden_rules(
       - action: {rule_action}
       - slot_was_set:
           - {rule_slot}: {rule_slot}
-          
+
     stories:
     - story: story
       steps:
@@ -1270,7 +1270,7 @@ async def test_predict_next_action_with_hidden_rules(
     policies:
     - name: RulePolicy
     - name: MemoizationPolicy
-    
+
     """
     )
     config_path = tmp_path / "config.yml"
