@@ -5,9 +5,7 @@ from typing import Any, Text, Type
 import pytest
 
 from rasa.core.agent import Agent
-
-# TODO: here
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
 import rasa.utils.common
 from rasa.utils.common import RepeatedLogFilter, find_unavailable_packages
 import tests.conftest
@@ -133,7 +131,10 @@ def test_find_unavailable_packages():
     [
         (Path, "pathlib.Path"),
         (Agent, "rasa.core.agent.Agent"),
-        (DIETClassifier, "rasa.nlu.classifiers._diet_classifier.DIETClassifier"),
+        (
+            DIETClassifierGraphComponent,
+            "rasa.nlu.classifiers.diet_classifier.DIETClassifierGraphComponent",
+        ),
     ],
 )
 def test_module_path_from_class(clazz: Type, module_path: Text):

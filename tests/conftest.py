@@ -2,6 +2,8 @@ import asyncio
 import copy
 import os
 import random
+import textwrap
+
 import pytest
 import sys
 import uuid
@@ -29,18 +31,12 @@ from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
 
-# TODO: Here
-from rasa.core.policies.rule_policy import RulePolicy
 from rasa.nlu.model import Interpreter
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
 from rasa.core.exporter import Exporter
 
-# TODO: Maybe here
-from rasa.core.policies import Policy
-
-# TODO: Here
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
@@ -174,19 +170,27 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-def _trained_default_agent(tmpdir_factory: TempdirFactory, stories_path: Text) -> Agent:
-    model_path = tmpdir_factory.mktemp("model").strpath
+async def _trained_default_agent(
+    tmpdir_factory: TempdirFactory, stories_path: Text, trained_async: Callable
+) -> Agent:
+    project_path = tmpdir_factory.mktemp("project")
 
-    agent = Agent(
-        "data/test_domains/default_with_slots.yml",
-        policies=[AugmentedMemoizationPolicy(max_history=3), RulePolicy()],
-        model_directory=model_path,
+    config = textwrap.dedent(
+        f"""
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    policies:
+    - name: AugmentedMemoizationPolicy
+      max_history: 3
+    - name: RulePolicy
+    """
+    )
+    config_path = project_path / "config.yml"
+    rasa.shared.utils.io.write_text_file(config, config_path)
+    model_path = await trained_async(
+        "data/test_domains/default_with_slots.yml", str(config_path), [stories_path]
     )
 
-    training_data = agent.load_data(stories_path)
-    agent.train(training_data)
-    agent.persist(model_path)
-    return agent
+    return Agent.load_local_model(model_path)
 
 
 @pytest.fixture()
@@ -292,11 +296,6 @@ def _domain(domain_path: Text) -> Domain:
 @pytest.fixture()
 def domain(_domain: Domain) -> Domain:
     return copy.deepcopy(_domain)
-
-
-@pytest.fixture(scope="session")
-def config(config_path: Text) -> List[Policy]:
-    return core_config.load(config_path)
 
 
 @pytest.fixture(scope="session")
