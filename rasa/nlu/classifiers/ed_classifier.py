@@ -102,27 +102,26 @@ class flask_serving_classifier(IntentClassifier):
                         "Need at least 2 different classes. "
                         "Skipping training of intent classifier.")
         else:
-#             X = np.stack([example.get("text_features")
-#                           for example in training_data.intent_examples])
-
-#             attrs = vars(training_data.intent_examples[0])
-#             print(', '.join("%s: %s" % item for item in attrs.items()))
-#             print('ED TRAIN DATA:', training_data.intent_examples[0])
 
             X = [i.get(TEXT) for i in training_data.intent_examples]
-            eqa_idx = labels.index('EQA_DATA')
-            eqa_content = X[eqa_idx]
-            print(labels[eqa_idx])
-            # Remove the Label and content for EQA Module
-            del labels[eqa_idx]
-            del X[eqa_idx]
-            print(eqa_content)
+            try:
+                eqa_idx = labels.index('EQA_DATA')
+                eqa_content = [X[eqa_idx]]
+                print(labels[eqa_idx])
+                # Remove the Label and content for EQA Module
+                del labels[eqa_idx]
+                del X[eqa_idx]
+                print(eqa_content)
+            except:
+                eqa_content = None
+
             y = self.transform_labels_str2num(labels).tolist()
             categories = [i for i in set(y)]
             host = '127.0.0.1'
             port = 9501
             url = f'http://{host}:{port}/train'
-            data = {'text': X, 'labels': y, 'unique_labels': categories}
+            # data = {'text': X, 'labels': y, 'unique_labels': categories}
+            data = {'text': X, 'labels': y, 'unique_labels': categories, 'eqa_content': eqa_content}
             # print('ED DATA', data)
             tr = requests.put(url, json=data)  ###train
             print(tr.json())
