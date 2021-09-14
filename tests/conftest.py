@@ -414,9 +414,13 @@ async def trained_e2e_model(
 
 
 @pytest.fixture(scope="session")
-def moodbot_domain() -> Domain:
-    domain_path = os.path.join("data", "test_moodbot", "domain.yml")
-    return Domain.load(domain_path)
+def moodbot_domain_path() -> Path:
+    return Path("data", "test_moodbot", "domain.yml")
+
+
+@pytest.fixture(scope="session")
+def moodbot_domain(moodbot_domain_path: Path) -> Domain:
+    return Domain.load(moodbot_domain_path)
 
 
 @pytest.fixture(scope="session")
