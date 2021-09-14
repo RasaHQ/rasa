@@ -1,5 +1,6 @@
 import rasa.shared.constants
 import typing
+import asyncio
 
 # WARNING: Be careful about adding any top level imports at this place!
 #   These functions are imported in `rasa.__init__` and any top level import
@@ -12,7 +13,6 @@ import typing
 if typing.TYPE_CHECKING:
     from typing import Any, Text, Dict, Union, List, Optional, NoReturn
     from rasa.model_training import TrainingResult
-    import asyncio
 
 
 def run(
