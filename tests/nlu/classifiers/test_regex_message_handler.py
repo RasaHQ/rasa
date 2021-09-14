@@ -13,6 +13,8 @@ import pytest
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.nlu.constants import (
     ENTITIES,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
     FEATURE_TYPE_SENTENCE,
@@ -165,7 +167,13 @@ def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
     if expected_entities:
         entity_data: List[Dict[Text, Any]] = unpacked_message.data[ENTITIES]
         assert all(
-            set(item.keys()) == {ENTITY_ATTRIBUTE_VALUE, ENTITY_ATTRIBUTE_TYPE}
+            set(item.keys())
+            == {
+                ENTITY_ATTRIBUTE_VALUE,
+                ENTITY_ATTRIBUTE_TYPE,
+                ENTITY_ATTRIBUTE_START,
+                ENTITY_ATTRIBUTE_END,
+            }
             for item in entity_data
         )
         assert set(
