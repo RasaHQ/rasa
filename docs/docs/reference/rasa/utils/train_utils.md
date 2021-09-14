@@ -27,40 +27,6 @@ on the LOSS_TYPE.
   
 - `Returns` - updated model configuration
 
-#### update\_deprecated\_loss\_type
-
-```python
-def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]
-```
-
-Updates LOSS_TYPE to &#x27;cross_entropy&#x27; if it is set to &#x27;softmax&#x27;.
-
-**Arguments**:
-
-- `config` - model configuration
-  
-
-**Returns**:
-
-  updated model configuration
-
-#### update\_deprecated\_sparsity\_to\_density
-
-```python
-def update_deprecated_sparsity_to_density(config: Dict[Text, Any]) -> Dict[Text, Any]
-```
-
-Updates `WEIGHT_SPARSITY` to `CONNECTION_DENSITY = 1 - WEIGHT_SPARSITY`.
-
-**Arguments**:
-
-- `config` - model configuration
-  
-
-**Returns**:
-
-  Updated model configuration
-
 #### align\_token\_features
 
 ```python

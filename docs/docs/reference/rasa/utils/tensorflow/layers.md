@@ -472,7 +472,7 @@ Declares instance variables with default values.
   ensure that similarity values are approximately bounded.
   Used inside _loss_cross_entropy() only.
 - `model_confidence` - Normalization of confidence values during inference.
-  Possible values are `SOFTMAX` and `LINEAR_NORM`.
+  Currently, the only possible value is `SOFTMAX`.
 - `similarity_type` - Similarity measure to use, either `cosine` or `inner`.
 - `name` - Optional name of the layer.
   
@@ -605,7 +605,7 @@ Declares instance variables with default values.
   sigmoid loss term is added to the total loss to ensure that similarity
   values are approximately bounded.
 - `model_confidence` - Normalization of confidence values during inference.
-  Possible values are `SOFTMAX` and `LINEAR_NORM`.
+  Currently, the only possible value is `SOFTMAX`.
 
 #### call
 
@@ -665,7 +665,7 @@ Declares instance variables with default values.
   ensure that similarity values are approximately bounded.
   Used inside _loss_cross_entropy() only.
 - `model_confidence` - Normalization of confidence values during inference.
-  Possible values are `SOFTMAX` and `LINEAR_NORM`.
+  Currently, the only possible value is `SOFTMAX`.
 
 #### call
 
