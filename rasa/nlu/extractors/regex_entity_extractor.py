@@ -1,12 +1,13 @@
+from __future__ import annotations
 import logging
-import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from rasa.nlu.model import Metadata
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
@@ -17,49 +18,93 @@ from rasa.shared.nlu.constants import (
     TEXT,
     ENTITY_ATTRIBUTE_TYPE,
 )
-from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.extractors._regex_entity_extractor import RegexEntityExtractor
 
 logger = logging.getLogger(__name__)
 
+# TODO: remove after everything is migrated
+RegexEntityExtractor = RegexEntityExtractor
 
-class RegexEntityExtractor(EntityExtractor):
-    """Searches for entities in the user's message using the lookup tables and regexes
-    defined in the training data."""
 
-    defaults = {
-        # text will be processed with case insensitive as default
-        "case_sensitive": False,
-        # use lookup tables to extract entities
-        "use_lookup_tables": True,
-        # use regexes to extract entities
-        "use_regexes": True,
-        # use match word boundaries for lookup table
-        "use_word_boundaries": True,
-    }
+class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+    """Extracts entities via lookup tables and regexes defined in the training data."""
+
+    REGEX_FILE_NAME = "regex.json"
+
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """The component's default config (see parent class for full docstring)."""
+        return {
+            # text will be processed with case insensitive as default
+            "case_sensitive": False,
+            # use lookup tables to extract entities
+            "use_lookup_tables": True,
+            # use regexes to extract entities
+            "use_regexes": True,
+            # use match word boundaries for lookup table
+            "use_word_boundaries": True,
+        }
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> GraphComponent:
+        """Creates a new `GraphComponent`.
+
+        Args:
+            config: This config overrides the `default_config`.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
+            resource: Resource locator for this component which can be used to persist
+                and load itself from the `model_storage`.
+            execution_context: Information about the current graph run. Unused.
+
+        Returns: An instantiated `GraphComponent`.
+        """
+        return cls(config, model_storage, resource)
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
         patterns: Optional[List[Dict[Text, Text]]] = None,
-    ):
-        """Extracts entities using the lookup tables and/or regexes defined."""
-        super(RegexEntityExtractor, self).__init__(component_config)
+    ) -> None:
+        """Creates a new instance.
 
-        self.case_sensitive = self.component_config["case_sensitive"]
+        Args:
+            config: The configuration.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
+            resource: Resource locator for this component which can be used to persist
+                and load itself from the `model_storage`.
+            patterns: a list of patterns
+        """
+        # graph component
+        self._config = {**self.get_default_config(), **config}
+        self._model_storage = model_storage
+        self._resource = resource
+        # extractor
+        self.case_sensitive = self._config["case_sensitive"]
         self.patterns = patterns or []
 
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
+    def train(self, training_data: TrainingData) -> Resource:
+        """Extract patterns from the training data.
+
+        Args:
+            training_data: the training data
+        """
         self.patterns = pattern_utils.extract_patterns(
             training_data,
-            use_lookup_tables=self.component_config["use_lookup_tables"],
-            use_regexes=self.component_config["use_regexes"],
+            use_lookup_tables=self._config["use_lookup_tables"],
+            use_regexes=self._config["use_regexes"],
             use_only_entities=True,
-            use_word_boundaries=self.component_config["use_word_boundaries"],
+            use_word_boundaries=self._config["use_word_boundaries"],
         )
 
         if not self.patterns:
@@ -69,20 +114,49 @@ class RegexEntityExtractor(EntityExtractor):
                 "component to work you need to define valid lookup tables or regexes "
                 "in the training data."
             )
+        self.persist()
+        return self._resource
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, messages: List[Message]) -> List[Message]:
+        """Extracts entities from messages and appends them to the attribute.
+
+        If no patterns where found during training, then the given messages will not
+        be modified. In particular, if no `ENTITIES` attribute exists yet, then
+        it will *not* be created.
+
+        If no pattern can be found in the given message, then no entities will be
+        added to any existing list of entities. However, if no `ENTITIES` attribute
+        exists yet, then an `ENTITIES` attribute will be created.
+
+        Returns:
+           the given list of messages that have been modified
+        """
         if not self.patterns:
-            return
+            rasa.shared.utils.io.raise_warning(
+                f"The {self.__class__.__name__} has not been "
+                f"trained properly yet. "
+                f"Continuing without extracting entities via this extractor."
+            )
+            return messages
 
-        extracted_entities = self._extract_entities(message)
-        extracted_entities = self.add_extractor_name(extracted_entities)
-
-        message.set(
-            ENTITIES, message.get(ENTITIES, []) + extracted_entities, add_to_output=True
-        )
+        for message in messages:
+            extracted_entities = self._extract_entities(message)
+            extracted_entities = self.add_extractor_name(extracted_entities)
+            message.set(
+                ENTITIES,
+                message.get(ENTITIES, []) + extracted_entities,
+                add_to_output=True,
+            )
+        return messages
 
     def _extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
-        """Extract entities of the given type from the given user message."""
+        """Extract entities of the given type from the given user message.
+
+        Args:
+            message: a message
+        Returns:
+            a list of dictionaries describing the entities
+        """
         entities = []
 
         flags = 0  # default flag
@@ -112,29 +186,38 @@ class RegexEntityExtractor(EntityExtractor):
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Text,
-        model_metadata: Optional[Metadata] = None,
-        cached_component: Optional["RegexEntityExtractor"] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "RegexEntityExtractor":
+    ) -> RegexEntityExtractorGraphComponent:
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta["file"]
-        regex_file = os.path.join(model_dir, file_name)
+        try:
+            with model_storage.read_from(resource) as model_path:
+                regex_file = model_path / cls.REGEX_FILE_NAME
+                patterns = rasa.shared.utils.io.read_json_file(regex_file)
+                return RegexEntityExtractorGraphComponent(
+                    config,
+                    model_storage=model_storage,
+                    resource=resource,
+                    patterns=patterns,
+                )
+        except ValueError:
+            rasa.shared.utils.io.raise_warning(
+                f"Failed to load {cls.__name__} from model storage. "
+                f"This can happen if the model could not be trained because regexes "
+                f"could not be extracted from the given training data - and hence "
+                f"could not be persisted."
+            )
+            return RegexEntityExtractorGraphComponent(
+                config, model_storage=model_storage, resource=resource,
+            )
 
-        if os.path.exists(regex_file):
-            patterns = rasa.shared.utils.io.read_json_file(regex_file)
-            return cls(meta, patterns=patterns)
-
-        return cls(meta)
-
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this model into the passed directory.
-
-        Return the metadata necessary to load the model again.
-        """
-        file_name = f"{file_name}.json"
-        regex_file = os.path.join(model_dir, file_name)
-        rasa.shared.utils.io.dump_obj_as_json_to_file(regex_file, self.patterns)
-
-        return {"file": file_name}
+    def persist(self) -> None:
+        """Persist this model."""
+        if not self.patterns:
+            return
+        with self._model_storage.write_to(self._resource) as model_path:
+            regex_file = model_path / self.REGEX_FILE_NAME
+            rasa.shared.utils.io.dump_obj_as_json_to_file(regex_file, self.patterns)
