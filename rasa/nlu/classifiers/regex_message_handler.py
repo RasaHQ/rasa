@@ -12,6 +12,8 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.constants import DOCS_URL_STORIES, INTENT_MESSAGE_PREFIX
 from rasa.shared.nlu.constants import (
     ENTITIES,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
     INTENT,
@@ -144,6 +146,7 @@ class RegexMessageHandler(GraphComponent):
             {INTENT_NAME_KEY: intent_name, PREDICTED_CONFIDENCE_KEY: confidence,}
         ]
         message_data = {}
+        message_data[TEXT] = user_text
         message_data[INTENT] = intent_data
         message_data[INTENT_RANKING_KEY] = intent_ranking
         message_data[ENTITIES] = entities
@@ -211,7 +214,7 @@ class RegexMessageHandler(GraphComponent):
             )
             parsed_entities = {
                 key: value
-                for key, value in parsed_entities
+                for key, value in parsed_entities.items()
                 if key not in unknown_entity_types
             }
 
@@ -225,6 +228,8 @@ class RegexMessageHandler(GraphComponent):
                     {
                         ENTITY_ATTRIBUTE_TYPE: entity_type,
                         ENTITY_ATTRIBUTE_VALUE: entity_value,
+                        ENTITY_ATTRIBUTE_START: match.start(),
+                        ENTITY_ATTRIBUTE_END: match.end(),
                     }
                 )
         return entities

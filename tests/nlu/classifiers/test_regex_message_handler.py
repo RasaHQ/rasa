@@ -69,12 +69,12 @@ def regex_message_handler(
         ("123?", None, 1.0, [], True),  # value extracted by > 1
         ("1.0.", None, 0.0, [], True),  # confidence string extracted but not a float
         # malformed entities
-        (None, "{'entity1','entity2'}", 1.0, [], True),
-        (None, "{'entity1','entity2':2.0}", 1.0, [], True),
+        (None, json.dumps({"entity1": "entity2"}), 1.0, [], True),
+        (None, '{"entity1","entity2":2.0}', 1.0, [], True),
         # ... note: if the confidence is None, the following will raise an error!
         (
             "1.0",
-            "['entity1']",
+            json.dumps(["entity1"]),
             1.0,
             [],
             True,
@@ -138,7 +138,14 @@ def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
 
     assert not unpacked_message.features
 
-    assert set(unpacked_message.data.keys()) == {INTENT, INTENT_RANKING_KEY, ENTITIES}
+    assert set(unpacked_message.data.keys()) == {
+        TEXT,
+        INTENT,
+        INTENT_RANKING_KEY,
+        ENTITIES,
+    }
+
+    assert unpacked_message.data[TEXT] == message.data[TEXT].strip()
 
     assert set(unpacked_message.data[INTENT].keys()) == {
         INTENT_NAME_KEY,
@@ -176,11 +183,13 @@ def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
 @pytest.mark.parametrize(
     "intent,entities,expected_intent,domain_entities",
     [
-        ("wrong_intent", "{'entity': 1.0}", "other_intent", ["entity"]),
-        ("my_intent", "{'wrong_entity': 1.0}", "my_intent", ["other-entity"]),
-        ("wrong_intent", "{'wrong_entity': 1.0}", "other_intent", ["other-entity"]),
-        # special case: text "my_intent['entity1']" will be interpreted as the intent
-        ("wrong_entity", "['wrong_entity']", "wrong_entity", ["wrong_entity"]),
+        ("wrong_intent", {"entity": 1.0}, "other_intent", ["entity"]),
+        ("my_intent", {"wrong_entity": 1.0}, "my_intent", ["other-entity"]),
+        ("wrong_intent", {"wrong_entity": 1.0}, "other_intent", ["other-entity"]),
+        # Special case: text "my_intent['entity1']" will be interpreted as the intent.
+        # This is not caught via the regex at the moment (intent names can include
+        # anything except "{" and "@".)
+        ("wrong_entity", ["wrong_entity"], "wrong_entity", ["wrong_entity"]),
     ],
 )
 def test_process_warns_if_intent_or_entities_not_in_domain(
@@ -193,7 +202,7 @@ def test_process_warns_if_intent_or_entities_not_in_domain(
     # construct text according to pattern
     text = INTENT_MESSAGE_PREFIX + intent  # do not add a confidence value
     if entities is not None:
-        text += entities
+        text += json.dumps(entities)
     message = Message(data={TEXT: text})
 
     # construct domain from expected intent/entities
@@ -258,9 +267,3 @@ def test_process_does_not_do_anything(
     parsed_messages = regex_message_handler.process([message], domain)
 
     assert parsed_messages[0] == message
-
-
-# TODO: this isn't done anymore - what was that good for?
-# async def test_regex_interpreter_adds_intent_prefix():
-#     r = await RegexInterpreter().parse('mood_greet{"name": "rasa"}')
-#     assert r.get("text") == '/mood_greet{"name": "rasa"}'
