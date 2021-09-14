@@ -599,3 +599,24 @@ async def test_wrong_predictions_with_intent_and_entities(
         assert "- seating: outside\n" in failed_stories
         # check that it does not double print entities
         assert failed_stories.count("\n") == 9
+
+
+async def test_failed_entity_extraction_comment(
+    tmpdir: Path, restaurantbot_agent: Agent,
+):
+    test_file = "data/test_yaml_stories/test_failed_entity_extraction_comment.yml"
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
+
+    await evaluate_stories(
+        stories=test_file,
+        agent=restaurantbot_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=True,
+    )
+
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
+    assert (
+        "- intent: request_restaurant  # predicted: request_restaurant: i am looking for [greek](cuisine) food"
+        in failed_stories
+    )

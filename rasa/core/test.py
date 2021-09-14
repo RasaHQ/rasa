@@ -356,6 +356,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         except LookupError:
             self.predicted_intent = None
 
+        self.target_entities = eval_store.entity_targets
         self.predicted_entities = eval_store.entity_predictions
 
         intent = {"name": eval_store.intent_targets[0]}
@@ -373,7 +374,10 @@ class WronglyClassifiedUserUtterance(UserUttered):
         """A comment attached to this event. Used during dumping."""
         from rasa.shared.core.events import format_message
 
-        if self.predicted_intent != self.intent["name"]:
+        if (
+            self.predicted_intent != self.intent["name"]
+            or self.predicted_entities != self.target_entities
+        ):
             predicted_message = format_message(
                 self.text, self.predicted_intent, self.predicted_entities
             )
