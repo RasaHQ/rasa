@@ -6,10 +6,7 @@ from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.nlu.utils.bilou_utils
-from rasa.shared.constants import (
-    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-    DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY,
-)
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
@@ -22,31 +19,18 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     AUTO,
     INNER,
-    LINEAR_NORM,
     COSINE,
     SEQUENCE,
     CROSS_ENTROPY,
-    TRANSFORMER_SIZE,
-    NUM_TRANSFORMER_LAYERS,
-    DENSE_DIMENSION,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
-    WEIGHT_SPARSITY,
-    CONNECTION_DENSITY,
     TOLERANCE,
     CHECKPOINT_MODEL,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.utils.tensorflow.model_data import RasaModelData
-from rasa.shared.nlu.constants import (
-    ACTION_NAME,
-    INTENT,
-    ENTITIES,
-    SPLIT_ENTITIES_BY_COMMA,
-)
-from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
-from rasa.core.constants import DIALOGUE
+from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
@@ -85,49 +69,6 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
             config[SIMILARITY_TYPE] = INNER
         elif config[LOSS_TYPE] == MARGIN:
             config[SIMILARITY_TYPE] = COSINE
-
-    return config
-
-
-def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """Updates LOSS_TYPE to 'cross_entropy' if it is set to 'softmax'.
-
-    Args:
-        config: model configuration
-
-    Returns:
-        updated model configuration
-    """
-    if config.get(LOSS_TYPE) == SOFTMAX:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"`{LOSS_TYPE}={SOFTMAX}` is deprecated. "
-            f"Please update your configuration file to use"
-            f"`{LOSS_TYPE}={CROSS_ENTROPY}` instead.",
-            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-        )
-        config[LOSS_TYPE] = CROSS_ENTROPY
-
-    return config
-
-
-def update_deprecated_sparsity_to_density(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """Updates `WEIGHT_SPARSITY` to `CONNECTION_DENSITY = 1 - WEIGHT_SPARSITY`.
-
-    Args:
-        config: model configuration
-
-    Returns:
-        Updated model configuration
-    """
-    if WEIGHT_SPARSITY in config:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"`{WEIGHT_SPARSITY}` is deprecated."
-            f"Please update your configuration file to use"
-            f"`{CONNECTION_DENSITY}` instead.",
-            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-            docs=DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY,
-        )
-        config[CONNECTION_DENSITY] = 1.0 - config[WEIGHT_SPARSITY]
 
     return config
 
@@ -277,56 +218,7 @@ def check_core_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
     # note: call _replace_deprecated_option() here when there are options to deprecate
-    new_config = {}
-    if isinstance(config.get(TRANSFORMER_SIZE), int):
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                TRANSFORMER_SIZE, [TRANSFORMER_SIZE, DIALOGUE], config
-            ),
-        )
 
-    if isinstance(config.get(NUM_TRANSFORMER_LAYERS), int):
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                NUM_TRANSFORMER_LAYERS, [NUM_TRANSFORMER_LAYERS, DIALOGUE], config
-            ),
-        )
-
-    if isinstance(config.get(DENSE_DIMENSION), int):
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, INTENT], config
-            ),
-        )
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, ACTION_NAME], config
-            ),
-        )
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, ENTITIES], config
-            ),
-        )
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, SLOTS], config
-            ),
-        )
-        new_config = override_defaults(
-            new_config,
-            _replace_deprecated_option(
-                DENSE_DIMENSION, [DENSE_DIMENSION, ACTIVE_LOOP], config
-            ),
-        )
-
-    config.update(new_config)
     return config
 
 
@@ -480,13 +372,6 @@ def create_common_callbacks(
     callbacks = [RasaTrainingLogger(epochs, silent=False)]
 
     if tensorboard_log_dir:
-        if tensorboard_log_level == "minibatch":
-            tensorboard_log_level = "batch"
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "You set 'tensorboard_log_level' to 'minibatch'. This value should not "
-                "be used anymore. Please use 'batch' instead."
-            )
-
         callbacks.append(
             tf.keras.callbacks.TensorBoard(
                 log_dir=tensorboard_log_dir,
@@ -602,13 +487,13 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
             f"other places. "
             f"Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead. "
         )
-    if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, LINEAR_NORM, AUTO]:
+    if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, AUTO]:
         raise InvalidConfigException(
             f"{MODEL_CONFIDENCE}={component_config[MODEL_CONFIDENCE]} is not a valid "
-            f"setting. Possible values: `{SOFTMAX}`, `{LINEAR_NORM}`(deprecated)."
+            f"setting. Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead."
         )
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
-        if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
+        if component_config[LOSS_TYPE] != CROSS_ENTROPY:
             raise InvalidConfigException(
                 f"{LOSS_TYPE}={component_config[LOSS_TYPE]} and "
                 f"{MODEL_CONFIDENCE}={SOFTMAX} is not a valid "
@@ -622,22 +507,13 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
                 f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
                 f"only with {SIMILARITY_TYPE}={INNER}."
             )
-    if component_config[MODEL_CONFIDENCE] == LINEAR_NORM:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"{MODEL_CONFIDENCE} is set to `{LINEAR_NORM}`. We "
-            f"introduced this option in Rasa Open Source 2.3.0, "
-            f"but have identified multiple problems with it based "
-            f"on user feedback. Therefore, `{MODEL_CONFIDENCE}={LINEAR_NORM}` "
-            f"is now deprecated and will be removed in Rasa Open Source `3.0.0`."
-            f"Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead."
-        )
 
 
 def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
-    if not component_config[CONSTRAIN_SIMILARITIES] and component_config[LOSS_TYPE] in [
-        SOFTMAX,
-        CROSS_ENTROPY,
-    ]:
+    if (
+        not component_config[CONSTRAIN_SIMILARITIES]
+        and component_config[LOSS_TYPE] == CROSS_ENTROPY
+    ):
         rasa.shared.utils.io.raise_warning(
             f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
             f"to set it to `True` when using cross-entropy loss. It will be set to "
