@@ -293,7 +293,7 @@ def test_train_model_checkpointing(
 
     config_params = {
         EPOCHS: 5,
-        MODEL_CONFIDENCE: "linear_norm",
+        MODEL_CONFIDENCE: "softmax",
         CONSTRAIN_SIMILARITIES: True,
         CHECKPOINT_MODEL: True,
         EVAL_NUM_EPOCHS: 1,

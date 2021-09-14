@@ -249,10 +249,10 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
             CHECKPOINT_MODEL: False,
             # if 'True' applies sigmoid on all similarity terms and adds it
             # to the loss function to ensure that similarity values are
-            # approximately bounded. Used inside softmax loss only.
+            # approximately bounded. Used inside cross-entropy loss only.
             CONSTRAIN_SIMILARITIES: False,
-            # Model confidence to be returned during inference. Possible values -
-            # 'softmax' and 'linear_norm'.
+            # Model confidence to be returned during inference. Currently, the only
+            # possible value is `softmax`.
             MODEL_CONFIDENCE: SOFTMAX,
         }
 
