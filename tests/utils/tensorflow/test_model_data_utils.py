@@ -7,10 +7,14 @@ import copy
 
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.constants import SPACY_DOCS
+
+# TODO: Here
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
+
+# TODO: Here
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.utils.tensorflow import model_data_utils
 from rasa.shared.nlu.training_data.features import Features

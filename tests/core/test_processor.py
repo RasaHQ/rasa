@@ -11,6 +11,7 @@ from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch, Mock
 
+# TODO: Here
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.actions.action import (
     ActionBotResponse,
@@ -935,6 +936,7 @@ async def test_restart_triggers_session_start(
 ):
     # The rule policy is trained and used so as to allow the default action
     # ActionRestart to be predicted
+    # TODO: here
     rule_policy = RulePolicy()
     rule_policy.train([], default_processor.domain, RegexInterpreter())
     monkeypatch.setattr(
