@@ -56,6 +56,9 @@ def nlg_app(base_url="/"):
     return app
 
 
+# TODO: Not sure if these ones can be replaced
+# pytest-sanic adds a fixture which is what is being used here
+# Not certain this won't change behaviour
 # noinspection PyShadowingNames
 @pytest.fixture()
 def http_nlg(loop, sanic_client):

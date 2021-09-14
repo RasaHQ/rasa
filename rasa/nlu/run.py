@@ -7,7 +7,7 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.model import Interpreter
 from rasa.shared.utils.io import json_to_string
-import rasa.utils.common
+import asyncio
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import ComponentBuilder
@@ -31,7 +31,7 @@ def run_cmdline(
             break
 
         if message.startswith(INTENT_MESSAGE_PREFIX):
-            result = rasa.utils.common.run_in_loop(regex_interpreter.parse(message))
+            result = asyncio.run(regex_interpreter.parse(message))
         else:
             result = interpreter.parse(message)
 

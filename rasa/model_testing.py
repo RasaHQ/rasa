@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
+import asyncio
 
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
@@ -37,7 +38,7 @@ def test_core_models_in_directory(
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
-    rasa.utils.common.run_in_loop(
+    asyncio.run(
         compare_models_in_dir(
             model_directory,
             stories,
@@ -117,7 +118,7 @@ def test_core_models(
     """
     from rasa.core.test import compare_models
 
-    rasa.utils.common.run_in_loop(
+    asyncio.run(
         compare_models(
             models,
             stories,

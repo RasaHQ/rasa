@@ -104,9 +104,8 @@ def train(
         An instance of `TrainingResult`.
     """
     from rasa.model_training import train_async
-    import rasa.utils.common
 
-    return rasa.utils.common.run_in_loop(
+    return asyncio.run(
         train_async(
             domain=domain,
             config=config,
@@ -121,7 +120,9 @@ def train(
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         ),
-        loop,
+        # TODO: asyncio.run doesn't let you set a custom loop,
+        # do we want to keep this parameter?
+        # loop,
     )
 
 

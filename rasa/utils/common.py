@@ -268,6 +268,7 @@ class RepeatedLogFilter(logging.Filter):
         return False
 
 
+# TODO: This is now unused
 def run_in_loop(
     f: Coroutine[Any, Any, T], loop: Optional[asyncio.AbstractEventLoop] = None
 ) -> T:
