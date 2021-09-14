@@ -1155,19 +1155,25 @@ class Domain:
             omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
-            a dictionary mapping slot names to their featurization
+            a mapping of slot names to their featurization
         """
         slots = {}
         for slot_name, slot in tracker.slots.items():
+            # If the slot doesn't influence conversations, slot.as_feature() will return
+            # a result that evaluates to False, meaning that the slot shouldn't be
+            # included in featurised sub-states.
+            # Note that this condition checks if the slot itself is None. An unset slot
+            # will be a Slot object and its `value` attribute will be None.
             if slot is not None and slot.as_feature():
                 if omit_unset_slots and not slot.has_been_set:
                     continue
                 if slot.value == rasa.shared.core.constants.SHOULD_NOT_BE_SET:
                     slots[slot_name] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
                 elif any(slot.as_feature()):
-                    # only add slot if some of the features are not zero
+                    # Only include slot in featurised sub-state if the slot is not
+                    # unset, i.e. is set to some actual value and has been successfully
+                    # featurized, and hence has at least one non-zero feature.
                     slots[slot_name] = tuple(slot.as_feature())
-
         return slots
 
     @staticmethod

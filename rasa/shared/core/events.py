@@ -1562,7 +1562,7 @@ class ActionExecuted(Event):
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
                 parameters.get("action_text"),
-                parameters.get("hide_rule_turn"),
+                parameters.get("hide_rule_turn", False),
             )
         ]
 
