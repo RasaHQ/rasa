@@ -1224,19 +1224,17 @@ class Domain:
         if self.store_entities_as_slots:
             slot_events = []
             for slot in self.slots:
-                if slot.auto_fill:
-                    matching_entities = [
-                        entity.get("value")
-                        for entity in entities
-                        if entity.get("entity") == slot.name
-                    ]
-                    if matching_entities:
-                        if slot.type_name == "list":
-                            slot_events.append(SlotSet(slot.name, matching_entities))
-                        else:
-                            slot_events.append(
-                                SlotSet(slot.name, matching_entities[-1])
-                            )
+                # if slot.auto_fill:
+                matching_entities = [
+                    entity.get("value")
+                    for entity in entities
+                    if entity.get("entity") == slot.name
+                ]
+                if matching_entities:
+                    if slot.type_name == "list":
+                        slot_events.append(SlotSet(slot.name, matching_entities))
+                    else:
+                        slot_events.append(SlotSet(slot.name, matching_entities[-1]))
             return slot_events
         else:
             return []
@@ -1429,8 +1427,8 @@ class Domain:
         for slot in domain_data[KEY_SLOTS].values():
             if slot["initial_value"] is None:
                 del slot["initial_value"]
-            if slot["auto_fill"]:
-                del slot["auto_fill"]
+            # if slot["auto_fill"]:
+            del slot["auto_fill"]
             if slot["type"].startswith("rasa.shared.core.slots"):
                 slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 

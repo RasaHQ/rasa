@@ -282,7 +282,7 @@ def test_domain_to_dict():
         "slots": {
             "some_slot": {
                 "values": ["high", "low"],
-                "auto_fill": True,
+                "auto_fill": False,
                 "influence_conversation": True,
                 "initial_value": None,
                 "mappings": [{"type": "from_text"}],
