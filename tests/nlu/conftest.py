@@ -94,7 +94,7 @@ def train_and_preprocess(
         def create_component(
             component_class: Type[GraphComponent], config: Dict[Text, Any], idx: int
         ) -> GraphComponent:
-            node_name = f"{component_class}_{idx}"
+            node_name = f"{component_class.__name__}_{idx}"
             execution_context = ExecutionContext(GraphSchema({}), node_name=node_name)
             resource = Resource(node_name)
             return component_class.create(
