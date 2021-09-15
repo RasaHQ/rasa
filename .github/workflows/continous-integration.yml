@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-20.04
     outputs:
       # Both of the outputs below are strings but only one exists at any given time
-      backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
+      backend: "true"
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
@@ -310,7 +310,7 @@ jobs:
       run: poetry run pip install -U ddtrace
 
     - name: Test Code 🔍
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
