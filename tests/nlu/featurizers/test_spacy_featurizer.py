@@ -6,10 +6,10 @@ import pytest
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyModelProvider, SpacyPreprocessor
 from rasa.shared.nlu.training_data import loading
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -250,10 +250,14 @@ def test_spacy_featurizer_using_empty_model():
 
 @pytest.mark.parametrize(
     "tokenizer_class, should_raise",
-    [(WhitespaceTokenizer, True), (MitieTokenizer, True), (SpacyTokenizer, False)],
+    [
+        (WhitespaceTokenizerGraphComponent, True),
+        (MitieTokenizerGraphComponent, True),
+        (SpacyTokenizerGraphComponent, False),
+    ],
 )
 def test_spacy_featurizer_validate_compatibility_with_tokenizer(
-    tokenizer_class: Type[Tokenizer], should_raise: bool
+    tokenizer_class: Type[TokenizerGraphComponent], should_raise: bool
 ):
     with pytest.warns(UserWarning if should_raise else None) as record:
         SpacyFeaturizerGraphComponent.validate_compatibility_with_tokenizer(
