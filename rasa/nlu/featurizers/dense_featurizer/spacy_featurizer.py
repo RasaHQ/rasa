@@ -20,6 +20,7 @@ from rasa.nlu.constants import (
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 from rasa.nlu.featurizers.dense_featurizer._spacy_featurizer import SpacyFeaturizer
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
@@ -71,6 +72,19 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(message, attribute)
         return messages
+
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
+        """Processes the training examples in the given training data in-place.
+
+        Args:
+          training_data: Training data.
+          model: A Mitie model.
+
+        Returns:
+          Same training data after processing.
+        """
+        self.process(training_data.training_examples)
+        return training_data
 
     def _set_spacy_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the spacy word vectors to the messages features."""
