@@ -261,7 +261,9 @@ class RasaModel(TmpKerasModel):
             self.prepared_for_prediction = True
 
         if self._run_eagerly:
-            outputs = tf_utils.to_numpy_or_python_type(self.predict_step(batch_in))
+            # Once we take advantage of TF's distributed training, this is where
+            # scheduled functions will be forced to execute and return actual values.
+            outputs = tf_utils.sync_to_numpy_or_python_type(self.predict_step(batch_in))
             if DIAGNOSTIC_DATA in outputs:
                 outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
                     outputs[DIAGNOSTIC_DATA]
@@ -273,7 +275,9 @@ class RasaModel(TmpKerasModel):
                 self.predict_step, input_signature=self._dynamic_signature(batch_in)
             )
 
-        outputs = tf_utils.to_numpy_or_python_type(self._tf_predict_step(batch_in))
+        # Once we take advantage of TF's distributed training, this is where
+        # scheduled functions will be forced to execute and return actual values.
+        outputs = tf_utils.sync_to_numpy_or_python_type(self.predict_step(batch_in))
         if DIAGNOSTIC_DATA in outputs:
             outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
                 outputs[DIAGNOSTIC_DATA]
@@ -480,7 +484,7 @@ class RasaModel(TmpKerasModel):
         idx: int,
         number_of_dimensions: int,
     ) -> Tuple[tf.Tensor, int]:
-        if isinstance(batch[idx], tf.Tensor):
+        if tf.is_tensor(batch[idx]):
             # explicitly substitute last dimension in shape with known
             # static value
             if number_of_dimensions > 1 and (

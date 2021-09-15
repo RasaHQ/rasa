@@ -3,7 +3,7 @@ from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
 import rasa.utils.tensorflow.crf
-from tensorflow.python.keras.utils import tf_utils
+from tensorflow.python.keras.utils import control_flow_util
 from tensorflow.python.keras import backend as K
 from rasa.utils.tensorflow.constants import (
     SOFTMAX,
@@ -88,7 +88,7 @@ class SparseDropout(tf.keras.layers.Dropout):
             to_retain = tf.greater_equal(to_retain_prob, self.rate)
             return tf.sparse.retain(inputs, to_retain)
 
-        outputs = tf_utils.smart_cond(
+        outputs = control_flow_util.smart_cond(
             training, dropped_inputs, lambda: tf.identity(inputs)
         )
         # need to explicitly recreate sparse tensor, because otherwise the shape
@@ -415,7 +415,7 @@ class Ffnn(tf.keras.layers.Layer):
                 RandomlyConnectedDense(
                     units=layer_size,
                     density=density,
-                    activation=tfa.activations.gelu,
+                    activation=tf.nn.gelu,
                     kernel_regularizer=l2_regularizer,
                     name=f"hidden_layer_{layer_name_suffix}_{i}",
                 )
@@ -557,7 +557,7 @@ class InputMask(tf.keras.layers.Layer):
             return tf.where(tf.tile(lm_mask_bool, (1, 1, x.shape[-1])), x_other, x)
 
         return (
-            tf_utils.smart_cond(training, x_masked, lambda: tf.identity(x)),
+            control_flow_util.smart_cond(training, x_masked, lambda: tf.identity(x)),
             lm_mask_bool,
         )
 

@@ -1026,7 +1026,7 @@ class RasaSequenceLayer(RasaCustomLayer):
             outputs, attention_weights = self._tf_layers[self.TRANSFORMER](
                 seq_sent_features_masked, mask_padding, training
             )
-            outputs = tfa.activations.gelu(outputs)
+            outputs = tf.nn.gelu(outputs)
         else:
             # tf.zeros((0,)) is an alternative to None
             outputs, attention_weights = seq_sent_features_masked, tf.zeros((0,))
