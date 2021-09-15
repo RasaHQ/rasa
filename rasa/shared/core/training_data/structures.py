@@ -47,10 +47,6 @@ STORY_START = "STORY_START"
 # Checkpoint id used to identify story end blocks
 STORY_END = None
 
-# need abbreviations otherwise they are not visualized well
-GENERATED_CHECKPOINT_PREFIX = "GENR_"
-CHECKPOINT_CYCLE_PREFIX = "CYCL_"
-
 GENERATED_HASH_LENGTH = 5
 
 FORM_PREFIX = "form: "
@@ -58,6 +54,9 @@ FORM_PREFIX = "form: "
 # will get increased with each new instance
 STEP_COUNT = 1
 
+# need abbreviations otherwise they are not visualized well
+GENERATED_CHECKPOINT_PREFIX = "GENR_"
+CHECKPOINT_CYCLE_PREFIX = "CYCL_"
 
 class EventTypeError(RasaCoreException, ValueError):
     """Represents an error caused by a Rasa Core event not being of the expected

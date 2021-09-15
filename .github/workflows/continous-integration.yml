@@ -310,6 +310,7 @@ jobs:
       run: poetry run pip install -U ddtrace
 
     - name: Test Code 🔍
+      if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
