@@ -54,7 +54,7 @@ class SpacyModelProvider(GraphComponent):
     model is only loaded once and then shared by depending components.
     """
 
-    def __init__(self, model: Optional[SpacyModel] = None) -> None:
+    def __init__(self, model: SpacyModel) -> None:
         """Initializes a `SpacyModelProvider`."""
         self._model = model
 
