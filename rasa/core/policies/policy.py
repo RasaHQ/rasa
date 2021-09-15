@@ -1,10 +1,10 @@
 from __future__ import annotations
 import abc
 import copy
-import json
 import logging
 from enum import Enum
 from pathlib import Path
+from rasa.shared.core.events import Event
 from typing import (
     Any,
     List,
@@ -17,35 +17,43 @@ from typing import (
     Tuple,
     TYPE_CHECKING,
 )
+
 import numpy as np
+
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-
-from rasa.shared.core.events import Event
-
-import rasa.shared.utils.common
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer2 as TrackerFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import (
+    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
+)
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer2 as SingleStateFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 import rasa.utils.common
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain, State
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
-    FEATURIZER_FILE,
-)
 from rasa.shared.exceptions import RasaException, FileIOException
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY, POLICY_PRIORITY
+from rasa.core.constants import (
+    DEFAULT_POLICY_PRIORITY,
+    POLICY_PRIORITY,
+    POLICY_MAX_HISTORY,
+)
 from rasa.shared.core.constants import (
     USER,
     SLOTS,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
 )
-from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+import rasa.shared.utils.common
+
 
 # All code outside this module will continue to use the old `Policy` interface
 from rasa.core.policies._policy import Policy
@@ -123,14 +131,13 @@ class PolicyGraphComponent(GraphComponent):
         featurizer: Optional[TrackerFeaturizer] = None,
     ) -> None:
         """Constructs a new Policy object."""
+        self.config = config
         if featurizer is None:
-            featurizer = self._create_featurizer(config)
+            featurizer = self._create_featurizer()
         self.__featurizer = featurizer
 
         self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
         self.finetune_mode = execution_context.is_finetuning
-
-        self._rule_only_data = {}
 
         self._model_storage = model_storage
         self._resource = resource
@@ -143,22 +150,21 @@ class PolicyGraphComponent(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> GraphComponent:
+    ) -> PolicyGraphComponent:
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
-    @classmethod
-    def _create_featurizer(cls, policy_config: Dict[Text, Any]) -> TrackerFeaturizer:
-        policy_config = copy.deepcopy(policy_config)
+    def _create_featurizer(self) -> TrackerFeaturizer:
+        policy_config = copy.deepcopy(self.config)
 
         featurizer_configs = policy_config.get("featurizer")
 
         if not featurizer_configs:
-            return cls._standard_featurizer()
+            return self._standard_featurizer()
 
         featurizer_func = _get_featurizer_from_config(
             featurizer_configs,
-            cls.__name__,
+            self.__class__.__name__,
             lookup_path="rasa.core.featurizers.tracker_featurizers",
         )
         featurizer_config = featurizer_configs[0]
@@ -167,7 +173,7 @@ class PolicyGraphComponent(GraphComponent):
         if state_featurizer_configs:
             state_featurizer_func = _get_featurizer_from_config(
                 state_featurizer_configs,
-                cls.__name__,
+                self.__class__.__name__,
                 lookup_path="rasa.core.featurizers.single_state_featurizer",
             )
             state_featurizer_config = state_featurizer_configs[0]
@@ -176,20 +182,25 @@ class PolicyGraphComponent(GraphComponent):
                 **state_featurizer_config
             )
 
-        return featurizer_func(**featurizer_config)
+        featurizer = featurizer_func(**featurizer_config)
+        if (
+            isinstance(featurizer, MaxHistoryTrackerFeaturizer)
+            and POLICY_MAX_HISTORY in policy_config
+            and POLICY_MAX_HISTORY not in featurizer_config
+        ):
+            featurizer.max_history = policy_config[POLICY_MAX_HISTORY]
+        return featurizer
 
-    @staticmethod
-    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
+    def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
+        """Initializes the standard featurizer for this policy."""
+        return MaxHistoryTrackerFeaturizer(
+            SingleStateFeaturizer(), self.config.get(POLICY_MAX_HISTORY)
+        )
 
     @property
     def featurizer(self) -> TrackerFeaturizer:
         """Returns the policy's featurizer."""
         return self.__featurizer
-
-    def set_shared_policy_states(self, **kwargs: Any) -> None:
-        """Sets policy's shared states for correct featurization."""
-        self._rule_only_data = kwargs.get("rule_only_data", {})
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
@@ -214,13 +225,13 @@ class PolicyGraphComponent(GraphComponent):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         bilou_tagging: bool = False,
         **kwargs: Any,
     ) -> Tuple[
-        List[List[Dict[Text, List["Features"]]]],
+        List[List[Dict[Text, List[Features]]]],
         np.ndarray,
-        List[List[Dict[Text, List["Features"]]]],
+        List[List[Dict[Text, List[Features]]]],
     ]:
         """Transform training trackers into a vector representation.
 
@@ -231,7 +242,7 @@ class PolicyGraphComponent(GraphComponent):
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
+            precomputations: Contains precomputed features and attributes.
             bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
@@ -247,8 +258,8 @@ class PolicyGraphComponent(GraphComponent):
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
             training_trackers,
             domain,
-            interpreter,
-            bilou_tagging,
+            precomputations=precomputations,
+            bilou_tagging=bilou_tagging,
             ignore_action_unlikely_intent=self.supported_data()
             == SupportedData.ML_DATA,
         )
@@ -270,6 +281,7 @@ class PolicyGraphComponent(GraphComponent):
         tracker: DialogueStateTracker,
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
         """Transforms tracker to states for prediction.
 
@@ -278,6 +290,8 @@ class PolicyGraphComponent(GraphComponent):
             domain: The Domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             A list of states.
@@ -287,7 +301,7 @@ class PolicyGraphComponent(GraphComponent):
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_data=self._rule_only_data,
+            rule_only_data=rule_only_data,
             ignore_action_unlikely_intent=self.supported_data()
             == SupportedData.ML_DATA,
         )[0]
@@ -296,9 +310,10 @@ class PolicyGraphComponent(GraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
+        rule_only_data: Optional[Dict[Text, Any]],
         use_text_for_last_user_input: bool = False,
-    ) -> List[List[Dict[Text, List["Features"]]]]:
+    ) -> List[List[Dict[Text, List[Features]]]]:
         """Transforms training tracker into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
@@ -307,9 +322,11 @@ class PolicyGraphComponent(GraphComponent):
         Args:
             tracker: The tracker to be featurized.
             domain: The Domain.
-            interpreter: The NLU interpreter.
+            precomputations: Contains precomputed features and attributes.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             A list (corresponds to the list of trackers)
@@ -321,10 +338,10 @@ class PolicyGraphComponent(GraphComponent):
         return self.featurizer.create_state_features(
             [tracker],
             domain,
-            interpreter,
+            precomputations=precomputations,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_data=self._rule_only_data,
+            rule_only_data=rule_only_data,
             ignore_action_unlikely_intent=self.supported_data()
             == SupportedData.ML_DATA,
         )
@@ -352,13 +369,19 @@ class PolicyGraphComponent(GraphComponent):
 
     @abc.abstractmethod
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
             tracker: The tracker containing the conversation history up to now.
             domain: The model's domain.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 
@@ -389,41 +412,6 @@ class PolicyGraphComponent(GraphComponent):
             action_metadata=action_metadata,
         )
 
-    def _metadata(self) -> Optional[Dict[Text, Any]]:
-        """Returns this policy's attributes that should be persisted.
-
-        Policies using the default `persist()` and `load()` implementations must
-        implement the `_metadata()` method."
-
-        Returns:
-            The policy metadata.
-        """
-        pass
-
-    @classmethod
-    def _metadata_filename(cls) -> Text:
-        """Returns the filename of the persisted policy metadata.
-
-        Policies using the default `persist()` and `load()` implementations must
-        implement the `_metadata_filename()` method.
-
-        Returns:
-            The filename of the persisted policy metadata.
-        """
-        pass
-
-    def persist(self) -> None:
-        """Persists the policy to storage."""
-        with self._model_storage.write_to(self._resource) as path:
-            # not all policies have a featurizer
-            if self.featurizer is not None:
-                self.featurizer.persist(path)
-
-            file = Path(path) / self._metadata_filename()
-
-            rasa.shared.utils.io.create_directory_for_file(file)
-            rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
-
     @classmethod
     def load(
         cls,
@@ -434,14 +422,10 @@ class PolicyGraphComponent(GraphComponent):
         **kwargs: Any,
     ) -> "PolicyGraphComponent":
         """Loads a trained policy (see parent class for full docstring)."""
-        config = {}
         featurizer = None
 
         try:
             with model_storage.read_from(resource) as path:
-                metadata_file = Path(path) / cls._metadata_filename()
-                config = json.loads(rasa.shared.utils.io.read_file(metadata_file))
-
                 if (Path(path) / FEATURIZER_FILE).is_file():
                     featurizer = TrackerFeaturizer.load(path)
 
@@ -579,7 +563,7 @@ class PolicyPrediction:
         policy_name: Optional[Text] = None,
         confidence: float = 1.0,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyPrediction:
+    ) -> "PolicyPrediction":
         """Create a prediction for a given action.
 
         Args:
@@ -615,7 +599,7 @@ class PolicyPrediction:
             and self.policy_name == other.policy_name
             and self.policy_priority == other.policy_priority
             and self.events == other.events
-            and self.optional_events == other.events
+            and self.optional_events == other.optional_events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
             and self.hide_rule_turn == other.hide_rule_turn
@@ -635,10 +619,10 @@ class PolicyPrediction:
 
     @property
     def max_confidence(self) -> float:
-        """Gets the highest predicted probability.
+        """Gets the highest predicted confidence.
 
         Returns:
-            The highest predicted probability.
+            The highest predicted confidence.
         """
         return max(self.probabilities, default=0.0)
 
