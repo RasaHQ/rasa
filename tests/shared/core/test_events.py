@@ -158,6 +158,20 @@ def test_json_parse_user():
     )
 
 
+def test_json_parse_action_executed_with_no_hide_rule():
+    evt = {
+        "event": "action",
+        "name": "action_listen",
+        "policy": None,
+        "confidence": None,
+        "timestamp": None,
+    }
+    deserialised: ActionExecuted = Event.from_parameters(evt)
+    expected = ActionExecuted("action_listen",)
+    assert deserialised == expected
+    assert deserialised.hide_rule_turn == expected.hide_rule_turn
+
+
 def test_json_parse_bot():
     evt = {"event": "bot", "text": "Hey there!", "data": {}}
     assert Event.from_parameters(evt) == BotUttered("Hey there!", {})
