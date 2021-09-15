@@ -3,12 +3,15 @@ import string
 import textwrap
 import uuid
 from collections import OrderedDict
-from pathlib import Path
 from typing import Callable, Text, List, Set, Any, Dict
+import copy
 
+from pathlib import Path
+import numpy as np
 import pytest
 
 import rasa.shared
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
@@ -17,6 +20,18 @@ from rasa.utils import io as io_utils
 
 os.environ["USER_NAME"] = "user"
 os.environ["PASS"] = "pass"
+
+
+@pytest.mark.parametrize("file, parents", [("A/test.yml", "A"), ("A", "A")])
+def test_file_in_path(file, parents):
+    assert rasa.shared.utils.io.is_subdirectory(file, parents)
+
+
+@pytest.mark.parametrize(
+    "file, parents", [("A", "A/B"), ("B", "A"), ("A/test.yml", "A/B"), (None, "A")]
+)
+def test_file_not_in_path(file, parents):
+    assert not rasa.shared.utils.io.is_subdirectory(file, parents)
 
 
 def test_raise_user_warning():
@@ -343,6 +358,17 @@ def test_create_directory_for_file(tmp_path: Path):
     assert os.path.exists(os.path.dirname(file))
 
 
+def test_write_utf_8_yaml_file(tmp_path: Path):
+    """This test makes sure that dumping a yaml doesn't result in Uxxxx sequences
+    but rather directly dumps the unicode character."""
+
+    file_path = str(tmp_path / "test.yml")
+    data = {"data": "amazing 🌈"}
+
+    rasa.shared.utils.io.write_yaml(data, file_path)
+    assert rasa.shared.utils.io.read_file(file_path) == "data: amazing 🌈\n"
+
+
 def test_write_json_file(tmp_path: Path):
     expected = {"abc": "dasds", "list": [1, 2, 3, 4], "nested": {"a": "b"}}
     file_path = str(tmp_path / "abc.txt")
@@ -567,3 +593,29 @@ def test_random_string(length):
     assert len(s) == length
     assert len(s2) == length
     assert s != s2
+
+
+@pytest.mark.parametrize(
+    "container",
+    [
+        {},
+        {"hello": "world"},
+        {1: 2},
+        {"foo": ["bar"]},
+        {"a": []},
+        [],
+        ["a"],
+        [{}],
+        [None],
+    ],
+)
+def test_fingerprint_containers(container):
+    assert rasa.shared.utils.io.deep_container_fingerprint(
+        container
+    ) == rasa.shared.utils.io.deep_container_fingerprint(copy.deepcopy(container))
+
+
+def test_deep_container_fingerprint_can_use_instance_fingerprint():
+    m1 = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
+    f = Features(m1, "sentence", "text", "CountVectorsFeaturizer")
+    assert rasa.shared.utils.io.deep_container_fingerprint(f) == f.fingerprint()
