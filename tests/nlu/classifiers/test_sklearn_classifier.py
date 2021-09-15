@@ -10,7 +10,7 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
     SpacyFeaturizerGraphComponent,
 )
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
-from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyModelProvider, SpacyPreprocessor
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyPreprocessor
 import rasa.shared.nlu.training_data.loading
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource

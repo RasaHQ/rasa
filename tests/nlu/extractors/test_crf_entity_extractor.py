@@ -14,7 +14,7 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
-from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyModelProvider, SpacyPreprocessor
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyPreprocessor
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import TEXT, ENTITIES
 from rasa.shared.nlu.training_data.message import Message
