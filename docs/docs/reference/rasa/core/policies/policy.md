@@ -29,6 +29,25 @@ Return trackers for a given policy.
 
   Trackers from ML-based training data and/or rule-based data.
 
+#### trackers\_for\_supported\_data
+
+```python
+@staticmethod
+def trackers_for_supported_data(supported_data: SupportedData, trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
+```
+
+Return trackers for a given policy.
+
+**Arguments**:
+
+- `supported_data` - Supported data filter for the `trackers`.
+- `trackers` - Trackers to split.
+  
+
+**Returns**:
+
+  Trackers from ML-based training data and/or rule-based data.
+
 ## PolicyGraphComponent Objects
 
 ```python

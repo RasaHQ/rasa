@@ -24,7 +24,11 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 from rasa.shared.exceptions import FileIOException
-from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
+from rasa.core.policies.policy import (
+    PolicyPrediction,
+    PolicyGraphComponent,
+    SupportedData,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
@@ -178,6 +182,10 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
             for t in training_trackers
             if not hasattr(t, "is_augmented") or not t.is_augmented
         ]
+        training_trackers = SupportedData.trackers_for_supported_data(
+            self.supported_data(), training_trackers
+        )
+
         (
             trackers_as_states,
             trackers_as_actions,

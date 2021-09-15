@@ -1,19 +1,7 @@
 import pytest
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-
-
-@pytest.fixture(scope="session")
-def mitie_feature_extractor(component_builder: ComponentBuilder, blank_config):
-    mitie_nlp_config = {"name": "MitieNLP"}
-    return component_builder.create_component(mitie_nlp_config, blank_config).extractor
-
-
-@pytest.fixture(scope="session")
-def blank_config() -> RasaNLUModelConfig:
-    return RasaNLUModelConfig({"language": "en", "pipeline": []})
 
 
 @pytest.fixture()
