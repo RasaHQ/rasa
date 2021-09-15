@@ -165,10 +165,12 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
 
         self._rules_sources = defaultdict(list)
 
-    def _validate_against_domain(self, domain: Domain) -> None:
-        if self._fallback_action_name not in domain.action_names_or_texts:
+    @classmethod
+    def _validate_against_domain(cls, config: Dict[Text, Any], domain: Domain) -> None:
+        fallback_action_name = config.get("core_fallback_action_name")
+        if fallback_action_name not in domain.action_names_or_texts:
             raise InvalidDomain(
-                f"The fallback action '{self._fallback_action_name}' which was "
+                f"The fallback action '{fallback_action_name}' which was "
                 f"configured for the {RulePolicy.__name__} must be present in the "
                 f"domain."
             )
@@ -772,7 +774,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         Returns:
             The resource which can be used to load the trained policy.
         """
-        self._validate_against_domain(domain)
+        self._validate_against_domain(self.config, domain)
 
         # only consider original trackers (no augmented ones)
         training_trackers = [
