@@ -220,7 +220,7 @@ def serve_application(
 
     app.register_listener(clear_model_files, "after_server_stop")
 
-    rasa.utils.common.update_sanic_log_level(log_file)
+    rasa.utils.common.update_sanic_log_level(log_file, use_syslog)
     app.run(
         host=interface,
         port=port,

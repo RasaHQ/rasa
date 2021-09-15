@@ -125,7 +125,8 @@ def update_tensorflow_log_level() -> None:
     logging.getLogger("tensorflow").propagate = False
 
 
-def update_sanic_log_level(log_file: Optional[Text] = None) -> None:
+def update_sanic_log_level(log_file: Optional[Text] = None,
+                           use_syslog: Optional[bool] = False) -> None:
     """Set the log level of sanic loggers to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     from sanic.log import logger, error_logger, access_logger
@@ -148,6 +149,15 @@ def update_sanic_log_level(log_file: Optional[Text] = None) -> None:
         logger.addHandler(file_handler)
         error_logger.addHandler(file_handler)
         access_logger.addHandler(file_handler)
+    if use_syslog:
+        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] [%(process)d]"
+                                      " %(message)s")
+        syslog_handler = logging.handlers.SysLogHandler(address='/dev/log')
+        syslog_handler.setFormatter(formatter)
+        logger.addHandler(syslog_handler)
+        error_logger.addHandler(syslog_handler)
+        access_logger.addHandler(syslog_handler)
+
 
 
 def update_asyncio_log_level() -> None:
