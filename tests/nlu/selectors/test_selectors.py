@@ -293,7 +293,7 @@ def test_train_model_checkpointing(
 
     config_params = {
         EPOCHS: 5,
-        MODEL_CONFIDENCE: "linear_norm",
+        MODEL_CONFIDENCE: "softmax",
         CONSTRAIN_SIMILARITIES: True,
         CHECKPOINT_MODEL: True,
         EVAL_NUM_EPOCHS: 1,
@@ -439,55 +439,6 @@ async def test_process_gives_diagnostic_data(
         # By default, ResponseSelector has `number_of_transformer_layers = 0`
         # in which case the attention weights should be None.
         assert values.get("attention_weights") is None
-
-
-@pytest.mark.parametrize(
-    "classifier_params, output_length",
-    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 9)],
-)
-async def test_cross_entropy_with_linear_norm(
-    classifier_params: Dict[Text, Any],
-    output_length: int,
-    monkeypatch: MonkeyPatch,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-):
-    pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "CountVectorsFeaturizer"},
-    ]
-    loaded_pipeline = load_pipeline(pipeline)
-    training_data = train_pipeline(loaded_pipeline, ["data/test_selectors"])
-
-    response_selector = create_response_selector(classifier_params)
-    response_selector.train(training_data=training_data)
-
-    message = Message(data={TEXT: "hello"})
-
-    for component in loaded_pipeline:
-        component.process(message)
-
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
-    classified_message = response_selector.process([message])[0]
-
-    response_ranking = (
-        classified_message.get("response_selector").get("default").get("ranking")
-    )
-
-    # check that the output was correctly truncated
-    assert len(response_ranking) == output_length
-
-    response_confidences = [response.get("confidence") for response in response_ranking]
-
-    # check whether normalization had the expected effect
-    output_sums_to_1 = sum(response_confidences) == pytest.approx(1)
-    assert output_sums_to_1
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
 
 
 @pytest.mark.parametrize(
