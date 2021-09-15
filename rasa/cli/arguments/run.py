@@ -57,8 +57,7 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     )
     server_arguments.add_argument(
         "--use-syslog",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Add syslog as a log handler",
     )
     add_endpoint_param(
