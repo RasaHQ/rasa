@@ -91,7 +91,7 @@ def test_prepare_for_training():
     domain = Domain(
         intents=["greet"],
         entities=["name"],
-        slots=[Slot("name")],
+        slots=[Slot("name", mappings=[{}])],
         responses={},
         forms={},
         action_names=["utter_greet", "action_check_weather"],

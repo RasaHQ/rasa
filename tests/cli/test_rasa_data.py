@@ -209,8 +209,12 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
         slots:
              first_name:
                 type: text
+                mappings:
+                - type: from_text
              last_nam:
                 type: text
+                mappings:
+                - type: from_text
         """
     )
     args = {

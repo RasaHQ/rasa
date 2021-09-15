@@ -17,6 +17,9 @@ entities:
 slots:
   name:
     type: text
+    mappings:
+      - type: from_entity
+        entity: name
 
 responses:
   utter_greet:
