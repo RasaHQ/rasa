@@ -3,6 +3,7 @@ import copy
 from typing import Dict, Text, List, Any, Callable
 
 import pytest
+from spacy import Language
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -13,7 +14,7 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
-from rasa.nlu.utils.spacy_utils import SpacyModelProvider, SpacyPreprocessor
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyModelProvider, SpacyPreprocessor
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import TEXT, ENTITIES
 from rasa.shared.nlu.training_data.message import Message
@@ -119,6 +120,7 @@ async def test_train_persist_with_different_configurations(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     spacy_tokenizer: SpacyTokenizerGraphComponent,
+    spacy_nlp: Language,
 ):
 
     crf_extractor = crf_entity_extractor(config_params)
@@ -126,7 +128,7 @@ async def test_train_persist_with_different_configurations(
     importer = RasaFileImporter(training_data_paths=["data/examples/rasa"])
     training_data = importer.get_nlu_data()
 
-    spacy_model = SpacyModelProvider.load_model("en_core_web_md")
+    spacy_model = SpacyModel(model=spacy_nlp, model_name="en_core_web_md")
     training_data = SpacyPreprocessor({}).process_training_data(
         training_data, spacy_model
     )
@@ -135,8 +137,8 @@ async def test_train_persist_with_different_configurations(
     crf_extractor.train(training_data)
 
     message = Message(data={TEXT: "I am looking for an italian restaurant"})
-    message = SpacyPreprocessor({}).process([message], spacy_model)[0]
-    message = spacy_tokenizer.process([message])[0]
+    messages = SpacyPreprocessor({}).process([message], spacy_model)
+    message = spacy_tokenizer.process(messages)[0]
 
     message2 = copy.deepcopy(message)
 
