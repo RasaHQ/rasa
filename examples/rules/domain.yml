@@ -20,8 +20,13 @@ slots:
   some_slot:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: some_slot
   detailed_faq:
     type: bool
+    mappings:
+    - type: custom
 
 actions:
 - utter_explain_some_slot

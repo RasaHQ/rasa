@@ -216,6 +216,8 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
           {some_slot}:
             type: text
             initial_value: {some_slot_initial_value}
+            mappings:
+            - type: from_text
         """
     )
     greet_rule_at_conversation_start = TrackerWithCachedStates.from_events(
@@ -287,6 +289,8 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
           {some_slot}:
             type: text
             initial_value: {some_slot_initial_value}
+            mappings:
+            - type: from_text
         """
     )
 
@@ -380,6 +384,8 @@ def test_incomplete_rules_due_to_slots(policy: RulePolicy):
         slots:
           {some_slot}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
 
@@ -450,6 +456,8 @@ def test_no_incomplete_rules_due_to_slots_after_listen(policy: RulePolicy):
         slots:
           {some_slot}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
 
@@ -508,8 +516,12 @@ def test_no_incomplete_rules_due_to_additional_slots_set(policy: RulePolicy):
         slots:
           {some_slot}:
             type: text
+            mappings:
+            - type: from_text
           {some_other_slot}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
 
@@ -835,6 +847,8 @@ async def test_predict_form_action_if_in_form(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -877,6 +891,8 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule(policy: Rule
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {loop_name}: {{}}
         """
@@ -931,6 +947,8 @@ async def test_predict_form_action_if_multiple_turns(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -979,6 +997,8 @@ slots:
       - v1
       - v2
     initial_value: v1
+    mappings:
+    - type: from_text
 """
     )
 
@@ -1027,6 +1047,8 @@ slots:
       - v1
       - v2
     initial_value: v1
+    mappings:
+    - type: from_text
 """
     )
 
@@ -1072,6 +1094,8 @@ async def test_predict_action_listen_after_form(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1116,6 +1140,8 @@ async def test_dont_predict_form_if_already_finished(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1164,6 +1190,8 @@ async def test_form_unhappy_path(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1206,6 +1234,8 @@ async def test_form_unhappy_path_from_general_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1261,6 +1291,8 @@ async def test_form_unhappy_path_from_in_form_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1334,6 +1366,8 @@ async def test_form_unhappy_path_from_story(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1408,6 +1442,8 @@ async def test_form_unhappy_path_no_validation_from_rule(
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1496,6 +1532,8 @@ async def test_form_unhappy_path_no_validation_from_story(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1563,6 +1601,8 @@ async def test_form_unhappy_path_without_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1606,6 +1646,8 @@ async def test_form_activation_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1644,6 +1686,8 @@ async def test_failing_form_activation_due_to_no_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1682,6 +1726,8 @@ def test_form_submit_rule(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -1733,8 +1779,12 @@ def test_immediate_submit(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
           {slot}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         entities:
@@ -2146,8 +2196,12 @@ def test_hide_rule_turn_with_slots(
         slots:
           {slot_which_is_only_in_rule}:
             type: text
+            mappings:
+            - type: from_text
           {slot_which_is_also_in_story}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
 
@@ -2268,6 +2322,8 @@ def test_hide_rule_turn_no_last_action_listen(
         slots:
           {followup_on_chitchat}:
             type: bool
+            mappings:
+            - type: from_text
         """
     )
     simple_rule_no_last_action_listen = TrackerWithCachedStates.from_events(
@@ -2357,6 +2413,8 @@ def test_hide_rule_turn_with_loops(
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
           {another_form_name}: {{}}
@@ -2455,6 +2513,8 @@ def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -2512,6 +2572,8 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
         slots:
           {REQUESTED_SLOT}:
             type: any
+            mappings:
+            - type: from_text
         forms:
           {form_name}: {{}}
         """
@@ -2900,11 +2962,15 @@ def test_rule_with_multiple_slots(policy: RulePolicy):
                 values:
                  - {value_1}
                  - {value_2}
+                mappings:
+                - type: from_text
               {slot_2}:
                 type: categorical
                 values:
                  - {value_1}
                  - {value_2}
+                mappings:
+                - type: from_text
             """
     )
     rule = TrackerWithCachedStates.from_events(
@@ -2964,11 +3030,15 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
                     values:
                      - {value_1}
                      - {value_2}
+                    mappings:
+                    - type: from_text
                   {slot_2}:
                     type: categorical
                     values:
                      - {value_1}
                      - {value_2}
+                    mappings:
+                    - type: from_text
                 """
     )
     rule_1 = TrackerWithCachedStates.from_events(

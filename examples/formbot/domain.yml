@@ -23,25 +23,53 @@ slots:
     type: text
     influence_conversation: false
     auto_fill: false
+    mappings:
+    - type: from_entity
+      entity: cuisine
   num_people:
     type: float
     influence_conversation: false
     auto_fill: false
+    mappings:
+    - type: from_entity
+      entity: number
+      intent: [inform, request_restaurant]
   outdoor_seating:
     type: text
     influence_conversation: false
     auto_fill: false
+    mappings:
+    - type: from_entity
+      entity: seating
+    - type: from_intent
+      intent: affirm
+      value: true
+    - type: from_intent
+      intent: deny
+      value: false
   preferences:
     type: text
     influence_conversation: false
     auto_fill: false
+    mappings:
+    - type: from_intent
+      intent: deny
+      value: no additional preferences
+    - type: from_text
+      not_intent: affirm
   feedback:
     type: text
     influence_conversation: false
     auto_fill: false
+    mappings:
+    - type: from_entity
+      entity: feedback
+    - type: from_text
   requested_slot:
     type: text
     influence_conversation: false
+    mappings:
+      - type: from_text
 
 responses:
   utter_ask_cuisine:
