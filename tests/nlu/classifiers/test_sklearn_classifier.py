@@ -1,19 +1,22 @@
 import copy
 import logging
-from typing import Text
+from typing import Callable, List, Text, Tuple
 
 import pytest
 from _pytest.logging import LogCaptureFixture
 
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
+    SpacyFeaturizerGraphComponent,
+)
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
+from rasa.nlu.utils.spacy_utils import SpacyModelProvider, SpacyPreprocessor
 import rasa.shared.nlu.training_data.loading
-from rasa.engine.graph import ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu import registry
 from rasa.nlu.classifiers.sklearn_intent_classifier import (
     SklearnIntentClassifierGraphComponent,
 )
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
@@ -39,21 +42,20 @@ def test_persist_and_load(
     default_sklearn_intent_classifier: SklearnIntentClassifierGraphComponent,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
 ):
-    pipeline = [
-        {"name": "SpacyNLP", "model": "en_core_web_md"},
-        {"name": "SpacyTokenizer"},
-        {"name": "SpacyFeaturizer"},
-    ]
-    loaded_pipeline = [
-        registry.get_component_class(component.pop("name")).create(
-            component, RasaNLUModelConfig()
-        )
-        for component in copy.deepcopy(pipeline)
-    ]
-    for component in loaded_pipeline:
-        component.train(training_data)
+    spacy_model = SpacyModelProvider.load_model("en_core_web_md")
+    training_data = SpacyPreprocessor({}).process_training_data(
+        training_data, spacy_model
+    )
 
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline=[
+            {"component": SpacyTokenizerGraphComponent},
+            {"component": SpacyFeaturizerGraphComponent},
+        ],
+        training_data=training_data,
+    )
     default_sklearn_intent_classifier.train(training_data)
 
     loaded = SklearnIntentClassifierGraphComponent.load(

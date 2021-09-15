@@ -54,15 +54,12 @@ class SpacyModelProvider(GraphComponent):
     model is only loaded once and then shared by depending components.
     """
 
-    def __init__(
-        self, model: Optional[Language] = None, model_name: Optional[Text] = None,
-    ) -> None:
+    def __init__(self, model: Optional[SpacyModel] = None) -> None:
         """Initializes a `SpacyModelProvider`."""
         self._model = model
-        self._model_name = model_name
 
     @staticmethod
-    def load_model(spacy_model_name: Text) -> Language:
+    def load_model(spacy_model_name: Text) -> SpacyModel:
         """Try loading the model, catching the OSError if missing."""
         import spacy
 
@@ -77,7 +74,8 @@ class SpacyModelProvider(GraphComponent):
             )
 
         try:
-            return spacy.load(spacy_model_name, disable=["parser"])
+            language = spacy.load(spacy_model_name, disable=["parser"])
+            return SpacyModel(model=language, model_name=spacy_model_name)
         except OSError:
             raise InvalidModelError(
                 f"Please confirm that {spacy_model_name} is an available spaCy model. "
@@ -106,8 +104,8 @@ class SpacyModelProvider(GraphComponent):
 
         model = cls.load_model(spacy_model_name)
 
-        cls.ensure_proper_language_model(model)
-        return cls(model, spacy_model_name)
+        cls.ensure_proper_language_model(model.model)
+        return cls(model)
 
     @staticmethod
     def ensure_proper_language_model(nlp: Optional[Language]) -> None:
@@ -133,7 +131,7 @@ class SpacyModelProvider(GraphComponent):
 
     def provide(self) -> SpacyModel:
         """Provides the loaded SpaCy model."""
-        return SpacyModel(model=self._model, model_name=self._model_name)
+        return self._model
 
 
 class SpacyPreprocessor(GraphComponent):
@@ -291,7 +289,7 @@ class SpacyPreprocessor(GraphComponent):
 
     def process_training_data(
         self, training_data: TrainingData, spacy_model: SpacyModel
-    ) -> None:
+    ) -> TrainingData:
         """Adds SpaCy tokens and features to training data messages."""
         model = spacy_model.model
 
@@ -307,7 +305,11 @@ class SpacyPreprocessor(GraphComponent):
                     # in preprocess method
                     example.set(SPACY_DOCS[attribute], example_attribute_doc)
 
-    def process(self, messages: List[Message], spacy_model: SpacyModel) -> None:
+        return training_data
+
+    def process(
+        self, messages: List[Message], spacy_model: SpacyModel
+    ) -> List[Message]:
         """Adds SpaCy tokens and features to messages."""
         model = spacy_model.model
         for message in messages:
@@ -317,3 +319,5 @@ class SpacyPreprocessor(GraphComponent):
                         SPACY_DOCS[attribute],
                         self._doc_for_text(model, message.get(attribute)),
                     )
+
+        return messages
