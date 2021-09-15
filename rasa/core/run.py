@@ -101,7 +101,7 @@ def configure_app(
 
     rasa.core.utils.configure_file_logging(logger,
                                            log_file,
-                                           use_syslog)
+                                           use_syslog,)
 
     if enable_api:
         app = server.create_app(
