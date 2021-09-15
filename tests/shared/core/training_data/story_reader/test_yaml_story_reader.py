@@ -60,8 +60,8 @@ def test_can_read_test_story_with_slots(domain: Domain):
 @pytest.mark.parametrize(
     "domain_dict",
     [
-        {"slots": {"my_slot": {"type": "text"}}},
-        {"slots": {"my_slot": {"type": "list"}}},
+        {"slots": {"my_slot": {"type": "text", "mappings": [{}]}}},
+        {"slots": {"my_slot": {"type": "list", "mappings": [{}]}}},
     ],
 )
 async def test_default_slot_value_if_slots_referenced_by_name_only(domain_dict: Dict):
@@ -84,8 +84,8 @@ async def test_default_slot_value_if_slots_referenced_by_name_only(domain_dict: 
 @pytest.mark.parametrize(
     "domain_dict",
     [
-        {"slots": {"my_slot": {"type": "categorical"}}},
-        {"slots": {"my_slot": {"type": "float"}}},
+        {"slots": {"my_slot": {"type": "categorical", "mappings": [{}]}}},
+        {"slots": {"my_slot": {"type": "float", "mappings": [{}]}}},
     ],
 )
 async def test_default_slot_value_if_incompatible_slots_referenced_by_name_only(
@@ -137,7 +137,7 @@ async def test_default_slot_value_if_unfeaturized_slot():
         - my_slot
     """
     domain = Domain.from_dict(
-        {"intents": ["greet"], "slots": {"my_slot": {"type": "any"}}}
+        {"intents": ["greet"], "slots": {"my_slot": {"type": "any", "mappings": [{}]}}}
     )
     reader = YAMLStoryReader(domain)
     with pytest.warns(None) as warnings:

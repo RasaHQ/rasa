@@ -7,8 +7,12 @@ intents:
 slots:
   cuisine:
     type: text
+    mappings:
+      - type: from_text
   location:
     type: text
+    mappings:
+      - type: from_text
 
 entities:
   - name

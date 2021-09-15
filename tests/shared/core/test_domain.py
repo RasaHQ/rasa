@@ -1,5 +1,6 @@
 import copy
 import json
+import textwrap
 from pathlib import Path
 import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
@@ -195,6 +196,8 @@ def test_custom_slot_type(tmpdir: Path):
        slots:
          custom:
            type: tests.core.conftest.CustomSlot
+           mappings:
+           - type: from_text
 
        responses:
          utter_greet:
@@ -233,7 +236,8 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
 
 
 def test_domain_to_dict():
-    test_yaml = f"""
+    test_yaml = textwrap.dedent(
+        f"""
     actions:
     - action_save_world
     config:
@@ -256,17 +260,20 @@ def test_domain_to_dict():
         type: categorical
         values:
         - high
-        - low"""
+        - low
+        mappings:
+        - type: from_text"""
+    )
 
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
 
     assert domain_as_dict == {
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
+        KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
         "entities": [],
         "forms": {"some_form": {"required_slots": {}}},
         "intents": [],
-        "e2e_actions": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
         "session_config": {
             "carry_over_slots_to_new_session": True,
@@ -275,13 +282,13 @@ def test_domain_to_dict():
         "slots": {
             "some_slot": {
                 "values": ["high", "low"],
-                "initial_value": None,
                 "auto_fill": True,
                 "influence_conversation": True,
+                "initial_value": None,
+                "mappings": [{"type": "from_text"}],
                 "type": "rasa.shared.core.slots.CategoricalSlot",
             }
         },
-        KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
     }
 
 
@@ -340,6 +347,8 @@ intents:
 slots:
   cuisine:
     type: text
+    mappings:
+    - type: from_text
 {KEY_E2E_ACTIONS}:
 - Bye
 responses:
@@ -437,6 +446,8 @@ def test_merge_with_empty_domain():
         slots:
           cuisine:
             type: text
+            mappings:
+            - type: from_text
         responses:
           utter_goodbye:
           - text: bye!
@@ -467,6 +478,8 @@ def test_merge_with_empty_other_domain(other: Optional[Domain]):
         slots:
           cuisine:
             type: text
+            mappings:
+            - type: from_text
         responses:
           utter_goodbye:
           - text: bye!
@@ -714,11 +727,16 @@ def test_unfeaturized_slot_in_domain_warnings():
     domain = Domain.from_dict(
         {
             "slots": {
-                featurized_slot_name: {"initial_value": "value2", "type": "text"},
+                featurized_slot_name: {
+                    "initial_value": "value2",
+                    "type": "text",
+                    "mappings": [{}],
+                },
                 unfeaturized_slot_name: {
                     "type": "text",
                     "initial_value": "value1",
                     "influence_conversation": False,
+                    "mappings": [{}],
                 },
             }
         }
@@ -749,7 +767,10 @@ def test_check_domain_sanity_on_invalid_domain():
         Domain(
             intents={},
             entities=[],
-            slots=[TextSlot("random_name"), TextSlot("random_name")],
+            slots=[
+                TextSlot("random_name", mappings=[{}]),
+                TextSlot("random_name", mappings=[{}]),
+            ],
             responses={},
             action_names=[],
             forms={},
@@ -1010,7 +1031,7 @@ def test_domain_from_dict_does_not_change_input():
             "pure_intent",
         ],
         "entities": ["name", "unrelated_recognized_entity", "other"],
-        "slots": {"name": {"type": "text"}},
+        "slots": {"name": {"type": "text", "mappings": [{}]}},
         "responses": {
             "utter_greet": [{"text": "hey there {name}!"}],
             "utter_goodbye": [{"text": "goodbye 😢"}, {"text": "bye bye 😢"}],
@@ -1264,30 +1285,48 @@ slots:
   confirm:
     type: bool
     influence_conversation: false
+    mappings:
+    - type: custom
   previous_email:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
   caller_id:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
   email:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
   incident_title:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
   priority:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
   problem_description:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
   requested_slot:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
   handoff_to:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
 """
 
     domain = Domain.from_yaml(test_yaml)
@@ -1299,9 +1338,13 @@ def test_slot_order_is_preserved_when_merging():
   b:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
   a:
     type: text
-    influence_conversation: false"""
+    influence_conversation: false
+    mappings:
+    - type: from_text"""
 
     test_yaml_1 = f"""
 slots:{slot_1}
@@ -1311,9 +1354,13 @@ slots:{slot_1}
   d:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_text
   c:
     type: text
-    influence_conversation: false"""
+    influence_conversation: false
+    mappings:
+    - type: from_text"""
 
     test_yaml_2 = f"""
 slots:{slot_2}
@@ -1475,6 +1522,8 @@ def test_domain_fingerprint_consistency_across_runs():
          slots:
            name:
              type: text
+             mappings:
+             - type: from_text
          responses:
            utter_greet:
              - text: "Hi"
