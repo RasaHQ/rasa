@@ -30,7 +30,7 @@ class Slot:
         mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
+        auto_fill: bool = False,
         influence_conversation: bool = True,
     ) -> None:
         """Create a Slot.
@@ -51,6 +51,15 @@ class Slot:
         self._value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
+        if auto_fill:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "Slot auto-fill has been deactivated in 3.0 and replaced by a"
+                " new explicit mechanism to specify slot mappings. "
+                "Please refer to the docs to learn more.",
+                "4.0.0",
+                docs=None,
+            )
+            auto_fill = False
         self.auto_fill = auto_fill
         self.influence_conversation = influence_conversation
         self._has_been_set = False
@@ -145,6 +154,7 @@ class Slot:
             )
 
     def persistence_info(self) -> Dict[str, Any]:
+        """Returns relevant information to persist this slot."""
         return {
             "type": rasa.shared.utils.common.module_path_from_instance(self),
             "initial_value": self.initial_value,
@@ -175,7 +185,7 @@ class FloatSlot(Slot):
         mappings: List[Dict[Text, Any]],
         initial_value: Optional[float] = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
+        auto_fill: bool = False,
         max_value: float = 1.0,
         min_value: float = 0.0,
         influence_conversation: bool = True,
@@ -316,7 +326,7 @@ class CategoricalSlot(Slot):
         values: Optional[List[Any]] = None,
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
+        auto_fill: bool = False,
         influence_conversation: bool = True,
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
@@ -407,8 +417,11 @@ class CategoricalSlot(Slot):
 
 
 class AnySlot(Slot):
-    """Slot which can be used to store any value. Users need to create a subclass of
-    `Slot` in case the information is supposed to get featurized."""
+    """Slot which can be used to store any value.
+
+    Users need to create a subclass of `Slot` in case
+    the information is supposed to get featurized.
+    """
 
     type_name = "any"
 
@@ -418,7 +431,7 @@ class AnySlot(Slot):
         mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
+        auto_fill: bool = False,
         influence_conversation: bool = False,
     ) -> None:
         """Creates an `Any  Slot` (see parent class for detailed docstring).

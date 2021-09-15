@@ -1,4 +1,4 @@
-from typing import Any, Tuple, List, Dict, Text
+from typing import Any, Tuple, List, Dict, Text, Type
 
 import pytest
 from _pytest.fixtures import SubRequest
@@ -389,3 +389,14 @@ def test_categorical_slot_ignores_none_value():
 
     message_text = "Rasa will ignore `null` as a possible value for the 'branch' slot."
     assert any(message_text in record.message.args[0] for record in records)
+
+
+@pytest.mark.parametrize(
+    "slot_type", [FloatSlot, BooleanSlot, TextSlot, ListSlot, AnySlot, CategoricalSlot]
+)
+def test_raises_deprecation_warning_auto_fill_true(slot_type: Type[Slot]):
+    with pytest.warns(FutureWarning) as warning:
+        slot = slot_type(name="test", mappings=[{}], auto_fill=True)
+
+    assert slot.auto_fill is False
+    assert "Slot auto-fill has been deactivated in 3.0" in str(warning[0].message)
