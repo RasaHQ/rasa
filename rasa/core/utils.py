@@ -30,21 +30,24 @@ logger = logging.getLogger(__name__)
 
 
 def configure_file_logging(
-    logger_obj: logging.Logger, log_file: Optional[Text]
+    logger_obj: logging.Logger, log_file: Optional[Text], use_syslog: Optional[bool]
 ) -> None:
     """Configure logging to a file.
 
     Args:
         logger_obj: Logger object to configure.
         log_file: Path of log file to write to.
+        use_syslog: Add syslog as a logger
     """
-    if not log_file:
+    if not log_file and not use_syslog:
         return
-    if log_file == "/dev/log":
+    formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+    if use_syslog:
         syslog_handler = logging.handlers.SysLogHandler(address=log_file)
         syslog_handler.setLevel(logger_obj.level)
+        syslog_handler.setFormatter(formatter)
         logger_obj.addHandler(syslog_handler)
-    else:
+    if log_file:
         formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
         file_handler = logging.FileHandler(
             log_file, encoding=rasa.shared.utils.io.DEFAULT_ENCODING

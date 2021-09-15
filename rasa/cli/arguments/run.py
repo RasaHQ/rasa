@@ -55,6 +55,12 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Store logs in specified file.",
     )
+    server_arguments.add_argument(
+        "--use-syslog",
+        type=bool,
+        default=False,
+        help="Add syslog as a log handler",
+    )
     add_endpoint_param(
         parser,
         help_text="Configuration file for the model server and the connectors as a "
@@ -113,7 +119,6 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         help="If your ssl-keyfile is protected by a password, you can specify it "
         "using this paramer.",
     )
-
     channel_arguments = parser.add_argument_group("Channels")
     channel_arguments.add_argument(
         "--credentials",
