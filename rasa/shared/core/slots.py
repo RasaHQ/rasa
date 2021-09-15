@@ -27,6 +27,7 @@ class Slot:
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
@@ -37,6 +38,7 @@ class Slot:
         Args:
             name: The name of the slot.
             initial_value: The initial value of the slot.
+            mappings: List containing slot mappings.
             value_reset_delay: After how many turns the slot should be reset to the
                 initial_value. This is behavior is currently not implemented.
             auto_fill: `True` if the slot should be filled automatically by entities
@@ -45,6 +47,7 @@ class Slot:
                 influence the predictions of the dialogue polices.
         """
         self.name = name
+        self.mappings = mappings
         self._value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
@@ -147,6 +150,7 @@ class Slot:
             "initial_value": self.initial_value,
             "auto_fill": self.auto_fill,
             "influence_conversation": self.influence_conversation,
+            "mappings": self.mappings,
         }
 
     def fingerprint(self) -> Text:
@@ -168,6 +172,7 @@ class FloatSlot(Slot):
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Optional[float] = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
@@ -182,7 +187,12 @@ class FloatSlot(Slot):
             UserWarning, if initial_value is outside the min-max range.
         """
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            auto_fill,
+            influence_conversation,
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -302,6 +312,7 @@ class CategoricalSlot(Slot):
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         values: Optional[List[Any]] = None,
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
@@ -310,7 +321,12 @@ class CategoricalSlot(Slot):
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            auto_fill,
+            influence_conversation,
         )
         if values and None in values:
             rasa.shared.utils.io.raise_warning(
@@ -399,11 +415,17 @@ class AnySlot(Slot):
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
         influence_conversation: bool = False,
     ) -> None:
+        """Creates an `Any  Slot` (see parent class for detailed docstring).
+
+        Raises:
+            InvalidSlotConfigError, if slot is featurized.
+        """
         if influence_conversation:
             raise InvalidSlotConfigError(
                 f"An {AnySlot.__name__} cannot be featurized. "
@@ -414,7 +436,12 @@ class AnySlot(Slot):
             )
 
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            auto_fill,
+            influence_conversation,
         )
 
     def __eq__(self, other: Any) -> bool:

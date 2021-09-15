@@ -1,4 +1,4 @@
-from typing import Any, Tuple, List
+from typing import Any, Tuple, List, Dict, Text
 
 import pytest
 from _pytest.fixtures import SubRequest
@@ -25,7 +25,9 @@ class SlotTestCollection:
 
     Each slot can declare further tests on its own."""
 
-    def create_slot(self, influence_conversation: bool) -> Slot:
+    def create_slot(
+        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+    ) -> Slot:
         raise NotImplementedError
 
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
@@ -37,8 +39,16 @@ class SlotTestCollection:
         featurization is not defined."""
         raise NotImplementedError
 
-    def test_featurization(self, value_feature_pair: Tuple[Any, List[float]]):
-        slot = self.create_slot(influence_conversation=True)
+    @pytest.fixture()
+    def mappings(self) -> List[Dict[Text, Any]]:
+        return [{}]
+
+    def test_featurization(
+        self,
+        value_feature_pair: Tuple[Any, List[float]],
+        mappings: List[Dict[Text, Any]],
+    ):
+        slot = self.create_slot(mappings=mappings, influence_conversation=True)
         value, expected = value_feature_pair
         slot.value = value
         assert slot.as_feature() == expected
@@ -52,17 +62,19 @@ class SlotTestCollection:
             slot.value == slot.initial_value
         ), "Slot should be reset to its initial value"
 
-    def test_empty_slot_featurization(self):
-        slot = self.create_slot(influence_conversation=True)
+    def test_empty_slot_featurization(self, mappings: List[Dict[Text, Any]]):
+        slot = self.create_slot(mappings=mappings, influence_conversation=True)
         assert (
             slot.value == slot.initial_value
         ), "An empty slot should be set to the initial value"
         assert len(slot.as_feature()) == slot.feature_dimensionality()
 
     def test_featurization_if_marked_as_unfeaturized(
-        self, value_feature_pair: Tuple[Any, List[float]]
+        self,
+        value_feature_pair: Tuple[Any, List[float]],
+        mappings: List[Dict[Text, Any]],
     ):
-        slot = self.create_slot(influence_conversation=False)
+        slot = self.create_slot(mappings=mappings, influence_conversation=False)
         value, _ = value_feature_pair
         slot.value = value
 
@@ -72,20 +84,24 @@ class SlotTestCollection:
         dimensions = slot.feature_dimensionality()
         assert dimensions == 0
 
-    def test_has_a_type_name(self):
-        slot = self.create_slot(influence_conversation=True)
+    def test_has_a_type_name(self, mappings: List[Dict[Text, Any]]):
+        slot = self.create_slot(mappings=mappings, influence_conversation=True)
         assert slot.type_name is not None
         assert type(slot) == Slot.resolve_by_type(slot.type_name)
 
-    def test_handles_invalid_values(self, invalid_value: Any):
-        slot = self.create_slot(influence_conversation=True)
+    def test_handles_invalid_values(
+        self, invalid_value: Any, mappings: List[Dict[Text, Any]]
+    ):
+        slot = self.create_slot(mappings=mappings, influence_conversation=True)
         slot.value = invalid_value
         assert slot.as_feature() is not None
         assert len(slot.as_feature()) == slot.feature_dimensionality()
 
     @pytest.mark.parametrize("influence_conversation", [True, False])
-    def test_serialization(self, influence_conversation: bool):
-        slot = self.create_slot(influence_conversation)
+    def test_serialization(
+        self, influence_conversation: bool, mappings: List[Dict[Text, Any]]
+    ):
+        slot = self.create_slot(mappings, influence_conversation)
 
         persistence_info = slot.persistence_info()
 
@@ -99,9 +115,12 @@ class SlotTestCollection:
 
     @pytest.mark.parametrize("influence_conversation", [True, False])
     def test_slot_has_been_set(
-        self, influence_conversation: bool, value_feature_pair: Tuple[Any, List[float]]
+        self,
+        influence_conversation: bool,
+        value_feature_pair: Tuple[Any, List[float]],
+        mappings: List[Dict[Text, Any]],
     ):
-        slot = self.create_slot(influence_conversation)
+        slot = self.create_slot(mappings, influence_conversation)
         assert not slot.has_been_set
         value, _ = value_feature_pair
         slot.value = value
@@ -110,16 +129,20 @@ class SlotTestCollection:
         assert not slot.has_been_set
 
     @pytest.mark.parametrize("influence_conversation", [True, False])
-    def test_slot_fingerprint_consistency(self, influence_conversation: bool):
-        slot1 = self.create_slot(influence_conversation)
-        slot2 = self.create_slot(influence_conversation)
+    def test_slot_fingerprint_consistency(
+        self, influence_conversation: bool, mappings: List[Dict[Text, Any]]
+    ):
+        slot1 = self.create_slot(mappings, influence_conversation)
+        slot2 = self.create_slot(mappings, influence_conversation)
         f1 = slot1.fingerprint()
         f2 = slot2.fingerprint()
         assert f1 == f2
 
     @pytest.mark.parametrize("influence_conversation", [True, False])
-    def test_slot_fingerprint_uniqueness(self, influence_conversation: bool):
-        slot = self.create_slot(influence_conversation)
+    def test_slot_fingerprint_uniqueness(
+        self, influence_conversation: bool, mappings: List[Dict[Text, Any]]
+    ):
+        slot = self.create_slot(mappings, influence_conversation)
         f1 = slot.fingerprint()
         slot.value = "changed"
         f2 = slot.fingerprint()
@@ -127,8 +150,12 @@ class SlotTestCollection:
 
 
 class TestTextSlot(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool) -> Slot:
-        return TextSlot("test", influence_conversation=influence_conversation)
+    def create_slot(
+        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+    ) -> Slot:
+        return TextSlot(
+            "test", mappings=mappings, influence_conversation=influence_conversation
+        )
 
     @pytest.fixture(params=[1, {"a": "b"}, 2.0, [], True])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -147,8 +174,12 @@ class TestTextSlot(SlotTestCollection):
 
 
 class TestBooleanSlot(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool) -> Slot:
-        return BooleanSlot("test", influence_conversation=influence_conversation)
+    def create_slot(
+        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+    ) -> Slot:
+        return BooleanSlot(
+            "test", mappings=mappings, influence_conversation=influence_conversation
+        )
 
     @pytest.fixture(params=[{"a": "b"}, [], "asd", "🌴"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -184,8 +215,12 @@ def test_bool_from_any_raises_type_error():
 
 
 class TestFloatSlot(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool = False) -> Slot:
-        return FloatSlot("test", influence_conversation=influence_conversation)
+    def create_slot(
+        self, mappings: List[Dict[Text, Any]], influence_conversation: bool = False
+    ) -> Slot:
+        return FloatSlot(
+            "test", mappings=mappings, influence_conversation=influence_conversation
+        )
 
     @pytest.fixture(params=[{"a": "b"}, [], "asd", "🌴"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -207,8 +242,12 @@ class TestFloatSlot(SlotTestCollection):
 
 
 class TestListSlot(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool) -> Slot:
-        return ListSlot("test", influence_conversation=influence_conversation)
+    def create_slot(
+        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+    ) -> Slot:
+        return ListSlot(
+            "test", mappings=mappings, influence_conversation=influence_conversation
+        )
 
     @pytest.fixture(params=[{"a": "b"}, 1, True, "asd", "🌴"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -219,8 +258,10 @@ class TestListSlot(SlotTestCollection):
         return request.param
 
     @pytest.mark.parametrize("value", ["cat", ["cat"]])
-    def test_apply_single_item_to_slot(self, value: Any):
-        slot = self.create_slot(influence_conversation=False)
+    def test_apply_single_item_to_slot(
+        self, value: Any, mappings: List[Dict[Text, Any]],
+    ):
+        slot = self.create_slot(mappings=mappings, influence_conversation=False)
         tracker = DialogueStateTracker.from_events("sender", evts=[], slots=[slot])
 
         slot_event = SlotSet(slot.name, value)
@@ -230,9 +271,12 @@ class TestListSlot(SlotTestCollection):
 
 
 class TestCategoricalSlot(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool) -> Slot:
+    def create_slot(
+        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+    ) -> Slot:
         return CategoricalSlot(
             "test",
+            mappings=mappings,
             values=[1, "two", "小于", {"three": 3}, "nOnE", "None", "null"],
             influence_conversation=influence_conversation,
         )
@@ -263,9 +307,12 @@ class TestCategoricalSlot(SlotTestCollection):
 
 
 class TestCategoricalSlotDefaultValue(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool) -> Slot:
+    def create_slot(
+        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+    ) -> Slot:
         slot = CategoricalSlot(
             "test",
+            mappings=mappings,
             values=[1, "two", "小于", {"three": 3}, "nOnE", "None", "null"],
             influence_conversation=influence_conversation,
         )
@@ -299,8 +346,10 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
 
 
 class TestAnySlot(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool) -> Slot:
-        return AnySlot("test", influence_conversation=False)
+    def create_slot(
+        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+    ) -> Slot:
+        return AnySlot("test", mappings=mappings, influence_conversation=False)
 
     @pytest.fixture(params=["there is nothing invalid, but we need to pass something"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -317,9 +366,11 @@ class TestAnySlot(SlotTestCollection):
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
-    def test_exception_if_featurized(self):
+    def test_exception_if_featurized(
+        self, mappings: List[Dict[Text, Any]],
+    ):
         with pytest.raises(InvalidSlotConfigError):
-            AnySlot("⛔️", influence_conversation=True)
+            AnySlot("⛔️", mappings=mappings, influence_conversation=True)
 
 
 def test_raises_on_invalid_slot_type():
@@ -330,7 +381,9 @@ def test_raises_on_invalid_slot_type():
 def test_categorical_slot_ignores_none_value():
     """Checks that None can't be added as a possible value for categorical slots."""
     with pytest.warns(UserWarning) as records:
-        slot = CategoricalSlot(name="branch", values=["Berlin", None, "San Francisco"])
+        slot = CategoricalSlot(
+            name="branch", mappings=[{}], values=["Berlin", None, "San Francisco"]
+        )
 
     assert not ("none" in slot.values)
 

@@ -790,6 +790,7 @@ class Domain:
             self.slots.append(
                 TextSlot(
                     rasa.shared.core.constants.REQUESTED_SLOT,
+                    mappings=[{}],
                     influence_conversation=False,
                 )
             )
@@ -820,11 +821,15 @@ class Domain:
             ]
             for slot in knowledge_base_slots:
                 if slot not in slot_names:
-                    self.slots.append(TextSlot(slot, influence_conversation=False))
+                    self.slots.append(
+                        TextSlot(slot, mappings=[{}], influence_conversation=False)
+                    )
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
+            AnySlot(
+                rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[{}]
+            )
         )
 
     def index_for_action(self, action_name: Text) -> int:
