@@ -75,7 +75,7 @@ Validates that the component is configured properly.
 
 ```python
 @classmethod
-def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]) -> None
+def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[TokenizerGraphComponent]) -> None
 ```
 
 Validates that the featurizer is compatible with the given tokenizer.

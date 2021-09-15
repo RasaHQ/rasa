@@ -6,7 +6,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.mitie_intent_classifier import (
     MitieIntentClassifierGraphComponent,
 )
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
 
 from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
 import rasa.shared.nlu.training_data.loading
@@ -38,6 +38,7 @@ def test_train_load_predict_loop(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     mitie_model: MitieModel,
+    mitie_tokenizer: MitieTokenizerGraphComponent,
 ):
     resource = Resource("mitie_classifier")
     component = MitieIntentClassifierGraphComponent.create(
@@ -50,9 +51,8 @@ def test_train_load_predict_loop(
     training_data = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.yml"
     )
-    tokenizer = MitieTokenizer()
     # Tokenize message as classifier needs that
-    tokenizer.train(training_data)
+    mitie_tokenizer.process_training_data(training_data)
 
     component.train(training_data, mitie_model)
 
@@ -64,7 +64,7 @@ def test_train_load_predict_loop(
     )
 
     test_message = Message({TEXT: "hi"})
-    tokenizer.process(test_message)
+    mitie_tokenizer.process([test_message])
     component.process([test_message], mitie_model)
 
     assert test_message.data[INTENT][INTENT_NAME_KEY] == "greet"
@@ -75,6 +75,7 @@ def test_load_from_untrained(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     mitie_model: MitieModel,
+    mitie_tokenizer: MitieTokenizerGraphComponent,
 ):
     resource = Resource("some_resource")
 
@@ -86,7 +87,7 @@ def test_load_from_untrained(
     )
 
     test_message = Message({TEXT: "hi"})
-    MitieTokenizer().process(test_message)
+    mitie_tokenizer.process([test_message])
     component.process([test_message], mitie_model)
 
     assert test_message.data[INTENT] == {"name": None, "confidence": 0.0}
@@ -96,6 +97,7 @@ def test_load_from_untrained_but_with_resource_existing(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     mitie_model: MitieModel,
+    mitie_tokenizer: MitieTokenizerGraphComponent,
 ):
     resource = Resource("some_resource")
 
@@ -111,7 +113,7 @@ def test_load_from_untrained_but_with_resource_existing(
     )
 
     test_message = Message({TEXT: "hi"})
-    MitieTokenizer().process(test_message)
+    mitie_tokenizer.process([test_message])
     component.process([test_message], mitie_model)
 
     assert test_message.data[INTENT] == {"name": None, "confidence": 0.0}

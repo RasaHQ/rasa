@@ -40,7 +40,7 @@ model is only loaded once and then shared by depending components.
 #### \_\_init\_\_
 
 ```python
-def __init__(model: Optional[Language] = None, model_name: Optional[Text] = None) -> None
+def __init__(model: SpacyModel) -> None
 ```
 
 Initializes a `SpacyModelProvider`.
@@ -49,7 +49,7 @@ Initializes a `SpacyModelProvider`.
 
 ```python
 @staticmethod
-def load_model(spacy_model_name: Text) -> Language
+def load_model(spacy_model_name: Text) -> SpacyModel
 ```
 
 Try loading the model, catching the OSError if missing.
@@ -137,7 +137,7 @@ Creates component for training see parent class for full docstring).
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData, spacy_model: SpacyModel) -> None
+def process_training_data(training_data: TrainingData, spacy_model: SpacyModel) -> TrainingData
 ```
 
 Adds SpaCy tokens and features to training data messages.
@@ -145,7 +145,7 @@ Adds SpaCy tokens and features to training data messages.
 #### process
 
 ```python
-def process(messages: List[Message], spacy_model: SpacyModel) -> None
+def process(messages: List[Message], spacy_model: SpacyModel) -> List[Message]
 ```
 
 Adds SpaCy tokens and features to messages.
