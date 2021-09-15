@@ -41,8 +41,9 @@ def configure_file_logging(
     """
     if not log_file and not use_syslog:
         return
-    formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
     if use_syslog:
+        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] [%(process)d]"
+                                      " %(message)s")
         syslog_handler = logging.handlers.SysLogHandler(address=log_file)
         syslog_handler.setLevel(logger_obj.level)
         syslog_handler.setFormatter(formatter)
