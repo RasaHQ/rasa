@@ -353,8 +353,12 @@ def test_verify_form_slots_invalid_domain(tmp_path: Path):
         slots:
              first_name:
                 type: text
+                mappings:
+                - type: from_text
              last_nam:
                 type: text
+                mappings:
+                - type: from_text
         """
     )
     importer = RasaFileImporter(domain_path=domain)
@@ -468,8 +472,12 @@ def test_valid_form_slots_in_domain(tmp_path: Path):
         slots:
              first_name:
                 type: text
+                mappings:
+                - type: from_text
              last_name:
                 type: text
+                mappings:
+                - type: from_text
         """
     )
     importer = RasaFileImporter(domain_path=domain)

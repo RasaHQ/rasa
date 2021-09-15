@@ -4,6 +4,8 @@ slots:
     values:
       - value_one
       - value_two
+    mappings:
+      - type: from_text
 
 responses:
   utter_greet:

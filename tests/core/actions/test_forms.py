@@ -85,6 +85,9 @@ async def test_activate_with_prefilled_slot():
     slots:
       {slot_name}:
         type: any
+        mappings:
+        - type: from_entity
+          entity: {slot_name}
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -262,6 +265,9 @@ async def test_activate_and_immediate_deactivate():
     slots:
       {slot_name}:
         type: any
+        mappings:
+        - type: from_entity
+          entity: {slot_name}
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -300,6 +306,8 @@ async def test_set_slot_and_deactivate():
       {slot_name}:
         type: text
         influence_conversation: false
+        mappings:
+        - type: from_text
     """
     domain = Domain.from_yaml(domain)
 
@@ -341,6 +349,9 @@ async def test_action_rejection():
     slots:
       {slot_to_fill}:
         type: any
+        mappings:
+        - type: from_entity
+          entity: some_entity
     """
     domain = Domain.from_yaml(domain)
 
@@ -469,8 +480,13 @@ async def test_validate_slots(
     slots:
       {slot_name}:
         type: any
+        mappings:
+        - type: from_text
       num_tables:
         type: any
+        mappings:
+        - type: from_entity
+          entity: num_tables
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
@@ -509,8 +525,16 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
         slots:
           {slot_name_1}:
             type: any
+            mappings:
+            - type: from_intent
+              intent: some_intent
+              value: some_value
           {slot_name_2}:
             type: any
+            mappings:
+            - type: from_intent
+              intent: some_intent
+              value: some_value
         forms:
           {form_name}:
             {REQUIRED_SLOTS_KEY}:
@@ -589,6 +613,9 @@ async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[
     slots:
       num_tables:
         type: any
+        mappings:
+        - type: from_entity
+          entity: num_tables
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
@@ -631,6 +658,8 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
     slots:
       {slot_name}:
         type: any
+        mappings:
+        - type: from_text
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
@@ -704,6 +733,8 @@ def test_temporary_tracker():
         slots:
           {extra_slot}:
             type: any
+            mappings:
+            - type: from_text
         """
     )
 
@@ -840,6 +871,9 @@ def test_extract_requested_slot_with_list_slot(
       {slot_name}:
         type: list
         influence_conversation: false
+        mappings:
+        - type: from_entity
+          entity: topping
 
     forms:
       {form_name}:
@@ -1390,6 +1424,9 @@ def test_extract_other_list_slot_from_entity(
       {slot_name}:
         type: list
         influence_conversation: false
+        mappings:
+        - type: from_entity
+          entity: topping
 
     forms:
       {form_name}:
