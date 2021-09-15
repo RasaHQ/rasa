@@ -6,7 +6,7 @@ import sys
 
 from collections import Counter
 from pathlib import Path
-from typing import Text, List, Dict
+from typing import Text, List, Dict, Optional
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
 
@@ -560,6 +560,27 @@ def test_or_statement_with_slot_was_set():
     assert isinstance(slot, SlotSet)
     assert slot.key == "name"
     assert slot.value == "bob"
+
+
+@pytest.mark.parametrize(
+    "file,warning",
+    [
+        ("data/test_yaml_stories/test_base_retrieval_intent_story.yml", None),
+        (
+            "data/test_yaml_stories/non_test_full_retrieval_intent_story.yml",
+            UserWarning,
+        ),
+    ],
+)
+async def test_story_with_retrieval_intent_warns(
+    file: Text, warning: Optional["Warning"]
+):
+    reader = YAMLStoryReader()
+
+    with pytest.warns(warning) as record:
+        reader.read_from_file(file)
+
+    assert len(record) == (1 if warning else 0)
 
 
 def test_or_statement_story_with_or_slot_was_set(domain: Domain):
