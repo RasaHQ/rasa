@@ -15,7 +15,7 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
 )
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import (
@@ -93,16 +93,16 @@ def process_training_text(
     create_language_model_featurizer: Callable[
         [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ) -> List[Message]:
     """ Creates a featurizer and process training data """
     config = create_pretrained_transformers_config(model_name, model_weights)
-    whitespace_tokenizer = WhitespaceTokenizer()
     lm_featurizer = create_language_model_featurizer(config)
 
     messages = [Message.build(text=text) for text in texts]
     td = TrainingData(messages)
 
-    whitespace_tokenizer.train(td)
+    whitespace_tokenizer.process_training_data(td)
     lm_featurizer.process_training_data(td)
     return messages
 
@@ -114,16 +114,16 @@ def process_messages(
     create_language_model_featurizer: Callable[
         [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ) -> List[Message]:
     """ Creates a featurizer and processes messages """
     config = create_pretrained_transformers_config(model_name, model_weights)
-    whitespace_tokenizer = WhitespaceTokenizer()
     lm_featurizer = create_language_model_featurizer(config)
 
     messages = []
     for text in texts:
         message = Message.build(text=text)
-        whitespace_tokenizer.process(message)
+        whitespace_tokenizer.process([message])
         messages.append(message)
     lm_featurizer.process(messages)
     return messages
@@ -367,9 +367,14 @@ class TestShapeValuesTrainAndProcess:
         create_language_model_featurizer: Callable[
             [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
+        whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
     ):
         messages = process_training_text(
-            texts, model_name, model_weights, create_language_model_featurizer
+            texts,
+            model_name,
+            model_weights,
+            create_language_model_featurizer,
+            whitespace_tokenizer,
         )
         self.evaluate_message_shapes(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
@@ -386,9 +391,14 @@ class TestShapeValuesTrainAndProcess:
         create_language_model_featurizer: Callable[
             [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
+        whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
     ):
         messages = process_messages(
-            texts, model_name, model_weights, create_language_model_featurizer
+            texts,
+            model_name,
+            model_weights,
+            create_language_model_featurizer,
+            whitespace_tokenizer,
         )
         self.evaluate_message_shapes(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
@@ -545,9 +555,9 @@ class TestSubTokensTrainAndProcess:
         texts: List[Text],
         messages: List[Message],
         expected_number_of_sub_tokens: List[List[float]],
+        whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
     ):
         """ Checks that we get the correct number of sub tokens """
-        whitespace_tokenizer = WhitespaceTokenizer()
         for index, message in enumerate(messages):
             assert [
                 t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
@@ -565,13 +575,20 @@ class TestSubTokensTrainAndProcess:
         create_language_model_featurizer: Callable[
             [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
+        whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
     ):
         """Tests the number of sub tokens when calling the function
         process training data """
         messages = process_training_text(
-            texts, model_name, model_weights, create_language_model_featurizer
+            texts,
+            model_name,
+            model_weights,
+            create_language_model_featurizer,
+            whitespace_tokenizer,
         )
-        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
+        self.check_subtokens(
+            texts, messages, expected_number_of_sub_tokens, whitespace_tokenizer
+        )
 
     def test_lm_featurizer_num_sub_tokens_process_messages(
         self,
@@ -582,13 +599,20 @@ class TestSubTokensTrainAndProcess:
         create_language_model_featurizer: Callable[
             [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
         ],
+        whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
     ):
         """Tests the number of sub tokens when calling the function
         process (messages) """
         messages = process_messages(
-            texts, model_name, model_weights, create_language_model_featurizer
+            texts,
+            model_name,
+            model_weights,
+            create_language_model_featurizer,
+            whitespace_tokenizer,
         )
-        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
+        self.check_subtokens(
+            texts, messages, expected_number_of_sub_tokens, whitespace_tokenizer
+        )
 
 
 @pytest.mark.parametrize(
@@ -705,16 +729,16 @@ def test_log_longer_sequence(
     create_language_model_featurizer: Callable[
         [Dict[Text, Any]], LanguageModelFeaturizerGraphComponent
     ],
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
     config = {"model_name": model_name, "model_weights": model_weights}
 
     featurizer = create_language_model_featurizer(config)
 
     text = " ".join(["hi"] * sequence_length)
-    tokenizer = WhitespaceTokenizer()
     message = Message.build(text=text)
     td = TrainingData([message])
-    tokenizer.train(td)
+    whitespace_tokenizer.process_training_data(td)
     caplog.set_level(logging.DEBUG)
     featurizer.process([message])
     if should_overflow:
