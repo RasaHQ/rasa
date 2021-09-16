@@ -159,7 +159,6 @@ def update_sanic_log_level(log_file: Optional[Text] = None,
         access_logger.addHandler(syslog_handler)
 
 
-
 def update_asyncio_log_level() -> None:
     """Set the log level of asyncio to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
