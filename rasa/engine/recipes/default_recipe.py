@@ -645,7 +645,7 @@ class DefaultV1Recipe(Recipe):
         predict_nodes["nlu_message_converter"] = SchemaNode(
             **default_predict_kwargs,
             # TODO
-            needs={"message": "__input__"},
+            needs={"messages": "__message__"},
             uses=NLUMessageConverter,
             fn="convert_user_message",
             config={},
@@ -782,8 +782,8 @@ class DefaultV1Recipe(Recipe):
                 needs={
                     "predictions": last_run_node,
                     "domain": "domain_provider",
-                    "original_message": "__input__",
-                    "tracker": "__input__",
+                    "original_messages": "__message__",
+                    "tracker": "__tracker__",
                 },
                 uses=NLUPredictionToHistoryAdder,
                 fn="add",
@@ -840,7 +840,7 @@ class DefaultV1Recipe(Recipe):
                     ),
                     "tracker": "nlu_prediction_to_history_adder"
                     if self._use_nlu
-                    else "__input__",
+                    else "__tracker__",
                     "rule_only_data": rule_only_data_provider_name,
                 },
                 fn="predict_action_probabilities",
@@ -864,7 +864,7 @@ class DefaultV1Recipe(Recipe):
                 "domain": "domain_provider",
                 "tracker": "nlu_prediction_to_history_adder"
                 if self._use_nlu
-                else "__input__",
+                else "__tracker__",
             },
             uses=DefaultPolicyPredictionEnsemble,
             fn="combine_predictions_from_kwargs",

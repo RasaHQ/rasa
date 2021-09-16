@@ -147,18 +147,18 @@ def ensure_loaded_agent(
         @wraps(f)
         def decorated(*args: Any, **kwargs: Any) -> Any:
             # noinspection PyUnresolvedReferences
-            if not app.agent or not (
-                app.agent.is_core_ready()
-                if require_core_is_ready
-                else app.agent.is_ready()
-            ):
-                raise ErrorResponse(
-                    HTTPStatus.CONFLICT,
-                    "Conflict",
-                    "No agent loaded. To continue processing, a "
-                    "model of a trained agent needs to be loaded.",
-                    help_url=_docs("/user-guide/configuring-http-api/"),
-                )
+            # if not app.agent or not (
+            #     app.agent.is_core_ready()
+            #     if require_core_is_ready
+            #     else app.agent.is_ready()
+            # ):
+            #     raise ErrorResponse(
+            #         HTTPStatus.CONFLICT,
+            #         "Conflict",
+            #         "No agent loaded. To continue processing, a "
+            #         "model of a trained agent needs to be loaded.",
+            #         help_url=_docs("/user-guide/configuring-http-api/"),
+            #     )
 
             return f(*args, **kwargs)
 
@@ -739,7 +739,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await app.agent.create_processor().fetch_tracker_with_initial_session(
+        tracker = await app.agent._processor.fetch_tracker_with_initial_session(
             conversation_id
         )
 

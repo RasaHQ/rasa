@@ -412,6 +412,8 @@ class GraphNode:
         else:
             run_kwargs = kwargs
 
+        # TODO: Better not during predictions
+        logger.info(f"Run '{self._component_class}' ({self._node_name}).")
         logger.debug(
             f"Node {self._node_name} running "
             f"{self._component_class.__name__}.{self._fn_name} "

@@ -349,7 +349,7 @@ def _validate_needs(
     )
 
     for param_name, parent_name in node.needs.items():
-        if parent_name == "__input__":
+        if parent_name.startswith("__"):
             continue
 
         if not has_kwargs and param_name not in available_args:

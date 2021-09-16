@@ -15,6 +15,7 @@ from rasa.core.channels.channel import (
 )
 import rasa.core.utils
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.engine.runner.interface import GraphRunner
 from rasa.exceptions import ActionLimitReached
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
@@ -67,8 +68,7 @@ MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"
 class MessageProcessor:
     def __init__(
         self,
-        interpreter: NaturalLanguageInterpreter,
-        policy_ensemble: PolicyEnsemble,
+        runner: GraphRunner,
         domain: Domain,
         tracker_store: rasa.core.tracker_store.TrackerStore,
         lock_store: LockStore,
@@ -77,10 +77,9 @@ class MessageProcessor:
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         message_preprocessor: Optional[LambdaType] = None,
         on_circuit_break: Optional[LambdaType] = None,
-    ):
-        self.interpreter = interpreter
+    ) -> None:
+        self._runner = runner
         self.nlg = generator
-        self.policy_ensemble = policy_ensemble
         self.domain = domain
         self.tracker_store = tracker_store
         self.lock_store = lock_store
@@ -95,19 +94,22 @@ class MessageProcessor:
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
-        tracker = await self.log_message(message, should_save_tracker=False)
+        # tracker = await self.log_message(message, should_save_tracker=False)
+        tracker = await self.fetch_tracker_and_update_session(
+            message.sender_id, message.output_channel, message.metadata
+        )
 
-        if not self.policy_ensemble or not self.domain:
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-            rasa.shared.utils.io.raise_warning(
-                "No policy ensemble or domain set. Skipping action prediction "
-                "and execution.",
-                docs=DOCS_URL_POLICIES,
-            )
-            return None
+        # if not self.policy_ensemble or not self.domain:
+        #     # save tracker state to continue conversation from this state
+        #     self._save_tracker(tracker)
+        #     rasa.shared.utils.io.raise_warning(
+        #         "No policy ensemble or domain set. Skipping action prediction "
+        #         "and execution.",
+        #         docs=DOCS_URL_POLICIES,
+        #     )
+        #     return None
 
-        await self._predict_and_execute_next_action(message.output_channel, tracker)
+        await self._predict_and_execute_next_action(message, tracker)
 
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -371,8 +373,8 @@ class MessageProcessor:
         return tracker
 
     def predict_next_action(
-        self, tracker: DialogueStateTracker
-    ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
+        self, tracker: DialogueStateTracker, message: Optional[UserMessage]
+    ) -> Tuple[DialogueStateTracker, rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
@@ -393,7 +395,17 @@ class MessageProcessor:
                 "The limit of actions to predict has been reached."
             )
 
-        prediction = self._get_next_action_probabilities(tracker)
+        results = self._runner.run(
+            inputs={
+                "__message__": [message] if message else [],
+                "__tracker__": tracker,
+            },
+            targets=["select_prediction", "nlu_prediction_to_history_adder"],
+        )
+        tracker = results["nlu_prediction_to_history_adder"]
+        prediction = results["select_prediction"]
+
+        # prediction = self._get_next_action_probabilities(tracker)
 
         action = rasa.core.actions.action.action_for_index(
             prediction.max_confidence_index, self.domain, self.action_endpoint
@@ -404,7 +416,7 @@ class MessageProcessor:
             f"{prediction.max_confidence:.2f}."
         )
 
-        return action, prediction
+        return tracker, action, prediction
 
     @staticmethod
     def _is_reminder(e: Event, name: Text) -> bool:
@@ -667,16 +679,17 @@ class MessageProcessor:
         )
 
     async def _predict_and_execute_next_action(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker
+        self, message: UserMessage, tracker: DialogueStateTracker
     ) -> None:
+        output_channel = message.output_channel
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
-
         # action loop. predicts actions until we hit action listen
         while should_predict_another_action and self._should_handle_message(tracker):
             # this actually just calls the policy's method by the same name
             try:
-                action, prediction = self.predict_next_action(tracker)
+                tracker, action, prediction = self.predict_next_action(tracker, message)
+                message = None
             except ActionLimitReached:
                 logger.warning(
                     "Circuit breaker tripped. Stopped predicting "
@@ -684,7 +697,7 @@ class MessageProcessor:
                 )
                 if self.on_circuit_break:
                     # call a registered callback
-                    self.on_circuit_break(tracker, output_channel, self.nlg)
+                    self.on_circuit_break(tracker, message.output_channel, self.nlg)
                 break
 
             should_predict_another_action = await self._run_action(
@@ -865,7 +878,7 @@ class MessageProcessor:
         if events is None:
             events = []
 
-        self._warn_about_new_slots(tracker, action.name(), events)
+        # self._warn_about_new_slots(tracker, action.name(), events)
 
         action_was_rejected_manually = any(
             isinstance(event, ActionExecutionRejected) for event in events

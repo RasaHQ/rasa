@@ -24,21 +24,20 @@ class NLUMessageConverter(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         return cls()
 
-    @staticmethod
-    def convert_user_message(message: Optional[UserMessage]) -> List[Message]:
+    def convert_user_message(self, messages: List[UserMessage]) -> List[Message]:
         """Converts user message into Message object.
 
         Returns:
             List containing only one instance of Message.
             Else empty list if user message is None.
         """
-        if message:
-            data = {
-                TEXT: message.text,
-                "message_id": message.message_id,
-                "metadata": message.metadata,
-            }
-
-            return [Message(data=data)]
-
-        return []
+        return [
+            Message(
+                data={
+                    TEXT: message.text,
+                    "message_id": message.message_id,
+                    "metadata": message.metadata,
+                }
+            )
+            for message in messages
+        ]
