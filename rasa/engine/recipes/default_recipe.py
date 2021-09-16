@@ -61,7 +61,7 @@ class SchemaValidator(GraphComponent):
 
     def validate(self, importer: TrainingDataImporter) -> TrainingDataImporter:
         """Validates component."""
-        pass
+        return importer
 
 
 class FinetuningValidator(GraphComponent):
@@ -80,7 +80,7 @@ class FinetuningValidator(GraphComponent):
 
     def validate(self, importer: TrainingDataImporter) -> TrainingDataImporter:
         """Validates."""
-        pass
+        return importer
 
 
 default_predict_kwargs = dict(constructor_name="load", eager=True, is_target=False,)
@@ -114,6 +114,81 @@ class DefaultV1Recipe(Recipe):
         """Creates recipe."""
         self._use_core = True
         self._use_nlu = True
+
+        from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
+        from rasa.nlu.classifiers.fallback_classifier import (
+            FallbackClassifierGraphComponent,
+        )
+        from rasa.nlu.classifiers.keyword_intent_classifier import (
+            KeywordIntentClassifierGraphComponent,
+        )
+        from rasa.nlu.classifiers.mitie_intent_classifier import (
+            MitieIntentClassifierGraphComponent,
+        )
+        from rasa.nlu.classifiers.sklearn_intent_classifier import (
+            SklearnIntentClassifierGraphComponent,
+        )
+        from rasa.nlu.extractors.crf_entity_extractor import (
+            CRFEntityExtractorGraphComponent,
+        )
+        from rasa.nlu.extractors.duckling_entity_extractor import (
+            DucklingEntityExtractorGraphComponent,
+        )
+        from rasa.nlu.extractors.entity_synonyms import (
+            EntitySynonymMapperGraphComponent,
+        )
+        from rasa.nlu.extractors.mitie_entity_extractor import (
+            MitieEntityExtractorGraphComponent,
+        )
+        from rasa.nlu.extractors.spacy_entity_extractor import (
+            SpacyEntityExtractorGraphComponent,
+        )
+        from rasa.nlu.extractors.regex_entity_extractor import (
+            RegexEntityExtractorGraphComponent,
+        )
+        from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
+            LexicalSyntacticFeaturizerGraphComponent,
+        )
+        from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import (
+            ConveRTFeaturizerGraphComponent,
+        )
+        from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import (
+            MitieFeaturizerGraphComponent,
+        )
+        from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
+            SpacyFeaturizerGraphComponent,
+        )
+        from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+            CountVectorsFeaturizerGraphComponent,
+        )
+        from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import (
+            LanguageModelFeaturizerGraphComponent,
+        )
+        from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
+            RegexFeaturizerGraphComponent,
+        )
+        from rasa.nlu.selectors.response_selector import ResponseSelectorGraphComponent
+        from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizerGraphComponent
+        from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
+        from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
+        from rasa.nlu.tokenizers.whitespace_tokenizer import (
+            WhitespaceTokenizerGraphComponent,
+        )
+        from rasa.nlu.utils.mitie_utils import MitieNLPGraphComponent
+        from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent
+
+        from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
+
+        from rasa.core.policies.memoization import (
+            AugmentedMemoizationPolicyGraphComponent,
+            AugmentedMemoizationPolicyGraphComponent,
+        )
+
+        from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+
+        from rasa.core.policies.unexpected_intent_policy import (
+            UnexpecTEDIntentPolicyGraphComponent,
+        )
 
     @dataclasses.dataclass()
     class RegisteredComponent:
@@ -198,6 +273,7 @@ class DefaultV1Recipe(Recipe):
                 constructor_name="create",
                 fn="validate",
                 config={},
+                is_input=True,
             ),
             "finetuning_validator": SchemaNode(
                 needs={"importer": "schema_validator"},
@@ -205,6 +281,7 @@ class DefaultV1Recipe(Recipe):
                 constructor_name="create",
                 fn="validate",
                 config={},
+                is_input=True,
             ),
         }
 
@@ -482,7 +559,7 @@ class DefaultV1Recipe(Recipe):
                     "training_trackers": "training_tracker_provider",
                     "domain": "domain_without_responses_provider",
                     **(
-                        {"end_to_end_features": node_with_e2e_features}
+                        {"precomputations": node_with_e2e_features}
                         if component.type
                         == self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT
                         and node_with_e2e_features
@@ -755,7 +832,7 @@ class DefaultV1Recipe(Recipe):
                     **nlu_merge_needs,
                     "domain": "domain_provider",
                     **(
-                        {"end_to_end_features": node_with_e2e_features}
+                        {"precomputations": node_with_e2e_features}
                         if component.type
                         == self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT
                         and node_with_e2e_features

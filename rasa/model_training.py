@@ -1,6 +1,9 @@
 import os
 import tempfile
+import time
+import uuid
 from contextlib import ExitStack
+from pathlib import Path
 from typing import (
     Text,
     NamedTuple,
@@ -11,7 +14,15 @@ from typing import (
     Dict,
 )
 
+import dask
+import randomname
+
 import rasa.core.interpreter
+from rasa.engine.caching import LocalTrainingCache
+from rasa.engine.recipes.recipe import Recipe
+from rasa.engine.runner.dask import DaskGraphRunner
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import model, telemetry
@@ -91,6 +102,7 @@ async def train_async(
     file_importer = TrainingDataImporter.load_from_config(
         config, domain, training_files
     )
+    domain_path = domain
     with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
         domain = file_importer.get_domain()
 
@@ -112,6 +124,8 @@ async def train_async(
             nlu_additional_arguments=nlu_additional_arguments,
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
+            domain_path=domain_path,
+            train_paths=training_files,
         )
 
 
@@ -182,6 +196,8 @@ async def _train_async_internal(
     nlu_additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
+    domain_path: Optional[Text] = None,
+    train_paths=None,
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
 
@@ -279,7 +295,7 @@ async def _train_async_internal(
         with telemetry.track_model_training(
             file_importer, model_type="rasa",
         ):
-            await _do_training(
+            trained_model = await _do_training(
                 file_importer,
                 output_path=output_path,
                 train_path=train_path,
@@ -291,13 +307,15 @@ async def _train_async_internal(
                 old_model_zip_path=old_model,
                 model_to_finetune=model_to_finetune,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
+                domain_path=domain_path,
+                train_paths=train_paths,
             )
-        trained_model = model.package_model(
-            fingerprint=new_fingerprint,
-            output_directory=output_path,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-        )
+        # trained_model = model.package_model(
+        #     fingerprint=new_fingerprint,
+        #     output_directory=output_path,
+        #     train_path=train_path,
+        #     fixed_model_name=fixed_model_name,
+        # )
         return TrainingResult(model=trained_model)
 
     rasa.shared.utils.cli.print_success(
@@ -319,54 +337,77 @@ async def _do_training(
     old_model_zip_path: Optional[Text] = None,
     model_to_finetune: Optional["Text"] = None,
     finetuning_epoch_fraction: float = 1.0,
-) -> None:
-    if not fingerprint_comparison_result:
-        fingerprint_comparison_result = FingerprintComparisonResult()
+    domain_path: Text = None,
+    train_paths=None,
+) -> Text:
+    config = file_importer.get_config()
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    train_schema, predict_schema = recipe.schemas_for_config(
+        config, {"data": train_paths, "domain": domain_path}
+    )
 
-    interpreter_path = None
-    if fingerprint_comparison_result.should_retrain_nlu():
-        model_path = await _train_nlu_with_validated_data(
-            file_importer,
-            output=output_path,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            persist_nlu_training_data=persist_nlu_training_data,
-            additional_arguments=nlu_additional_arguments,
-            model_to_finetune=model_to_finetune,
-            finetuning_epoch_fraction=finetuning_epoch_fraction,
-        )
-        interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
-    else:
-        rasa.shared.utils.cli.print_color(
-            "NLU data/configuration did not change. No need to retrain NLU model.",
-            color=rasa.shared.utils.io.bcolors.OKBLUE,
+    with tempfile.TemporaryDirectory() as temp_model_dir:
+        model_storage = LocalModelStorage(Path(temp_model_dir))
+        cache = LocalTrainingCache()
+
+        trainer = GraphTrainer(model_storage, cache, DaskGraphRunner)
+
+        time_format = "%Y%m%d-%H%M%S"
+        model_name = Path(
+            output_path, f"{time.strftime(time_format)}_{randomname.get_name()}.tar.gz"
         )
 
-    if fingerprint_comparison_result.should_retrain_core():
-        _train_core_with_validated_data(
-            file_importer,
-            output=output_path,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            additional_arguments=core_additional_arguments,
-            interpreter=_load_interpreter(interpreter_path)
-            or _interpreter_from_previous_model(old_model_zip_path),
-            model_to_finetune=model_to_finetune,
-            finetuning_epoch_fraction=finetuning_epoch_fraction,
-        )
-    elif fingerprint_comparison_result.should_retrain_nlg():
-        rasa.shared.utils.cli.print_color(
-            "Core stories/configuration did not change. "
-            "Only the responses section has been changed. A new model with "
-            "the updated responses will be created.",
-            color=rasa.shared.utils.io.bcolors.OKBLUE,
-        )
-        model.update_model_with_new_domain(file_importer, train_path)
-    else:
-        rasa.shared.utils.cli.print_color(
-            "Core stories/configuration did not change. No need to retrain Core model.",
-            color=rasa.shared.utils.io.bcolors.OKBLUE,
-        )
+        trainer.train(train_schema, predict_schema, Path(domain_path), model_name)
+
+        return str(model_name)
+
+    # if not fingerprint_comparison_result:
+    #     fingerprint_comparison_result = FingerprintComparisonResult()
+    #
+    # interpreter_path = None
+    # if fingerprint_comparison_result.should_retrain_nlu():
+    #     model_path = await _train_nlu_with_validated_data(
+    #         file_importer,
+    #         output=output_path,
+    #         train_path=train_path,
+    #         fixed_model_name=fixed_model_name,
+    #         persist_nlu_training_data=persist_nlu_training_data,
+    #         additional_arguments=nlu_additional_arguments,
+    #         model_to_finetune=model_to_finetune,
+    #         finetuning_epoch_fraction=finetuning_epoch_fraction,
+    #     )
+    #     interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
+    # else:
+    #     rasa.shared.utils.cli.print_color(
+    #         "NLU data/configuration did not change. No need to retrain NLU model.",
+    #         color=rasa.shared.utils.io.bcolors.OKBLUE,
+    #     )
+    #
+    # if fingerprint_comparison_result.should_retrain_core():
+    #     _train_core_with_validated_data(
+    #         file_importer,
+    #         output=output_path,
+    #         train_path=train_path,
+    #         fixed_model_name=fixed_model_name,
+    #         additional_arguments=core_additional_arguments,
+    #         interpreter=_load_interpreter(interpreter_path)
+    #         or _interpreter_from_previous_model(old_model_zip_path),
+    #         model_to_finetune=model_to_finetune,
+    #         finetuning_epoch_fraction=finetuning_epoch_fraction,
+    #     )
+    # elif fingerprint_comparison_result.should_retrain_nlg():
+    #     rasa.shared.utils.cli.print_color(
+    #         "Core stories/configuration did not change. "
+    #         "Only the responses section has been changed. A new model with "
+    #         "the updated responses will be created.",
+    #         color=rasa.shared.utils.io.bcolors.OKBLUE,
+    #     )
+    #     model.update_model_with_new_domain(file_importer, train_path)
+    # else:
+    #     rasa.shared.utils.cli.print_color(
+    #         "Core stories/configuration did not change. No need to retrain Core model.",
+    #         color=rasa.shared.utils.io.bcolors.OKBLUE,
+    #     )
 
 
 def _load_interpreter(

@@ -32,5 +32,7 @@ class DomainWithoutResponsesProvider(GraphComponent):
             but with an empty set of responses.
         """
         serialized_domain = domain.as_dict()
-        del serialized_domain[KEY_RESPONSES]
+        for response_name in serialized_domain[KEY_RESPONSES]:
+            serialized_domain[KEY_RESPONSES][response_name] = []
+
         return Domain.from_dict(serialized_domain)
