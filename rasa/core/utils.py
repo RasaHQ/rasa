@@ -42,7 +42,7 @@ def configure_file_logging(
     if use_syslog:
         formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] [%(process)d]"
                                       " %(message)s")
-        syslog_handler = logging.handlers.SysLogHandler(address=log_file)
+        syslog_handler = logging.handlers.SysLogHandler()
         syslog_handler.setLevel(logger_obj.level)
         syslog_handler.setFormatter(formatter)
         logger_obj.addHandler(syslog_handler)

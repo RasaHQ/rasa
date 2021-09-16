@@ -152,7 +152,7 @@ def update_sanic_log_level(log_file: Optional[Text] = None,
     if use_syslog:
         formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] [%(process)d]"
                                       " %(message)s")
-        syslog_handler = logging.handlers.SysLogHandler(address='/dev/log')
+        syslog_handler = logging.handlers.SysLogHandler()
         syslog_handler.setFormatter(formatter)
         logger.addHandler(syslog_handler)
         error_logger.addHandler(syslog_handler)
