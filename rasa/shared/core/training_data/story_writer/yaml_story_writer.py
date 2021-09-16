@@ -245,7 +245,9 @@ class YAMLStoryWriter(StoryWriter):
             result[KEY_ENTITIES] = entities
 
         if hasattr(user_utterance, "inline_comment"):
-            comment = user_utterance.inline_comment(force_add=not entities)
+            comment = user_utterance.inline_comment(
+                force_comment_generation=not entities
+            )
             if comment:
                 result.yaml_add_eol_comment(comment, KEY_USER_INTENT)
 

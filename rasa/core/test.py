@@ -370,11 +370,11 @@ class WronglyClassifiedUserUtterance(UserUttered):
             event.input_channel,
         )
 
-    def inline_comment(self, force_add: bool = False) -> Optional[Text]:
+    def inline_comment(self, force_comment_generation: bool = False) -> Optional[Text]:
         """A comment attached to this event. Used during dumping."""
         from rasa.shared.core.events import format_message
 
-        if self.predicted_intent != self.intent["name"] or force_add:
+        if force_comment_generation or self.predicted_intent != self.intent["name"]:
             predicted_message = format_message(
                 self.text, self.predicted_intent, self.predicted_entities
             )
