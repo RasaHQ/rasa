@@ -1,11 +1,14 @@
+import shutil
+import textwrap
 from pathlib import Path
-from typing import Text, Optional, Dict, Any, List, Callable
+from typing import Text, Optional, Dict, Any, List, Callable, Coroutine
 import pytest
 
 import rasa.core.test
 import rasa.shared.utils.io
 from rasa.core.policies.ensemble import SimplePolicyEnsemble
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.events import UserUttered
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
@@ -22,6 +25,7 @@ from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import RegexInterpreter
+
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import State
 from rasa.core.policies.policy import SupportedData
@@ -143,12 +147,14 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
     assert "report" in result.keys()
 
 
-def _train_rule_based_agent(
+@pytest.fixture()
+async def _train_rule_based_agent(
     moodbot_domain: Domain,
-    train_file_name: Path,
+    tmp_path: Path,
+    trained_async: Callable,
     monkeypatch: MonkeyPatch,
-    ignore_action_unlikely_intent: bool,
-) -> Agent:
+    moodbot_domain_path: Path,
+) -> Callable[[Path, bool], Coroutine]:
 
     # We need `RulePolicy` to predict the correct actions
     # in a particular conversation context as seen during training.
@@ -156,28 +162,44 @@ def _train_rule_based_agent(
     # some cases. We monkey-patch the method which creates
     # prediction states to ignore `action_unlikely_intent`s if needed.
 
-    monkeypatch.setattr(
-        RulePolicy,
-        "_prediction_states",
-        _custom_prediction_states_for_rules(ignore_action_unlikely_intent),
-    )
+    async def inner(file_name: Path, ignore_action_unlikely_intent: bool) -> Agent:
+        config = textwrap.dedent(
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        policies:
+        - name: RulePolicy
+          restrict_rules: false
+        """
+        )
+        config_path = tmp_path / "config.yml"
+        rasa.shared.utils.io.write_text_file(config, config_path)
 
-    deterministic_policy = RulePolicy(restrict_rules=False)
-    agent = Agent(moodbot_domain, SimplePolicyEnsemble([deterministic_policy]))
-    training_data = agent.load_data(str(train_file_name))
+        rule_file = tmp_path / "rules.yml"
+        shutil.copy2(file_name, rule_file)
+        training_data = rule_file.read_text()
+        training_data_for_rules = training_data.replace("stories:", "rules:")
+        training_data_for_rules = training_data_for_rules.replace("story:", "rule:")
+        rule_file.write_text(training_data_for_rules)
 
-    # Make the trackers compatible with rules
-    # so that they are picked up by the policy.
-    for tracker in training_data:
-        tracker.is_rule_tracker = True
+        model_path = await trained_async(
+            moodbot_domain_path, str(config_path), str(rule_file)
+        )
 
-    agent.train(training_data)
+        monkeypatch.setattr(
+            RulePolicy,
+            "_prediction_states",
+            _custom_prediction_states_for_rules(ignore_action_unlikely_intent),
+        )
 
-    return agent
+        return Agent.load_local_model(model_path)
+
+    return inner
 
 
 async def test_action_unlikely_intent_warning(
-    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -205,9 +227,7 @@ async def test_action_unlikely_intent_warning(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = _train_rule_based_agent(
-        moodbot_domain, file_name, monkeypatch, ignore_action_unlikely_intent=True
-    )
+    agent = await _train_rule_based_agent(file_name, True)
 
     result = await rasa.core.test.test(
         str(file_name),
@@ -226,7 +246,9 @@ async def test_action_unlikely_intent_warning(
 
 
 async def test_action_unlikely_intent_correctly_predicted(
-    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -255,9 +277,7 @@ async def test_action_unlikely_intent_correctly_predicted(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = _train_rule_based_agent(
-        moodbot_domain, file_name, monkeypatch, ignore_action_unlikely_intent=False
-    )
+    agent = await _train_rule_based_agent(file_name, False)
 
     result = await rasa.core.test.test(
         str(file_name),
@@ -271,7 +291,9 @@ async def test_action_unlikely_intent_correctly_predicted(
 
 
 async def test_wrong_action_after_action_unlikely_intent(
-    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -318,9 +340,7 @@ async def test_wrong_action_after_action_unlikely_intent(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = _train_rule_based_agent(
-        moodbot_domain, train_file_name, monkeypatch, ignore_action_unlikely_intent=True
-    )
+    agent = await _train_rule_based_agent(train_file_name, True)
 
     result = await rasa.core.test.test(
         str(test_file_name),
@@ -346,7 +366,9 @@ async def test_wrong_action_after_action_unlikely_intent(
 
 
 async def test_action_unlikely_intent_not_found(
-    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     test_file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
     test_file_name.write_text(
@@ -388,12 +410,7 @@ async def test_action_unlikely_intent_not_found(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = _train_rule_based_agent(
-        moodbot_domain,
-        train_file_name,
-        monkeypatch,
-        ignore_action_unlikely_intent=False,
-    )
+    agent = await _train_rule_based_agent(train_file_name, False)
 
     result = await rasa.core.test.test(
         str(test_file_name), agent, out_directory=str(tmp_path)
@@ -410,7 +427,9 @@ async def test_action_unlikely_intent_not_found(
 
 
 async def test_action_unlikely_intent_warning_and_story_error(
-    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -457,9 +476,7 @@ async def test_action_unlikely_intent_warning_and_story_error(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = _train_rule_based_agent(
-        moodbot_domain, train_file_name, monkeypatch, ignore_action_unlikely_intent=True
-    )
+    agent = await _train_rule_based_agent(train_file_name, True)
 
     result = await rasa.core.test.test(
         str(test_file_name), agent, out_directory=str(tmp_path),
@@ -477,7 +494,9 @@ async def test_action_unlikely_intent_warning_and_story_error(
 
 
 async def test_fail_on_prediction_errors(
-    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -506,9 +525,7 @@ async def test_fail_on_prediction_errors(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = _train_rule_based_agent(
-        moodbot_domain, file_name, monkeypatch, ignore_action_unlikely_intent=False
-    )
+    agent = await _train_rule_based_agent(file_name, False)
 
     with pytest.raises(rasa.core.test.WrongPredictionException):
         await rasa.core.test.test(
@@ -585,7 +602,7 @@ async def test_fail_on_prediction_errors(
 async def test_multiple_warnings_sorted_on_severity(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
-    moodbot_domain: Domain,
+    _train_rule_based_agent: Callable[[Path, bool], Coroutine],
     metadata_for_intents: Dict,
     story_order: List[Text],
 ):
@@ -604,12 +621,7 @@ async def test_multiple_warnings_sorted_on_severity(
     # We train on the stories as it is so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = _train_rule_based_agent(
-        moodbot_domain,
-        Path(test_story_path),
-        monkeypatch,
-        ignore_action_unlikely_intent=True,
-    )
+    agent = await _train_rule_based_agent(Path(test_story_path), True)
 
     await rasa.core.test.test(
         test_story_path,

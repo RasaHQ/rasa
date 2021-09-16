@@ -1,4 +1,5 @@
 import os
+import textwrap
 from pathlib import Path
 import json
 import logging
@@ -21,12 +22,12 @@ from rasa.core.constants import (
     SUCCESSFUL_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
 )
-from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
 from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
 from rasa.core.agent import Agent
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.exceptions import RasaException
 
 
@@ -178,14 +179,29 @@ async def test_source_in_failed_stories(
 
 async def test_end_to_evaluation_trips_circuit_breaker(
     e2e_story_file_trips_circuit_breaker_path: Text,
+    trained_async: Callable,
+    tmp_path: Path,
 ):
-    agent = Agent(
-        domain="data/test_domains/default.yml",
-        policies=[MemoizationPolicy(max_history=11)],
-    )
-    training_data = agent.load_data(e2e_story_file_trips_circuit_breaker_path)
-    agent.train(training_data)
+    config = textwrap.dedent(
+        f"""
+    version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+    policies:
+    - name: MemoizationPolicy
+      max_history: 11
 
+    pipeline: []
+    """
+    )
+    config_path = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_text_file(config, config_path)
+
+    model_path = await trained_async(
+        "data/test_domains/default.yml",
+        str(config_path),
+        e2e_story_file_trips_circuit_breaker_path,
+    )
+
+    agent = Agent.load_local_model(model_path)
     generator = _create_data_generator(
         e2e_story_file_trips_circuit_breaker_path,
         agent,
