@@ -109,6 +109,7 @@ class TwilioVoiceInput(InputChannel):
             credentials.get("speech_timeout", "5"),
             credentials.get("speech_model", "default"),
             credentials.get("enhanced", "false"),
+            credentials.get("hints", None)
         )
 
     def __init__(
@@ -119,6 +120,7 @@ class TwilioVoiceInput(InputChannel):
         speech_timeout: Optional[Text],
         speech_model: Optional[Text],
         enhanced: Optional[Text],
+        hints: Optional[Text],
     ) -> None:
         """Creates a connection to Twilio voice.
 
@@ -129,6 +131,7 @@ class TwilioVoiceInput(InputChannel):
             speech_timeout: how long to pause when user finished speaking.
             speech_model: type of transcription model to use from Twilio.
             enhanced: toggle to use Twilio's premium speech transcription model.
+            hints: comma separated list of expected phrases to improve Twilio's speech recognition.
         """
         self.initial_prompt = initial_prompt
         self.reprompt_fallback_phrase = reprompt_fallback_phrase
@@ -136,6 +139,7 @@ class TwilioVoiceInput(InputChannel):
         self.speech_timeout = speech_timeout
         self.speech_model = speech_model
         self.enhanced = enhanced
+        self.hints = hints
 
         self._validate_configuration()
 
@@ -285,6 +289,7 @@ class TwilioVoiceInput(InputChannel):
             speechTimeout=self.speech_timeout,
             speechModel=self.speech_model,
             enhanced=self.enhanced,
+            hints=self.hints,
         )
 
         # Add pauses between messages.
