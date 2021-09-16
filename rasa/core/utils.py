@@ -39,8 +39,6 @@ def configure_file_logging(
         log_file: Path of log file to write to.
         use_syslog: Add syslog as a logger
     """
-    if not log_file and not use_syslog:
-        return
     if use_syslog:
         formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] [%(process)d]"
                                       " %(message)s")
