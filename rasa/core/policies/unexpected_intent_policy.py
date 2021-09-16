@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, TYPE_CHECKING
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.training_data.features import Features
@@ -138,6 +139,9 @@ logger = logging.getLogger(__name__)
 UnexpecTEDIntentPolicy = UnexpecTEDIntentPolicy
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+)
 class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
     """`UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
 

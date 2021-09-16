@@ -6,6 +6,7 @@ import shutil
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 
@@ -13,7 +14,7 @@ from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.message import Message
 
 from rasa.nlu.tokenizers._jieba_tokenizer import JiebaTokenizer
-
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,9 @@ logger = logging.getLogger(__name__)
 JiebaTokenizer = JiebaTokenizer
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=True
+)
 class JiebaTokenizerGraphComponent(TokenizerGraphComponent):
     """This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba)."""
 
@@ -87,6 +91,11 @@ class JiebaTokenizerGraphComponent(TokenizerGraphComponent):
         for jieba_userdict in jieba_userdicts:
             logger.info(f"Loading Jieba User Dictionary at {jieba_userdict}")
             jieba.load_userdict(jieba_userdict)
+
+    def train(self, training_data: TrainingData) -> Resource:
+        """Copies the dictionary to the model storage."""
+        self.persist()
+        return self._resource
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenizes the text of the provided attribute of the incoming message."""

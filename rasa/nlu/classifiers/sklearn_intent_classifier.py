@@ -9,6 +9,7 @@ import numpy as np
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
@@ -28,6 +29,9 @@ if typing.TYPE_CHECKING:
     import sklearn
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
 class SklearnIntentClassifierGraphComponent(GraphComponent):
     """Intent classifier using the sklearn framework."""
 

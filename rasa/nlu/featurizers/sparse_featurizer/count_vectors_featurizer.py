@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
@@ -40,6 +41,9 @@ BUFFER_SLOTS_PREFIX = "buf_"
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
 class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 

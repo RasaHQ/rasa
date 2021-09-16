@@ -33,7 +33,7 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
 
 from rasa.nlu.model import Interpreter
-from rasa.nlu.utils.spacy_utils import SpacyModelProvider
+from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
@@ -494,7 +494,7 @@ def component_builder():
 
 @pytest.fixture(scope="session")
 def spacy_nlp() -> Language:
-    spacy_provider = SpacyModelProvider.create(
+    spacy_provider = SpacyNLPGraphComponent.create(
         {"model": "en_core_web_md"}, Mock(), Mock(), Mock()
     )
 

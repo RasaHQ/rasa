@@ -11,6 +11,7 @@ import tensorflow as tf
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
@@ -116,6 +117,9 @@ LABEL_SUB_KEY = IDS
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
 class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
     """A multi-task model for intent classification and entity extraction.
 

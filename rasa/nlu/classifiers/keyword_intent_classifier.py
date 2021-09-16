@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, Optional, Text, List
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -21,6 +22,9 @@ KeywordIntentClassifier = KeywordIntentClassifier
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
+)
 class KeywordIntentClassifierGraphComponent(GraphComponent):
     """Intent classifier using simple keyword matching.
 

@@ -113,7 +113,7 @@ def test_train_extract_load(
 
     # train the extractor
     mitie_entity_extractor = create_or_load_mitie_extractor(config={}, load=False)
-    mitie_entity_extractor.train(training_data, mitie_model=mitie_model)
+    mitie_entity_extractor.train(training_data, model=mitie_model)
 
     # create some messages "without entities" - for processing
     messages_without_entities = [
@@ -128,7 +128,7 @@ def test_train_extract_load(
 
     # process!
     mitie_entity_extractor.process(
-        messages=messages_without_entities, mitie_model=mitie_model
+        messages=messages_without_entities, model=mitie_model
     )
 
     # check that extractor added the expected entities to the messages
@@ -167,9 +167,7 @@ def test_train_extract_load(
         )
         for message in messages_with_entities
     ]
-    loaded_extractor.process(
-        messages=same_messages_without_entities, mitie_model=mitie_model
-    )
+    loaded_extractor.process(messages=same_messages_without_entities, model=mitie_model)
     assert same_messages_without_entities[0].data == messages_without_entities[0].data
 
 

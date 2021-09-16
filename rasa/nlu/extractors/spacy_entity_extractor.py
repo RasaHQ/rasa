@@ -2,6 +2,7 @@ import typing
 from typing import Any, Dict, List, Text
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.constants import ENTITIES, TEXT
@@ -17,6 +18,9 @@ if typing.TYPE_CHECKING:
 SpacyEntityExtractor = SpacyEntityExtractor
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=False
+)
 class SpacyEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """Entity extractor which uses SpaCy."""
 

@@ -32,7 +32,6 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import RasaException
 
-
 TypeAnnotation = Union[TypeVar, Text, Type]
 
 
@@ -280,6 +279,10 @@ def _validate_run_fn_return_type(
             f"components to validate the graph's structure."
         )
 
+    # TODO: Handle forward references here
+    if typing_utils.issubtype(return_type, typing.List):
+        return_type = typing.get_args(return_type)[0]
+
     if is_training and not isinstance(return_type, Fingerprintable):
         raise GraphSchemaValidationException(
             f"Node '{node_name}' uses a component '{node.uses.__name__}' whose method "
@@ -346,6 +349,9 @@ def _validate_needs(
     )
 
     for param_name, parent_name in node.needs.items():
+        if parent_name == "__input__":
+            continue
+
         if not has_kwargs and param_name not in available_args:
             raise GraphSchemaValidationException(
                 f"Node '{node_name}' is configured to retrieve a value for the "

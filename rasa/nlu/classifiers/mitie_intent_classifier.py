@@ -4,6 +4,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.utils.mitie_utils import MitieModel
@@ -25,6 +26,9 @@ MitieIntentClassifier = (
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
 class MitieIntentClassifierGraphComponent(GraphComponent):
     """Intent classifier which uses the `mitie` library."""
 

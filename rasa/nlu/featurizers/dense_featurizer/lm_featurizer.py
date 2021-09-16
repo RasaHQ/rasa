@@ -5,6 +5,7 @@ import logging
 from typing import Any, Optional, Text, List, Type, Dict, Tuple
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.config import RasaNLUModelConfig
@@ -42,6 +43,9 @@ MAX_SEQUENCE_LENGTHS = {
 }
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
 class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """A featurizer that uses transformer-based language models.
 

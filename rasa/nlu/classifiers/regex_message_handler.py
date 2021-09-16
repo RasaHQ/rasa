@@ -6,6 +6,7 @@ import re
 from typing import Any, Dict, Match, Optional, Pattern, Text, List
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
@@ -28,7 +29,10 @@ from rasa.shared.nlu.training_data.message import Message
 logger = logging.getLogger(__name__)
 
 
-class RegexMessageHandler(GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
+)
+class RegexMessageHandlerGraphComponent(GraphComponent):
     """Unpacks messages where `TEXT` contains an encoding of attributes.
 
     The `TEXT` attribute of such messages consists of the following sub-strings:
@@ -46,7 +50,7 @@ class RegexMessageHandler(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> RegexMessageHandler:
+    ) -> RegexMessageHandlerGraphComponent:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls()
 
@@ -67,14 +71,17 @@ class RegexMessageHandler(GraphComponent):
             pattern with named groups
         """
         return re.compile(
-            f"^{re.escape(RegexMessageHandler._get_prefix())}"
+            f"^{re.escape(RegexMessageHandlerGraphComponent._get_prefix())}"
             f"(?P<{INTENT_NAME_KEY}>[^{{@]+)"  # "{{" is a masked "{" in an f-string
             f"(?P<{PREDICTED_CONFIDENCE_KEY}>@[0-9.]+)?"
             f"(?P<{ENTITIES}>{{.+}})?"  # "{{" is a masked "{" in an f-string
             f"(?P<rest>.*)"
         )
 
-    def process(self, messages: List[Message], domain: Domain) -> List[Message]:
+    # TODO: Handle empty domain (NLU only training)
+    def process(
+        self, messages: List[Message], domain: Optional[Domain] = None
+    ) -> List[Message]:
         """Unpacks messages where `TEXT` contains an encoding of attributes.
 
         Note that this method returns a *new* message instance if there is

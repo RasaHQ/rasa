@@ -1,6 +1,7 @@
 from __future__ import annotations
 import abc
 import logging
+import typing
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -9,7 +10,9 @@ from typing import Tuple, Union, Text, ContextManager, Dict, Any
 
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-from rasa.engine.graph import GraphSchema
+
+if typing.TYPE_CHECKING:
+    from rasa.engine.graph import GraphSchema
 
 
 logger = logging.getLogger(__name__)
@@ -129,6 +132,8 @@ class ModelMetadata:
         Returns:
             Instantiated `ModelMetadata`.
         """
+        from rasa.engine.graph import GraphSchema
+
         return ModelMetadata(
             trained_at=datetime.fromisoformat(serialized["trained_at"]),
             rasa_open_source_version=serialized["rasa_open_source_version"],

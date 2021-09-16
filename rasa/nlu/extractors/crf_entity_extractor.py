@@ -9,6 +9,7 @@ import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.shared.utils.io
 import rasa.utils.train_utils
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.test import determine_token_labels
@@ -62,6 +63,9 @@ class CRFToken:
         self.entity_group_tag = entity_group_tag
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
+)
 class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """Implements conditional random fields (CRF) to do named entity recognition."""
 

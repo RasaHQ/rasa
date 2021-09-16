@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-import typing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import logging
@@ -15,8 +14,7 @@ from rasa.engine.exceptions import (
 import rasa.shared.utils.common
 from rasa.engine.storage.resource import Resource
 
-if typing.TYPE_CHECKING:
-    from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.storage import ModelStorage
 
 
 logger = logging.getLogger(__name__)

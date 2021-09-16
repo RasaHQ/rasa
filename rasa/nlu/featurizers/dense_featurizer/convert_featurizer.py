@@ -9,6 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
@@ -50,6 +51,9 @@ RESTRICTED_ACCESS_URL = (
 ConveRTFeaturizer = ConveRTFeaturizer
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
 class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """Featurizer using ConveRT model.
 

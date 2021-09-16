@@ -58,6 +58,6 @@ class DomainProvider(GraphComponent):
         self._persist(domain)
         return domain
 
-    def provide_inference(self) -> Optional[Domain]:
+    def provide_inference(self) -> Domain:
         """Provides the domain during inference."""
         return self._domain

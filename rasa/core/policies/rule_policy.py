@@ -9,6 +9,7 @@ import json
 from collections import defaultdict
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_RULES
@@ -98,6 +99,9 @@ class InvalidRule(RasaException):
         )
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
 class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
     """Policy which handles all the rules."""
 
@@ -1080,7 +1084,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         domain: Domain,
         rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
-    ) -> "PolicyPrediction":
+    ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
         prediction, _ = self._predict(tracker, domain)
         return prediction

@@ -18,6 +18,7 @@ from typing import (
 )
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY, SpacyTokenizer
@@ -48,6 +49,9 @@ BEGIN_OF_SENTENCE = "BOS"
 FEATURES = "features"
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
 class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Extracts and encodes lexical syntactic features.
 

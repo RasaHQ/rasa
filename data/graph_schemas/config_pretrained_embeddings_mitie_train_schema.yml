@@ -1,0 +1,138 @@
+project_provider:
+  needs: {}
+  uses: rasa.graph_components.providers.project_provider.ProjectProvider
+  constructor_name: create
+  fn: provide
+  config:
+    domain_path: null
+    training_data_paths: [ ]
+  eager: false
+  is_target: false
+  is_input: true
+  resource: null
+schema_validator:
+  needs:
+    importer: project_provider
+  uses: rasa.engine.recipes.default_recipe.SchemaValidator
+  constructor_name: create
+  fn: validate
+  config: {}
+  eager: false
+  is_target: false
+  is_input: false
+  resource: null
+finetuning_validator:
+  needs:
+    importer: schema_validator
+  uses: rasa.engine.recipes.default_recipe.FinetuningValidator
+  constructor_name: create
+  fn: validate
+  config: {}
+  eager: false
+  is_target: false
+  is_input: false
+  resource: null
+nlu_training_data_provider:
+  needs:
+    importer: finetuning_validator
+  uses: rasa.graph_components.providers.nlu_training_data_provider.NLUTrainingDataProvider
+  constructor_name: create
+  fn: provide
+  config:
+    language: en
+    persist: false
+  eager: false
+  is_target: false
+  is_input: true
+  resource: null
+run_MitieNLP0:
+  needs: {}
+  uses: rasa.nlu.utils.mitie_utils.MitieNLPGraphComponent
+  constructor_name: create
+  fn: provide
+  config:
+    model: data/total_word_feature_extractor.dat
+  eager: false
+  is_target: false
+  is_input: false
+  resource: null
+run_MitieTokenizer1:
+  needs:
+    training_data: nlu_training_data_provider
+  uses: rasa.nlu.tokenizers.mitie_tokenizer.MitieTokenizerGraphComponent
+  constructor_name: load
+  fn: process_training_data
+  config: {}
+  eager: false
+  is_target: false
+  is_input: false
+  resource: null
+train_MitieEntityExtractor2:
+  needs:
+    training_data: run_MitieTokenizer1
+    model: run_MitieNLP0
+  uses: rasa.nlu.extractors.mitie_entity_extractor.MitieEntityExtractorGraphComponent
+  constructor_name: create
+  fn: train
+  config: {}
+  eager: false
+  is_target: true
+  is_input: false
+  resource: null
+train_EntitySynonymMapper3:
+  needs:
+    training_data: run_MitieTokenizer1
+  uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapperGraphComponent
+  constructor_name: create
+  fn: train
+  config: {}
+  eager: false
+  is_target: true
+  is_input: false
+  resource: null
+train_RegexFeaturizer4:
+  needs:
+    training_data: run_MitieTokenizer1
+  uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizerGraphComponent
+  constructor_name: create
+  fn: train
+  config: {}
+  eager: false
+  is_target: true
+  is_input: false
+  resource: null
+run_RegexFeaturizer4:
+  needs:
+    training_data: run_MitieTokenizer1
+    resource: train_RegexFeaturizer4
+  uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizerGraphComponent
+  constructor_name: load
+  fn: process_training_data
+  config: {}
+  eager: false
+  is_target: false
+  is_input: false
+  resource: null
+run_MitieFeaturizer5:
+  needs:
+    training_data: run_RegexFeaturizer4
+    model: run_MitieNLP0
+  uses: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer.MitieFeaturizerGraphComponent
+  constructor_name: load
+  fn: process_training_data
+  config: {}
+  eager: false
+  is_target: false
+  is_input: false
+  resource: null
+train_SklearnIntentClassifier6:
+  needs:
+    training_data: run_MitieFeaturizer5
+  uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifierGraphComponent
+  constructor_name: create
+  fn: train
+  config: {}
+  eager: false
+  is_target: true
+  is_input: false
+  resource: null

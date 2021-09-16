@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
@@ -27,6 +28,9 @@ logger = logging.getLogger(__name__)
 RegexEntityExtractor = RegexEntityExtractor
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
+)
 class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """Extracts entities via lookup tables and regexes defined in the training data."""
 

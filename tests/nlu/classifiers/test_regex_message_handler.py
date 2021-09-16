@@ -8,7 +8,7 @@ from rasa.shared.core.domain import Domain
 from rasa.engine.storage.resource import Resource
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandler
+from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandlerGraphComponent
 import pytest
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.nlu.constants import (
@@ -29,8 +29,8 @@ from rasa.shared.nlu.constants import (
 @pytest.fixture
 def regex_message_handler(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-) -> RegexMessageHandler:
-    return RegexMessageHandler.create(
+) -> RegexMessageHandlerGraphComponent:
+    return RegexMessageHandlerGraphComponent.create(
         config={},
         model_storage=default_model_storage,
         resource=Resource("unused"),
@@ -84,7 +84,7 @@ def regex_message_handler(
     ],
 )
 def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
-    regex_message_handler: RegexMessageHandler,
+    regex_message_handler: RegexMessageHandlerGraphComponent,
     confidence: Optional[Text],
     entities: Optional[Text],
     expected_confidence: float,
@@ -201,7 +201,7 @@ def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
     ],
 )
 def test_process_warns_if_intent_or_entities_not_in_domain(
-    regex_message_handler: RegexMessageHandler,
+    regex_message_handler: RegexMessageHandlerGraphComponent,
     intent: Text,
     entities: Optional[Text],
     expected_intent: Text,
@@ -247,7 +247,7 @@ def test_process_warns_if_intent_or_entities_not_in_domain(
     ],
 )
 def test_process_does_not_do_anything(
-    regex_message_handler: RegexMessageHandler, text: Text
+    regex_message_handler: RegexMessageHandlerGraphComponent, text: Text
 ):
 
     message = Message(

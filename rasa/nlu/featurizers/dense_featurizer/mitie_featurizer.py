@@ -4,6 +4,7 @@ import typing
 from typing import Any, List, Text, Dict, Tuple, Type
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
@@ -31,6 +32,11 @@ logger = logging.getLogger(__name__)
 MitieFeaturizer = MitieFeaturizer
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER,
+    is_trainable=False,
+    model_from="MitieNLPGraphComponent",
+)
 class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """A class that featurizes using Mitie."""
 

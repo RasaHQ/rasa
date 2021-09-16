@@ -1,0 +1,81 @@
+domain_provider:
+  needs: {}
+  uses: rasa.graph_components.providers.domain_provider.DomainProvider
+  constructor_name: load
+  fn: provide_inference
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource:
+    name: domain_provider
+run_MemoizationPolicy0:
+  needs:
+    domain: domain_provider
+    rule_only_data: rule_only_data_provider
+    tracker: __input__
+  uses: rasa.core.policies.memoization.MemoizationPolicyGraphComponent
+  constructor_name: load
+  fn: predict_action_probabilities
+  config:
+    max_history: 5
+  eager: true
+  is_target: false
+  is_input: false
+  resource:
+    name: train_MemoizationPolicy0
+run_RulePolicy1:
+  needs:
+    domain: domain_provider
+    rule_only_data: rule_only_data_provider
+    tracker: __input__
+  uses: rasa.core.policies.rule_policy.RulePolicyGraphComponent
+  constructor_name: load
+  fn: predict_action_probabilities
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource:
+    name: train_RulePolicy1
+run_TEDPolicy2:
+  needs:
+    domain: domain_provider
+    rule_only_data: rule_only_data_provider
+    tracker: __input__
+  uses: rasa.core.policies.ted_policy.TEDPolicyGraphComponent
+  constructor_name: load
+  fn: predict_action_probabilities
+  config:
+    max_history: 5
+  eager: true
+  is_target: false
+  is_input: false
+  resource:
+    name: train_TEDPolicy2
+rule_only_data_provider:
+  needs: {}
+  uses: rasa.graph_components.providers.rule_only_provider.RuleOnlyDataProvider
+  constructor_name: load
+  fn: provide
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource:
+    name: train_RulePolicy1
+select_prediction:
+  needs:
+    policy0: run_MemoizationPolicy0
+    policy1: run_RulePolicy1
+    policy2: run_TEDPolicy2
+    domain: domain_provider
+    tracker: __input__
+  uses: rasa.core.policies.ensemble.DefaultPolicyPredictionEnsemble
+  constructor_name: load
+  fn: combine_predictions_from_kwargs
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource: null

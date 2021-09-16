@@ -1,6 +1,7 @@
 import typing
 from typing import Dict, Text, List, Any, Optional
 
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.message import Message
 
@@ -17,6 +18,9 @@ SpacyTokenizer = SpacyTokenizer
 POS_TAG_KEY = "pos"
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
+)
 class SpacyTokenizerGraphComponent(TokenizerGraphComponent):
     """Tokenizer that uses SpaCy."""
 

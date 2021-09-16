@@ -1,0 +1,47 @@
+project_provider:
+  needs: {}
+  uses: rasa.graph_components.providers.project_provider.ProjectProvider
+  constructor_name: create
+  fn: provide
+  config:
+    domain_path: null
+    training_data_paths: [ ]
+  eager: false
+  is_target: false
+  is_input: true
+  resource: null
+schema_validator:
+  needs:
+    importer: project_provider
+  uses: rasa.engine.recipes.default_recipe.SchemaValidator
+  constructor_name: create
+  fn: validate
+  config: {}
+  eager: false
+  is_target: false
+  is_input: false
+  resource: null
+finetuning_validator:
+  needs:
+    importer: schema_validator
+  uses: rasa.engine.recipes.default_recipe.FinetuningValidator
+  constructor_name: create
+  fn: validate
+  config: {}
+  eager: false
+  is_target: false
+  is_input: false
+  resource: null
+nlu_training_data_provider:
+  needs:
+    importer: finetuning_validator
+  uses: rasa.graph_components.providers.nlu_training_data_provider.NLUTrainingDataProvider
+  constructor_name: create
+  fn: provide
+  config:
+    language: null
+    persist: false
+  eager: false
+  is_target: false
+  is_input: true
+  resource: null

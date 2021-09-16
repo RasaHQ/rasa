@@ -3,6 +3,7 @@ import typing
 import logging
 from typing import Any, Text, Dict, List, Type
 
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
 import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext, GraphComponent
@@ -30,6 +31,9 @@ SpacyFeaturizer = SpacyFeaturizer
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
 class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """Featurize messages using SpaCy."""
 

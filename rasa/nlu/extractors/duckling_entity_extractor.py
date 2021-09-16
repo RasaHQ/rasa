@@ -8,6 +8,7 @@ from typing import Any, List, Optional, Text, Dict
 
 import rasa.utils.endpoints as endpoints_utils
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -58,7 +59,10 @@ def convert_duckling_format_to_rasa(
     return extracted
 
 
-class DucklingEntityExtractorComponent(GraphComponent, EntityExtractorMixin):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=False
+)
+class DucklingEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """Searches for structured entities, e.g. dates, using a duckling server."""
 
     @staticmethod
@@ -97,7 +101,7 @@ class DucklingEntityExtractorComponent(GraphComponent, EntityExtractorMixin):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> DucklingEntityExtractorComponent:
+    ) -> DucklingEntityExtractorGraphComponent:
         """Creates component (see parent class for full docstring)."""
         return cls(config)
 

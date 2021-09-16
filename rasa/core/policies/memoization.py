@@ -12,6 +12,7 @@ from pathlib import Path
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import State, Domain
@@ -51,6 +52,9 @@ AugmentedMemoizationPolicy = AugmentedMemoizationPolicy
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
 class MemoizationPolicyGraphComponent(PolicyGraphComponent):
     """A policy that follows exact examples of `max_history` turns in training stories.
 
@@ -175,7 +179,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         **kwargs: Any,
-    ) -> None:
+    ) -> Resource:
         # only considers original trackers (no augmented ones)
         training_trackers = [
             t
@@ -196,6 +200,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
         self.persist()
+        return self._resource
 
     def _recall_states(self, states: List[State]) -> Optional[Text]:
         return self.lookup.get(self._create_feature_key(states))

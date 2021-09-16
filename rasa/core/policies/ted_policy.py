@@ -1,5 +1,7 @@
 from __future__ import annotations
 import logging
+
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.core.domain import Domain
 import shutil
@@ -152,6 +154,9 @@ STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+)
 class TEDPolicyGraphComponent(PolicyGraphComponent):
     """Transformer Embedding Dialogue (TED) Policy.
 
