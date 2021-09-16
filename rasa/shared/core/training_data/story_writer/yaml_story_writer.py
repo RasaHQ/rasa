@@ -59,10 +59,10 @@ class YAMLStoryWriter(StoryWriter):
     """Writes Core training data into a file in a YAML format. """
 
     def dumps(
-            self,
-            story_steps: List[StoryStep],
-            is_appendable: bool = False,
-            is_test_story: bool = False,
+        self,
+        story_steps: List[StoryStep],
+        is_appendable: bool = False,
+        is_test_story: bool = False,
     ) -> Text:
         """Turns Story steps into an YAML string.
 
@@ -81,11 +81,11 @@ class YAMLStoryWriter(StoryWriter):
         return stream.getvalue()
 
     def dump(
-            self,
-            target: Union[Text, Path, yaml.StringIO],
-            story_steps: List[StoryStep],
-            is_appendable: bool = False,
-            is_test_story: bool = False,
+        self,
+        target: Union[Text, Path, yaml.StringIO],
+        story_steps: List[StoryStep],
+        is_appendable: bool = False,
+        is_test_story: bool = False,
     ) -> None:
         """Writes Story steps into a target file/stream.
 
@@ -105,7 +105,7 @@ class YAMLStoryWriter(StoryWriter):
         rasa.shared.utils.io.write_yaml(result, target, True)
 
     def stories_to_yaml(
-            self, story_steps: List[StoryStep], is_test_story: bool = False
+        self, story_steps: List[StoryStep], is_test_story: bool = False
     ) -> Dict[Text, Any]:
         """Converts a sequence of story steps into yaml format.
 
@@ -196,7 +196,7 @@ class YAMLStoryWriter(StoryWriter):
 
     @staticmethod
     def process_user_utterance(
-            user_utterance: UserUttered, is_test_story: bool = False
+        user_utterance: UserUttered, is_test_story: bool = False
     ) -> OrderedDict:
         """Converts a single user utterance into an ordered dict.
 
@@ -250,10 +250,10 @@ class YAMLStoryWriter(StoryWriter):
                 result.yaml_add_eol_comment(comment, KEY_USER_INTENT)
 
         if user_utterance.text and (
-                # We only print the utterance text if it was an end-to-end prediction
-                user_utterance.use_text_for_featurization
-                # or if we want to print a conversation test story.
-                or is_test_story
+            # We only print the utterance text if it was an end-to-end prediction
+            user_utterance.use_text_for_featurization
+            # or if we want to print a conversation test story.
+            or is_test_story
         ):
             result[KEY_USER_MESSAGE] = LiteralScalarString(
                 rasa.shared.core.events.format_message(
@@ -383,9 +383,9 @@ class YAMLStoryWriter(StoryWriter):
 
         normal_events = rule_step.get_rules_events()
         if normal_events and not (
-                isinstance(normal_events[0], ActionExecuted)
-                and normal_events[0].action_name
-                == rasa.shared.core.constants.RULE_SNIPPET_ACTION_NAME
+            isinstance(normal_events[0], ActionExecuted)
+            and normal_events[0].action_name
+            == rasa.shared.core.constants.RULE_SNIPPET_ACTION_NAME
         ):
             result[KEY_RULE_FOR_CONVERSATION_START] = True
 
@@ -398,9 +398,9 @@ class YAMLStoryWriter(StoryWriter):
             result[KEY_STEPS] = normal_steps
 
         if len(normal_events) > 1 and (
-                isinstance(normal_events[len(normal_events) - 1], ActionExecuted)
-                and normal_events[len(normal_events) - 1].action_name
-                == rasa.shared.core.constants.RULE_SNIPPET_ACTION_NAME
+            isinstance(normal_events[len(normal_events) - 1], ActionExecuted)
+            and normal_events[len(normal_events) - 1].action_name
+            == rasa.shared.core.constants.RULE_SNIPPET_ACTION_NAME
         ):
             result[KEY_WAIT_FOR_USER_INPUT_AFTER_RULE] = False
 
