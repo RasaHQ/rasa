@@ -120,32 +120,11 @@ forms:
     ignored_intents:
     - chitchat
     required_slots:
-      cuisine:
-      - type: from_entity
-        entity: cuisine
-      num_people:
-      - type: from_entity
-        entity: number
-        intent: [inform, request_restaurant]
-      outdoor_seating:
-      - type: from_entity
-        entity: seating
-      - type: from_intent
-        intent: affirm
-        value: true
-      - type: from_intent
-        intent: deny
-        value: false
-      preferences:
-      - type: from_intent
-        intent: deny
-        value: no additional preferences
-      - type: from_text
-        not_intent: affirm
-      feedback:
-      - type: from_entity
-        entity: feedback
-      - type: from_text
+      - cuisine
+      - num_people
+      - outdoor_seating
+      - preferences
+      - feedback
 
 session_config:
   session_expiration_time: 60  # value in minutes

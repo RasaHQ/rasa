@@ -567,7 +567,8 @@ def test_incomplete_rules_due_to_loops(policy: RulePolicy):
         intents:
         - {GREET_INTENT_NAME}
         forms:
-          {some_form}: {{}}
+          {some_form}:
+            required_slots: []
         """
     )
 
@@ -850,7 +851,8 @@ async def test_predict_form_action_if_in_form(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -894,7 +896,8 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule(policy: Rule
             mappings:
             - type: from_text
         forms:
-          {loop_name}: {{}}
+          {loop_name}:
+            required_slots: []
         """
     )
     e2e_rule = TrackerWithCachedStates.from_events(
@@ -950,7 +953,8 @@ async def test_predict_form_action_if_multiple_turns(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1097,7 +1101,8 @@ async def test_predict_action_listen_after_form(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1143,7 +1148,8 @@ async def test_dont_predict_form_if_already_finished(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1193,7 +1199,8 @@ async def test_form_unhappy_path(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1237,7 +1244,8 @@ async def test_form_unhappy_path_from_general_rule(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1294,7 +1302,8 @@ async def test_form_unhappy_path_from_in_form_rule(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1369,7 +1378,8 @@ async def test_form_unhappy_path_from_story(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1445,7 +1455,8 @@ async def test_form_unhappy_path_no_validation_from_rule(
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1535,7 +1546,8 @@ async def test_form_unhappy_path_no_validation_from_story(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1604,7 +1616,8 @@ async def test_form_unhappy_path_without_rule(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1649,7 +1662,8 @@ async def test_form_activation_rule(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1689,7 +1703,8 @@ async def test_failing_form_activation_due_to_no_rule(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1729,7 +1744,8 @@ def test_form_submit_rule(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -1786,7 +1802,8 @@ def test_immediate_submit(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         entities:
         - {entity}
         """
@@ -2416,8 +2433,10 @@ def test_hide_rule_turn_with_loops(
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
-          {another_form_name}: {{}}
+          {form_name}:
+            required_slots: []
+          {another_form_name}:
+            required_slots: []
         """
     )
 
@@ -2516,7 +2535,8 @@ def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
@@ -2575,7 +2595,8 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
             mappings:
             - type: from_text
         forms:
-          {form_name}: {{}}
+          {form_name}:
+            required_slots: []
         """
     )
 
