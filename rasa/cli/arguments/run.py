@@ -55,7 +55,7 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Store logs in specified file.",
     )
-    server_arguments.add_argument(
+    parser.add_argument(
         "--use-syslog",
         action="store_true",
         help="Add syslog as a log handler",
