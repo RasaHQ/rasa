@@ -773,14 +773,6 @@ def test_cvf_incremental_training(
         assert new_vocab.get(vocab_token) == vocab_index
 
 
-def test_additional_vocab_size_deprecation(
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-):
-    with pytest.warns(FutureWarning) as warning:
-        _ = create_featurizer({"additional_vocabulary_size": {TEXT: 5, RESPONSE: 10}},)
-    assert "The parameter has been deprecated" in warning[0].message.args[0]
-
-
 @pytest.mark.parametrize(
     "initial_train_text, additional_train_text, " "use_shared_vocab",
     [("am I the coolest person?", "no", True), ("rasa rasa", "sara sara", False),],

@@ -42,48 +42,6 @@ Initializes the tracker featurizer.
 
 - `state_featurizer` - The state featurizer used to encode tracker states.
 
-#### training\_states\_actions\_and\_entities
-
-```python
-def training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
-```
-
-Transforms trackers to states, actions, and entity data.
-
-**Arguments**:
-
-- `trackers` - The trackers to transform.
-- `domain` - The domain.
-- `omit_unset_slots` - If `True` do not include the initial values of slots.
-- `ignore_action_unlikely_intent` - Whether to remove `action_unlikely_intent`
-  from training states.
-  
-
-**Returns**:
-
-  Trackers as states, actions, and entity data.
-
-#### training\_states\_and\_actions
-
-```python
-def training_states_and_actions(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[List[List[State]], List[List[Text]]]
-```
-
-Transforms trackers to states and actions.
-
-**Arguments**:
-
-- `trackers` - The trackers to transform.
-- `domain` - The domain.
-- `omit_unset_slots` - If `True` do not include the initial values of slots.
-- `ignore_action_unlikely_intent` - Whether to remove `action_unlikely_intent`
-  from training states.
-  
-
-**Returns**:
-
-  Trackers as states and actions.
-
 #### training\_states\_and\_labels
 
 ```python
