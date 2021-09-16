@@ -715,7 +715,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_key=self.label_key, label_sub_key=self.label_sub_key,
         )
 
-        # Add features for text, labels/entities
+        # Add features for text and labels/entities
         # (Note that label/entities will only be included if training is True)
         features, sparse_feature_sizes = self._collect_features(
             messages=messages, training=training
