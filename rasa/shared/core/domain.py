@@ -201,13 +201,17 @@ class Domain:
             The instantiated `Domain` object.
         """
         responses = data.get(KEY_RESPONSES, {})
-        slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
+
+        domain_slots = data.get(KEY_SLOTS, {})
+        _validate_slot_mappings(domain_slots)
+        slots = cls.collect_slots(domain_slots)
+
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
         forms = data.get(KEY_FORMS, {})
 
-        _validate_slot_mappings(forms)
+        _validate_forms(forms, domain_slots)
 
         return cls(
             intents,
@@ -1742,27 +1746,29 @@ class Domain:
 
         return any(key in content for key in ALL_DOMAIN_KEYS)
 
-    def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
-        """Retrieve the slot mappings for a form which are defined in the domain.
+    def slot_mapping_for_form(self, form_name: Text) -> List[Text]:
+        """Deprecated method in 3.0."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "Slot mappings defined in the form section of the domain have been "
+            "deprecated in 3.0.0.",
+            "4.0.0",
+        )
+        return self.required_slots_for_form(form_name)
 
-        Options:
-        - an extracted entity
-        - intent: value pairs
-        - trigger_intent: value pairs
-        - a whole message
-        or a list of them, where the first match will be picked
+    def required_slots_for_form(self, form_name: Text) -> List[Text]:
+        """Retrieve the list of required slot names for a form defined in the domain.
 
         Args:
             form_name: The name of the form.
 
         Returns:
-            The slot mapping or an empty dictionary in case no mapping was found.
+            The list of slot names or an empty list if no form was found.
         """
         form = self.forms.get(form_name)
         if form:
             return form[REQUIRED_SLOTS_KEY]
 
-        return {}
+        return []
 
 
 class SlotMapping(Enum):
@@ -1772,18 +1778,18 @@ class SlotMapping(Enum):
     FROM_INTENT = 1
     FROM_TRIGGER_INTENT = 2
     FROM_TEXT = 3
+    CUSTOM = 4
 
     def __str__(self) -> Text:
         """Returns a string representation of the object."""
         return self.name.lower()
 
     @staticmethod
-    def validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None:
+    def validate(mapping: Dict[Text, Any], slot_name: Text) -> None:
         """Validates a slot mapping.
 
         Args:
             mapping: The mapping which is validated.
-            form_name: The name of the form which uses this slot mapping.
             slot_name: The name of the slot which is mapped by this mapping.
 
         Raises:
@@ -1792,8 +1798,8 @@ class SlotMapping(Enum):
         if not isinstance(mapping, dict):
             raise InvalidDomain(
                 f"Please make sure that the slot mappings for slot '{slot_name}' in "
-                f"your form '{form_name}' are valid dictionaries. Please see "
-                f"{DOCS_URL_FORMS} for more information."
+                f"your domain are valid dictionaries. Please see "
+                f"the documentation for more information."
             )
 
         validations = {
@@ -1801,6 +1807,7 @@ class SlotMapping(Enum):
             str(SlotMapping.FROM_INTENT): ["value"],
             str(SlotMapping.FROM_TRIGGER_INTENT): ["value"],
             str(SlotMapping.FROM_TEXT): [],
+            str(SlotMapping.CUSTOM): [],
         }
 
         mapping_type = mapping.get("type")
@@ -1808,9 +1815,9 @@ class SlotMapping(Enum):
 
         if required_keys is None:
             raise InvalidDomain(
-                f"Your form '{form_name}' uses an invalid slot mapping of type "
+                f"Your domain uses an invalid slot mapping of type "
                 f"'{mapping_type}' for slot '{slot_name}'. Please see "
-                f"{DOCS_URL_FORMS} for more information."
+                f"the documentation for more information."
             )
 
         for required_key in required_keys:
@@ -1818,12 +1825,89 @@ class SlotMapping(Enum):
                 raise InvalidDomain(
                     f"You need to specify a value for the key "
                     f"'{required_key}' in the slot mapping of type '{mapping_type}' "
-                    f"for slot '{slot_name}' in the form '{form_name}'. Please see "
-                    f"{DOCS_URL_FORMS} for more information."
+                    f"for slot '{slot_name}'. Please see the "
+                    f"documentation for more information."
                 )
 
+    @staticmethod
+    def _get_ignored_intents(
+        mapping: Dict[Text, Any], domain: Domain, active_loop_name: Text,
+    ) -> List[Text]:
+        mapping_conditions = mapping.get("conditions")
+        active_loop_match = False
+        ignored_intents = []
 
-def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
+        if mapping_conditions:
+            for condition in mapping_conditions:
+                if condition.get("active_loop") == active_loop_name:
+                    active_loop_match = True
+                    break
+
+        if active_loop_match:
+            form_ignored_intents = domain.forms[active_loop_name].get(
+                IGNORED_INTENTS, []
+            )
+            if not isinstance(form_ignored_intents, list):
+                form_ignored_intents = [form_ignored_intents]
+            ignored_intents.extend(form_ignored_intents)
+
+        return ignored_intents
+
+    @staticmethod
+    def intent_is_desired(
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain,
+    ) -> bool:
+        """Checks whether user intent matches slot mapping intent specifications."""
+        mapping_intents = mapping.get("intent", [])
+        mapping_not_intents = mapping.get("not_intent", [])
+
+        active_loop_name = tracker.active_loop_name
+        if active_loop_name:
+            mapping_not_intents = set(
+                mapping_not_intents
+                + SlotMapping._get_ignored_intents(mapping, domain, active_loop_name)
+            )
+
+        intent = tracker.latest_message.intent.get("name")
+
+        intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
+
+        return intent_not_blocked or intent in mapping_intents
+
+    @staticmethod
+    def entity_is_desired(
+        mapping: Dict[Text, Any],
+        extracted_entities: List[Dict],
+        tracker: "DialogueStateTracker",
+    ) -> bool:
+        """Checks whether slot should be filled by an entity in the input or not.
+
+        Args:
+            mapping: Slot mapping.
+            extracted_entities: List of entities extracted from last user message.
+            tracker: The tracker.
+
+        Returns:
+            True, if slot should be filled, false otherwise.
+        """
+        slot_fulfils_entity_mapping = False
+
+        for entity in extracted_entities:
+            if (
+                mapping.get("entity") == entity["entity"]
+                and mapping.get("role") == entity.get("role")
+                and mapping.get("group") == entity.get("group")
+            ):
+                matching_values = tracker.get_latest_entity_values(
+                    mapping.get("entity"), mapping.get("role"), mapping.get("group"),
+                )
+                slot_fulfils_entity_mapping = matching_values is not None
+                break
+
+        return slot_fulfils_entity_mapping
+
+
+def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> None:
     if not isinstance(forms, dict):
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
@@ -1842,29 +1926,51 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
         if IGNORED_INTENTS in form_data and REQUIRED_SLOTS_KEY not in form_data:
             raise InvalidDomain(
                 f"If you use the `{IGNORED_INTENTS}` parameter in your form, then "
-                f"the keyword `{REQUIRED_SLOTS_KEY}` should precede the definition "
-                f"of your slot mappings. Please see {DOCS_URL_FORMS} "
-                f"for more information."
+                f"the keyword `{REQUIRED_SLOTS_KEY}` is required. "
+                f"Please see {DOCS_URL_FORMS} for more information."
             )
 
-        slots = forms[form_name].get(REQUIRED_SLOTS_KEY, {})
+        form_slots = forms[form_name].get(REQUIRED_SLOTS_KEY, form_data)
 
-        if not isinstance(slots, Dict):
+        if not isinstance(form_slots, list):
             raise InvalidDomain(
                 f"The slots for form '{form_name}' were specified "
-                f"as '{type(slots)}'. They need to be specified "
-                f"as dictionary. Please see {DOCS_URL_FORMS} "
+                f"as '{type(form_slots)}'. They need to be specified "
+                f"as list. Please see {DOCS_URL_FORMS} "
                 f"for more information."
             )
 
-        for slot_name, slot_mappings in slots.items():
-            if not isinstance(slot_mappings, list):
-                raise InvalidDomain(
-                    f"The slot mappings for slot '{slot_name}' in "
-                    f"form '{form_name}' have type '{type(slot_mappings)}'. "
-                    f"It is required to provide a list of slot "
-                    f"mappings. Please see {DOCS_URL_FORMS} "
-                    f"for more information."
-                )
-            for slot_mapping in slot_mappings:
-                SlotMapping.validate(slot_mapping, form_name, slot_name)
+        for slot in form_slots:
+            if slot not in domain_slots:
+                raise InvalidDomain(f"The slot '{slot}' is not mapped in domain slots.")
+
+
+def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
+    if not isinstance(domain_slots, Dict):
+        raise InvalidDomain(
+            f"Slots were specified as '{type(domain_slots)}'. "
+            f"They need to be specified as dictionary."
+        )
+
+    for slot_name, properties in domain_slots.items():
+        if not isinstance(properties, dict):
+            raise InvalidDomain(
+                f"The properties of slot {slot_name} were specified as "
+                f"'{type(properties)}'. They need to be specified as dictionary."
+            )
+        mappings = properties.get("mappings")
+
+        if mappings is None:
+            raise InvalidDomain(f"The slot '{slot_name}' has no mappings defined.")
+
+        if not isinstance(mappings, list):
+            raise InvalidDomain(
+                f"The slot mappings for slot '{slot_name}' in "
+                f"the domain have type '{type(mappings)}'. "
+                f"It is required to provide a list of slot "
+                f"mappings. Please see the documentation "
+                f"for more information."
+            )
+
+        for slot_mapping in mappings:
+            SlotMapping.validate(slot_mapping, slot_name)

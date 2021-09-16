@@ -51,7 +51,9 @@ mapping:
         type: "map"
         mapping:
           required_slots:
-            type: "map"
+            type: "seq"
+            sequence:
+              - type: str
             required: False
             allowempty: True
           ignored_intents:

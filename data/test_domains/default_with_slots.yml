@@ -37,6 +37,4 @@ responses:
 forms:
   some_form:
     required_slots:
-      name:
-      - type: from_entity
-        entity: name
+      - name

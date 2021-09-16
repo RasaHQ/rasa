@@ -39,6 +39,7 @@ from rasa.shared.core.domain import (
     KEY_E2E_ACTIONS,
     KEY_INTENTS,
     KEY_ENTITIES,
+    KEY_SLOTS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -214,6 +215,8 @@ def test_custom_slot_type(tmpdir: Path):
     slots:
         custom:
          type: tests.core.conftest.Unknown
+         mappings:
+         - type: from_text
 
     responses:
         utter_greet:
@@ -222,6 +225,8 @@ def test_custom_slot_type(tmpdir: Path):
     slots:
         custom:
          type: blubblubblub
+         mappings:
+         - type: from_text
 
     responses:
         utter_greet:
@@ -244,7 +249,8 @@ def test_domain_to_dict():
       store_entities_as_slots: true
     entities: []
     forms:
-      some_form: {{}}
+      some_form:
+       required_slots: []
     intents: []
     responses:
       utter_greet:
@@ -272,7 +278,7 @@ def test_domain_to_dict():
         "config": {"store_entities_as_slots": True},
         KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
         "entities": [],
-        "forms": {"some_form": {"required_slots": {}}},
+        "forms": {"some_form": {"required_slots": []}},
         "intents": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
         "session_config": {
@@ -495,22 +501,30 @@ def test_merge_with_empty_other_domain(other: Optional[Domain]):
 
 def test_merge_domain_with_forms():
     test_yaml_1 = """
+    slots:
+      slot1:
+        type: text
+        mappings:
+        - type: from_text
     forms:
       my_form:
         required_slots:
-            slot1:
-            - type: from_text
+            - slot1
 
       my_form2:
-        required_slots: {}
+        required_slots: []
     """
 
     test_yaml_2 = """
+    slots:
+      slot1:
+        type: text
+        mappings:
+        - type: from_text
     forms:
       my_form3:
         required_slots:
-          slot1:
-          - type: from_text
+          - slot1
     """
 
     domain_1 = Domain.from_yaml(test_yaml_1)
@@ -730,13 +744,13 @@ def test_unfeaturized_slot_in_domain_warnings():
                 featurized_slot_name: {
                     "initial_value": "value2",
                     "type": "text",
-                    "mappings": [{}],
+                    "mappings": [{"type": "from_text"}],
                 },
                 unfeaturized_slot_name: {
                     "type": "text",
                     "initial_value": "value1",
                     "influence_conversation": False,
-                    "mappings": [{}],
+                    "mappings": [{"type": "from_text"}],
                 },
             }
         }
@@ -1031,7 +1045,7 @@ def test_domain_from_dict_does_not_change_input():
             "pure_intent",
         ],
         "entities": ["name", "unrelated_recognized_entity", "other"],
-        "slots": {"name": {"type": "text", "mappings": [{}]}},
+        "slots": {"name": {"type": "text", "mappings": [{"type": "from_text"}]}},
         "responses": {
             "utter_greet": [{"text": "hey there {name}!"}],
             "utter_goodbye": [{"text": "goodbye 😢"}, {"text": "bye bye 😢"}],
@@ -1178,37 +1192,60 @@ def test_featurized_entities_ordered_consistently():
 @pytest.mark.parametrize(
     "domain_as_dict",
     [
-        # No forms
-        {KEY_FORMS: {}},
-        # No slot mappings
-        {KEY_FORMS: {"my_form": None}},
-        {KEY_FORMS: {"my_form": {}}},
+        # No slots
+        {KEY_SLOTS: {}},
         # Valid slot mappings
         {
-            KEY_FORMS: {
-                "my_form": {"slot_x": [{"type": "from_entity", "entity": "name"}]}
-            }
-        },
-        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_intent", "value": 5}]}}},
-        {
-            KEY_FORMS: {
-                "my_form": {"slot_x": [{"type": "from_intent", "value": "some value"}]}
-            }
-        },
-        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_intent", "value": False}]}}},
-        {
-            KEY_FORMS: {
-                "my_form": {"slot_x": [{"type": "from_trigger_intent", "value": 5}]}
-            }
-        },
-        {
-            KEY_FORMS: {
-                "my_form": {
-                    "slot_x": [{"type": "from_trigger_intent", "value": "some value"}]
+            KEY_SLOTS: {
+                "slot_x": {
+                    "type": "text",
+                    "mappings": [{"type": "from_entity", "entity": "name"}],
                 }
             }
         },
-        {KEY_FORMS: {"my_form": {"slot_x": [{"type": "from_text"}]}}},
+        {
+            KEY_SLOTS: {
+                "slot_x": {
+                    "type": "float",
+                    "mappings": [{"type": "from_intent", "value": 5}],
+                }
+            },
+        },
+        {
+            KEY_SLOTS: {
+                "slot_x": {
+                    "type": "text",
+                    "mappings": [{"type": "from_intent", "value": "some value"}],
+                }
+            }
+        },
+        {
+            KEY_SLOTS: {
+                "slot_x": {
+                    "type": "bool",
+                    "mappings": [{"type": "from_intent", "value": False}],
+                }
+            }
+        },
+        {
+            KEY_SLOTS: {
+                "slot_x": {
+                    "type": "float",
+                    "mappings": [{"type": "from_trigger_intent", "value": 5}],
+                }
+            }
+        },
+        {
+            KEY_SLOTS: {
+                "slot_x": {
+                    "type": "text",
+                    "mappings": [
+                        {"type": "from_trigger_intent", "value": "some value"}
+                    ],
+                }
+            }
+        },
+        {KEY_SLOTS: {"slot_x": {"type": "text", "mappings": [{"type": "from_text"}]}}},
     ],
 )
 def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
@@ -1218,60 +1255,74 @@ def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
 @pytest.mark.parametrize(
     "domain_as_dict",
     [
-        # Wrong type for slot names
+        # Wrong type for forms
+        {KEY_FORMS: []},
+        # Wrong type for required_slots
         {KEY_FORMS: {"my_form": []}},
         {KEY_FORMS: {"my_form": 5}},
-        # Slot mappings not defined as list
+        # 2.0 slot mappings
         {KEY_FORMS: {"my_form": {"required_slots": {"slot1": {}}}}},
+        # ignored_intent in forms, but no required_slots
+        {KEY_FORMS: {"my_form": {"ignored_intents": ["greet"]}}},
+        # slot not specified in domain, but present in forms
+        {KEY_FORMS: {"my_form": {"required_slots": ["slot1"]}}},
+    ],
+)
+def test_form_invalid_mappings(domain_as_dict: Dict[Text, Any]):
+    with pytest.raises(InvalidDomain):
+        Domain.from_dict(domain_as_dict)
+
+
+@pytest.mark.parametrize(
+    "domain_as_dict",
+    [
+        # Wrong type for slot names
+        {KEY_SLOTS: {"my_slot": 5}},
+        # Wrong type for slot mappings
+        {KEY_SLOTS: {"my_slot": {"type": "text", "mappings": {}}}},
         # Unknown mapping
-        {
-            KEY_FORMS: {
-                "my_form": {"required_slots": {"slot1": [{"type": "my slot mapping"}]}}
-            }
-        },
+        {KEY_SLOTS: {"my_slot": {"type": "text", "mappings": [{"type": "test"}]}}},
         # Mappings with missing keys
         {
-            KEY_FORMS: {
-                "my_form": {
-                    "required_slots": {
-                        "slot1": [{"type": "from_entity", "intent": "greet"}]
-                    }
+            KEY_SLOTS: {
+                "my_slot": {
+                    "type": "text",
+                    "mappings": [{"type": "from_entity", "intent": "greet"},],
                 }
             }
         },
         {
-            KEY_FORMS: {
-                "my_form": {"required_slots": {"slot1": [{"type": "from_intent"}]}}
+            KEY_SLOTS: {
+                "my_slot": {"type": "text", "mappings": [{"type": "from_intent"}],}
             }
         },
         {
-            KEY_FORMS: {
-                "my_form": {
-                    "required_slots": {
-                        "slot1": [{"type": "from_intent", "value": None}]
-                    }
+            KEY_SLOTS: {
+                "my_slot": {
+                    "type": "text",
+                    "mappings": [{"type": "from_intent", "value": None},],
                 }
             }
         },
         {
-            KEY_FORMS: {
-                "my_form": {
-                    "required_slots": {"slot1": [{"type": "from_trigger_intent"}]}
+            KEY_SLOTS: {
+                "my_slot": {
+                    "type": "text",
+                    "mappings": [{"type": "from_trigger_intent"}],
                 }
             }
         },
         {
-            KEY_FORMS: {
-                "my_form": {
-                    "required_slots": {
-                        "slot1": [{"type": "from_trigger_intent", "value": None}]
-                    }
+            KEY_SLOTS: {
+                "my_slot": {
+                    "type": "text",
+                    "mappings": [{"type": "from_trigger_intent", "value": None},],
                 }
             }
         },
     ],
 )
-def test_form_invalid_mappings(domain_as_dict: Dict[Text, Any]):
+def test_slot_invalid_mappings(domain_as_dict: Dict[Text, Any]):
     with pytest.raises(InvalidDomain):
         Domain.from_dict(domain_as_dict)
 
@@ -1486,10 +1537,11 @@ def test_domain_with_no_form_slots():
         """
         version: "2.0"
         forms:
-          contract_form: {}
+         contract_form:
+          required_slots: []
         """
     )
-    assert domain.slot_mapping_for_form("contract_form") == {}
+    assert domain.slot_mapping_for_form("contract_form") == []
 
 
 def test_domain_with_empty_required_slots():
@@ -1523,16 +1575,15 @@ def test_domain_fingerprint_consistency_across_runs():
            name:
              type: text
              mappings:
-             - type: from_text
+             - type: from_entity
+               entity: name
          responses:
            utter_greet:
              - text: "Hi"
          forms:
           test_form:
             required_slots:
-               name:
-                - type: from_entity
-                  entity: name
+               - name
          actions:
          - action_test
     """
