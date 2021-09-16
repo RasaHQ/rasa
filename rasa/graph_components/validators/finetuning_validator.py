@@ -25,11 +25,11 @@ class FineTuningValidator(GraphComponent):
     """Component that checks whether fine-tuning is possible.
 
     This is a component at the beginning of the graph which receives all training data
-    and raises an exception in case is_finetuning=True and finetuning is not possible
-    (e.g. because new labels were added). In case we are doing a regular training
-    (and not finetuning) this persists the necessary information extracted from the
-    training data to be able to validate when initialized via load whether we can
-    finetune.
+    and raises an exception in case `is_finetuning` is `True` and finetuning is not
+    possible (e.g. because new labels were added).
+    In case we are doing a regular training (and not finetuning) this persists the
+    necessary information extracted from the training data to be able to validate when
+    initialized via load whether we can finetune.
 
     Finetuning is possible if, compared to the initial training phase, it holds that
     1. the configuration (except for "epoch" keys) does not change
@@ -145,7 +145,7 @@ class FineTuningValidator(GraphComponent):
         self._fingerprints[FINGERPRINT_VERSION] = rasa_version
 
         config = importer.get_config()
-        self._compare_raise_update(
+        self._compare_or_memorize(
             fingerprint_key=FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
             new_fingerprint=self._get_fingerprint_of_config_without_epochs(config),
             error_message=(
@@ -161,7 +161,7 @@ class FineTuningValidator(GraphComponent):
             # that ensures domain and core training data are consistent, then we can
             # drop this check.
             domain = importer.get_domain()
-            self._compare_raise_update(
+            self._compare_or_memorize(
                 fingerprint_key=FINGERPRINT_CORE,
                 new_fingerprint=self._get_fingerprint_of_domain_without_responses(
                     domain
@@ -176,7 +176,7 @@ class FineTuningValidator(GraphComponent):
 
         if nlu:
             nlu_data = importer.get_nlu_data()
-            self._compare_raise_update(
+            self._compare_or_memorize(
                 fingerprint_key=FINGERPRINT_NLU,
                 new_fingerprint=nlu_data.label_fingerprint(),
                 error_message=(
@@ -193,16 +193,10 @@ class FineTuningValidator(GraphComponent):
 
         self.persist()
 
-    def _compare_raise_update(
+    def _compare_or_memorize(
         self, fingerprint_key: Text, new_fingerprint: Text, error_message: Text,
     ) -> None:
-        """Compare fingerprints, raise if needed and update the fingerprints.
-
-        During finetuning, this method expects that it has seen fingerprints for
-        `fingerprint_key` before, compares the given `new_fingerprint` with that old
-        one and raises an error with `error_message` if needed.
-        When we're not in finetuning mode, this method just memorizes the given
-        `new_fingerprint`.
+        """Compares given fingerprint if we are finetuning, otherwise just saves it.
 
         Args:
            fingerprint_key: name of the fingerprint
