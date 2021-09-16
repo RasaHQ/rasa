@@ -2,9 +2,14 @@ import glob
 import pytest
 
 import rasa.core.config
+from rasa.core.policies import Policy
 from rasa.core.policies.memoization import MemoizationPolicy
 import rasa.shared.utils.io
-from tests.core.conftest import ExamplePolicy
+
+
+class ExamplePolicy(Policy):
+    def __init__(self, *args, **kwargs):
+        super(ExamplePolicy, self).__init__(*args, **kwargs)
 
 
 @pytest.mark.parametrize("filename", glob.glob("data/test_config/example_config.yaml"))

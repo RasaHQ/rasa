@@ -12,12 +12,14 @@ from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa
+
 from rasa.core.policies.ted_policy import TEDPolicy
 import rasa.model
 import rasa.model_training
 import rasa.core
 import rasa.core.train
 import rasa.nlu
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.shared.importers.autoconfig as autoconfig
 import rasa.shared.utils.io

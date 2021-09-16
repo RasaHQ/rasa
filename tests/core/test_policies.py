@@ -41,11 +41,12 @@ from rasa.core.policies.policy import (
     InvalidPolicyConfig,
     PolicyGraphComponent,
 )
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
 from rasa.core.policies.memoization import (
     AugmentedMemoizationPolicyGraphComponent as AugmentedMemoizationPolicy,
     MemoizationPolicyGraphComponent as MemoizationPolicy,
+    MemoizationPolicyGraphComponent,
 )
 
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -729,33 +730,25 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
 @pytest.mark.parametrize(
     "policy,supported_data",
     [
-        (TEDPolicy, SupportedData.ML_DATA),
-        (RulePolicy, SupportedData.ML_AND_RULE_DATA),
-        (MemoizationPolicy, SupportedData.ML_DATA),
+        (TEDPolicyGraphComponent, SupportedData.ML_DATA),
+        (RulePolicyGraphComponent, SupportedData.ML_AND_RULE_DATA),
+        (MemoizationPolicyGraphComponent, SupportedData.ML_DATA),
     ],
 )
 def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
     assert policy.supported_data() == supported_data
 
 
-class OnlyRulePolicy(Policy):
-    """Test policy that supports only rule-based training data."""
-
-    @staticmethod
-    def supported_data() -> SupportedData:
-        return SupportedData.RULE_DATA
-
-
 @pytest.mark.parametrize(
-    "policy,n_rule_trackers,n_ml_trackers",
+    "supported_data,n_rule_trackers,n_ml_trackers",
     [
-        (TEDPolicy(), 0, 3),
-        (RulePolicy(), 2, 3),
-        (OnlyRulePolicy, 2, 0),  # policy can be passed as a `type` as well
+        (SupportedData.ML_DATA, 0, 3),
+        (SupportedData.ML_AND_RULE_DATA, 2, 3),
+        (SupportedData.RULE_DATA, 2, 0),
     ],
 )
 def test_get_training_trackers_for_policy(
-    policy: Policy, n_rule_trackers: int, n_ml_trackers: int
+    supported_data: SupportedData, n_rule_trackers: int, n_ml_trackers: int
 ):
     # create five trackers (two rule-based and three ML trackers)
     trackers = [
@@ -766,7 +759,7 @@ def test_get_training_trackers_for_policy(
         DialogueStateTracker("id5", slots=[], is_rule_tracker=False),
     ]
 
-    trackers = SupportedData.trackers_for_policy(policy, trackers)
+    trackers = SupportedData.trackers_for_supported_data(supported_data, trackers)
 
     rule_trackers = [tracker for tracker in trackers if tracker.is_rule_tracker]
     ml_trackers = [tracker for tracker in trackers if not tracker.is_rule_tracker]
