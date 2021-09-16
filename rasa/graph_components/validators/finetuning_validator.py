@@ -32,7 +32,7 @@ class FineTuningValidator(GraphComponent):
     finetune.
 
     Finetuning is possible if, compared to the initial training phase, it holds that
-    1. the configuration (excpet for "epoch" keys) does not change
+    1. the configuration (except for "epoch" keys) does not change
     2. the domain (except for "responses") does not change - or we're not finetuning
        the core part
     3. the intents, entities, entity groups, entity roles, and action names that
