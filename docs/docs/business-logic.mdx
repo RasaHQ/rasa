@@ -58,22 +58,35 @@ piece of required information. Slot mappings define both which
 slots are required, and how each slot can be filled:
 
 ```yaml-rasa title="domain.yml"
+entities:
+- cuisine
+- number
+slots:
+  cuisine:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: cuisine
+  num_people:
+    type: float
+    mappings:
+    - type: from_entity
+      entity: number
+  outdoor_seating:
+    type: bool
+    mappings:
+    - type: from_intent
+      intent: affirm
+      value: true
+    - type: from_intent
+      intent: deny
+      value: false
 forms:
   restaurant_form:
     required_slots:
-        cuisine:
-          - type: from_entity
-            entity: cuisine
-        num_people:
-          - type: from_entity
-            entity: number
-        outdoor_seating:
-          - type: from_intent
-            intent: affirm
-            value: true
-          - type: from_intent
-            intent: deny
-            value: false
+        - cuisine
+        - num_people
+        - outdoor_seating
 ```
 
 For any slot filled `from_entity`, the entity needs to be added
