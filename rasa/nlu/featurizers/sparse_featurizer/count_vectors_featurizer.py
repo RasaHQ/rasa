@@ -26,8 +26,6 @@ from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
     INTENT_RESPONSE_KEY,
-    RESPONSE,
-    ACTION_TEXT,
     ACTION_NAME,
 )
 from rasa.nlu.featurizers.sparse_featurizer._count_vectors_featurizer import (
@@ -92,12 +90,6 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
             # indicates whether the featurizer should use the lemma of a word for
             # counting (if available) or not
             "use_lemma": True,
-            # Additional vocabulary size to be kept reserved for finetuning
-            "additional_vocabulary_size": {
-                TEXT: None,
-                RESPONSE: None,
-                ACTION_TEXT: None,
-            },
         }
 
     @staticmethod
@@ -156,20 +148,6 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
             OOV_token = OOV_token.lower()
             if OOV_words:
                 OOV_words = [w.lower() for w in OOV_words]
-        additional_size_attributes = [
-            key
-            for key, value in self._config["additional_vocabulary_size"].items()
-            if value
-        ]
-        if additional_size_attributes:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"The parameter `additional_vocabulary_size` has been specified for "
-                f"attributes - `{additional_size_attributes}`. The parameter has been "
-                f"deprecated since the pipeline no longer creates an extra buffer for "
-                f"additional vocabulary. Any value assigned to "
-                f"this parameter will be ignored. You can omit specifying "
-                f"`additional_vocabulary_size` in future runs."
-            )
 
         return OOV_token, OOV_words
 
