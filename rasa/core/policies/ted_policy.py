@@ -38,7 +38,11 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
+from rasa.core.policies.policy import (
+    PolicyPrediction,
+    PolicyGraphComponent,
+    SupportedData,
+)
 from rasa.core.constants import (
     DIALOGUE,
     POLICY_MAX_HISTORY,
@@ -691,6 +695,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
                 category=UserWarning,
             )
             return self._resource
+
+        training_trackers = SupportedData.trackers_for_supported_data(
+            self.supported_data(), training_trackers
+        )
 
         model_data, label_ids = self._prepare_for_training(
             training_trackers, domain, precomputations,

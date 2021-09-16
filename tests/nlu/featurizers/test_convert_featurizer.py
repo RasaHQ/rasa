@@ -5,7 +5,7 @@ from pathlib import Path
 import os
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -52,8 +52,8 @@ def test_convert_featurizer_process(
         [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
     ],
     monkeypatch: MonkeyPatch,
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
-    tokenizer = WhitespaceTokenizer()
 
     monkeypatch.setattr(
         ConveRTFeaturizerGraphComponent,
@@ -69,7 +69,7 @@ def test_convert_featurizer_process(
     message = Message.build(text=sentence)
 
     td = TrainingData([message])
-    tokenizer.train(td)
+    whitespace_tokenizer.process_training_data(td)
     tokens = featurizer.tokenize(message, attribute=TEXT)
 
     featurizer.process([message])
@@ -97,8 +97,8 @@ def test_convert_featurizer_train(
     ],
     monkeypatch: MonkeyPatch,
     load: bool,
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
-    tokenizer = WhitespaceTokenizer()
 
     monkeypatch.setattr(
         ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
@@ -114,7 +114,7 @@ def test_convert_featurizer_train(
     message.set(RESPONSE, sentence)
 
     td = TrainingData([message])
-    tokenizer.train(td)
+    whitespace_tokenizer.process_training_data(td)
 
     tokens = featurizer.tokenize(message, attribute=TEXT)
 
@@ -170,8 +170,8 @@ def test_convert_featurizer_tokens_to_text(
     sentence: Text,
     expected_text: Text,
     monkeypatch: MonkeyPatch,
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
-    tokenizer = WhitespaceTokenizer()
 
     monkeypatch.setattr(
         ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
@@ -183,7 +183,7 @@ def test_convert_featurizer_tokens_to_text(
     featurizer = create_or_load_convert_featurizer(component_config)
     message = Message.build(text=sentence)
     td = TrainingData([message])
-    tokenizer.train(td)
+    whitespace_tokenizer.process_training_data(td)
     tokens = featurizer.tokenize(message, attribute=TEXT)
 
     actual_text = ConveRTFeaturizerGraphComponent._tokens_to_text([tokens])[0]
@@ -215,8 +215,8 @@ def test_convert_featurizer_token_edge_cases(
     expected_tokens: List[Text],
     expected_indices: List[Tuple[int]],
     monkeypatch: MonkeyPatch,
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
-    tokenizer = WhitespaceTokenizer()
 
     monkeypatch.setattr(
         ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
@@ -228,7 +228,7 @@ def test_convert_featurizer_token_edge_cases(
     featurizer = create_or_load_convert_featurizer(component_config)
     message = Message.build(text=text)
     td = TrainingData([message])
-    tokenizer.train(td)
+    whitespace_tokenizer.process_training_data(td)
     tokens = featurizer.tokenize(message, attribute=TEXT)
 
     assert [t.text for t in tokens] == expected_tokens
@@ -248,8 +248,8 @@ def test_convert_featurizer_number_of_sub_tokens(
     text: Text,
     expected_number_of_sub_tokens: List[int],
     monkeypatch: MonkeyPatch,
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
-    tokenizer = WhitespaceTokenizer()
 
     monkeypatch.setattr(
         ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
@@ -262,7 +262,7 @@ def test_convert_featurizer_number_of_sub_tokens(
 
     message = Message.build(text=text)
     td = TrainingData([message])
-    tokenizer.train(td)
+    whitespace_tokenizer.process_training_data(td)
 
     tokens = featurizer.tokenize(message, attribute=TEXT)
 
