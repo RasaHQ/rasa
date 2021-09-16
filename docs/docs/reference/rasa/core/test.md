@@ -31,7 +31,7 @@ See the docstring of the parent class for more information.
 #### inline\_comment
 
 ```python
-def inline_comment() -> Text
+def inline_comment(**kwargs: Any) -> Text
 ```
 
 A comment attached to this event. Used during dumping.
@@ -60,7 +60,7 @@ See the docstring of the parent class `ActionExecuted` for more information.
 #### inline\_comment
 
 ```python
-def inline_comment() -> Text
+def inline_comment(**kwargs: Any) -> Text
 ```
 
 A comment attached to this event. Used during dumping.
@@ -162,7 +162,7 @@ Set `predicted_intent` and `predicted_entities` attributes.
 #### inline\_comment
 
 ```python
-def inline_comment() -> Optional[Text]
+def inline_comment(force_comment_generation: bool = False) -> Optional[Text]
 ```
 
 A comment attached to this event. Used during dumping.
