@@ -1942,7 +1942,10 @@ def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> 
 
         for slot in form_slots:
             if slot not in domain_slots:
-                raise InvalidDomain(f"The slot '{slot}' is not mapped in domain slots.")
+                raise InvalidDomain(
+                    f"The slot '{slot}' in form '{form_name}' is not "
+                    f"mapped in domain slots."
+                )
 
 
 def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
