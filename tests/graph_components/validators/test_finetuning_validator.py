@@ -22,7 +22,7 @@ from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.importers.importer import NluDataImporter, TrainingDataImporter
 import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.constants import ACTION_NAME, INTENT
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
@@ -61,8 +61,6 @@ def get_finetuning_validator(
 @pytest.fixture
 def get_validation_method(
     get_finetuning_validator: Callable[[bool, bool], FineTuningValidator],
-    nlu: bool,
-    core: bool,
 ) -> Callable[[bool, bool, bool, bool], ValidationMethodType]:
     def inner(
         finetuning: bool, load: bool, nlu: bool, core: bool
@@ -111,15 +109,12 @@ def test_validate_after_changing_response_text_in_domain(
     nlu: bool,
     core: bool,
 ):
-    # NOTE: test_model/test_validate_changed_response_text
-
     # training
     importer = _project_files(project)
     old_domain = importer.get_domain()
-    config = importer.get_config()
 
     validate = get_validation_method(finetuning=False, load=False, core=core, nlu=nlu)
-    validate(importer=importer, config=config)
+    validate(importer=importer)
 
     # Change NLG content but keep actions the same
     domain_with_changed_nlg = old_domain.as_dict()
@@ -132,7 +127,7 @@ def test_validate_after_changing_response_text_in_domain(
         finetuning=False, load=True, core=core, nlu=nlu
     )
     assert importer.get_domain() != old_domain
-    loaded_validate(importer=importer, config=config)
+    loaded_validate(importer=importer)
 
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
@@ -142,15 +137,12 @@ def test_validate_after_adding_action_to_domain(
     nlu: bool,
     core: bool,
 ):
-    # NOTE: test_model/test_validate_additional_action
-
     # training
     importer = _project_files(project)
     old_domain = importer.get_domain()
-    config = importer.get_config()
 
     validate = get_validation_method(finetuning=False, load=False, core=core, nlu=nlu)
-    validate(importer=importer, config=config)
+    validate(importer=importer)
 
     # Add another action - via the response key
     domain_with_new_action = old_domain.as_dict()
@@ -165,9 +157,9 @@ def test_validate_after_adding_action_to_domain(
     assert importer.get_domain() != old_domain
     if core:
         with pytest.raises(InvalidConfigException):
-            loaded_validate(importer=importer, config=config)
+            loaded_validate(importer=importer)
     else:
-        loaded_validate(importer=importer, config=config)
+        loaded_validate(importer=importer)
 
 
 def _get_example_config() -> Dict[Text, Any]:
@@ -216,13 +208,11 @@ def test_validate_after_changing_epochs_in_config(
     nlu: bool,
     core: bool,
 ):
-    # NOTE: test_model/test_validate_changing_config_epochs (first part)
-
     # training
     config1 = _get_example_config()
     importer = _create_importer_from_config(config1, tmp_path, "config1.yml")
     validate = get_validation_method(finetuning=False, load=False, nlu=nlu, core=core)
-    validate(importer=importer, config=config1)
+    validate(importer=importer)
 
     # Change Configuration - replace all epoch settings by a different value
     config2 = copy.deepcopy(config1)
@@ -241,7 +231,7 @@ def test_validate_after_changing_epochs_in_config(
     loaded_validate = get_validation_method(
         finetuning=True, load=True, nlu=nlu, core=core
     )
-    loaded_validate(importer=importer2, config=config2)
+    loaded_validate(importer=importer2)
 
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
@@ -251,13 +241,11 @@ def test_validate_after_changing_nlu_config(
     nlu: bool,
     core: bool,
 ):
-    # NOTE: test_model/test_validate_changing_config_epochs (2nd part)
-
     # training
     config1 = _get_example_config()
     importer = _create_importer_from_config(config1, tmp_path, "config1.yml")
     validate = get_validation_method(finetuning=False, load=False, nlu=nlu, core=core)
-    validate(importer=importer, config=config1)
+    validate(importer=importer)
 
     # Change Config - remove parts of NLU pipeline
     config3 = copy.deepcopy(config1)
@@ -271,7 +259,7 @@ def test_validate_after_changing_nlu_config(
 
     # does raise - doesn't matter if it's nlu/core/both
     with pytest.raises(InvalidConfigException):
-        loaded_validate(importer=importer3, config=config3)
+        loaded_validate(importer=importer3)
 
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
@@ -281,13 +269,11 @@ def test_validate_after_changing_core_config(
     nlu: bool,
     core: bool,
 ):
-    # NOTE: *new*
-
     # training
     config1 = _get_example_config()
-    importer = _create_importer_from_config(config1, tmp_path, "config1.yml")
+    importer1 = _create_importer_from_config(config1, tmp_path, "config1.yml")
     validate = get_validation_method(finetuning=False, load=False, nlu=nlu, core=core)
-    validate(importer=importer, config=config1)
+    validate(importer=importer1)
 
     # Change Config - remove parts of NLU pipeline
     config3 = copy.deepcopy(config1)
@@ -304,17 +290,16 @@ def test_validate_after_changing_core_config(
 
     # does raise - doesn't matter if it's nlu/core/both
     with pytest.raises(InvalidConfigException):
-        loaded_validate(importer=importer3, config=config3) @ pytest.mark.parametrize(
-            "nlu, core", [(True, False), (False, True), (True, True)]
-        )
+        loaded_validate(importer=importer3)
 
 
 class DummyNluDataImporter(NluDataImporter):
-    def __init__(self, messages: List[Message]) -> None:
+    def __init__(self, messages: List[Message], config: Dict[Text, Any]) -> None:
         self.training_data = TrainingData(training_examples=messages)
+        self.config = config
 
     def get_config(self) -> Dict:
-        return {}
+        return self.config
 
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         return self.training_data
@@ -334,8 +319,6 @@ def test_validate_after_removing_or_adding_intent_or_action_name(
     core: bool,
     key: Text,
 ):
-    # NOTE: *new*
-
     messages = [
         Message(data={key: "item-1"}),
         Message(data={key: "item-2"}),
@@ -344,28 +327,68 @@ def test_validate_after_removing_or_adding_intent_or_action_name(
 
     # training
     config = _get_example_config()
-    importer = DummyNluDataImporter(messages)
+    importer = DummyNluDataImporter(messages, config)
     validate = get_validation_method(finetuning=False, load=False, nlu=nlu, core=core)
-    validate(importer=importer, config=config)
+    validate(importer=importer)
 
     # load validate method in finetuning mode
     validate = get_validation_method(finetuning=True, load=True, nlu=nlu, core=core)
 
     # ... apply with something suddenly missing
-    importer2 = DummyNluDataImporter(messages[1:])
+    importer2 = DummyNluDataImporter(messages[1:], config)
     if nlu:
         with pytest.raises(InvalidConfigException):
-            validate(importer=importer2, config=config)
+            validate(importer=importer2)
     else:
-        validate(importer=importer2, config=config)
+        validate(importer=importer2)
 
     # ... apply with additional item
-    importer3 = DummyNluDataImporter(messages + [message_with_new_item])
+    importer3 = DummyNluDataImporter(messages + [message_with_new_item], config)
     if nlu:
         with pytest.raises(InvalidConfigException):
-            validate(importer=importer3, config=config)
+            validate(importer=importer3)
     else:
-        validate(importer=importer3, config=config)
+        validate(importer=importer3)
+
+
+@pytest.mark.parametrize(
+    "nlu, core,key",
+    [
+        (nlu, core, key)
+        for nlu, core in [(True, False), (False, True), (True, True)]
+        for key in [INTENT, ACTION_NAME]
+    ],
+)
+def test_validate_with_different_examples_for_intent_or_action_name(
+    get_validation_method: Callable[..., ValidationMethodType],
+    nlu: bool,
+    core: bool,
+    key: Text,
+):
+    messages = [
+        Message(data={key: "item-1", TEXT: "a"}),
+        Message(data={key: "item-2", TEXT: "b"}),
+    ]
+
+    # training
+    config = _get_example_config()
+    importer = DummyNluDataImporter(messages, config)
+    validate = get_validation_method(finetuning=False, load=False, nlu=nlu, core=core)
+    validate(importer=importer)
+
+    # load validate method in finetuning mode
+    validate = get_validation_method(finetuning=True, load=True, nlu=nlu, core=core)
+
+    # ... apply with different messages
+    messages = [
+        Message(data={key: "item-1", TEXT: "c"}),
+        Message(data={key: "item-1", TEXT: "d"}),
+        Message(data={key: "item-2", TEXT: "e"}),
+        Message(data={key: "item-2", TEXT: "f"}),
+    ]
+    importer2 = DummyNluDataImporter(messages, config)
+    # does not complain:
+    validate(importer=importer2)
 
 
 @pytest.mark.parametrize(
@@ -389,8 +412,6 @@ def test_validate_with_other_version(
     old_version: Text,
     can_tune: bool,
 ):
-    # NOTE: test_can_finetune_min_version
-
     monkeypatch.setattr(rasa, "__version__", old_version)
     monkeypatch.setattr(
         rasa.graph_components.validators.finetuning_validator,
@@ -400,17 +421,17 @@ def test_validate_with_other_version(
 
     # training
     config = _get_example_config()
-    importer = DummyNluDataImporter([Message(data={INTENT: "dummy"})])
+    importer = DummyNluDataImporter([Message(data={INTENT: "dummy"})], config)
     validate = get_validation_method(finetuning=False, load=False, nlu=nlu, core=core)
-    validate(importer=importer, config=config)
+    validate(importer=importer)
 
     # finetuning
     validate = get_validation_method(finetuning=True, load=True, nlu=nlu, core=core)
     if not can_tune:
         with pytest.raises(InvalidConfigException):
-            validate(importer=importer, config=config)
+            validate(importer=importer)
     else:
-        validate(importer=importer, config=config)
+        validate(importer=importer)
 
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
@@ -421,10 +442,10 @@ def test_validate_with_finetuning_fails_without_training(
     core: bool,
 ):
     config1 = _get_example_config()
-    importer = _create_importer_from_config(config1, tmp_path, "config1.yml")
+    importer1 = _create_importer_from_config(config1, tmp_path, "config1.yml")
     validate = get_validation_method(finetuning=True, load=False, nlu=nlu, core=core)
     with pytest.raises(InvalidConfigException):
-        validate(importer=importer, config=config1)
+        validate(importer=importer1)
 
 
 def test_loading_without_persisting(
