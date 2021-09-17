@@ -17,7 +17,6 @@ from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
-from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
@@ -32,12 +31,6 @@ from tests.core.utilities import tracker_from_dialogue
 class CustomSlot(Slot):
     def as_feature(self):
         return [0.5]
-
-
-# noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
-class ExamplePolicy(Policy):
-    def __init__(self, *args, **kwargs):
-        super(ExamplePolicy, self).__init__(*args, **kwargs)
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):
@@ -145,10 +138,8 @@ def default_tracker(domain: Domain) -> DialogueStateTracker:
 
 
 @pytest.fixture(scope="session")
-async def form_bot_agent(trained_async: Callable) -> Agent:
-    endpoint = EndpointConfig("https://example.com/webhooks/actions")
-
-    zipped_model = await trained_async(
+async def trained_formbot(trained_async: Callable) -> Text:
+    return await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",
         training_files=[
@@ -157,7 +148,12 @@ async def form_bot_agent(trained_async: Callable) -> Agent:
         ],
     )
 
-    return Agent.load_local_model(zipped_model, action_endpoint=endpoint)
+
+@pytest.fixture(scope="module")
+async def form_bot_agent(trained_formbot: Text) -> Agent:
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+
+    return Agent.load_local_model(trained_formbot, action_endpoint=endpoint)
 
 
 @pytest.fixture
@@ -170,7 +166,8 @@ def moodbot_features(
     Returns:
       A dict containing dicts for mapping action and intent names to features.
     """
-    origin = getattr(request, "param", "SingleStateFeaturizer")
+    # TODO: remove "2" once migration of policies is done
+    origin = getattr(request, "param", "SingleStateFeaturizer") + "2"
     action_shape = (1, len(moodbot_domain.action_names_or_texts))
     actions = {}
     for index, action in enumerate(moodbot_domain.action_names_or_texts):

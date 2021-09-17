@@ -10,7 +10,6 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     COSINE,
     INNER,
-    LINEAR_NORM,
     CROSS_ENTROPY,
     LABEL,
     LABEL_PAD_ID,
@@ -731,7 +730,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Normalization of confidence values during inference.
-                Possible values are `SOFTMAX` and `LINEAR_NORM`.
+                Currently, the only possible value is `SOFTMAX`.
             similarity_type: Similarity measure to use, either `cosine` or `inner`.
             name: Optional name of the layer.
 
@@ -806,12 +805,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         confidences = similarities
         if self.model_confidence == SOFTMAX:
             confidences = tf.nn.softmax(similarities)
-        elif self.model_confidence == LINEAR_NORM:
-            # Clip negative values to 0 and linearly normalize to bring the predictions
-            # in the range [0,1].
-            clipped_similarities = tf.nn.relu(similarities)
-            normalization = tf.reduce_sum(clipped_similarities, axis=-1)
-            confidences = tf.math.divide_no_nan(clipped_similarities, normalization)
         return similarities, confidences
 
     def call(self, *args: Any, **kwargs: Any) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -898,7 +891,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
                 sigmoid loss term is added to the total loss to ensure that similarity
                 values are approximately bounded.
             model_confidence: Normalization of confidence values during inference.
-                Possible values are `SOFTMAX` and `LINEAR_NORM`.
+                Currently, the only possible value is `SOFTMAX`.
         """
         super().__init__(
             num_candidates,
@@ -1262,7 +1255,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Normalization of confidence values during inference.
-                Possible values are `SOFTMAX` and `LINEAR_NORM`.
+                Currently, the only possible value is `SOFTMAX`.
         """
         super().__init__(
             num_candidates,

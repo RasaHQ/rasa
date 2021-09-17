@@ -19,7 +19,6 @@ EXTRACTOR = "extractor"
 
 PRETRAINED_EXTRACTORS = {
     "DucklingEntityExtractor",
-    "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
     "SpacyEntityExtractor",
 }
 

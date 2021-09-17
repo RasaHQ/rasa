@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pathlib import Path
 from collections import defaultdict
 from abc import abstractmethod
@@ -8,34 +9,50 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
 import numpy as np
 
+
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
+import rasa.shared.core.trackers
+import rasa.shared.utils.io
+from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES, ACTION_NAME
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import Event, ActionExecuted, UserUttered
-import rasa.shared.core.trackers
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import (
     USER,
     ACTION_UNLIKELY_INTENT_NAME,
     PREVIOUS_ACTION,
 )
-from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
-from rasa.utils.tensorflow.constants import LABEL_PAD_ID
 from rasa.shared.exceptions import RasaException
-import rasa.shared.utils.io
-from rasa.shared.nlu.training_data.features import Features
-from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
-from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.utils.tensorflow.constants import LABEL_PAD_ID
+from rasa.core.featurizers import _tracker_featurizers
 
 FEATURIZER_FILE = "featurizer.json"
 
 logger = logging.getLogger(__name__)
+
+# All code outside this module will continue to use the old `tracker_featurizer` module
+# TODO: This is a workaround around until we have all components migrated to
+# `GraphComponent`.
+TrackerFeaturizer = _tracker_featurizers.TrackerFeaturizer
+MaxHistoryTrackerFeaturizer = _tracker_featurizers.MaxHistoryTrackerFeaturizer
+IntentMaxHistoryTrackerFeaturizer = (
+    _tracker_featurizers.IntentMaxHistoryTrackerFeaturizer
+)
+FullDialogueTrackerFeaturizer = _tracker_featurizers.FullDialogueTrackerFeaturizer
 
 
 class InvalidStory(RasaException):
     """Exception that can be raised if story cannot be featurized."""
 
     def __init__(self, message: Text) -> None:
+        """Creates an InvalidStory exception.
+
+        Args:
+          message: a custom exception message.
+        """
         self.message = message
         super(InvalidStory, self).__init__()
 
@@ -43,7 +60,7 @@ class InvalidStory(RasaException):
         return self.message
 
 
-class TrackerFeaturizer:
+class TrackerFeaturizer2:
     """Base class for actual tracker featurizers."""
 
     def __init__(
@@ -88,21 +105,21 @@ class TrackerFeaturizer:
     def _featurize_states(
         self,
         trackers_as_states: List[List[State]],
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> List[List[Dict[Text, List[Features]]]]:
         """Featurizes state histories with `state_featurizer`.
 
         Args:
             trackers_as_states: Lists of states produced by a `DialogueStateTracker`
                 instance.
-            interpreter: An interpreter for the `state_featurizer` to use.
+            precomputations: Contains precomputed features and attributes.
 
         Returns:
             Featurized tracker states.
         """
         return [
             [
-                self.state_featurizer.encode_state(state, interpreter)
+                self.state_featurizer.encode_state(state, precomputations)
                 for state in tracker_states
             ]
             for tracker_states in trackers_as_states
@@ -134,14 +151,14 @@ class TrackerFeaturizer:
     def _create_entity_tags(
         self,
         trackers_as_entities: List[List[Dict[Text, Any]]],
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         bilou_tagging: bool = False,
     ) -> List[List[Dict[Text, List[Features]]]]:
         """Featurizes extracted entities with `state_featurizer`.
 
         Args:
             trackers_as_entities: Extracted entities from trackers.
-            interpreter: An interpreter for the `state_featurizer` to use.
+            precomputations: Contains precomputed features and attributes.
             bilou_tagging: When `True` use the BILOU tagging scheme.
 
         Returns:
@@ -150,7 +167,7 @@ class TrackerFeaturizer:
         return [
             [
                 self.state_featurizer.encode_entities(
-                    entity_data, interpreter, bilou_tagging
+                    entity_data, precomputations, bilou_tagging,
                 )
                 for entity_data in trackers_entities
             ]
@@ -193,67 +210,6 @@ class TrackerFeaturizer:
                 # remove text features to only use intent
                 if state.get(USER, {}).get(INTENT) and state.get(USER, {}).get(TEXT):
                     del state[USER][TEXT]
-
-    def training_states_actions_and_entities(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain,
-        omit_unset_slots: bool = False,
-        ignore_action_unlikely_intent: bool = False,
-    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms trackers to states, actions, and entity data.
-
-        Args:
-            trackers: The trackers to transform.
-            domain: The domain.
-            omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
-                 from training states.
-
-        Returns:
-            Trackers as states, actions, and entity data.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "'training_states_actions_and_entities' is being deprecated in favor of "
-            "'training_states_labels_and_entities'."
-        )
-        return self.training_states_labels_and_entities(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots,
-            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
-        )
-
-    def training_states_and_actions(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain,
-        omit_unset_slots: bool = False,
-        ignore_action_unlikely_intent: bool = False,
-    ) -> Tuple[List[List[State]], List[List[Text]]]:
-        """Transforms trackers to states and actions.
-
-        Args:
-            trackers: The trackers to transform.
-            domain: The domain.
-            omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
-                from training states.
-
-        Returns:
-            Trackers as states and actions.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "'training_states_and_actions' is being deprecated in favor of "
-            "'training_states_and_labels'."
-        )
-
-        return self.training_states_and_labels(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots,
-            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
-        )
 
     def training_states_and_labels(
         self,
@@ -312,10 +268,7 @@ class TrackerFeaturizer:
         )
 
     def prepare_for_featurization(
-        self,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        bilou_tagging: bool = False,
+        self, domain: Domain, bilou_tagging: bool = False,
     ) -> None:
         """Ensures that the featurizer is ready to be called during training.
 
@@ -324,7 +277,6 @@ class TrackerFeaturizer:
 
         Args:
             domain: Domain of the assistant.
-            interpreter: NLU Interpreter for featurizing states.
             bilou_tagging: Whether to consider bilou tagging.
         """
         if self.state_featurizer is None:
@@ -334,13 +286,13 @@ class TrackerFeaturizer:
                 f"'{SingleStateFeaturizer.__class__.__name__}' class "
                 f"to get numerical features for trackers."
             )
-        self.state_featurizer.prepare_for_training(domain, interpreter, bilou_tagging)
+        self.state_featurizer.prepare_for_training(domain, bilou_tagging)
 
     def featurize_trackers(
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         bilou_tagging: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[
@@ -353,7 +305,7 @@ class TrackerFeaturizer:
         Args:
             trackers: list of training trackers
             domain: the domain
-            interpreter: the interpreter
+            precomputations: Contains precomputed features and attributes.
             bilou_tagging: indicates whether BILOU tagging should be used or not
             ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
                 from training state features.
@@ -368,7 +320,7 @@ class TrackerFeaturizer:
               containing entity tag ids for text user inputs otherwise empty dict
               for all dialogue turns in all training trackers
         """
-        self.prepare_for_featurization(domain, interpreter, bilou_tagging)
+        self.prepare_for_featurization(domain, bilou_tagging)
         (
             trackers_as_states,
             trackers_as_labels,
@@ -379,7 +331,9 @@ class TrackerFeaturizer:
             ignore_action_unlikely_intent=ignore_action_unlikely_intent,
         )
 
-        tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
+        tracker_state_features = self._featurize_states(
+            trackers_as_states, precomputations
+        )
 
         if not tracker_state_features and not trackers_as_labels:
             # If input and output were empty, it means there is
@@ -391,7 +345,7 @@ class TrackerFeaturizer:
         label_ids = self._convert_labels_to_ids(trackers_as_labels, domain)
 
         entity_tags = self._create_entity_tags(
-            trackers_as_entities, interpreter, bilou_tagging
+            trackers_as_entities, precomputations, bilou_tagging
         )
 
         return tracker_state_features, label_ids, entity_tags
@@ -454,7 +408,7 @@ class TrackerFeaturizer:
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
@@ -465,7 +419,7 @@ class TrackerFeaturizer:
         Args:
             trackers: A list of state trackers
             domain: The domain
-            interpreter: The interpreter
+            precomputations: Contains precomputed features and attributes.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
@@ -488,7 +442,7 @@ class TrackerFeaturizer:
             rule_only_data,
             ignore_action_unlikely_intent=ignore_action_unlikely_intent,
         )
-        return self._featurize_states(trackers_as_states, interpreter)
+        return self._featurize_states(trackers_as_states, precomputations)
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the tracker featurizer to the given path.
@@ -509,7 +463,7 @@ class TrackerFeaturizer:
         )
 
     @staticmethod
-    def load(path: Union[Text, Path]) -> Optional["TrackerFeaturizer"]:
+    def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer2]:
         """Loads the featurizer from file.
 
         Args:
@@ -548,7 +502,7 @@ class TrackerFeaturizer:
         ]
 
 
-class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
+class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2):
     """Creates full dialogue training data for time distributed architectures.
 
     Creates training data that uses each time output for prediction.
@@ -686,7 +640,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         return trackers_as_states
 
 
-class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
+class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2):
     """Truncates the tracker history into `max_history` long sequences.
 
     Creates training data from trackers where actions are the output prediction
@@ -927,7 +881,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return trackers_as_states
 
 
-class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
+class IntentMaxHistoryTrackerFeaturizer2(MaxHistoryTrackerFeaturizer2):
     """Truncates the tracker history into `max_history` long sequences.
 
     Creates training data from trackers where intents are the output prediction

@@ -4,9 +4,9 @@ import pytest
 
 from rasa.shared.nlu.constants import TEXT, SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.extractors.extractor import EntityExtractorMixin as EntityExtractor
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.formats import MarkdownReader
+from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLReader
 
 
 @pytest.mark.parametrize(
@@ -221,12 +221,12 @@ def test_convert_tags_to_entities(
     tags: Dict[Text, List[Text]],
     confidences: Dict[Text, List[float]],
     expected_entities: List[Dict[Text, Any]],
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
-    extractor = EntityExtractor()
-    tokenizer = WhitespaceTokenizer()
+    extractor = EntityExtractorMixin()
 
     message = Message(data={TEXT: text})
-    tokens = tokenizer.tokenize(message, TEXT)
+    tokens = whitespace_tokenizer.tokenize(message, TEXT)
 
     split_entities_config = {SPLIT_ENTITIES_BY_COMMA: True}
     actual_entities = extractor.convert_predictions_into_entities(
@@ -396,12 +396,12 @@ def test_split_entities_by_comma(
     tags: Dict[Text, List[Text]],
     confidences: Dict[Text, List[float]],
     expected_entities: List[Dict[Text, Any]],
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
-    extractor = EntityExtractor()
-    tokenizer = WhitespaceTokenizer()
+    extractor = EntityExtractorMixin()
 
     message = Message(data={TEXT: text})
-    tokens = tokenizer.tokenize(message, TEXT)
+    tokens = whitespace_tokenizer.tokenize(message, TEXT)
 
     split_entities_config = {
         SPLIT_ENTITIES_BY_COMMA: True,
@@ -419,44 +419,60 @@ def test_split_entities_by_comma(
     "text, warnings",
     [
         (
-            "## intent:test\n"
-            "- I want to fly from [Berlin](location) to [ San Fransisco](location)\n",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I want to fly from [Berlin](location) to [ London](location)\n",
             1,
         ),
         (
-            "## intent:test\n"
-            "- I want to fly from [Berlin ](location) to [San Fransisco](location)\n",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I want to fly from [Berlin ](location) to [London](location)\n",
             1,
         ),
         (
-            "## intent:test\n"
-            "- I want to fly from [Berlin](location) to [San Fransisco.](location)\n"
-            "- I have nothing to say.",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I want to fly from [Berlin](location) to [London.](location)\n"
+            "    - I have nothing to say.\n",
             1,
         ),
         (
-            "## intent:test\n"
-            "- I have nothing to say.\n"
-            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I have nothing to say.\n"
+            "    - I want to fly from [Berlin](location) to[San Fransisco](location)\n",
             1,
         ),
         (
-            "## intent:test\n"
-            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n"
-            "- Book a flight from [London](location) to [Paris.](location)\n",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I want to fly from [Berlin](location) to[San Fransisco](location)\n"
+            "    - Book a flight from [London](location) to [Paris.](location)\n",
             2,
         ),
     ],
 )
-def test_check_check_correct_entity_annotations(text: Text, warnings: int):
-    reader = MarkdownReader()
-    tokenizer = WhitespaceTokenizer()
+def test_check_correct_entity_annotations(
+    text: Text, warnings: int, whitespace_tokenizer: WhitespaceTokenizerGraphComponent
+):
+    reader = RasaYAMLReader()
 
     training_data = reader.reads(text)
-    tokenizer.train(training_data)
+    whitespace_tokenizer.process_training_data(training_data)
 
     with pytest.warns(UserWarning) as record:
-        EntityExtractor.check_correct_entity_annotations(training_data)
+        EntityExtractorMixin.check_correct_entity_annotations(training_data)
 
     assert len(record) == warnings
     assert all(
