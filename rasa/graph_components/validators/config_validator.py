@@ -490,8 +490,6 @@ class ConfigValidator(GraphComponent):
         """
         for schema_node in self._graph_schema.nodes.values():
             if schema_node.uses == RulePolicyGraphComponent:
-
-                # FIXME: add a test to rule policy for this function
                 RulePolicyGraphComponent.raise_if_incompatible_with_domain(
                     config=schema_node.config, domain=domain
                 )

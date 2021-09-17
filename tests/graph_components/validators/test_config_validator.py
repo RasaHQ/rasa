@@ -103,7 +103,10 @@ def _test_warn_if_some_training_data_is_not_used(
             ),
             (
                 {ENTITIES: [{ENTITY_ATTRIBUTE_TYPE: "dummy"}]},
-                TRAINABLE_EXTRACTORS,
+                sorted(
+                    TRAINABLE_EXTRACTORS,
+                    key=lambda component_type: component_type.__name__,
+                ),
                 "consisting of entity examples",
             ),
             (
