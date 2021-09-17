@@ -13,7 +13,7 @@ Helper class to read a story file.
 #### \_\_init\_\_
 
 ```python
-def __init__(domain: Optional[Domain] = None, source_name: Optional[Text] = None, is_used_for_training: bool = True) -> None
+def __init__(domain: Optional[Domain] = None, source_name: Optional[Text] = None) -> None
 ```
 
 Constructor for the StoryReader.
@@ -22,13 +22,6 @@ Constructor for the StoryReader.
 
 - `domain` - Domain object.
 - `source_name` - Name of the training data source.
-- `is_used_for_training` - Identifies if the user utterances should be parsed
-  (entities are extracted and removed from the original text) and
-  OR statements should be unfolded. This parameter is used only to
-  simplify the conversation from MD story files. Don&#x27;t use it other ways,
-  because it ends up in a invalid story that cannot be user for real
-  training. Default value is `False`, which preserves the expected behavior
-  of the reader.
 
 #### read\_from\_file
 

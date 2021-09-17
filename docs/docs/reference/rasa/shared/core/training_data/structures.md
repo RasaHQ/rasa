@@ -56,6 +56,14 @@ NOTE: Checkpoints are not only limited to those manually written
 in the story file, but are also implicitly created at points where
 multiple intents are separated in one line by chaining them with &quot;OR&quot;s.
 
+#### as\_story\_string
+
+```python
+def as_story_string(flat: bool = False, e2e: bool = False) -> Text
+```
+
+Returns a story as a string.
+
 #### is\_action\_unlikely\_intent
 
 ```python
