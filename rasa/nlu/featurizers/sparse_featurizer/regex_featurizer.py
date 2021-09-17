@@ -45,9 +45,6 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
             "use_regexes": True,
             # use match word boundaries for lookup table
             "use_word_boundaries": True,
-            # Additional number of patterns to consider
-            # for incremental training
-            "number_additional_patterns": None,
         }
 
     def __init__(
@@ -77,14 +74,6 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         self.known_patterns = known_patterns if known_patterns else []
         self.case_sensitive = config["case_sensitive"]
         self.finetune_mode = execution_context.is_finetuning
-
-        if config["number_additional_patterns"]:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "The parameter `number_additional_patterns` has been deprecated "
-                "since the pipeline does not create an extra buffer for new vocabulary "
-                "anymore. Any value assigned to this parameter will be ignored. "
-                "You can omit specifying `number_additional_patterns` in future runs."
-            )
 
     @classmethod
     def create(

@@ -17,29 +17,18 @@ class StoryReader:
     """Helper class to read a story file."""
 
     def __init__(
-        self,
-        domain: Optional[Domain] = None,
-        source_name: Optional[Text] = None,
-        is_used_for_training: bool = True,
+        self, domain: Optional[Domain] = None, source_name: Optional[Text] = None,
     ) -> None:
         """Constructor for the StoryReader.
 
         Args:
             domain: Domain object.
             source_name: Name of the training data source.
-            is_used_for_training: Identifies if the user utterances should be parsed
-              (entities are extracted and removed from the original text) and
-              OR statements should be unfolded. This parameter is used only to
-              simplify the conversation from MD story files. Don't use it other ways,
-              because it ends up in a invalid story that cannot be user for real
-              training. Default value is `False`, which preserves the expected behavior
-              of the reader.
         """
         self.story_steps = []
         self.current_step_builder: Optional[StoryStepBuilder] = None
         self.domain = domain
         self.source_name = source_name
-        self._is_used_for_training = is_used_for_training
         self._is_parsing_conditions = False
 
     def read_from_file(
@@ -81,7 +70,9 @@ class StoryReader:
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name, is_rule=True)
 
-    def _add_event(self, event_name: Text, parameters: Dict[Text, Any]) -> None:
+    def _parse_events(
+        self, event_name: Text, parameters: Dict[Text, Any]
+    ) -> Optional[List["Event"]]:
         # add 'name' only if event is not a SlotSet,
         # because there might be a slot with slot_key='name'
         if "name" not in parameters and event_name != SlotSet.type_name:
@@ -95,6 +86,12 @@ class StoryReader:
                 "Unknown event '{}'. It is Neither an event "
                 "nor an action).".format(event_name)
             )
+
+        return parsed_events
+
+    def _add_event(self, event_name: Text, parameters: Dict[Text, Any]) -> None:
+        parsed_events = self._parse_events(event_name, parameters)
+
         if self.current_step_builder is None:
             raise StoryParseError(
                 "Failed to handle event '{}'. There is no "
