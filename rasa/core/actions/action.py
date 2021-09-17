@@ -357,8 +357,11 @@ class ActionRetrieveResponse(ActionBotResponse):
     def get_full_retrieval_name(
         self, tracker: "DialogueStateTracker"
     ) -> Optional[Text]:
-        """Extracts retrieval intent from response selector and
-        returns complete action utterance name."""
+        """Returns full retrieval name for the action.
+
+        Extracts retrieval intent from response selector and
+        returns complete action utterance name.
+        """
         if RESPONSE_SELECTOR_PROPERTY_NAME not in tracker.latest_message.parse_data:
             return None
 
