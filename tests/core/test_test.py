@@ -150,7 +150,8 @@ async def test_testing_with_utilizing_retrieval_intents(
     target_intents = [full_intent, full_intent, intent]
     for index, story in enumerate(failed_stories["stories"]):
         assert story["steps"][0]["intent"] == target_intents[index]
-    # check that retrieval intent for actions is retrieved correctly and only when it's needed
+    # check that retrieval intent for actions is retrieved correctly
+    # and only when it's needed
     action, full_action = "utter_faq", "utter_faq/is-this-legit"
     target_actions = [full_action, full_action, full_action, action]
     predicted_actions = result["actions"][::2]
