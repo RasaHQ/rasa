@@ -3,8 +3,10 @@ pipeline:
 - name: WhitespaceTokenizer
 - name: CountVectorsFeaturizer
 - name: DIETClassifier
+  random_seed: 42
   epochs: 5
 - name: ResponseSelector
+  random_seed: 42
   epochs: 5
 policies:
 - name: TEDPolicy
