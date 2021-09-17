@@ -56,7 +56,7 @@ def configure_file_logging(
         syslog_handler = logging.handlers.SysLogHandler(
             address=(syslog_address,syslog_port),
             socktype=socktype,
-            )
+        )
         syslog_handler.setLevel(logger_obj.level)
         syslog_handler.setFormatter(formatter)
         logger_obj.addHandler(syslog_handler)

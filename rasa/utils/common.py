@@ -161,7 +161,7 @@ def update_sanic_log_level(log_file: Optional[Text] = None,
         syslog_handler = logging.handlers.SysLogHandler(
             address=(syslog_address,syslog_port),
             socktype=socktype,
-            )
+        )
         syslog_handler.setFormatter(formatter)
         logger.addHandler(syslog_handler)
         error_logger.addHandler(syslog_handler)

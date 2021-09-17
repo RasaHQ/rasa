@@ -239,7 +239,7 @@ def serve_application(
         syslog_address,
         syslog_port,
         syslog_protocol,
-        )
+    )
     app.run(
         host=interface,
         port=port,
