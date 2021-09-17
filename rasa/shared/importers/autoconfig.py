@@ -33,6 +33,14 @@ class TrainingType(Enum):
     CORE = 2
     BOTH = 3
 
+    @property
+    def model_type(self) -> Text:
+        if self == TrainingType.NLU:
+            return "nlu"
+        if self == TrainingType.CORE:
+            return "core"
+        return "rasa"
+
 
 def get_configuration(
     config_file_path: Optional[Text],

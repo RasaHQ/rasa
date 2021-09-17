@@ -135,39 +135,6 @@ def test_generate_graphs(
     )
 
 
-def test_importer_parameter_interpolation():
-    config = rasa.shared.utils.io.read_yaml(
-        """
-    version: '2.0'
-
-    policies:
-    - name: RulePolicy
-    """
-    )
-    data_path = "my_data/dir"
-    path_to_domain = "my_domain.yml"
-    stories_path = "extra_dir/for_stories"
-    nlu_path = "extra_dir/for_nlu_files"
-
-    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, _ = recipe.schemas_for_config(
-        config,
-        {
-            "data": [data_path],
-            "domain": path_to_domain,
-            "stories": stories_path,
-            "nlu": nlu_path,
-        },
-    )
-
-    node = train_schema.nodes["project_provider"]
-
-    assert node.config == {
-        "domain_path": path_to_domain,
-        "training_data_paths": [data_path, stories_path, nlu_path],
-    }
-
-
 def test_tracker_generator_parameter_interpolation():
     config = rasa.shared.utils.io.read_yaml(
         """

@@ -116,6 +116,8 @@ def _walk_and_check_for_cycles(
 
     parents = schema.nodes[node_name].needs.values()
     for parent_name in parents:
+        if parent_name.startswith("__"):
+            continue
         _walk_and_check_for_cycles([*visited_so_far, node_name], parent_name, schema)
 
 

@@ -6,7 +6,7 @@ from typing import Any, Dict, Text, Type, Union
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.runner.interface import GraphRunner
-from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.training.components import (
     PrecomputedValueProvider,
     FingerprintComponent,
@@ -14,7 +14,7 @@ from rasa.engine.training.components import (
 )
 from rasa.engine.training.hooks import TrainingHook
 from rasa.shared.core.domain import Domain
-
+from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -44,24 +44,31 @@ class GraphTrainer:
         self,
         train_schema: GraphSchema,
         predict_schema: GraphSchema,
-        domain_path: Path,
+        importer: TrainingDataImporter,
         output_filename: Path,
-    ) -> GraphRunner:
+        force_retraining: bool,
+    ) -> ModelMetadata:
         """Trains and packages a model and returns the prediction graph runner.
 
         Args:
             train_schema: The train graph schema.
             predict_schema: The predict graph schema.
-            domain_path: The path to the domain file.
+            importer: The importer which provides the training data for the training.
             output_filename: The location to save the packaged model.
+            force_retraining: If `True` then the cache is skipped and all components
+                are retrained.
 
         Returns:
-            A graph runner loaded with the predict schema.
-
+            The metadata describing the trained model.
         """
         logger.debug("Starting training.")
 
-        pruned_training_schema = self._fingerprint_and_prune(train_schema)
+        if force_retraining:
+            pruned_training_schema = train_schema
+        else:
+            pruned_training_schema = self._fingerprint_and_prune(
+                train_schema, importer=importer
+            )
 
         hooks = [TrainingHook(cache=self._cache, model_storage=self._model_storage)]
 
@@ -74,22 +81,17 @@ class GraphTrainer:
 
         logger.debug("Running the pruned train graph with real node execution.")
 
-        graph_runner.run()
+        graph_runner.run(inputs={"__importer__": importer})
 
-        domain = Domain.from_path(domain_path)
-        model_metadata = self._model_storage.create_model_package(
+        domain = importer.get_domain()
+
+        return self._model_storage.create_model_package(
             output_filename, train_schema, predict_schema, domain
         )
 
-        return self._graph_runner_class.create(
-            graph_schema=predict_schema,
-            model_storage=self._model_storage,
-            execution_context=ExecutionContext(
-                graph_schema=predict_schema, model_id=model_metadata.model_id
-            ),
-        )
-
-    def _fingerprint_and_prune(self, train_schema: GraphSchema) -> GraphSchema:
+    def _fingerprint_and_prune(
+        self, train_schema: GraphSchema, importer: TrainingDataImporter
+    ) -> GraphSchema:
         """Runs the graph using fingerprints to determine which nodes need to re-run.
 
         Nodes which have a matching fingerprint key in the cache can either be removed
@@ -98,6 +100,8 @@ class GraphTrainer:
 
         Args:
             train_schema: The train graph schema that will be run in fingerprint mode.
+            importer: The importer which provides the training data for the training.
+
 
         Returns:
             A new, potentially smaller and/or cached, graph schema.
@@ -111,7 +115,9 @@ class GraphTrainer:
         )
 
         logger.debug("Running the train graph in fingerprint mode.")
-        fingerprint_run_outputs = fingerprint_graph_runner.run()
+        fingerprint_run_outputs = fingerprint_graph_runner.run(
+            inputs={"__importer__": importer}
+        )
 
         pruned_training_schema = self._prune_schema(
             train_schema, fingerprint_run_outputs

@@ -29,7 +29,6 @@ from rasa.graph_components.providers.domain_without_response_provider import (
 from rasa.graph_components.providers.nlu_training_data_provider import (
     NLUTrainingDataProvider,
 )
-from rasa.graph_components.providers.project_provider import ProjectProvider
 from rasa.graph_components.providers.rule_only_provider import RuleOnlyDataProvider
 from rasa.graph_components.providers.story_graph_provider import StoryGraphProvider
 from rasa.graph_components.providers.training_tracker_provider import (
@@ -256,19 +255,8 @@ class DefaultV1Recipe(Recipe):
                 training_data_paths.append(cli_parameters[arg])
 
         train_nodes = {
-            "project_provider": SchemaNode(
-                needs={},
-                uses=ProjectProvider,
-                constructor_name="create",
-                fn="provide",
-                config={
-                    "domain_path": cli_parameters.get("domain"),
-                    "training_data_paths": training_data_paths,
-                },
-                is_input=True,
-            ),
             "schema_validator": SchemaNode(
-                needs={"importer": "project_provider"},
+                needs={"importer": "__importer__"},
                 uses=SchemaValidator,
                 constructor_name="create",
                 fn="validate",

@@ -54,8 +54,14 @@ class Resource:
             model_storage: The model storage which currently contains the persisted
                 `Resource`.
         """
-        with model_storage.read_from(self) as resource_directory:
-            rasa.utils.common.copy_directory(resource_directory, directory)
+        try:
+            with model_storage.read_from(self) as resource_directory:
+                rasa.utils.common.copy_directory(resource_directory, directory)
+        except ValueError:
+            logger.debug(
+                f"Skipped caching resource '{self.name}' as no persisted "
+                f"data was found."
+            )
 
     def fingerprint(self) -> Text:
         """Provides fingerprint for `Resource`.

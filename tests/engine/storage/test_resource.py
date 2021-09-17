@@ -1,7 +1,10 @@
+from pathlib import Path
+
 from _pytest.tmpdir import TempPathFactory
 
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 
 
 def test_resource_caching(tmp_path_factory: TempPathFactory):
@@ -46,3 +49,10 @@ def test_resource_fingerprinting():
     assert fingerprint2
 
     assert fingerprint1 != fingerprint2
+
+
+def test_caching_empty_resource(default_model_storage: ModelStorage, tmp_path: Path):
+    resource = Resource("my resource")
+
+    # does not raise
+    resource.to_cache(tmp_path, default_model_storage)
