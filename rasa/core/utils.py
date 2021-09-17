@@ -17,8 +17,7 @@ import numpy as np
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
-from rasa.core.constants import TCP_PROTOCOL
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH,TCP_PROTOCOL
 
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config

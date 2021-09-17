@@ -22,8 +22,7 @@ from typing import (
 from socket import SOCK_DGRAM, SOCK_STREAM
 import rasa.utils.io
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
-from rasa.core.constants import TCP_PROTOCOL
-from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
+from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
