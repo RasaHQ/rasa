@@ -529,36 +529,37 @@ def test_read_mixed_training_data_file(domain: Domain):
         assert not len(record)
 
 
-def test_or_statement_if_not_training_mode():
+def test_or_statement_with_slot_was_set():
     stories = """
     stories:
-    - story: hello world
+    - story: tell name bob or joe
       steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: tell_name
       - or:
-        - intent: intent1
-        - intent: intent2
-      - action: some_action
-      - intent: intent3
-      - action: other_action
+        - slot_was_set:
+            - name: joe
+        - slot_was_set:
+            - name: bob
     """
 
-    reader = YAMLStoryReader(is_used_for_training=False)
+    reader = YAMLStoryReader()
     yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     steps = reader.read_from_parsed_yaml(yaml_content)
 
-    assert len(steps) == 1
+    assert len(steps) == 2
 
-    assert len(steps[0].events) == 4  # 4 events in total
-    assert len(steps[0].start_checkpoints) == 1
-    assert steps[0].start_checkpoints[0].name == "STORY_START"
-    assert steps[0].end_checkpoints == []
+    slot = steps[0].events[3]
+    assert isinstance(slot, SlotSet)
+    assert slot.key == "name"
+    assert slot.value == "joe"
 
-    or_statement = steps[0].events[0]
-    assert isinstance(or_statement, list)  # But first one is a list (OR)
-
-    assert or_statement[0].intent["name"] == "intent1"
-    assert or_statement[1].intent["name"] == "intent2"
+    slot = steps[1].events[3]
+    assert isinstance(slot, SlotSet)
+    assert slot.key == "name"
+    assert slot.value == "bob"
 
 
 @pytest.mark.parametrize(
@@ -574,12 +575,25 @@ def test_or_statement_if_not_training_mode():
 async def test_story_with_retrieval_intent_warns(
     file: Text, warning: Optional["Warning"]
 ):
-    reader = YAMLStoryReader(is_used_for_training=False)
+    reader = YAMLStoryReader()
 
     with pytest.warns(warning) as record:
         reader.read_from_file(file)
 
     assert len(record) == (1 if warning else 0)
+
+
+def test_or_statement_story_with_or_slot_was_set(domain: Domain):
+    training_trackers = training.load_data(
+        "data/test_yaml_stories/story_with_or_slot_was_set.yml",
+        domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False,
+    )
+    assert len(training_trackers) == 2
+    assert training_trackers[0].events[3] == SlotSet(key="name", value="peter")
+    assert training_trackers[1].events[3] == SlotSet(key="name", value="bob")
 
 
 @pytest.mark.parametrize("is_conversation_test", [True, False])
