@@ -19,8 +19,10 @@ from typing import (
     Set,
 )
 
+from socket import SOCK_DGRAM, SOCK_STREAM
 import rasa.utils.io
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
+from rasa.core.constants import TCP_PROTOCOL
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
 import rasa.shared.utils.io
 
@@ -126,7 +128,10 @@ def update_tensorflow_log_level() -> None:
 
 
 def update_sanic_log_level(log_file: Optional[Text] = None,
-                           use_syslog: Optional[bool] = False) -> None:
+                           use_syslog: Optional[bool] = False,
+                           syslog_address: Optional[Text] = None,
+                           syslog_port: Optional[int] = None,
+                           syslog_protocol: Optional[Text] = None,) -> None:
     """Set the log level of sanic loggers to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     from sanic.log import logger, error_logger, access_logger
@@ -152,7 +157,11 @@ def update_sanic_log_level(log_file: Optional[Text] = None,
     if use_syslog:
         formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] [%(process)d]"
                                       " %(message)s")
-        syslog_handler = logging.handlers.SysLogHandler()
+        socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
+        syslog_handler = logging.handlers.SysLogHandler(
+            address=(syslog_address,syslog_port),
+            socktype=socktype,
+            )
         syslog_handler.setFormatter(formatter)
         logger.addHandler(syslog_handler)
         error_logger.addHandler(syslog_handler)

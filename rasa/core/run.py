@@ -96,12 +96,19 @@ def configure_app(
     log_file: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
     use_syslog: bool = False,
+    syslog_address: Optional[Text] = None,
+    syslog_port: Optional[int] = None,
+    syslog_protocol: Optional[Text] = None,
 ) -> Sanic:
     """Run the agent."""
 
     rasa.core.utils.configure_file_logging(logger,
                                            log_file,
-                                           use_syslog,)
+                                           use_syslog,
+                                           syslog_address,
+                                           syslog_port,
+                                           syslog_protocol,
+                                           )
 
     if enable_api:
         app = server.create_app(
@@ -169,6 +176,9 @@ def serve_application(
     ssl_password: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
     use_syslog: Optional[bool] = False,
+    syslog_address: Optional[Text] = None,
+    syslog_port: Optional[int] = None,
+    syslog_protocol: Optional[Text] = None,
 ) -> None:
     """Run the API entrypoint."""
 
@@ -190,6 +200,9 @@ def serve_application(
         log_file=log_file,
         conversation_id=conversation_id,
         use_syslog=use_syslog,
+        syslog_address=syslog_address,
+        syslog_port=syslog_port,
+        syslog_protocol=syslog_protocol,
     )
 
     ssl_context = server.create_ssl_context(
@@ -220,7 +233,13 @@ def serve_application(
 
     app.register_listener(clear_model_files, "after_server_stop")
 
-    rasa.utils.common.update_sanic_log_level(log_file, use_syslog)
+    rasa.utils.common.update_sanic_log_level(
+        log_file,
+        use_syslog,
+        syslog_address,
+        syslog_port,
+        syslog_protocol,
+        )
     app.run(
         host=interface,
         port=port,

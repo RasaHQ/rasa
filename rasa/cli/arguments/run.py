@@ -60,6 +60,24 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Add syslog as a log handler",
     )
+    parser.add_argument(
+        "--syslog-address",
+        type=str,
+        default=constants.DEFAULT_SYSLOG_HOST,
+        help="Adress of the syslog server. --use-sylog flag is required"
+    )
+    parser.add_argument(
+        "--syslog-port",
+        type=int,
+        default=constants.DEFAULT_SYSLOG_PORT,
+        help="Port of the syslog server. --use-sylog flag is required"
+    )
+    parser.add_argument(
+        "--syslog-protocol",
+        type=str,
+        default=constants.UDP_PROTOCOL,
+        help="Protocol used with the syslog server. --use-sylog flag is required"
+    )
     add_endpoint_param(
         parser,
         help_text="Configuration file for the model server and the connectors as a "

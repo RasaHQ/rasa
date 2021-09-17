@@ -17,12 +17,14 @@ import numpy as np
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
+from rasa.core.constants import TCP_PROTOCOL
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
 from sanic.views import CompositionView
+from socket import SOCK_DGRAM, SOCK_STREAM
 import rasa.cli.utils as cli_utils
 
 
@@ -30,19 +32,31 @@ logger = logging.getLogger(__name__)
 
 
 def configure_file_logging(
-    logger_obj: logging.Logger, log_file: Optional[Text], use_syslog: Optional[bool]
+    logger_obj: logging.Logger,
+    log_file: Optional[Text],
+    use_syslog: Optional[bool],
+    syslog_address: Optional[Text] = None,
+    syslog_port: Optional[int] = None,
+    syslog_protocol: Optional[Text] = None,
 ) -> None:
     """Configure logging to a file.
 
     Args:
         logger_obj: Logger object to configure.
         log_file: Path of log file to write to.
-        use_syslog: Add syslog as a logger
+        use_syslog: Add syslog as a logger.
+        syslog_address: Adress of the syslog server.
+        syslog_port: Port of the syslog server.
+        syslog_protocol: Protocol with the syslog server
     """
     if use_syslog:
         formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] [%(process)d]"
                                       " %(message)s")
-        syslog_handler = logging.handlers.SysLogHandler()
+        socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
+        syslog_handler = logging.handlers.SysLogHandler(
+            address=(syslog_address,syslog_port),
+            socktype=socktype,
+            )
         syslog_handler.setLevel(logger_obj.level)
         syslog_handler.setFormatter(formatter)
         logger_obj.addHandler(syslog_handler)
