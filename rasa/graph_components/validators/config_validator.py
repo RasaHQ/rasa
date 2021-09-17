@@ -1,15 +1,34 @@
 from __future__ import annotations
 from collections import defaultdict
 import itertools
-from rasa.nlu.featurizers.featurizer import Featurizer2
-from typing import List, Dict, Set, Text, Any
+from typing import Iterable, List, Dict, Optional, Text, Any, Set, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.core.policies.rule_policy import RulePolicy, RulePolicyGraphComponent
+from rasa.nlu.featurizers.featurizer import Featurizer2
+from rasa.nlu.extractors.mitie_entity_extractor import (
+    MitieEntityExtractorGraphComponent,
+)
+from rasa.nlu.extractors.regex_entity_extractor import (
+    RegexEntityExtractorGraphComponent,
+)
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractorGraphComponent
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperComponent
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
+    RegexFeaturizerGraphComponent,
+)
+from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
+from rasa.nlu.selectors.response_selector import ResponseSelectorGraphComponent
 from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
+from rasa.core.policies.rule_policy import RulePolicyGraphComponent
 from rasa.core.policies.policy import PolicyGraphComponent, SupportedData
+from rasa.core.policies.memoization import MemoizationPolicyGraphComponent
+from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
+from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
+    LexicalSyntacticFeaturizerGraphComponent,
+)
+from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DOCS_URL_COMPONENTS,
@@ -24,32 +43,48 @@ from rasa.shared.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 
-def names_of_component_types_used_in_schema(graph_schema: GraphSchema) -> Set[Text]:
-    """Collects the names of the types used in the schema nodes.
+# FIXME: check right paths, not just existence on any path (e.g. end2end featurization
+# might be separate from NLU featurization and only one of them might have a
+# tokenizer)
+
+TRAINABLE_EXTRACTORS = {
+    MitieEntityExtractorGraphComponent,
+    CRFEntityExtractorGraphComponent,
+    DIETClassifierGraphComponent,
+}
+
+# TODO: do we have a registries for these?
+FEATURIZER_CLASSES = {
+    LexicalSyntacticFeaturizerGraphComponent,
+    RegexFeaturizerGraphComponent,
+    # TODO: add rest / replace
+}
+POLICY_CLASSSES = {  # Note: this is used in tests only, should belong elsewhere anyway
+    TEDPolicyGraphComponent,
+    MemoizationPolicyGraphComponent,
+    RulePolicyGraphComponent,
+}
+
+
+def types_to_str(types: Iterable[Type]) -> Text:
+    """Returns a text containing the names of all given types.
 
     Args:
-        graph_schema: a graph schema
+        types: some types
     Returns:
-        names of the types used in the schema nodes in the given `graph_schema`
+        text containing all type names
     """
-    node_names = set(node.uses.__name__ for node in graph_schema.nodes.values())
-    # FIXME: remove this workaround when all 3.0 components have been renamed
-    node_names = set(
-        name.replace("GraphComponent", "").replace("Component", "")
-        for name in node_names
-    )
-    return node_names
+    return ", ".join([type.__name__ for type in types])
 
 
-class NLUValidator(GraphComponent):
-    """Checks whether the configuration and the NLU training data match."""
+class ConfigValidator(GraphComponent):
+    """Validates the current graph schema against the training data and domain."""
 
     @classmethod
     def create(
@@ -58,37 +93,54 @@ class NLUValidator(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> NLUValidator:
-        """Creates a new `NLUValidator` (see parent class for full docstring)."""
-        return cls(execution_context)
+    ) -> ConfigValidator:
+        """Creates a new `ConfigValidator` (see parent class for full docstring)."""
+        return cls(execution_context.graph_schema)
 
-    def __init__(self, execution_context: ExecutionContext) -> None:
-        """Instantiates a new `NLUValidator`.
+    def __init__(self, graph_schema: GraphSchema) -> None:
+        """Instantiates a new `ConfigValidator`.
 
         Args:
-           execution_context: Information about the current graph run.
+           graph_schema: a graph schema
         """
-        self._graph_schema = execution_context._graph_schema  # TODO: prune?
-        self._component_type_names = names_of_component_types_used_in_schema(
-            self._graph_schema
-        )
+        self._graph_schema = graph_schema
+        self._component_types = set(node.uses for node in graph_schema.nodes.values())
+        self._policy_schema_nodes: List[SchemaNode] = [
+            node
+            for node in self._graph_schema.nodes.values()
+            if issubclass(node.uses, PolicyGraphComponent)
+        ]
 
-    def validate(self, training_data: TrainingData) -> None:
+    def validate(self, importer: TrainingDataImporter) -> None:
+        """Validates the current graph schema against the training data and domain.
+
+        Args:
+            importer: the training data importer which can also load the domain
+        """
+        nlu_data = importer.get_nlu_data()
+        self._validate_nlu(nlu_data)
+
+        story_graph = importer.get_stories()
+        domain = importer.get_domain()
+        self._validate_core(story_graph, domain)
+
+    def _validate_nlu(self, training_data: TrainingData) -> None:
         """Validates whether the configuration matches the training data.
 
         Args:
-           training_data: the NLU training data
+           training_data: training_data
         """
-        # TODO: where do we check whether this is consistent with the domain?
-        self._warn_if_some_training_data_is_unused(training_data=training_data)
+        # TODO: raise if training data is empty?
+        # TODO: where do we check whether NLU training data is consistent with
+        # the domain?
         tokenizer_schema_node = self._raise_if_more_than_one_tokenizer()
-        self._warn_of_competing_extractors()
-        self._warn_of_competition_with_regex_extractor(training_data=training_data)
-        self._raise_or_warn_if_featurizers_are_not_compatible(
+        self._raise_if_featurizers_are_not_compatible()
+        self._raise_or_warn_if_featurizers_are_not_compatible_with_tokenizer(
             tokenizer_schema_node=tokenizer_schema_node
         )
-
-    # all NLU components
+        self._warn_of_competing_extractors()
+        self._warn_of_competition_with_regex_extractor(training_data=training_data)
+        self._warn_if_some_training_data_is_unused(training_data=training_data)
 
     def _warn_if_some_training_data_is_unused(
         self, training_data: TrainingData
@@ -106,135 +158,166 @@ class NLUValidator(GraphComponent):
         Args:
             training_data: training data
         """
-
         if (
             training_data.response_examples
-            and "ResponseSelector" not in self._names_of_used_components
+            and ResponseSelectorGraphComponent not in self._component_types
         ):
             rasa.shared.utils.io.raise_warning(
-                "You have defined training data with examples for training a response "
-                "selector, but your NLU pipeline does not include a response selector "
-                "component. To train a model on your response selector data, add a "
-                "'ResponseSelector' to your pipeline."
+                f"You have defined training data with examples for training a response "
+                f"selector, but your NLU pipeline does not include a response selector "
+                f"component. To train a model on your response selector data, add a "
+                f"'{ResponseSelectorGraphComponent.__name__}' to your pipeline."
             )
 
-        if training_data.entity_examples and self._names_of_used_components.disjoint(
+        if training_data.entity_examples and self._component_types.isdisjoint(
             TRAINABLE_EXTRACTORS
         ):
             rasa.shared.utils.io.raise_warning(
                 "You have defined training data consisting of entity examples, but "
                 "your NLU pipeline does not include an entity extractor trained on "
                 "your training data. To extract non-pretrained entities, add one of "
-                f"{TRAINABLE_EXTRACTORS} to your pipeline."
+                f"{types_to_str(TRAINABLE_EXTRACTORS)} to your pipeline."
             )
 
-        if training_data.entity_examples and self._names_of_used_components.disjoint(
-            {"DIETClassifier", "CRFEntityExtractor"}
+        if training_data.entity_examples and self._component_types.isdisjoint(
+            {DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent}
         ):
             if training_data.entity_roles_groups_used():
                 rasa.shared.utils.io.raise_warning(
-                    "You have defined training data with entities that "
-                    "have roles/groups, but your NLU pipeline does not "
-                    "include a 'DIETClassifier' or a 'CRFEntityExtractor'. "
-                    "To train entities that have roles/groups, "
-                    "add either 'DIETClassifier' or 'CRFEntityExtractor' to your "
-                    "pipeline."
+                    f"You have defined training data with entities that "
+                    f"have roles/groups, but your NLU pipeline does not "
+                    f"include a '{DIETClassifierGraphComponent.__name__}' "
+                    f"or a '{CRFEntityExtractorGraphComponent.__name__}'. "
+                    f"To train entities that have roles/groups, "
+                    f"add either '{DIETClassifierGraphComponent.__name__}' "
+                    f"or '{CRFEntityExtractorGraphComponent.__name__}' to your "
+                    f"pipeline."
                 )
 
-        if training_data.regex_features and self._names_of_used_components.disjoint(
-            ["RegexFeaturizer", "RegexEntityExtractor"],
+        if training_data.regex_features and self._component_types.isdisjoint(
+            [RegexFeaturizerGraphComponent, RegexEntityExtractorGraphComponent],
         ):
             rasa.shared.utils.io.raise_warning(
-                "You have defined training data with regexes, but "
-                "your NLU pipeline does not include a 'RegexFeaturizer' or a "
-                "'RegexEntityExtractor'. To use regexes, include either a "
-                "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
+                f"You have defined training data with regexes, but "
+                f"your NLU pipeline does not include a 'RegexFeaturizer' or a "
+                f"'RegexEntityExtractor'. To use regexes, include either a "
+                f"'{RegexFeaturizerGraphComponent.__name__}' or a "
+                f"'{RegexEntityExtractorGraphComponent.__name__}' in your pipeline."
             )
 
-        if training_data.lookup_tables and self._names_of_used_components.disjoint(
-            ["RegexFeaturizer", "RegexEntityExtractor"],
+        # NOTE: bugs
+        # 1. removed the check that complains if neither "CRFEntityExtractor",
+        #   nor "DIETClassifier" are contained in case a lookup table is given...
+        #   ... because
+        #   - CRFEntityExtractor: only uses lookup tables if a RegexFeaturizer is
+        #       present *and* the patterns feature is defined (see also 2.)
+        #   - DIET: does not use the lookup table...
+        # 2. previously we warned if there is a lookup table and the
+        #    CRF entity extractor has no "patterns" defined
+        #    a) this is optional but not mandatory, so we *could* remove that warning
+        #       (it is still below - see if "CRFEntityExtractor...")
+        #    b) we definitely should warn if "patterns" is defined but there
+        #       is no regex featurizer
+        #       (this is a new warning added under the if "CRFEntityExtractor...")
+
+        if training_data.lookup_tables and self._component_types.isdisjoint(
+            [RegexFeaturizerGraphComponent, RegexEntityExtractorGraphComponent],
         ):
             rasa.shared.utils.io.raise_warning(
-                "You have defined training data consisting of lookup tables, but "
-                "your NLU pipeline does not include a 'RegexFeaturizer' or a "
-                "'RegexEntityExtractor'. To use lookup tables, include either a "
-                "'RegexFeaturizer' or a 'RegexEntityExtractor' in your pipeline."
+                f"You have defined training data consisting of lookup tables, but "
+                f"your NLU pipeline does not include a "
+                f"'{RegexFeaturizerGraphComponent.__name__}' or a "
+                f"'{RegexEntityExtractorGraphComponent.__name__}'. "
+                f"To use lookup tables, include either a "
+                f"'{RegexFeaturizerGraphComponent.__name__}' "
+                f"or a '{RegexEntityExtractorGraphComponent.__name__}' "
+                f"in your pipeline."
             )
 
-        if training_data.lookup_tables:
-            if self._names_of_used_components.disjoint(
-                ["CRFEntityExtractor", "DIETClassifier"],
-            ):
+        if CRFEntityExtractorGraphComponent in self._component_types:
+
+            crf_schema_nodes = [
+                schema_node
+                for schema_node in self._graph_schema.nodes.values()
+                if schema_node.uses == CRFEntityExtractorGraphComponent
+            ]
+            # check to see if any of the possible CRFEntityExtractors will
+            # featurize `pattern`
+            has_pattern_feature = False
+
+            for crf in crf_schema_nodes:
+                crf_features = crf.config.get("features", [])
+                # iterate through [[before],[word],[after]] features
+                has_pattern_feature = "pattern" in itertools.chain(*crf_features)
+
+            if training_data.lookup_tables and not has_pattern_feature:
                 rasa.shared.utils.io.raise_warning(
-                    "You have defined training data consisting of lookup tables, but "
-                    "your NLU pipeline does not include any components that use these "
-                    "features. To make use of lookup tables, "
-                    "add a 'DIETClassifier' or a "
-                    "'CRFEntityExtractor' with the 'pattern' feature to your pipeline."
+                    f"You have defined training data consisting of "
+                    f"lookup tables, but your NLU pipeline's "
+                    f"'{CRFEntityExtractorGraphComponent.__name__}' "
+                    f"does not include the "
+                    f"'pattern' feature. To featurize lookup tables, "
+                    f"add the 'pattern' feature to the "
+                    f"'{CRFEntityExtractorGraphComponent.__name__}' "
+                    "in your pipeline."
                 )
-            elif "CRFEntityExtractor" not in self._names_of_used_components:
-                crf_schema_nodes = [
-                    c
-                    for c in self._graph_schema
-                    if c.uses.__name__ == "CRFEntityExtractor"
-                ]
-                # check to see if any of the possible CRFEntityExtractors will
-                # featurize `pattern`
-                has_pattern_feature = False
-                for crf in crf_schema_nodes:
-                    crf_features = crf.config.get("features")
-                    # iterate through [[before],[word],[after]] features
-                    has_pattern_feature = "pattern" in itertools.chain(*crf_features)
 
-                if not has_pattern_feature:
-                    rasa.shared.utils.io.raise_warning(
-                        "You have defined training data consisting of "
-                        "lookup tables, but your NLU pipeline's "
-                        "'CRFEntityExtractor' does not include the "
-                        "'pattern' feature. To featurize lookup tables, "
-                        "add the 'pattern' feature to the 'CRFEntityExtractor' "
-                        "in your pipeline."
-                    )
+            if not training_data.lookup_tables and has_pattern_feature:
+                rasa.shared.utils.io.raise_warning(
+                    "You have specified the 'pattern' feature for your "
+                    f"'{CRFEntityExtractorGraphComponent.__name__}' "
+                    f"but your training data does not"
+                    f"contain a lookup table. "
+                    f"To use the 'pattern' feature, "
+                    f"add a lookup tale to your training data and a "
+                    f"'{RegexFeaturizerGraphComponent.__name__}' "
+                    f"to your pipeline."
+                )
 
         if (
             training_data.entity_synonyms
-            and "EntitySynonymMapper" not in self._names_of_used_components
+            and EntitySynonymMapperComponent not in self._component_types
         ):
             rasa.shared.utils.io.raise_warning(
-                "You have defined synonyms in your training data, but "
-                "your NLU pipeline does not include an 'EntitySynonymMapper'. "
-                "To map synonyms, add an 'EntitySynonymMapper' to your pipeline."
+                f"You have defined synonyms in your training data, but "
+                f"your NLU pipeline does not include an "
+                f"'{EntitySynonymMapperComponent.__name__}'. "
+                f"To map synonyms, add an "
+                f"'{EntitySynonymMapperComponent.__name__}' to your pipeline."
             )
 
-    def _raise_if_more_than_one_tokenizer(self) -> SchemaNode:
+    def _raise_if_more_than_one_tokenizer(self) -> Optional[SchemaNode]:
         """Validates that only one tokenizer is present in the pipeline.
 
         NOTE: rasa/nlu/components/validate_only_one_tokenizer_is_used
 
         Returns:
-            the schema node describing the tokenizer
+            the schema node describing the tokenizer if there is such a tokenizer,
+            otherwise just None
 
         Raises:
             `InvalidConfigException` in case there is more than one tokenizer
         """
         tokenizer_schema_nodes = [
             schema_node
-            for schema_node in self._graph_schema.nodes.items()
-            if isinstance(schema_node.uses, TokenizerGraphComponent)
+            for schema_node in self._graph_schema.nodes.values()
+            if issubclass(schema_node.uses, TokenizerGraphComponent)
         ]
 
-        # TODO: why is 0 tokenizers ok? shouldn't this be ==1 ? Would also match the
+        # TODO: is 0 tokenizers ok? shouldn't this be ==1 ? Would also match the
         # old name better...
         if len(tokenizer_schema_nodes) > 1:
-            names = [schema_node.node_name for schema_node in tokenizer_schema_nodes]
+            names = [
+                schema_node.uses.__name__ for schema_node in tokenizer_schema_nodes
+            ]
             raise InvalidConfigException(
                 f"The pipeline configuration contains more than one tokenizer, "
                 f"which is not possible at this time. You can only use one tokenizer. "
                 f"The pipeline contains the following tokenizers: "
-                f"{names}. "  # TODO: do we want to print node_name or id?
+                f"{names}. "
             )
 
-        return tokenizer_schema_nodes[0]
+        return tokenizer_schema_nodes[0] if tokenizer_schema_nodes else None
 
     def _warn_of_competing_extractors(self) -> None:
         """Warns the user when using competing extractors.
@@ -246,14 +329,14 @@ class NLUValidator(GraphComponent):
         Args:
            node_names: names of all components
         """
-        extractors_in_pipeline = self._component_type_names.intersection(
-            TRAINABLE_EXTRACTORS.intersection
-        )
+        extractors_in_pipeline: Set[
+            Type[GraphComponent]
+        ] = self._component_types.intersection(TRAINABLE_EXTRACTORS)
         if len(extractors_in_pipeline) > 1:
             rasa.shared.utils.io.raise_warning(
                 f"You have defined multiple entity extractors that do the same job "
                 f"in your pipeline: "
-                f"{', '.join(extractors_in_pipeline)}. "
+                f"{types_to_str(extractors_in_pipeline)}. "
                 f"This can lead to the same entity getting "
                 f"extracted multiple times. Please read the documentation section "
                 f"on entity extractors to make sure you understand the implications: "
@@ -273,11 +356,13 @@ class NLUValidator(GraphComponent):
         Args:
             training_data: the training data
         """
-        present_general_extractors = self._component_type_names.intersection(
+        present_general_extractors = self._component_types.intersection(
             TRAINABLE_EXTRACTORS
         )
         has_general_extractors = len(present_general_extractors) > 0
-        has_regex_extractor = "RegexEntityExtractor" in self._component_type_names
+        has_regex_extractor = (
+            RegexEntityExtractorGraphComponent in self._component_types
+        )
 
         regex_entity_types = {rf["name"] for rf in training_data.regex_features}
         overlap_between_types = training_data.entities.intersection(regex_entity_types)
@@ -285,87 +370,72 @@ class NLUValidator(GraphComponent):
 
         if has_general_extractors and has_regex_extractor and has_overlap:
             rasa.shared.utils.io.raise_warning(
-                f"You have an overlap between the RegexEntityExtractor and the "
+                f"You have an overlap between the "
+                f"{RegexEntityExtractorGraphComponent.__name__} and the "
                 f"statistical entity extractors "
-                f"{', '.join(present_general_extractors)} "
+                f"{types_to_str(present_general_extractors)} "
                 f"in your pipeline. Specifically both types of extractors will "
                 f"attempt to extract entities of the types "
-                f"{', '.join(overlap_between_types)}. This can lead to multiple "
-                f"extraction of entities. Please read RegexEntityExtractor's "
+                f"{', '.join(overlap_between_types)}. "
+                f"This can lead to multiple "
+                f"extraction of entities. Please read "
+                f"{RegexEntityExtractorGraphComponent.__name__}'s "
                 f"documentation section to make sure you understand the "
                 f"implications: {DOCS_URL_COMPONENTS}#regexentityextractor"
             )
 
-    def _raise_or_warn_if_featurizers_are_not_compatible(
-        self, tokenizer_schema_node: SchemaNode
-    ) -> None:
+    def _raise_if_featurizers_are_not_compatible(self,) -> None:
         """Raises or warns if there are problems regarding the featurizers.
 
-        We require featurizers to...
-        1. have unique names because otherwise we cannot distinguish the features
-           produces by them
-        2. be compatible with the used tokenizer (e.g. `SpacyFeaturizer` won't do
-           anything if it is not used with the `SpacyTokenizer`)
+        Raises:
+            `InvalidConfigException`
         """
         featurizers: List[SchemaNode] = [
             node
             for node in self._graph_schema.nodes.values()
-            if isinstance(node.uses, Featurizer2)
+            if issubclass(node.uses, Featurizer2)
         ]
-
-        Featurizer2.validate_configs_compatible(
+        Featurizer2.raise_if_featurizer_configs_are_not_compatible(
             [schema_node.config for schema_node in featurizers]
         )
 
-        for schema_node in featurizers:
-            Featurizer2.validate_compatibility_with_tokenizer(
-                config=schema_node.config, tokenizer_type=tokenizer_schema_node.uses
-            )
-
-
-class CoreValidator(GraphComponent):
-    """Checks whether the configuration and the Core training data match."""
-
-    @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> GraphComponent:
-        """Creates a new `CoreValidator` (see parent class for full docstring)."""
-        return cls(execution_context)
-
-    def __init__(self, execution_context: ExecutionContext) -> None:
-        """Instantiates a new `CoreValidator`.
+    def _raise_or_warn_if_featurizers_are_not_compatible_with_tokenizer(
+        self, tokenizer_schema_node: Optional[SchemaNode]
+    ) -> None:
+        """Validates all featurizers against the tokenizer.
 
         Args:
-           execution_context: Information about the current graph run.
+            tokenizer_schema_node: the schema node of the tokenizer if there is such
+                a node, otherwise None
         """
-        self._graph_schema = execution_context._graph_schema  # TODO: prune?
-        self._policy_schema_nodes: List[SchemaNode] = [
-            node
-            for node in self._graph_schema.nodes.values()
-            if isinstance(node.uses, PolicyGraphComponent)
-        ]
+        if tokenizer_schema_node is None:
+            return
+        for schema_node in self._graph_schema.nodes.values():
+            if issubclass(schema_node.uses, Featurizer2):
+                schema_node.uses.validate_compatibility_with_tokenizer(
+                    config=schema_node.config, tokenizer_type=tokenizer_schema_node.uses
+                )
+        # TODO: shouldn't we always complain if there is no tokenizer?
 
-    def validate(
-        self, training_trackers: List[DialogueStateTracker], domain: Domain
-    ) -> None:
+    def _validate_core(self, story_graph: StoryGraph, domain: Domain) -> None:
         """Validates whether the configuration matches the training data.
 
         Args:
-           training_trackers: trackers containing the Core training data
+           story_graph: a story graph (core training data)
            domain: the domain
         """
-        if not self._self._policy_schema_nodes:
+        if not self._policy_schema_nodes and story_graph.story_steps:
+            rasa.shared.utils.io.raise_warning(
+                "Found data for training policies but no policy was configured.",
+                docs=DOCS_URL_POLICIES,
+            )
+        if not self._policy_schema_nodes:
             return
         self._warn_if_no_rule_policy_is_contained()
-        self._raise_if_rule_policies_are_incompatible_with_domain(domain)
-        self._warn_if_rule_based_data_is_unused_or_missing(
-            training_trackers=training_trackers
-        )
+        self._raise_if_domain_contains_form_names_but_no_rule_policy_given(domain)
+        self._raise_if_a_rule_policy_is_incompatible_with_domain(domain)
+        self._warn_if_priorities_are_not_unique()
+        self._warn_if_rule_based_data_is_unused_or_missing(story_graph=story_graph)
 
     def _warn_if_no_rule_policy_is_contained(self) -> None:
         """Warns if there is no rule policy among the given policies.
@@ -373,11 +443,10 @@ class CoreValidator(GraphComponent):
         NOTE: core/policies/_ensemble/check_for_important_policies
         """
         if not any(
-            isinstance(node.uses, RulePolicyGraphComponent)
-            for node in self._policy_schema_nodes
+            node.uses == RulePolicyGraphComponent for node in self._policy_schema_nodes
         ):
             rasa.shared.utils.io.raise_warning(
-                f"'{RulePolicy.__name__}' is not included in the model's "
+                f"'{RulePolicyGraphComponent.__name__}' is not included in the model's "
                 f"policy configuration. Default intents such as "
                 f"'{USER_INTENT_RESTART}' and '{USER_INTENT_BACK}' will "
                 f"not trigger actions '{ACTION_RESTART_NAME}' and "
@@ -385,41 +454,47 @@ class CoreValidator(GraphComponent):
                 docs=DOCS_URL_DEFAULT_ACTIONS,
             )
 
-    def _warn_if_rule_based_data_is_unused_or_missing(
-        self, training_trackers: List[DialogueStateTracker]
+    def _raise_if_domain_contains_form_names_but_no_rule_policy_given(
+        self, domain: Domain,
     ) -> None:
-        """Warns if rule-data is unused or missing.
+        """Validates that there exists a rule policy if forms are defined.
 
-        NOTE: _ensemble/_emit_rule_policy_warning (called in train)
+        NOTE: _ensemble/check_domain_ensemble_compatibility (called from agent.py)
 
-        Args:
-            training_trackers: trackers to be used for training
+        Raises:
+            `InvalidConfigException` if domain and rule policies do not match
         """
-        consuming_rule_data = any(
-            policy_node.uses.supported_data()
-            in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
-            for policy_node in self._policy_schema_nodes
-        )
-        contains_rule_tracker = any(
-            tracker.is_rule_tracker for tracker in training_trackers
+        contains_rule_policy = any(
+            schema_node
+            for schema_node in self._graph_schema.nodes.values()
+            if schema_node.uses == RulePolicyGraphComponent
         )
 
-        if consuming_rule_data and not contains_rule_tracker:
-            rasa.shared.utils.io.raise_warning(
-                f"Found a rule-based policy in your pipeline but "
-                f"no rule-based training data. Please add rule-based "
-                f"stories to your training data or "
-                f"remove the rule-based policy (`{RulePolicy.__name__}`) from your "
-                f"your pipeline.",
-                docs=DOCS_URL_RULES,
+        if domain.form_names and not contains_rule_policy:
+            raise InvalidDomain(
+                "You have defined a form action, but have not added the "
+                f"'{RulePolicyGraphComponent.__name__}' to your policy ensemble. "
+                f"Either remove all forms from your domain or add the "
+                f"'{RulePolicyGraphComponent.__name__}' to your policy configuration."
             )
-        elif not consuming_rule_data and contains_rule_tracker:
-            rasa.shared.utils.io.raise_warning(
-                f"Found rule-based training data but no policy supporting rule-based "
-                f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
-                f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`.",
-                docs=DOCS_URL_RULES,
-            )
+
+    def _raise_if_a_rule_policy_is_incompatible_with_domain(
+        self, domain: Domain,
+    ) -> None:
+        """Validates the rule policies against the domain.
+
+        NOTE: _ensemble/check_domain_ensemble_compatibility (called from agent.py)
+
+        Raises:
+            `InvalidDomain` if domain and rule policies do not match
+        """
+        for schema_node in self._graph_schema.nodes.values():
+            if schema_node.uses == RulePolicyGraphComponent:
+
+                # FIXME: add a test to rule policy for this function
+                RulePolicyGraphComponent.raise_if_incompatible_with_domain(
+                    config=schema_node.config, domain=domain
+                )
 
     def _warn_if_priorities_are_not_unique(self) -> None:
         """Warns if the priorities of the policies are not unique.
@@ -428,9 +503,10 @@ class CoreValidator(GraphComponent):
         """
         priority_dict = defaultdict(list)
         for schema_node in self._policy_schema_nodes:
-            priority = schema_node.config["priority"]
-            name = schema_node.node_name
-            priority_dict[priority].append(name)
+            if "priority" in schema_node.config:
+                priority = schema_node.config["priority"]
+                name = schema_node.uses.__name__
+                priority_dict[priority].append(name)
 
         for k, v in priority_dict.items():
             if len(v) > 1:
@@ -442,39 +518,44 @@ class CoreValidator(GraphComponent):
                     docs=DOCS_URL_POLICIES,
                 )
 
-    def _raise_if_rule_policies_are_incompatible_with_domain(
-        self, domain: Domain,
+    def _warn_if_rule_based_data_is_unused_or_missing(
+        self, story_graph: StoryGraph
     ) -> None:
-        """Validates the rule policies against the domain.
+        """Warns if rule-data is unused or missing.
 
-        NOTE: _ensemble/check_domain_ensemble_compatibility (called from agent.py)
+        NOTE: _ensemble/_emit_rule_policy_warning (called in train)
 
-        Raises:
-            `InvalidConfigException` if domain and rule policies do not match
+        Args:
+            story_graph: a story graph (core training data)
         """
-        rule_policies: List[SchemaNode] = [
-            schema_node
-            for schema_node in self._graph_schema.nodes.items()
-            if schema_node.uses == RulePolicyGraphComponent
-        ]
+        consuming_rule_data = any(
+            policy_node.uses.supported_data()
+            in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
+            for policy_node in self._policy_schema_nodes
+        )
 
-        if domain.form_names and not rule_policies:
-            raise InvalidDomain(
-                "You have defined a form action, but have not added the "
-                f"'{RulePolicyGraphComponent.__name__}' to your policy ensemble. "
-                f"Either remove all forms from your domain or add the "
-                f"'{RulePolicyGraphComponent.__name__}' to your policy configuration."
+        # Reminder: We generate rule trackers via:
+        #   rasa/shared/core/generator/...
+        #   .../TrainingDataGenerator/_generate_rule_trackers/
+        contains_rule_tracker = any(
+            isinstance(step, RuleStep) for step in story_graph.ordered_steps()
+        )
+
+        if consuming_rule_data and not contains_rule_tracker:
+            rasa.shared.utils.io.raise_warning(
+                f"Found a rule-based policy in your pipeline but "
+                f"no rule-based training data. Please add rule-based "
+                f"stories to your training data or "
+                f"remove the rule-based policy "
+                f"(`{RulePolicyGraphComponent.__name__}`) from your "
+                f"your pipeline.",
+                docs=DOCS_URL_RULES,
             )
-
-        if rule_policies:
-            first_rule_policy: SchemaNode = rule_policies[0]
-            try:
-                RulePolicyGraphComponent._validate_against_domain(
-                    config=first_rule_policy.config, domain=domain
-                )
-            except InvalidDomain as e:
-                raise InvalidConfigException(
-                    f"The given domain does not match the configuration "
-                    f"of {first_rule_policy.node_name}."
-                    # TODO: do we want to print node_name or id?
-                ) from e
+        elif not consuming_rule_data and contains_rule_tracker:
+            rasa.shared.utils.io.raise_warning(
+                f"Found rule-based training data but no policy supporting rule-based "
+                f"data. Please add `{RulePolicyGraphComponent.__name__}` "
+                f"or another rule-supporting "
+                f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`.",
+                docs=DOCS_URL_RULES,
+            )

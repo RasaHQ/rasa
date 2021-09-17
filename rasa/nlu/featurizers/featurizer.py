@@ -57,8 +57,6 @@ class Featurizer2(Generic[FeatureType], ABC):
         cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
     ) -> None:
         """Validates that the featurizer is compatible with the given tokenizer."""
-        # TODO: add (something like) this to recipe validation
-        # TODO: replace tokenizer by config of tokenizer to enable static check
         ...
 
     def add_features_to_message(
@@ -85,7 +83,7 @@ class Featurizer2(Generic[FeatureType], ABC):
                 message.add_features(wrapped_feature)
 
     @staticmethod
-    def validate_configs_compatible(
+    def raise_if_featurizer_configs_are_not_compatible(
         featurizer_configs: Iterable[Dict[Text, Any]]
     ) -> None:
         """Validates that the given configurations of featurizers can be used together.
