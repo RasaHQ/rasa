@@ -11,8 +11,11 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     TOKENS_NAMES,
 )
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY, SpacyTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.spacy_tokenizer import (
+    POS_TAG_KEY,
+    SpacyTokenizerGraphComponent,
+)
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizerGraphComponent,
     FEATURES,
@@ -295,9 +298,9 @@ def test_validate_config(config: Dict[Text, Any], raises: bool):
 @pytest.mark.parametrize(
     "config,tokenizer_type,warns",
     [
-        ({FEATURES: [["pos"],]}, SpacyTokenizer, False),
-        ({FEATURES: [["pos"],]}, WhitespaceTokenizer, True),
-        ({FEATURES: [["suffix2"],]}, WhitespaceTokenizer, False),
+        ({FEATURES: [["pos"],]}, SpacyTokenizerGraphComponent, False),
+        ({FEATURES: [["pos"],]}, WhitespaceTokenizerGraphComponent, True),
+        ({FEATURES: [["suffix2"],]}, WhitespaceTokenizerGraphComponent, False),
     ],
 )
 def test_validate_compatibility_with_tokenizer(

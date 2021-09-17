@@ -2,8 +2,6 @@ import pytest
 from typing import Dict, Optional
 
 import rasa.shared.utils.io
-from rasa.nlu.components import UnsupportedLanguageError
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_TEXT, ACTION_NAME
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -15,11 +13,8 @@ def create_whitespace_tokenizer(
     config: Optional[Dict] = None,
 ) -> WhitespaceTokenizerGraphComponent:
     config = config if config else {}
-    return WhitespaceTokenizerGraphComponent.create(
+    return WhitespaceTokenizerGraphComponent(
         {**WhitespaceTokenizerGraphComponent.get_default_config(), **config},
-        None,
-        None,
-        None,
     )
 
 
@@ -182,17 +177,11 @@ def test_whitespace_does_not_throw_error():
         tk.tokenize(Message.build(text=text), attribute=TEXT)
 
 
-@pytest.mark.parametrize("language, error", [("en", False), ("zh", True)])
-def test_whitespace_language_support(language, error, component_builder):
-    config = RasaNLUModelConfig(
-        {"language": language, "pipeline": [{"name": "WhitespaceTokenizer"}]}
-    )
-
-    if error:
-        with pytest.raises(UnsupportedLanguageError):
-            component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
-    else:
-        component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
+@pytest.mark.parametrize("language, is_not_supported", [("en", False), ("zh", True)])
+def test_whitespace_language_support(language, is_not_supported):
+    assert (
+        language in WhitespaceTokenizerGraphComponent.not_supported_languages()
+    ) == is_not_supported
 
 
 def test_whitespace_processing_with_attribute():

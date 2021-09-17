@@ -1,4 +1,5 @@
 import os
+import textwrap
 from pathlib import Path
 import json
 import logging
@@ -21,12 +22,12 @@ from rasa.core.constants import (
     SUCCESSFUL_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
 )
-from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
 from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
 from rasa.core.agent import Agent
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.exceptions import RasaException
 
 
@@ -178,14 +179,29 @@ async def test_source_in_failed_stories(
 
 async def test_end_to_evaluation_trips_circuit_breaker(
     e2e_story_file_trips_circuit_breaker_path: Text,
+    trained_async: Callable,
+    tmp_path: Path,
 ):
-    agent = Agent(
-        domain="data/test_domains/default.yml",
-        policies=[MemoizationPolicy(max_history=11)],
-    )
-    training_data = agent.load_data(e2e_story_file_trips_circuit_breaker_path)
-    agent.train(training_data)
+    config = textwrap.dedent(
+        f"""
+    version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+    policies:
+    - name: MemoizationPolicy
+      max_history: 11
 
+    pipeline: []
+    """
+    )
+    config_path = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_text_file(config, config_path)
+
+    model_path = await trained_async(
+        "data/test_domains/default.yml",
+        str(config_path),
+        e2e_story_file_trips_circuit_breaker_path,
+    )
+
+    agent = Agent.load_local_model(model_path)
     generator = _create_data_generator(
         e2e_story_file_trips_circuit_breaker_path,
         agent,
@@ -599,3 +615,25 @@ async def test_wrong_predictions_with_intent_and_entities(
         assert "- seating: outside\n" in failed_stories
         # check that it does not double print entities
         assert failed_stories.count("\n") == 9
+
+
+async def test_failed_entity_extraction_comment(
+    tmpdir: Path, restaurantbot_agent: Agent,
+):
+    test_file = "data/test_yaml_stories/test_failed_entity_extraction_comment.yml"
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
+
+    await evaluate_stories(
+        stories=test_file,
+        agent=restaurantbot_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=True,
+    )
+
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
+    assert (
+        "- intent: request_restaurant"
+        "  # predicted: request_restaurant: i am looking for [greek](cuisine) food"
+        in failed_stories
+    )
