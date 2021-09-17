@@ -212,6 +212,13 @@
           ],
           "label": "rasa.graph_components.providers",
           "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/graph_components/validators/finetuning_validator"
+          ],
+          "label": "rasa.graph_components.validators",
+          "type": "category"
         }
       ],
       "label": "rasa.graph_components",
