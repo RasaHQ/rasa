@@ -13,7 +13,7 @@ run_MemoizationPolicy0:
   needs:
     domain: domain_provider
     rule_only_data: rule_only_data_provider
-    tracker: __input__
+    tracker: __tracker__
   uses: rasa.core.policies.memoization.MemoizationPolicyGraphComponent
   constructor_name: load
   fn: predict_action_probabilities
@@ -28,7 +28,7 @@ run_RulePolicy1:
   needs:
     domain: domain_provider
     rule_only_data: rule_only_data_provider
-    tracker: __input__
+    tracker: __tracker__
   uses: rasa.core.policies.rule_policy.RulePolicyGraphComponent
   constructor_name: load
   fn: predict_action_probabilities
@@ -42,7 +42,7 @@ run_TEDPolicy2:
   needs:
     domain: domain_provider
     rule_only_data: rule_only_data_provider
-    tracker: __input__
+    tracker: __tracker__
   uses: rasa.core.policies.ted_policy.TEDPolicyGraphComponent
   constructor_name: load
   fn: predict_action_probabilities
@@ -70,7 +70,7 @@ select_prediction:
     policy1: run_RulePolicy1
     policy2: run_TEDPolicy2
     domain: domain_provider
-    tracker: __input__
+    tracker: __tracker__
   uses: rasa.core.policies.ensemble.DefaultPolicyPredictionEnsemble
   constructor_name: load
   fn: combine_predictions_from_kwargs

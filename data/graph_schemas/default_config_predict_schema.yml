@@ -1,6 +1,6 @@
 nlu_message_converter:
   needs:
-    message: __input__
+    messages: __message__
   uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
   constructor_name: load
   fn: convert_user_message
@@ -139,8 +139,8 @@ run_RegexMessageHandlerGraphComponent:
 nlu_prediction_to_history_adder:
   needs:
     domain: domain_provider
-    original_message: __input__
-    tracker: __input__
+    original_messages: __message__
+    tracker: __tracker__
     predictions: run_RegexMessageHandlerGraphComponent
   uses: rasa.graph_components.adders.nlu_prediction_to_history_adder.NLUPredictionToHistoryAdder
   constructor_name: load
@@ -277,7 +277,7 @@ run_UnexpecTEDIntentPolicy2:
   needs:
     tracker: nlu_prediction_to_history_adder
     domain: domain_provider
-    end_to_end_features: end_to_end_features_provider
+    precomputations: end_to_end_features_provider
     rule_only_data: rule_only_data_provider
   uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicyGraphComponent
   constructor_name: load
@@ -294,7 +294,7 @@ run_TEDPolicy3:
   needs:
     tracker: nlu_prediction_to_history_adder
     domain: domain_provider
-    end_to_end_features: end_to_end_features_provider
+    precomputations: end_to_end_features_provider
     rule_only_data: rule_only_data_provider
   uses: rasa.core.policies.ted_policy.TEDPolicyGraphComponent
   constructor_name: load

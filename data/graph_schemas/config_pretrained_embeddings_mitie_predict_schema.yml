@@ -1,6 +1,6 @@
 nlu_message_converter:
   needs:
-    message: __input__
+    messages: __message__
   uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
   constructor_name: load
   fn: convert_user_message

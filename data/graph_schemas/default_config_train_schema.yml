@@ -19,7 +19,7 @@ schema_validator:
   config: {}
   eager: false
   is_target: false
-  is_input: false
+  is_input: true
   resource: null
 finetuning_validator:
   needs:
@@ -30,7 +30,7 @@ finetuning_validator:
   config: {}
   eager: false
   is_target: false
-  is_input: false
+  is_input: true
   resource: null
 nlu_training_data_provider:
   needs:
@@ -349,7 +349,7 @@ train_UnexpecTEDIntentPolicy2:
   needs:
     training_trackers: training_tracker_provider
     domain: domain_without_responses_provider
-    end_to_end_features: end_to_end_features_provider
+    precomputations: end_to_end_features_provider
   uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicyGraphComponent
   constructor_name: create
   fn: train
@@ -364,7 +364,7 @@ train_TEDPolicy3:
   needs:
     training_trackers: training_tracker_provider
     domain: domain_without_responses_provider
-    end_to_end_features: end_to_end_features_provider
+    precomputations: end_to_end_features_provider
   uses: rasa.core.policies.ted_policy.TEDPolicyGraphComponent
   constructor_name: create
   fn: train

@@ -19,7 +19,7 @@ schema_validator:
   config: {}
   eager: false
   is_target: false
-  is_input: false
+  is_input: true
   resource: null
 finetuning_validator:
   needs:
@@ -30,7 +30,7 @@ finetuning_validator:
   config: {}
   eager: false
   is_target: false
-  is_input: false
+  is_input: true
   resource: null
 nlu_training_data_provider:
   needs:
