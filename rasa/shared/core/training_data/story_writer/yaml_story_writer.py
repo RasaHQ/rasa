@@ -101,7 +101,6 @@ class YAMLStoryWriter(StoryWriter):
         result = self.stories_to_yaml(story_steps, is_test_story)
         if is_appendable and KEY_STORIES in result:
             result = result[KEY_STORIES]
-
         rasa.shared.utils.io.write_yaml(result, target, True)
 
     def stories_to_yaml(
@@ -149,7 +148,6 @@ class YAMLStoryWriter(StoryWriter):
         result = OrderedDict()
         result[KEY_STORY_NAME] = story_step.block_name
         steps = self.process_checkpoints(story_step.start_checkpoints)
-
         for event in story_step.events:
             if not self._filter_event(event):
                 continue
@@ -210,7 +208,11 @@ class YAMLStoryWriter(StoryWriter):
         """
         result = CommentedMap()
         if user_utterance.intent_name and not user_utterance.use_text_for_featurization:
-            result[KEY_USER_INTENT] = user_utterance.intent_name
+            result[KEY_USER_INTENT] = (
+                user_utterance.full_retrieval_intent_name
+                if user_utterance.full_retrieval_intent_name
+                else user_utterance.intent_name
+            )
 
         if hasattr(user_utterance, "inline_comment"):
             comment = user_utterance.inline_comment()

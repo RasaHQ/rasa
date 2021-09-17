@@ -1,0 +1,32 @@
+version: "2.0"
+
+stories:
+- story: test full intent name
+  steps:
+  - user: |
+      is that really legit ?
+    intent: faq/is-this-legit
+  - action: utter_faq/is-this-legit
+
+- story: test retrieving full utter action when predicted wrongly
+  steps:
+  - user: |
+      is that really legit ?
+    intent: faq/is-this-legit
+  - action: utter_faq/inquire-cost
+
+- story: test that works well without retrieval intents
+  steps:
+  - user: |
+      is that really legit ?
+    intent: faq
+  - action: utter_greet
+
+- story: test that works well without retrieval intents
+  steps:
+  - user: |
+      is that really legit ?
+    intent: faq
+  - action: utter_faq
+
+

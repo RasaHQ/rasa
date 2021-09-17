@@ -1,0 +1,14 @@
+version: "2.0"
+
+intents:
+- greet
+- faq:
+    is_retrieval_intent: true
+
+responses:
+  utter_greet:
+  - text: hi!
+  utter_faq/is-this-legit:
+  - text: yes, it is
+  utter_faq/inquire-cost:
+  - text: idk

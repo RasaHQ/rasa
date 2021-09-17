@@ -32,6 +32,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     TOKENS_NAMES,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
 )
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -57,6 +58,8 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.tensorflow.constants import QUERY_INTENT_KEY, SEVERITY_KEY
 from rasa.exceptions import ActionLimitReached
+
+from rasa.core.actions.action import ActionRetrieveResponse
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -519,7 +522,6 @@ def _collect_user_uttered_predictions(
 
     # predicted intent: note that this is only the base intent at this point
     predicted_base_intent = predicted.get(INTENT, {}).get(INTENT_NAME_KEY)
-
     # if the test story only provides the base intent AND the prediction was correct,
     # we are not interested in full retrieval intents and skip this section.
     # In any other case we are interested in the full retrieval intent (e.g. for report)
@@ -550,8 +552,20 @@ def _collect_user_uttered_predictions(
                 f" \n\n{story_dump}"
             )
     else:
+        response_selector_info = (
+            {
+                RESPONSE_SELECTOR_PROPERTY_NAME: predicted[
+                    RESPONSE_SELECTOR_PROPERTY_NAME
+                ]
+            }
+            if RESPONSE_SELECTOR_PROPERTY_NAME in predicted
+            else None
+        )
         end_to_end_user_utterance = EndToEndUserUtterance(
-            event.text, event.intent, event.entities
+            text=event.text,
+            intent=event.intent,
+            entities=event.entities,
+            parse_data=response_selector_info,
         )
         partial_tracker.update(end_to_end_user_utterance)
 
@@ -600,18 +614,48 @@ def _get_e2e_entity_evaluation_result(
     return None
 
 
+def _get_predicted_action_name(
+    predicted_action: rasa.core.actions.action.Action,
+    partial_tracker: DialogueStateTracker,
+    expected_action_name: Text,
+) -> Optional[Text]:
+    """Get the name of predicted action.
+
+    If the action is instance of `ActionRetrieveResponse`, we need to return full
+    action name with its retrieval intent (e.g. utter_faq/is-this-legit).
+    The only case when we should not do it is when an expected action given in
+    a test story is a retrieval action but it's not specified in the test story.
+    To illustrate this, we're basically avoiding this unnecessary mismatch:
+    utter_faq (expected) != utter_faq/is-this-legit (predicted).
+    In this case or if the action isn't instance of `ActionRetrieveResponse`,
+    the function returns only the action name (e.g. utter_faq).
+    """
+    if (
+        isinstance(predicted_action, ActionRetrieveResponse)
+        and expected_action_name != predicted_action.name()
+    ):
+        full_retrieval_name = predicted_action.get_full_retrieval_name(partial_tracker)
+        predicted_action_name = (
+            full_retrieval_name if full_retrieval_name else predicted_action.name()
+        )
+    else:
+        predicted_action_name = predicted_action.name()
+    return predicted_action_name
+
+
 def _run_action_prediction(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
 ) -> Tuple[Text, PolicyPrediction, Optional[EntityEvaluationResult]]:
     action, prediction = processor.predict_next_action(partial_tracker)
-    predicted_action = action.name()
+    predicted_action = _get_predicted_action_name(
+        action, partial_tracker, expected_action
+    )
 
     policy_entity_result = _get_e2e_entity_evaluation_result(
         processor, partial_tracker, prediction
     )
-
     if (
         prediction.policy_name
         and predicted_action != expected_action
@@ -624,11 +668,12 @@ def _run_action_prediction(
         emulate_loop_rejection(partial_tracker)
         # try again
         action, prediction = processor.predict_next_action(partial_tracker)
-
         # Even if the prediction is also wrong, we don't have to undo the emulation
         # of the action rejection as we know that the user explicitly specified
         # that something else than the form was supposed to run.
-        predicted_action = action.name()
+        predicted_action = _get_predicted_action_name(
+            action, partial_tracker, expected_action
+        )
 
     return predicted_action, prediction, policy_entity_result
 
@@ -764,7 +809,6 @@ async def _predict_tracker_actions(
         agent.domain.slots,
         sender_source=tracker.sender_source,
     )
-
     tracker_actions = []
     policy_entity_results = []
 
@@ -777,7 +821,6 @@ async def _predict_tracker_actions(
             ) = _collect_action_executed_predictions(
                 processor, partial_tracker, event, fail_on_prediction_errors,
             )
-
             if entity_result:
                 policy_entity_results.append(entity_result)
 
@@ -802,14 +845,13 @@ async def _predict_tracker_actions(
             # Leaving that as it is because Markdown is in legacy mode.
             else:
                 predicted = await processor.parse_message(UserMessage(event.text))
+
             user_uttered_result = _collect_user_uttered_predictions(
                 event, predicted, partial_tracker, fail_on_prediction_errors
             )
-
             tracker_eval_store.merge_store(user_uttered_result)
         else:
             partial_tracker.update(event)
-
     return tracker_eval_store, partial_tracker, tracker_actions, policy_entity_results
 
 

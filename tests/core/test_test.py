@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Text, Optional, Dict, Any, List, Callable
 import pytest
-
+import os
+import yaml
 import rasa.core.test
 import rasa.shared.utils.io
 from rasa.core.policies.ensemble import SimplePolicyEnsemble
@@ -121,6 +122,40 @@ async def test_testing_warns_if_action_unknown(
     assert "Test story" in output
     assert "contains the bot utterance" in output
     assert "which is not part of the training data / domain" in output
+
+
+async def test_testing_with_utilizing_retrieval_intents(
+    intent_retrieval_agent: Agent,
+    intent_retrieval_bot_test_stories: Path,
+    intent_retrieval_bot_test_results: Path,
+):
+    if not os.path.exists(intent_retrieval_bot_test_results):
+        os.mkdir(intent_retrieval_bot_test_results)
+
+    result = await rasa.core.test.test(
+        stories=intent_retrieval_bot_test_stories,
+        agent=intent_retrieval_agent,
+        e2e=True,
+        out_directory=intent_retrieval_bot_test_results,
+        disable_plotting=True,
+        warnings=False,
+    )
+    failed_stories_path = os.path.join(
+        intent_retrieval_bot_test_results, "failed_test_stories.yml"
+    )
+    with open(failed_stories_path, "r") as stream:
+        failed_stories = yaml.safe_load(stream)
+    # check that the intent is shown correctly in the failed test stories file
+    intent, full_intent = "faq", "faq/is-this-legit"
+    target_intents = [full_intent, full_intent, intent]
+    for index, story in enumerate(failed_stories["stories"]):
+        assert story["steps"][0]["intent"] == target_intents[index]
+    # check that retrieval intent for actions is retrieved correctly and only when it's needed
+    action, full_action = "utter_faq", "utter_faq/is-this-legit"
+    target_actions = [full_action, full_action, full_action, action]
+    predicted_actions = result["actions"][::2]
+    for target_action, predicted_action in zip(target_actions, predicted_actions):
+        assert target_action == predicted_action["predicted"]
 
 
 async def test_testing_does_not_warn_if_intent_in_domain(

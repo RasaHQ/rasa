@@ -1,0 +1,14 @@
+language: en
+pipeline:
+- name: WhitespaceTokenizer
+- name: CountVectorsFeaturizer
+- name: DIETClassifier
+  epochs: 5
+- name: ResponseSelector
+  epochs: 5
+policies:
+- name: TEDPolicy
+  random_seed: 42
+  epochs: 5
+- name: MemoizationPolicy
+  max_history: 5
