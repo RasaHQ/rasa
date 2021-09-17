@@ -618,7 +618,7 @@ def _get_predicted_action_name(
     predicted_action: rasa.core.actions.action.Action,
     partial_tracker: DialogueStateTracker,
     expected_action_name: Text,
-) -> Optional[Text]:
+) -> Text:
     """Get the name of predicted action.
 
     If the action is instance of `ActionRetrieveResponse`, we need to return full
