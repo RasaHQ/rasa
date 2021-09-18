@@ -1,18 +1,30 @@
-from pathlib import Path
+import copy
 
 import pytest
 import numpy as np
-from typing import List, Dict, Text, Any, Optional, Union
+from typing import List, Dict, Text, Any, Optional, Tuple, Union, Callable
 from unittest.mock import Mock
+
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    CountVectorsFeaturizerGraphComponent,
+)
+from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
+    LexicalSyntacticFeaturizerGraphComponent,
+)
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
+    RegexFeaturizerGraphComponent,
+)
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 import rasa.nlu.train
-from rasa.nlu.components import ComponentBuilder
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data import util
-from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.nlu.training_data.loading
-from rasa.nlu.train import Trainer, Interpreter
 from rasa.utils.tensorflow.constants import (
     EPOCHS,
     MASKED_LM,
@@ -26,6 +38,8 @@ from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     HIDDEN_LAYERS_SIZES,
     LABEL,
+    EVAL_NUM_EXAMPLES,
+    EVAL_NUM_EPOCHS,
 )
 from rasa.utils import train_utils
 from rasa.shared.nlu.constants import (
@@ -37,34 +51,13 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.nlu.selectors.response_selector import ResponseSelectorGraphComponent
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from tests.nlu.classifiers.test_diet_classifier import as_pipeline
 
 
-@pytest.mark.parametrize(
-    "pipeline",
-    [
-        [
-            {"name": "WhitespaceTokenizer"},
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "ResponseSelector", EPOCHS: 1},
-        ],
-        [
-            {"name": "WhitespaceTokenizer"},
-            {"name": "CountVectorsFeaturizer"},
-            {
-                "name": "ResponseSelector",
-                EPOCHS: 1,
-                MASKED_LM: True,
-                TRANSFORMER_SIZE: 256,
-                NUM_TRANSFORMER_LAYERS: 1,
-            },
-        ],
-    ],
-)
-def test_train_selector(pipeline, component_builder, tmpdir):
+@pytest.fixture()
+def response_selector_training_data() -> TrainingData:
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.yml"
@@ -74,39 +67,147 @@ def test_train_selector(pipeline, component_builder, tmpdir):
     )
     training_data = training_data.merge(training_data_responses)
 
-    nlu_config = RasaNLUModelConfig({"language": "en", "pipeline": pipeline})
+    return training_data
 
-    trainer = Trainer(nlu_config)
-    trainer.train(training_data)
 
-    persisted_path = trainer.persist(tmpdir)
+@pytest.fixture()
+def default_response_selector_resource() -> Resource:
+    return Resource("response_selector")
 
-    assert trainer.pipeline
 
-    loaded = Interpreter.load(persisted_path, component_builder)
-    parsed = loaded.parse("hello")
-    assert loaded.pipeline
-    assert parsed is not None
-    assert (parsed.get("response_selector").get("all_retrieval_intents")) == [
-        "chitchat"
+@pytest.fixture
+def create_response_selector(
+    default_model_storage: ModelStorage,
+    default_response_selector_resource: Resource,
+    default_execution_context: ExecutionContext,
+) -> Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent]:
+    def inner(config_params: Dict[Text, Any]) -> ResponseSelectorGraphComponent:
+        return ResponseSelectorGraphComponent.create(
+            {**ResponseSelectorGraphComponent.get_default_config(), **config_params},
+            default_model_storage,
+            default_response_selector_resource,
+            default_execution_context,
+        )
+
+    return inner
+
+
+@pytest.fixture()
+def load_response_selector(
+    default_model_storage: ModelStorage,
+    default_response_selector_resource: Resource,
+    default_execution_context: ExecutionContext,
+) -> Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent]:
+    def inner(config_params: Dict[Text, Any]) -> ResponseSelectorGraphComponent:
+        return ResponseSelectorGraphComponent.load(
+            {**ResponseSelectorGraphComponent.get_default_config(), **config_params},
+            default_model_storage,
+            default_response_selector_resource,
+            default_execution_context,
+        )
+
+    return inner
+
+
+@pytest.fixture()
+def train_persist_load_with_different_settings(
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    default_execution_context: ExecutionContext,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
+):
+    def inner(
+        pipeline: List[Dict[Text, Any]],
+        config_params: Dict[Text, Any],
+        should_finetune: bool,
+    ):
+
+        training_data, loaded_pipeline = train_and_preprocess(
+            pipeline, "data/examples/rasa/demo-rasa.yml"
+        )
+
+        response_selector = create_response_selector(config_params)
+        response_selector.train(training_data=training_data)
+
+        if should_finetune:
+            default_execution_context.is_finetuning = True
+
+        message = Message(data={TEXT: "hello"})
+        message = process_message(loaded_pipeline, message)
+
+        message2 = copy.deepcopy(message)
+
+        classified_message = response_selector.process([message])[0]
+
+        loaded_selector = load_response_selector(config_params)
+
+        classified_message2 = loaded_selector.process([message2])[0]
+
+        assert classified_message2.fingerprint() == classified_message.fingerprint()
+
+    return inner
+
+
+@pytest.mark.parametrize(
+    "config_params",
+    [
+        {EPOCHS: 1},
+        {EPOCHS: 1, MASKED_LM: True, TRANSFORMER_SIZE: 256, NUM_TRANSFORMER_LAYERS: 1,},
+    ],
+)
+def test_train_selector(
+    response_selector_training_data: TrainingData,
+    config_params: Dict[Text, Any],
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+    default_model_storage: ModelStorage,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
+):
+    pipeline = [
+        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": CountVectorsFeaturizerGraphComponent},
     ]
+    response_selector_training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, response_selector_training_data
+    )
+
+    response_selector = create_response_selector(config_params)
+    response_selector.train(training_data=response_selector_training_data)
+
+    message = Message(data={TEXT: "hello"})
+    message = process_message(loaded_pipeline, message)
+
+    classified_message = response_selector.process([message])[0]
+
+    assert classified_message is not None
     assert (
-        parsed.get("response_selector")
+        classified_message.get("response_selector").get("all_retrieval_intents")
+    ) == ["chitchat"]
+    assert (
+        classified_message.get("response_selector")
         .get("default")
         .get("response")
         .get("intent_response_key")
     ) is not None
     assert (
-        parsed.get("response_selector")
+        classified_message.get("response_selector")
         .get("default")
         .get("response")
         .get("utter_action")
     ) is not None
     assert (
-        parsed.get("response_selector").get("default").get("response").get("responses")
+        classified_message.get("response_selector")
+        .get("default")
+        .get("response")
+        .get("responses")
     ) is not None
 
-    ranking = parsed.get("response_selector").get("default").get("ranking")
+    ranking = classified_message.get("response_selector").get("default").get("ranking")
     assert ranking is not None
 
     for rank in ranking:
@@ -114,15 +215,13 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         assert rank.get("intent_response_key") is not None
 
 
-def test_preprocess_selector_multiple_retrieval_intents():
+def test_preprocess_selector_multiple_retrieval_intents(
+    response_selector_training_data: TrainingData,
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+):
 
-    # use some available data
-    training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.yml"
-    )
-    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.yml"
-    )
     training_data_extra_intent = TrainingData(
         [
             Message.build(
@@ -131,11 +230,9 @@ def test_preprocess_selector_multiple_retrieval_intents():
             Message.build(text="How can I get a new virtual env", intent="faq/q2"),
         ]
     )
-    training_data = training_data.merge(training_data_responses).merge(
-        training_data_extra_intent
-    )
+    training_data = response_selector_training_data.merge(training_data_extra_intent)
 
-    response_selector = ResponseSelector()
+    response_selector = create_response_selector({})
 
     response_selector.preprocess_train_data(training_data)
 
@@ -149,23 +246,20 @@ def test_preprocess_selector_multiple_retrieval_intents():
         [True, ["I am Mr. Bot", "It's sunny where I live"]],
     ],
 )
-def test_ground_truth_for_training(use_text_as_label, label_values):
-
-    # use data that include some responses
-    training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.yml"
+def test_ground_truth_for_training(
+    use_text_as_label,
+    label_values,
+    response_selector_training_data: TrainingData,
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+):
+    response_selector = create_response_selector(
+        {"use_text_as_label": use_text_as_label},
     )
-    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.yml"
-    )
-    training_data = training_data.merge(training_data_responses)
+    response_selector.preprocess_train_data(response_selector_training_data)
 
-    response_selector = ResponseSelector(
-        component_config={"use_text_as_label": use_text_as_label}
-    )
-    response_selector.preprocess_train_data(training_data)
-
-    assert response_selector.responses == training_data.responses
+    assert response_selector.responses == response_selector_training_data.responses
     assert (
         sorted(list(response_selector.index_label_id_mapping.values())) == label_values
     )
@@ -179,22 +273,17 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
     ],
 )
 def test_resolve_intent_response_key_from_label(
-    predicted_label, train_on_text, resolved_intent_response_key
+    predicted_label: Text,
+    train_on_text: bool,
+    resolved_intent_response_key: Text,
+    response_selector_training_data: TrainingData,
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
 ):
 
-    # use data that include some responses
-    training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.yml"
-    )
-    training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.yml"
-    )
-    training_data = training_data.merge(training_data_responses)
-
-    response_selector = ResponseSelector(
-        component_config={"use_text_as_label": train_on_text}
-    )
-    response_selector.preprocess_train_data(training_data)
+    response_selector = create_response_selector({"use_text_as_label": train_on_text},)
+    response_selector.preprocess_train_data(response_selector_training_data)
 
     label_intent_response_key = response_selector._resolve_intent_response_key(
         {"id": hash(predicted_label), "name": predicted_label}
@@ -204,178 +293,135 @@ def test_resolve_intent_response_key_from_label(
         response_selector.responses[
             util.intent_response_key_to_template_key(label_intent_response_key)
         ]
-        == training_data.responses[
+        == response_selector_training_data.responses[
             util.intent_response_key_to_template_key(resolved_intent_response_key)
         ]
     )
 
 
-async def test_train_model_checkpointing(
-    component_builder: ComponentBuilder, tmpdir: Path
+def test_train_model_checkpointing(
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+    default_model_storage: ModelStorage,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
 ):
-    from pathlib import Path
-
-    model_name = "rs-checkpointed-model"
-    best_model_file = Path(str(tmpdir), model_name)
-    assert not best_model_file.exists()
-
-    _config = RasaNLUModelConfig(
+    pipeline = [
+        {"component": WhitespaceTokenizerGraphComponent},
         {
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {
-                    "name": "CountVectorsFeaturizer",
-                    "analyzer": "char_wb",
-                    "min_ngram": 3,
-                    "max_ngram": 17,
-                    "max_features": 10,
-                    "min_df": 5,
-                },
-                {
-                    "name": "ResponseSelector",
-                    EPOCHS: 5,
-                    MODEL_CONFIDENCE: "linear_norm",
-                    CONSTRAIN_SIMILARITIES: True,
-                    CHECKPOINT_MODEL: True,
-                },
-            ],
-            "language": "en",
-        }
+            "component": CountVectorsFeaturizerGraphComponent,
+            "analyzer": "char_wb",
+            "min_ngram": 3,
+            "max_ngram": 17,
+            "max_features": 10,
+            "min_df": 5,
+        },
+    ]
+
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, "data/test_selectors"
     )
 
-    await rasa.nlu.train.train(
-        _config,
-        path=str(tmpdir),
-        data="data/test_selectors",
-        component_builder=component_builder,
-        fixed_model_name=model_name,
-    )
+    config_params = {
+        EPOCHS: 5,
+        MODEL_CONFIDENCE: "softmax",
+        CONSTRAIN_SIMILARITIES: True,
+        CHECKPOINT_MODEL: True,
+        EVAL_NUM_EPOCHS: 1,
+        EVAL_NUM_EXAMPLES: 10,
+    }
 
-    assert best_model_file.exists()
+    response_selector = create_response_selector(config_params)
+    assert response_selector.component_config[CHECKPOINT_MODEL]
 
-    """
-    Tricky to validate the *exact* number of files that should be there, however there
-    must be at least the following:
-        - metadata.json
-        - checkpoint
-        - component_1_CountVectorsFeaturizer (as per the pipeline above)
-        - component_2_ResponseSelector files (more than 1 file)
-    """
-    all_files = list(best_model_file.rglob("*.*"))
-    assert len(all_files) > 4
+    resource = response_selector.train(training_data=training_data)
 
-
-async def _train_persist_load_with_different_settings(
-    pipeline: List[Dict[Text, Any]],
-    component_builder: ComponentBuilder,
-    tmp_path: Path,
-    should_finetune: bool,
-):
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
-
-    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmp_path),
-        data="data/examples/rasa/demo-rasa.yml",
-        component_builder=component_builder,
-    )
-
-    assert trainer.pipeline
-    assert trained.pipeline
-
-    loaded = Interpreter.load(
-        persisted_path,
-        component_builder,
-        new_config=_config if should_finetune else None,
-    )
-
-    assert loaded.pipeline
-    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
+    with default_model_storage.read_from(resource) as model_dir:
+        checkpoint_dir = model_dir / "checkpoints"
+        assert checkpoint_dir.is_dir()
+        checkpoint_files = list(checkpoint_dir.rglob("*.*"))
+        """
+        there should be min 2 `tf_model` files in the `checkpoints` directory:
+        - tf_model.data
+        - tf_model.index
+        """
+        assert len(checkpoint_files) >= 2
 
 
 @pytest.mark.skip_on_windows
-async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: Path):
+def test_train_persist_load(
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    default_execution_context: ExecutionContext,
+    train_persist_load_with_different_settings,
+):
+
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "CountVectorsFeaturizer"},
-        {"name": "ResponseSelector", EPOCHS: 1},
+        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": CountVectorsFeaturizerGraphComponent},
     ]
-    await _train_persist_load_with_different_settings(
-        pipeline, component_builder, tmpdir, False
+    config_params = {EPOCHS: 1}
+
+    train_persist_load_with_different_settings(
+        pipeline, config_params, False,
     )
-    await _train_persist_load_with_different_settings(
-        pipeline, component_builder, tmpdir, True
+
+    train_persist_load_with_different_settings(
+        pipeline, config_params, True,
     )
 
 
 async def test_process_gives_diagnostic_data(
-    response_selector_interpreter: Interpreter,
+    default_execution_context: ExecutionContext,
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
     """Tests if processing a message returns attention weights as numpy array."""
-    interpreter = response_selector_interpreter
+    pipeline = [
+        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": CountVectorsFeaturizerGraphComponent},
+    ]
+    config_params = {EPOCHS: 1}
+
+    importer = RasaFileImporter(
+        config_file="data/test_response_selector_bot/config.yml",
+        domain_path="data/test_response_selector_bot/domain.yml",
+        training_data_paths=[
+            "data/test_response_selector_bot/data/rules.yml",
+            "data/test_response_selector_bot/data/stories.yml",
+            "data/test_response_selector_bot/data/nlu.yml",
+        ],
+    )
+    training_data = importer.get_nlu_data()
+
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, training_data)
+
+    default_execution_context.should_add_diagnostic_data = True
+
+    response_selector = create_response_selector(config_params)
+    response_selector.train(training_data=training_data)
 
     message = Message(data={TEXT: "hello"})
-    for component in interpreter.pipeline:
-        component.process(message)
+    message = process_message(loaded_pipeline, message)
 
-    diagnostic_data = message.get(DIAGNOSTIC_DATA)
+    classified_message = response_selector.process([message])[0]
+    diagnostic_data = classified_message.get(DIAGNOSTIC_DATA)
 
-    # The last component is ResponseSelector, which should add diagnostic data
-    name = f"component_{len(interpreter.pipeline) - 1}_ResponseSelector"
     assert isinstance(diagnostic_data, dict)
-    assert name in diagnostic_data
-    assert "text_transformed" in diagnostic_data[name]
-    assert isinstance(diagnostic_data[name].get("text_transformed"), np.ndarray)
-    # The `attention_weights` key should exist, regardless of there being a transformer
-    assert "attention_weights" in diagnostic_data[name]
-    # By default, ResponseSelector has `number_of_transformer_layers = 0`
-    # in which case the attention weights should be None.
-    assert diagnostic_data[name].get("attention_weights") is None
-
-
-@pytest.mark.parametrize(
-    "classifier_params, output_length",
-    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 9)],
-)
-async def test_cross_entropy_with_linear_norm(
-    component_builder: ComponentBuilder,
-    tmp_path: Path,
-    classifier_params: Dict[Text, Any],
-    output_length: int,
-    monkeypatch: MonkeyPatch,
-):
-    pipeline = as_pipeline(
-        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
-    )
-    assert pipeline[2]["name"] == "ResponseSelector"
-    pipeline[2].update(classifier_params)
-
-    _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmp_path),
-        data="data/test_selectors",
-        component_builder=component_builder,
-    )
-    loaded = Interpreter.load(persisted_path, component_builder)
-
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
-    parse_data = loaded.parse("hello")
-    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
-
-    # check that the output was correctly truncated
-    assert len(response_ranking) == output_length
-
-    response_confidences = [response.get("confidence") for response in response_ranking]
-
-    # check whether normalization had the expected effect
-    output_sums_to_1 = sum(response_confidences) == pytest.approx(1)
-    assert output_sums_to_1
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
+    for _, values in diagnostic_data.items():
+        assert "text_transformed" in values
+        assert isinstance(values.get("text_transformed"), np.ndarray)
+        # The `attention_weights` key should exist, regardless of there
+        # being a transformer
+        assert "attention_weights" in values
+        # By default, ResponseSelector has `number_of_transformer_layers = 0`
+        # in which case the attention weights should be None.
+        assert values.get("attention_weights") is None
 
 
 @pytest.mark.parametrize(
@@ -383,30 +429,35 @@ async def test_cross_entropy_with_linear_norm(
 )
 async def test_margin_loss_is_not_normalized(
     monkeypatch: MonkeyPatch,
-    component_builder: ComponentBuilder,
-    tmp_path: Path,
     classifier_params: Dict[Text, int],
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
-    pipeline = as_pipeline(
-        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
+    pipeline = [
+        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": CountVectorsFeaturizerGraphComponent},
+    ]
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, "data/test_selectors"
     )
-    assert pipeline[2]["name"] == "ResponseSelector"
-    pipeline[2].update(classifier_params)
+
+    response_selector = create_response_selector(classifier_params)
+    response_selector.train(training_data=training_data)
+
+    message = Message(data={TEXT: "hello"})
+    message = process_message(loaded_pipeline, message)
 
     mock = Mock()
     monkeypatch.setattr(train_utils, "normalize", mock.normalize)
 
-    _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmp_path),
-        data="data/test_selectors",
-        component_builder=component_builder,
-    )
-    loaded = Interpreter.load(persisted_path, component_builder)
+    classified_message = response_selector.process([message])[0]
 
-    parse_data = loaded.parse("hello")
-    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
+    response_ranking = (
+        classified_message.get("response_selector").get("default").get("ranking")
+    )
 
     # check that the output was not normalized
     mock.normalize.assert_not_called()
@@ -416,37 +467,41 @@ async def test_margin_loss_is_not_normalized(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, data_path, output_length",
+    "classifier_params, output_length",
     [
-        ({RANDOM_SEED: 42, EPOCHS: 1}, "data/test_selectors", 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1}, "data/test_selectors", 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, "data/test_selectors", 2),
+        ({RANDOM_SEED: 42, EPOCHS: 1}, 9),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1}, 9),
+        ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, 2),
     ],
 )
 async def test_softmax_ranking(
-    component_builder: ComponentBuilder,
-    tmp_path: Path,
     classifier_params: Dict[Text, int],
-    data_path: Text,
     output_length: int,
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
-    pipeline = as_pipeline(
-        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
+    pipeline = [
+        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": CountVectorsFeaturizerGraphComponent},
+    ]
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, "data/test_selectors"
     )
-    assert pipeline[2]["name"] == "ResponseSelector"
-    pipeline[2].update(classifier_params)
 
-    _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmp_path),
-        data=data_path,
-        component_builder=component_builder,
+    response_selector = create_response_selector(classifier_params)
+    response_selector.train(training_data=training_data)
+
+    message = Message(data={TEXT: "hello"})
+    message = process_message(loaded_pipeline, message)
+
+    classified_message = response_selector.process([message])[0]
+
+    response_ranking = (
+        classified_message.get("response_selector").get("default").get("ranking")
     )
-    loaded = Interpreter.load(persisted_path, component_builder)
-
-    parse_data = loaded.parse("hello")
-    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
     # check that the output was correctly truncated after normalization
     assert len(response_ranking) == output_length
 
@@ -493,11 +548,15 @@ async def test_softmax_ranking(
     ],
 )
 def test_warning_when_transformer_and_hidden_layers_enabled(
-    config: Dict[Text, Union[int, Dict[Text, List[int]]]], should_raise_warning: bool
+    config: Dict[Text, Union[int, Dict[Text, List[int]]]],
+    should_raise_warning: bool,
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
 ):
     """ResponseSelector recommends disabling hidden layers if transformer is enabled."""
     with pytest.warns(UserWarning) as records:
-        _ = ResponseSelector(component_config=config)
+        _ = create_response_selector(config)
     warning_str = "We recommend to disable the hidden layers when using a transformer"
 
     if should_raise_warning:
@@ -535,12 +594,16 @@ def test_warning_when_transformer_and_hidden_layers_enabled(
     ],
 )
 def test_sets_integer_transformer_size_when_needed(
-    config: Dict[Text, Optional[int]], should_set_default_transformer_size: bool,
+    config: Dict[Text, Optional[int]],
+    should_set_default_transformer_size: bool,
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
 ):
     """ResponseSelector ensures sensible transformer size when transformer enabled."""
     default_transformer_size = 256
     with pytest.warns(UserWarning) as records:
-        selector = ResponseSelector(component_config=config)
+        selector = create_response_selector(config)
 
     warning_str = f"positive size is required when using `{NUM_TRANSFORMER_LAYERS} > 0`"
 
@@ -561,7 +624,12 @@ def test_sets_integer_transformer_size_when_needed(
 
 @pytest.mark.timeout(120)
 async def test_adjusting_layers_incremental_training(
-    component_builder: ComponentBuilder, tmpdir: Path
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
     """Tests adjusting sparse layers of `ResponseSelector` to increased sparse
        feature sizes during incremental training.
@@ -574,37 +642,38 @@ async def test_adjusting_layers_incremental_training(
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": LexicalSyntacticFeaturizerGraphComponent},
+        {"component": RegexFeaturizerGraphComponent},
+        {"component": CountVectorsFeaturizerGraphComponent},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizerGraphComponent,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
         },
-        {"name": "ResponseSelector", EPOCHS: 1},
     ]
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, iter1_data_path)
+    response_selector = create_response_selector({EPOCHS: 1})
+    response_selector.train(training_data=training_data)
 
-    (_, trained, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmpdir),
-        data=iter1_data_path,
-        component_builder=component_builder,
+    old_data_signature = response_selector.model.data_signature
+    old_predict_data_signature = response_selector.model.predict_data_signature
+
+    message = Message(data={TEXT: "Rasa is great!"})
+    message = process_message(loaded_pipeline, message)
+
+    message2 = copy.deepcopy(message)
+
+    classified_message = response_selector.process([message])[0]
+
+    old_sparse_feature_sizes = classified_message.get_sparse_feature_sizes(
+        attribute=TEXT
     )
-    assert trained.pipeline
-    old_data_signature = trained.pipeline[-1].model.data_signature
-    old_predict_data_signature = trained.pipeline[-1].model.predict_data_signature
-    message = Message.build(text="Rasa is great!")
-    trained.featurize_message(message)
-    old_sparse_feature_sizes = message.get_sparse_feature_sizes(attribute=TEXT)
-    initial_rs_layers = (
-        trained.pipeline[-1]
-        .model._tf_layers["sequence_layer.text"]
-        ._tf_layers["feature_combining"]
-    )
+
+    initial_rs_layers = response_selector.model._tf_layers[
+        "sequence_layer.text"
+    ]._tf_layers["feature_combining"]
     initial_rs_sequence_layer = initial_rs_layers._tf_layers[
         "sparse_dense.sequence"
     ]._tf_layers["sparse_to_dense"]
@@ -621,26 +690,27 @@ async def test_adjusting_layers_incremental_training(
         old_sparse_feature_sizes[FEATURE_TYPE_SENTENCE]
     )
 
-    loaded = Interpreter.load(persisted_path, component_builder, new_config=_config,)
-    assert loaded.pipeline
-    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
-    (_, trained, _) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmpdir),
-        data=iter2_data_path,
-        component_builder=component_builder,
-        model_to_finetune=loaded,
-    )
-    assert trained.pipeline
-    message = Message.build(text="Rasa is great!")
-    trained.featurize_message(message)
-    new_sparse_feature_sizes = message.get_sparse_feature_sizes(attribute=TEXT)
+    loaded_selector = load_response_selector({EPOCHS: 1})
 
-    final_rs_layers = (
-        trained.pipeline[-1]
-        .model._tf_layers["sequence_layer.text"]
-        ._tf_layers["feature_combining"]
+    classified_message2 = loaded_selector.process([message2])[0]
+
+    assert classified_message2.fingerprint() == classified_message.fingerprint()
+
+    training_data2, loaded_pipeline2 = train_and_preprocess(pipeline, iter2_data_path)
+
+    response_selector.train(training_data=training_data2)
+
+    new_message = Message.build(text="Rasa is great!")
+    new_message = process_message(loaded_pipeline2, new_message)
+
+    classified_new_message = response_selector.process([new_message])[0]
+    new_sparse_feature_sizes = classified_new_message.get_sparse_feature_sizes(
+        attribute=TEXT
     )
+
+    final_rs_layers = response_selector.model._tf_layers[
+        "sequence_layer.text"
+    ]._tf_layers["feature_combining"]
     final_rs_sequence_layer = final_rs_layers._tf_layers[
         "sparse_dense.sequence"
     ]._tf_layers["sparse_to_dense"]
@@ -657,8 +727,8 @@ async def test_adjusting_layers_incremental_training(
         new_sparse_feature_sizes[FEATURE_TYPE_SENTENCE]
     )
     # check if the data signatures were correctly updated
-    new_data_signature = trained.pipeline[-1].model.data_signature
-    new_predict_data_signature = trained.pipeline[-1].model.predict_data_signature
+    new_data_signature = response_selector.model.data_signature
+    new_predict_data_signature = response_selector.model.predict_data_signature
     iter2_data = load_data(iter2_data_path)
     expected_sequence_lengths = len(
         [
@@ -735,48 +805,54 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     iter1_path: Text,
     iter2_path: Text,
     should_raise_exception: bool,
-    component_builder: ComponentBuilder,
-    tmpdir: Path,
+    create_response_selector: Callable[
+        [Dict[Text, Any]], ResponseSelectorGraphComponent
+    ],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    default_execution_context: ExecutionContext,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": LexicalSyntacticFeaturizerGraphComponent},
+        {"component": RegexFeaturizerGraphComponent},
+        {"component": CountVectorsFeaturizerGraphComponent},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizerGraphComponent,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
         },
-        {"name": "ResponseSelector", EPOCHS: 1},
     ]
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, iter1_path)
 
-    (_, trained, persisted_path) = await rasa.nlu.train.train(
-        _config, path=str(tmpdir), data=iter1_path, component_builder=component_builder,
-    )
-    assert trained.pipeline
+    response_selector = create_response_selector({EPOCHS: 1})
+    response_selector.train(training_data=training_data)
 
-    loaded = Interpreter.load(persisted_path, component_builder, new_config=_config,)
-    assert loaded.pipeline
-    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
+    message = Message(data={TEXT: "Rasa is great!"})
+    message = process_message(loaded_pipeline, message)
+
+    message2 = copy.deepcopy(message)
+
+    classified_message = response_selector.process([message])[0]
+
+    default_execution_context.is_finetuning = True
+
+    loaded_selector = load_response_selector({EPOCHS: 1})
+
+    classified_message2 = loaded_selector.process([message2])[0]
+
+    assert classified_message2.fingerprint() == classified_message.fingerprint()
+
     if should_raise_exception:
         with pytest.raises(Exception) as exec_info:
-            (_, trained, _) = await rasa.nlu.train.train(
-                _config,
-                path=str(tmpdir),
-                data=iter2_path,
-                component_builder=component_builder,
-                model_to_finetune=loaded,
+            training_data2, loaded_pipeline2 = train_and_preprocess(
+                pipeline, iter2_path
             )
+            loaded_selector.train(training_data=training_data2)
         assert "Sparse feature sizes have decreased" in str(exec_info.value)
     else:
-        (_, trained, _) = await rasa.nlu.train.train(
-            _config,
-            path=str(tmpdir),
-            data=iter2_path,
-            component_builder=component_builder,
-            model_to_finetune=loaded,
-        )
-        assert trained.pipeline
+        training_data2, loaded_pipeline2 = train_and_preprocess(pipeline, iter2_path)
+        loaded_selector.train(training_data=training_data2)
+        assert loaded_selector.model

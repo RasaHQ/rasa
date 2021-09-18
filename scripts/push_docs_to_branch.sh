@@ -62,7 +62,8 @@ else
     echo "Updating the docs..."
     # remove everything in the previous docs/ folder, except versioned_docs/*, versioned_sidebars/*
     # and versions.js files.
-    cd $TMP_DOCS_FOLDER/docs/ && find . ! -path . ! -regex '.*version.*' -exec rm -rf {} + && cd - || exit 1
+    # skip node_modules/ because `yarn install` has run
+    cd $TMP_DOCS_FOLDER/docs/ && find  . ! -path . ! -regex '.*\(version\|node_modules\).*' -exec rm -rf {} + && cd - || exit 1
     # update the docs/ folder with the latest version of the docs
     cp -R `ls -A | grep -v "^\.git$"` $TMP_DOCS_FOLDER/
 
