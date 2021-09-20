@@ -14,4 +14,4 @@ pipeline:
 policies:
 - name: TEDPolicy
   random_seed: 42
-  epochs: 4
+  epochs: 5
