@@ -153,7 +153,7 @@ async def trained_formbot(trained_async: Callable) -> Text:
 async def form_bot_agent(trained_formbot: Text) -> Agent:
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
 
-    return Agent.load_local_model(trained_formbot, action_endpoint=endpoint)
+    return Agent.load(trained_formbot, action_endpoint=endpoint)
 
 
 @pytest.fixture

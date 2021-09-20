@@ -729,7 +729,9 @@ def default_execution_context() -> ExecutionContext:
 
 
 @pytest.fixture(autouse=True)
-def disable_cache(monkeypatch: MonkeyPatch, tmp_path_factory: TempdirFactory) -> Path:
+def use_temp_dir_for_cache(
+    monkeypatch: MonkeyPatch, tmp_path_factory: TempdirFactory
+) -> Path:
     cache_dir = tmp_path_factory.mktemp(uuid.uuid4().hex)
     monkeypatch.setattr(
         LocalTrainingCache,
