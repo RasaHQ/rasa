@@ -43,6 +43,40 @@ mapping:
   slots:
     type: "map"
     allowempty: True
+    mapping:
+      regex;([A-Za-z]+):
+        type: "map"
+        mapping:
+          influence_conversation:
+            type: "bool"
+            required: False
+          type:
+            type: "any"
+            required: True
+          values:
+            type: "seq"
+            sequence:
+              - type: "any"
+            required: False
+          auto_fill:
+            type: "bool"
+            required: False
+          min_value:
+            type: "number"
+            required: False
+          max_value:
+            type: "number"
+            required: False
+          initial_value:
+            type: "any"
+            required: False
+          mappings:
+           type: "seq"
+           required: True
+           allowempty: False
+           sequence:
+              - type: "map"
+                allowempty: True
   forms:
     type: "map"
     required: False
