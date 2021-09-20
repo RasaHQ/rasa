@@ -1,7 +1,7 @@
 from typing import Optional, Text, Tuple, Union
 import tensorflow as tf
-from tensorflow.python.keras.utils import control_flow_util
-from tensorflow.python.keras import backend as K
+from keras.utils import control_flow_util
+from tensorflow.keras import backend as K
 import numpy as np
 from rasa.utils.tensorflow.layers import RandomlyConnectedDense
 

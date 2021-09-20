@@ -13,16 +13,13 @@ from typing import (
 import numpy as np
 import tensorflow as tf
 
-from tensorflow.python.keras.callbacks import Callback, History
-from tensorflow.python.keras.engine import training
-from tensorflow.python.keras.engine import training_utils
-from tensorflow.python.keras.engine import data_adapter
-from tensorflow.python.keras.engine.training import _disallow_inside_tf_function
-from tensorflow.python.keras.utils import version_utils
+from keras.callbacks import Callback, History
+from keras.engine import training, training_utils, data_adapter
+from keras.engine.training import _disallow_inside_tf_function
 from tensorflow.python.eager import context
-from tensorflow.python.keras.engine.data_adapter import DataHandler
-from tensorflow.python.keras.engine import base_layer
-from tensorflow.python.keras.utils import tf_utils
+from keras.engine.data_adapter import DataHandler
+from keras.engine import base_layer
+from keras.utils import tf_utils, version_utils
 from tensorflow.python.profiler import trace
 
 

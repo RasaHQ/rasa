@@ -3,8 +3,8 @@ from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
 import rasa.utils.tensorflow.crf
-from tensorflow.python.keras.utils import control_flow_util
-from tensorflow.python.keras import backend as K
+from keras.utils import control_flow_util
+from tensorflow.keras import backend as K
 from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     MARGIN,
