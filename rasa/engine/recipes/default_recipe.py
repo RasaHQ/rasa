@@ -113,6 +113,7 @@ class DefaultV1Recipe(Recipe):
         """Creates recipe."""
         self._use_core = True
         self._use_nlu = True
+        self._use_end_to_end = True
 
         from rasa.nlu.classifiers.diet_classifier import (  # noqa: F401
             DIETClassifierGraphComponent,
@@ -262,6 +263,11 @@ class DefaultV1Recipe(Recipe):
         )
         self._use_nlu = (
             bool(config.get("pipeline")) and not training_type == TrainingType.CORE
+        )
+        self._use_end_to_end = (
+            self._use_nlu
+            and self._use_core
+            and training_type == TrainingType.END_TO_END
         )
 
         train_nodes, preprocessors = self._create_train_nodes(config, cli_parameters)
@@ -562,7 +568,7 @@ class DefaultV1Recipe(Recipe):
                 cli_parameters, component.clazz
             )
 
-            requires_end_to_end_data = self._use_nlu and (
+            requires_end_to_end_data = self._use_end_to_end and (
                 component.type == self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT
             )
             policy_with_end_to_end_support_used = (
@@ -586,7 +592,7 @@ class DefaultV1Recipe(Recipe):
                 config={**item, **extra_config_from_cli},
             )
 
-        if policy_with_end_to_end_support_used:
+        if self._use_end_to_end and policy_with_end_to_end_support_used:
             self._add_end_to_end_features_for_training(preprocessors, train_nodes)
 
     def _add_end_to_end_features_for_training(

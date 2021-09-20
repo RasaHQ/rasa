@@ -432,15 +432,15 @@ def trained_e2e_model_cache(
 @pytest.fixture(scope="session")
 async def trained_e2e_model(
     trained_async: Callable,
-    domain_path: Text,
-    stack_config_path: Text,
+    moodbot_domain_path: Text,
+    e2e_bot_config_file: Path,
     nlu_data_path: Text,
     e2e_stories_path: Text,
     _trained_e2e_model_cache: Path,
 ) -> Text:
     return await trained_async(
-        domain=domain_path,
-        config=stack_config_path,
+        domain=moodbot_domain_path,
+        config=str(e2e_bot_config_file),
         training_files=[nlu_data_path, e2e_stories_path],
         cache_dir=_trained_e2e_model_cache,
     )

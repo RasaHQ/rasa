@@ -1,10 +1,9 @@
-import datetime
 import logging
 import secrets
 import tempfile
 import os
 from pathlib import Path
-from typing import Text, Dict, Any
+from typing import Text, Any
 from unittest.mock import Mock
 
 import pytest
@@ -14,24 +13,23 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa
 
-from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.ted_policy import TEDPolicy, TEDPolicyGraphComponent
 import rasa.model
 import rasa.model_training
 import rasa.core
 import rasa.core.train
 import rasa.nlu
-from rasa.engine.caching import CACHE_LOCATION_ENV
-from rasa.engine.storage.storage import ModelMetadata
 from rasa.engine.training.graph_trainer import GraphTrainer
 
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.diet_classifier import (
+    DIETClassifier,
+    DIETClassifierGraphComponent,
+)
 import rasa.shared.importers.autoconfig as autoconfig
 import rasa.shared.utils.io
 from rasa.core.agent import Agent
-from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
 from rasa.utils.tensorflow.constants import EPOCHS
-from tests.conftest import AsyncMock
 
 
 def count_temp_rasa_files(directory: Text) -> int:
@@ -276,23 +274,20 @@ def new_model_path_in_same_dir(old_model_path: Text) -> Text:
 class TestE2e:
     def test_e2e_gives_experimental_warning(
         self,
-        monkeypatch: MonkeyPatch,
-        trained_e2e_model: Text,
-        domain_path: Text,
-        stack_config_path: Text,
+        moodbot_domain_path: Path,
+        e2e_bot_config_file: Path,
         e2e_stories_path: Text,
         nlu_data_path: Text,
         caplog: LogCaptureFixture,
+        tmp_path: Path,
     ):
-        # skip actual core training
-        monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, Mock())
-
         with caplog.at_level(logging.WARNING):
             rasa.train(
-                domain_path,
-                stack_config_path,
+                str(moodbot_domain_path),
+                str(e2e_bot_config_file),
                 [e2e_stories_path, nlu_data_path],
-                output=new_model_path_in_same_dir(trained_e2e_model),
+                output=str(tmp_path),
+                dry_run=True,
             )
 
         assert any(
@@ -304,17 +299,16 @@ class TestE2e:
 
     def test_models_not_retrained_if_no_new_data(
         self,
-        monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        domain_path: Text,
-        stack_config_path: Text,
+        moodbot_domain_path: Path,
+        e2e_bot_config_file: Path,
         e2e_stories_path: Text,
         nlu_data_path: Text,
         trained_e2e_model_cache: Path,
     ):
         result = rasa.train(
-            domain_path,
-            stack_config_path,
+            str(moodbot_domain_path),
+            str(e2e_bot_config_file),
             [e2e_stories_path, nlu_data_path],
             output=new_model_path_in_same_dir(trained_e2e_model),
             dry_run=True,
@@ -324,10 +318,9 @@ class TestE2e:
 
     def test_retrains_nlu_and_core_if_new_e2e_example(
         self,
-        monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        domain_path: Text,
-        stack_config_path: Text,
+        moodbot_domain_path: Path,
+        e2e_bot_config_file: Path,
         e2e_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
@@ -340,8 +333,8 @@ class TestE2e:
         rasa.shared.utils.io.write_yaml(stories_yaml, new_stories_file)
 
         result = rasa.train(
-            domain_path,
-            stack_config_path,
+            str(moodbot_domain_path),
+            str(e2e_bot_config_file),
             [new_stories_file, nlu_data_path],
             output=new_model_path_in_same_dir(trained_e2e_model),
             dry_run=True,
@@ -349,12 +342,18 @@ class TestE2e:
 
         assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
 
+        fingerprints = result.dry_run_results
+        assert not fingerprints["train_CountVectorsFeaturizer3"].is_hit
+        assert not fingerprints["train_DIETClassifier5"].is_hit
+        assert not fingerprints["end_to_end_features_provider"].is_hit
+        assert not fingerprints["train_TEDPolicy0"].is_hit
+        assert not fingerprints["train_RulePolicy1"].is_hit
+
     def test_retrains_only_core_if_new_e2e_example_seen_before(
         self,
-        monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        domain_path: Text,
-        stack_config_path: Text,
+        moodbot_domain_path: Path,
+        e2e_bot_config_file: Path,
         e2e_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
@@ -367,8 +366,8 @@ class TestE2e:
         rasa.shared.utils.io.write_yaml(stories_yaml, new_stories_file)
 
         result = rasa.train(
-            domain_path,
-            stack_config_path,
+            str(moodbot_domain_path),
+            str(e2e_bot_config_file),
             [new_stories_file, nlu_data_path],
             output=new_model_path_in_same_dir(trained_e2e_model),
             dry_run=True,
@@ -376,40 +375,53 @@ class TestE2e:
 
         assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
 
+        fingerprints = result.dry_run_results
+
+        assert fingerprints["train_CountVectorsFeaturizer3"].is_hit
+        assert fingerprints["train_DIETClassifier5"].is_hit
+        assert fingerprints["end_to_end_features_provider"].is_hit
+        assert not fingerprints["train_TEDPolicy0"].is_hit
+        assert not fingerprints["train_RulePolicy1"].is_hit
+
     def test_nlu_and_core_trained_if_no_nlu_data_but_e2e_stories(
         self,
-        monkeypatch: MonkeyPatch,
-        domain_path: Text,
-        stack_config_path: Text,
+        moodbot_domain_path: Path,
+        e2e_bot_config_file: Path,
         e2e_stories_path: Text,
         tmp_path: Path,
+        monkeypatch: MonkeyPatch,
     ):
-        mocked_nlu_training = mock_nlu_training(monkeypatch)
-        mocked_core_training = mock_core_training(monkeypatch)
+        train_mock = Mock()
+        monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, train_mock)
 
-        output = self.make_tmp_model_dir(tmp_path)
         rasa.train(
-            domain_path, stack_config_path, [e2e_stories_path], output=output,
+            str(moodbot_domain_path),
+            str(e2e_bot_config_file),
+            [e2e_stories_path],
+            output=str(tmp_path),
         )
 
-        mocked_core_training.assert_called_once()
-        mocked_nlu_training.assert_called_once()
+        args, _ = train_mock.call_args
 
-    @staticmethod
-    def make_tmp_model_dir(tmp_path: Path) -> Text:
-        (tmp_path / "models").mkdir()
-        output = str(tmp_path / "models")
-        return output
+        for schema in args[:2]:
+            assert any(
+                issubclass(node.uses, DIETClassifierGraphComponent)
+                for node in schema.nodes.values()
+            )
+            assert any(
+                issubclass(node.uses, TEDPolicyGraphComponent)
+                for node in schema.nodes.values()
+            )
 
     def test_new_nlu_data_retrains_core_if_there_are_e2e_stories(
         self,
-        monkeypatch: MonkeyPatch,
         trained_e2e_model: Text,
-        domain_path: Text,
-        stack_config_path: Text,
+        moodbot_domain_path: Path,
+        e2e_bot_config_file: Path,
         e2e_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
+        trained_e2e_model_cache: Path,
     ):
         nlu_yaml = rasa.shared.utils.io.read_yaml_file(nlu_data_path)
         nlu_yaml["nlu"][0]["examples"] += "- surprise!\n"
@@ -417,70 +429,75 @@ class TestE2e:
         new_nlu_file = tmp_path / "new_nlu.yml"
         rasa.shared.utils.io.write_yaml(nlu_yaml, new_nlu_file)
 
-        mocked_nlu_training = mock_nlu_training(monkeypatch)
-        mocked_core_training = mock_core_training(monkeypatch)
-
-        new_model_path = rasa.train(
-            domain_path,
-            stack_config_path,
+        result = rasa.train(
+            str(moodbot_domain_path),
+            str(e2e_bot_config_file),
             [e2e_stories_path, new_nlu_file],
             output=new_model_path_in_same_dir(trained_e2e_model),
-        ).model
-        os.remove(new_model_path)
+            dry_run=True,
+        )
 
-        mocked_core_training.assert_called_once()
-        mocked_nlu_training.assert_called_once()
+        assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
+
+        fingerprints = result.dry_run_results
+        assert not fingerprints["train_CountVectorsFeaturizer3"].is_hit
+        assert not fingerprints["train_DIETClassifier5"].is_hit
+        assert not fingerprints["end_to_end_features_provider"].is_hit
+        assert not fingerprints["train_TEDPolicy0"].is_hit
+        assert fingerprints["train_RulePolicy1"].is_hit
 
     def test_new_nlu_data_does_not_retrain_core_if_there_are_no_e2e_stories(
         self,
-        monkeypatch: MonkeyPatch,
-        trained_simple_rasa_model: Text,
-        domain_path: Text,
-        stack_config_path: Text,
+        moodbot_domain_path: Path,
+        e2e_bot_config_file: Path,
         simple_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
     ):
+        rasa.train(
+            str(moodbot_domain_path),
+            str(e2e_bot_config_file),
+            [simple_stories_path, nlu_data_path],
+            output=str(tmp_path),
+        )
+
         nlu_yaml = rasa.shared.utils.io.read_yaml_file(nlu_data_path)
         nlu_yaml["nlu"][0]["examples"] += "- surprise!\n"
 
         new_nlu_file = tmp_path / "new_nlu.yml"
         rasa.shared.utils.io.write_yaml(nlu_yaml, new_nlu_file)
 
-        mocked_nlu_training = mock_nlu_training(monkeypatch)
-        mocked_core_training = mock_core_training(monkeypatch)
-
-        new_model_path = rasa.train(
-            domain_path,
-            stack_config_path,
+        result = rasa.train(
+            str(moodbot_domain_path),
+            str(e2e_bot_config_file),
             [simple_stories_path, new_nlu_file],
-            output=new_model_path_in_same_dir(trained_simple_rasa_model),
-        ).model
-        os.remove(new_model_path)
+            output=str(tmp_path),
+            dry_run=True,
+        )
 
-        mocked_core_training.assert_not_called()
-        mocked_nlu_training.assert_called_once()
+        assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
+
+        fingerprints = result.dry_run_results
+
+        assert not fingerprints["train_CountVectorsFeaturizer3"].is_hit
+        assert not fingerprints["train_DIETClassifier5"].is_hit
+        assert "end_to_end_features_provider" not in fingerprints
+        assert fingerprints["train_TEDPolicy0"].is_hit
+        assert fingerprints["train_RulePolicy1"].is_hit
 
     def test_training_core_with_e2e_fails_gracefully(
         self,
         capsys: CaptureFixture,
-        monkeypatch: MonkeyPatch,
         tmp_path: Path,
         domain_path: Text,
         stack_config_path: Text,
         e2e_stories_path: Text,
     ):
-
-        mocked_nlu_training = mock_nlu_training(monkeypatch)
-        mocked_core_training = mock_core_training(monkeypatch)
-
-        output = self.make_tmp_model_dir(tmp_path)
         rasa.model_training.train_core(
-            domain_path, stack_config_path, e2e_stories_path, output=output,
+            domain_path, stack_config_path, e2e_stories_path, output=str(tmp_path),
         )
 
-        mocked_core_training.assert_not_called()
-        mocked_nlu_training.assert_not_called()
+        assert not list(tmp_path.glob("*"))
 
         captured = capsys.readouterr()
         assert (

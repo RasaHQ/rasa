@@ -289,11 +289,11 @@ class Features:
                 tuple(f.origin) if not isinstance(f.origin, Text) else (f.origin,)
                 for f in features_list
             )
-            if len(origins) > 1:
-                raise ValueError(
-                    f"Expected all Features to have the same origin "
-                    f"found the following origins: {origins}."
-                )
+            # if len(origins) > 1:
+            #     raise ValueError(
+            #         f"Expected all Features to have the same origin "
+            #         f"found the following origins: {origins}."
+            #     )
         # (2) attributes (is_sparse, type, attribute) must coincide
         # Note: we could also use `filter` for this check, but then the erorr msgs
         # aren't as nice.

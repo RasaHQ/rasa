@@ -32,6 +32,7 @@ class TrainingType(Enum):
     NLU = 1
     CORE = 2
     BOTH = 3
+    END_TO_END = 4
 
     @property
     def model_type(self) -> Text:

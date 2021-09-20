@@ -41,6 +41,7 @@ class TrainingResult(NamedTuple):
 
     model: Optional[Text] = None
     code: int = 0
+    dry_run_results: Optional[Dict[Text, Union[FingerprintStatus, Any]]] = None
 
 
 def _dry_run_result(
@@ -60,7 +61,9 @@ def _dry_run_result(
     """
     if force_full_training:
         rasa.shared.utils.cli.print_warning("The training was forced.")
-        return TrainingResult(code=CODE_FORCED_TRAINING)
+        return TrainingResult(
+            code=CODE_FORCED_TRAINING, dry_run_results=fingerprint_results
+        )
 
     training_required = any(
         isinstance(result, FingerprintStatus) and not result.is_hit
@@ -69,12 +72,14 @@ def _dry_run_result(
 
     if training_required:
         rasa.shared.utils.cli.print_warning("The model needs to be retrained.")
-        return TrainingResult(code=CODE_NEEDS_TO_BE_RETRAINED)
+        return TrainingResult(
+            code=CODE_NEEDS_TO_BE_RETRAINED, dry_run_results=fingerprint_results
+        )
 
     rasa.shared.utils.cli.print_success(
         "No training of components required (responses might need updating)."
     )
-    return TrainingResult()
+    return TrainingResult(dry_run_results=fingerprint_results)
 
 
 def train(
@@ -127,6 +132,7 @@ def train(
 
     if nlu_data.has_e2e_examples():
         rasa.shared.utils.common.mark_as_experimental_feature("end-to-end training")
+        training_type = TrainingType.END_TO_END
 
     if stories.is_empty() and nlu_data.contains_no_pure_nlu_data():
         rasa.shared.utils.cli.print_error(

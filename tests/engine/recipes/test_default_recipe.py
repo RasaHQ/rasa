@@ -36,6 +36,13 @@ def test_recipe_for_name():
         # The default config is the config which most users run
         (
             "rasa/shared/importers/default_config.yml",
+            "data/graph_schemas/default_config_e2e_train_schema.yml",
+            "data/graph_schemas/default_config_e2e_predict_schema.yml",
+            TrainingType.END_TO_END,
+        ),
+        # The default config without end to end
+        (
+            "rasa/shared/importers/default_config.yml",
             "data/graph_schemas/default_config_train_schema.yml",
             "data/graph_schemas/default_config_predict_schema.yml",
             TrainingType.BOTH,

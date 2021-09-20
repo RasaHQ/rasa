@@ -161,6 +161,90 @@ domain_provider:
   is_input: false
   resource:
     name: domain_provider
+tracker_to_message_converter:
+  needs:
+    tracker: nlu_prediction_to_history_adder
+  uses: rasa.core.featurizers.precomputation.CoreFeaturizationInputConverter
+  constructor_name: load
+  fn: convert_for_inference
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource: null
+e2e_run_WhitespaceTokenizer0:
+  needs:
+    messages: tracker_to_message_converter
+  uses: rasa.nlu.tokenizers.whitespace_tokenizer.WhitespaceTokenizerGraphComponent
+  constructor_name: load
+  fn: process
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource: null
+e2e_run_RegexFeaturizer1:
+  needs:
+    messages: e2e_run_WhitespaceTokenizer0
+  uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizerGraphComponent
+  constructor_name: load
+  fn: process
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource:
+    name: train_RegexFeaturizer1
+e2e_run_LexicalSyntacticFeaturizer2:
+  needs:
+    messages: e2e_run_RegexFeaturizer1
+  uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizerGraphComponent
+  constructor_name: load
+  fn: process
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource:
+    name: train_LexicalSyntacticFeaturizer2
+e2e_run_CountVectorsFeaturizer3:
+  needs:
+    messages: e2e_run_LexicalSyntacticFeaturizer2
+  uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizerGraphComponent
+  constructor_name: load
+  fn: process
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource:
+    name: train_CountVectorsFeaturizer3
+e2e_run_CountVectorsFeaturizer4:
+  needs:
+    messages: e2e_run_CountVectorsFeaturizer3
+  uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizerGraphComponent
+  constructor_name: load
+  fn: process
+  config:
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  eager: true
+  is_target: false
+  is_input: false
+  resource:
+    name: train_CountVectorsFeaturizer4
+end_to_end_features_provider:
+  needs:
+    messages: e2e_run_CountVectorsFeaturizer4
+  uses: rasa.core.featurizers.precomputation.CoreFeaturizationCollector
+  constructor_name: load
+  fn: collect
+  config: {}
+  eager: true
+  is_target: false
+  is_input: false
+  resource: null
 run_MemoizationPolicy0:
   needs:
     tracker: nlu_prediction_to_history_adder
@@ -193,6 +277,7 @@ run_UnexpecTEDIntentPolicy2:
   needs:
     tracker: nlu_prediction_to_history_adder
     domain: domain_provider
+    precomputations: end_to_end_features_provider
     rule_only_data: rule_only_data_provider
   uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicyGraphComponent
   constructor_name: load
@@ -209,6 +294,7 @@ run_TEDPolicy3:
   needs:
     tracker: nlu_prediction_to_history_adder
     domain: domain_provider
+    precomputations: end_to_end_features_provider
     rule_only_data: rule_only_data_provider
   uses: rasa.core.policies.ted_policy.TEDPolicyGraphComponent
   constructor_name: load

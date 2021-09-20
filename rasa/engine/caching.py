@@ -162,7 +162,7 @@ class LocalTrainingCache(TrainingCache):
 
         The `Cache` setting can be configured via environment variables.
         """
-        self._cache_location = self._get_cache_location()
+        self._cache_location = LocalTrainingCache._get_cache_location()
 
         self._max_cache_size = float(
             os.environ.get(CACHE_SIZE_ENV, DEFAULT_CACHE_SIZE_MB)
