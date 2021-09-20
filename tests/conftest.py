@@ -12,7 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.python import Function
 from spacy import Language
 
-from rasa.engine.caching import CACHE_LOCATION_ENV, LocalTrainingCache
+from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
@@ -731,6 +731,10 @@ def default_execution_context() -> ExecutionContext:
 @pytest.fixture(autouse=True)
 def disable_cache(monkeypatch: MonkeyPatch, tmp_path_factory: TempdirFactory) -> Path:
     cache_dir = tmp_path_factory.mktemp(uuid.uuid4().hex)
-    monkeypatch.setenv(CACHE_LOCATION_ENV, str(cache_dir))
+    monkeypatch.setattr(
+        LocalTrainingCache,
+        LocalTrainingCache._get_cache_location.__name__,
+        Mock(return_value=cache_dir),
+    )
 
     return cache_dir
