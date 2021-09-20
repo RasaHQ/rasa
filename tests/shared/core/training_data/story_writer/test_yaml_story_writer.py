@@ -33,14 +33,14 @@ from rasa.shared.core.training_data.structures import STORY_START
     ],
 )
 async def test_simple_story(tmpdir: Path, domain: Domain, input_yaml_file: Text):
-    original_yaml_reader = YAMLStoryReader(domain, None, False)
+    original_yaml_reader = YAMLStoryReader(domain, None)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
     target_story_filename = tmpdir / "test.yml"
     writer = YAMLStoryWriter()
     writer.dump(target_story_filename, original_yaml_story_steps)
 
-    processed_yaml_reader = YAMLStoryReader(domain, None, False)
+    processed_yaml_reader = YAMLStoryReader(domain, None)
     processed_yaml_story_steps = processed_yaml_reader.read_from_file(
         target_story_filename
     )
@@ -55,7 +55,7 @@ async def test_simple_story(tmpdir: Path, domain: Domain, input_yaml_file: Text)
 async def test_story_start_checkpoint_is_skipped(domain: Domain):
     input_yaml_file = "data/test_yaml_stories/stories.yml"
 
-    original_yaml_reader = YAMLStoryReader(domain, None, False)
+    original_yaml_reader = YAMLStoryReader(domain, None)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
     yaml_text = YAMLStoryWriter().dumps(original_yaml_story_steps)
@@ -64,7 +64,7 @@ async def test_story_start_checkpoint_is_skipped(domain: Domain):
 
 
 async def test_forms_are_converted(domain: Domain):
-    original_yaml_reader = YAMLStoryReader(domain, None, False)
+    original_yaml_reader = YAMLStoryReader(domain, None)
     original_yaml_story_steps = original_yaml_reader.read_from_file(
         "data/test_yaml_stories/stories_form.yml"
     )
@@ -156,7 +156,7 @@ def test_yaml_writer_avoids_dumping_not_existing_user_messages():
     "input_yaml_file", ["data/test_yaml_stories/rules_with_stories_sorted.yaml"]
 )
 def test_yaml_writer_dumps_rules(input_yaml_file: Text, tmpdir: Path, domain: Domain):
-    original_yaml_reader = YAMLStoryReader(domain, None, False)
+    original_yaml_reader = YAMLStoryReader(domain, None)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
     dump = YAMLStoryWriter().dumps(original_yaml_story_steps)
@@ -182,7 +182,7 @@ async def test_action_start_action_listen_are_not_dumped():
 
 
 def test_yaml_writer_stories_to_yaml(domain: Domain):
-    reader = YAMLStoryReader(domain, None, False)
+    reader = YAMLStoryReader(domain, None)
     writer = YAMLStoryWriter()
     steps = reader.read_from_file(
         "data/test_yaml_stories/simple_story_with_only_end.yml"
