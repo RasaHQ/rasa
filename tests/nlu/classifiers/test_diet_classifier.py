@@ -497,7 +497,12 @@ async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+                {
+                    "name": "DIETClassifier",
+                    ENTITY_RECOGNITION: False,
+                    RANDOM_SEED: 1,
+                    EPOCHS: 1,
+                },
             ],
             "language": "en",
         }
