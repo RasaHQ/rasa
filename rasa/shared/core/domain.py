@@ -30,6 +30,7 @@ from rasa.shared.constants import (
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
+    DOCS_URL_SLOTS,
 )
 import rasa.shared.core.constants
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
@@ -1799,7 +1800,7 @@ class SlotMapping(Enum):
             raise InvalidDomain(
                 f"Please make sure that the slot mappings for slot '{slot_name}' in "
                 f"your domain are valid dictionaries. Please see "
-                f"the documentation for more information."
+                f"{DOCS_URL_SLOTS} for more information."
             )
 
         validations = {
@@ -1817,7 +1818,7 @@ class SlotMapping(Enum):
             raise InvalidDomain(
                 f"Your domain uses an invalid slot mapping of type "
                 f"'{mapping_type}' for slot '{slot_name}'. Please see "
-                f"the documentation for more information."
+                f"{DOCS_URL_SLOTS} for more information."
             )
 
         for required_key in required_keys:
@@ -1825,8 +1826,8 @@ class SlotMapping(Enum):
                 raise InvalidDomain(
                     f"You need to specify a value for the key "
                     f"'{required_key}' in the slot mapping of type '{mapping_type}' "
-                    f"for slot '{slot_name}'. Please see the "
-                    f"documentation for more information."
+                    f"for slot '{slot_name}'. Please see "
+                    f"{DOCS_URL_SLOTS} for more information."
                 )
 
     @staticmethod
@@ -1848,8 +1849,9 @@ class SlotMapping(Enum):
                 IGNORED_INTENTS, []
             )
             if not isinstance(form_ignored_intents, list):
-                form_ignored_intents = [form_ignored_intents]
-            ignored_intents.extend(form_ignored_intents)
+                ignored_intents = [form_ignored_intents]
+            else:
+                ignored_intents = form_ignored_intents
 
         return ignored_intents
 
