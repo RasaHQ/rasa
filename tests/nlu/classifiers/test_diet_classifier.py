@@ -402,35 +402,43 @@ def test_preprocess_train_data_and_create_data_for_prediction(
         expected_text_sub_keys = {MASK, SENTENCE, SEQUENCE, SEQUENCE_LENGTH}
         assert set(model_data.get(TEXT).keys()) == expected_text_sub_keys
         text_features = model_data.get(TEXT)
-        for key in expected_text_sub_keys:
+        # - every subkey contains a list with one feature array
+        for key in text_features:
             assert len(text_features.get(key)) == 1
             assert isinstance(text_features.get(key)[0], FeatureArray)
-        assert text_features.get(MASK)[0].shape == (len(messages), 1, 1)
+        # - subkey: mask (this is a "turn" mask, hence all masks are just "[1]")
+        mask = np.array(text_features.get(MASK)[0])
+        assert mask.shape == (len(messages), 1, 1)
+        assert np.all(mask == 1)
+        # - subkey: sequence-length
+        lengths = np.array(text_features.get(SEQUENCE_LENGTH)[0])
+        assert lengths.shape == (len(messages),)
+        assert np.all(lengths == test_case.seq_len)
+        # - subkey: sequence / sentence
         expected = expected_outputs[TEXT]
-        for feature_type in expected:
-            feature_array = text_features.get(feature_type)[0]
-            # feature arrays cannot be compared with np arrays without
-            # the `np.array()`
-            assert np.all(np.array(feature_array) == expected[feature_type])
+        for feature_type in [SENTENCE, SEQUENCE]:
+            feature_array = np.array(text_features.get(feature_type)[0])
+            assert np.all(feature_array == expected[feature_type])
 
         # TODO: check sparse feature sizes
 
-        # Check subkeys for LABEL
         if training and intent_classification:
-
+            # Check subkeys for LABEL
             expected_label_subkeys = {LABEL_SUB_KEY, MASK, SENTENCE}
             if input_contains_features_for_intent:
                 expected_label_subkeys.update({SEQUENCE, SEQUENCE_LENGTH})
             label_features = model_data.get(LABEL_KEY)
             assert set(label_features.keys()) == expected_label_subkeys
-            for key in expected_label_subkeys:
+            # - every subkey is a list containing one feature array
+            for key in label_features:
                 assert len(label_features.get(key)) == 1
                 assert isinstance(label_features.get(key)[0], FeatureArray)
-            # id mapping maps intent1 to 0 and intent2 so we expect:
+            # - subkey: label_sub_key / id
+            #   The label id mapping should map intent1 to 0 and intent2 to 1.
             assert np.all(
                 np.array(label_features.get(LABEL_SUB_KEY)[0].flatten()) == [0, 1, 1]
             )
-
+            # - subkey: sentence
             if not input_contains_features_for_intent:
                 # we create features for LABEL on the fly if and only if no
                 # features for labels are contained in the given messages
@@ -447,22 +455,37 @@ def test_preprocess_train_data_and_create_data_for_prediction(
                 for feature_type in expected:
                     feature_array = label_features.get(feature_type)[0]
                     assert np.all(np.array(feature_array) == expected[feature_type])
+            # - subkey: mask  (this is a "turn" mask, hence all masks are just "[1]")
+            assert np.all(np.array(label_features.get(MASK)[0]) == [1, 1, 1])
+
+        else:
+            assert not model_data.get(LABEL_KEY)
 
         if training and entity_recognition:
-            entity_features = model_data.get(ENTITIES)[ENTITY_ATTRIBUTE_TYPE][0]
-
-            assert len(entity_features) == len(messages)
-
+            # Check sub-keys for entities
+            expected_entity_sub_keys = {ENTITY_ATTRIBUTE_TYPE, MASK}
+            entity_features = model_data.get(ENTITIES)
+            assert entity_features
+            assert set(entity_features.keys()) == expected_entity_sub_keys
+            # - every subkey is a list containing one feature array
+            for key in entity_features:
+                assert len(entity_features.get(key)) == 1
+                assert isinstance(entity_features.get(key)[0], FeatureArray)
+            # - subkey: mask  (this is a "turn" mask, hence all masks are just "[1]")
+            assert np.all(np.array(entity_features.get(MASK)[0]) == [1, 1, 1])
+            # - subkey: entities
+            entity_sub_features = entity_features[ENTITY_ATTRIBUTE_TYPE][0]
+            assert len(entity_sub_features) == len(messages)
             # message 0: no entity
-            assert np.all(np.array(entity_features[0]).flatten() == [0])
+            assert np.all(np.array(entity_sub_features[0]).flatten() == [0])
             # message 1: no entity
-            assert np.all(np.array(entity_features[1]).flatten() == [0])
+            assert np.all(np.array(entity_sub_features[1]).flatten() == [0])
             # message 2: entity1, entity2
-            message2 = messages_for_training[-1]
             if not bilou_tagging:
                 expected_entity_features = [0, 1, 1, 1, 0, 0, 2]
                 # where 0 = no entity, 1 = city, 2 = what
             else:
+                message2 = messages_for_training[-1]
                 assert message2.get(BILOU_ENTITIES) == [
                     "O",
                     "B-city",
@@ -476,8 +499,10 @@ def test_preprocess_train_data_and_create_data_for_prediction(
                 # where 0 = no entity, 1/2/3/4 = B/I/L/U-city, and
                 # 5/6/7/8 = B/I/L/U-what
             assert np.all(
-                np.array(entity_features[2]).flatten() == expected_entity_features
+                np.array(entity_sub_features[2]).flatten() == expected_entity_features
             )
+        else:
+            assert not model_data.get(ENTITIES)
 
 
 @pytest.mark.parametrize(
