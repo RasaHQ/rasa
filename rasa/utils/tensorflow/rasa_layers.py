@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
 import numpy as np
 from typing import Text, List, Dict, Any, Union, Optional, Tuple, Callable
 
