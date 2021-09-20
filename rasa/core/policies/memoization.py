@@ -332,6 +332,9 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         )
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
 class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
     """The policy that remembers examples from training stories for `max_history` turns.
 
