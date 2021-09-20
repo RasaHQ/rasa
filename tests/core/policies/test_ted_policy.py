@@ -4,6 +4,8 @@ from typing import Optional, List, Type, Dict, Text, Any
 from unittest.mock import Mock
 import numpy as np
 import pytest
+from _pytest.tmpdir import TempPathFactory
+
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
@@ -20,8 +22,9 @@ from rasa.core.featurizers.single_state_featurizer import (
 )
 from rasa.core.policies.policy import PolicyGraphComponent as Policy
 from rasa.core.policies.ted_policy import TEDPolicyGraphComponent as TEDPolicy
-from rasa.core.policies.ted_policy import TEDPolicy as Rasa2TEDPolicy
+from rasa.engine.exceptions import GraphComponentException
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
@@ -33,7 +36,7 @@ from rasa.shared.core.events import (
     EntitiesAdded,
     ActiveLoop,
 )
-from rasa.shared.exceptions import RasaException, InvalidConfigException
+from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.model_training import train_core
@@ -54,14 +57,13 @@ from rasa.utils.tensorflow.constants import (
     MASK,
     SENTENCE,
     IDS,
-    EVAL_NUM_EPOCHS,
     EPOCHS,
     EPOCH_OVERRIDE,
 )
 from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow import model_data_utils
 from tests.core.test_policies import PolicyTestCollection
-from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_CORE_SUBDIRECTORY_NAME
+from rasa.shared.constants import DEFAULT_SENDER_ID
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -83,8 +85,7 @@ def get_checkpoint_dir_path(train_path: Path, ted_pos: Optional[int] = 0) -> Pat
         train_path: the path passed to model_training.train_core for training output.
         ted_pos: the position of TED in the policies listed in the config.
     """
-    policy_dir_name = Path("policy_{}_{}".format(ted_pos, Rasa2TEDPolicy.__name__))
-    policy_path = train_path / DEFAULT_CORE_SUBDIRECTORY_NAME / policy_dir_name
+    policy_path = train_path / f"train_TEDPolicy{ted_pos}"
     return policy_path / "checkpoints"
 
 
@@ -124,33 +125,47 @@ class TestTEDPolicy(PolicyTestCollection):
     def _policy_class_to_test() -> Type[TEDPolicy]:
         return TEDPolicy
 
-    def test_train_model_checkpointing(self, tmp_path: Path):
-        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
-        assert not checkpoint_dir.is_dir()
-
+    def test_train_model_checkpointing(
+        self, tmp_path: Path, tmp_path_factory: TempPathFactory
+    ):
         train_core(
             domain="data/test_domains/default.yml",
             stories="data/test_yaml_stories/stories_defaultdomain.yml",
-            train_path=str(tmp_path),
             output=str(tmp_path),
+            fixed_model_name="my_model.tar.gz",
             config="data/test_config/config_ted_policy_model_checkpointing.yml",
         )
+
+        storage_dir = tmp_path_factory.mktemp("storage dir")
+        storage, _ = LocalModelStorage.from_model_archive(
+            storage_dir, tmp_path / "my_model.tar.gz"
+        )
+
+        checkpoint_dir = get_checkpoint_dir_path(storage_dir)
         assert checkpoint_dir.is_dir()
 
-    def test_doesnt_checkpoint_with_no_checkpointing(self, tmp_path: Path):
-        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
-        assert not checkpoint_dir.is_dir()
-
+    def test_doesnt_checkpoint_with_no_checkpointing(
+        self, tmp_path: Path, tmp_path_factory: TempPathFactory
+    ):
         train_core(
             domain="data/test_domains/default.yml",
             stories="data/test_yaml_stories/stories_defaultdomain.yml",
-            train_path=str(tmp_path),
             output=str(tmp_path),
+            fixed_model_name="my_model.tar.gz",
             config="data/test_config/config_ted_policy_no_model_checkpointing.yml",
         )
+
+        storage_dir = tmp_path_factory.mktemp("storage dir")
+        storage, _ = LocalModelStorage.from_model_archive(
+            storage_dir, tmp_path / "my_model.tar.gz"
+        )
+
+        checkpoint_dir = get_checkpoint_dir_path(storage_dir)
         assert not checkpoint_dir.is_dir()
 
-    def test_doesnt_checkpoint_with_zero_eval_num_examples(self, tmp_path: Path):
+    def test_doesnt_checkpoint_with_zero_eval_num_examples(
+        self, tmp_path: Path, tmp_path_factory: TempPathFactory
+    ):
         checkpoint_dir = get_checkpoint_dir_path(tmp_path)
         assert not checkpoint_dir.is_dir()
         config_file = "config_ted_policy_model_checkpointing_zero_eval_num_examples.yml"
@@ -158,8 +173,8 @@ class TestTEDPolicy(PolicyTestCollection):
             train_core(
                 domain="data/test_domains/default.yml",
                 stories="data/test_yaml_stories/stories_defaultdomain.yml",
-                train_path=str(tmp_path),
                 output=str(tmp_path),
+                fixed_model_name="my_model.tar.gz",
                 config=f"data/test_config/{config_file}",
             )
         warn_text = (
@@ -167,8 +182,16 @@ class TestTEDPolicy(PolicyTestCollection):
             f"'{EVAL_NUM_EXAMPLES}' is not greater than 0. No checkpoint model will be "
             f"saved."
         )
-        assert not checkpoint_dir.is_dir()
+
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
+
+        storage_dir = tmp_path_factory.mktemp("storage dir")
+        storage, _ = LocalModelStorage.from_model_archive(
+            storage_dir, tmp_path / "my_model.tar.gz"
+        )
+
+        checkpoint_dir = get_checkpoint_dir_path(storage_dir)
+        assert not checkpoint_dir.is_dir()
 
     @pytest.mark.parametrize(
         "should_finetune, epoch_override, expected_epoch_value",
@@ -206,24 +229,19 @@ class TestTEDPolicy(PolicyTestCollection):
         assert loaded_policy.config[EPOCHS] == expected_epoch_value
 
     def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
-        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
-        assert not checkpoint_dir.is_dir()
         config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"
-        with pytest.raises(InvalidConfigException):
-            with pytest.warns(UserWarning) as warning:
-                train_core(
-                    domain="data/test_domains/default.yml",
-                    stories="data/test_yaml_stories/stories_defaultdomain.yml",
-                    train_path=str(tmp_path),
-                    output=str(tmp_path),
-                    config=f"data/test_config/{config_file}",
-                )
-        warn_text = (
-            f"You have opted to save the best model, but the value of "
-            f"'{EVAL_NUM_EPOCHS}' is not -1 or greater than 0. Training will fail."
-        )
-        assert len([w for w in warning if warn_text in str(w.message)]) == 1
-        assert not checkpoint_dir.is_dir()
+        with pytest.raises(
+            GraphComponentException, match="Error initializing graph component"
+        ):
+            # with pytest.warns(UserWarning) as warning:
+            train_core(
+                domain="data/test_domains/default.yml",
+                stories="data/test_yaml_stories/stories_defaultdomain.yml",
+                output=str(tmp_path),
+                config=f"data/test_config/{config_file}",
+            )
+
+        assert not (tmp_path / "my_model.tar.gz").is_file()
 
     def test_training_with_no_intent(
         self,

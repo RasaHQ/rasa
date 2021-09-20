@@ -8,9 +8,11 @@ import pytest
 import sys
 import uuid
 
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.python import Function
 from spacy import Language
 
+from rasa.engine.caching import CACHE_LOCATION_ENV
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
@@ -18,7 +20,7 @@ from sanic.request import Request
 
 from typing import Iterator, Callable, Generator
 
-from _pytest.tmpdir import TempPathFactory
+from _pytest.tmpdir import TempPathFactory, TempdirFactory
 from pathlib import Path
 from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
@@ -686,3 +688,11 @@ def default_model_storage(tmp_path: Path) -> ModelStorage:
 @pytest.fixture()
 def default_execution_context() -> ExecutionContext:
     return ExecutionContext(GraphSchema({}), uuid.uuid4().hex)
+
+
+@pytest.fixture(autouse=True)
+def disable_cache(monkeypatch: MonkeyPatch, tmp_path_factory: TempdirFactory) -> Path:
+    cache_dir = tmp_path_factory.mktemp(uuid.uuid4().hex)
+    monkeypatch.setenv(CACHE_LOCATION_ENV, str(cache_dir))
+
+    return cache_dir
