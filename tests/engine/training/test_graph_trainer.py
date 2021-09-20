@@ -25,7 +25,7 @@ from tests.engine.graph_components_test_classes import (
     SubtractByX,
 )
 
-# TODO: test new stuff
+
 def test_graph_trainer_returns_model_metadata(
     default_model_storage: ModelStorage,
     temp_cache: TrainingCache,

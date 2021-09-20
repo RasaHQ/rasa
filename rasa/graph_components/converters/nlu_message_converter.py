@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Text, Any, Optional, List
+from typing import Dict, Text, Any, List
 
 from rasa.core.channels.channel import UserMessage
 

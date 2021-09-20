@@ -35,6 +35,7 @@ class TrainingType(Enum):
 
     @property
     def model_type(self) -> Text:
+        """Returns the type of model which this training yields."""
         if self == TrainingType.NLU:
             return "nlu"
         if self == TrainingType.CORE:

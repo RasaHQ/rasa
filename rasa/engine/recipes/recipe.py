@@ -14,8 +14,20 @@ class InvalidRecipeException(RasaException):
 
 
 class Recipe(abc.ABC):
+    """Base class for `Recipe`s which convert configs to graph schemas."""
+
     @staticmethod
     def recipe_for_name(name: Optional[Text]) -> Recipe:
+        """Returns `Recipe` based on an optional recipe identifier.
+
+        Args:
+            name: The identifier which is used to select a certain `Recipe`. If `None`
+                the default recipe will be used.
+
+        Returns:
+            A recipe which can be used to convert a given config to train and predict
+            graph schemas.
+        """
         from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 
         if name is None:
@@ -44,4 +56,17 @@ class Recipe(abc.ABC):
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
     ) -> Tuple[GraphSchema, GraphSchema]:
+        """Converts a given config to graph schemas for training and prediction.
+
+        Args:
+            config: The given config.
+            cli_parameters: Potentially passed CLI parameters which need to be
+                inserted into certain components config.
+            training_type: The given training type which might be used to omit / add
+                certain subgraphs.
+
+        Returns:
+            A graph schema to train a model and a graph schema to make predictions
+            with this model after training.
+        """
         raise NotImplementedError()

@@ -12,7 +12,7 @@ import rasa.shared.utils.common
 import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
-from rasa import model, server, telemetry
+from rasa import server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent

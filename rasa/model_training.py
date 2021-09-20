@@ -28,7 +28,6 @@ import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.shared.utils.common
 
-from rasa.shared.utils.cli import print_success
 import rasa.shared.exceptions
 import rasa.shared.utils.io
 

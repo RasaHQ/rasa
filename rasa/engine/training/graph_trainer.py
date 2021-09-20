@@ -13,7 +13,6 @@ from rasa.engine.training.components import (
     FingerprintStatus,
 )
 from rasa.engine.training.hooks import TrainingHook
-from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)

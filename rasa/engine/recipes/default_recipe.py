@@ -114,83 +114,94 @@ class DefaultV1Recipe(Recipe):
         self._use_core = True
         self._use_nlu = True
 
-        from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
-        from rasa.nlu.classifiers.fallback_classifier import (
+        from rasa.nlu.classifiers.diet_classifier import (  # noqa: F401
+            DIETClassifierGraphComponent,
+        )
+        from rasa.nlu.classifiers.fallback_classifier import (  # noqa: F401
             FallbackClassifierGraphComponent,
         )
-        from rasa.nlu.classifiers.keyword_intent_classifier import (
+        from rasa.nlu.classifiers.keyword_intent_classifier import (  # noqa: F401
             KeywordIntentClassifierGraphComponent,
         )
-        from rasa.nlu.classifiers.mitie_intent_classifier import (
+        from rasa.nlu.classifiers.mitie_intent_classifier import (  # noqa: F401
             MitieIntentClassifierGraphComponent,
         )
-        from rasa.nlu.classifiers.sklearn_intent_classifier import (
+        from rasa.nlu.classifiers.sklearn_intent_classifier import (  # noqa: F401
             SklearnIntentClassifierGraphComponent,
         )
-        from rasa.nlu.extractors.crf_entity_extractor import (
+        from rasa.nlu.extractors.crf_entity_extractor import (  # noqa: F401
             CRFEntityExtractorGraphComponent,
         )
-        from rasa.nlu.extractors.duckling_entity_extractor import (
+        from rasa.nlu.extractors.duckling_entity_extractor import (  # noqa: F401
             DucklingEntityExtractorGraphComponent,
         )
-        from rasa.nlu.extractors.entity_synonyms import (
+        from rasa.nlu.extractors.entity_synonyms import (  # noqa: F401
             EntitySynonymMapperGraphComponent,
         )
-        from rasa.nlu.extractors.mitie_entity_extractor import (
+        from rasa.nlu.extractors.mitie_entity_extractor import (  # noqa: F401
             MitieEntityExtractorGraphComponent,
         )
-        from rasa.nlu.extractors.spacy_entity_extractor import (
+        from rasa.nlu.extractors.spacy_entity_extractor import (  # noqa: F401
             SpacyEntityExtractorGraphComponent,
         )
-        from rasa.nlu.extractors.regex_entity_extractor import (
+        from rasa.nlu.extractors.regex_entity_extractor import (  # noqa: F401
             RegexEntityExtractorGraphComponent,
         )
-        from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
+        from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (  # noqa: F401, E501
             LexicalSyntacticFeaturizerGraphComponent,
         )
-        from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import (
+        from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import (  # noqa: F401, E501
             ConveRTFeaturizerGraphComponent,
         )
-        from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import (
+        from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import (  # noqa: F401, E501
             MitieFeaturizerGraphComponent,
         )
-        from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
+        from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (  # noqa: F401, E501
             SpacyFeaturizerGraphComponent,
         )
-        from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (  # noqa: F401, E501
             CountVectorsFeaturizerGraphComponent,
         )
-        from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import (
+        from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import (  # noqa: F401
             LanguageModelFeaturizerGraphComponent,
         )
-        from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
+        from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (  # noqa: F401, E501
             RegexFeaturizerGraphComponent,
         )
-        from rasa.nlu.selectors.response_selector import ResponseSelectorGraphComponent
-        from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizerGraphComponent
-        from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
-        from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
-        from rasa.nlu.tokenizers.whitespace_tokenizer import (
+        from rasa.nlu.selectors.response_selector import (  # noqa: F401
+            ResponseSelectorGraphComponent,
+        )
+        from rasa.nlu.tokenizers.jieba_tokenizer import (  # noqa: F401
+            JiebaTokenizerGraphComponent,
+        )
+        from rasa.nlu.tokenizers.mitie_tokenizer import (  # noqa: F401
+            MitieTokenizerGraphComponent,
+        )
+        from rasa.nlu.tokenizers.spacy_tokenizer import (  # noqa: F401
+            SpacyTokenizerGraphComponent,
+        )
+        from rasa.nlu.tokenizers.whitespace_tokenizer import (  # noqa: F401
             WhitespaceTokenizerGraphComponent,
         )
-        from rasa.nlu.utils.mitie_utils import MitieNLPGraphComponent
-        from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent
+        from rasa.nlu.utils.mitie_utils import MitieNLPGraphComponent  # noqa: F401
+        from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent  # noqa: F401
 
-        from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
-
-        from rasa.core.policies.memoization import (
-            AugmentedMemoizationPolicyGraphComponent,
+        from rasa.core.policies.ted_policy import TEDPolicyGraphComponent  # noqa: F401
+        from rasa.core.policies.memoization import (  # noqa: F401
+            MemoizationPolicyGraphComponent,
             AugmentedMemoizationPolicyGraphComponent,
         )
-
-        from rasa.core.policies.rule_policy import RulePolicyGraphComponent
-
-        from rasa.core.policies.unexpected_intent_policy import (
+        from rasa.core.policies.rule_policy import (  # noqa: F401
+            RulePolicyGraphComponent,
+        )
+        from rasa.core.policies.unexpected_intent_policy import (  # noqa: F401
             UnexpecTEDIntentPolicyGraphComponent,
         )
 
     @dataclasses.dataclass()
     class RegisteredComponent:
+        """Describes a graph component which was registered with the decorator."""
+
         clazz: Type[GraphComponent]
         type: DefaultV1Recipe.ComponentType
         is_trainable: bool
@@ -203,6 +214,19 @@ class DefaultV1Recipe(Recipe):
         is_trainable: bool,
         model_from: Optional[Text] = None,
     ) -> Callable[[Type[GraphComponent]], Type[GraphComponent]]:
+        """This decorator can be used to register classes with the recipe.
+
+        Args:
+            component_type: Describes the type of the component which is then used
+                to place the component in the graph.
+            is_trainable: `True` if the component requires training.
+            model_from: Can be used if this component requires a pre-loaded model
+                such as `SpacyNLP` or `MitieNLP`.
+
+        Returns:
+            The registered class.
+        """
+
         def f(registered_class: Type[GraphComponent]) -> Type[GraphComponent]:
             if not issubclass(registered_class, GraphComponent):
                 raise DefaultV1RecipeRegisterException(
@@ -232,6 +256,7 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
     ) -> Tuple[GraphSchema, GraphSchema]:
+        """Converts default config to graphs (see parent class for full docstring)."""
         self._use_core = (
             bool(config.get("policies")) and not training_type == TrainingType.NLU
         )
