@@ -27,7 +27,7 @@ from rasa.shared.core.domain import Domain
 import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.shared.utils.common
-
+import rasa.shared.utils.cli
 import rasa.shared.exceptions
 import rasa.shared.utils.io
 
@@ -168,8 +168,8 @@ async def train_async(
             persist_nlu_training_data=persist_nlu_training_data,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
             dry_run=dry_run,
-            **core_additional_arguments,
-            **nlu_additional_arguments,
+            **(core_additional_arguments or {}),
+            **(nlu_additional_arguments or {}),
         )
 
 
@@ -231,8 +231,10 @@ def _determine_model_name(
 ) -> Text:
     if fixed_model_name:
         model_file = Path(fixed_model_name)
-        if not model_file.suffix == ".tar.gz":
+        if not model_file.name.endswith(".tar.gz"):
             return model_file.with_suffix(".tar.gz").name
+
+        return fixed_model_name
 
     prefix = ""
     if training_type in [TrainingType.CORE, TrainingType.NLU]:
@@ -307,7 +309,7 @@ def train_core(
         model_to_finetune=model_to_finetune,
         fixed_model_name=fixed_model_name,
         finetuning_epoch_fraction=finetuning_epoch_fraction,
-        **additional_arguments,
+        **(additional_arguments or {}),
     ).model
 
 
@@ -400,5 +402,5 @@ async def train_nlu_async(
         fixed_model_name=fixed_model_name,
         finetuning_epoch_fraction=finetuning_epoch_fraction,
         persist_nlu_training_data=persist_nlu_training_data,
-        **additional_arguments,
+        **(additional_arguments or {}),
     ).model
