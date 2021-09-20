@@ -74,7 +74,6 @@ def train(
     persist_nlu_training_data: bool = False,
     core_additional_arguments: "Optional[Dict]" = None,
     nlu_additional_arguments: "Optional[Dict]" = None,
-    loop: "Optional[asyncio.AbstractEventLoop]" = None,
     model_to_finetune: "Optional[Text]" = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> "TrainingResult":
@@ -94,7 +93,6 @@ def train(
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
             method of each NLU component.
-        loop: Optional EventLoop for running coroutines.
         model_to_finetune: Optional path to a model which should be finetuned or
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
@@ -103,25 +101,21 @@ def train(
     Returns:
         An instance of `TrainingResult`.
     """
-    from rasa.model_training import train_async
-    import rasa.utils.common
+    from rasa.model_training import train
 
-    return rasa.utils.common.run_in_loop(
-        train_async(
-            domain=domain,
-            config=config,
-            training_files=training_files,
-            output=output,
-            dry_run=dry_run,
-            force_training=force_training,
-            fixed_model_name=fixed_model_name,
-            persist_nlu_training_data=persist_nlu_training_data,
-            core_additional_arguments=core_additional_arguments,
-            nlu_additional_arguments=nlu_additional_arguments,
-            model_to_finetune=model_to_finetune,
-            finetuning_epoch_fraction=finetuning_epoch_fraction,
-        ),
-        loop,
+    return train(
+        domain=domain,
+        config=config,
+        training_files=training_files,
+        output=output,
+        dry_run=dry_run,
+        force_training=force_training,
+        fixed_model_name=fixed_model_name,
+        persist_nlu_training_data=persist_nlu_training_data,
+        core_additional_arguments=core_additional_arguments,
+        nlu_additional_arguments=nlu_additional_arguments,
+        model_to_finetune=model_to_finetune,
+        finetuning_epoch_fraction=finetuning_epoch_fraction,
     )
 
 

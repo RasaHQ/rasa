@@ -57,7 +57,7 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> GraphComponent:
+    ) -> RegexEntityExtractorGraphComponent:
         """Creates a new `GraphComponent`.
 
         Args:
@@ -201,22 +201,20 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             with model_storage.read_from(resource) as model_path:
                 regex_file = model_path / cls.REGEX_FILE_NAME
                 patterns = rasa.shared.utils.io.read_json_file(regex_file)
-                return RegexEntityExtractorGraphComponent(
+                return cls(
                     config,
                     model_storage=model_storage,
                     resource=resource,
                     patterns=patterns,
                 )
-        except ValueError:
+        except (ValueError, FileNotFoundError):
             rasa.shared.utils.io.raise_warning(
                 f"Failed to load {cls.__name__} from model storage. "
                 f"This can happen if the model could not be trained because regexes "
                 f"could not be extracted from the given training data - and hence "
                 f"could not be persisted."
             )
-            return RegexEntityExtractorGraphComponent(
-                config, model_storage=model_storage, resource=resource,
-            )
+            return cls(config, model_storage=model_storage, resource=resource,)
 
     def persist(self) -> None:
         """Persist this model."""

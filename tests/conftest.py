@@ -44,7 +44,7 @@ from rasa.core.exporter import Exporter
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.model_training import train_async, train_nlu_async
+from rasa.model_training import train, train_nlu_async
 from rasa.utils.common import TempDirectoryPath
 from rasa.shared.exceptions import RasaException
 
@@ -174,7 +174,7 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-async def _trained_default_agent(
+def _trained_default_agent(
     tmp_path_factory: TempPathFactory, stories_path: Text, trained_async: Callable
 ) -> Agent:
     project_path = tmp_path_factory.mktemp("project")
@@ -190,15 +190,15 @@ async def _trained_default_agent(
     )
     config_path = project_path / "config.yml"
     rasa.shared.utils.io.write_text_file(config, config_path)
-    model_path = await trained_async(
+    model_path = train(
         "data/test_domains/default_with_slots.yml", str(config_path), [stories_path]
-    )
+    ).model
 
     return Agent.load_local_model(model_path)
 
 
 @pytest.fixture()
-async def empty_agent() -> Agent:
+def empty_agent() -> Agent:
     agent = Agent("data/test_domains/default_with_slots.yml",)
     return agent
 
@@ -211,7 +211,7 @@ def reset_conversation_state(agent: Agent) -> Agent:
 
 
 @pytest.fixture
-async def default_agent(_trained_default_agent: Agent) -> Agent:
+def default_agent(_trained_default_agent: Agent) -> Agent:
     return reset_conversation_state(_trained_default_agent)
 
 
@@ -243,9 +243,7 @@ async def trained_nlu_moodbot_path(trained_nlu_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def unpacked_trained_moodbot_path(
-    trained_moodbot_path: Text,
-) -> TempDirectoryPath:
+def unpacked_trained_moodbot_path(trained_moodbot_path: Text,) -> TempDirectoryPath:
     return get_model(trained_moodbot_path)
 
 
@@ -259,9 +257,7 @@ async def trained_spacybot_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def unpacked_trained_spacybot_path(
-    trained_spacybot_path: Text,
-) -> TempDirectoryPath:
+def unpacked_trained_spacybot_path(trained_spacybot_path: Text,) -> TempDirectoryPath:
     return get_model(trained_spacybot_path)
 
 
@@ -310,7 +306,7 @@ def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
         if output_path is None:
             output_path = str(tmp_path_factory.mktemp("models"))
 
-        result = await train_async(*args, output=output_path, **kwargs)
+        result = train(*args, output=output_path, **kwargs)
         return result.model
 
     return _train
@@ -330,20 +326,20 @@ def trained_nlu_async(tmp_path_factory: TempPathFactory) -> Callable:
 
 
 @pytest.fixture(scope="session")
-async def trained_rasa_model(
+def trained_rasa_model(
     trained_async: Callable,
     domain_path: Text,
     nlu_data_path: Text,
     stories_path: Text,
     stack_config_path: Text,
 ) -> Text:
-    trained_stack_model_path = await trained_async(
+    trained_stack_model_path = rasa.api.train(
         domain=domain_path,
         config=stack_config_path,
         training_files=[nlu_data_path, stories_path],
     )
 
-    return trained_stack_model_path
+    return trained_stack_model_path.model
 
 
 @pytest.fixture(scope="session")
@@ -364,7 +360,7 @@ async def trained_simple_rasa_model(
 
 
 @pytest.fixture(scope="session")
-async def unpacked_trained_rasa_model(
+def unpacked_trained_rasa_model(
     trained_rasa_model: Text,
 ) -> Generator[Text, None, None]:
     with get_model(trained_rasa_model) as path:
@@ -430,49 +426,49 @@ def moodbot_nlu_data_path() -> Path:
 
 
 @pytest.fixture
-async def rasa_server(stack_agent: Agent) -> Sanic:
+def rasa_server(stack_agent: Agent) -> Sanic:
     app = server.create_app(agent=stack_agent)
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
 
 @pytest.fixture
-async def rasa_non_trained_server(empty_agent: Agent) -> Sanic:
+def rasa_non_trained_server(empty_agent: Agent) -> Sanic:
     app = server.create_app(agent=empty_agent)
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
 
 @pytest.fixture
-async def rasa_core_server(core_agent: Agent) -> Sanic:
+def rasa_core_server(core_agent: Agent) -> Sanic:
     app = server.create_app(agent=core_agent)
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
 
 @pytest.fixture
-async def rasa_nlu_server(nlu_agent: Agent) -> Sanic:
+def rasa_nlu_server(nlu_agent: Agent) -> Sanic:
     app = server.create_app(agent=nlu_agent)
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
 
 @pytest.fixture
-async def rasa_server_secured(default_agent: Agent) -> Sanic:
+def rasa_server_secured(default_agent: Agent) -> Sanic:
     app = server.create_app(agent=default_agent, auth_token="rasa", jwt_secret="core")
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
 
 @pytest.fixture
-async def rasa_non_trained_server_secured(empty_agent: Agent) -> Sanic:
+def rasa_non_trained_server_secured(empty_agent: Agent) -> Sanic:
     app = server.create_app(agent=empty_agent, auth_token="rasa", jwt_secret="core")
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
 
 @pytest.fixture
-async def rasa_server_without_api() -> Sanic:
+def rasa_server_without_api() -> Sanic:
     app = rasa.core.run._create_app_without_api()
     channel.register([RestInput()], app, "/webhooks/")
     return app
@@ -527,17 +523,17 @@ async def trained_response_selector_bot(trained_async: Callable) -> Path:
 
 
 @pytest.fixture(scope="session")
-async def e2e_bot_domain_file() -> Path:
+def e2e_bot_domain_file() -> Path:
     return Path("data/test_e2ebot/domain.yml")
 
 
 @pytest.fixture(scope="session")
-async def e2e_bot_config_file() -> Path:
+def e2e_bot_config_file() -> Path:
     return Path("data/test_e2ebot/config.yml")
 
 
 @pytest.fixture(scope="session")
-async def e2e_bot_training_files() -> List[Path]:
+def e2e_bot_training_files() -> List[Path]:
     return [
         Path("data/test_e2ebot/data/rules.yml"),
         Path("data/test_e2ebot/data/stories.yml"),
@@ -546,7 +542,7 @@ async def e2e_bot_training_files() -> List[Path]:
 
 
 @pytest.fixture(scope="session")
-async def e2e_bot_test_stories_with_unknown_bot_utterances() -> Path:
+def e2e_bot_test_stories_with_unknown_bot_utterances() -> Path:
     return Path("data/test_e2ebot/tests/test_stories_with_unknown_bot_utterances.yml")
 
 
@@ -570,20 +566,18 @@ async def e2e_bot(
 
 
 @pytest.fixture(scope="module")
-async def response_selector_agent(
-    trained_response_selector_bot: Optional[Path],
-) -> Agent:
-    return Agent.load_local_model(trained_response_selector_bot)
+def response_selector_agent(trained_response_selector_bot: Path,) -> Agent:
+    return Agent.load_local_model(str(trained_response_selector_bot))
 
 
 @pytest.fixture(scope="module")
-async def response_selector_interpreter(response_selector_agent: Agent,) -> Interpreter:
+def response_selector_interpreter(response_selector_agent: Agent,) -> Interpreter:
     return response_selector_agent.interpreter.interpreter
 
 
 @pytest.fixture(scope="module")
-async def e2e_bot_agent(e2e_bot: Optional[Path],) -> Agent:
-    return Agent.load_local_model(e2e_bot)
+def e2e_bot_agent(e2e_bot: Path) -> Agent:
+    return Agent.load_local_model(str(e2e_bot))
 
 
 def write_endpoint_config_to_yaml(

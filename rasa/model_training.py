@@ -30,6 +30,7 @@ import rasa.shared.utils.common
 import rasa.shared.utils.cli
 import rasa.shared.exceptions
 import rasa.shared.utils.io
+import rasa.shared.constants
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
@@ -76,15 +77,15 @@ def _dry_run_result(
     return TrainingResult()
 
 
-async def train_async(
+def train(
     domain: Text,
     config: Text,
     training_files: Optional[Union[Text, List[Text]]],
-    output: Text,
-    dry_run: bool,
-    force_training: bool,
-    fixed_model_name: Optional[Text],
-    persist_nlu_training_data: bool,
+    output: Text = rasa.shared.constants.DEFAULT_MODELS_PATH,
+    dry_run: bool = False,
+    force_training: bool = False,
+    fixed_model_name: Optional[Text] = None,
+    persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional[Text] = None,

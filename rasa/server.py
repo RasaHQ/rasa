@@ -1066,10 +1066,10 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            from rasa.model_training import train_async
+            from rasa.model_training import train
 
             # pass `None` to run in default executor
-            training_result = await train_async(**training_payload)
+            training_result = train(**training_payload)
 
             if training_result.model:
                 filename = os.path.basename(training_result.model)
@@ -1085,7 +1085,7 @@ def create_app(
                     "TrainingError",
                     "Ran training, but it finished without a trained model.",
                 )
-        except ErrorResponse as e:
+        except Exception as e:
             raise e
         except InvalidDomain as e:
             raise ErrorResponse(
