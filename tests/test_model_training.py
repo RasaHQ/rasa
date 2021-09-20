@@ -1,3 +1,4 @@
+import datetime
 import logging
 import secrets
 import tempfile
@@ -19,6 +20,9 @@ import rasa.model_training
 import rasa.core
 import rasa.core.train
 import rasa.nlu
+from rasa.engine.caching import CACHE_LOCATION_ENV
+from rasa.engine.storage.storage import ModelMetadata
+from rasa.engine.training.graph_trainer import GraphTrainer
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.shared.importers.autoconfig as autoconfig
@@ -28,40 +32,6 @@ from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.conftest import AsyncMock
-from tests.test_model import _fingerprint
-
-
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        {"model_name": "test-1234", "prefix": None},
-        {"model_name": None, "prefix": "core-"},
-        {"model_name": None, "prefix": None},
-    ],
-)
-def test_package_model(trained_rasa_model: Text, parameters: Dict):
-    output_path = tempfile.mkdtemp()
-    train_path = rasa.model.unpack_model(trained_rasa_model)
-
-    model_path = rasa.model.package_model(
-        _fingerprint(),
-        output_path,
-        train_path,
-        parameters["model_name"],
-        parameters["prefix"],
-    )
-
-    assert os.path.exists(model_path)
-
-    file_name = os.path.basename(model_path)
-
-    if parameters["model_name"]:
-        assert parameters["model_name"] in file_name
-
-    if parameters["prefix"]:
-        assert parameters["prefix"] in file_name
-
-    assert file_name.endswith(".tar.gz")
 
 
 def count_temp_rasa_files(directory: Text) -> int:
@@ -227,81 +197,6 @@ def test_train_nlu_no_nlu_file_error_message(
     assert "No NLU data given" in captured.out
 
 
-def test_trained_interpreter_passed_to_core_training(
-    monkeypatch: MonkeyPatch,
-    tmp_path: Path,
-    unpacked_trained_rasa_model: Text,
-    nlu_data_path: Text,
-    stories_path: Text,
-    config_path: Text,
-    domain_path: Text,
-):
-    # Skip actual NLU training and return trained interpreter path from fixture
-    # Patching is bit more complicated as we have a module `train` and function
-    # with the same name 😬
-    monkeypatch.setattr(
-        rasa.model_training,
-        "_train_nlu_with_validated_data",
-        AsyncMock(return_value=unpacked_trained_rasa_model),
-    )
-
-    # Mock the actual Core training
-    _train_core = mock_core_training(monkeypatch)
-
-    rasa.train(
-        domain_path, config_path, [stories_path, nlu_data_path], str(tmp_path),
-    )
-
-    _train_core.assert_called_once()
-    _, _, kwargs = _train_core.mock_calls[0]
-    assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
-
-
-def test_interpreter_of_old_model_passed_to_core_training(
-    monkeypatch: MonkeyPatch,
-    tmp_path: Path,
-    trained_rasa_model: Text,
-    domain_path: Text,
-    config_path: Text,
-    stories_path: Text,
-    nlu_data_path: Text,
-):
-    # NLU isn't retrained
-    monkeypatch.setattr(
-        rasa.model.FingerprintComparisonResult,
-        rasa.model.FingerprintComparisonResult.should_retrain_nlu.__name__,
-        lambda _: False,
-    )
-
-    # An old model with an interpreter exists
-    monkeypatch.setattr(
-        rasa.model, rasa.model.get_latest_model.__name__, lambda _: trained_rasa_model
-    )
-
-    # Mock the actual Core training
-    _train_core = mock_core_training(monkeypatch)
-
-    rasa.train(
-        domain_path, config_path, [stories_path, nlu_data_path], str(tmp_path),
-    )
-
-    _train_core.assert_called_once()
-    _, _, kwargs = _train_core.mock_calls[0]
-    assert isinstance(kwargs["interpreter"], RasaNLUInterpreter)
-
-
-def test_load_interpreter_returns_none_for_none():
-    from rasa.model_training import _load_interpreter
-
-    assert _load_interpreter(None) is None
-
-
-def test_interpreter_from_previous_model_returns_none_for_none():
-    from rasa.model_training import _interpreter_from_previous_model
-
-    assert _interpreter_from_previous_model(None) is None
-
-
 def test_train_core_autoconfig(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -312,13 +207,11 @@ def test_train_core_autoconfig(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
     # mock function that returns configuration
-    mocked_get_configuration = Mock()
+    mocked_get_configuration = Mock(return_value={})
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
     # skip actual core training
-    monkeypatch.setattr(
-        rasa.model_training, "_train_core_with_validated_data", AsyncMock()
-    )
+    monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, Mock())
 
     # do training
     rasa.model_training.train_core(
@@ -342,13 +235,10 @@ def test_train_nlu_autoconfig(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
     # mock function that returns configuration
-    mocked_get_configuration = Mock()
+    mocked_get_configuration = Mock(return_value={})
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
-    monkeypatch.setattr(
-        rasa.model_training, "_train_nlu_with_validated_data", AsyncMock()
-    )
-
+    monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, Mock())
     # do training
     rasa.model_training.train_nlu(
         stack_config_path, nlu_data_path, output="test_train_nlu_temp_files_models",
@@ -394,8 +284,8 @@ class TestE2e:
         nlu_data_path: Text,
         caplog: LogCaptureFixture,
     ):
-        mock_nlu_training(monkeypatch)
-        mock_core_training(monkeypatch)
+        # skip actual core training
+        monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, Mock())
 
         with caplog.at_level(logging.WARNING):
             rasa.train(
@@ -420,19 +310,17 @@ class TestE2e:
         stack_config_path: Text,
         e2e_stories_path: Text,
         nlu_data_path: Text,
+        trained_e2e_model_cache: Path,
     ):
-        mocked_nlu_training = mock_nlu_training(monkeypatch)
-        mocked_core_training = mock_core_training(monkeypatch)
-
-        rasa.train(
+        result = rasa.train(
             domain_path,
             stack_config_path,
             [e2e_stories_path, nlu_data_path],
             output=new_model_path_in_same_dir(trained_e2e_model),
+            dry_run=True,
         )
 
-        mocked_core_training.assert_not_called()
-        mocked_nlu_training.assert_not_called()
+        assert result.code == 0
 
     def test_retrains_nlu_and_core_if_new_e2e_example(
         self,
@@ -443,6 +331,7 @@ class TestE2e:
         e2e_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
+        trained_e2e_model_cache: Path,
     ):
         stories_yaml = rasa.shared.utils.io.read_yaml_file(e2e_stories_path)
         stories_yaml["stories"][1]["steps"].append({"user": "new message!"})
@@ -450,19 +339,15 @@ class TestE2e:
         new_stories_file = tmp_path / "new_stories.yml"
         rasa.shared.utils.io.write_yaml(stories_yaml, new_stories_file)
 
-        mocked_nlu_training = mock_nlu_training(monkeypatch)
-        mocked_core_training = mock_core_training(monkeypatch)
-
-        new_model_path = rasa.train(
+        result = rasa.train(
             domain_path,
             stack_config_path,
             [new_stories_file, nlu_data_path],
             output=new_model_path_in_same_dir(trained_e2e_model),
-        ).model
-        os.remove(new_model_path)
+            dry_run=True,
+        )
 
-        mocked_core_training.assert_called_once()
-        mocked_nlu_training.assert_called_once()
+        assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
 
     def test_retrains_only_core_if_new_e2e_example_seen_before(
         self,
@@ -473,26 +358,23 @@ class TestE2e:
         e2e_stories_path: Text,
         nlu_data_path: Text,
         tmp_path: Path,
+        trained_e2e_model_cache: Path,
     ):
         stories_yaml = rasa.shared.utils.io.read_yaml_file(e2e_stories_path)
         stories_yaml["stories"][1]["steps"].append({"user": "Yes"})
 
-        new_stories_file = new_stories_file = tmp_path / "new_stories.yml"
+        new_stories_file = tmp_path / "new_stories.yml"
         rasa.shared.utils.io.write_yaml(stories_yaml, new_stories_file)
 
-        mocked_nlu_training = mock_nlu_training(monkeypatch)
-        mocked_core_training = mock_core_training(monkeypatch)
-
-        new_model_path = rasa.train(
+        result = rasa.train(
             domain_path,
             stack_config_path,
             [new_stories_file, nlu_data_path],
             output=new_model_path_in_same_dir(trained_e2e_model),
-        ).model
-        os.remove(new_model_path)
+            dry_run=True,
+        )
 
-        mocked_core_training.assert_called_once()
-        mocked_nlu_training.assert_not_called()
+        assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
 
     def test_nlu_and_core_trained_if_no_nlu_data_but_e2e_stories(
         self,

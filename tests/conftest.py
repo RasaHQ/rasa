@@ -12,7 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.python import Function
 from spacy import Language
 
-from rasa.engine.caching import CACHE_LOCATION_ENV
+from rasa.engine.caching import CACHE_LOCATION_ENV, LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
@@ -301,12 +301,25 @@ def domain(_domain: Domain) -> Domain:
 @pytest.fixture(scope="session")
 def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
     async def _train(
-        *args: Any, output_path: Optional[Text] = None, **kwargs: Any
+        *args: Any,
+        output_path: Optional[Text] = None,
+        cache_dir: Optional[Path] = None,
+        **kwargs: Any,
     ) -> Optional[Text]:
+
+        old_get_cache_location = None
+        if cache_dir:
+            old_get_cache_location = LocalTrainingCache._get_cache_location
+            LocalTrainingCache._get_cache_location = Mock(return_value=cache_dir)
+
         if output_path is None:
             output_path = str(tmp_path_factory.mktemp("models"))
 
         result = train(*args, output=output_path, **kwargs)
+
+        if cache_dir:
+            LocalTrainingCache._get_cache_location = old_get_cache_location
+
         return result.model
 
     return _train
@@ -396,18 +409,49 @@ async def trained_nlu_model(
 
 
 @pytest.fixture(scope="session")
+def _trained_e2e_model_cache(tmp_path_factory: TempPathFactory) -> Path:
+    return tmp_path_factory.mktemp("cache")
+
+
+@pytest.fixture()
+def trained_e2e_model_cache(
+    _trained_e2e_model_cache: Path,
+    tmp_path_factory: TempPathFactory,
+    monkeypatch: MonkeyPatch,
+) -> Path:
+    copied_cache = tmp_path_factory.mktemp("copy")
+    rasa.utils.common.copy_directory(_trained_e2e_model_cache, copied_cache)
+
+    monkeypatch.setattr(
+        LocalTrainingCache, "_get_cache_location", Mock(return_value=copied_cache)
+    )
+
+    return copied_cache
+
+
+@pytest.fixture(scope="session")
 async def trained_e2e_model(
     trained_async: Callable,
     domain_path: Text,
     stack_config_path: Text,
     nlu_data_path: Text,
     e2e_stories_path: Text,
+    _trained_e2e_model_cache: Path,
 ) -> Text:
     return await trained_async(
         domain=domain_path,
         config=stack_config_path,
         training_files=[nlu_data_path, e2e_stories_path],
+        cache_dir=_trained_e2e_model_cache,
     )
+
+
+@pytest.fixture()
+def set_cache(monkeypatch: MonkeyPatch) -> Callable:
+    def set_cache(directory: Path) -> None:
+        monkeypatch.setattr(LocalTrainingCache, "._get_cache_location", directory)
+
+    return set_cache
 
 
 @pytest.fixture(scope="session")

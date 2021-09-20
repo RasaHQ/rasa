@@ -162,9 +162,7 @@ class LocalTrainingCache(TrainingCache):
 
         The `Cache` setting can be configured via environment variables.
         """
-        self._cache_location = Path(
-            os.environ.get(CACHE_LOCATION_ENV, DEFAULT_CACHE_LOCATION)
-        )
+        self._cache_location = self._get_cache_location()
 
         self._max_cache_size = float(
             os.environ.get(CACHE_SIZE_ENV, DEFAULT_CACHE_SIZE_MB)
@@ -183,6 +181,10 @@ class LocalTrainingCache(TrainingCache):
         self._sessionmaker = self._create_database()
 
         self._drop_cache_entries_from_incompatible_versions()
+
+    @staticmethod
+    def _get_cache_location() -> Path:
+        return Path(os.environ.get(CACHE_LOCATION_ENV, DEFAULT_CACHE_LOCATION))
 
     def _create_database(self) -> sqlalchemy.orm.sessionmaker:
         if self._is_disabled():
