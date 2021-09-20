@@ -213,7 +213,7 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
-@pytest.mark.timeout(150, func_only=True)
+@pytest.mark.timeout(180, func_only=True)
 async def test_train_persist_load_with_different_settings_non_windows(
     component_builder: ComponentBuilder, tmp_path: Path
 ):
@@ -234,7 +234,7 @@ async def test_train_persist_load_with_different_settings_non_windows(
     )
 
 
-@pytest.mark.timeout(150, func_only=True)
+@pytest.mark.timeout(180, func_only=True)
 async def test_train_persist_load_with_different_settings(component_builder, tmpdir):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
@@ -249,7 +249,7 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
     )
 
 
-@pytest.mark.timeout(150, func_only=True)
+@pytest.mark.timeout(180, func_only=True)
 async def test_train_persist_load_with_only_entity_recognition(
     component_builder, tmpdir
 ):
@@ -746,7 +746,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
-@pytest.mark.timeout(150, func_only=True)
+@pytest.mark.timeout(180, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params, component_builder, tmpdir
 ):
