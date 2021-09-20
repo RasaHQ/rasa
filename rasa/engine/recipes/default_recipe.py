@@ -293,7 +293,7 @@ class DefaultV1Recipe(Recipe):
         train_nodes: Dict[Text, SchemaNode],
         cli_parameters: Dict[Text, Any],
     ) -> List[Text]:
-        persist_nlu_data = bool(cli_parameters.get("persist_nlu_data"))
+        persist_nlu_data = bool(cli_parameters.get("persist_nlu_training_data"))
         train_nodes["nlu_training_data_provider"] = SchemaNode(
             needs={"importer": "finetuning_validator"},
             uses=NLUTrainingDataProvider,
@@ -528,12 +528,7 @@ class DefaultV1Recipe(Recipe):
             },
         )
 
-        node_with_e2e_features = None
-        if self._use_nlu:
-            node_with_e2e_features = self._add_end_to_end_features_for_training(
-                preprocessors, train_nodes
-            )
-
+        policy_with_end_to_end_support_used = False
         for idx, item in enumerate(train_config["policies"]):
             component_name = item.pop("name")
             component = self._from_registry(component_name)
@@ -542,15 +537,20 @@ class DefaultV1Recipe(Recipe):
                 cli_parameters, component.clazz
             )
 
+            requires_end_to_end_data = self._use_nlu and (
+                component.type == self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT
+            )
+            policy_with_end_to_end_support_used = (
+                policy_with_end_to_end_support_used or requires_end_to_end_data
+            )
+
             train_nodes[f"train_{component_name}{idx}"] = SchemaNode(
                 needs={
                     "training_trackers": "training_tracker_provider",
                     "domain": "domain_without_responses_provider",
                     **(
-                        {"precomputations": node_with_e2e_features}
-                        if component.type
-                        == self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT
-                        and node_with_e2e_features
+                        {"precomputations": "end_to_end_features_provider"}
+                        if requires_end_to_end_data
                         else {}
                     ),
                 },
@@ -561,9 +561,12 @@ class DefaultV1Recipe(Recipe):
                 config={**item, **extra_config_from_cli},
             )
 
+        if policy_with_end_to_end_support_used:
+            self._add_end_to_end_features_for_training(preprocessors, train_nodes)
+
     def _add_end_to_end_features_for_training(
         self, preprocessors: List[Text], train_nodes: Dict[Text, SchemaNode],
-    ) -> Text:
+    ) -> None:
         train_nodes["story_to_nlu_training_data_converter"] = SchemaNode(
             needs={
                 "story_graph": "story_graph_provider",
@@ -593,8 +596,6 @@ class DefaultV1Recipe(Recipe):
             fn="collect",
             config={},
         )
-
-        return node_with_e2e_features
 
     def _create_predict_nodes(
         self,
@@ -789,7 +790,7 @@ class DefaultV1Recipe(Recipe):
         nlu_merge_needs = {}
         node_with_e2e_features = None
 
-        if self._use_nlu and last_run_node:
+        if "end_to_end_features_provider" in train_nodes:
             node_with_e2e_features = self._add_end_to_end_features_for_inference(
                 predict_nodes, preprocessors
             )

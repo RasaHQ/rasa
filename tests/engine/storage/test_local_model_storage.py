@@ -133,3 +133,14 @@ def test_create_model_package_with_non_empty_model_storage(tmp_path: Path):
     with pytest.raises(ValueError):
         # Unpacking into an already filled `ModelStorage` raises an exception.
         _ = LocalModelStorage.from_model_archive(tmp_path, Path("does not matter"))
+
+
+def test_create_model_package_with_non_existing_dir(
+    tmp_path: Path, default_model_storage: ModelStorage
+):
+    path = tmp_path / "some_dir" / "another" / "model.tar.gz"
+    default_model_storage.create_model_package(
+        path, GraphSchema({}), GraphSchema({}), Domain.empty()
+    )
+
+    assert path.exists()

@@ -172,7 +172,9 @@ def test_nlu_training_data_persistence():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, _ = recipe.schemas_for_config(config, {"persist_nlu_data": True},)
+    train_schema, _ = recipe.schemas_for_config(
+        config, {"persist_nlu_training_data": True},
+    )
 
     node = train_schema.nodes["nlu_training_data_provider"]
 

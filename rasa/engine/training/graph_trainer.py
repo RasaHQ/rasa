@@ -46,7 +46,7 @@ class GraphTrainer:
         predict_schema: GraphSchema,
         importer: TrainingDataImporter,
         output_filename: Path,
-        force_retraining: bool,
+        force_retraining: bool = False,
     ) -> ModelMetadata:
         """Trains and packages a model and returns the prediction graph runner.
 
@@ -64,10 +64,15 @@ class GraphTrainer:
         logger.debug("Starting training.")
 
         if force_retraining:
+            logger.debug(
+                "Skip fingerprint run as as full retrained of the model was "
+                "enforced."
+            )
             pruned_training_schema = train_schema
         else:
-            pruned_training_schema = self._fingerprint_and_prune(
-                train_schema, importer=importer
+            fingerprint_run_outputs = self.fingerprint(train_schema, importer=importer)
+            pruned_training_schema = self._prune_schema(
+                train_schema, fingerprint_run_outputs
             )
 
         hooks = [TrainingHook(cache=self._cache, model_storage=self._model_storage)]
@@ -75,7 +80,7 @@ class GraphTrainer:
         graph_runner = self._graph_runner_class.create(
             graph_schema=pruned_training_schema,
             model_storage=self._model_storage,
-            execution_context=ExecutionContext(graph_schema=pruned_training_schema),
+            execution_context=ExecutionContext(graph_schema=train_schema),
             hooks=hooks,
         )
 
@@ -89,9 +94,9 @@ class GraphTrainer:
             output_filename, train_schema, predict_schema, domain
         )
 
-    def _fingerprint_and_prune(
+    def fingerprint(
         self, train_schema: GraphSchema, importer: TrainingDataImporter
-    ) -> GraphSchema:
+    ) -> Dict[Text, Union[FingerprintStatus, Any]]:
         """Runs the graph using fingerprints to determine which nodes need to re-run.
 
         Nodes which have a matching fingerprint key in the cache can either be removed
@@ -102,9 +107,8 @@ class GraphTrainer:
             train_schema: The train graph schema that will be run in fingerprint mode.
             importer: The importer which provides the training data for the training.
 
-
         Returns:
-            A new, potentially smaller and/or cached, graph schema.
+            Mapping of node names to fingerprint results.
         """
         fingerprint_schema = self._create_fingerprint_schema(train_schema)
 
@@ -115,14 +119,7 @@ class GraphTrainer:
         )
 
         logger.debug("Running the train graph in fingerprint mode.")
-        fingerprint_run_outputs = fingerprint_graph_runner.run(
-            inputs={"__importer__": importer}
-        )
-
-        pruned_training_schema = self._prune_schema(
-            train_schema, fingerprint_run_outputs
-        )
-        return pruned_training_schema
+        return fingerprint_graph_runner.run(inputs={"__importer__": importer})
 
     def _create_fingerprint_schema(self, train_schema: GraphSchema) -> GraphSchema:
         fingerprint_schema = copy.deepcopy(train_schema)
