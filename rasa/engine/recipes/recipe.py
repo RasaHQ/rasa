@@ -43,5 +43,22 @@ class Recipe(abc.ABC):
         config: Dict,
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
+        is_finetuning: bool = False,
     ) -> Tuple[GraphSchema, GraphSchema]:
-        raise NotImplementedError()
+        """Converts a config to graph schemas for training and prediction.
+
+        Args:
+            config: The config which the `Recipe` is supposed to convert.
+            cli_parameters: Potential CLI params which should be interpolated into the
+                components configs.
+            training_type: The current training type. Can be used to omit / add certain
+                parts of the graphs.
+            is_finetuning: If `True` then the components should load themselves from
+                trained version of themselves instead of using `create` to start from
+                scratch.
+
+        Returns:
+            A schema for training a model and a schema for making predictions with this
+            trained model.
+        """
+        ...

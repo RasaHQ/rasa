@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 import copy
 from typing import Callable, List, Optional, Text, Dict, Any
-import functools
 
 from _pytest.monkeypatch import MonkeyPatch
 import pytest
@@ -11,7 +10,7 @@ import pytest
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.graph_components.validators.finetuning_validator import FineTuningValidator
+from rasa.graph_components.validators.finetuning_validator import FinetuningValidator
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -40,16 +39,18 @@ def get_finetuning_validator(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     default_resource: Resource,
-) -> Callable[[bool, bool], FineTuningValidator]:
-    def inner(finetuning: bool, load: bool,) -> FineTuningValidator:
+) -> Callable[[bool, bool], FinetuningValidator]:
+    def inner(
+        finetuning: bool, load: bool, config: Dict[Text, bool]
+    ) -> FinetuningValidator:
         if load:
-            constructor = FineTuningValidator.load
+            constructor = FinetuningValidator.load
         else:
-            constructor = FineTuningValidator.create
+            constructor = FinetuningValidator.create
         if finetuning:
             default_execution_context.is_finetuning = finetuning
         return constructor(
-            config=FineTuningValidator.get_default_config(),
+            config={**FinetuningValidator.get_default_config(), **config},
             execution_context=default_execution_context,
             model_storage=default_model_storage,
             resource=default_resource,
@@ -60,24 +61,30 @@ def get_finetuning_validator(
 
 @pytest.fixture
 def get_validation_method(
-    get_finetuning_validator: Callable[[bool, bool], FineTuningValidator],
+    get_finetuning_validator: Callable[
+        [bool, bool, Dict[Text, bool]], FinetuningValidator
+    ],
 ) -> Callable[[bool, bool, bool, bool], ValidationMethodType]:
     def inner(
         finetuning: bool, load: bool, nlu: bool, core: bool
     ) -> ValidationMethodType:
-        validator = get_finetuning_validator(finetuning=finetuning, load=load)
-        if core and nlu:
-            method = "validate"
-        elif core:
-            method = "validate_core_only"
-        elif nlu:
-            method = "validate_nlu_only"
-        else:
-            method = "validate"
-        func = getattr(validator, method)
-        if not core and not nlu:
-            func = functools.partial(func, nlu=False, core=False)
-        return func
+        validator = get_finetuning_validator(
+            finetuning=finetuning,
+            load=load,
+            config={"validate_core": core, "validate_nlu": nlu},
+        )
+        # if core and nlu:
+        #     method = "validate"
+        # elif core:
+        #     method = "validate_core_only"
+        # elif nlu:
+        #     method = "validate_nlu_only"
+        # else:
+        #     method = "validate"
+        # func = getattr(validator, method)
+        # if not core and not nlu:
+        #     func = functools.partial(func, nlu=False, core=False)
+        return validator.validate
 
     return inner
 
@@ -449,7 +456,9 @@ def test_validate_with_finetuning_fails_without_training(
 
 
 def test_loading_without_persisting(
-    get_finetuning_validator: Callable[[bool, bool], FineTuningValidator],
+    get_finetuning_validator: Callable[
+        [bool, bool, Dict[Text, bool]], FinetuningValidator
+    ],
 ):
     with pytest.raises(ValueError):
-        get_finetuning_validator(finetuning=False, load=True)
+        get_finetuning_validator(finetuning=False, load=True, config={})

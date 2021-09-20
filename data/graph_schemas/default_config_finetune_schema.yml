@@ -62,7 +62,7 @@ train_RegexFeaturizer1:
   needs:
     training_data: run_WhitespaceTokenizer0
   uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizerGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config: {}
   eager: false
@@ -85,7 +85,7 @@ train_LexicalSyntacticFeaturizer2:
   needs:
     training_data: run_RegexFeaturizer1
   uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizerGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config: {}
   eager: false
@@ -108,7 +108,7 @@ train_CountVectorsFeaturizer3:
   needs:
     training_data: run_LexicalSyntacticFeaturizer2
   uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizerGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config: {}
   eager: false
@@ -131,7 +131,7 @@ train_CountVectorsFeaturizer4:
   needs:
     training_data: run_CountVectorsFeaturizer3
   uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizerGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config:
     analyzer: char_wb
@@ -160,7 +160,7 @@ train_DIETClassifier5:
   needs:
     training_data: run_CountVectorsFeaturizer4
   uses: rasa.nlu.classifiers.diet_classifier.DIETClassifierGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config:
     epochs: 100
@@ -173,7 +173,7 @@ train_EntitySynonymMapper6:
   needs:
     training_data: run_CountVectorsFeaturizer4
   uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapperGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config: {}
   eager: false
@@ -184,7 +184,7 @@ train_ResponseSelector7:
   needs:
     training_data: run_CountVectorsFeaturizer4
   uses: rasa.nlu.selectors.response_selector.ResponseSelectorGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config:
     epochs: 100
@@ -328,7 +328,7 @@ train_MemoizationPolicy0:
     training_trackers: training_tracker_provider
     domain: domain_without_responses_provider
   uses: rasa.core.policies.memoization.MemoizationPolicyGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config: {}
   eager: false
@@ -340,7 +340,7 @@ train_RulePolicy1:
     training_trackers: training_tracker_provider
     domain: domain_without_responses_provider
   uses: rasa.core.policies.rule_policy.RulePolicyGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config: {}
   eager: false
@@ -353,7 +353,7 @@ train_UnexpecTEDIntentPolicy2:
     domain: domain_without_responses_provider
     end_to_end_features: end_to_end_features_provider
   uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicyGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config:
     max_history: 5
@@ -368,7 +368,7 @@ train_TEDPolicy3:
     domain: domain_without_responses_provider
     end_to_end_features: end_to_end_features_provider
   uses: rasa.core.policies.ted_policy.TEDPolicyGraphComponent
-  constructor_name: create
+  constructor_name: load
   fn: train
   config:
     max_history: 5
