@@ -30,7 +30,7 @@ class Slot:
         mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = False,
+        auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
         """Create a Slot.
@@ -57,7 +57,7 @@ class Slot:
                 " new explicit mechanism to specify slot mappings. "
                 "Please refer to the docs to learn more.",
                 "4.0.0",
-                docs=None,
+                docs=DOCS_URL_SLOTS,
             )
             auto_fill = False
         self.auto_fill = auto_fill
@@ -185,7 +185,7 @@ class FloatSlot(Slot):
         mappings: List[Dict[Text, Any]],
         initial_value: Optional[float] = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = False,
+        auto_fill: bool = True,
         max_value: float = 1.0,
         min_value: float = 0.0,
         influence_conversation: bool = True,
@@ -326,7 +326,7 @@ class CategoricalSlot(Slot):
         values: Optional[List[Any]] = None,
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = False,
+        auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
@@ -431,7 +431,7 @@ class AnySlot(Slot):
         mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = False,
+        auto_fill: bool = True,
         influence_conversation: bool = False,
     ) -> None:
         """Creates an `Any  Slot` (see parent class for detailed docstring).

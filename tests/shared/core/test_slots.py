@@ -396,7 +396,7 @@ def test_categorical_slot_ignores_none_value():
 )
 def test_raises_deprecation_warning_auto_fill_true(slot_type: Type[Slot]):
     with pytest.warns(FutureWarning) as warning:
-        slot = slot_type(name="test", mappings=[{}], auto_fill=True)
+        slot = slot_type(name="test", mappings=[{}])
 
     assert slot.auto_fill is False
     assert "Slot auto-fill has been deactivated in 3.0" in str(warning[0].message)
