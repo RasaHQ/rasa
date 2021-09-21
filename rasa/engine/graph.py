@@ -201,6 +201,15 @@ class GraphComponent(ABC):
         return None
 
     @staticmethod
+    def not_supported_languages() -> Optional[List[Text]]:
+        """Determines which languages this component cannot work with.
+
+        Returns: A list of not supported languages, or
+            `None` to signify all are supported.
+        """
+        return None
+
+    @staticmethod
     def required_packages() -> List[Text]:
         """Any extra python dependencies required for this component to run."""
         return []
@@ -260,6 +269,8 @@ class ExecutionContext:
     model_id: Optional[Text] = None
     should_add_diagnostic_data: bool = False
     is_finetuning: bool = False
+    # This is set by the `GraphNode` before it is passed to the `GraphComponent`.
+    node_name: Optional[Text] = None
 
 
 class GraphNode:
@@ -322,7 +333,9 @@ class GraphNode:
         self._model_storage = model_storage
         self._existing_resource = resource
 
-        self._execution_context: ExecutionContext = execution_context
+        self._execution_context: ExecutionContext = dataclasses.replace(
+            execution_context, node_name=self._node_name
+        )
 
         self._hooks: List[GraphNodeHook] = hooks if hooks else []
 

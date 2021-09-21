@@ -30,24 +30,15 @@ class TrainingDataImporter:
         """
         raise NotImplementedError()
 
-    def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
         Args:
-            template_variables: Values of templates that should be replaced while
-                                reading the story files.
-            use_e2e: Specifies whether to parse end to end learning annotations.
             exclusion_percentage: Amount of training data that should be excluded.
 
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        # TODO: Drop `use_e2e` in Rasa Open Source 3.0.0 when removing Markdown support
         raise NotImplementedError()
 
     def get_conversation_tests(self) -> StoryGraph:
@@ -56,7 +47,7 @@ class TrainingDataImporter:
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        return self.get_stories(use_e2e=True)
+        return self.get_stories()
 
     def get_config(self) -> Dict:
         """Retrieves the configuration that should be used for the training.
@@ -210,12 +201,7 @@ class NluDataImporter(TrainingDataImporter):
         """Retrieves model domain (see parent class for full docstring)."""
         return Domain.empty()
 
-    def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return StoryGraph([])
 
@@ -259,16 +245,10 @@ class CombinedDataImporter(TrainingDataImporter):
         )
 
     @rasa.shared.utils.common.cached_method
-    def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         stories = [
-            importer.get_stories(template_variables, use_e2e, exclusion_percentage)
-            for importer in self._importers
+            importer.get_stories(exclusion_percentage) for importer in self._importers
         ]
 
         return reduce(
@@ -387,16 +367,9 @@ class ResponsesSyncImporter(TrainingDataImporter):
             {},
         )
 
-    def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
-        return self._importer.get_stories(
-            template_variables, use_e2e, exclusion_percentage
-        )
+        return self._importer.get_stories(exclusion_percentage)
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
@@ -477,17 +450,13 @@ class E2EImporter(TrainingDataImporter):
     def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
         See parent class for details.
         """
-        return self.importer.get_stories(
-            template_variables, use_e2e, exclusion_percentage
-        )
+        return self.importer.get_stories(exclusion_percentage)
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""

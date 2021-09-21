@@ -45,6 +45,7 @@ from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
@@ -752,8 +753,6 @@ def ensure_schema_exists(session: "Session") -> None:
 
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
-
-    from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
     Base: DeclarativeMeta = declarative_base()
 

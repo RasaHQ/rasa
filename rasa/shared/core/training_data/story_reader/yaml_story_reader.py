@@ -73,13 +73,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             A new reader instance.
         """
-        return cls(
-            reader.domain,
-            reader.template_variables,
-            reader.use_e2e,
-            reader.source_name,
-            reader._is_used_for_training,
-        )
+        return cls(reader.domain, reader.source_name)
 
     def read_from_file(
         self, filename: Union[Text, Path], skip_validation: bool = False
@@ -338,26 +332,48 @@ class YAMLStoryReader(StoryReader):
             )
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
-        utterances = []
+        events: List = []
 
-        for utterance in step.get(KEY_OR):
-            if KEY_USER_INTENT in utterance.keys():
-                utterance = self._parse_raw_user_utterance(utterance)
+        for item in step.get(KEY_OR):
+            if KEY_USER_INTENT in item.keys():
+                utterance = self._parse_raw_user_utterance(item)
                 if utterance:
-                    utterances.append(utterance)
+                    events.append(utterance)
+            elif KEY_CHECKPOINT_SLOTS in item.keys():
+                for slot in item.get(KEY_CHECKPOINT_SLOTS, []):
+                    if isinstance(slot, dict):
+                        for key, value in slot.items():
+                            parsed_events = self._parse_events(
+                                SlotSet.type_name, {key: value}
+                            )
+                            events.extend(parsed_events)
+                    elif isinstance(slot, str):
+                        parsed_events = self._parse_events(
+                            SlotSet.type_name, {slot: self._slot_default_value(slot)}
+                        )
+                        events.extend(parsed_events)
+                    else:
+                        rasa.shared.utils.io.raise_warning(
+                            f"Issue found in '{self.source_name}':\n"
+                            f"Invalid slot: \n{slot}\n"
+                            f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
+                            f"YAML dictionaries or Strings. "
+                            f"The checkpoint will be skipped.",
+                            docs=self._get_docs_link(),
+                        )
+                        return
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}': \n"
-                    f"`OR` statement can only have '{KEY_USER_INTENT}' "
+                    f"`OR` statement can have '{KEY_USER_INTENT}' or '{KEY_SLOT_NAME}'"
                     f"as a sub-element. This step will be skipped:\n"
-                    f"'{utterance}'\n",
+                    f"'{item}'\n",
                     docs=self._get_docs_link(),
                 )
                 return
 
-        self.current_step_builder.add_user_messages(
-            utterances, self._is_used_for_training
-        )
+        if events:
+            self.current_step_builder.add_events(events)
 
     def _user_intent_from_step(
         self, step: Dict[Text, Any]
@@ -468,7 +484,6 @@ class YAMLStoryReader(StoryReader):
         return final_entities
 
     def _parse_slot(self, step: Dict[Text, Any]) -> None:
-
         for slot in step.get(KEY_CHECKPOINT_SLOTS, []):
             if isinstance(slot, dict):
                 for key, value in slot.items():

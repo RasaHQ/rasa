@@ -1246,11 +1246,11 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     This parameter sets the number of units in the transformer (default: `256`).
     The vectors coming out of the transformers will have the given `transformer_size`.
 
-  * `weight_sparsity`:
-    This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
-    in the model (default: `0.8`). The value should be between 0 and 1. If you set `weight_sparsity`
-    to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
-    set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+  * `connection_density`:
+    This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
+    layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
+    to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+    set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
   * `constrain_similarities`:
@@ -1344,7 +1344,7 @@ However, additional parameters exist that can be adapted.
 | negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
 |                                 |                  | similarity between embeddings of different labels.           |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+| connection_density              | 0.2              | Connection density of the weights in dense layers.           |
 |                                 |                  | Value should be between 0 and 1.                             |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
@@ -1410,13 +1410,10 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"        | Affects how model's confidence for each intent               |
-|                                 |                  | is computed. It can take two values:                         |
+|                                 |                  | is computed. Currently, only one value is supported:         |
 |                                 |                  | 1. `softmax` - Similarities between input and intent         |
 |                                 |                  | embeddings are post-processed with a softmax function,       |
 |                                 |                  | as a result of which confidence for all intents sum up to 1. |
-|                                 |                  | 2. `linear_norm` - Linearly normalized dot product similarity|
-|                                 |                  | between input and intent embeddings. Confidence for each     |
-|                                 |                  | intent will be in the range `[0,1]`                          |
 |                                 |                  | This parameter does not affect the confidence for entity     |
 |                                 |                  | prediction.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
@@ -1713,7 +1710,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 
   If you want to pass custom features, such as pre-trained word embeddings, to `CRFEntityExtractor`, you can
-  add any dense featurizer to the pipeline before the `CRFEntityExtractor`.
+  add any dense featurizer to the pipeline before the `CRFEntityExtractor` and subsequently configure
+  `CRFEntityExtractor` to make use of the dense features by adding `"text_dense_feature"` to its feature configuration.
   `CRFEntityExtractor` automatically finds the additional dense features and checks if the dense features are an
   iterable of `len(tokens)`, where each entry is a vector.
   A warning will be shown in case the check fails.
@@ -1730,26 +1728,27 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   The following features are available:
 
   ```
-  ==============  ==========================================================================================
-  Feature Name    Description
-  ==============  ==========================================================================================
-  low             Checks if the token is lower case.
-  upper           Checks if the token is upper case.
-  title           Checks if the token starts with an uppercase character and all remaining characters are
-                  lowercased.
-  digit           Checks if the token contains just digits.
-  prefix5         Take the first five characters of the token.
-  prefix2         Take the first two characters of the token.
-  suffix5         Take the last five characters of the token.
-  suffix3         Take the last three characters of the token.
-  suffix2         Take the last two characters of the token.
-  suffix1         Take the last character of the token.
-  pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
-  pos2            Take the first two characters of the Part-of-Speech tag of the token
-                  (``SpacyTokenizer`` required).
-  pattern         Take the patterns defined by ``RegexFeaturizer``.
-  bias            Add an additional "bias" feature to the list of features.
-  ==============  ==========================================================================================
+  ===================  ==========================================================================================
+  Feature Name         Description
+  ===================  ==========================================================================================
+  low                  Checks if the token is lower case.
+  upper                Checks if the token is upper case.
+  title                Checks if the token starts with an uppercase character and all remaining characters are
+                       lowercased.
+  digit                Checks if the token contains just digits.
+  prefix5              Take the first five characters of the token.
+  prefix2              Take the first two characters of the token.
+  suffix5              Take the last five characters of the token.
+  suffix3              Take the last three characters of the token.
+  suffix2              Take the last two characters of the token.
+  suffix1              Take the last character of the token.
+  pos                  Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+  pos2                 Take the first two characters of the Part-of-Speech tag of the token
+                       (``SpacyTokenizer`` required).
+  pattern              Take the patterns defined by ``RegexFeaturizer``.
+  bias                 Add an additional "bias" feature to the list of features.
+  text_dense_features  Adds additional features from a dense featurizer.
+  ===================  ==========================================================================================
   ```
 
   As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
@@ -1782,6 +1781,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         "pattern",
       ],
       ["low", "title", "upper"],
+      ["text_dense_features"]
     ]
     # The maximum number of iterations for optimization algorithms.
     "max_iterations": 50
@@ -1808,6 +1808,11 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   :::
 
+  :::note
+  If `text_dense_features` features are used, you need to have a dense featurizer (e.g. `LanguageModelFeaturizer`) in
+  your pipeline.
+
+  :::
 
 ### DucklingEntityExtractor
 
@@ -2175,11 +2180,11 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
       This parameter sets the number of units in the transformer (default: `256`).
       The vectors coming out of the transformers will have the given `transformer_size`.
 
-    * `weight_sparsity`:
-      This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
-      in the model (default: `0.8`). The value should be between 0 and 1. If you set `weight_sparsity`
-      to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
-      set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+    * `connection_density`:
+      This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
+      layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
+      to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+      set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
       to learn.
 
     * `BILOU_flag`:
@@ -2248,7 +2253,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   |                                 |                  | which is deprecated (see changelog for 2.3.4).               |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
-  |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
+  |                                 |                  | 'cross_entropy'. Set to 0 to turn off normalization.         |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
   |                                 |                  | embedding vectors for correct labels.                        |
@@ -2269,7 +2274,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   | negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
   |                                 |                  | similarity between embeddings of different labels.           |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+  | connection_density              | 0.2              | Connection density of the weights in dense layers.           |
   |                                 |                  | Value should be between 0 and 1.                             |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
@@ -2511,11 +2516,11 @@ Selectors predict a bot response from a set of candidate responses.
     This parameter sets the number of units in the transformer (default: `None`).
     The vectors coming out of the transformers will have the given `transformer_size`.
 
-  * `weight_sparsity`:
-    This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
-    in the model (default: `0.8`). The value should be between 0 and 1. If you set `weight_sparsity`
-    to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
-    set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+  * `connection_density`:
+    This parameter defines the fraction of kernel weights that are set to non zero values for all feed forward
+    layers in the model (default: `0.2`). The value should be between 0 and 1. If you set `connection_density`
+    to 1, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+    set `connection_density` to 0 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
   * `constrain_similarities`:
@@ -2629,7 +2634,7 @@ However, additional parameters exist that can be adapted.
 | negative_margin_scale           | 0.8               | The scale of how important is to minimize the maximum        |
 |                                 |                   | similarity between embeddings of different labels.           |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| weight_sparsity                 | 0.8               | Sparsity of the weights in dense layers.                     |
+| connection_density              | 0.2               | Connection density of the weights in dense layers.           |
 |                                 |                   | Value should be between 0 and 1.                             |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | drop_rate                       | 0.2               | Dropout rate for encoder. Value should be between 0 and 1.   |
@@ -2683,13 +2688,10 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"         | Affects how model's confidence for each response label       |
-|                                 |                   | is computed. It can take two values:                         |
+|                                 |                   | is computed. Currently, only one value is supported:         |
 |                                 |                   | 1. `softmax` - Similarities between input and response label |
 |                                 |                   | embeddings are post-processed with a softmax function,       |
 |                                 |                   | as a result of which confidence for all labels sum up to 1.  |
-|                                 |                   | 2. `linear_norm` - Linearly normalized dot product similarity|
-|                                 |                   | between input and response label embeddings. Confidence for  |
-|                                 |                   | each label is in the range `[0, 1]`.                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 ```
 
