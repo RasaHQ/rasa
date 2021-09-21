@@ -3,7 +3,6 @@ import textwrap
 from pathlib import Path
 from typing import Text, Optional, Dict, Any, List, Callable, Coroutine
 import pytest
-
 import rasa.core.test
 import rasa.shared.utils.io
 from rasa.core.policies.ensemble import SimplePolicyEnsemble
@@ -29,6 +28,7 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import State
 from rasa.core.policies.policy import SupportedData
+from rasa.shared.utils.io import read_file, read_yaml
 
 
 def _probabilities_with_action_unlikely_intent_for(
@@ -125,6 +125,49 @@ async def test_testing_warns_if_action_unknown(
     assert "Test story" in output
     assert "contains the bot utterance" in output
     assert "which is not part of the training data / domain" in output
+
+
+async def test_testing_with_utilizing_retrieval_intents(
+    response_selector_agent: Agent,
+    response_selector_test_stories: Path,
+    response_selector_results: Path,
+):
+    if not response_selector_results.exists():
+        response_selector_results.mkdir()
+
+    result = await rasa.core.test.test(
+        stories=response_selector_test_stories,
+        agent=response_selector_agent,
+        e2e=True,
+        out_directory=response_selector_results,
+        disable_plotting=True,
+        warnings=False,
+    )
+    failed_stories_path = response_selector_results / "failed_test_stories.yml"
+    failed_stories = read_yaml(read_file(failed_stories_path, "utf-8"))
+    # check that the intent is shown correctly in the failed test stories file
+    target_intents = {
+        "test 0": "chitchat/ask_name",
+        "test 1": "chitchat/ask_name",
+        "test 2": "chitchat",
+        "test 3": "chitchat",
+    }
+    for story in failed_stories["stories"]:
+        test_name = story["story"].split("-")[0].strip()
+        assert story["steps"][0]["intent"] == target_intents[test_name]
+    # check that retrieval intent for actions is retrieved correctly
+    # and only when it's needed.
+    target_actions = {
+        "utter_chitchat": "utter_chitchat",
+        "utter_chitchat/ask_name": "utter_chitchat/ask_name",
+        "utter_chitchat/ask_weather": "utter_chitchat/ask_name",
+        "utter_goodbye": "utter_chitchat/ask_name",
+    }
+    predicted_actions = result["actions"][::2]
+    for predicted_action in predicted_actions:
+        assert (
+            target_actions[predicted_action["action"]] == predicted_action["predicted"]
+        )
 
 
 async def test_testing_does_not_warn_if_intent_in_domain(
