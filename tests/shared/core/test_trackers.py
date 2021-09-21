@@ -1373,11 +1373,13 @@ def test_autofill_slots_for_policy_entities():
                 {nlu_entity}:
                     type: text
                     mappings:
-                    - type: from_text
+                    - type: from_entity
+                      entity: {nlu_entity}
                 {policy_entity}:
                     type: text
                     mappings:
-                    - type: from_text
+                    - type: from_entity
+                      entity: {policy_entity}
             """
         )
     )

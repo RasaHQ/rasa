@@ -1221,7 +1221,7 @@ class Domain:
         return states
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
-        """Creates slot events for entities if auto-filling is enabled.
+        """Creates slot events for entities if from_entity mapping matches.
 
         Args:
             entities: The list of entities.
@@ -1229,14 +1229,20 @@ class Domain:
         Returns:
             A list of `SlotSet` events.
         """
+        # TODO: revisit/remove method after this is fixed:
+        #  https://github.com/RasaHQ/rasa/issues/9364
         if self.store_entities_as_slots:
             slot_events = []
             for slot in self.slots:
-                # if slot.auto_fill:
                 matching_entities = [
                     entity.get("value")
                     for entity in entities
-                    if entity.get("entity") == slot.name
+                    if any(
+                        [
+                            entity.get("entity") == mapping.get("entity", None)
+                            for mapping in slot.mappings
+                        ]
+                    )
                 ]
                 if matching_entities:
                     if slot.type_name == "list":
@@ -1975,14 +1981,17 @@ def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
         mappings = properties.get("mappings")
 
         if mappings is None:
-            raise InvalidDomain(f"The slot '{slot_name}' has no mappings defined.")
+            raise InvalidDomain(
+                f"The slot '{slot_name}' has no mappings defined. "
+                f"Please see {DOCS_URL_SLOTS} for more information."
+            )
 
         if not isinstance(mappings, list):
             raise InvalidDomain(
                 f"The slot mappings for slot '{slot_name}' in "
                 f"the domain have type '{type(mappings)}'. "
                 f"It is required to provide a list of slot "
-                f"mappings. Please see the documentation "
+                f"mappings. Please see {DOCS_URL_SLOTS} "
                 f"for more information."
             )
 
