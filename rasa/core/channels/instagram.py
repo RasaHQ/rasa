@@ -4,6 +4,7 @@ import inspect
 import logging
 from typing import Text, Dict, Any, Callable, Awaitable, Optional, List
 
+import rasa.shared.utils.io
 from fbmessenger import MessengerClient
 from fbmessenger.elements import Text as InstaText
 from fbmessenger.attachments import Image
@@ -17,7 +18,9 @@ from sanic.response import HTTPResponse
 logger = logging.getLogger(__name__)
 
 
-class Messenger:
+class InstaMessenger:
+    """Implement a instagram messenger to parse incoming webhooks and send msgs."""
+
     @classmethod
     def name(cls) -> Text:
         return "instagram"
@@ -33,19 +36,11 @@ class Messenger:
         self.last_message: Dict[Text, Any] = {}
 
     def get_user_id(self, metadata) -> Text:
-        logger.info(
-            f"function-name: {inspect.stack()[0][3]}\n"
-            f"metadata: {metadata}"
-            f"last message: {self.last_message}"
-        )
         return self.last_message.get("sender", {}).get("id", "")
 
     @staticmethod
     def _is_user_message(message: Dict[Text, Any]) -> bool:
         """Check if the message is a message from the user"""
-        print(
-            f"function-name: {inspect.stack()[0][3]}\n" f"user_message: {str(message)}"
-        )
         return "text" in message["message"]
 
     @staticmethod
@@ -87,6 +82,9 @@ class Messenger:
     async def message(
         self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
     ) -> None:
+        """
+        checks if the messages are of the type which instagram supports
+        """
         if self._is_user_message(message):
             text = message["message"]["text"]
         elif self._is_image_message(message):
@@ -109,12 +107,9 @@ class Messenger:
     async def _handle_user_message(
         self, text: Text, sender_id: Text, metadata: Optional[Dict[Text, Any]]
     ) -> None:
-        logger.info(
-            f"function-name: {inspect.stack()[0][3]}\n"
-            f"sender-id: {sender_id}\n"
-            f"metadata: {str(metadata)}"
-        )
-        out_channel = MessengerBot(self.client)
+        """Pass on the text to the dialogue engine for processing."""
+
+        out_channel = InstaMessengerBot(self.client)
         await out_channel.send_action(sender_id, sender_action="mark_seen")
 
         user_msg = UserMessage(
@@ -130,29 +125,80 @@ class Messenger:
             await out_channel.send_action(sender_id, sender_action="typing_off")
 
 
-class MessengerBot(OutputChannel):
+class InstaMessengerBot(OutputChannel):
+    """A bot that uses insta-messenger to communicate."""
+
     @classmethod
     def name(cls) -> Text:
         return "instagram"
 
     def __init__(self, instagram_client: MessengerClient) -> None:
+
         self.instagram_client = instagram_client
         super().__init__()
 
     def send(self, recipient_id: Text, element: Any):
+        """Sends a message to the recipient using the messenger client."""
+
+        # this is a bit hacky, but the client doesn't have a proper API to
+        # send messages but instead expects the incoming sender to be present
+        # which we don't have as it is stored in the input channel.
         self.instagram_client.send(element.to_dict(), recipient_id, "RESPONSE")
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
+        """Send a message through this channel."""
         for message_part in text.strip().split("\n\n"):
-            print(f"message: {message_part}")
             self.send(recipient_id, InstaText(text=message_part))
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
+        """Sends an image. Default will just post the url as a string."""
         self.send(recipient_id, Image(url=image))
+
+    async def send_action(self, recipient_id: Text, sender_action: Text) -> None:
+        """Sends a sender action to instagram (e.g. "typing_on").
+
+        Args:
+            recipient_id: recipient
+            sender_action: action to send, e.g. "typing_on" or "mark_seen"
+        """
+        self.instagram_client.send_action(
+            SenderAction(sender_action).to_dict(), recipient_id
+        )
+
+    async def send_text_with_buttons(
+        self,
+        recipient_id: Text,
+        text: Text,
+        buttons: List[Dict[Text, Any]],
+        **kwargs: Any,
+    ) -> None:
+        """Sends buttons to the output.
+        Currently there is no predefined way to create a message with
+        buttons in the instagram messenger framework - so we need to create the payload on our own
+        """
+        if len(buttons) > 3:
+            rasa.shared.utils.io.raise_warning(
+                "Instagram API currently allows only up to 3 buttons. "
+                "If you add more, all will be ignored."
+            )
+            await self.send_text_message(recipient_id, text, **kwargs)
+        else:
+            self._add_postback_info(buttons)
+            payload = {
+                "attachment": {
+                    "type": "template",
+                    "payload": {
+                        "template_type": "button",
+                        "text": text,
+                        "buttons": buttons,
+                    },
+                }
+            }
+            self.instagram_client.send(payload, recipient_id, "RESPONSE")
 
     async def send_quick_replies(
         self,
@@ -166,28 +212,12 @@ class MessengerBot(OutputChannel):
         quick_replies = self._convert_to_quick_reply(quick_replies)
         self.send(recipient_id, InstaText(text=text, quick_replies=quick_replies))
 
-    async def send_text_with_buttons(
-        self,
-        recipient_id: Text,
-        text: Text,
-        buttons: List[Dict[Text, Any]],
-        **kwargs: Any,
-    ) -> None:
-        """Sends buttons to the output.
-        Currently there is no predefined way to create a message with
-        buttons in the instagram messenger framework - so we need to create the payload on our own
-         """
-        payload = {
-            "attachment": {
-                "type": "template",
-                "payload": {
-                    "template_type": "button",
-                    "text": text,
-                    "buttons": buttons,
-                },
-            }
-        }
-        self.instagram_client.send(payload, recipient_id, "RESPONSE")
+    @staticmethod
+    def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
+        """Make sure every button has a type. Modifications happen in place."""
+        for button in buttons:
+            if "type" not in button:
+                button["type"] = "postback"
 
     @staticmethod
     def _convert_to_quick_reply(quick_replies: List[Dict[Text, Any]]) -> QuickReplies:
@@ -205,22 +235,12 @@ class MessengerBot(OutputChannel):
                 )
             except KeyError as e:
                 raise ValueError(
-                    'Facebook quick replies must define a "{}" field.'.format(e.args[0])
+                    'Instagram quick replies must define a "{}" field.'.format(
+                        e.args[0]
+                    )
                 )
 
         return QuickReplies(quick_replies=fb_quick_replies)
-
-    @staticmethod
-    def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
-        """Make sure every button has a type. Modifications happen in place."""
-        for button in buttons:
-            if "type" not in button:
-                button["type"] = "postback"
-
-    async def send_action(self, recipient_id: Text, sender_action: Text) -> None:
-        self.instagram_client.send_action(
-            SenderAction(sender_action).to_dict(), recipient_id
-        )
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
@@ -237,13 +257,15 @@ class MessengerBot(OutputChannel):
         elif json_message["template_type"] in ["generic", "product"]:
             self.instagram_client.send(json_message, recipient_id, "RESPONSE")
         else:
-            print(
+            logger.warning(
                 "Instagram API currently doesn't support other kind of messages. "
                 "If you add, all will be ignored."
             )
 
 
 class InstagramInput(InputChannel):
+    """Instagram input channel implementation. Based on the HTTPInputChannel."""
+
     @classmethod
     def name(cls) -> Text:
         return "instagram"
@@ -262,14 +284,22 @@ class InstagramInput(InputChannel):
     def __init__(
         self, insta_verify: Text, insta_secret: Text, insta_access_token: Text
     ) -> None:
+        """Create a instagram input channel.
+
+        Needs a couple of settings to properly authenticate and validate
+        messages. Details to setup:
+
+        https://github.com/rehabstudio/fbmessenger#facebook-app-setup
+
+        Args:
+            insta_verify: FB Verification string
+                (can be chosen by yourself on webhook creation)
+            insta_secret: facebook application secret
+            insta_access_token: access token to post in the name of the FB page
+        """
         self.insta_verify = insta_verify
         self.insta_secret = insta_secret
         self.insta_access_token = insta_access_token
-        print(
-            f"verify: {self.insta_verify}\n"
-            f"secret: {self.insta_secret}\n"
-            f"token: {self.insta_access_token}"
-        )
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -286,7 +316,7 @@ class InstagramInput(InputChannel):
             if request.args.get("hub.verify_token") == self.insta_verify:
                 return response.text(request.args.get("hub.challenge"))
             else:
-                print(
+                logger.warning(
                     "Invalid instagram verify token! Make sure this matches "
                     "your webhook settings on the facebook app."
                 )
@@ -295,18 +325,19 @@ class InstagramInput(InputChannel):
         @insta_webhook.route("/webhook", methods=["POST"])
         async def webhook(request: Request) -> HTTPResponse:
             signature = request.headers.get("X-Hub_Signature") or ""
-            # if not self.validate_hub_signature(self.insta_secret, request.body, signature):
-            #     print(
-            #         "Wrong instagram secret! Make sure this matches the "
-            #         "secret in your facebook app settings"
-            #     )
-            #     return response.text("not validated")
-            messenger = Messenger(self.insta_access_token, on_new_message)
+            if not self.validate_hub_signature(
+                self.insta_secret, request.body, signature
+            ):
+                logger.warning(
+                    "Wrong instagram secret! Make sure this matches the "
+                    "secret in your facebook app settings"
+                )
+                return response.text("not validated")
+
+            messenger = InstaMessenger(self.insta_access_token, on_new_message)
+
             metadata = self.get_metadata(request)
             await messenger.handle(request.json, metadata)
-            print(
-                f"function-name: {inspect.stack()[0][3]}\n" f"response: {response.text}"
-            )
             return response.text("success")
 
         return insta_webhook
@@ -315,6 +346,18 @@ class InstagramInput(InputChannel):
     def validate_hub_signature(
         app_secret: Text, request_payload: bytes, hub_signature_header: Text
     ) -> bool:
+        """Make sure the incoming webhook requests are properly signed.
+
+        Args:
+            app_secret: Secret Key for application
+            request_payload: request body
+            hub_signature_header: X-Hub-Signature header sent with request
+
+        Returns:
+            bool: indicated that hub signature is validated
+        """
+
+        # noinspection PyBroadException
         try:
             hash_method, hub_signature = hub_signature_header.split("=")
         except Exception:
@@ -331,4 +374,4 @@ class InstagramInput(InputChannel):
 
     def get_output_channel(self) -> Optional["OutputChannel"]:
         client = MessengerClient(self.insta_access_token)
-        return MessengerBot(client)
+        return InstaMessengerBot(client)
