@@ -493,13 +493,22 @@ def blank_config() -> RasaNLUModelConfig:
 
 
 @pytest.fixture(scope="session")
+async def response_selector_test_stories() -> Path:
+    return Path("data/test_response_selector_bot/tests/test_stories.yml")
+
+
+@pytest.fixture(scope="session")
+async def response_selector_results() -> Path:
+    return Path("data/test_response_selector_bot/results/")
+
+
+@pytest.fixture(scope="session")
 async def trained_response_selector_bot(trained_async: Callable) -> Path:
     zipped_model = await trained_async(
         domain="data/test_response_selector_bot/domain.yml",
         config="data/test_response_selector_bot/config.yml",
         training_files=[
             "data/test_response_selector_bot/data/rules.yml",
-            "data/test_response_selector_bot/data/stories.yml",
             "data/test_response_selector_bot/data/nlu.yml",
         ],
     )
@@ -551,60 +560,6 @@ async def e2e_bot(
         raise RasaException("Model training for e2ebot failed.")
 
     return Path(zipped_model)
-
-
-@pytest.fixture(scope="session")
-async def intent_retrieval_bot_domain_file() -> Path:
-    return Path("data/test_retrieval_intents_in_test_stories/domain.yml")
-
-
-@pytest.fixture(scope="session")
-async def intent_retrieval_bot_config_file() -> Path:
-    return Path("data/test_retrieval_intents_in_test_stories/config.yml")
-
-
-@pytest.fixture(scope="session")
-async def intent_retrieval_bot_training_files() -> List[Path]:
-    return [
-        Path("data/test_retrieval_intents_in_test_stories/data/stories.yml"),
-        Path("data/test_retrieval_intents_in_test_stories/data/nlu.yml"),
-    ]
-
-
-@pytest.fixture(scope="session")
-async def intent_retrieval_bot_test_stories() -> Path:
-    return Path("data/test_retrieval_intents_in_test_stories/tests/test_stories.yml")
-
-
-@pytest.fixture(scope="session")
-async def intent_retrieval_bot_test_results() -> Path:
-    return Path("data/test_retrieval_intents_in_test_stories/results/")
-
-
-@pytest.fixture(scope="session")
-async def trained_intent_retrieval_bot(
-    trained_async: Callable,
-    intent_retrieval_bot_domain_file: Path,
-    intent_retrieval_bot_config_file: Path,
-    intent_retrieval_bot_training_files: List[Path],
-) -> Path:
-    zipped_model = await trained_async(
-        domain=intent_retrieval_bot_domain_file,
-        config=intent_retrieval_bot_config_file,
-        training_files=intent_retrieval_bot_training_files,
-    )
-
-    if not zipped_model:
-        raise RasaException("Model training for intent retrieval bot failed.")
-
-    return Path(zipped_model)
-
-
-@pytest.fixture(scope="module")
-async def intent_retrieval_agent(
-    trained_intent_retrieval_bot: Optional[Path],
-) -> Agent:
-    return Agent.load_local_model(trained_intent_retrieval_bot)
 
 
 @pytest.fixture(scope="module")

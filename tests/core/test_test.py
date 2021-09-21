@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Text, Optional, Dict, Any, List, Callable
 import pytest
 import os
-import yaml
 import rasa.core.test
 import rasa.shared.utils.io
 from rasa.core.policies.ensemble import SimplePolicyEnsemble
@@ -26,6 +25,7 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import State
 from rasa.core.policies.policy import SupportedData
+from rasa.shared.utils.io import read_file, read_yaml
 
 
 def _probabilities_with_action_unlikely_intent_for(
@@ -125,38 +125,46 @@ async def test_testing_warns_if_action_unknown(
 
 
 async def test_testing_with_utilizing_retrieval_intents(
-    intent_retrieval_agent: Agent,
-    intent_retrieval_bot_test_stories: Path,
-    intent_retrieval_bot_test_results: Path,
+    response_selector_agent: Agent,
+    response_selector_test_stories: Path,
+    response_selector_results: Path,
 ):
-    if not os.path.exists(intent_retrieval_bot_test_results):
-        os.mkdir(intent_retrieval_bot_test_results)
+    if not response_selector_results.exists():
+        os.mkdir(response_selector_results)
 
     result = await rasa.core.test.test(
-        stories=intent_retrieval_bot_test_stories,
-        agent=intent_retrieval_agent,
+        stories=response_selector_test_stories,
+        agent=response_selector_agent,
         e2e=True,
-        out_directory=intent_retrieval_bot_test_results,
+        out_directory=response_selector_results,
         disable_plotting=True,
         warnings=False,
     )
-    failed_stories_path = os.path.join(
-        intent_retrieval_bot_test_results, "failed_test_stories.yml"
-    )
-    with open(failed_stories_path, "r") as stream:
-        failed_stories = yaml.safe_load(stream)
+    failed_stories_path = response_selector_results / "failed_test_stories.yml"
+    failed_stories = read_yaml(read_file(failed_stories_path, "utf-8"))
     # check that the intent is shown correctly in the failed test stories file
-    intent, full_intent = "faq", "faq/is-this-legit"
-    target_intents = [full_intent, full_intent, intent]
-    for index, story in enumerate(failed_stories["stories"]):
-        assert story["steps"][0]["intent"] == target_intents[index]
+    target_intents = {
+        "test 0": "chitchat/ask_name",
+        "test 1": "chitchat/ask_name",
+        "test 2": "chitchat",
+        "test 3": "chitchat",
+    }
+    for story in failed_stories["stories"]:
+        test_name = story["story"].split("-")[0].strip()
+        assert story["steps"][0]["intent"] == target_intents[test_name]
     # check that retrieval intent for actions is retrieved correctly
-    # and only when it's needed
-    action, full_action = "utter_faq", "utter_faq/is-this-legit"
-    target_actions = [full_action, full_action, full_action, action]
+    # and only when it's needed.
+    target_actions = {
+        "utter_chitchat": "utter_chitchat",
+        "utter_chitchat/ask_name": "utter_chitchat/ask_name",
+        "utter_chitchat/ask_weather": "utter_chitchat/ask_name",
+        "utter_goodbye": "utter_chitchat/ask_name",
+    }
     predicted_actions = result["actions"][::2]
-    for target_action, predicted_action in zip(target_actions, predicted_actions):
-        assert target_action == predicted_action["predicted"]
+    for predicted_action in predicted_actions:
+        assert (
+            target_actions[predicted_action["action"]] == predicted_action["predicted"]
+        )
 
 
 async def test_testing_does_not_warn_if_intent_in_domain(
@@ -185,7 +193,6 @@ def _train_rule_based_agent(
     monkeypatch: MonkeyPatch,
     ignore_action_unlikely_intent: bool,
 ) -> Agent:
-
     # We need `RulePolicy` to predict the correct actions
     # in a particular conversation context as seen during training.
     # Since it can get affected by `action_unlikely_intent` being triggered in
