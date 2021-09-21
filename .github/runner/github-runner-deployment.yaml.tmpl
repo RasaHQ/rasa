@@ -25,7 +25,7 @@ spec:
       terminationGracePeriodSeconds: 720
       containers:
       - name: github-runner
-        image: {{getenv "GH_RUNNER_IMAGE"}}:latest
+        image: {{getenv "GH_RUNNER_IMAGE"}}:test-yiyao
         imagePullPolicy: Always
         livenessProbe:
           initialDelaySeconds: 30
