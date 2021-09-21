@@ -457,7 +457,7 @@ def test_reduce_raises_if_combining_different_origins_or_attributes(differ: Text
         message = "Expected all Features to describe the same attribute"
         expected_origin = ["origin"]
     else:
-        message = f"Expected 'origin-1' to be the origin of the 0-th"
+        message = "Expected 'origin-1' to be the origin of the 0-th"
         expected_origin = ["origin-1"]
     with pytest.raises(ValueError, match=message):
         Features.reduce(features_list, expected_origins=expected_origin)
