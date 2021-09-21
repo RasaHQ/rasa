@@ -23,6 +23,7 @@ from typing import (
 )
 
 import rasa.shared.utils.common
+import rasa.shared.utils.io
 from typing import Union
 
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
@@ -247,19 +248,7 @@ class Event(ABC):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         self.timestamp = timestamp or time.time()
-        self._metadata = metadata or {}
-
-    @property
-    def metadata(self) -> Dict[Text, Any]:
-        # Needed for compatibility with Rasa versions <1.4.0. Previous versions
-        # of Rasa serialized trackers using the pickle module. For the moment,
-        # Rasa still supports loading these serialized trackers with pickle,
-        # but will use JSON in any subsequent save operations. Versions of
-        # trackers serialized with pickle won't include the `_metadata`
-        # attribute in their events, so it is necessary to define this getter
-        # in case the attribute does not exist. For more information see
-        # CHANGELOG.rst.
-        return getattr(self, "_metadata", {})
+        self.metadata = metadata or {}
 
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
@@ -317,6 +306,16 @@ class Event(ABC):
 
         return d
 
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the event which is stable across python runs.
+
+        Returns:
+            fingerprint of the event
+        """
+        data = self.as_dict()
+        del data["timestamp"]
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
+
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> Optional["Event"]:
         """Called to convert a dictionary of parameters to a single event.
@@ -324,8 +323,8 @@ class Event(ABC):
         By default uses the same implementation as the story line
         conversation ``_from_story_string``. But the subclass might
         decide to handle parameters differently if the parsed parameters
-        don't origin from a story file."""
-
+        don't origin from a story file.
+        """
         result = cls._from_story_string(parameters)
         if len(result) > 1:
             logger.warning(
@@ -544,7 +543,7 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+    def as_sub_state(self,) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         """Turns a UserUttered event into features.
 
         The substate contains information about entities, intent and text of the
@@ -571,7 +570,7 @@ class UserUttered(Event):
             if ENTITY_ATTRIBUTE_GROUP in entity
         )
 
-        out = {}
+        out: Dict[Text, Union[None, Text, List[Optional[Text]]]] = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
         if self.text and (
@@ -959,7 +958,9 @@ class SlotSet(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["SlotSet"]]:
 
         slots = []
         for slot_key, slot_val in parameters.items():
@@ -1526,7 +1527,7 @@ class ActionExecuted(Event):
             self.action_name, self.policy, self.confidence
         )
 
-    def __str__(self) -> Text:
+    def __str__(self) -> Optional[Text]:
         """Returns event as human readable string."""
         return self.action_name or self.action_text
 
@@ -1541,7 +1542,7 @@ class ActionExecuted(Event):
 
         return self.__members__() == other.__members__()
 
-    def as_story_string(self) -> Text:
+    def as_story_string(self) -> Optional[Text]:
         """Returns event in Markdown format."""
         if self.action_text:
             raise UnsupportedFeatureException(
@@ -1742,6 +1743,15 @@ class LegacyForm(ActiveLoop):
         d["event"] = ActiveLoop.type_name
         return d
 
+    def fingerprint(self) -> Text:
+        """Returns the hash of the event."""
+        d = self.as_dict()
+        # Revert event name to legacy subclass name to avoid different event types
+        # having the same fingerprint.
+        d["event"] = self.type_name
+        del d["timestamp"]
+        return rasa.shared.utils.io.get_dictionary_fingerprint(d)
+
 
 class LoopInterrupted(SkipEventInMDStoryMixin):
     """Event added by FormPolicy and RulePolicy.
@@ -1841,6 +1851,15 @@ class LegacyFormValidation(LoopInterrupted):
         # event type.
         d["event"] = LoopInterrupted.type_name
         return d
+
+    def fingerprint(self) -> Text:
+        """Returns hash of the event."""
+        d = self.as_dict()
+        # Revert event name to legacy subclass name to avoid different event types
+        # having the same fingerprint.
+        d["event"] = self.type_name
+        del d["timestamp"]
+        return rasa.shared.utils.io.get_dictionary_fingerprint(d)
 
 
 class ActionExecutionRejected(SkipEventInMDStoryMixin):

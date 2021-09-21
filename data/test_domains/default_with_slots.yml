@@ -33,6 +33,7 @@ responses:
 
 forms:
   some_form:
-    name:
-    - type: from_entity
-      entity: name
+    required_slots:
+      name:
+      - type: from_entity
+        entity: name

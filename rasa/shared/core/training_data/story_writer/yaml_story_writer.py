@@ -1,6 +1,13 @@
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Text, Union, Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Text,
+    Union,
+    Optional,
+)
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
@@ -205,27 +212,8 @@ class YAMLStoryWriter(StoryWriter):
         if user_utterance.intent_name and not user_utterance.use_text_for_featurization:
             result[KEY_USER_INTENT] = user_utterance.intent_name
 
-        if hasattr(user_utterance, "inline_comment"):
-            comment = user_utterance.inline_comment()
-            if comment:
-                result.yaml_add_eol_comment(comment, KEY_USER_INTENT)
-
-        if user_utterance.text and (
-            # We only print the utterance text if it was an end-to-end prediction
-            user_utterance.use_text_for_featurization
-            # or if we want to print a conversation test story.
-            or is_test_story
-        ):
-            result[KEY_USER_MESSAGE] = LiteralScalarString(
-                rasa.shared.core.events.format_message(
-                    user_utterance.text,
-                    user_utterance.intent_name,
-                    user_utterance.entities,
-                )
-            )
-
+        entities = []
         if len(user_utterance.entities) and not is_test_story:
-            entities = []
             for entity in user_utterance.entities:
                 if "value" in entity:
                     if hasattr(user_utterance, "inline_comment_for_entity"):
@@ -255,6 +243,27 @@ class YAMLStoryWriter(StoryWriter):
                 else:
                     entities.append(entity["entity"])
             result[KEY_ENTITIES] = entities
+
+        if hasattr(user_utterance, "inline_comment"):
+            comment = user_utterance.inline_comment(
+                force_comment_generation=not entities
+            )
+            if comment:
+                result.yaml_add_eol_comment(comment, KEY_USER_INTENT)
+
+        if user_utterance.text and (
+            # We only print the utterance text if it was an end-to-end prediction
+            user_utterance.use_text_for_featurization
+            # or if we want to print a conversation test story.
+            or is_test_story
+        ):
+            result[KEY_USER_MESSAGE] = LiteralScalarString(
+                rasa.shared.core.events.format_message(
+                    user_utterance.text,
+                    user_utterance.intent_name,
+                    user_utterance.entities,
+                )
+            )
 
         return result
 
@@ -287,14 +296,14 @@ class YAMLStoryWriter(StoryWriter):
         return result
 
     @staticmethod
-    def process_slot(event: SlotSet) -> Dict[Text, List[Dict]]:
+    def process_slot(event: SlotSet) -> OrderedDict:
         """Converts a single `SlotSet` event into an ordered dict.
 
         Args:
             event: Original `SlotSet` event.
 
         Returns:
-            Dict with an `SlotSet` event.
+            OrderedDict with an `SlotSet` event.
         """
         return OrderedDict([(KEY_SLOT_NAME, [{event.key: event.value}])])
 

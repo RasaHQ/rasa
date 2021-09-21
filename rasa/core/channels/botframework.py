@@ -75,6 +75,7 @@ class BotFramework(OutputChannel):
                 return BotFramework.headers
             else:
                 logger.error("Could not get BotFramework token")
+                return None
         else:
             return BotFramework.headers
 

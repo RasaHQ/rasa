@@ -208,7 +208,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v4
+        uses: Gr1N/setup-poetry@v7
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -340,7 +340,8 @@ jobs:
         if: failure() && steps.issue-exists.outputs.result == 'false'
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
+          github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           script: |
             var issue = await github.issues.create({
               owner: context.repo.owner,
@@ -353,7 +354,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure()  && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@f3635935f58910a6d6951b73efe9037c960c8c04  # v3
+        uses: 8398a7/action-slack@047b09b154480ed39076984b64f324fff010d703  # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -441,6 +442,7 @@ jobs:
 
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          OUTPUT="$(echo $OUTPUT | sed 's|`|\\`|g')"
           echo "::set-output name=report_description::${OUTPUT}"
 
           IS_DROPPED=false
@@ -492,19 +494,24 @@ jobs:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
           github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           script: |
+            // Prepare issue body
+            let issue_body = '*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br>'
+            issue_body += `${{ steps.performance.outputs.report_description }}`
+
+            // Open issue
             var issue = await github.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: '${{ env.GITHUB_ISSUE_TITLE }}',
               labels: ${{ env.GITHUB_ISSUE_LABELS }},
-              body: '"*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br> ${{ steps.performance.outputs.report_description }}"'
+              body: issue_body
             })
             return issue.data.number
 
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@f3635935f58910a6d6951b73efe9037c960c8c04 #v3
+        uses: 8398a7/action-slack@047b09b154480ed39076984b64f324fff010d703 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
