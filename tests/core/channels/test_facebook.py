@@ -1,4 +1,4 @@
-import logging
+import logging, pytest
 from rasa.core.channels.facebook import MessengerBot
 from fbmessenger import MessengerClient
 
@@ -33,7 +33,59 @@ def test_facebook_channel():
     assert routes_list["fb_webhook.webhook"].startswith("/webhooks/facebook/webhook")
 
 
-async def test_facebook_send_custom_json():
+@pytest.mark.parametrize(
+    "test_input, expected",
+    [
+        (
+            {
+                "blocks": [
+                    {"type": "title", "text": {"text": "Conversation progress"}},
+                    {
+                        "type": "progression_bar",
+                        "text": {"text": "progression 1", "level": "1"},
+                    },
+                ]
+            },
+            "test_id",
+        ),
+        (
+            {
+                "blocks": [
+                    {"type": "title", "text": {"text": "Conversation progress"}},
+                    {
+                        "type": "progression_bar",
+                        "text": {"text": "progression 1", "level": "1"},
+                    },
+                ],
+                "sender": {"id": "test_json_id"},
+            },
+            "test_json_id",
+        ),
+        (
+            {
+                "blocks": {
+                    "type": "progression_bar",
+                    "text": {"text": "progression 1", "level": "1"},
+                },
+                "sender": {"id": "test_json_id_2"},
+            },
+            "test_json_id_2",
+        ),
+        (
+            [
+                {
+                    "blocks": {
+                        "type": "progression_bar",
+                        "text": {"text": "progression 1", "level": "1"},
+                    }
+                },
+                {"sender": {"id": "test_json_id_3"}},
+            ],
+            "test_json_id_3",
+        ),
+    ],
+)
+async def test_facebook_send_custom_json(test_input, expected):
     # This function tests cases when the custom json is a list
     # The send_custom_json function doesn't return anything. Rather
     # it calls an object MessengerClient, that will
@@ -42,44 +94,6 @@ async def test_facebook_send_custom_json():
     # by the MessengerBot.send_custom_json_list we
     # modify MessengerClient (from the fbmessenger pypackage) to
     # return the recipient ID.
-
-    json_without_id = {
-        "blocks": [
-            {"type": "title", "text": {"text": "Conversation progress"}},
-            {
-                "type": "progression_bar",
-                "text": {"text": "progression 1", "level": "1"},
-            },
-        ]
-    }
-    json_with_id = {
-        "blocks": [
-            {"type": "title", "text": {"text": "Conversation progress"}},
-            {
-                "type": "progression_bar",
-                "text": {"text": "progression 1", "level": "1"},
-            },
-        ],
-        "sender": {"id": "test_json_id"},
-    }
-
-    json_with_id_and_blocks_as_dict = {
-        "blocks": {
-            "type": "progression_bar",
-            "text": {"text": "progression 1", "level": "1"},
-        },
-        "sender": {"id": "test_json_id_2"},
-    }
-
-    json_actually_a_list = [
-        {
-            "blocks": {
-                "type": "progression_bar",
-                "text": {"text": "progression 1", "level": "1"},
-            }
-        },
-        {"sender": {"id": "test_json_id_3"}},
-    ]
 
     class TestableMessengerClient(MessengerClient):
         def __init__(self, page_access_token, **kwargs):
@@ -100,18 +114,6 @@ async def test_facebook_send_custom_json():
     messenger_client = TestableMessengerClient(page_access_token="test_token")
     messenger_bot = MessengerBot(messenger_client)
     await messenger_bot.send_custom_json(
-        recipient_id="test_id", json_message=json_without_id
+        recipient_id="test_id", json_message=test_input
     )
-    assert messenger_bot.messenger_client.recipient_id == "test_id"
-    await messenger_bot.send_custom_json(
-        recipient_id="test_id", json_message=json_with_id
-    )
-    assert messenger_bot.messenger_client.recipient_id == "test_json_id"
-    await messenger_bot.send_custom_json(
-        recipient_id="not me", json_message=json_with_id_and_blocks_as_dict
-    )
-    assert messenger_bot.messenger_client.recipient_id == "test_json_id_2"
-    await messenger_bot.send_custom_json(
-        recipient_id="nor me", json_message=json_actually_a_list
-    )
-    assert messenger_bot.messenger_client.recipient_id == "test_json_id_3"
+    assert messenger_bot.messenger_client.recipient_id == expected
