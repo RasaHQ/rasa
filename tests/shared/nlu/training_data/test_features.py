@@ -234,12 +234,15 @@ def _generate_feature_list_and_modifications(
 
 
 @pytest.mark.parametrize(
-    "is_sparse,type,number",
+    "is_sparse,type,number,use_expected_origin",
     itertools.product(
-        [True, False], [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE], [1, 2, 5]
+        [True, False],
+        [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE],
+        [1, 2, 5],
+        [True, False],
     ),
 )
-def test_combine(is_sparse: bool, type: Text, number: int):
+def test_combine(is_sparse: bool, type: Text, number: int, use_expected_origin: bool):
 
     features_list, modifications = _generate_feature_list_and_modifications(
         is_sparse=is_sparse, type=type, number=number
@@ -247,16 +250,17 @@ def test_combine(is_sparse: bool, type: Text, number: int):
     modified_features = [Features(**config) for config in modifications]
     first_dim = features_list[0].features.shape[0]
 
-    expected_origin = [f"origin-{idx}" for idx in range(len(features_list))]
+    origins = [f"origin-{idx}" for idx in range(len(features_list))]
     if number == 1:
         # in this case the origin will be same str as before, not a list
-        expected_origin = expected_origin[0]
+        origins = origins[0]
+    expected_origin = origins if use_expected_origin else None
 
     # works as expected
     combination = Features.combine(features_list, expected_origins=expected_origin)
     assert combination.features.shape[1] == int(number * (number + 1) / 2)
     assert combination.features.shape[0] == first_dim
-    assert combination.origin == expected_origin
+    assert combination.origin == origins
     assert combination.is_sparse() == is_sparse
     matrix = combination.features
     if is_sparse:
@@ -266,7 +270,7 @@ def test_combine(is_sparse: bool, type: Text, number: int):
         assert np.all(matrix[:, offset : (offset + idx + 1)] == idx + 1)
 
     # fails as expected in these cases
-    if number > 1:
+    if use_expected_origin and number > 1:
         for modified_feature in modified_features:
             features_list_copy = features_list.copy()
             features_list_copy[-1] = modified_feature
@@ -449,5 +453,11 @@ def test_reduce_raises_if_combining_different_origins_or_attributes(differ: Text
         features_list.append(feat)
 
     # reduce!
-    with pytest.raises(ValueError, match="Expected all Features"):
-        Features.reduce(features_list)
+    if differ == "attribute":
+        message = "Expected all Features to describe the same attribute"
+        expected_origin = ["origin"]
+    else:
+        message = f"Expected 'origin-1' to be the origin of the 0-th"
+        expected_origin = ["origin-1"]
+    with pytest.raises(ValueError, match=message):
+        Features.reduce(features_list, expected_origins=expected_origin)
