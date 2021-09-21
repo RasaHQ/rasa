@@ -15,7 +15,9 @@ finetuning_validator:
   uses: rasa.engine.recipes.default_recipe.FinetuningValidator
   constructor_name: create
   fn: validate
-  config: {}
+  config:
+    validate_core: true
+    validate_nlu: true
   eager: false
   is_target: false
   is_input: true

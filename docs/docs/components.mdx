@@ -1710,7 +1710,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
 
   If you want to pass custom features, such as pre-trained word embeddings, to `CRFEntityExtractor`, you can
-  add any dense featurizer to the pipeline before the `CRFEntityExtractor`.
+  add any dense featurizer to the pipeline before the `CRFEntityExtractor` and subsequently configure
+  `CRFEntityExtractor` to make use of the dense features by adding `"text_dense_feature"` to its feature configuration.
   `CRFEntityExtractor` automatically finds the additional dense features and checks if the dense features are an
   iterable of `len(tokens)`, where each entry is a vector.
   A warning will be shown in case the check fails.
@@ -1727,26 +1728,27 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   The following features are available:
 
   ```
-  ==============  ==========================================================================================
-  Feature Name    Description
-  ==============  ==========================================================================================
-  low             Checks if the token is lower case.
-  upper           Checks if the token is upper case.
-  title           Checks if the token starts with an uppercase character and all remaining characters are
-                  lowercased.
-  digit           Checks if the token contains just digits.
-  prefix5         Take the first five characters of the token.
-  prefix2         Take the first two characters of the token.
-  suffix5         Take the last five characters of the token.
-  suffix3         Take the last three characters of the token.
-  suffix2         Take the last two characters of the token.
-  suffix1         Take the last character of the token.
-  pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
-  pos2            Take the first two characters of the Part-of-Speech tag of the token
-                  (``SpacyTokenizer`` required).
-  pattern         Take the patterns defined by ``RegexFeaturizer``.
-  bias            Add an additional "bias" feature to the list of features.
-  ==============  ==========================================================================================
+  ===================  ==========================================================================================
+  Feature Name         Description
+  ===================  ==========================================================================================
+  low                  Checks if the token is lower case.
+  upper                Checks if the token is upper case.
+  title                Checks if the token starts with an uppercase character and all remaining characters are
+                       lowercased.
+  digit                Checks if the token contains just digits.
+  prefix5              Take the first five characters of the token.
+  prefix2              Take the first two characters of the token.
+  suffix5              Take the last five characters of the token.
+  suffix3              Take the last three characters of the token.
+  suffix2              Take the last two characters of the token.
+  suffix1              Take the last character of the token.
+  pos                  Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+  pos2                 Take the first two characters of the Part-of-Speech tag of the token
+                       (``SpacyTokenizer`` required).
+  pattern              Take the patterns defined by ``RegexFeaturizer``.
+  bias                 Add an additional "bias" feature to the list of features.
+  text_dense_features  Adds additional features from a dense featurizer.
+  ===================  ==========================================================================================
   ```
 
   As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
@@ -1779,6 +1781,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         "pattern",
       ],
       ["low", "title", "upper"],
+      ["text_dense_features"]
     ]
     # The maximum number of iterations for optimization algorithms.
     "max_iterations": 50
@@ -1805,6 +1808,11 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   :::
 
+  :::note
+  If `text_dense_features` features are used, you need to have a dense featurizer (e.g. `LanguageModelFeaturizer`) in
+  your pipeline.
+
+  :::
 
 ### DucklingEntityExtractor
 
