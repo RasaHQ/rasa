@@ -267,6 +267,27 @@ def intent_name_from_action(action_name: Text) -> Text
 
 Resolve the name of the intent from the action name.
 
+#### get\_full\_retrieval\_name
+
+```python
+def get_full_retrieval_name(tracker: "DialogueStateTracker") -> Optional[Text]
+```
+
+Returns full retrieval name for the action.
+
+Extracts retrieval intent from response selector and
+returns complete action utterance name.
+
+**Arguments**:
+
+- `tracker` - Tracker containing past conversation events.
+  
+
+**Returns**:
+
+  Full retrieval name of the action if the last user utterance
+  contains a response selector output, `None` otherwise.
+
 #### run
 
 ```python

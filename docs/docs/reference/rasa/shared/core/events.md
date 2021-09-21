@@ -246,6 +246,15 @@ def intent_name() -> Optional[Text]
 
 Returns intent name or `None` if no intent.
 
+#### full\_retrieval\_intent\_name
+
+```python
+@property
+def full_retrieval_intent_name() -> Optional[Text]
+```
+
+Returns full retrieval intent name or `None` if no retrieval intent.
+
 #### \_\_eq\_\_
 
 ```python
