@@ -158,7 +158,7 @@ jobs:
           # Read TF version
           TF_VERSION=$(grep "tensorflow =" pyproject.toml | sed 's/^[^"]*"\([^"]*\),.*/\1/' | sed 's/[\^~><=]//g')
           # Keep the first 3 characters, e.g. we keep 2.3 if TF_VERSION if 2.3.4
-          TF_VERSION=$(TF_VERSION::3)
+          TF_VERSION=${TF_VERSION::3}
           echo "TensorFlow version: $TF_VERSION"
           echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
 
