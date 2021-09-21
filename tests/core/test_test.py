@@ -3,7 +3,6 @@ import textwrap
 from pathlib import Path
 from typing import Text, Optional, Dict, Any, List, Callable, Coroutine
 import pytest
-import os
 import rasa.core.test
 import rasa.shared.utils.io
 from rasa.core.policies.ensemble import SimplePolicyEnsemble
