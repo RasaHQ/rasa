@@ -15,14 +15,14 @@ stories:
     intent: chitchat/ask_name
   - action: utter_chitchat/ask_weather
 
-- story: test 2 - test that fails correctly without retrieval intents 1
+- story: test 2 - test that fails correctly without retrieval intents
   steps:
   - user: |
       What is your name?
     intent: chitchat
   - action: utter_goodbye
 
-- story: test 3 - test that works well without retrieval intents 2
+- story: test 3 - test that works well without retrieval intents
   steps:
   - user: |
       What is your name?
