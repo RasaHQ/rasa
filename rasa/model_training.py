@@ -244,8 +244,8 @@ def _train_graph(
                 force_retraining=force_full_training,
                 is_finetuning=is_finetuning,
             )
-            rasa.shared.utils.cli.print_color(
-                "Model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE
+            rasa.shared.utils.cli.print_success(
+                f"Your Rasa model is trained and saved at '{full_model_path}'."
             )
 
         return TrainingResult(str(full_model_path), 0)

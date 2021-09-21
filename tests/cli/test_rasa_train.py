@@ -74,7 +74,7 @@ def test_train_finetune(
     )
 
     output = capsys.readouterr().out
-    assert "No NLU model for finetuning found" in output
+    assert "No model for finetuning found" in output
 
 
 def test_train_persist_nlu_data(
@@ -564,6 +564,7 @@ def test_train_nlu_finetune_with_model(
     assert len(files) == 1
 
     model_name = os.path.relpath(files[0])
-    output = run_in_simple_project_with_model("train", "nlu", "--finetune", model_name)
-
-    assert any(model_name in line for line in output.outlines)
+    output = run_in_simple_project_with_model("train", "--finetune", model_name)
+    assert any(
+        "Your Rasa model is trained and saved at" in line for line in output.outlines
+    )
