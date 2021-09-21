@@ -71,6 +71,16 @@ async def test_facebook_send_custom_json():
         "sender": {"id": "test_json_id_2"},
     }
 
+    json_actually_a_list = [
+        {
+            "blocks": {
+                "type": "progression_bar",
+                "text": {"text": "progression 1", "level": "1"},
+            }
+        },
+        {"sender": {"id": "test_json_id_3"}},
+    ]
+
     class TestableMessengerClient(MessengerClient):
         def __init__(self, page_access_token, **kwargs):
             self.recipient_id = ""
@@ -101,3 +111,7 @@ async def test_facebook_send_custom_json():
         recipient_id="not me", json_message=json_with_id_and_blocks_as_dict
     )
     assert messenger_bot.messenger_client.recipient_id == "test_json_id_2"
+    await messenger_bot.send_custom_json(
+        recipient_id="nor me", json_message=json_actually_a_list
+    )
+    assert messenger_bot.messenger_client.recipient_id == "test_json_id_3"
