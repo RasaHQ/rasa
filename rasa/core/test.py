@@ -109,7 +109,7 @@ class WarningPredictedAction(ActionExecuted):
         self.action_name_prediction = action_name_prediction
         super().__init__(action_name, policy, confidence, timestamp, metadata)
 
-    def inline_comment(self) -> Text:
+    def inline_comment(self, **kwargs: Any) -> Text:
         """A comment attached to this event. Used during dumping."""
         return f"predicted: {self.action_name_prediction}"
 
@@ -149,7 +149,7 @@ class WronglyPredictedAction(ActionExecuted):
             action_text=action_text_target,
         )
 
-    def inline_comment(self) -> Text:
+    def inline_comment(self, **kwargs: Any) -> Text:
         """A comment attached to this event. Used during dumping."""
         comment = f"predicted: {self.action_name_prediction}"
         if self.predicted_action_unlikely_intent:
@@ -359,6 +359,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         except LookupError:
             self.predicted_intent = None
 
+        self.target_entities = eval_store.entity_targets
         self.predicted_entities = eval_store.entity_predictions
 
         intent = {"name": eval_store.intent_targets[0]}
@@ -372,11 +373,11 @@ class WronglyClassifiedUserUtterance(UserUttered):
             event.input_channel,
         )
 
-    def inline_comment(self) -> Optional[Text]:
+    def inline_comment(self, force_comment_generation: bool = False) -> Optional[Text]:
         """A comment attached to this event. Used during dumping."""
         from rasa.shared.core.events import format_message
 
-        if self.predicted_intent != self.intent["name"]:
+        if force_comment_generation or self.predicted_intent != self.intent["name"]:
             predicted_message = format_message(
                 self.text, self.predicted_intent, self.predicted_entities
             )

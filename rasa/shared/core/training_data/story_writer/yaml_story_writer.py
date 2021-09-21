@@ -214,27 +214,8 @@ class YAMLStoryWriter(StoryWriter):
                 else user_utterance.intent_name
             )
 
-        if hasattr(user_utterance, "inline_comment"):
-            comment = user_utterance.inline_comment()
-            if comment:
-                result.yaml_add_eol_comment(comment, KEY_USER_INTENT)
-
-        if user_utterance.text and (
-            # We only print the utterance text if it was an end-to-end prediction
-            user_utterance.use_text_for_featurization
-            # or if we want to print a conversation test story.
-            or is_test_story
-        ):
-            result[KEY_USER_MESSAGE] = LiteralScalarString(
-                rasa.shared.core.events.format_message(
-                    user_utterance.text,
-                    user_utterance.intent_name,
-                    user_utterance.entities,
-                )
-            )
-
+        entities = []
         if len(user_utterance.entities) and not is_test_story:
-            entities = []
             for entity in user_utterance.entities:
                 if "value" in entity:
                     if hasattr(user_utterance, "inline_comment_for_entity"):
@@ -264,6 +245,27 @@ class YAMLStoryWriter(StoryWriter):
                 else:
                     entities.append(entity["entity"])
             result[KEY_ENTITIES] = entities
+
+        if hasattr(user_utterance, "inline_comment"):
+            comment = user_utterance.inline_comment(
+                force_comment_generation=not entities
+            )
+            if comment:
+                result.yaml_add_eol_comment(comment, KEY_USER_INTENT)
+
+        if user_utterance.text and (
+            # We only print the utterance text if it was an end-to-end prediction
+            user_utterance.use_text_for_featurization
+            # or if we want to print a conversation test story.
+            or is_test_story
+        ):
+            result[KEY_USER_MESSAGE] = LiteralScalarString(
+                rasa.shared.core.events.format_message(
+                    user_utterance.text,
+                    user_utterance.intent_name,
+                    user_utterance.entities,
+                )
+            )
 
         return result
 

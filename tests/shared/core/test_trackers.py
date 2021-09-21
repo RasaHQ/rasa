@@ -221,7 +221,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
     assert [e.as_story_string() for e in tracker.events] == expected
 
 
-async def test_bot_utterance_comes_after_action_event(default_agent):
+async def test_bot_utterance_comes_after_action_event(default_agent: Agent):
     sender_id = "test_bot_utterance_comes_after_action_event"
 
     await default_agent.handle_text("/greet", sender_id=sender_id)
