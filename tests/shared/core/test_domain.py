@@ -289,7 +289,6 @@ def test_domain_to_dict():
         "slots": {
             "some_slot": {
                 "values": ["high", "low"],
-                "auto_fill": False,
                 "influence_conversation": True,
                 "initial_value": None,
                 "mappings": [{"type": "from_text"}],
@@ -319,11 +318,15 @@ session_config:
 slots: {{}}
 """
 
-    with pytest.warns(None) as record:
+    with pytest.warns(UserWarning) as record:
         domain = Domain.from_yaml(test_yaml)
         actual_yaml = domain.as_yaml()
 
-    assert not record
+    assert (
+        "Slot auto-fill has been removed in 3.0"
+        " and replaced by a new explicit mechanism to set slots. "
+        "Please refer to the docs to learn more." == record[0].message.args[0]
+    )
 
     expected = rasa.shared.utils.io.read_yaml(test_yaml)
     actual = rasa.shared.utils.io.read_yaml(actual_yaml)

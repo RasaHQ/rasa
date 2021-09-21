@@ -329,6 +329,9 @@ class Domain:
         slot_dict = copy.deepcopy(slot_dict)
         # Don't sort the slots, see https://github.com/RasaHQ/rasa-x/issues/3900
         for slot_name in slot_dict:
+            # remove auto_fill if it exists in the domain
+            slot_dict[slot_name].pop("auto_fill", None)
+
             slot_type = slot_dict[slot_name].pop("type", None)
             slot_class = Slot.resolve_by_type(slot_type)
 
@@ -1432,8 +1435,6 @@ class Domain:
         for slot in domain_data[KEY_SLOTS].values():
             if slot["initial_value"] is None:
                 del slot["initial_value"]
-            # if slot["auto_fill"]:
-            del slot["auto_fill"]
             if slot["type"].startswith("rasa.shared.core.slots"):
                 slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 
@@ -1956,6 +1957,14 @@ def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
             f"Slots were specified as '{type(domain_slots)}'. "
             f"They need to be specified as dictionary."
         )
+
+    rasa.shared.utils.io.raise_warning(
+        "Slot auto-fill has been removed in 3.0 and replaced by a"
+        " new explicit mechanism to set slots. "
+        "Please refer to the docs to learn more.",
+        UserWarning,
+        DOCS_URL_SLOTS,
+    )
 
     for slot_name, properties in domain_slots.items():
         if not isinstance(properties, dict):
