@@ -3,6 +3,7 @@ from typing import Text, Dict, Any
 import pytest
 
 import rasa.shared.utils.io
+from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
 from rasa.engine.graph import GraphSchema, GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import (
     DefaultV1Recipe,
@@ -20,6 +21,7 @@ from rasa.nlu.classifiers.sklearn_intent_classifier import (
 from rasa.nlu.extractors.mitie_entity_extractor import (
     MitieEntityExtractorGraphComponent,
 )
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.autoconfig import TrainingType
 import rasa.engine.validation
 
@@ -312,6 +314,56 @@ def test_retrieve_not_registered_class():
     class NotRegisteredClass:
         pass
 
-    with pytest.raises(KeyError):
+    with pytest.raises(InvalidConfigException):
         # noinspection PyTypeChecker
         DefaultV1Recipe._from_registry(NotRegisteredClass.__name__)
+
+
+def test_retrieve_via_module_path():
+    train_schema, predict_schema = DefaultV1Recipe().schemas_for_config(
+        {
+            "policies": [
+                {"name": "rasa.core.policies.ted_policy.TEDPolicyGraphComponent"}
+            ]
+        },
+        {},
+        TrainingType.CORE,
+    )
+
+    assert any(
+        issubclass(node.uses, TEDPolicyGraphComponent)
+        for node in train_schema.nodes.values()
+    )
+    assert any(
+        issubclass(node.uses, TEDPolicyGraphComponent)
+        for node in predict_schema.nodes.values()
+    )
+
+
+def test_retrieve_via_invalid_module_path():
+    with pytest.raises(ImportError):
+        DefaultV1Recipe().schemas_for_config(
+            {
+                "policies": [
+                    {
+                        "name": "rasa.core.policies.ted_policy.TEDPolicyGraphComponent1000"
+                    }
+                ]
+            },
+            {},
+            TrainingType.CORE,
+        )
+
+
+def test_train_nlu_without_nlu_pipeline():
+    with pytest.raises(InvalidConfigException):
+        DefaultV1Recipe().schemas_for_config(
+            {"pipeline": []}, {}, TrainingType.NLU,
+        )
+
+
+def test_train_core_without_nlu_pipeline():
+    with pytest.raises(InvalidConfigException):
+        DefaultV1Recipe().schemas_for_config(
+            {"policies": []}, {}, TrainingType.CORE,
+        )

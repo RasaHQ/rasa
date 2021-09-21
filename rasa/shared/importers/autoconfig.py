@@ -85,7 +85,7 @@ def _get_unspecified_autoconfigurable_keys(
     else:
         all_keys = rasa.shared.constants.CONFIG_AUTOCONFIGURABLE_KEYS
 
-    return {k for k in all_keys if not config.get(k)}
+    return {k for k in all_keys if config.get(k) is None}
 
 
 def _get_missing_config_keys(

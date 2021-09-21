@@ -388,7 +388,7 @@ def train_nlu(
 
 async def train_nlu_async(
     config: Text,
-    nlu_data: Text,
+    nlu_data: Optional[Text],
     output: Text,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,

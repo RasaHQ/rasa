@@ -37,11 +37,12 @@ from rasa.graph_components.providers.training_tracker_provider import (
 )
 from rasa.graph_components.validators.finetuning_validator import FinetuningValidator
 
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.importers.autoconfig import TrainingType
 
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.utils.tensorflow.constants import EPOCHS
+import rasa.shared.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -232,8 +233,20 @@ class DefaultV1Recipe(Recipe):
     def _from_registry(cls, name: Text) -> RegisteredComponent:
         if not name.endswith("GraphComponent"):
             name = f"{name}GraphComponent"
-        # TODO: Handle case name is full module path
-        return cls._registered_components[name]
+
+        if name in cls._registered_components:
+            return cls._registered_components[name]
+
+        if "." in name:
+            clazz = rasa.shared.utils.common.class_from_module_path(name)
+            if clazz.__name__ in cls._registered_components:
+                return cls._registered_components[clazz.__name__]
+
+        raise InvalidConfigException(
+            f"Can't load class for name '{name}'. Please make sure to provide "
+            f"a valid name or module path and to register it using the "
+            f"'@DefaultV1Recipe.register' decorator."
+        )
 
     def schemas_for_config(
         self,
@@ -249,6 +262,19 @@ class DefaultV1Recipe(Recipe):
         self._use_nlu = (
             bool(config.get("pipeline")) and not training_type == TrainingType.CORE
         )
+
+        if not self._use_nlu and training_type == TrainingType.NLU:
+            raise InvalidConfigException(
+                "Can't train an NLU model without a specified pipeline. Please make "
+                "sure to specify a valid pipeline in your configuration."
+            )
+
+        if not self._use_core and training_type == TrainingType.CORE:
+            raise InvalidConfigException(
+                "Can't train an CORE model without policies. Please make "
+                "sure to specify a valid policy in your configuration."
+            )
+
         self._use_end_to_end = (
             self._use_nlu
             and self._use_core
