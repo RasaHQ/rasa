@@ -1239,7 +1239,8 @@ class Domain:
                     for entity in entities
                     if any(
                         [
-                            entity.get("entity") == mapping.get("entity", None)
+                            entity.get("entity")
+                            == mapping.get("entity", "no_entity_found")
                             for mapping in slot.mappings
                         ]
                     )
