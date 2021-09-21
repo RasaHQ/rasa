@@ -35,6 +35,7 @@ from rasa.graph_components.providers.story_graph_provider import StoryGraphProvi
 from rasa.graph_components.providers.training_tracker_provider import (
     TrainingTrackerProvider,
 )
+from rasa.graph_components.validators.finetuning_validator import FinetuningValidator
 
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.autoconfig import TrainingType
@@ -61,25 +62,6 @@ class SchemaValidator(GraphComponent):
 
     def validate(self, importer: TrainingDataImporter) -> TrainingDataImporter:
         """Validates component."""
-        return importer
-
-
-class FinetuningValidator(GraphComponent):
-    """Temporary placeholder."""
-
-    @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> GraphComponent:
-        """Creates component."""
-        pass
-
-    def validate(self, importer: TrainingDataImporter) -> TrainingDataImporter:
-        """Validates."""
         return importer
 
 
@@ -114,6 +96,7 @@ class DefaultV1Recipe(Recipe):
         """Creates recipe."""
         self._use_core = True
         self._use_nlu = True
+        self._is_finetuning = False
 
         from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
         from rasa.nlu.classifiers.fallback_classifier import (
@@ -232,14 +215,16 @@ class DefaultV1Recipe(Recipe):
         config: Dict,
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
+        is_finetuning: bool = False,
     ) -> Tuple[GraphSchema, GraphSchema]:
+        """Converts the default config to graphs (see interface for full docstring)."""
         self._use_core = (
             bool(config.get("policies")) and not training_type == TrainingType.NLU
         )
         self._use_nlu = (
             bool(config.get("pipeline")) and not training_type == TrainingType.CORE
         )
-
+        self._is_finetuning = is_finetuning
         train_nodes, preprocessors = self._create_train_nodes(config, cli_parameters)
         predict_nodes = self._create_predict_nodes(config, preprocessors, train_nodes)
 
@@ -280,8 +265,8 @@ class DefaultV1Recipe(Recipe):
                 uses=FinetuningValidator,
                 constructor_name="create",
                 fn="validate",
-                config={},
                 is_input=True,
+                config={"validate_core": self._use_core, "validate_nlu": self._use_nlu},
             ),
         }
 
@@ -396,7 +381,7 @@ class DefaultV1Recipe(Recipe):
         train_nodes[train_node_name] = SchemaNode(
             needs={"training_data": last_run_node, **model_provider_needs},
             uses=component,
-            constructor_name="create",
+            constructor_name="load" if self._is_finetuning else "create",
             fn="train",
             config={**config, **config_from_cli},
             is_target=True,
@@ -567,7 +552,7 @@ class DefaultV1Recipe(Recipe):
                     ),
                 },
                 uses=component.clazz,
-                constructor_name="create",
+                constructor_name="load" if self._is_finetuning else "create",
                 fn="train",
                 is_target=True,
                 config={**item, **extra_config_from_cli},

@@ -31,7 +31,7 @@ def test_recipe_for_name():
 
 @pytest.mark.parametrize(
     "config_path, expected_train_schema_path, expected_predict_schema_path, "
-    "training_type",
+    "training_type, is_finetuning",
     [
         # The default config is the config which most users run
         (
@@ -39,18 +39,21 @@ def test_recipe_for_name():
             "data/graph_schemas/default_config_train_schema.yml",
             "data/graph_schemas/default_config_predict_schema.yml",
             TrainingType.BOTH,
+            False,
         ),
         (
             "rasa/shared/importers/default_config.yml",
             "data/graph_schemas/default_config_core_train_schema.yml",
             "data/graph_schemas/default_config_core_predict_schema.yml",
             TrainingType.CORE,
+            False,
         ),
         (
             "rasa/shared/importers/default_config.yml",
             "data/graph_schemas/default_config_nlu_train_schema.yml",
             "data/graph_schemas/default_config_nlu_predict_schema.yml",
             TrainingType.NLU,
+            False,
         ),
         # A config which uses Spacy and Duckling does not have Core model config
         (
@@ -60,6 +63,7 @@ def test_recipe_for_name():
             "data/graph_schemas/"
             "config_pretrained_embeddings_spacy_duckling_predict_schema.yml",
             TrainingType.BOTH,
+            False,
         ),
         # A minimal NLU config without Core model
         (
@@ -67,6 +71,7 @@ def test_recipe_for_name():
             "data/graph_schemas/keyword_classifier_config_train_schema.yml",
             "data/graph_schemas/keyword_classifier_config_predict_schema.yml",
             TrainingType.BOTH,
+            False,
         ),
         # A config which uses Mitie and does not have Core model
         (
@@ -75,6 +80,7 @@ def test_recipe_for_name():
             "data/graph_schemas/"
             "config_pretrained_embeddings_mitie_predict_schema.yml",
             TrainingType.BOTH,
+            False,
         ),
         # A config which uses Mitie and Jiebe and does not have Core model
         (
@@ -83,6 +89,7 @@ def test_recipe_for_name():
             "data/graph_schemas/"
             "config_pretrained_embeddings_mitie_zh_predict_schema.yml",
             TrainingType.BOTH,
+            False,
         ),
         # A core only model because of no pipeline
         (
@@ -90,6 +97,15 @@ def test_recipe_for_name():
             "data/graph_schemas/max_hist_config_train_schema.yml",
             "data/graph_schemas/max_hist_config_predict_schema.yml",
             TrainingType.BOTH,
+            False,
+        ),
+        # A full model which wants to be finetuned
+        (
+            "rasa/shared/importers/default_config.yml",
+            "data/graph_schemas/default_config_finetune_schema.yml",
+            "data/graph_schemas/default_config_predict_schema.yml",
+            TrainingType.BOTH,
+            True,
         ),
     ],
 )
@@ -97,7 +113,8 @@ def test_generate_graphs(
     config_path: Text,
     expected_train_schema_path: Text,
     expected_predict_schema_path: Text,
-    training_type,
+    training_type: TrainingType,
+    is_finetuning: bool,
 ):
     expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
         expected_train_schema_path
@@ -113,7 +130,7 @@ def test_generate_graphs(
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
     train_schema, predict_schema = recipe.schemas_for_config(
-        config, {}, training_type=training_type
+        config, {}, training_type=training_type, is_finetuning=is_finetuning
     )
 
     for node_name, node in expected_train_schema.nodes.items():
