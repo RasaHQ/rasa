@@ -249,37 +249,25 @@ def test_num_threads_interpolation():
     assert predict_schema == expected_predict_schema
 
 
-# TODO: comment in once a all components were adapted
-# def test_epoch_fraction_cli_param():
-#     expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
-#         "data/graph_schemas/default_config_train_schema.yml"
-#     )
-#     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
-#
-#     expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
-#         "data/graph_schemas/default_config_predict_schema.yml"
-#     )
-#     expected_predict_schema = GraphSchema.from_dict(expected_schema_as_dict)
-#
-#
-#     config = rasa.shared.utils.io.read_yaml_file(
-#         "rasa/shared/importers/default_config.yml"
-#     )
-#
-#     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-#     train_schema, predict_schema = recipe.schemas_for_config(
-#         config, {"epoch_fraction": 0.5}
-#     )
-#
-#     for node_name, node in expected_train_schema.nodes.items():
-#         assert train_schema.nodes[node_name] == node
-#
-#     assert train_schema == expected_train_schema
-#
-#     for node_name, node in expected_predict_schema.nodes.items():
-#         assert predict_schema.nodes[node_name] == node
-#
-#     assert predict_schema == expected_predict_schema
+def test_epoch_fraction_cli_param():
+    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
+        "data/graph_schemas/default_config_finetune_epoch_fraction_schema.yml"
+    )
+    expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
+
+    config = rasa.shared.utils.io.read_yaml_file(
+        "rasa/shared/importers/default_config.yml"
+    )
+
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
+    train_schema, predict_schema = recipe.schemas_for_config(
+        config, {"finetuning_epoch_fraction": 0.5}, is_finetuning=True
+    )
+
+    for node_name, node in expected_train_schema.nodes.items():
+        assert train_schema.nodes[node_name] == node
+
+    assert train_schema == expected_train_schema
 
 
 def test_register_component():

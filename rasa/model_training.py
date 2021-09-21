@@ -31,6 +31,7 @@ import rasa.shared.utils.cli
 import rasa.shared.exceptions
 import rasa.shared.utils.io
 import rasa.shared.constants
+import rasa.model
 
 CODE_NEEDS_TO_BE_RETRAINED = 0b0001
 CODE_FORCED_TRAINING = 0b1000
@@ -193,8 +194,18 @@ def _train_graph(
     config = file_importer.get_config()
     recipe = Recipe.recipe_for_name(config.get("recipe"))
 
+    if model_to_finetune:
+        model_to_finetune = rasa.model.get_model_for_finetuning(model_to_finetune)
+        if not model_to_finetune:
+            rasa.shared.utils.cli.print_error_and_exit(
+                f"No model for finetuning found. Please make sure to either "
+                f"specify a path to a previous model or to have a finetunable "
+                f"model within the directory '{output_path}'."
+            )
+    is_finetuning = model_to_finetune is not None
+
     train_schema, predict_schema = recipe.schemas_for_config(
-        config, kwargs, training_type=training_type,
+        config, kwargs, training_type=training_type, is_finetuning=is_finetuning
     )
 
     # TODO
@@ -204,7 +215,13 @@ def _train_graph(
         )
 
     with tempfile.TemporaryDirectory() as temp_model_dir:
-        model_storage = LocalModelStorage(Path(temp_model_dir))
+        if is_finetuning:
+            model_storage, _ = LocalModelStorage.from_model_archive(
+                Path(temp_model_dir), model_to_finetune
+            )
+        else:
+            model_storage = LocalModelStorage(Path(temp_model_dir))
+
         cache = LocalTrainingCache()
 
         trainer = GraphTrainer(model_storage, cache, DaskGraphRunner)
@@ -225,6 +242,7 @@ def _train_graph(
                 file_importer,
                 full_model_path,
                 force_retraining=force_full_training,
+                is_finetuning=is_finetuning,
             )
             rasa.shared.utils.cli.print_color(
                 "Model training completed.", color=rasa.shared.utils.io.bcolors.OKBLUE

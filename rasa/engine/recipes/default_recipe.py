@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import enum
 import logging
+import math
 from enum import Enum
 from typing import Dict, Text, Any, Tuple, Type, Optional, List, Callable
 
@@ -39,8 +40,8 @@ from rasa.graph_components.validators.finetuning_validator import FinetuningVali
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.autoconfig import TrainingType
 
-# from rasa.utils.tensorflow.constants import EPOCHS
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
 
@@ -283,7 +284,7 @@ class DefaultV1Recipe(Recipe):
             "finetuning_validator": SchemaNode(
                 needs={"importer": "schema_validator"},
                 uses=FinetuningValidator,
-                constructor_name="create",
+                constructor_name="load" if self._is_finetuning else "create",
                 fn="validate",
                 is_input=True,
                 config={"validate_core": self._use_core, "validate_nlu": self._use_nlu},
@@ -393,7 +394,7 @@ class DefaultV1Recipe(Recipe):
         config: Dict[Text, Any],
         cli_parameters: Dict[Text, Any],
     ) -> Text:
-        config_from_cli = self._extra_config_from_cli(cli_parameters, component)
+        config_from_cli = self._extra_config_from_cli(cli_parameters, component, config)
 
         model_provider_needs = self._get_model_provider_needs(train_nodes, component,)
 
@@ -409,7 +410,10 @@ class DefaultV1Recipe(Recipe):
         return train_node_name
 
     def _extra_config_from_cli(
-        self, cli_parameters: Dict[Text, Any], component: Type[GraphComponent]
+        self,
+        cli_parameters: Dict[Text, Any],
+        component: Type[GraphComponent],
+        component_config: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         from rasa.nlu.classifiers.mitie_intent_classifier import (
             MitieIntentClassifierGraphComponent,
@@ -421,7 +425,7 @@ class DefaultV1Recipe(Recipe):
             SklearnIntentClassifierGraphComponent,
         )
 
-        cli_args_mapping = {
+        cli_args_mapping: Dict[Type[GraphComponent], List[Text]] = {
             MitieIntentClassifierGraphComponent: ["num_threads"],
             MitieEntityExtractorGraphComponent: ["num_threads"],
             SklearnIntentClassifierGraphComponent: ["num_threads"],
@@ -433,12 +437,17 @@ class DefaultV1Recipe(Recipe):
             if param in cli_parameters
         }
 
-        # TODO: Comment in once all components are adapted
-        # if (
-        #     "epoch_fraction" in cli_parameters
-        #     and EPOCHS in component.get_default_config()
-        # ):
-        #     config_from_cli["epoch_fraction"] = cli_parameters["epoch_fraction"]
+        if (
+            self._is_finetuning
+            and "finetuning_epoch_fraction" in cli_parameters
+            and EPOCHS in component.get_default_config()
+        ):
+            old_number_epochs = component_config.get(
+                EPOCHS, component.get_default_config()[EPOCHS]
+            )
+            epoch_fraction = float(cli_parameters["finetuning_epoch_fraction"])
+
+            config_from_cli[EPOCHS] = math.ceil(old_number_epochs * epoch_fraction)
 
         return config_from_cli
 
@@ -551,7 +560,7 @@ class DefaultV1Recipe(Recipe):
             component = self._from_registry(component_name)
 
             extra_config_from_cli = self._extra_config_from_cli(
-                cli_parameters, component.clazz
+                cli_parameters, component.clazz, item
             )
 
             requires_end_to_end_data = self._use_end_to_end and (

@@ -151,7 +151,7 @@ train_DIETClassifier5:
   constructor_name: load
   fn: train
   config:
-    epochs: 100
+    epochs: 50
     constrain_similarities: true
   eager: false
   is_target: true
@@ -175,7 +175,7 @@ train_ResponseSelector7:
   constructor_name: load
   fn: train
   config:
-    epochs: 100
+    epochs: 50
     constrain_similarities: true
   eager: false
   is_target: true
@@ -259,7 +259,7 @@ train_UnexpecTEDIntentPolicy2:
   fn: train
   config:
     max_history: 5
-    epochs: 100
+    epochs: 50
   eager: false
   is_target: true
   is_input: false
@@ -273,7 +273,7 @@ train_TEDPolicy3:
   fn: train
   config:
     max_history: 5
-    epochs: 100
+    epochs: 50
     constrain_similarities: true
   eager: false
   is_target: true

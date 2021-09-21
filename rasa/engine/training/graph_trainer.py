@@ -46,6 +46,7 @@ class GraphTrainer:
         importer: TrainingDataImporter,
         output_filename: Path,
         force_retraining: bool = False,
+        is_finetuning: bool = False,
     ) -> ModelMetadata:
         """Trains and packages a model and returns the prediction graph runner.
 
@@ -69,7 +70,9 @@ class GraphTrainer:
             )
             pruned_training_schema = train_schema
         else:
-            fingerprint_run_outputs = self.fingerprint(train_schema, importer=importer)
+            fingerprint_run_outputs = self.fingerprint(
+                train_schema, importer=importer, is_finetuning=is_finetuning
+            )
             pruned_training_schema = self._prune_schema(
                 train_schema, fingerprint_run_outputs
             )
@@ -79,7 +82,9 @@ class GraphTrainer:
         graph_runner = self._graph_runner_class.create(
             graph_schema=pruned_training_schema,
             model_storage=self._model_storage,
-            execution_context=ExecutionContext(graph_schema=train_schema),
+            execution_context=ExecutionContext(
+                graph_schema=train_schema, is_finetuning=is_finetuning
+            ),
             hooks=hooks,
         )
 
@@ -94,7 +99,10 @@ class GraphTrainer:
         )
 
     def fingerprint(
-        self, train_schema: GraphSchema, importer: TrainingDataImporter
+        self,
+        train_schema: GraphSchema,
+        importer: TrainingDataImporter,
+        is_finetuning: bool = False,
     ) -> Dict[Text, Union[FingerprintStatus, Any]]:
         """Runs the graph using fingerprints to determine which nodes need to re-run.
 
@@ -105,6 +113,7 @@ class GraphTrainer:
         Args:
             train_schema: The train graph schema that will be run in fingerprint mode.
             importer: The importer which provides the training data for the training.
+            is_finetuning: `True` if we want to finetune the model.
 
         Returns:
             Mapping of node names to fingerprint results.
@@ -114,7 +123,9 @@ class GraphTrainer:
         fingerprint_graph_runner = self._graph_runner_class.create(
             graph_schema=fingerprint_schema,
             model_storage=self._model_storage,
-            execution_context=ExecutionContext(graph_schema=fingerprint_schema),
+            execution_context=ExecutionContext(
+                graph_schema=fingerprint_schema, is_finetuning=is_finetuning
+            ),
         )
 
         logger.debug("Running the train graph in fingerprint mode.")

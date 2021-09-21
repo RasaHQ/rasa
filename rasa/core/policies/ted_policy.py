@@ -935,6 +935,9 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             model_path / f"{model_filename}.priority.pkl", self.priority
         )
         rasa.utils.io.pickle_dump(
+            model_path / f"{model_filename}.meta.pkl", self.config
+        )
+        rasa.utils.io.pickle_dump(
             model_path / f"{model_filename}.data_example.pkl", self.data_example,
         )
         rasa.utils.io.pickle_dump(
@@ -990,6 +993,9 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             )
             for tag_spec in entity_tag_specs
         ]
+        model_config = rasa.utils.io.pickle_load(
+            model_path / f"{cls._metadata_filename()}.meta.pkl"
+        )
 
         return {
             "tf_model_file": tf_model_file,
@@ -998,6 +1004,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             "label_data": label_data,
             "priority": priority,
             "entity_tag_specs": entity_tag_specs,
+            "model_config": model_config,
         }
 
     @classmethod
@@ -1054,7 +1061,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
         model = cls._load_tf_model(
-            config,
             model_utilities,
             model_data_example,
             predict_data_example,
@@ -1097,7 +1103,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
     @classmethod
     def _load_tf_model(
         cls,
-        config: Dict[Text, Any],
         model_utilities: Dict[Text, Any],
         model_data_example: RasaModelData,
         predict_data_example: RasaModelData,
@@ -1109,7 +1114,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             model_data_example,
             predict_data_example,
             data_signature=model_data_example.get_signature(),
-            config=config,
+            config=model_utilities["model_config"],
             max_history_featurizer_is_used=isinstance(
                 featurizer, MaxHistoryTrackerFeaturizer
             ),

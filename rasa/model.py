@@ -186,9 +186,7 @@ def move_model(source: Text, target: Text) -> bool:
         return False
 
 
-def get_model_for_finetuning(
-    previous_model_file: Optional[Union[Path, Text]]
-) -> Optional[Union[Path, Text]]:
+def get_model_for_finetuning(previous_model_file: Union[Path, Text]) -> Optional[Path]:
     """Gets validated path for model to finetune.
 
     Args:
@@ -203,10 +201,10 @@ def get_model_for_finetuning(
             f"Trying to load latest model from '{previous_model_file}' for "
             f"finetuning."
         )
-        return get_latest_model(previous_model_file)
+        previous_model_file = get_latest_model(previous_model_file)
 
-    if Path(previous_model_file).is_file():
-        return previous_model_file
+    if previous_model_file and Path(previous_model_file).is_file():
+        return Path(previous_model_file)
 
     logger.debug(
         "No valid model for finetuning found as directory either "

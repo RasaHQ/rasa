@@ -132,6 +132,7 @@ class FinetuningValidator(GraphComponent):
                 )
         self._fingerprints[FINGERPRINT_VERSION] = rasa_version
 
+        # TODO: Go through config in graph schemas
         config = importer.get_config()
         self._compare_or_memorize(
             fingerprint_key=FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,

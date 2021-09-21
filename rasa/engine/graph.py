@@ -15,7 +15,7 @@ import rasa.shared.utils.common
 from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
-
+from rasa.shared.exceptions import InvalidConfigException
 
 logger = logging.getLogger(__name__)
 
@@ -422,6 +422,8 @@ class GraphNode:
 
         try:
             output = self._fn(self._component, **run_kwargs)
+        except InvalidConfigException:
+            raise
         except Exception as e:
             raise GraphComponentException(
                 f"Error running graph component for node {self._node_name}."
