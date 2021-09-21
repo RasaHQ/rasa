@@ -15,7 +15,7 @@ stories:
     intent: chitchat/ask_name
   - action: utter_chitchat/ask_weather
 
-- story: test 2 - test that works well without retrieval intents 1
+- story: test 2 - test that fails correctly without retrieval intents 1
   steps:
   - user: |
       What is your name?
