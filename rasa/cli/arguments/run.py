@@ -64,7 +64,7 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         "--syslog-address",
         type=str,
         default=constants.DEFAULT_SYSLOG_HOST,
-        help="Adress of the syslog server. --use-sylog flag is required"
+        help="Address of the syslog server. --use-sylog flag is required"
     )
     parser.add_argument(
         "--syslog-port",
