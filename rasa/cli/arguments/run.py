@@ -77,7 +77,7 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=constants.DEFAULT_PROTOCOL,
         help="Protocol used with the syslog server. Can be UDP (default) or TCP "
-        "--use-sylog flag is required""
+        "--use-sylog flag is required",
     )
     add_endpoint_param(
         parser,
