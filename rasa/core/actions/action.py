@@ -361,6 +361,13 @@ class ActionRetrieveResponse(ActionBotResponse):
 
         Extracts retrieval intent from response selector and
         returns complete action utterance name.
+
+        Args:
+            tracker: Tracker containing past conversation events.
+
+        Returns:
+            Full retrieval name of the action if the last user utterance
+            contains a response selector output, `None` otherwise.
         """
         if RESPONSE_SELECTOR_PROPERTY_NAME not in tracker.latest_message.parse_data:
             return None

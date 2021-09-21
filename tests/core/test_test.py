@@ -134,7 +134,7 @@ async def test_testing_with_utilizing_retrieval_intents(
     response_selector_results: Path,
 ):
     if not response_selector_results.exists():
-        os.mkdir(response_selector_results)
+        response_selector_results.mkdir()
 
     result = await rasa.core.test.test(
         stories=response_selector_test_stories,
