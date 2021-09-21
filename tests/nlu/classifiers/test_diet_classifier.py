@@ -746,7 +746,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
-@pytest.mark.timeout(240, func_only=True)
+@pytest.mark.timeout(300, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params, component_builder, tmpdir
 ):
