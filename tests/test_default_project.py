@@ -5,7 +5,6 @@ from _pytest.pytester import Testdir
 import pytest
 
 from rasa.__main__ import create_argument_parser
-from rasa.cli.arguments.data import set_validator_arguments
 import rasa.cli.data
 import rasa.cli.scaffold
 import rasa.cli.train
@@ -13,7 +12,8 @@ import rasa.shared.utils.io
 
 
 def _warning_should_be_filtered_out(warning: WarningMessage) -> bool:
-    # we filter out `gelu` warnings because of this issue: https://github.com/RasaHQ/rasa/issues/9129
+    # we filter out `gelu` warnings because of this issue:
+    # https://github.com/RasaHQ/rasa/issues/9129
     # this function can be removed once we migrate to TensorFlow 2.6
     return type(warning.message) == DeprecationWarning and str(
         warning.message
