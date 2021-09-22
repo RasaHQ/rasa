@@ -314,15 +314,6 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
         self.finetune_mode = self._execution_context.is_finetuning
         self._sparse_feature_sizes = sparse_feature_sizes
 
-        if not self.model and self.finetune_mode:
-            raise rasa.shared.exceptions.InvalidParameterException(
-                f"{self.__class__.__name__} was instantiated "
-                f"with `model=None` and `finetune_mode=True`. "
-                f"This is not a valid combination as the component "
-                f"needs an already instantiated and trained model "
-                f"to continue training in finetune mode."
-            )
-
     # init helpers
     def _check_masked_lm(self) -> None:
         if (
@@ -845,6 +836,16 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
                 f"Skipping training of the classifier."
             )
             return self._resource
+
+        if not self.model and self.finetune_mode:
+            raise rasa.shared.exceptions.InvalidParameterException(
+                f"{self.__class__.__name__} was instantiated "
+                f"with `model=None` and `finetune_mode=True`. "
+                f"This is not a valid combination as the component "
+                f"needs an already instantiated and trained model "
+                f"to continue training in finetune mode."
+            )
+
         if self.component_config.get(INTENT_CLASSIFICATION):
             if not self._check_enough_labels(model_data):
                 logger.error(

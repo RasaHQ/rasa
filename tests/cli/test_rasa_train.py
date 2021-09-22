@@ -31,7 +31,7 @@ from rasa.shared.constants import (
 from rasa.shared.nlu.training_data.training_data import (
     DEFAULT_TRAINING_DATA_OUTPUT_PATH,
 )
-import tests.utilities
+import rasa.utils.io
 
 
 def test_train(run_in_simple_project: Callable[..., RunResult], tmp_path: Path):
@@ -174,7 +174,7 @@ def test_train_skip_on_model_not_changed(
     assert old_metadata.trained_at < new_metadata.trained_at
     assert old_metadata.domain.as_dict() == new_metadata.domain.as_dict()
 
-    assert tests.utilities.are_directory_contents_equal(old_dir, new_dir)
+    assert rasa.utils.io.are_directories_equal(old_dir, new_dir)
 
 
 def test_train_force(
@@ -199,7 +199,7 @@ def test_train_force(
     new_dir = tmp_path_factory.mktemp("new")
     _ = LocalModelStorage.from_model_archive(new_dir, files[1])
 
-    assert not tests.utilities.are_directory_contents_equal(old_dir, new_dir)
+    assert not rasa.utils.io.are_directories_equal(old_dir, new_dir)
 
 
 def test_train_dry_run(run_in_simple_project_with_model: Callable[..., RunResult]):

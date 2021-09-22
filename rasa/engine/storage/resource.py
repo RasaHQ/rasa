@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Text
 
 import rasa.utils.common
+import rasa.utils.io
 
 if typing.TYPE_CHECKING:
     from rasa.engine.storage.storage import ModelStorage
@@ -39,8 +40,16 @@ class Resource:
         logger.debug(f"Loading resource '{node_name}' from cache.")
 
         resource = Resource(node_name)
-        with model_storage.write_to(resource) as resource_directory:
-            rasa.utils.common.copy_directory(directory, resource_directory)
+        try:
+            with model_storage.write_to(resource) as resource_directory:
+                rasa.utils.common.copy_directory(directory, resource_directory)
+        except ValueError:
+            # This might happen during finetuning as in this case the model storage
+            # is already filled
+            if not rasa.utils.io.are_directories_equal(directory, resource_directory):
+                # We skip caching in case we see the cached output and output
+                # from the model which we want to finetune are not the same
+                raise
 
         logger.debug(f"Successfully initialized resource '{node_name}' from cache.")
 
