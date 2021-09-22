@@ -200,7 +200,7 @@ def test_handles_pipeline_with_non_existing_component(
 
     with pytest.raises(
         Exception,
-        match="Cannot retrieve class from path my_made_up_componentGraphComponent",
+        match="Can't load class for name 'my_made_up_componentGraphComponent'",
     ):
         rasa.model_training.train_nlu(
             str(config_file), nlu_as_json_path, output=str(tmp_path),

@@ -204,7 +204,7 @@ def test_train_core_autoconfig(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
     # mock function that returns configuration
-    mocked_get_configuration = Mock(return_value={})
+    mocked_get_configuration = Mock(wraps=autoconfig.get_configuration)
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
     # skip actual core training
@@ -232,7 +232,7 @@ def test_train_nlu_autoconfig(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
     # mock function that returns configuration
-    mocked_get_configuration = Mock(return_value={})
+    mocked_get_configuration = Mock(wraps=autoconfig.get_configuration)
     monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
 
     monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, Mock())

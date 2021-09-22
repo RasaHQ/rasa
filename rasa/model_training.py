@@ -340,7 +340,7 @@ def train_core(
 
 def train_nlu(
     config: Text,
-    nlu_data: Text,
+    nlu_data: Optional[Text],
     output: Text,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
@@ -369,35 +369,7 @@ def train_nlu(
     Returns:
         If `train_path` is given it returns the path to the model archive,
         otherwise the path to the directory with the trained model files.
-
     """
-    return rasa.utils.common.run_in_loop(
-        train_nlu_async(
-            config,
-            nlu_data,
-            output,
-            fixed_model_name,
-            persist_nlu_training_data,
-            additional_arguments,
-            domain=domain,
-            model_to_finetune=model_to_finetune,
-            finetuning_epoch_fraction=finetuning_epoch_fraction,
-        )
-    )
-
-
-async def train_nlu_async(
-    config: Text,
-    nlu_data: Optional[Text],
-    output: Text,
-    fixed_model_name: Optional[Text] = None,
-    persist_nlu_training_data: bool = False,
-    additional_arguments: Optional[Dict] = None,
-    domain: Optional[Union[Domain, Text]] = None,
-    model_to_finetune: Optional[Text] = None,
-    finetuning_epoch_fraction: float = 1.0,
-) -> Optional[Text]:
-    """Trains an NLU model asynchronously."""
     if not nlu_data:
         rasa.shared.utils.cli.print_error(
             "No NLU data given. Please provide NLU data in order to train "

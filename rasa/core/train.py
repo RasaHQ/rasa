@@ -1,8 +1,8 @@
 import argparse
 import logging
 import os
-import tempfile
 import typing
+from pathlib import Path
 from typing import Dict, Optional, Text, Union, List
 
 import rasa.shared.utils.io
@@ -10,7 +10,6 @@ import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -84,6 +83,7 @@ def train_comparison_models(
 ) -> None:
     """Train multiple models for comparison of policies"""
     from rasa import model
+    import rasa.model_training
 
     exclusion_percentages = exclusion_percentages or []
     policy_configs = policy_configs or []
@@ -93,11 +93,6 @@ def train_comparison_models(
 
         for current_run, percentage in enumerate(exclusion_percentages, 1):
             for policy_config in policy_configs:
-
-                file_importer = TrainingDataImporter.load_core_importer_from_config(
-                    policy_config, domain, [story_file]
-                )
-
                 config_name = os.path.splitext(os.path.basename(policy_config))[0]
                 logging.info(
                     "Starting to train {} round {}/{}"
@@ -107,34 +102,26 @@ def train_comparison_models(
                     )
                 )
 
-                with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
-                    train(
-                        domain,
-                        file_importer,
-                        train_path,
-                        policy_config=policy_config,
-                        exclusion_percentage=percentage,
-                        additional_arguments=additional_arguments,
-                    )
-                    new_fingerprint = model.model_fingerprint(file_importer)
-
-                    output_dir = os.path.join(output_path, "run_" + str(r + 1))
-                    model_name = config_name + PERCENTAGE_KEY + str(percentage)
-                    model.package_model(
-                        fingerprint=new_fingerprint,
-                        output_directory=output_dir,
-                        train_path=train_path,
-                        fixed_model_name=model_name,
-                    )
+                rasa.model_training.train_core(
+                    domain,
+                    policy_config,
+                    stories=story_file,
+                    output=str(Path(output_path, f"run_{r +1}")),
+                    fixed_model_name=config_name + PERCENTAGE_KEY + str(percentage),
+                    additional_arguments={
+                        **additional_arguments,
+                        "exclusion_percentage": percentage,
+                    },
+                )
 
 
 def get_no_of_stories(story_file: Text, domain: Text) -> int:
-    """Get number of stories in a file."""
-    from rasa.shared.core.domain import Domain
-    from rasa.shared.core.training_data import loading
-
-    stories = loading.load_data_from_files([story_file], Domain.load(domain))
-    return len(stories)
+    """Gets number of stories in a file."""
+    importer = TrainingDataImporter.load_from_dict(
+        domain_path=domain, training_data_paths=[story_file]
+    )
+    story_graph = importer.get_stories()
+    return len(story_graph.story_steps)
 
 
 def do_compare_training(

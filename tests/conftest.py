@@ -44,7 +44,7 @@ from rasa.core.exporter import Exporter
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
-from rasa.model_training import train, train_nlu_async
+from rasa.model_training import train, train_nlu
 from rasa.utils.common import TempDirectoryPath
 from rasa.shared.exceptions import RasaException
 
@@ -234,8 +234,8 @@ async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text
 
 
 @pytest.fixture(scope="session")
-async def trained_nlu_moodbot_path(trained_nlu_async: Callable) -> Text:
-    return await trained_nlu_async(
+def trained_nlu_moodbot_path(trained_nlu: Callable) -> Text:
+    return trained_nlu(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
         nlu_data="data/test_moodbot/data/nlu.yml",
@@ -326,14 +326,14 @@ def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
 
 
 @pytest.fixture(scope="session")
-def trained_nlu_async(tmp_path_factory: TempPathFactory) -> Callable:
+def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
     async def _train_nlu(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
     ) -> Optional[Text]:
         if output_path is None:
             output_path = str(tmp_path_factory.mktemp("models"))
 
-        return await train_nlu_async(*args, output=output_path, **kwargs)
+        return train_nlu(*args, output=output_path, **kwargs)
 
     return _train_nlu
 

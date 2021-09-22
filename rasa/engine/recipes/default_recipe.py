@@ -559,7 +559,7 @@ class DefaultV1Recipe(Recipe):
             uses=StoryGraphProvider,
             constructor_name="create",
             fn="provide",
-            config={},
+            config={"exclusion_percentage": cli_parameters.get("exclusion_percentage")},
             is_input=True,
         )
         train_nodes["training_tracker_provider"] = SchemaNode(

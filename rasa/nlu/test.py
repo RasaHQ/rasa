@@ -1,6 +1,9 @@
 import itertools
 import os
 import logging
+import tempfile
+from pathlib import Path
+
 import numpy as np
 from collections import defaultdict, namedtuple
 from tqdm import tqdm
@@ -51,13 +54,13 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Interpreter, Trainer, TrainingData
+from rasa.nlu.model import Interpreter, TrainingData
 from rasa.nlu.classifiers import fallback_classifier
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
@@ -1561,100 +1564,111 @@ def cross_validate(
         dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
-    import rasa.nlu.config
+    import rasa.model_training
 
-    if isinstance(nlu_config, (str, Dict)):
-        nlu_config = rasa.nlu.config.load(nlu_config)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        tmp_path = Path(temp_dir)
 
-    if output:
-        rasa.shared.utils.io.create_directory(output)
+        if isinstance(nlu_config, Dict):
+            config_path = tmp_path / "config.yml"
+            rasa.shared.utils.io.write_yaml(nlu_config, config_path)
+            nlu_config = str(config_path)
 
-    trainer = Trainer(nlu_config)
+        if output:
+            rasa.shared.utils.io.create_directory(output)
 
-    intent_train_metrics: IntentMetrics = defaultdict(list)
-    intent_test_metrics: IntentMetrics = defaultdict(list)
-    entity_train_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
-    entity_test_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
-    response_selection_train_metrics: ResponseSelectionMetrics = defaultdict(list)
-    response_selection_test_metrics: ResponseSelectionMetrics = defaultdict(list)
+        intent_train_metrics: IntentMetrics = defaultdict(list)
+        intent_test_metrics: IntentMetrics = defaultdict(list)
+        entity_train_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
+        entity_test_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
+        response_selection_train_metrics: ResponseSelectionMetrics = defaultdict(list)
+        response_selection_test_metrics: ResponseSelectionMetrics = defaultdict(list)
 
-    intent_test_results: List[IntentEvaluationResult] = []
-    entity_test_results: List[EntityEvaluationResult] = []
-    response_selection_test_results: List[ResponseSelectionEvaluationResult] = []
+        intent_test_results: List[IntentEvaluationResult] = []
+        entity_test_results: List[EntityEvaluationResult] = []
+        response_selection_test_results: List[ResponseSelectionEvaluationResult] = []
 
-    for train, test in generate_folds(n_folds, data):
-        interpreter = trainer.train(train)
+        for train, test in generate_folds(n_folds, data):
+            training_data_file = tmp_path / "training_data.yml"
+            RasaYAMLWriter().dump(training_data_file, train)
 
-        # calculate train accuracy
-        combine_result(
-            intent_train_metrics,
-            entity_train_metrics,
-            response_selection_train_metrics,
-            interpreter,
-            train,
+            model_file = rasa.model_training.train_nlu(
+                nlu_config, str(training_data_file), str(tmp_path)
+            )
+
+            # TODO: Load trained model
+            interpreter = None
+
+            # calculate train accuracy
+            combine_result(
+                intent_train_metrics,
+                entity_train_metrics,
+                response_selection_train_metrics,
+                interpreter,
+                train,
+            )
+            # calculate test accuracy
+            combine_result(
+                intent_test_metrics,
+                entity_test_metrics,
+                response_selection_test_metrics,
+                interpreter,
+                test,
+                intent_test_results,
+                entity_test_results,
+                response_selection_test_results,
+            )
+
+        if intent_test_results:
+            logger.info("Accumulated test folds intent evaluation results:")
+            intent_evaluation = evaluate_intents(
+                intent_test_results,
+                output,
+                successes,
+                errors,
+                disable_plotting,
+                report_as_dict=report_as_dict,
+            )
+
+        entity_evaluation = {}
+        if entity_test_results:
+            logger.info("Accumulated test folds entity evaluation results:")
+            extractors = _get_active_entity_extractors(entity_test_results)
+            entity_evaluation = evaluate_entities(
+                entity_test_results,
+                extractors,
+                output,
+                successes,
+                errors,
+                disable_plotting,
+                report_as_dict=report_as_dict,
+            )
+
+        responses_evaluation = {}
+        if response_selection_test_results:
+            logger.info("Accumulated test folds response selection evaluation results:")
+            responses_evaluation = evaluate_response_selections(
+                response_selection_test_results,
+                output,
+                successes,
+                errors,
+                disable_plotting,
+                report_as_dict=report_as_dict,
+            )
+
+        return (
+            CVEvaluationResult(
+                dict(intent_train_metrics), dict(intent_test_metrics), intent_evaluation
+            ),
+            CVEvaluationResult(
+                dict(entity_train_metrics), dict(entity_test_metrics), entity_evaluation
+            ),
+            CVEvaluationResult(
+                dict(response_selection_train_metrics),
+                dict(response_selection_test_metrics),
+                responses_evaluation,
+            ),
         )
-        # calculate test accuracy
-        combine_result(
-            intent_test_metrics,
-            entity_test_metrics,
-            response_selection_test_metrics,
-            interpreter,
-            test,
-            intent_test_results,
-            entity_test_results,
-            response_selection_test_results,
-        )
-
-    if intent_test_results:
-        logger.info("Accumulated test folds intent evaluation results:")
-        intent_evaluation = evaluate_intents(
-            intent_test_results,
-            output,
-            successes,
-            errors,
-            disable_plotting,
-            report_as_dict=report_as_dict,
-        )
-
-    entity_evaluation = {}
-    if entity_test_results:
-        logger.info("Accumulated test folds entity evaluation results:")
-        extractors = _get_active_entity_extractors(entity_test_results)
-        entity_evaluation = evaluate_entities(
-            entity_test_results,
-            extractors,
-            output,
-            successes,
-            errors,
-            disable_plotting,
-            report_as_dict=report_as_dict,
-        )
-
-    responses_evaluation = {}
-    if response_selection_test_results:
-        logger.info("Accumulated test folds response selection evaluation results:")
-        responses_evaluation = evaluate_response_selections(
-            response_selection_test_results,
-            output,
-            successes,
-            errors,
-            disable_plotting,
-            report_as_dict=report_as_dict,
-        )
-
-    return (
-        CVEvaluationResult(
-            dict(intent_train_metrics), dict(intent_test_metrics), intent_evaluation
-        ),
-        CVEvaluationResult(
-            dict(entity_train_metrics), dict(entity_test_metrics), entity_evaluation
-        ),
-        CVEvaluationResult(
-            dict(response_selection_train_metrics),
-            dict(response_selection_test_metrics),
-            responses_evaluation,
-        ),
-    )
 
 
 def _targets_predictions_from(
@@ -1751,9 +1765,6 @@ async def compare_nlu(
 
     Returns: training examples per run
     """
-
-    from rasa.model_training import train_nlu_async
-
     training_examples_per_run = []
 
     for run in range(runs):
@@ -1797,7 +1808,7 @@ async def compare_nlu(
                 )
 
                 try:
-                    model_path = await train_nlu_async(
+                    model_path = rasa.model_training.train_nlu(
                         nlu_config,
                         train_split_path,
                         model_output_path,
@@ -1809,8 +1820,6 @@ async def compare_nlu(
                     logger.warning(f"Training model '{model_name}' failed. Error: {e}")
                     f_score_results[model_name][run].append(0.0)
                     continue
-
-                model_path = os.path.join(get_model(model_path), "nlu")
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
                 result = run_evaluation(

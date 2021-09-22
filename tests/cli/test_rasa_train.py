@@ -9,6 +9,7 @@ from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
 
 import rasa.shared.utils.io
+from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.core.policies import Policy
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -320,6 +321,38 @@ def test_train_core_no_domain_exists(run_in_simple_project: Callable[..., RunRes
     )
 
     assert not list(Path("train_rasa_models_no_domain").glob("*"))
+
+
+def test_train_core_compare(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    run_in_simple_project(
+        "train",
+        "core",
+        "-c",
+        "config.yml",
+        "config.yml",
+        "-d",
+        "domain.yml",
+        "--stories",
+        "data",
+        "--out",
+        str(tmp_path),
+        "--runs",
+        "2",
+        "--percentages",
+        "50",
+        "100",
+    )
+
+    for run in range(1, 2):
+        assert (tmp_path / f"run_{run}" / "config__percentage__50.tar.gz").exists()
+        assert (tmp_path / f"run_{run}" / "config__percentage__100.tar.gz").exists()
+
+    num_stories = rasa.shared.utils.io.read_yaml_file(
+        tmp_path / NUMBER_OF_TRAINING_STORIES_FILE
+    )
+    assert num_stories == [3, 0]
 
 
 def test_train_nlu(run_in_simple_project: Callable[..., RunResult], tmp_path: Path):
