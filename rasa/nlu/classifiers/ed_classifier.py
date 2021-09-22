@@ -118,7 +118,7 @@ class flask_serving_classifier(IntentClassifier):
             y = self.transform_labels_str2num(labels).tolist()
             categories = [i for i in set(y)]
             host = '127.0.0.1'
-            port = 9501
+            port = 9000
             url = f'http://{host}:{port}/train'
             # data = {'text': X, 'labels': y, 'unique_labels': categories}
             data = {'text': X, 'labels': y, 'unique_labels': categories, 'eqa_content': eqa_content}
@@ -170,7 +170,7 @@ class flask_serving_classifier(IntentClassifier):
         :return: vector of probabilities containing one entry for each label"""
         data = {'text': X,'labels':[], 'unique_labels':[]}
         host = '127.0.0.1'
-        port = 9501
+        port = 9000
         url = f'http://{host}:{port}/predict'
         pred = requests.post(url, json=data)
         out = np.array(pred.json()['prediction'])
