@@ -446,14 +446,6 @@ async def trained_e2e_model(
     )
 
 
-@pytest.fixture()
-def set_cache(monkeypatch: MonkeyPatch) -> Callable:
-    def set_cache(directory: Path) -> None:
-        monkeypatch.setattr(LocalTrainingCache, "._get_cache_location", directory)
-
-    return set_cache
-
-
 @pytest.fixture(scope="session")
 def moodbot_domain_path() -> Path:
     return Path("data", "test_moodbot", "domain.yml")

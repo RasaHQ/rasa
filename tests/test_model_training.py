@@ -26,6 +26,7 @@ from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
 import rasa.shared.importers.autoconfig as autoconfig
 import rasa.shared.utils.io
+from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.utils.tensorflow.constants import EPOCHS
 
@@ -899,3 +900,67 @@ def test_model_finetuning_with_invalid_model_nlu(
         )
 
     assert "No model for finetuning found" in capsys.readouterr().out
+
+
+def test_models_not_retrained_if_only_new_responses(
+    trained_e2e_model: Text,
+    moodbot_domain_path: Path,
+    e2e_bot_config_file: Path,
+    e2e_stories_path: Text,
+    nlu_data_path: Text,
+    trained_e2e_model_cache: Path,
+    tmp_path: Path,
+):
+    domain = Domain.load(moodbot_domain_path)
+    domain_with_extra_response = """
+    version: '2.0'
+    responses:
+      utter_greet:
+      - text: "Hi from Rasa"
+    """
+
+    new_domain = domain.merge(Domain.from_yaml(domain_with_extra_response))
+    new_domain_path = tmp_path / "domain.yml"
+    rasa.shared.utils.io.write_yaml(new_domain.as_dict(), new_domain_path)
+
+    result = rasa.train(
+        str(new_domain_path),
+        str(e2e_bot_config_file),
+        [e2e_stories_path, nlu_data_path],
+        output=str(tmp_path),
+        dry_run=True,
+    )
+
+    assert result.code == 0
+
+
+def test_models_not_retrained_if_only_new_action(
+    trained_e2e_model: Text,
+    moodbot_domain_path: Path,
+    e2e_bot_config_file: Path,
+    e2e_stories_path: Text,
+    nlu_data_path: Text,
+    trained_e2e_model_cache: Path,
+    tmp_path: Path,
+):
+    domain = Domain.load(moodbot_domain_path)
+    domain_with_extra_response = """
+    version: '2.0'
+    responses:
+      utter_greet_new:
+      - text: "Hi from Rasa"
+    """
+
+    new_domain = domain.merge(Domain.from_yaml(domain_with_extra_response))
+    new_domain_path = tmp_path / "domain.yml"
+    rasa.shared.utils.io.write_yaml(new_domain.as_dict(), new_domain_path)
+
+    result = rasa.train(
+        str(new_domain_path),
+        str(e2e_bot_config_file),
+        [e2e_stories_path, nlu_data_path],
+        output=str(tmp_path),
+        dry_run=True,
+    )
+
+    assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
