@@ -1,4 +1,4 @@
-from typing import Any, Dict, Text, Type
+from typing import Any, Dict, Text
 
 import numpy as np
 import pytest
@@ -6,10 +6,6 @@ import pytest
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
-from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyModelProvider, SpacyPreprocessor
 from rasa.shared.nlu.training_data import loading
 from rasa.shared.nlu.training_data.training_data import TrainingData
