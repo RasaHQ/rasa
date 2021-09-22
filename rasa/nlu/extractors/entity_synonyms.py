@@ -22,7 +22,7 @@ EntitySynonymMapper = EntitySynonymMapper
 logger = logging.getLogger(__name__)
 
 
-class EntitySynonymMapperComponent(GraphComponent):
+class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
     """Maps entities to their synonyms if they appear in the training data."""
 
     SYNONYM_FILENAME = "synonyms.json"
