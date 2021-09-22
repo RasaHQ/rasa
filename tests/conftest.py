@@ -328,7 +328,7 @@ def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
 
 @pytest.fixture(scope="session")
 def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
-    async def _train_nlu(
+    def _train_nlu(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
     ) -> Optional[Text]:
         if output_path is None:
