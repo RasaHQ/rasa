@@ -96,6 +96,8 @@ def validate(
             node_name, node, schema, create_fn_params, run_fn_params,
         )
 
+    _validate_required_components(schema)
+
 
 def _validate_cycle(schema: GraphSchema) -> None:
     for target_name in schema.target_names:
@@ -399,3 +401,66 @@ def _validate_parent_return_type(
             f"'{parent_return_type}' but type '{required_type}' "
             f"was expected by component '{node.uses.__name__}'."
         )
+
+
+def _validate_required_components(schema: GraphSchema,) -> None:
+    unmet_requirements: Dict[Text, Dict[Type, Set[Text]]] = dict()
+    for target_name in schema.target_names:
+        unmet_requirements[target_name], _ = _recursively_check_required_components(
+            node_name=target_name, schema=schema,
+        )
+    if any(problems for problems in unmet_requirements.values()):
+        errors = "".join(
+            [
+                f"Some components ({', '.join(sorted(required_by))}) "
+                f"require a {type.__name__} to be placed before it in the graph "
+                f"in order to compute the target {target_name}. "
+                for target_name, problems in unmet_requirements.items()
+                for type, required_by in problems.items()
+            ]
+        )
+        num_nodes = len(
+            set(
+                node_name
+                for problems in unmet_requirements.values()
+                for required_by in problems.values()
+                for node_name in required_by
+            )
+        )
+        raise GraphSchemaValidationException(
+            f"{num_nodes} nodes are missing required components. "
+            f"{errors}"
+            f"Please add the required components to the graph."
+        )
+
+
+def _recursively_check_required_components(
+    node_name: Text, schema: GraphSchema,
+) -> Tuple[Dict[Type, Set[Text]], Set[Type]]:
+    schema_node = schema.nodes.get(node_name, None)
+    if not schema_node:
+        raise RuntimeError("This cannot happen.")
+
+    unmet_requirements = dict()
+    used_subtypes = set()
+    for parent_node_name in schema_node.needs.values():
+        (
+            part_of_unmet_requirements,
+            part_of_used_types,
+        ) = _recursively_check_required_components(
+            node_name=parent_node_name, schema=schema
+        )
+        for type, nodes in part_of_unmet_requirements.items():
+            unmet_requirements.setdefault(type, set()).update(nodes)
+        used_subtypes.update(part_of_used_types)
+
+    unmet_requirements_of_current_node = set(
+        required
+        for required in schema_node.uses.required_components
+        if not any(issubclass(used_subtype, required) for used_subtype in used_subtypes)
+    )
+    for type in unmet_requirements_of_current_node:
+        unmet_requirements.setdefault(type, set()).add(node_name)
+    used_subtypes.add(schema_node.uses)
+
+    return unmet_requirements, used_subtypes

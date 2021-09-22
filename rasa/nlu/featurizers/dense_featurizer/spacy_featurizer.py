@@ -4,6 +4,7 @@ import logging
 from typing import Any, Text, Dict, List, Type
 
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
+from rasa.nlu.utils.spacy_utils import SpacyModelProvider
 import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
@@ -32,6 +33,11 @@ logger = logging.getLogger(__name__)
 
 class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """Featurize messages using SpaCy."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [SpacyModelProvider, SpacyTokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

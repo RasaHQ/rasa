@@ -1,10 +1,10 @@
 from __future__ import annotations
 from abc import abstractmethod, ABC
 from collections import Counter
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from typing import Generic, Iterable, Text, Optional, Dict, Any, TypeVar, Type
+from typing import Generic, Iterable, List, Text, Optional, Dict, Any, TypeVar, Type
 
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
+from rasa.nlu.tokenizers.tokenizer import Tokenizer, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import InvalidConfigException
@@ -26,6 +26,11 @@ FeatureType = TypeVar("FeatureType")
 
 class Featurizer2(Generic[FeatureType], ABC):
     """Base class for all featurizers."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

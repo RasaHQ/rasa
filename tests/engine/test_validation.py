@@ -1,4 +1,4 @@
-from typing import Any, Dict, Text, Type, Optional, List
+from typing import Any, Callable, Dict, Text, Tuple, Type, Optional, List
 
 import pytest
 
@@ -609,3 +609,146 @@ def test_cycle(is_train_graph: bool):
 
     with pytest.raises(GraphSchemaValidationException, match="Cycles"):
         validation.validate(schema, language=None, is_train_graph=is_train_graph)
+
+
+@pytest.mark.parametrize(
+    "node_needs_requires, targets, num_unmet, is_train_graph, test_subclasses",
+    [
+        (node_needs_requires, targets, num_unmet, is_train_graph, test_subclasses,)
+        for node_needs_requires, targets, num_unmet in [
+            ([(1, [2], [2]), (2, [], [])], [1], 0,),
+            (
+                [(1, [2, 3, 4], [2, 3, 4]), (2, [], []), (3, [], []), (4, [], [])],
+                [1],
+                0,
+            ),
+            (
+                [
+                    (1, [3], [4]),
+                    (2, [3], [4]),
+                    (3, [4, 5], []),
+                    (4, [], []),
+                    (5, [6], []),
+                    (6, [], []),
+                ],
+                [1, 3],
+                0,
+            ),
+            ([(1, [], [2]), (2, [], [])], [1], 1,),  # 2 is not reachable from 1
+            (
+                [
+                    (1, [3], [4]),
+                    (2, [3], [4]),
+                    (3, [4], [5]),
+                    (4, [], []),
+                    (5, [], []),
+                ],
+                [1],
+                1,  # 5 is not reachable from 3
+            ),
+            (
+                [(1, [2], [3]), (2, [], [4]), (3, [], []), (4, [], [])],
+                [1],
+                2,
+            ),  # 3 and 4 are not reachable from 1 and 2
+        ]
+        for is_train_graph in [True, False]
+        for test_subclasses in [True, False]
+    ],
+)
+def test_required_components(
+    node_needs_requires: List[Tuple[int, List[int], List[int]]],
+    targets: List[int],
+    num_unmet: int,
+    is_train_graph: bool,
+    test_subclasses: bool,
+):
+    # create component types
+    def create_run(num_args) -> Callable[..., TrainingData]:
+        # Note: setting __annotations__ is not sufficient for the validation and
+        # creating a function via types.FunctionType is cumbersome, so we just
+        # explicitly create the function we need:
+        if num_args == 0:
+
+            def run() -> TrainingData:
+                return TrainingData()
+
+        elif num_args == 1:
+
+            def run(param0: TrainingData) -> TrainingData:
+                return TrainingData()
+
+        elif num_args == 2:
+
+            def run(param0: TrainingData, param1: TrainingData) -> TrainingData:
+                return TrainingData()
+
+        elif num_args == 3:
+
+            def run(
+                param0: TrainingData, param1: TrainingData, param2: TrainingData
+            ) -> TrainingData:
+                return TrainingData()
+
+        else:
+            assert False, f"This test doesn't work with num_args={num_args} ."
+        return run
+
+    def create_component_type_and_subtype(
+        node: int, needs: List[int]
+    ) -> Tuple[Type[GraphComponent], Type[GraphComponent]]:
+        main_type = type(
+            f"class_{node}",
+            (TestComponentWithoutRun,),
+            {
+                "run": create_run(num_args=len(needs)),
+                "create": lambda *args, **kwargs: None,
+                "__init__": lambda: None,
+            },
+        )
+        sub_type = type(f"subclass_of_class_{node}", (main_type,), {})
+        return main_type, sub_type
+
+    component_types = {
+        node: create_component_type_and_subtype(node=node, needs=needs)
+        for node, needs, _ in node_needs_requires
+    }
+
+    # add required components functions
+    def create_required_components(required_components):
+        return [component_types[required][0] for required in required_components]
+
+    for node, _, required_components in node_needs_requires:
+        for component_type in component_types[node]:
+            component_type.required_components = create_required_components(
+                required_components
+            )
+    # create graph schema
+    graph_schema = GraphSchema(
+        {
+            f"node-{node}": SchemaNode(
+                needs={
+                    f"param{param}": f"node-{needed_node}"
+                    for param, needed_node in enumerate(needs)
+                },
+                uses=component_types[node][test_subclasses],  # use subclass if required
+                fn="run",
+                constructor_name="create",
+                config={},
+                is_target=node in targets,
+            )
+            for node, needs, _ in node_needs_requires
+        }
+    )
+
+    # validate!
+    if num_unmet == 0:
+        validation.validate(
+            schema=graph_schema, language=None, is_train_graph=is_train_graph
+        )
+    else:
+        message = f"{num_unmet} nodes are missing"
+        with pytest.raises(GraphSchemaValidationException, match=message):
+            validation.validate(
+                schema=graph_schema, language=None, is_train_graph=is_train_graph
+            )
