@@ -283,7 +283,7 @@ def _validate_run_fn_return_type(
 
     # TODO: Handle forward references here
     if typing_utils.issubtype(return_type, typing.List):
-        return_type = typing.get_args(return_type)[0]
+        return_type = typing_utils.get_args(return_type)[0]
 
     if is_training and not isinstance(return_type, Fingerprintable):
         raise GraphSchemaValidationException(

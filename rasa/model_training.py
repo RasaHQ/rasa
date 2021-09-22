@@ -208,7 +208,6 @@ def _train_graph(
         config, kwargs, training_type=training_type, is_finetuning=is_finetuning
     )
 
-    # TODO
     if model_to_finetune:
         rasa.shared.utils.common.mark_as_experimental_feature(
             "Incremental Training feature"
