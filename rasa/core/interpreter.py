@@ -2,7 +2,7 @@ import aiohttp
 
 import logging
 
-import os
+from pathlib import Path
 from typing import Text, Dict, Any, Union, Optional
 
 from rasa.core import constants
@@ -29,7 +29,7 @@ def create_interpreter(
 
     if isinstance(obj, rasa.shared.nlu.interpreter.NaturalLanguageInterpreter):
         return obj
-    elif isinstance(obj, str) and os.path.exists(obj):
+    elif isinstance(obj, str) and Path(obj).exists():
         return RasaNLUInterpreter(model_directory=obj)
     elif isinstance(obj, str):
         # user passed in a string, but file does not exist

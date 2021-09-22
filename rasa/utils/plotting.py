@@ -331,9 +331,7 @@ def plot_curve(
     ax = plt.gca()
 
     # load results from file
-    data = rasa.shared.utils.io.read_json_file(
-        os.path.join(output_directory, RESULTS_FILE)
-    )
+    data = rasa.shared.utils.io.read_json_file(Path(output_directory) / RESULTS_FILE)
     x = number_of_examples
 
     # compute mean of all the runs for different configs

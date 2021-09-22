@@ -2,6 +2,7 @@ import logging
 import os
 import warnings as pywarnings
 import typing
+from pathlib import Path
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
@@ -1151,9 +1152,7 @@ def _plot_story_evaluation(
 
     confusion_matrix_filename = CONFUSION_MATRIX_STORIES_FILE
     if output_directory:
-        confusion_matrix_filename = os.path.join(
-            output_directory, confusion_matrix_filename
-        )
+        confusion_matrix_filename = Path(output_directory) / confusion_matrix_filename
 
     cnf_matrix = confusion_matrix(targets, predictions)
 
@@ -1161,7 +1160,7 @@ def _plot_story_evaluation(
         cnf_matrix,
         classes=unique_labels(targets, predictions),
         title="Action Confusion matrix",
-        output_file=confusion_matrix_filename,
+        output_file=str(confusion_matrix_filename),
     )
 
 
@@ -1203,7 +1202,7 @@ async def compare_models_in_dir(
             number_correct[k].append(v)
 
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output, RESULTS_FILE), number_correct
+        Path(output) / RESULTS_FILE, number_correct
     )
 
 
@@ -1231,7 +1230,7 @@ async def compare_models(
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
 
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output, RESULTS_FILE), number_correct
+        Path(output) / RESULTS_FILE, number_correct
     )
 
 

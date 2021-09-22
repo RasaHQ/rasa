@@ -1,6 +1,5 @@
 from asyncio import CancelledError
 import logging
-import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -105,7 +104,7 @@ def _load_interpreter(
 
 
 def _load_domain_and_policy_ensemble(
-    core_path: Optional[Text],
+    core_path: Optional[Path],
 ) -> Tuple[Optional[Domain], Optional[PolicyEnsemble]]:
     """Load the domain and policy ensemble from the model at `core_path`.
 
@@ -120,7 +119,7 @@ def _load_domain_and_policy_ensemble(
 
     if core_path:
         policy_ensemble = PolicyEnsemble.load(core_path)
-        domain_path = os.path.join(os.path.abspath(core_path), DEFAULT_DOMAIN_PATH)
+        domain_path = core_path.resolve() / DEFAULT_DOMAIN_PATH
         domain = Domain.load(domain_path)
 
     return domain, policy_ensemble
@@ -141,7 +140,7 @@ def _load_and_set_updated_model(
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
     interpreter = _load_interpreter(agent, nlu_path)
-    domain, policy_ensemble = _load_domain_and_policy_ensemble(core_path)
+    domain, policy_ensemble = _load_domain_and_policy_ensemble(Path(core_path))
 
     agent.update_model(
         domain, policy_ensemble, fingerprint, interpreter, model_directory
@@ -236,9 +235,7 @@ async def _pull_model_and_fingerprint(
                     return None
 
                 rasa.utils.io.unarchive(await resp.read(), model_directory)
-                logger.debug(
-                    "Unzipped model to '{}'".format(os.path.abspath(model_directory))
-                )
+                logger.debug(f"Unzipped model to '{Path(model_directory).resolve()}'")
 
                 # return the new fingerprint
                 return resp.headers.get("ETag")
@@ -359,7 +356,7 @@ async def load_agent(
                 model_server=model_server,
             )
 
-        elif model_path is not None and os.path.exists(model_path):
+        elif model_path is not None and Path(model_path).exists():
             return Agent.load_local_model(
                 model_path,
                 interpreter=interpreter,
@@ -467,9 +464,11 @@ class Agent:
         try:
             if not model_path:
                 raise ModelNotFound("No path specified.")
-            if not os.path.exists(model_path):
+
+            model_path = Path(model_path)
+            if not model_path.exists():
                 raise ModelNotFound(f"No file or directory at '{model_path}'.")
-            if os.path.isfile(model_path):
+            if model_path.is_file():
                 model_path = get_model(str(model_path))
         except ModelNotFound as e:
             raise ModelNotFound(
@@ -491,16 +490,8 @@ class Agent:
         ensemble = None
 
         if core_model:
-            domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-            ensemble = (
-                PolicyEnsemble.load(
-                    core_model,
-                    new_config=new_config,
-                    finetuning_epoch_fraction=finetuning_epoch_fraction,
-                )
-                if core_model
-                else None
-            )
+            domain = Domain.load(Path(core_model) / DEFAULT_DOMAIN_PATH)
+            ensemble = PolicyEnsemble.load(core_model) if core_model else None
 
             # ensures the domain hasn't changed between test and train
             domain.compare_with_specification(core_model)
@@ -764,18 +755,19 @@ class Agent:
             self.fingerprint = uuid.uuid4().hex
 
     @staticmethod
-    def _clear_model_directory(model_path: Text) -> None:
+    def _clear_model_directory(model_path: Path) -> None:
         """Remove existing files from model directory.
 
         Only removes files if the directory seems to contain a previously
         persisted model. Otherwise does nothing to avoid deleting
-        `/` by accident."""
-        if not os.path.exists(model_path):
+        `/` by accident.
+        """
+        if not model_path.exists():
             return
 
-        domain_spec_path = os.path.join(model_path, "metadata.json")
+        domain_spec_path = model_path / "metadata.json"
         # check if there were a model before
-        if os.path.exists(domain_spec_path):
+        if domain_spec_path.exists():
             logger.info(
                 "Model directory {} exists and contains old "
                 "model files. All files will be overwritten."
@@ -795,16 +787,17 @@ class Agent:
         if not self.is_core_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
 
-        if not model_path.endswith(DEFAULT_CORE_SUBDIRECTORY_NAME):
-            model_path = os.path.join(model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
+        model_path = Path(model_path)
+        if not str(model_path).endswith(DEFAULT_CORE_SUBDIRECTORY_NAME):
+            model_path = model_path / DEFAULT_CORE_SUBDIRECTORY_NAME
 
         self._clear_model_directory(model_path)
 
         self.policy_ensemble.persist(model_path)
-        self.domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
-        self.domain.persist_specification(model_path)
+        self.domain.persist(model_path / DEFAULT_DOMAIN_PATH)
+        self.domain.persist_specification(str(model_path))
 
-        logger.info("Persisted model to '{}'".format(os.path.abspath(model_path)))
+        logger.info(f"Persisted model to '{model_path.resolve()}'")
 
     async def visualize(
         self,
@@ -924,7 +917,7 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
     ) -> "Agent":
-        if os.path.isfile(model_path):
+        if Path(model_path).is_file:
             model_archive = model_path
         else:
             model_archive = get_latest_model(model_path)

@@ -1,8 +1,8 @@
 import argparse
 import logging
-import os
 import tempfile
 import typing
+from pathlib import Path
 from typing import Dict, Optional, Text, Union, List
 
 import rasa.shared.utils.io
@@ -98,7 +98,7 @@ def train_comparison_models(
                     policy_config, domain, [story_file]
                 )
 
-                config_name = os.path.splitext(os.path.basename(policy_config))[0]
+                config_name = Path(policy_config).stem
                 logging.info(
                     "Starting to train {} round {}/{}"
                     " with {}% exclusion"
@@ -118,11 +118,11 @@ def train_comparison_models(
                     )
                     new_fingerprint = model.model_fingerprint(file_importer)
 
-                    output_dir = os.path.join(output_path, "run_" + str(r + 1))
+                    output_dir = Path(output_path) / ("run_" + str(r + 1))
                     model_name = config_name + PERCENTAGE_KEY + str(percentage)
                     model.package_model(
                         fingerprint=new_fingerprint,
-                        output_directory=output_dir,
+                        output_directory=str(output_dir),
                         train_path=train_path,
                         fixed_model_name=model_name,
                     )
@@ -160,9 +160,7 @@ def do_compare_training(
         no_stories - round((x / 100.0) * no_stories) for x in args.percentages
     ]
 
-    training_stories_per_model_file = os.path.join(
-        args.out, NUMBER_OF_TRAINING_STORIES_FILE
-    )
+    training_stories_per_model_file = Path(args.out) / NUMBER_OF_TRAINING_STORIES_FILE
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         training_stories_per_model_file, story_range
     )

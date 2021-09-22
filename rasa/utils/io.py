@@ -121,10 +121,8 @@ def create_temporary_directory() -> Text:
 
 def create_path(file_path: Text) -> None:
     """Makes sure all directories in the 'file_path' exists."""
-
-    parent_dir = os.path.dirname(os.path.abspath(file_path))
-    if not os.path.exists(parent_dir):
-        os.makedirs(parent_dir)
+    parent_dir = Path(file_path).parent
+    Path(parent_dir).mkdir(parents=True, exist_ok=True)
 
 
 def file_type_validator(

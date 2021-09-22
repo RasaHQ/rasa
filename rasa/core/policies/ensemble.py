@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import sys
+from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -239,9 +240,8 @@ class PolicyEnsemble:
 
     def _persist_metadata(self, path: Text) -> None:
         """Persists the domain specification to storage."""
-
         # make sure the directory we persist exists
-        domain_spec_path = os.path.join(path, "metadata.json")
+        domain_spec_path = Path(path) / "metadata.json"
         rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [

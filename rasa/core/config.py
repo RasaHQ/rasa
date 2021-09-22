@@ -1,5 +1,5 @@
 import copy
-import os
+from pathlib import Path
 from typing import Optional, Text, List, Dict, Union, Tuple, Any, TYPE_CHECKING
 
 import rasa.shared.utils.io
@@ -40,9 +40,15 @@ def load(config_file: Union[Text, Dict]) -> List["Policy"]:
     """Load policy data stored in the specified file."""
     from rasa.core.policies.ensemble import PolicyEnsemble
 
+    if not config_file:
+        raise FileNotFoundException(
+            f"The provided configuration file path does not seem to be valid. "
+            f"The file '{Path(config_file).resolve()}' could not be found."
+        )
+
     config_data = {}
-    if isinstance(config_file, str) and os.path.isfile(config_file):
-        config_data = rasa.shared.utils.io.read_model_configuration(config_file)
+    if isinstance(config_file, str) and Path(config_file).is_file():
+        config_data = rasa.shared.utils.io.read_config_file(config_file)
     elif isinstance(config_file, Dict):
         config_data = config_file
 

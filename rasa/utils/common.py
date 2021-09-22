@@ -198,7 +198,7 @@ def write_global_config_value(name: Text, value: Any) -> bool:
     # in tests
     config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
     try:
-        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        Path(config_path).parent.mkdir(parents=True, exist_ok=True)
 
         c = read_global_config(config_path)
         c[name] = value
@@ -222,7 +222,7 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
     # in tests
     config_path = rasa.constants.GLOBAL_USER_CONFIG_PATH
 
-    if not os.path.exists(config_path):
+    if not Path(config_path).exists():
         return not_found()
 
     c = read_global_config(config_path)

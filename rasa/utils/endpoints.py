@@ -2,7 +2,7 @@ import ssl
 
 import aiohttp
 import logging
-import os
+from pathlib import Path
 from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
 from typing import Any, Optional, Text, Dict
@@ -35,7 +35,7 @@ def read_endpoint_config(
     except FileNotFoundError:
         logger.error(
             "Failed to read endpoint configuration "
-            "from {}. No such file.".format(os.path.abspath(filename))
+            f"from {Path(filename).resolve()}. No such file."
         )
         return None
 

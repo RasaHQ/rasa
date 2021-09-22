@@ -2,6 +2,7 @@ import logging
 import os
 import textwrap
 import uuid
+from pathlib import Path
 from functools import partial
 from multiprocessing import Process
 from typing import (
@@ -811,7 +812,7 @@ def _write_stories_to_file(
         writer = YAMLStoryWriter()
 
     should_append_stories = False
-    if os.path.exists(export_story_path):
+    if Path(export_story_path).exists():
         append_write = "a"  # append if already exists
         should_append_stories = True
     else:
@@ -1632,7 +1633,7 @@ def start_visualization(image_path: Text, port: int) -> None:
     def visualisation_png(request: Request,) -> HTTPResponse:
         try:
             headers = {"Cache-Control": "no-cache"}
-            return response.file(os.path.abspath(image_path), headers=headers)
+            return response.file(Path(image_path).resolve(), headers=headers)
         except FileNotFoundError:
             return response.text("", 404)
 
