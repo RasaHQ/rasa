@@ -246,22 +246,3 @@ def test_spacy_featurizer_using_empty_model():
 
     assert seq_vecs is None
     assert sen_vecs is None
-
-
-@pytest.mark.parametrize(
-    "tokenizer_class, should_raise",
-    [
-        (WhitespaceTokenizerGraphComponent, True),
-        (MitieTokenizerGraphComponent, True),
-        (SpacyTokenizerGraphComponent, False),
-    ],
-)
-def test_spacy_featurizer_validate_compatibility_with_tokenizer(
-    tokenizer_class: Type[TokenizerGraphComponent], should_raise: bool
-):
-    with pytest.warns(UserWarning if should_raise else None) as record:
-        SpacyFeaturizerGraphComponent.validate_compatibility_with_tokenizer(
-            {}, tokenizer_class
-        )
-        if not should_raise:
-            assert len(record) == 0

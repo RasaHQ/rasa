@@ -293,26 +293,3 @@ def test_validate_config(config: Dict[Text, Any], raises: bool):
     else:
         with pytest.raises(InvalidConfigException):
             LexicalSyntacticFeaturizerGraphComponent.validate_config(config)
-
-
-@pytest.mark.parametrize(
-    "config,tokenizer_type,warns",
-    [
-        ({FEATURES: [["pos"],]}, SpacyTokenizerGraphComponent, False),
-        ({FEATURES: [["pos"],]}, WhitespaceTokenizerGraphComponent, True),
-        ({FEATURES: [["suffix2"],]}, WhitespaceTokenizerGraphComponent, False),
-    ],
-)
-def test_validate_compatibility_with_tokenizer(
-    config: Dict[Text, Any], tokenizer_type: Type[Tokenizer], warns: bool
-):
-    lsf_cls = LexicalSyntacticFeaturizerGraphComponent
-    if warns:
-        with pytest.warns(UserWarning):
-            lsf_cls.validate_compatibility_with_tokenizer(
-                config=config, tokenizer_type=tokenizer_type
-            )
-    else:
-        lsf_cls.validate_compatibility_with_tokenizer(
-            config=config, tokenizer_type=tokenizer_type
-        )
