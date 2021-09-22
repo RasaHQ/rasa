@@ -7,7 +7,6 @@ from unittest.mock import Mock
 
 from rasa.engine.graph import GraphComponent, GraphSchema, SchemaNode
 from rasa.graph_components.validators.config_validator import (
-    FEATURIZER_CLASSES,
     POLICY_CLASSSES,
     ConfigValidator,
     TRAINABLE_EXTRACTORS,
