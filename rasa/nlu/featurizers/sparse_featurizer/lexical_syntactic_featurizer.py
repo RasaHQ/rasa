@@ -14,15 +14,13 @@ from typing import (
     Set,
     Optional,
     Union,
-    Type,
 )
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY, SpacyTokenizer
+from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -179,33 +177,6 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
             raise InvalidConfigException(message) from e
         if configured_feature_names.difference(cls.SUPPORTED_FEATURES):
             raise InvalidConfigException(message)
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validate a configuration for this component in the context of a recipe."""
-        # TODO: add (something like) this to recipe validation
-        # TODO: replace tokenizer by config of tokenizer to enable static check
-        configured_feature_names = set(
-            feature_name
-            for pos_config in config.get(FEATURES, [])
-            for feature_name in pos_config
-        )
-        if (
-            any(
-                feature_name in configured_feature_names
-                for feature_name in ["pos", "pos2"]
-            )
-            and tokenizer_type != SpacyTokenizer
-        ):
-            rasa.shared.utils.io.raise_warning(
-                f"Expected tokenizer to be {SpacyTokenizer.__name__} "
-                f"because the given configuration includes part-of-speech features "
-                f"`pos` and/or `pos2` which can only be extracted from tokens "
-                f"produced by this tokenizer. "
-                f"Continuing without the part-of-speech-features."
-            )
 
     def _set_feature_to_idx_dict(
         self,

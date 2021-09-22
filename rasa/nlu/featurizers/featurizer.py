@@ -1,8 +1,7 @@
 from __future__ import annotations
 from abc import abstractmethod, ABC
 from collections import Counter
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from typing import Generic, Iterable, Text, Optional, Dict, Any, TypeVar, Type
+from typing import Generic, Iterable, Text, Optional, Dict, Any, TypeVar
 
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.shared.nlu.training_data.features import Features
@@ -49,14 +48,6 @@ class Featurizer2(Generic[FeatureType], ABC):
     @abstractmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        ...
-
-    @classmethod
-    @abstractmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
         ...
 
     def add_features_to_message(

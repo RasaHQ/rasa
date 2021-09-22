@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections import defaultdict
 import itertools
-from typing import Iterable, List, Dict, Optional, Text, Any, Set, Type
+from typing import Iterable, List, Dict, Text, Any, Set, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
@@ -133,11 +133,8 @@ class ConfigValidator(GraphComponent):
         # TODO: raise if training data is empty?
         # TODO: where do we check whether NLU training data is consistent with
         # the domain?
-        tokenizer_schema_node = self._raise_if_more_than_one_tokenizer()
+        self._raise_if_more_than_one_tokenizer()
         self._raise_if_featurizers_are_not_compatible()
-        self._raise_or_warn_if_featurizers_are_not_compatible_with_tokenizer(
-            tokenizer_schema_node=tokenizer_schema_node
-        )
         self._warn_of_competing_extractors()
         self._warn_of_competition_with_regex_extractor(training_data=training_data)
         self._warn_if_some_training_data_is_unused(training_data=training_data)
@@ -286,14 +283,10 @@ class ConfigValidator(GraphComponent):
                 f"'{EntitySynonymMapperComponent.__name__}' to your pipeline."
             )
 
-    def _raise_if_more_than_one_tokenizer(self) -> Optional[SchemaNode]:
+    def _raise_if_more_than_one_tokenizer(self) -> None:
         """Validates that only one tokenizer is present in the pipeline.
 
         NOTE: rasa/nlu/components/validate_only_one_tokenizer_is_used
-
-        Returns:
-            the schema node describing the tokenizer if there is such a tokenizer,
-            otherwise just None
 
         Raises:
             `InvalidConfigException` in case there is more than one tokenizer
@@ -316,8 +309,6 @@ class ConfigValidator(GraphComponent):
                 f"The pipeline contains the following tokenizers: "
                 f"{names}. "
             )
-
-        return tokenizer_schema_nodes[0] if tokenizer_schema_nodes else None
 
     def _warn_of_competing_extractors(self) -> None:
         """Warns the user when using competing extractors.
@@ -398,24 +389,6 @@ class ConfigValidator(GraphComponent):
         Featurizer2.raise_if_featurizer_configs_are_not_compatible(
             [schema_node.config for schema_node in featurizers]
         )
-
-    def _raise_or_warn_if_featurizers_are_not_compatible_with_tokenizer(
-        self, tokenizer_schema_node: Optional[SchemaNode]
-    ) -> None:
-        """Validates all featurizers against the tokenizer.
-
-        Args:
-            tokenizer_schema_node: the schema node of the tokenizer if there is such
-                a node, otherwise None
-        """
-        if tokenizer_schema_node is None:
-            return
-        for schema_node in self._graph_schema.nodes.values():
-            if issubclass(schema_node.uses, Featurizer2):
-                schema_node.uses.validate_compatibility_with_tokenizer(
-                    config=schema_node.config, tokenizer_type=tokenizer_schema_node.uses
-                )
-        # TODO: shouldn't we always complain if there is no tokenizer?
 
     def _validate_core(self, story_graph: StoryGraph, domain: Domain) -> None:
         """Validates whether the configuration matches the training data.
