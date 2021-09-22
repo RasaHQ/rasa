@@ -398,44 +398,6 @@ def test_nlu_raise_if_featurizers_are_not_compatible(
         validator.validate(importer)
 
 
-def test_raise_or_warn_if_featurizers_are_not_compatible_with_tokenizer(
-    monkeypatch: MonkeyPatch,
-):
-
-    nodes = {}
-    configs = dict()
-    mocks = dict()
-
-    tokenizer_type = WhitespaceTokenizerGraphComponent
-    nodes["tokenizer"] = SchemaNode({}, tokenizer_type, "", "", {})
-    for idx, featurizer_class in enumerate(FEATURIZER_CLASSES):
-        # create multiple nodes with the same "uses" field and different configs
-        configs[featurizer_class] = []
-        for num in range(3):
-            unique_config = {f"config{idx}-{num}": None}
-            configs[featurizer_class].append(unique_config)
-            nodes[f"{idx}-{num}"] = SchemaNode(
-                {}, featurizer_class, "", "", unique_config
-            )
-        # mock the validation function
-        mock = Mock()
-        monkeypatch.setattr(
-            featurizer_class, "validate_compatibility_with_tokenizer", mock
-        )
-        mocks[featurizer_class] = mock
-
-    validator = ConfigValidator(graph_schema=GraphSchema(nodes))
-
-    importer = DummyImporter()
-    validator.validate(importer)
-
-    for featurizer_class, configs in configs.items():
-        # Note: this works because we validate nodes in insertion order
-        mocks[featurizer_class].all_args_list == [
-            {"config": config, "tokenizer_type": tokenizer_type} for config in configs
-        ]
-
-
 @pytest.mark.parametrize(
     "policy_type",
     [
