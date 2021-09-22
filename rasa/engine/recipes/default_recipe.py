@@ -221,7 +221,7 @@ class DefaultV1Recipe(Recipe):
             The registered class.
         """
 
-        def f(registered_class: Type[GraphComponent]) -> Type[GraphComponent]:
+        def decorator(registered_class: Type[GraphComponent]) -> Type[GraphComponent]:
             if not issubclass(registered_class, GraphComponent):
                 raise DefaultV1RecipeRegisterException(
                     f"Failed to register class '{registered_class.__name__}' with "
@@ -235,10 +235,11 @@ class DefaultV1Recipe(Recipe):
             )
             return registered_class
 
-        return f
+        return decorator
 
     @classmethod
     def _from_registry(cls, name: Text) -> RegisteredComponent:
+        # TODO: Hack until we've deleted the old components
         if not name.endswith("GraphComponent"):
             name = f"{name}GraphComponent"
 
@@ -300,11 +301,6 @@ class DefaultV1Recipe(Recipe):
         self, config: Dict[Text, Any], cli_parameters: Dict[Text, Any]
     ) -> Tuple[Dict[Text, SchemaNode], List[Text]]:
         train_config = copy.deepcopy(config)
-
-        training_data_paths = cli_parameters.get("data") or []
-        for arg in ["stories", "nlu"]:
-            if cli_parameters.get(arg):
-                training_data_paths.append(cli_parameters[arg])
 
         train_nodes = {
             "schema_validator": SchemaNode(
@@ -377,10 +373,7 @@ class DefaultV1Recipe(Recipe):
                     config=item,
                 )
                 # TODO: Spacy preprocessor
-            elif component.type in [
-                self.ComponentType.MESSAGE_TOKENIZER,
-                self.ComponentType.MESSAGE_FEATURIZER,
-            ]:
+            else:
                 from_resource = None
                 if component.is_trainable:
                     from_resource = self._add_nlu_train_node(
@@ -392,30 +385,21 @@ class DefaultV1Recipe(Recipe):
                         cli_parameters,
                     )
 
-                last_run_node = self._add_nlu_process_node(
-                    train_nodes,
-                    component.clazz,
-                    component_name,
-                    last_run_node,
-                    item,
-                    from_resource=from_resource,
-                )
-
-                # Remember for End-to-End-Featurization
-                preprocessors.append(last_run_node)
-            elif component.type in [
-                self.ComponentType.INTENT_CLASSIFIER,
-                self.ComponentType.ENTITY_EXTRACTOR,
-            ]:
-                if component.is_trainable:
-                    _ = self._add_nlu_train_node(
+                if component.type in [
+                    self.ComponentType.MESSAGE_TOKENIZER,
+                    self.ComponentType.MESSAGE_FEATURIZER,
+                ]:
+                    last_run_node = self._add_nlu_process_node(
                         train_nodes,
                         component.clazz,
                         component_name,
                         last_run_node,
                         item,
-                        cli_parameters,
+                        from_resource=from_resource,
                     )
+
+                    # Remember for End-to-End-Featurization
+                    preprocessors.append(last_run_node)
 
         return preprocessors
 
@@ -429,7 +413,6 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
     ) -> Text:
         config_from_cli = self._extra_config_from_cli(cli_parameters, component, config)
-
         model_provider_needs = self._get_model_provider_needs(train_nodes, component,)
 
         train_node_name = f"train_{component_name}"
@@ -667,10 +650,10 @@ class DefaultV1Recipe(Recipe):
         predict_config = copy.deepcopy(config)
         predict_nodes = {}
 
-        last_run_node = None
+        nlu_output_node = None
 
         if self._use_nlu:
-            last_run_node = self._add_nlu_predict_nodes(
+            nlu_output_node = self._add_nlu_predict_nodes(
                 predict_config, predict_nodes, train_nodes
             )
 
@@ -678,7 +661,7 @@ class DefaultV1Recipe(Recipe):
             self._add_core_predict_nodes(
                 predict_config,
                 predict_nodes,
-                last_run_node,
+                nlu_output_node,
                 train_nodes,
                 preprocessors,
             )
@@ -802,7 +785,6 @@ class DefaultV1Recipe(Recipe):
         last_run_node: Text,
     ) -> Text:
         node_name = f"run_{component_name}"
-
         model_provider_needs = self._get_model_provider_needs(predict_nodes, node.uses,)
 
         predict_nodes[node_name] = dataclasses.replace(
@@ -818,15 +800,15 @@ class DefaultV1Recipe(Recipe):
         self,
         predict_config: Dict[Text, Any],
         predict_nodes: Dict[Text, SchemaNode],
-        last_run_node: Optional[Text],
+        nlu_output_node: Optional[Text],
         train_nodes: Dict[Text, SchemaNode],
         preprocessors: List[Text],
     ) -> None:
-        if last_run_node:
+        if nlu_output_node:
             predict_nodes["nlu_prediction_to_history_adder"] = SchemaNode(
                 **default_predict_kwargs,
                 needs={
-                    "predictions": last_run_node,
+                    "predictions": nlu_output_node,
                     "domain": "domain_provider",
                     "original_messages": PLACEHOLDER_MESSAGE,
                     "tracker": PLACEHOLDER_TRACKER,
@@ -844,16 +826,12 @@ class DefaultV1Recipe(Recipe):
             resource=Resource("domain_provider"),
         )
 
-        nlu_merge_needs = {}
         node_with_e2e_features = None
 
         if "end_to_end_features_provider" in train_nodes:
             node_with_e2e_features = self._add_end_to_end_features_for_inference(
                 predict_nodes, preprocessors
             )
-            # The tracker has to be provided via `runner.run(..., inputs=...)` in this
-            # case
-            nlu_merge_needs = {"tracker": "nlu_prediction_to_history_adder"}
 
         rule_only_data_provider_name = "rule_only_data_provider"
         rule_policy_resource = None
@@ -875,7 +853,6 @@ class DefaultV1Recipe(Recipe):
                 train_nodes[train_node_name],
                 **default_predict_kwargs,
                 needs={
-                    **nlu_merge_needs,
                     "domain": "domain_provider",
                     **(
                         {"precomputations": node_with_e2e_features}
