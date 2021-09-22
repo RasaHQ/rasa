@@ -1,48 +1,111 @@
-import numpy as np
-from typing import Text, Optional, Dict, Any
+from __future__ import annotations
+from abc import abstractmethod, ABC
+from collections import Counter
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from typing import Generic, Iterable, Text, Optional, Dict, Any, TypeVar, Type
 
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
-from rasa.nlu.components import Component
-from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+
+# TODO: remove after all featurizers have been migrated
+from rasa.nlu.featurizers._featurizer import (
+    Featurizer,
+    SparseFeaturizer,
+    DenseFeaturizer,
+)
+
+Featurizer = Featurizer
+SparseFeaturizer = SparseFeaturizer
+DenseFeaturizer = DenseFeaturizer
+
+FeatureType = TypeVar("FeatureType")
 
 
-class Featurizer(Component):
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        if not component_config:
-            component_config = {}
+class Featurizer2(Generic[FeatureType], ABC):
+    """Base class for all featurizers."""
 
-        # makes sure the alias name is set
-        # Necessary for `unique_name` to be defined
-        self.component_config = component_config
-        component_config.setdefault(FEATURIZER_CLASS_ALIAS, self.unique_name)
-
-        super().__init__(component_config)
-
-
-class DenseFeaturizer(Featurizer):
     @staticmethod
-    def _calculate_sentence_features(
-        features: np.ndarray, pooling_operation: Text
-    ) -> np.ndarray:
-        # take only non zeros feature vectors into account
-        non_zero_features = np.array([f for f in features if f.any()])
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config."""
+        return {FEATURIZER_CLASS_ALIAS: None}
 
-        # if features are all zero just return a vector with all zeros
-        if non_zero_features.size == 0:
-            return np.zeros([1, features.shape[-1]])
+    def __init__(self, name: Text, config: Dict[Text, Any]) -> None:
+        """Instantiates a new featurizer.
 
-        if pooling_operation == MEAN_POOLING:
-            return np.mean(non_zero_features, axis=0, keepdims=True)
+        Args:
+          config: configuration
+          name: a name that can be used as identifier, in case the configuration does
+            not specify an `alias` (or this `alias` is None)
+        """
+        super().__init__()
+        self.validate_config(config)
+        self._config = config
+        self._identifier = self._config[FEATURIZER_CLASS_ALIAS] or name
 
-        if pooling_operation == MAX_POOLING:
-            return np.max(non_zero_features, axis=0, keepdims=True)
+    @classmethod
+    @abstractmethod
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
+        """Validates that the component is configured properly."""
+        ...
 
-        raise ValueError(
-            f"Invalid pooling operation specified. Available operations are "
-            f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
-            f"'{pooling_operation}'."
+    @classmethod
+    @abstractmethod
+    def validate_compatibility_with_tokenizer(
+        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
+    ) -> None:
+        """Validates that the featurizer is compatible with the given tokenizer."""
+        # TODO: add (something like) this to recipe validation
+        # TODO: replace tokenizer by config of tokenizer to enable static check
+        ...
+
+    def add_features_to_message(
+        self,
+        sequence: FeatureType,
+        sentence: Optional[FeatureType],
+        attribute: Text,
+        message: Message,
+    ) -> None:
+        """Adds sequence and sentence features for the attribute to the given message.
+
+        Args:
+          sequence: sequence feature matrix
+          sentence: sentence feature matrix
+          attribute: the attribute which both features describe
+          message: the message to which we want to add those features
+        """
+        for type, features in [
+            (FEATURE_TYPE_SEQUENCE, sequence),
+            (FEATURE_TYPE_SENTENCE, sentence),
+        ]:
+            if features is not None:
+                wrapped_feature = Features(features, type, attribute, self._identifier,)
+                message.add_features(wrapped_feature)
+
+    @staticmethod
+    def validate_configs_compatible(
+        featurizer_configs: Iterable[Dict[Text, Any]]
+    ) -> None:
+        """Validates that the given configurations of featurizers can be used together.
+
+        Raises:
+          `InvalidConfigException` if the given featurizers should not be used in
+            the same graph.
+        """
+        # NOTE: this assumes the names given via the execution context are unique
+        alias_counter = Counter(
+            config[FEATURIZER_CLASS_ALIAS]
+            for config in featurizer_configs
+            if FEATURIZER_CLASS_ALIAS in config
         )
-
-
-class SparseFeaturizer(Featurizer):
-    pass
+        if not alias_counter:  # no alias found
+            return
+        if alias_counter.most_common(1)[0][1] > 1:
+            raise InvalidConfigException(
+                f"Expected the featurizers to have unique names but found "
+                f" (name, count): {alias_counter.most_common()}. "
+                f"Please update your config such that each featurizer has a unique "
+                f"alias."
+            )
