@@ -43,7 +43,7 @@ class NLUPredictionToHistoryAdder(GraphComponent):
             predictions: A list of NLU predictions wrapped as Messages
             tracker: The tracker the predictions should be attached to
             domain: The domain of the model.
-            original_messages: An original message from the user with
+            original_messages: The original messages from the user with
                 extra metadata to annotate the predictions (e.g. channel)
 
         Returns:

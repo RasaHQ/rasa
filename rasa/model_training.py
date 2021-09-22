@@ -18,6 +18,7 @@ from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.importers.autoconfig import TrainingType
@@ -52,13 +53,12 @@ def _dry_run_result(
     """Returns a dry run result.
 
     Args:
-        fingerprint_results: A result of fingerprint comparison operation.
-        force_full_training: Whether the user used the `--force` flag to enforce
+        fingerprint_results: A result of fingerprint run..
+        force_full_training: Whether the user used the `--force` flag to enforce a
             full retraining of the model.
 
     Returns:
-        A tuple where the first element is the result code and the second
-        is the list of human-readable texts that need to be printed to the end user.
+        Result containing the return code and the fingerprint results.
     """
     if force_full_training:
         rasa.shared.utils.cli.print_warning("The training was forced.")
@@ -78,7 +78,8 @@ def _dry_run_result(
         )
 
     rasa.shared.utils.cli.print_success(
-        "No training of components required (responses might need updating)."
+        "No training of components required "
+        "(the responses might still need updating!)."
     )
     return TrainingResult(dry_run_results=fingerprint_results)
 
@@ -127,7 +128,6 @@ def train(
 
     stories = file_importer.get_stories()
     nlu_data = file_importer.get_nlu_data()
-    domain = file_importer.get_domain()
 
     training_type = TrainingType.BOTH
 
@@ -142,14 +142,15 @@ def train(
         )
         return TrainingResult(code=1)
 
+    domain = file_importer.get_domain()
     if domain.is_empty():
-        training_type = TrainingType.NLU
-
         rasa.shared.utils.cli.print_warning(
             "Core training was skipped because no valid domain file was found. "
             "Only an NLU-model was created. Please specify a valid domain using "
             "the '--domain' argument or check if the provided domain file exists."
         )
+        training_type = TrainingType.NLU
+
     elif stories.is_empty():
         rasa.shared.utils.cli.print_warning(
             "No stories present. Just a Rasa NLU model will be trained."
@@ -191,9 +192,6 @@ def _train_graph(
     dry_run: bool = False,
     **kwargs: Any,
 ) -> TrainingResult:
-    config = file_importer.get_config()
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
-
     if model_to_finetune:
         model_to_finetune = rasa.model.get_model_for_finetuning(model_to_finetune)
         if not model_to_finetune:
@@ -202,27 +200,24 @@ def _train_graph(
                 f"specify a path to a previous model or to have a finetunable "
                 f"model within the directory '{output_path}'."
             )
-    is_finetuning = model_to_finetune is not None
 
-    train_schema, predict_schema = recipe.schemas_for_config(
-        config, kwargs, training_type=training_type, is_finetuning=is_finetuning
-    )
-
-    if model_to_finetune:
         rasa.shared.utils.common.mark_as_experimental_feature(
             "Incremental Training feature"
         )
 
+    is_finetuning = model_to_finetune is not None
+
+    config = file_importer.get_config()
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    train_schema, predict_schema = recipe.schemas_for_config(
+        config, kwargs, training_type=training_type, is_finetuning=is_finetuning
+    )
+
     with tempfile.TemporaryDirectory() as temp_model_dir:
-        if is_finetuning:
-            model_storage, _ = LocalModelStorage.from_model_archive(
-                Path(temp_model_dir), model_to_finetune
-            )
-        else:
-            model_storage = LocalModelStorage(Path(temp_model_dir))
-
+        model_storage = _create_model_storage(
+            is_finetuning, model_to_finetune, Path(temp_model_dir)
+        )
         cache = LocalTrainingCache()
-
         trainer = GraphTrainer(model_storage, cache, DaskGraphRunner)
 
         if dry_run:
@@ -248,6 +243,19 @@ def _train_graph(
             )
 
         return TrainingResult(str(full_model_path), 0)
+
+
+def _create_model_storage(
+    is_finetuning: bool, model_to_finetune: Optional[Path], temp_model_dir: Path
+) -> ModelStorage:
+    if is_finetuning:
+        model_storage, _ = LocalModelStorage.from_model_archive(
+            temp_model_dir, model_to_finetune
+        )
+    else:
+        model_storage = LocalModelStorage(temp_model_dir)
+
+    return model_storage
 
 
 def _determine_model_name(
@@ -293,8 +301,7 @@ def train_core(
             in the model configuration which should be used for finetuning.
 
     Returns:
-        If `train_path` is given it returns the path to the model archive,
-        otherwise the path to the directory with the trained model files.
+        Path to the model archive.
 
     """
     file_importer = TrainingDataImporter.load_core_importer_from_config(
@@ -366,8 +373,7 @@ def train_nlu(
             in the model configuration which should be used for finetuning.
 
     Returns:
-        If `train_path` is given it returns the path to the model archive,
-        otherwise the path to the directory with the trained model files.
+        Path to the model archive.
     """
     if not nlu_data:
         rasa.shared.utils.cli.print_error(

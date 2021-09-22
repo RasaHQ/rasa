@@ -1,9 +1,11 @@
 import glob
+import hashlib
 import logging
 import os
 import shutil
 import tempfile
 from pathlib import Path
+from subprocess import check_output, CalledProcessError, DEVNULL
 from typing import (
     Text,
     Tuple,
@@ -165,6 +167,21 @@ def get_model_subdirectories(
         )
 
     return core_path, nlu_path
+
+
+def project_fingerprint() -> Optional[Text]:
+    """Create a hash for the project in the current working directory.
+
+    Returns:
+        project hash
+    """
+    try:
+        remote = check_output(  # skipcq:BAN-B607,BAN-B603
+            ["git", "remote", "get-url", "origin"], stderr=DEVNULL
+        )
+        return hashlib.sha256(remote).hexdigest()
+    except (CalledProcessError, OSError):
+        return None
 
 
 def move_model(source: Text, target: Text) -> bool:

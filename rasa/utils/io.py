@@ -233,7 +233,7 @@ def get_emoji_regex() -> Pattern:
 
 
 def are_directories_equal(dir1: Path, dir2: Path) -> bool:
-    """ Compare two directories recursively.
+    """Compares two directories recursively.
 
     Files in each directory are
     assumed to be equal if their names and contents are equal.

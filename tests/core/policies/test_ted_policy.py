@@ -36,7 +36,7 @@ from rasa.shared.core.events import (
     EntitiesAdded,
     ActiveLoop,
 )
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.model_training import train_core
@@ -231,9 +231,9 @@ class TestTEDPolicy(PolicyTestCollection):
     def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
         config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"
         with pytest.raises(
-            GraphComponentException, match="Error initializing graph component"
+            InvalidConfigException,
+            match="Only values either equal to -1 or greater than 0 are allowed for this parameter.",
         ):
-            # with pytest.warns(UserWarning) as warning:
             train_core(
                 domain="data/test_domains/default.yml",
                 stories="data/test_yaml_stories/stories_defaultdomain.yml",

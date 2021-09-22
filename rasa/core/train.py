@@ -1,75 +1,15 @@
 import argparse
 import logging
 import os
-import typing
 from pathlib import Path
-from typing import Dict, Optional, Text, Union, List
+from typing import Dict, Optional, Text, List
 
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
-from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 
-if typing.TYPE_CHECKING:
-    from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-    from rasa.core.utils import AvailableEndpoints
-    from rasa.core.agent import Agent
-
 logger = logging.getLogger(__name__)
-
-
-def train(
-    domain_file: Union[Domain, Text],
-    training_resource: Union[Text, "TrainingDataImporter"],
-    output_path: Text,
-    interpreter: Optional["NaturalLanguageInterpreter"] = None,
-    endpoints: "AvailableEndpoints" = None,
-    policy_config: Optional[Union[Text, Dict]] = None,
-    exclusion_percentage: Optional[int] = None,
-    additional_arguments: Optional[Dict] = None,
-    model_to_finetune: Optional["Agent"] = None,
-) -> "Agent":
-    """Trains the model."""
-    from rasa.core import config, utils
-    from rasa.core.utils import AvailableEndpoints
-    from rasa.core.agent import Agent
-
-    if not endpoints:
-        endpoints = AvailableEndpoints()
-
-    if not additional_arguments:
-        additional_arguments = {}
-
-    policies = config.load(policy_config)
-
-    agent = Agent(
-        domain_file,
-        generator=endpoints.nlg,
-        action_endpoint=endpoints.action,
-        interpreter=interpreter,
-        policies=policies,
-    )
-
-    data_load_args, additional_arguments = utils.extract_args(
-        additional_arguments,
-        {
-            "use_story_concatenation",
-            "unique_last_num_states",
-            "augmentation_factor",
-            "remove_duplicates",
-            "debug_plots",
-        },
-    )
-    training_data = agent.load_data(
-        training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
-    )
-    if model_to_finetune:
-        agent.policy_ensemble = model_to_finetune.policy_ensemble
-    agent.train(training_data, **additional_arguments)
-    agent.persist(output_path)
-
-    return agent
 
 
 def train_comparison_models(
@@ -82,7 +22,6 @@ def train_comparison_models(
     additional_arguments: Optional[Dict] = None,
 ) -> None:
     """Train multiple models for comparison of policies"""
-    from rasa import model
     import rasa.model_training
 
     exclusion_percentages = exclusion_percentages or []

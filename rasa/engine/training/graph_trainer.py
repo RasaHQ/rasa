@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, Text, Type, Union
 
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import ExecutionContext, GraphSchema
+from rasa.engine.graph import ExecutionContext, GraphSchema, PLACEHOLDER_IMPORTER
 from rasa.engine.runner.interface import GraphRunner
 from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.training.components import (
@@ -63,10 +63,13 @@ class GraphTrainer:
         """
         logger.debug("Starting training.")
 
+        # Retrieve the domain for the model metadata right at the start.
+        # This avoids that something during the graph runs mutates it.
+        domain = copy.deepcopy(importer.get_domain())
+
         if force_retraining:
             logger.debug(
-                "Skip fingerprint run as as full retrained of the model was "
-                "enforced."
+                "Skip fingerprint run as a full training of the model was enforced."
             )
             pruned_training_schema = train_schema
         else:
@@ -90,9 +93,7 @@ class GraphTrainer:
 
         logger.debug("Running the pruned train graph with real node execution.")
 
-        graph_runner.run(inputs={"__importer__": importer})
-
-        domain = importer.get_domain()
+        graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
         return self._model_storage.create_model_package(
             output_filename, train_schema, predict_schema, domain
@@ -129,7 +130,7 @@ class GraphTrainer:
         )
 
         logger.debug("Running the train graph in fingerprint mode.")
-        return fingerprint_graph_runner.run(inputs={"__importer__": importer})
+        return fingerprint_graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
     def _create_fingerprint_schema(self, train_schema: GraphSchema) -> GraphSchema:
         fingerprint_schema = copy.deepcopy(train_schema)

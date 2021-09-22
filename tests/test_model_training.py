@@ -3,7 +3,7 @@ import secrets
 import tempfile
 import os
 from pathlib import Path
-from typing import Text, Any
+from typing import Text
 from unittest.mock import Mock
 
 import pytest
@@ -14,7 +14,7 @@ from _pytest.tmpdir import TempPathFactory
 
 import rasa
 
-from rasa.core.policies.ted_policy import TEDPolicy, TEDPolicyGraphComponent
+from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
 import rasa.model
 import rasa.model_training
 import rasa.core
@@ -245,26 +245,6 @@ def test_train_nlu_autoconfig(
     mocked_get_configuration.assert_called_once()
     _, args, _ = mocked_get_configuration.mock_calls[0]
     assert args[1] == autoconfig.TrainingType.NLU
-
-
-def mock_async(monkeypatch: MonkeyPatch, target: Any, name: Text) -> Mock:
-    mock = Mock()
-
-    async def mock_async_func(*args: Any, **kwargs: Any) -> None:
-        mock(*args, **kwargs)
-
-    monkeypatch.setattr(target, name, mock_async_func)
-    return mock
-
-
-def mock_core_training(monkeypatch: MonkeyPatch) -> Mock:
-    mock = Mock()
-    monkeypatch.setattr(rasa.core.train, rasa.core.train.train.__name__, mock)
-    return mock
-
-
-def mock_nlu_training(monkeypatch: MonkeyPatch) -> Mock:
-    return mock_async(monkeypatch, rasa.nlu.train, rasa.nlu.train.train.__name__)
 
 
 def new_model_path_in_same_dir(old_model_path: Text) -> Text:

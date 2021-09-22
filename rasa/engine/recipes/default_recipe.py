@@ -15,7 +15,15 @@ from rasa.core.featurizers.precomputation import (
 )
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 
-from rasa.engine.graph import GraphSchema, GraphComponent, SchemaNode, ExecutionContext
+from rasa.engine.graph import (
+    GraphSchema,
+    GraphComponent,
+    SchemaNode,
+    ExecutionContext,
+    PLACEHOLDER_IMPORTER,
+    PLACEHOLDER_MESSAGE,
+    PLACEHOLDER_TRACKER,
+)
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -271,7 +279,7 @@ class DefaultV1Recipe(Recipe):
 
         if not self._use_core and training_type == TrainingType.CORE:
             raise InvalidConfigException(
-                "Can't train an CORE model without policies. Please make "
+                "Can't train an Core model without policies. Please make "
                 "sure to specify a valid policy in your configuration."
             )
 
@@ -300,7 +308,7 @@ class DefaultV1Recipe(Recipe):
 
         train_nodes = {
             "schema_validator": SchemaNode(
-                needs={"importer": "__importer__"},
+                needs={"importer": PLACEHOLDER_IMPORTER},
                 uses=SchemaValidator,
                 constructor_name="create",
                 fn="validate",
@@ -685,8 +693,7 @@ class DefaultV1Recipe(Recipe):
     ) -> Text:
         predict_nodes["nlu_message_converter"] = SchemaNode(
             **default_predict_kwargs,
-            # TODO
-            needs={"messages": "__message__"},
+            needs={"messages": PLACEHOLDER_MESSAGE},
             uses=NLUMessageConverter,
             fn="convert_user_message",
             config={},
@@ -818,13 +825,11 @@ class DefaultV1Recipe(Recipe):
         if last_run_node:
             predict_nodes["nlu_prediction_to_history_adder"] = SchemaNode(
                 **default_predict_kwargs,
-                # TODO: I think there is a bug in our Dask Runner for this case as
-                # the input will override `messages`
                 needs={
                     "predictions": last_run_node,
                     "domain": "domain_provider",
-                    "original_messages": "__message__",
-                    "tracker": "__tracker__",
+                    "original_messages": PLACEHOLDER_MESSAGE,
+                    "tracker": PLACEHOLDER_TRACKER,
                 },
                 uses=NLUPredictionToHistoryAdder,
                 fn="add",
@@ -881,7 +886,7 @@ class DefaultV1Recipe(Recipe):
                     ),
                     "tracker": "nlu_prediction_to_history_adder"
                     if self._use_nlu
-                    else "__tracker__",
+                    else PLACEHOLDER_TRACKER,
                     "rule_only_data": rule_only_data_provider_name,
                 },
                 fn="predict_action_probabilities",
@@ -905,7 +910,7 @@ class DefaultV1Recipe(Recipe):
                 "domain": "domain_provider",
                 "tracker": "nlu_prediction_to_history_adder"
                 if self._use_nlu
-                else "__tracker__",
+                else PLACEHOLDER_TRACKER,
             },
             uses=DefaultPolicyPredictionEnsemble,
             fn="combine_predictions_from_kwargs",

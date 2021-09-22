@@ -24,8 +24,13 @@ class NLUMessageConverter(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         return cls()
 
-    def convert_user_message(self, messages: List[UserMessage]) -> List[Message]:
+    @classmethod
+    def convert_user_message(cls, messages: List[UserMessage]) -> List[Message]:
         """Converts user message into Message object.
+
+        Args:
+            messages: The user messages which should be converted to be processed by
+                the NLU components.
 
         Returns:
             List containing only one instance of Message.

@@ -12,7 +12,6 @@ import typing
 if typing.TYPE_CHECKING:
     from typing import Any, Text, Dict, Union, List, Optional, NoReturn
     from rasa.model_training import TrainingResult
-    import asyncio
 
 
 def run(

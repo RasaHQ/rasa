@@ -309,6 +309,7 @@ def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
 
         old_get_cache_location = None
         if cache_dir:
+            # This allows insert a certain cache directory for the training
             old_get_cache_location = LocalTrainingCache._get_cache_location
             LocalTrainingCache._get_cache_location = Mock(return_value=cache_dir)
 
@@ -724,6 +725,8 @@ def default_execution_context() -> ExecutionContext:
 def use_temp_dir_for_cache(
     monkeypatch: MonkeyPatch, tmp_path_factory: TempdirFactory
 ) -> Path:
+    # This avoids that the unit tests because they share a local cache.
+    # Instead we are creating a new cache for every test.
     cache_dir = tmp_path_factory.mktemp(uuid.uuid4().hex)
     monkeypatch.setattr(
         LocalTrainingCache,
