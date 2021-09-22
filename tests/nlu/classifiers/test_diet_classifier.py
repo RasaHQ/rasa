@@ -258,7 +258,7 @@ class FeatureGenerator:
         expected: Dict[
             Text, Dict[Text, Union[List[np.ndarray], List[scipy.sparse.spmatrix]]]
         ],
-        slice: Optional[slice] = None,
+        indices: Optional[List[int]] = None,
     ) -> None:
         """Compares mappings from feature type and sparseness indicator to features.
 
@@ -268,17 +268,16 @@ class FeatureGenerator:
               (i.e. dense numpy array or sparse scipy matrices)
             expected: the expected features in a mapping that has the same form
                as the `actual` features
-            slice: a slice describing which message indices from `expected`  should
-               be considered for the comparison
+            indices: indices describing which messages from `expected`
+               should be considered for the comparison
         """
-        slice = slice or slice(None, None)
         for feature_type in [SENTENCE, SEQUENCE]:
             type_features = actual.get(feature_type)
             assert len(type_features) == 2
             for sparse_idx, sparse in enumerate([True, False]):  # sparse first
                 feature_array = type_features[sparse_idx]
                 expected_feature_array = expected[feature_type][sparse]
-                relevant_indices = np.arange(len(expected_feature_array))[slice]
+                relevant_indices = indices or np.arange(len(expected_feature_array))
                 assert len(feature_array) == len(relevant_indices)
                 for message_idx in relevant_indices:
                     actual_matrix = feature_array[message_idx]
@@ -310,12 +309,7 @@ class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
 
     def generate_input_and_expected_extracted_features(
         self, input_contains_features_for_intent: bool,
-    ) -> Tuple[
-        List[Message],
-        Dict[
-            Text, Dict[Text, Dict[bool, Union[np.array, scipy.sparse.spmatrix, None]]]
-        ],
-    ]:
+    ) -> Dict[Text, Any]:
         """Creates input messages and concatentations of their features.
 
         Creates a list of dummy messages with texts, tokens, intents, and entities
@@ -398,6 +392,7 @@ class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
             # message 4: like message 2 but *no* text  (core message)
             Message(
                 data={
+                    TEXT: "",  # an empty text is like no text
                     INTENT: "intent2",
                     TOKENS_NAMES[TEXT]: tokens,
                     "other": "unrelated-attribute3",
@@ -436,7 +431,10 @@ class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
             for attribute in attributes_with_features
         }
 
-        return messages, expected_extracted_features
+        return {
+            "messages": messages,
+            "expected_extracted_features": expected_extracted_features,
+        }
 
 
 @pytest.mark.parametrize(
@@ -478,12 +476,11 @@ def test_preprocess_train_data_and_create_data_for_prediction(
     test_case = SimpleIntentClassificationTestCaseWithEntities(
         featurizers, used_featurizers=used_featurizers
     )
-    (
-        messages,
-        expected_outputs,
-    ) = test_case.generate_input_and_expected_extracted_features(
+    test_case_data = test_case.generate_input_and_expected_extracted_features(
         input_contains_features_for_intent=input_contains_features_for_intent,
     )
+    messages = test_case_data["messages"]
+    expected_outputs = test_case_data["expected_extracted_features"]
 
     # Preprocess Training Data
     messages_for_training = copy.deepcopy(messages)
@@ -504,14 +501,14 @@ def test_preprocess_train_data_and_create_data_for_prediction(
         (model_data_for_training, True),
         (model_data_for_prediction, False),
     ]:
-        num_relevant_messages = len(messages)
+        relevant_indices = range(len(messages))
         if training:
             # only the first three ("nlu") messages will be used for training
-            num_relevant_messages = 3
+            relevant_indices = [0, 1, 2]
 
         # Check size and attributes
         try:
-            assert model_data.number_of_examples() == num_relevant_messages
+            assert model_data.number_of_examples() == len(relevant_indices)
         except:
             breakpoint()
         expected_keys = {TEXT}
@@ -530,30 +527,26 @@ def test_preprocess_train_data_and_create_data_for_prediction(
         mask_features = text_features.get(MASK)
         assert len(mask_features) == 1
         mask = np.array(mask_features[0])  # because it's a feature array
-        assert mask.shape == (num_relevant_messages, 1, 1)
-        if not training:
-            # the last message contains no text, just an intent
-            assert np.all(mask[:-1] == 1)
-            assert mask[-1] == 0
-        else:
-            # in this case we only use "nlu" messages
-            assert np.all(mask == 1)
+        assert mask.shape == (len(relevant_indices), 1, 1)
+        # TODO/NOTE: mask entry will be 0 if text is None but 1 if text is ""
+        assert np.all(mask == 1)
         # - subkey: sequence-length
         length_features = text_features.get(SEQUENCE_LENGTH)
         assert len(length_features) == 1
         lengths = np.array(length_features[0])  # because it's a feature array
-        assert lengths.shape == (num_relevant_messages,)
+        assert lengths.shape == (len(relevant_indices),)
         if not training:
             # the last message contains no text, just an intent
             assert np.all(lengths[:-1] == test_case.seq_len)
             assert lengths[-1] == 0
         else:
+            # in this case we only use "nlu" messages - which have a text
             assert np.all(lengths == test_case.seq_len)
         # - subkey: sequence / sentence
         test_case.compare_features_of_same_type_and_sparseness(
             actual=text_features,
             expected=expected_outputs[TEXT],
-            slice=slice(None, num_relevant_messages),
+            indices=relevant_indices,
         )
 
         # TODO: check sparse feature sizes
@@ -573,7 +566,8 @@ def test_preprocess_train_data_and_create_data_for_prediction(
             #   The label id mapping should map intent1 to 0 and intent2 to 1.
             id_features = label_features.get(LABEL_SUB_KEY)
             assert len(id_features) == 1
-            assert np.all(np.array(id_features[0].flatten()) == [0, 1, 1])
+            ids = np.array(id_features[0].flatten())
+            assert np.all(ids == [0, 1, 1])
             # - subkey: sentence
             if not input_contains_features_for_intent:
                 # we create features for LABEL on the fly if and only if no
@@ -592,12 +586,12 @@ def test_preprocess_train_data_and_create_data_for_prediction(
                 test_case.compare_features_of_same_type_and_sparseness(
                     expected=expected_outputs[INTENT],
                     actual=label_features,
-                    slice=slice(0, num_relevant_messages),
+                    indices=relevant_indices,
                 )
             # - subkey: mask  (this is a "turn" mask, hence all masks are just "[1]")
             assert len(label_features.get(MASK)) == 1
-            mask_features = np.array(label_features.get(MASK)[0])
-            assert np.all(mask_features == [1, 1, 1])
+            mask = np.array(label_features.get(MASK)[0])
+            assert np.all(mask == [1, 1, 1])
 
         else:
             assert not model_data.get(LABEL_KEY)
@@ -613,23 +607,17 @@ def test_preprocess_train_data_and_create_data_for_prediction(
                 assert len(entity_features.get(key)) == 1
                 assert isinstance(entity_features.get(key)[0], FeatureArray)
             # - subkey: mask  (this is a "turn" mask, hence all masks are just "[1]")
-            expected_mask_features = [1, 1, 1, 1]
-            if intent_classification:
-                # in this case, we ignore the last message which does not have an
-                # intent
-                expected_mask_features = expected_mask_features[:-1]
-            assert np.all(
-                np.array(entity_features.get(MASK)[0]) == expected_mask_features
-            )
+            mask = np.array(entity_features.get(MASK)[0])
+            expected_mask = [1] * len(relevant_indices)
+            assert np.all(mask == expected_mask)
             # - subkey: entities
             entity_sub_features = entity_features[ENTITY_ATTRIBUTE_TYPE][0]
-            assert len(entity_sub_features) == num_relevant_messages
+            assert len(entity_sub_features) == len(relevant_indices)
             # message 0+1: no entity
             for idx in [0, 1]:
                 assert np.all(np.array(entity_sub_features[idx]).flatten() == [0])
-            # message 2-4: entity1, entity2
-            considered_messages_with_entities = [2] + ([] if training else [3, 4])
-            for idx in considered_messages_with_entities:
+            # message 2: has entity1 and entity2
+            for idx in [2]:
                 if not bilou_tagging:
                     expected_entity_features = [0, 1, 1, 1, 0, 0, 2]
                     # where 0 = no entity, 1 = city, 2 = what
@@ -651,6 +639,8 @@ def test_preprocess_train_data_and_create_data_for_prediction(
                     np.array(entity_sub_features[idx]).flatten()
                     == expected_entity_features
                 )
+            # message 3-4: are not considered during training
+            assert not {3.4}.intersection(relevant_indices)
         else:
             assert not model_data.get(ENTITIES)
 
