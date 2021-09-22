@@ -24,9 +24,6 @@ import rasa.utils
 from rasa.core import jobs, training
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.engine import loader
-from rasa.engine.runner.dask import DaskGraphRunner
-from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 import rasa.core.interpreter
@@ -363,7 +360,7 @@ async def load_agent(
             )
 
         elif model_path is not None and os.path.exists(model_path):
-            return Agent.load(
+            return Agent.load_local_model(
                 model_path,
                 interpreter=interpreter,
                 generator=generator,
@@ -467,56 +464,51 @@ class Agent:
         finetuning_epoch_fraction: float = 1.0,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
-        # try:
-        #     if not model_path:
-        #         raise ModelNotFound("No path specified.")
-        #     if not os.path.exists(model_path):
-        #         raise ModelNotFound(f"No file or directory at '{model_path}'.")
-        #     if os.path.isfile(model_path):
-        #         model_path = get_model(str(model_path))
-        # except ModelNotFound as e:
-        #     raise ModelNotFound(
-        #         f"You are trying to load a model from '{model_path}', "
-        #         f"which is not possible. \n"
-        #         f"The model path should be a 'tar.gz' file or a directory "
-        #         f"containing the various model files in the sub-directories "
-        #         f"'core' and 'nlu'. \n\n"
-        #         f"If you want to load training data instead of a model, use "
-        #         f"`agent.load_data(...)` instead. {e}"
-        #     )
-        #
-        # core_model, nlu_model = get_model_subdirectories(model_path)
-        #
-        # if not interpreter and nlu_model:
-        #     interpreter = rasa.core.interpreter.create_interpreter(nlu_model)
+        try:
+            if not model_path:
+                raise ModelNotFound("No path specified.")
+            if not os.path.exists(model_path):
+                raise ModelNotFound(f"No file or directory at '{model_path}'.")
+            if os.path.isfile(model_path):
+                model_path = get_model(str(model_path))
+        except ModelNotFound as e:
+            raise ModelNotFound(
+                f"You are trying to load a model from '{model_path}', "
+                f"which is not possible. \n"
+                f"The model path should be a 'tar.gz' file or a directory "
+                f"containing the various model files in the sub-directories "
+                f"'core' and 'nlu'. \n\n"
+                f"If you want to load training data instead of a model, use "
+                f"`agent.load_data(...)` instead. {e}"
+            )
+
+        core_model, nlu_model = get_model_subdirectories(model_path)
+
+        if not interpreter and nlu_model:
+            interpreter = rasa.core.interpreter.create_interpreter(nlu_model)
 
         domain = None
         ensemble = None
 
-        # if core_model:
-        #     domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-        #     ensemble = (
-        #         PolicyEnsemble.load(
-        #             core_model,
-        #             new_config=new_config,
-        #             finetuning_epoch_fraction=finetuning_epoch_fraction,
-        #         )
-        #         if core_model
-        #         else None
-        #     )
-        #
-        #     # ensures the domain hasn't changed between test and train
-        #     domain.compare_with_specification(core_model)
-        model_tar = rasa.model.get_latest_model(model_path)
-        model_path = tempfile.mkdtemp()
-        metadata, runner = loader.load_predict_graph_runner(
-            Path(model_path), Path(model_tar), LocalModelStorage, DaskGraphRunner,
-        )
+        if core_model:
+            domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
+            ensemble = (
+                PolicyEnsemble.load(
+                    core_model,
+                    new_config=new_config,
+                    finetuning_epoch_fraction=finetuning_epoch_fraction,
+                )
+                if core_model
+                else None
+            )
 
-        agent = cls(
-            domain=metadata.domain,
-            # policies=ensemble,
-            # interpreter=interpreter,
+            # ensures the domain hasn't changed between test and train
+            domain.compare_with_specification(core_model)
+
+        return cls(
+            domain=domain,
+            policies=ensemble,
+            interpreter=interpreter,
             generator=generator,
             tracker_store=tracker_store,
             lock_store=lock_store,
@@ -526,18 +518,6 @@ class Agent:
             remote_storage=remote_storage,
             path_to_model_archive=path_to_model_archive,
         )
-
-        processor = MessageProcessor(
-            runner=runner,
-            domain=metadata.domain,
-            tracker_store=tracker_store,
-            lock_store=lock_store,
-            action_endpoint=action_endpoint,
-            generator=NaturalLanguageGenerator.create(generator, metadata.domain),
-        )
-
-        agent.initialize_processor(processor, metadata.domain)
-        return agent
 
     def is_core_ready(self) -> bool:
         """Check if all necessary components and policies are ready to use the agent."""
@@ -593,10 +573,10 @@ class Agent:
             logger.info("Ignoring message as there is no agent to handle it.")
             return None
 
-        # processor = self.create_processor(message_preprocessor)
+        processor = self.create_processor(message_preprocessor)
 
         async with self.lock_store.lock(message.sender_id):
-            return await self._processor.handle_message(message)
+            return await processor.handle_message(message)
 
     # noinspection PyUnusedLocal
     async def predict_next(
@@ -954,7 +934,3 @@ class Agent:
             )
 
         return None
-
-    def initialize_processor(self, processor: MessageProcessor, domain: Domain) -> None:
-        self._processor = processor
-        self.domain = domain

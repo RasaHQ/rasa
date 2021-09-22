@@ -147,18 +147,18 @@ def ensure_loaded_agent(
         @wraps(f)
         def decorated(*args: Any, **kwargs: Any) -> Any:
             # noinspection PyUnresolvedReferences
-            # if not app.agent or not (
-            #     app.agent.is_core_ready()
-            #     if require_core_is_ready
-            #     else app.agent.is_ready()
-            # ):
-            #     raise ErrorResponse(
-            #         HTTPStatus.CONFLICT,
-            #         "Conflict",
-            #         "No agent loaded. To continue processing, a "
-            #         "model of a trained agent needs to be loaded.",
-            #         help_url=_docs("/user-guide/configuring-http-api/"),
-            #     )
+            if not app.agent or not (
+                app.agent.is_core_ready()
+                if require_core_is_ready
+                else app.agent.is_ready()
+            ):
+                raise ErrorResponse(
+                    HTTPStatus.CONFLICT,
+                    "Conflict",
+                    "No agent loaded. To continue processing, a "
+                    "model of a trained agent needs to be loaded.",
+                    help_url=_docs("/user-guide/configuring-http-api/"),
+                )
 
             return f(*args, **kwargs)
 
@@ -739,7 +739,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await app.agent._processor.fetch_tracker_with_initial_session(
+        tracker = await app.agent.create_processor().fetch_tracker_with_initial_session(
             conversation_id
         )
 
@@ -1066,10 +1066,10 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            from rasa.model_training import train
+            from rasa.model_training import train_async
 
             # pass `None` to run in default executor
-            training_result = train(**training_payload)
+            training_result = await train_async(**training_payload)
 
             if training_result.model:
                 filename = os.path.basename(training_result.model)
@@ -1085,7 +1085,7 @@ def create_app(
                     "TrainingError",
                     "Ran training, but it finished without a trained model.",
                 )
-        except Exception as e:
+        except ErrorResponse as e:
             raise e
         except InvalidDomain as e:
             raise ErrorResponse(
