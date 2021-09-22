@@ -928,7 +928,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # filter messages and extract labels
         training_messages = training_data.nlu_examples
         if self.label_attribute is not None:
-            # keep only the messages that have a label
+            # keep only the messages that have the label attribute
+            # NOTE: This is not needed for the `DIETClassifier` since only "nlu"
+            # messages are used for training (see above) and messages with test but
+            # no intent are no "nlu" messages. However, the following filter **is**
+            # needed for the `rasa.nlu.selectors.ResponseSelector`!
             training_messages = [
                 example
                 for example in training_messages

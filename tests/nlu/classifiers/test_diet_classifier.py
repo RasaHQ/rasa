@@ -1,6 +1,5 @@
 import copy
 from pathlib import Path
-from rasa.utils.common import T
 import scipy.sparse
 import numpy as np
 import pytest
@@ -167,7 +166,9 @@ class FeatureGenerator:
 
         This method will always generate sequence as well as sentence features:
         - sentence features will be of shape `[1, sentence_feature_dim]`
+          if the attribute value is non-empty and `[0, sentence_feature_dim]` otherwise
         - sequence features will be of shape `[seq_len, sequence_feature_dim]`
+          if the attribute value is non-empty and `[0, sequence_feature_dim]` otherwise
         for each message.
 
         Args:
@@ -187,26 +188,38 @@ class FeatureGenerator:
         attributes = attributes or [TEXT]
         featurizers = self.featurizers or [None]
         concatenations = dict()
+        # per feature type
         for shape, feature_type in [
             ((1, self.sentence_feature_dim), FEATURE_TYPE_SENTENCE),
             ((self.seq_len, self.sequence_feature_dim), FEATURE_TYPE_SEQUENCE),
         ]:
             concatenations[feature_type] = dict()
+            # per attribute
             for attribute in attributes:
+                # per message
                 matrices_per_message = []
                 for message in messages:
+                    # if the attribute is empty, set the sequence length to 0
+                    if not message.get(attribute):
+                        _shape = (0, shape[1])
+                    else:
+                        _shape = shape
                     matrices_per_featurizer = []
+                    # per featurizer
                     for featurizer in featurizers:
+                        # create a unique value
                         value = FeatureGenerator.generate_feature_value(
                             attribute,
                             featurizer,
                             feature_type,
-                            str(message.get(attribute)),
+                            str(message.get(attribute, None)),
                         )
+                        # fill a sparse/dense matrix with this value
                         if not sparse:
-                            matrix = np.full(shape=shape, fill_value=value,)
+                            matrix = np.full(shape=_shape, fill_value=value,)
                         else:
-                            matrix = scipy.sparse.eye(m=shape[0], n=shape[1]) * value
+                            matrix = scipy.sparse.eye(m=_shape[0], n=_shape[1]) * value
+                        # add it to the message if required
                         if add_to_messages:
                             feature = Features(
                                 features=matrix,
@@ -215,6 +228,8 @@ class FeatureGenerator:
                                 origin=featurizer,
                             )
                             message.features.append(feature)
+                        # add it to our collection if we expect the featurizer
+                        # to be used (by whatever model we're testing via this function)
                         if (
                             self.used_featurizers is None
                             or featurizer in self.used_featurizers
@@ -224,6 +239,12 @@ class FeatureGenerator:
                         concatenated = np.concatenate(matrices_per_featurizer, axis=-1)
                     else:
                         concatenated = scipy.sparse.hstack(matrices_per_featurizer)
+                    # Remember that the sequence lengths can differ even though
+                    # we use the fixed `seq_len` parameter -- since we set the
+                    # sequence length to 0 if the corresponding attribute value is
+                    # missing. Hence, we cannot concatenate the collected matrices
+                    # and instead collect them in a list.
+                    # Moreover, one cannot assemble 3d sparse scipy matrices anyway.
                     matrices_per_message.append(concatenated)
                 concatenations[feature_type][attribute] = matrices_per_message
         return concatenations
@@ -237,6 +258,7 @@ class FeatureGenerator:
         expected: Dict[
             Text, Dict[Text, Union[List[np.ndarray], List[scipy.sparse.spmatrix]]]
         ],
+        slice: Optional[slice] = None,
     ) -> None:
         """Compares mappings from feature type and sparseness indicator to features.
 
@@ -246,29 +268,42 @@ class FeatureGenerator:
               (i.e. dense numpy array or sparse scipy matrices)
             expected: the expected features in a mapping that has the same form
                as the `actual` features
+            slice: a slice describing which message indices from `expected`  should
+               be considered for the comparison
         """
+        slice = slice or slice(None, None)
         for feature_type in [SENTENCE, SEQUENCE]:
             type_features = actual.get(feature_type)
             assert len(type_features) == 2
             for sparse_idx, sparse in enumerate([True, False]):  # sparse first
                 feature_array = type_features[sparse_idx]
-                expected_array = expected[feature_type][sparse]
-                num_messages = len(expected_array)
-                assert len(feature_array) == num_messages
-                for message_idx in range(num_messages):
+                expected_feature_array = expected[feature_type][sparse]
+                relevant_indices = np.arange(len(expected_feature_array))[slice]
+                assert len(feature_array) == len(relevant_indices)
+                for message_idx in relevant_indices:
                     actual_matrix = feature_array[message_idx]
-                    expected_matrix = expected_array[message_idx]
+                    expected_matrix = expected_feature_array[message_idx]
                     if sparse:
                         actual_matrix = actual_matrix.todense()
                         expected_matrix = expected_matrix.todense()
                     else:
                         # because it's a feature array
                         actual_matrix = np.array(actual_matrix)
+                    assert actual_matrix.shape == expected_matrix.shape
                     assert np.all(actual_matrix == expected_matrix)
 
 
 class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
     """Generates a simple intent classification test case with entities.
+
+    The data includes:
+    - 'NLU' messages with text, intents and possibly entities
+    - 'Core' messages with either text or intent (and entities)
+
+    The test case data does **not** include:
+    - empty messages which would be classified as 'NLU' messages
+    - messages containing action names or texts which would be classified as
+      core messages
 
     For a full docstring see parent class.
     """
@@ -302,7 +337,7 @@ class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
         text = "the city of bielefeld does not exist"
         tokens = [
             Token(text=match.group(), start=match.start())
-            for match in re.finditer("\w+", text)
+            for match in re.finditer(r"\w+", text)
         ]
         entities = [
             {
@@ -321,7 +356,7 @@ class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
 
         # create messages
         messages = [
-            # message 0: 'intent1'
+            # message 0: 'intent1' (nlu message)
             Message(
                 data={
                     TEXT: "bla",
@@ -331,7 +366,7 @@ class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
                 },
                 ENTITIES=[],
             ),
-            # message 1: 'intent2'
+            # message 1: 'intent2' (nlu message)
             Message(
                 data={
                     TEXT: "blub",
@@ -341,10 +376,28 @@ class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
                 },
                 ENTITIES=[],
             ),
-            # message 2: 'intent2' + 2 entities ('city','what')
+            # message 2: 'intent2' + 2 entities ('city','what') (nlu message)
             Message(
                 data={
                     TEXT: text,
+                    INTENT: "intent2",
+                    TOKENS_NAMES[TEXT]: tokens,
+                    "other": "unrelated-attribute3",
+                    ENTITIES: entities,
+                }
+            ),
+            # message 3: like message 2 but *no* intent (core message)
+            Message(
+                data={
+                    TEXT: text,
+                    TOKENS_NAMES[TEXT]: tokens,
+                    "other": "unrelated-attribute3",
+                    ENTITIES: entities,
+                }
+            ),
+            # message 4: like message 2 but *no* text  (core message)
+            Message(
+                data={
                     INTENT: "intent2",
                     TOKENS_NAMES[TEXT]: tokens,
                     "other": "unrelated-attribute3",
@@ -451,9 +504,16 @@ def test_preprocess_train_data_and_create_data_for_prediction(
         (model_data_for_training, True),
         (model_data_for_prediction, False),
     ]:
+        num_relevant_messages = len(messages)
+        if training:
+            # only the first three ("nlu") messages will be used for training
+            num_relevant_messages = 3
 
         # Check size and attributes
-        assert model_data.number_of_examples() == len(messages)
+        try:
+            assert model_data.number_of_examples() == num_relevant_messages
+        except:
+            breakpoint()
         expected_keys = {TEXT}
         if training and intent_classification:
             expected_keys.add(LABEL)
@@ -465,26 +525,44 @@ def test_preprocess_train_data_and_create_data_for_prediction(
         expected_text_sub_keys = {MASK, SENTENCE, SEQUENCE, SEQUENCE_LENGTH}
         assert set(model_data.get(TEXT).keys()) == expected_text_sub_keys
         text_features = model_data.get(TEXT)
-        # - subkey: mask (this is a "turn" mask, hence all masks are just "[1]")
+        # - subkey: mask (this is a "turn" mask)
+        # TODO: Masks are irrelevant for DIET. Check whether we can remove them.
         mask_features = text_features.get(MASK)
         assert len(mask_features) == 1
         mask = np.array(mask_features[0])  # because it's a feature array
-        assert mask.shape == (len(messages), 1, 1)
-        assert np.all(mask == 1)
+        assert mask.shape == (num_relevant_messages, 1, 1)
+        if not training:
+            # the last message contains no text, just an intent
+            assert np.all(mask[:-1] == 1)
+            assert mask[-1] == 0
+        else:
+            # in this case we only use "nlu" messages
+            assert np.all(mask == 1)
         # - subkey: sequence-length
         length_features = text_features.get(SEQUENCE_LENGTH)
         assert len(length_features) == 1
         lengths = np.array(length_features[0])  # because it's a feature array
-        assert lengths.shape == (len(messages),)
-        assert np.all(lengths == test_case.seq_len)
+        assert lengths.shape == (num_relevant_messages,)
+        if not training:
+            # the last message contains no text, just an intent
+            assert np.all(lengths[:-1] == test_case.seq_len)
+            assert lengths[-1] == 0
+        else:
+            assert np.all(lengths == test_case.seq_len)
         # - subkey: sequence / sentence
         test_case.compare_features_of_same_type_and_sparseness(
-            actual=text_features, expected=expected_outputs[TEXT]
+            actual=text_features,
+            expected=expected_outputs[TEXT],
+            slice=slice(None, num_relevant_messages),
         )
 
         # TODO: check sparse feature sizes
 
         if training and intent_classification:
+            # NOTE: in this case, the last message is not used since it does not
+            # contain an intent. Hence, in the following, we only consider messages
+            # with index 0, 1 and 2.
+
             # Check subkeys for LABEL
             expected_label_subkeys = {LABEL_SUB_KEY, MASK, SENTENCE}
             if input_contains_features_for_intent:
@@ -512,7 +590,9 @@ def test_preprocess_train_data_and_create_data_for_prediction(
             else:
                 # otherwise, the same features as in the data must be there:
                 test_case.compare_features_of_same_type_and_sparseness(
-                    expected=expected_outputs[INTENT], actual=label_features
+                    expected=expected_outputs[INTENT],
+                    actual=label_features,
+                    slice=slice(0, num_relevant_messages),
                 )
             # - subkey: mask  (this is a "turn" mask, hence all masks are just "[1]")
             assert len(label_features.get(MASK)) == 1
@@ -533,35 +613,44 @@ def test_preprocess_train_data_and_create_data_for_prediction(
                 assert len(entity_features.get(key)) == 1
                 assert isinstance(entity_features.get(key)[0], FeatureArray)
             # - subkey: mask  (this is a "turn" mask, hence all masks are just "[1]")
-            assert np.all(np.array(entity_features.get(MASK)[0]) == [1, 1, 1])
+            expected_mask_features = [1, 1, 1, 1]
+            if intent_classification:
+                # in this case, we ignore the last message which does not have an
+                # intent
+                expected_mask_features = expected_mask_features[:-1]
+            assert np.all(
+                np.array(entity_features.get(MASK)[0]) == expected_mask_features
+            )
             # - subkey: entities
             entity_sub_features = entity_features[ENTITY_ATTRIBUTE_TYPE][0]
-            assert len(entity_sub_features) == len(messages)
-            # message 0: no entity
-            assert np.all(np.array(entity_sub_features[0]).flatten() == [0])
-            # message 1: no entity
-            assert np.all(np.array(entity_sub_features[1]).flatten() == [0])
-            # message 2: entity1, entity2
-            if not bilou_tagging:
-                expected_entity_features = [0, 1, 1, 1, 0, 0, 2]
-                # where 0 = no entity, 1 = city, 2 = what
-            else:
-                message2 = messages_for_training[-1]
-                assert message2.get(BILOU_ENTITIES) == [
-                    "O",
-                    "B-city",
-                    "I-city",
-                    "L-city",
-                    "O",
-                    "O",
-                    "U-what",
-                ]
-                expected_entity_features = [0, 1, 2, 3, 0, 0, 8]
-                # where 0 = no entity, 1/2/3/4 = B/I/L/U-city, and
-                # 5/6/7/8 = B/I/L/U-what
-            assert np.all(
-                np.array(entity_sub_features[2]).flatten() == expected_entity_features
-            )
+            assert len(entity_sub_features) == num_relevant_messages
+            # message 0+1: no entity
+            for idx in [0, 1]:
+                assert np.all(np.array(entity_sub_features[idx]).flatten() == [0])
+            # message 2-4: entity1, entity2
+            considered_messages_with_entities = [2] + ([] if training else [3, 4])
+            for idx in considered_messages_with_entities:
+                if not bilou_tagging:
+                    expected_entity_features = [0, 1, 1, 1, 0, 0, 2]
+                    # where 0 = no entity, 1 = city, 2 = what
+                else:
+                    message = messages_for_training[idx]
+                    assert message.get(BILOU_ENTITIES) == [
+                        "O",
+                        "B-city",
+                        "I-city",
+                        "L-city",
+                        "O",
+                        "O",
+                        "U-what",
+                    ]
+                    expected_entity_features = [0, 1, 2, 3, 0, 0, 8]
+                    # where 0 = no entity, 1/2/3/4 = B/I/L/U-city, and
+                    # 5/6/7/8 = B/I/L/U-what
+                assert np.all(
+                    np.array(entity_sub_features[idx]).flatten()
+                    == expected_entity_features
+                )
         else:
             assert not model_data.get(ENTITIES)
 
