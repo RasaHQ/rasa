@@ -237,12 +237,13 @@ class FineTuningValidator(GraphComponent):
         Returns:
             fingerprint
         """
-        schema = self._execution_context.graph_schema
-        for schema_node in schema.nodes.values():
-            config_copy = copy.deepcopy(schema_node.config)
+        schema_as_dict = self._execution_context.graph_schema.as_dict()
+        for node_dict in schema_as_dict.values():
+            config_copy = copy.deepcopy(node_dict["config"])
             config_copy.pop("epochs", None)
-            schema_node.config = config_copy
-        return rasa.shared.utils.io.deep_container_fingerprint(schema.as_dict())
+            node_dict["config"] = config_copy
+            node_dict.pop("eager")
+        return rasa.shared.utils.io.deep_container_fingerprint(schema_as_dict)
 
     @classmethod
     def create(

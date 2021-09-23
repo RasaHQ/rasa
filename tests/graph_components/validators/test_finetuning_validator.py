@@ -197,6 +197,7 @@ def _get_example_schema(num_epochs: int = 5, other_parameter: int = 10) -> Graph
             "some-parameter": "bla",
         },
         {"epochs": num_epochs, "yet-other-parameter": 344},
+        {"no-epochs-defined-here": None},
     ]
     return GraphSchema(
         nodes={
