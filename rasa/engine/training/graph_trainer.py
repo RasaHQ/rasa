@@ -107,7 +107,9 @@ class GraphTrainer:
         fingerprint_graph_runner = self._graph_runner_class.create(
             graph_schema=fingerprint_schema,
             model_storage=self._model_storage,
-            execution_context=ExecutionContext(graph_schema=fingerprint_schema),
+            # We pass the original `train_schema` to the execution context because
+            # the finetuning validator needs access to the details of the configuration.
+            execution_context=ExecutionContext(graph_schema=train_schema),
         )
 
         logger.debug("Running the train graph in fingerprint mode.")

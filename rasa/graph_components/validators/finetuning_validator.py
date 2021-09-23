@@ -145,7 +145,7 @@ class FineTuningValidator(GraphComponent):
                 )
         self._fingerprints[FINGERPRINT_VERSION] = rasa_version
 
-        fingerprint_config = self._get_fingerprint_of_configs_without_epochs()
+        fingerprint_config = self._get_fingerprint_of_schema_without_epochs_config()
         self._compare_or_memorize(
             fingerprint_key=FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
             new_fingerprint=fingerprint_config,
@@ -231,19 +231,18 @@ class FineTuningValidator(GraphComponent):
         domain.responses = {}
         return domain.fingerprint()
 
-    def _get_fingerprint_of_configs_without_epochs(self,) -> Text:
+    def _get_fingerprint_of_schema_without_epochs_config(self,) -> Text:
         """Returns a fingerprint of the given configuration with "epoch" keys removed.
 
         Returns:
             fingerprint
         """
-        config_copies = [
-            copy.deepcopy(schema_node.config)
-            for schema_node in self._execution_context.graph_schema.nodes.values()
-        ]
-        for config in config_copies:
-            config.pop("epochs", None)
-        return rasa.shared.utils.io.deep_container_fingerprint(config_copies)
+        schema = self._execution_context.graph_schema
+        for schema_node in schema.nodes.values():
+            config_copy = copy.deepcopy(schema_node.config)
+            config_copy.pop("epochs", None)
+            schema_node.config = config_copy
+        return rasa.shared.utils.io.deep_container_fingerprint(schema.as_dict())
 
     @classmethod
     def create(

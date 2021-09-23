@@ -12,6 +12,7 @@ from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, Sch
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.validators.finetuning_validator import FineTuningValidator
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -92,13 +93,6 @@ def get_validation_method(
     return inner
 
 
-@pytest.fixture
-def empty_data_importer(tmp_path: Path) -> TrainingDataImporter:
-    config_path = tmp_path / "config.py"
-    rasa.shared.utils.io.write_yaml({}, config_path, True)
-    return TrainingDataImporter.load_from_config(str(config_path))
-
-
 class DummyNluDataImporter(NluDataImporter):
     def __init__(self, messages: List[Message]) -> None:
         self.training_data = TrainingData(training_examples=messages)
@@ -108,6 +102,11 @@ class DummyNluDataImporter(NluDataImporter):
 
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         return self.training_data
+
+
+class EmptyDataImporter(DummyNluDataImporter):
+    def __init__(self) -> None:
+        super().__init__([])
 
 
 def _project_files(
@@ -190,9 +189,13 @@ def test_validate_after_adding_action_to_domain(
         loaded_validate(importer=importer)
 
 
-def _get_example_schema(num_epochs: int = 5) -> GraphSchema:
+def _get_example_schema(num_epochs: int = 5, other_parameter: int = 10) -> GraphSchema:
     example_configs = [
-        {"epochs": num_epochs, "other-parameter": 234, "some-parameter": "bla"},
+        {
+            "epochs": num_epochs,
+            "other-parameter": other_parameter,
+            "some-parameter": "bla",
+        },
         {"epochs": num_epochs, "yet-other-parameter": 344},
     ]
     return GraphSchema(
@@ -207,17 +210,14 @@ def _get_example_schema(num_epochs: int = 5) -> GraphSchema:
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_after_changing_epochs_in_config(
-    empty_data_importer: TrainingDataImporter,
-    get_validation_method: Callable[..., ValidationMethodType],
-    nlu: bool,
-    core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
 ):
     # training
     schema1 = _get_example_schema(num_epochs=5)
     validate = get_validation_method(
         finetuning=False, load=False, nlu=nlu, core=core, graph_schema=schema1
     )
-    validate(importer=empty_data_importer)
+    validate(importer=EmptyDataImporter())
 
     # change schema - replace all epoch settings by a different value
     schema2 = _get_example_schema(num_epochs=10)
@@ -226,22 +226,19 @@ def test_validate_after_changing_epochs_in_config(
     loaded_validate = get_validation_method(
         finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema2
     )
-    loaded_validate(importer=empty_data_importer)
+    loaded_validate(importer=EmptyDataImporter())
 
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_after_removing_node_from_schema(
-    empty_data_importer: TrainingDataImporter,
-    get_validation_method: Callable[..., ValidationMethodType],
-    nlu: bool,
-    core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
 ):
     # training
     schema1 = _get_example_schema(num_epochs=5)
     validate = get_validation_method(
         finetuning=False, load=False, nlu=nlu, core=core, graph_schema=schema1
     )
-    validate(importer=empty_data_importer)
+    validate(importer=EmptyDataImporter())
 
     # change schema - remove a node
     schema2 = copy.deepcopy(schema1)
@@ -252,15 +249,12 @@ def test_validate_after_removing_node_from_schema(
         finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema2,
     )
     with pytest.raises(InvalidConfigException):
-        loaded_validate(importer=empty_data_importer)
+        loaded_validate(importer=EmptyDataImporter())
 
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_after_adding_node_to_schema(
-    empty_data_importer: TrainingDataImporter,
-    get_validation_method: Callable[..., ValidationMethodType],
-    nlu: bool,
-    core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
 ):
     # training
     schema1 = _get_example_schema()
@@ -270,7 +264,7 @@ def test_validate_after_adding_node_to_schema(
     validate = get_validation_method(
         finetuning=False, load=False, nlu=nlu, core=core, graph_schema=schema2
     )
-    validate(importer=empty_data_importer)
+    validate(importer=EmptyDataImporter())
 
     # change schema - continue with the schema with one more node than before
     assert len(schema1.nodes) > len(schema2.nodes)
@@ -280,7 +274,50 @@ def test_validate_after_adding_node_to_schema(
         finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema1
     )
     with pytest.raises(InvalidConfigException):
-        loaded_validate(importer=empty_data_importer)
+        loaded_validate(importer=EmptyDataImporter())
+
+
+@pytest.mark.parametrize(
+    "nlu, core, what",
+    [
+        (nlu, core, what)
+        for what in ["uses"]  # , 'needs', 'fn', 'config' ]
+        for nlu, core in [(True, False), (False, True), (True, True)]
+    ],
+)
+def test_validate_after_replacing_something_in_schema(
+    get_validation_method: Callable[..., ValidationMethodType],
+    nlu: bool,
+    core: bool,
+    what: Text,
+):
+    # training
+    schema1 = _get_example_schema()
+    validate = get_validation_method(
+        finetuning=False, load=False, nlu=nlu, core=core, graph_schema=schema1
+    )
+    validate(importer=EmptyDataImporter())
+
+    # change schema
+    schema2 = copy.deepcopy(schema1)
+    schema_node = schema2.nodes["node-0"]
+    if what == "uses":
+        schema_node.uses = WhitespaceTokenizerGraphComponent
+    elif what == "fn":
+        schema_node.fn = "a-new-function"
+    elif what == "needs":
+        schema_node.needs = {"something-new": "node-1"}
+    elif what == "config":
+        schema_node.config["other-parameter"] = "some-new-value"
+    else:
+        assert False, "Please fix this test."
+
+    # finetuning raises -  doesn't matter if it's nlu/core/both
+    loaded_validate = get_validation_method(
+        finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema2
+    )
+    with pytest.raises(InvalidConfigException):
+        loaded_validate(importer=EmptyDataImporter())
 
 
 @pytest.mark.parametrize(
@@ -411,14 +448,11 @@ def test_validate_with_other_version(
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_with_finetuning_fails_without_training(
-    empty_data_importer: TrainingDataImporter,
-    get_validation_method: Callable[..., ValidationMethodType],
-    nlu: bool,
-    core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
 ):
     validate = get_validation_method(finetuning=True, load=False, nlu=nlu, core=core)
     with pytest.raises(InvalidConfigException):
-        validate(importer=empty_data_importer)
+        validate(importer=EmptyDataImporter())
 
 
 def test_loading_without_persisting(
