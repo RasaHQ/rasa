@@ -1,6 +1,6 @@
-import os
 import tempfile
 from contextlib import ExitStack
+from pathlib import Path
 from typing import (
     Text,
     NamedTuple,
@@ -302,7 +302,7 @@ async def _train_async_internal(
 
     rasa.shared.utils.cli.print_success(
         "Nothing changed. You can use the old model stored at '{}'."
-        "".format(os.path.abspath(old_model))
+        "".format(Path(old_model).resolve())
     )
     return TrainingResult(model=old_model)
 
@@ -335,7 +335,7 @@ async def _do_training(
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
-        interpreter_path = os.path.join(model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
+        interpreter_path = Path(model_path).joinpath(DEFAULT_NLU_SUBDIRECTORY_NAME)
     else:
         rasa.shared.utils.cli.print_color(
             "NLU data/configuration did not change. No need to retrain NLU model.",
@@ -514,7 +514,7 @@ def _train_core_with_validated_data(
             rasa.core.train.train(
                 domain_file=domain,
                 training_resource=file_importer,
-                output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
+                output_path=Path(_train_path).joinpath(DEFAULT_CORE_SUBDIRECTORY_NAME),
                 policy_config=config,
                 additional_arguments=additional_arguments,
                 interpreter=interpreter,

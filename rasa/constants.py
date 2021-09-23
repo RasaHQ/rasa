@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
@@ -25,7 +25,7 @@ CONFIG_TELEMETRY_DATE = "date"
 
 MINIMUM_COMPATIBLE_VERSION = "2.8.0"
 
-GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
+GLOBAL_USER_CONFIG_PATH = Path("~/.config/rasa/global.yml").expanduser()
 
 DEFAULT_LOG_LEVEL_RASA_X = "WARNING"
 DEFAULT_LOG_LEVEL_LIBRARIES = "ERROR"

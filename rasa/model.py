@@ -154,10 +154,10 @@ def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
     """
     if not model_path:
         raise ModelNotFound("No path specified.")
-    elif not os.path.exists(model_path):
+    elif not Path(model_path).exists():
         raise ModelNotFound(f"No file or directory at '{model_path}'.")
 
-    if os.path.isdir(model_path):
+    if Path(model_path).is_dir():
         model_path = get_latest_model(model_path)
         if not model_path:
             raise ModelNotFound(
@@ -205,10 +205,10 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
         Path to latest model in the given directory.
 
     """
-    if not os.path.exists(model_path) or os.path.isfile(model_path):
-        model_path = os.path.dirname(model_path)
+    if not Path(model_path).exists() or Path(model_path).is_file():
+        model_path = Path(model_path).parent
 
-    list_of_files = glob.glob(os.path.join(model_path, "*.tar.gz"))
+    list_of_files = glob.glob(Path(model_path).joinpath("*.tar.gz"))
 
     if len(list_of_files) == 0:
         return None
@@ -261,13 +261,13 @@ def get_model_subdirectories(
                path to NLU subdirectory if it exists or `None` otherwise).
 
     """
-    core_path = os.path.join(unpacked_model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
-    nlu_path = os.path.join(unpacked_model_path, DEFAULT_NLU_SUBDIRECTORY_NAME)
+    core_path = Path(unpacked_model_path).joinpath(DEFAULT_CORE_SUBDIRECTORY_NAME)
+    nlu_path = Path(unpacked_model_path).joinpath(DEFAULT_NLU_SUBDIRECTORY_NAME)
 
-    if not os.path.isdir(core_path):
+    if not core_path.is_dir():
         core_path = None
 
-    if not os.path.isdir(nlu_path):
+    if not nlu_path.is_dir():
         nlu_path = None
 
     if not core_path and not nlu_path:
@@ -302,9 +302,9 @@ def create_package_rasa(
     if fingerprint:
         persist_fingerprint(training_directory, fingerprint)
 
-    output_directory = os.path.dirname(output_filename)
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
+    output_directory = Path(output_filename).dirname
+    if not Path(output_directory).exists():
+        Path(output_directory).mkdir()
 
     with tarfile.open(output_filename, "w:gz") as tar:
         for elem in os.scandir(training_directory):
@@ -420,12 +420,13 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     Returns:
         The fingerprint or an empty dict if no fingerprint was found.
     """
-    if not model_path or not os.path.exists(model_path):
+    model_path = Path(model_path)
+    if not model_path or not model_path.exists():
         return {}
 
-    fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
+    fingerprint_path = model_path.joinpath(FINGERPRINT_FILE_PATH)
 
-    if os.path.isfile(fingerprint_path):
+    if fingerprint_path.is_file():
         return rasa.shared.utils.io.read_json_file(fingerprint_path)
     else:
         return {}
@@ -440,7 +441,7 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint) -> None:
 
     """
 
-    path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
+    path = Path(output_path).joinpath(FINGERPRINT_FILE_PATH)
     rasa.shared.utils.io.dump_obj_as_json_to_file(path, fingerprint)
 
 
@@ -497,7 +498,7 @@ def should_retrain(
     """
     fingerprint_comparison = FingerprintComparisonResult()
 
-    if old_model is None or not os.path.exists(old_model):
+    if old_model is None or not Path(old_model).exists():
         return fingerprint_comparison
 
     try:
@@ -524,7 +525,7 @@ def should_retrain(
 
             core_merge_failed = False
             if not fingerprint_comparison.should_retrain_core():
-                target_path = os.path.join(train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
+                target_path = Path(train_path).joinpath(DEFAULT_CORE_SUBDIRECTORY_NAME)
                 core_merge_failed = not move_model(old_core, target_path)
                 fingerprint_comparison.core = core_merge_failed
 
@@ -533,7 +534,7 @@ def should_retrain(
                 fingerprint_comparison.nlg = True
 
             if not fingerprint_comparison.should_retrain_nlu():
-                target_path = os.path.join(train_path, "nlu")
+                target_path = Path(train_path).joinpath("nlu")
                 fingerprint_comparison.nlu = not move_model(old_nlu, target_path)
 
             return fingerprint_comparison
@@ -608,7 +609,7 @@ def package_model(
 
     print_success(
         "Your Rasa model is trained and saved at '{}'.".format(
-            os.path.abspath(output_directory)
+            Path(output_directory).resolve()
         )
     )
 

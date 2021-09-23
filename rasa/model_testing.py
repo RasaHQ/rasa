@@ -1,5 +1,5 @@
 import logging
-import os
+from pathlib import Path
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
@@ -46,7 +46,7 @@ def test_core_models_in_directory(
         )
     )
 
-    story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
+    story_n_path = Path(model_directory) / NUMBER_OF_TRAINING_STORIES_FILE
     number_of_stories = rasa.shared.utils.io.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
 
@@ -60,7 +60,7 @@ def plot_core_results(output_directory: Text, number_of_examples: List[int]) -> 
     """
     import rasa.utils.plotting as plotting_utils
 
-    graph_path = os.path.join(output_directory, "core_model_comparison_graph.pdf")
+    graph_path = Path(output_directory) / "core_model_comparison_graph.pdf"
 
     plotting_utils.plot_curve(
         output_directory,
@@ -208,9 +208,9 @@ def test_nlu(
 
     rasa.shared.utils.io.create_directory(output_directory)
 
-    nlu_model = os.path.join(unpacked_model, "nlu")
+    nlu_model = Path(unpacked_model) / "nlu"
 
-    if os.path.exists(nlu_model):
+    if Path(nlu_model).exists():
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
@@ -240,8 +240,7 @@ async def compare_nlu_models(
 
     create_path(output)
 
-    bases = [os.path.basename(nlu_config) for nlu_config in configs]
-    model_names = [os.path.splitext(base)[0] for base in bases]
+    model_names = [Path(nlu_config).stem for nlu_config in configs]
 
     f1_score_results = {
         model_name: [[] for _ in range(runs)] for model_name in model_names
@@ -257,7 +256,7 @@ async def compare_nlu_models(
         runs,
     )
 
-    f1_path = os.path.join(output, RESULTS_FILE)
+    f1_path = Path(output) / RESULTS_FILE
     write_json_to_file(f1_path, f1_score_results)
 
     plot_nlu_results(output, training_examples_per_run)
@@ -272,7 +271,7 @@ def plot_nlu_results(output_directory: Text, number_of_examples: List[int]) -> N
     """
     import rasa.utils.plotting as plotting_utils
 
-    graph_path = os.path.join(output_directory, "nlu_model_comparison_graph.pdf")
+    graph_path = Path(output_directory) / "nlu_model_comparison_graph.pdf"
 
     plotting_utils.plot_curve(
         output_directory,

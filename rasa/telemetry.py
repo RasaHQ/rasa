@@ -481,7 +481,7 @@ def _default_context_fields() -> Dict[Text, Any]:
             "os": {"name": platform.system(), "version": platform.release()},
             "ci": in_continuous_integration(),
             "project": model.project_fingerprint(),
-            "directory": _hash_directory_path(os.getcwd()),
+            "directory": _hash_directory_path(Path.cwd()),
             "python": sys.version.split(" ")[0],
             "rasa_open_source": rasa.__version__,
             "cpu": multiprocessing.cpu_count(),
@@ -630,12 +630,12 @@ def strip_sensitive_data_from_sentry_event(
             elif "site-packages" in frame["filename"]:
                 # drop site-packages and following slash / backslash
                 relative_name = frame["filename"].split("site-packages")[-1][1:]
-                frame["filename"] = os.path.join("site-packages", relative_name)
+                frame["filename"] = Path("site-packages").joinpath(relative_name)
             elif "dist-packages" in frame["filename"]:
                 # drop dist-packages and following slash / backslash
                 relative_name = frame["filename"].split("dist-packages")[-1][1:]
-                frame["filename"] = os.path.join("dist-packages", relative_name)
-            elif os.path.isabs(frame["filename"]):
+                frame["filename"] = Path("dist-packages").joinpath(relative_name)
+            elif Path(frame["filename"]).is_absolute():
                 # if the file path is absolute, we'll drop the whole event as this is
                 # very likely custom code. needs to happen after cleaning as
                 # site-packages / dist-packages paths are also absolute, but fine.

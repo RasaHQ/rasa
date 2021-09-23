@@ -1,6 +1,6 @@
 import argparse
 import logging
-import os
+from pathlib import Path
 import platform
 import sys
 
@@ -106,7 +106,7 @@ def main() -> None:
     tf_env.setup_tf_environment()
 
     # insert current path in syspath so custom modules are found
-    sys.path.insert(1, os.getcwd())
+    sys.path.insert(1, Path.cwd())
 
     try:
         if hasattr(cmdline_arguments, "func"):

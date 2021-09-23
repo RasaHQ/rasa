@@ -2,7 +2,6 @@ import asyncio
 import concurrent.futures
 import logging
 import multiprocessing
-import os
 import tempfile
 import traceback
 from collections import defaultdict
@@ -1072,7 +1071,7 @@ def create_app(
             training_result = await train_async(**training_payload)
 
             if training_result.model:
-                filename = os.path.basename(training_result.model)
+                filename = Path(training_result.model).name
 
                 return await response.file(
                     training_result.model,
@@ -1207,10 +1206,11 @@ def create_app(
                 model_path, model_server, app.agent.remote_storage
             )
 
-        data_path = os.path.abspath(test_data_file)
+        data_path = Path(test_data_file).resolve()
 
-        if not eval_agent.model_directory or not os.path.exists(
-            eval_agent.model_directory
+        if (
+            not eval_agent.model_directory
+            or not Path(eval_agent.model_directory).exists()
         ):
             raise ErrorResponse(
                 HTTPStatus.CONFLICT, "Conflict", "Loaded model file not found."
