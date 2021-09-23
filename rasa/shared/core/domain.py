@@ -329,9 +329,6 @@ class Domain:
         slot_dict = copy.deepcopy(slot_dict)
         # Don't sort the slots, see https://github.com/RasaHQ/rasa-x/issues/3900
         for slot_name in slot_dict:
-            # remove auto_fill if it exists in the domain
-            slot_dict[slot_name].pop("auto_fill", None)
-
             slot_type = slot_dict[slot_name].pop("type", None)
             slot_class = Slot.resolve_by_type(slot_type)
 

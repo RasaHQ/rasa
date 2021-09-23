@@ -58,9 +58,6 @@ mapping:
             sequence:
               - type: "any"
             required: False
-          auto_fill:
-            type: "bool"
-            required: False
           min_value:
             type: "number"
             required: False
