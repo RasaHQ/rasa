@@ -34,6 +34,7 @@ from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.constants import (
     ENTITIES,
+    ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_TYPE,
     INTENT_RESPONSE_KEY,
@@ -67,107 +68,224 @@ class DummyImporter(TrainingDataImporter):
         return StoryGraph([])
 
 
-def _test_warn_if_some_training_data_is_not_used(
-    training_data: TrainingData, component_type: Type, match: Text
+def _test_validation_warnings_with_default_configs(
+    training_data: TrainingData,
+    component_types: List[Type],
+    warnings: Optional[List[Text]] = None,
 ):
     dummy_importer = DummyImporter(training_data=training_data)
-    graph_schema_without_critical_component = GraphSchema(
-        {"tokenizer": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {})}
-    )
-    validator = DefaultV1ConfigValidator(graph_schema_without_critical_component)
-    with pytest.warns(UserWarning, match=match):
-        validator.validate(dummy_importer)
-
-    graph_schema_with_critical_component = GraphSchema(
+    graph_schema = GraphSchema(
         {
-            **graph_schema_without_critical_component.nodes,
-            "critical_component": SchemaNode({}, component_type, "", "", {}),
+            f"{idx}": SchemaNode(
+                needs={},
+                uses=component_type,
+                constructor_name="",
+                fn="",
+                config=component_type.get_default_config(),
+            )
+            for idx, component_type in enumerate(component_types)
         }
     )
-    validator = DefaultV1ConfigValidator(graph_schema_with_critical_component)
-    with pytest.warns(None) as records:
-        validator.validate(dummy_importer)
-        assert len(records) == 0
+    validator = DefaultV1ConfigValidator(graph_schema)
+    if not warnings:
+        with pytest.warns(None) as records:
+            validator.validate(dummy_importer)
+            assert len(records) == 0
+    else:
+        with pytest.warns(None) as records:
+            validator.validate(dummy_importer)
+        assert len(records) == len(warnings), ", ".join(
+            warning.message.args[0] for warning in records
+        )
+        assert [
+            re.match(warning.message.args[0], expected_warning)
+            for warning, expected_warning in zip(records, warnings)
+        ]
 
 
 @pytest.mark.parametrize(
-    "message_data, component_type, warning",
-    [
-        (message_data, component_type, warning)
-        for message_data, component_types, warning in [
-            (
-                {INTENT_RESPONSE_KEY: "dummy"},
-                [ResponseSelectorGraphComponent],
-                "with examples for training a response selector",
-            ),
-            (
-                {ENTITIES: [{ENTITY_ATTRIBUTE_TYPE: "dummy"}]},
-                sorted(
-                    TRAINABLE_EXTRACTORS,
-                    key=lambda component_type: component_type.__name__,
-                ),
-                "consisting of entity examples",
-            ),
-            (
-                {
-                    ENTITIES: [
-                        {
-                            ENTITY_ATTRIBUTE_TYPE: "dummy",
-                            ENTITY_ATTRIBUTE_ROLE: "dummy-role",
-                        }
-                    ]
-                },
-                [DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent],
-                "with entities that have roles/groups",
-            ),
-        ]
-        for component_type in component_types
-    ],
+    "component_type, warns", [(ResponseSelectorGraphComponent, False,), (None, True)]
 )
-def test_nlu_warn_if_training_examples_are_unused(
-    component_type: Type[GraphComponent], message_data: Dict[Text, Any], warning: Text,
+def test_nlu_warn_if_training_examples_with_intent_response_key_are_unused(
+    component_type: Type[GraphComponent], warns: bool,
 ):
+    message_data = {INTENT_RESPONSE_KEY: "dummy"}
     training_data = TrainingData(training_examples=[Message(message_data)])
-    _test_warn_if_some_training_data_is_not_used(
-        training_data=training_data,
-        component_type=component_type,
-        match=f"You have defined training data {warning}, but your NLU configuration",
+    warnings = (
+        (
+            [
+                "You have defined training data with examples "
+                "for training a response selector, "
+                "but your NLU configuration"
+            ]
+        )
+        if warns
+        else None
+    )
+    component_types = [WhitespaceTokenizerGraphComponent]
+    if component_type:
+        component_types.append(component_type)
+    _test_validation_warnings_with_default_configs(
+        training_data=training_data, component_types=component_types, warnings=warnings,
     )
 
 
 @pytest.mark.parametrize(
-    "component_type",
-    [RegexFeaturizerGraphComponent, RegexEntityExtractorGraphComponent],
+    "component_type, warns",
+    [(extractor, False) for extractor in TRAINABLE_EXTRACTORS] + [(None, True)],
 )
-def test_nlu_warn_if_regex_features_are_not_used(component_type: Type[GraphComponent]):
+def test_nlu_warn_if_training_examples_with_entities_are_unused(
+    component_type: Type[GraphComponent], warns: bool,
+):
+    message_data = {ENTITIES: [{ENTITY_ATTRIBUTE_TYPE: "dummy"}]}
+    training_data = TrainingData(training_examples=[Message(message_data)])
+    warnings = (
+        (
+            [
+                "You have defined training data consisting of entity examples, "
+                "but your NLU configuration"
+            ]
+        )
+        if warns
+        else None
+    )
+    component_types = [WhitespaceTokenizerGraphComponent]
+    if component_type:
+        component_types.append(component_type)
+    _test_validation_warnings_with_default_configs(
+        training_data=training_data, component_types=component_types, warnings=warnings,
+    )
+
+
+@pytest.mark.parametrize(
+    "component_type, role_instead_of_group, warns",
+    [
+        (extractor, role_instead_of_group, True)
+        for extractor in TRAINABLE_EXTRACTORS.difference(
+            {DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent}
+        )
+        for role_instead_of_group in [True, False]
+    ]
+    + [
+        (extractor, role_instead_of_group, False)
+        for extractor in {
+            DIETClassifierGraphComponent,
+            CRFEntityExtractorGraphComponent,
+        }
+        for role_instead_of_group in [True, False]
+    ],
+)
+def test_nlu_warn_if_training_examples_with_entity_roles_are_unused(
+    component_type: Type[GraphComponent], role_instead_of_group: bool, warns: bool,
+):
+    message_data = {
+        ENTITIES: [
+            {
+                ENTITY_ATTRIBUTE_TYPE: "dummy",
+                (
+                    ENTITY_ATTRIBUTE_ROLE
+                    if role_instead_of_group
+                    else ENTITY_ATTRIBUTE_GROUP
+                ): "dummy-2",
+            }
+        ]
+    }
+    training_data = TrainingData(training_examples=[Message(message_data)])
+    warnings = (
+        [
+            "You have defined training data with entities that have roles/groups, "
+            "but your NLU configuration"
+        ]
+        if warns
+        else []
+    )
+    component_types = [WhitespaceTokenizerGraphComponent]
+    if component_type:
+        component_types.append(component_type)
+    _test_validation_warnings_with_default_configs(
+        training_data=training_data, component_types=component_types, warnings=warnings,
+    )
+
+
+@pytest.mark.parametrize(
+    "component_type, warns",
+    [
+        (RegexFeaturizerGraphComponent, False),
+        (RegexEntityExtractorGraphComponent, False),
+        (None, True),
+    ],
+)
+def test_nlu_warn_if_regex_features_are_not_used(
+    component_type: Type[GraphComponent], warns: bool
+):
     training_data = TrainingData(
         training_examples=[Message({})],
         regex_features=[{"name": "dummy", "pattern": "dummy"}],
     )
-    _test_warn_if_some_training_data_is_not_used(
-        training_data=training_data,
-        component_type=component_type,
-        match="You have defined training data with regexes, but your NLU",
+    component_types = [WhitespaceTokenizerGraphComponent]
+    if component_type:
+        component_types.append(component_type)
+    warnings = (
+        ["You have defined training data with regexes, but your NLU"] if warns else None
+    )
+    _test_validation_warnings_with_default_configs(
+        training_data=training_data, component_types=component_types, warnings=warnings
     )
 
 
 @pytest.mark.parametrize(
-    "component_type",
-    [RegexFeaturizerGraphComponent, RegexEntityExtractorGraphComponent],
+    "featurizer, consumer, warns_featurizer, warns_consumer",
+    [
+        (None, consumer, True, False)
+        for consumer in [DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent]
+    ]
+    + [
+        (RegexFeaturizerGraphComponent, None, False, True),
+        # (None, RegexEntityExtractorGraphComponent, False, False), # does not work
+        (None, RegexEntityExtractorGraphComponent, False, True),  # instead we get this
+    ]
+    + [
+        (featurizer, consumer, False, False)
+        for consumer in [DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent]
+        for featurizer in [
+            RegexFeaturizerGraphComponent,
+            RegexEntityExtractorGraphComponent,
+        ]
+    ],
 )
-def test_nlu_warn_if_lookup_table_is_not_used(component_type: Type[GraphComponent]):
+def test_nlu_warn_if_lookup_table_is_not_used(
+    featurizer: Type[GraphComponent],
+    consumer: Type[GraphComponent],
+    warns_featurizer: bool,
+    warns_consumer: bool,
+):
     training_data = TrainingData(
         training_examples=[Message({})],
         lookup_tables=[{"elements": "this-is-no-file-and-that-does-not-matter"}],
     )
     assert training_data.lookup_tables is not None
-    _test_warn_if_some_training_data_is_not_used(
-        training_data=training_data,
-        component_type=component_type,
-        match=(
+    component_types = [WhitespaceTokenizerGraphComponent, featurizer, consumer]
+    component_types = [type for type in component_types if type is not None]
+
+    expected_warnings = []
+    if warns_featurizer:
+        warning = (
             "You have defined training data consisting of lookup tables, "
-            "but your NLU"
-        ),
+            "your NLU configuration does not include a featurizer using the "
+            "lookup table."
+        )
+        expected_warnings.append(warning)
+    if warns_consumer:
+        warning = (
+            "You have defined training data consisting of lookup tables, but "
+            "your NLU configuration does not include any components "
+            "that uses the features created from the lookup table. "
+        )
+        expected_warnings.append(warning)
+    _test_validation_warnings_with_default_configs(
+        training_data=training_data,
+        component_types=component_types,
+        warnings=expected_warnings,
     )
 
 

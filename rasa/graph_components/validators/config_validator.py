@@ -197,7 +197,8 @@ class DefaultV1ConfigValidator(GraphComponent):
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data with regexes, but "
-                f"your NLU configuration does not include a 'RegexFeaturizer' or a "
+                f"your NLU configuration does not include a 'RegexFeaturizer' "
+                f" or a "
                 f"'RegexEntityExtractor'. To use regexes, include either a "
                 f"'{RegexFeaturizerGraphComponent.__name__}' or a "
                 f"'{RegexEntityExtractorGraphComponent.__name__}' "
@@ -210,57 +211,58 @@ class DefaultV1ConfigValidator(GraphComponent):
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data consisting of lookup tables, but "
-                f"your NLU configuration does not include a "
-                f"'{RegexFeaturizerGraphComponent.__name__}' or a "
-                f"'{RegexEntityExtractorGraphComponent.__name__}'. "
-                f"To use lookup tables, include either a "
+                f"your NLU configuration does not include a featurizer "
+                f"or an entity extractor using the lookup table."
+                f"To use the lookup tables, include either a "
                 f"'{RegexFeaturizerGraphComponent.__name__}' "
                 f"or a '{RegexEntityExtractorGraphComponent.__name__}' "
                 f"in your configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
-        if CRFEntityExtractorGraphComponent in self._component_types:
+        if training_data.lookup_tables:
 
-            crf_schema_nodes = [
-                schema_node
-                for schema_node in self._graph_schema.nodes.values()
-                if schema_node.uses == CRFEntityExtractorGraphComponent
-            ]
-            # check to see if any of the possible CRFEntityExtractors will
-            # featurize `pattern`
-            has_pattern_feature = False
-
-            for crf in crf_schema_nodes:
-                crf_features = crf.config.get("features", [])
-                # iterate through [[before],[word],[after]] features
-                has_pattern_feature = "pattern" in itertools.chain(*crf_features)
-
-            if training_data.lookup_tables and not has_pattern_feature:
+            if self._component_types.isdisjoint(
+                [CRFEntityExtractorGraphComponent, DIETClassifierGraphComponent]
+            ):
                 rasa.shared.utils.io.raise_warning(
-                    f"You have defined training data consisting of "
-                    f"lookup tables, but your NLU configuration's "
+                    f"You have defined training data consisting of lookup tables, but "
+                    f"your NLU configuration does not include any components "
+                    f"that uses the features created from the lookup table. "
+                    f"To make use of the features that are created with the "
+                    f"help of the lookup tables, "
+                    f"add a '{DIETClassifierGraphComponent.__name__}' or a "
                     f"'{CRFEntityExtractorGraphComponent.__name__}' "
-                    f"does not include the "
-                    f"'pattern' feature. To featurize lookup tables, "
-                    f"add the 'pattern' feature to the "
-                    f"'{CRFEntityExtractorGraphComponent.__name__}' "
-                    "in your configuration.",
-                    docs=DOCS_URL_COMPONENTS,
-                )
-
-            if not training_data.lookup_tables and has_pattern_feature:
-                rasa.shared.utils.io.raise_warning(
-                    "You have specified the 'pattern' feature for your "
-                    f"'{CRFEntityExtractorGraphComponent.__name__}' "
-                    f"but your training data does not"
-                    f"contain a lookup table. "
-                    f"To use the 'pattern' feature, "
-                    f"add a lookup tale to your training data and a "
-                    f"'{RegexFeaturizerGraphComponent.__name__}' "
+                    f"with the 'pattern' feature "
                     f"to your configuration.",
                     docs=DOCS_URL_COMPONENTS,
                 )
+
+            elif CRFEntityExtractorGraphComponent in self._component_types:
+
+                crf_schema_nodes = [
+                    schema_node
+                    for schema_node in self._graph_schema.nodes.values()
+                    if schema_node.uses == CRFEntityExtractorGraphComponent
+                ]
+
+                has_pattern_feature = False
+                for crf in crf_schema_nodes:
+                    crf_features = crf.config.get("features", [])
+                    has_pattern_feature = "pattern" in itertools.chain(*crf_features)
+
+                if not has_pattern_feature:
+                    rasa.shared.utils.io.raise_warning(
+                        f"You have defined training data consisting of "
+                        f"lookup tables, but your NLU configuration's "
+                        f"'{CRFEntityExtractorGraphComponent.__name__}' "
+                        f"does not include the "
+                        f"'pattern' feature. To featurize lookup tables, "
+                        f"add the 'pattern' feature to the "
+                        f"'{CRFEntityExtractorGraphComponent.__name__}' "
+                        "in your configuration.",
+                        docs=DOCS_URL_COMPONENTS,
+                    )
 
         if (
             training_data.entity_synonyms
