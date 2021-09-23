@@ -273,9 +273,9 @@ class PolicyEnsemble:
 
     @classmethod
     def load_metadata(cls, path: Text) -> Dict[Text, Any]:
-        metadata_path = os.path.join(path, "metadata.json")
+        metadata_path = Path.joinpath(path, "metadata.json")
         metadata = json.loads(
-            rasa.shared.utils.io.read_file(os.path.abspath(metadata_path))
+            rasa.shared.utils.io.read_file(Path.absolute(metadata_path))
         )
         return metadata
 
@@ -343,7 +343,7 @@ class PolicyEnsemble:
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = registry.policy_from_module_path(policy_name)
             dir_name = f"policy_{i}_{policy_cls.__name__}"
-            policy_path = os.path.join(path, dir_name)
+            policy_path = Path.joinpath(path, dir_name)
 
             context = {}
             if new_config:
