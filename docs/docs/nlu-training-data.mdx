@@ -113,7 +113,7 @@ that helps the model learn an association between intents/entities and inputs
 that fit the regular expression. 
 
 :::note Provide Training Examples
-The `RegexFeaturizer` provides features to the entity extractor, but it doesn't predict the entity directly. Include enough examples containing the regular expression so that the entity extractor can learn ot use the regular expression feature.
+The `RegexFeaturizer` provides features to the entity extractor, but it doesn't predict the entity directly. Include enough examples containing the regular expression so that the entity extractor can learn to use the regular expression feature.
 
 :::
 
@@ -167,14 +167,6 @@ When using lookup tables with `RegexFeaturizer`, provide enough examples for the
 
 
 ## Entities Roles and Groups
-
-:::caution
-This feature is experimental.
-We introduce experimental features to get feedback from our community, so we encourage you to try it out!
-However, the functionality might be changed or removed in the future.
-If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
-
-:::
 
 Annotating words as custom entities allows you to define certain concepts in your training data.
 For example, you can identify cities by annotating them:

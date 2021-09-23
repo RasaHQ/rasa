@@ -1,6 +1,10 @@
 # constants for configuration parameters of our tensorflow models
 
 LABEL = "label"
+IDS = "ids"
+# LABEL_PAD_ID is used to pad multi-label training examples.
+# It should be < 0 to avoid index out of bounds errors by tf.one_hot.
+LABEL_PAD_ID = -1
 HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
 
@@ -37,8 +41,9 @@ DROP_RATE = "drop_rate"
 DROP_RATE_ATTENTION = "drop_rate_attention"
 DROP_RATE_DIALOGUE = "drop_rate_dialogue"
 DROP_RATE_LABEL = "drop_rate_label"
+CONSTRAIN_SIMILARITIES = "constrain_similarities"
 
-WEIGHT_SPARSITY = "weight_sparsity"
+CONNECTION_DENSITY = "connection_density"
 
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
@@ -51,6 +56,7 @@ SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
 DENSE_INPUT_DROPOUT = "use_dense_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
+MODEL_CONFIDENCE = "model_confidence"
 
 BILOU_FLAG = "BILOU_flag"
 
@@ -63,10 +69,12 @@ MARGIN = "margin"
 AUTO = "auto"
 INNER = "inner"
 COSINE = "cosine"
+CROSS_ENTROPY = "cross_entropy"
 
 BALANCED = "balanced"
 
 SEQUENCE = "sequence"
+SEQUENCE_LENGTH = f"{SEQUENCE}_lengths"
 SENTENCE = "sentence"
 
 POOLING = "pooling"
@@ -81,3 +89,21 @@ SENTENCE_FEATURES = "sentence_features"
 
 FEATURIZERS = "featurizers"
 CHECKPOINT_MODEL = "checkpoint_model"
+
+MASK = "mask"
+
+IGNORE_INTENTS_LIST = "ignore_intents_list"
+
+TOLERANCE = "tolerance"
+
+POSITIVE_SCORES_KEY = "positive_scores"
+
+NEGATIVE_SCORES_KEY = "negative_scores"
+
+RANKING_KEY = "label_ranking"
+QUERY_INTENT_KEY = "query_intent"
+SCORE_KEY = "score"
+THRESHOLD_KEY = "threshold"
+SEVERITY_KEY = "severity"
+NAME = "name"
+EPOCH_OVERRIDE = "epoch_override"

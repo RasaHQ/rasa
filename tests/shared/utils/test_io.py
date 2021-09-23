@@ -1,21 +1,37 @@
 import os
 import string
+import textwrap
 import uuid
 from collections import OrderedDict
-from pathlib import Path
-from typing import Callable, Text, List, Set, Any
+from typing import Callable, Text, List, Set, Any, Dict
+import copy
 
+from pathlib import Path
+import numpy as np
 import pytest
 
 import rasa.shared
-from rasa.shared.exceptions import FileIOException, FileNotFoundException
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 import rasa.shared.utils.io
+import rasa.shared.utils.validation
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
-from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils import io as io_utils
 
 os.environ["USER_NAME"] = "user"
 os.environ["PASS"] = "pass"
+
+
+@pytest.mark.parametrize("file, parents", [("A/test.yml", "A"), ("A", "A")])
+def test_file_in_path(file, parents):
+    assert rasa.shared.utils.io.is_subdirectory(file, parents)
+
+
+@pytest.mark.parametrize(
+    "file, parents", [("A", "A/B"), ("B", "A"), ("A/test.yml", "A/B"), (None, "A")]
+)
+def test_file_not_in_path(file, parents):
+    assert not rasa.shared.utils.io.is_subdirectory(file, parents)
 
 
 def test_raise_user_warning():
@@ -144,13 +160,13 @@ def test_read_yaml_string_with_env_var_not_exist():
     user: ${USER_NAME}
     password: ${PASSWORD}
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(RasaException):
         rasa.shared.utils.io.read_yaml(config_with_env_var_not_exist)
 
 
 def test_environment_variable_not_existing():
     content = "model: \n  test: ${variable}"
-    with pytest.raises(ValueError):
+    with pytest.raises(RasaException):
         rasa.shared.utils.io.read_yaml(content)
 
 
@@ -197,6 +213,26 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
     content = rasa.shared.utils.io.read_yaml(content)
 
     assert content["model"]["test"] == "dir/test/dir"
+
+
+def test_environment_variable_with_dollar_char():
+    os.environ["variable1"] = "$test1"
+    os.environ["variable2"] = "test2"
+    content = "model: \n  test1: ${variable1}\n  test2: ${variable2}"
+
+    content = rasa.shared.utils.io.read_yaml(content)
+
+    assert content["model"]["test1"] == "$test1"
+    assert content["model"]["test2"] == "test2"
+
+
+def test_environment_variable_with_dollar_char_in_the_middle():
+    os.environ["variable1"] = "test$123"
+    content = "model: \n  test1: ${variable1}"
+
+    content = rasa.shared.utils.io.read_yaml(content)
+
+    assert content["model"]["test1"] == "test$123"
 
 
 def test_emojis_in_yaml():
@@ -322,6 +358,17 @@ def test_create_directory_for_file(tmp_path: Path):
     assert os.path.exists(os.path.dirname(file))
 
 
+def test_write_utf_8_yaml_file(tmp_path: Path):
+    """This test makes sure that dumping a yaml doesn't result in Uxxxx sequences
+    but rather directly dumps the unicode character."""
+
+    file_path = str(tmp_path / "test.yml")
+    data = {"data": "amazing 🌈"}
+
+    rasa.shared.utils.io.write_yaml(data, file_path)
+    assert rasa.shared.utils.io.read_file(file_path) == "data: amazing 🌈\n"
+
+
 def test_write_json_file(tmp_path: Path):
     expected = {"abc": "dasds", "list": [1, 2, 3, 4], "nested": {"a": "b"}}
     file_path = str(tmp_path / "abc.txt")
@@ -345,7 +392,7 @@ def test_create_directory_if_already_exists(tmp_path: Path):
 
 def test_raise_deprecation_warning():
     with pytest.warns(FutureWarning) as record:
-        raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             "This feature is deprecated.", warn_until_version="3.0.0"
         )
 
@@ -358,7 +405,7 @@ def test_raise_deprecation_warning():
 
 def test_raise_deprecation_warning_version_already_in_message():
     with pytest.warns(FutureWarning) as record:
-        raise_deprecation_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             "This feature is deprecated and will be removed in 3.0.0!",
             warn_until_version="3.0.0",
         )
@@ -372,7 +419,7 @@ def test_raise_deprecation_warning_version_already_in_message():
 
 def test_raise_deprecation_warning_default():
     with pytest.warns(FutureWarning) as record:
-        raise_deprecation_warning("This feature is deprecated.")
+        rasa.shared.utils.io.raise_deprecation_warning("This feature is deprecated.")
 
     assert len(record) == 1
     assert record[0].message.args[0] == (
@@ -386,3 +433,189 @@ def test_read_file_with_wrong_encoding(tmp_path: Path):
     file.write_text("ä", encoding="latin-1")
     with pytest.raises(FileIOException):
         rasa.shared.utils.io.read_file(file)
+
+
+@pytest.mark.parametrize("config_file", Path("data", "configs_for_docs").glob("*.yml"))
+def test_validate_config_file(config_file: Path):
+    # does not raise
+    rasa.shared.utils.io.read_model_configuration(config_file)
+
+
+def test_validate_config_file_with_extra_keys(tmp_path: Path):
+    content = textwrap.dedent(
+        """
+        language: en
+        pipeline:
+        policies:
+
+        importers:
+        - RasaFileImporter
+        """
+    )
+    config_file = tmp_path / "config.yml"
+    config_file.write_text(content)
+
+    rasa.shared.utils.io.read_model_configuration(config_file)
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        # Pre 2.x pipeline templates are invalid
+        textwrap.dedent(
+            """
+            pipeline: supervised_embeddings
+            """
+        ),
+        # Each list item needs the `name` property
+        textwrap.dedent(
+            """
+            pipeline:
+            - DIETClassier
+            policies:
+            """
+        ),
+        # Name property is missing
+        textwrap.dedent(
+            """
+            pipeline:
+            policies:
+            - some_attribute: "lala"
+            """
+        ),
+        # Name property is not a string
+        textwrap.dedent(
+            """
+            pipeline:
+            policies:
+            - name: 1234
+            """
+        ),
+        # Invalid training data version
+        textwrap.dedent(
+            """
+            version: 2.0
+            policies:
+            pipeline:
+            """
+        ),
+        # Language has wrong type
+        textwrap.dedent(
+            """
+            language: []
+            policies:
+            pipeline:
+            """
+        ),
+    ],
+)
+def test_invalid_config_files(config: Text, tmp_path: Path):
+    config_file = tmp_path / "config.yml"
+    config_file.write_text(config)
+    with pytest.raises(rasa.shared.utils.validation.YamlValidationException):
+        rasa.shared.utils.io.read_model_configuration(config_file)
+
+
+@pytest.mark.parametrize(
+    "content, expected",
+    [
+        ("rest:", {"rest": None}),
+        (
+            textwrap.dedent(
+                """
+                tracker_store:
+                    password: test
+                """
+            ),
+            {"tracker_store": {"password": "test"}},
+        ),
+    ],
+)
+def test_read_config_file(tmp_path: Path, content: Text, expected: Dict):
+    config_file = tmp_path / "file.yml"
+    config_file.write_text(content)
+
+    assert rasa.shared.utils.io.read_config_file(config_file) == expected
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "text",
+        textwrap.dedent(
+            """
+            - item1
+            - item2
+            """
+        ),
+    ],
+)
+def test_read_invalid_config_file(tmp_path: Path, content: Text):
+    config_file = tmp_path / "file.yml"
+    config_file.write_text(content)
+
+    with pytest.raises(rasa.shared.utils.validation.YamlValidationException):
+        rasa.shared.utils.io.read_model_configuration(config_file)
+
+
+@pytest.mark.parametrize(
+    "file,keys,expected_result",
+    [
+        ("data/test_yaml_stories/stories.yml", ["stories"], True),
+        ("data/test_yaml_stories/stories.yml", ["something_else"], False),
+        ("data/test_yaml_stories/stories.yml", ["stories", "something_else"], True),
+        (
+            "data/test_domains/default_retrieval_intents.yml",
+            ["intents", "responses"],
+            True,
+        ),
+        ("data/test_yaml_stories/rules_without_stories.yml", ["rules"], True),
+        ("data/test_yaml_stories/rules_without_stories.yml", ["stories"], False),
+    ],
+)
+async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
+    assert rasa.shared.utils.io.is_key_in_yaml(file, *keys) == expected_result
+
+
+async def test_is_key_in_yaml_with_unicode_files():
+    # This shouldn't raise
+    assert rasa.shared.utils.io.is_key_in_yaml(
+        "./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu"
+    )
+
+
+@pytest.mark.parametrize("length", [4, 8, 16, 32])
+def test_random_string(length):
+
+    s = rasa.shared.utils.io.random_string(length)
+    s2 = rasa.shared.utils.io.random_string(length)
+
+    assert len(s) == length
+    assert len(s2) == length
+    assert s != s2
+
+
+@pytest.mark.parametrize(
+    "container",
+    [
+        {},
+        {"hello": "world"},
+        {1: 2},
+        {"foo": ["bar"]},
+        {"a": []},
+        [],
+        ["a"],
+        [{}],
+        [None],
+    ],
+)
+def test_fingerprint_containers(container):
+    assert rasa.shared.utils.io.deep_container_fingerprint(
+        container
+    ) == rasa.shared.utils.io.deep_container_fingerprint(copy.deepcopy(container))
+
+
+def test_deep_container_fingerprint_can_use_instance_fingerprint():
+    m1 = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
+    f = Features(m1, "sentence", "text", "CountVectorsFeaturizer")
+    assert rasa.shared.utils.io.deep_container_fingerprint(f) == f.fingerprint()

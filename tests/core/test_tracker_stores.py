@@ -10,6 +10,10 @@ from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
+from pymongo.errors import OperationFailure
+
+from rasa.nlu.model import Interpreter
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
@@ -31,6 +35,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
 )
+from rasa.shared.exceptions import ConnectionException
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
@@ -41,10 +46,11 @@ from rasa.core.tracker_store import (
     FailSafeTrackerStore,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from tests.core.conftest import DEFAULT_ENDPOINTS_FILE, MockedMongoTrackerStore
+from tests.core.conftest import MockedMongoTrackerStore
 
-domain = Domain.load("data/test_domains/default.yml")
+test_domain = Domain.load("data/test_domains/default.yml")
 
 
 def get_or_create_tracker_store(store: TrackerStore) -> None:
@@ -63,20 +69,20 @@ def get_or_create_tracker_store(store: TrackerStore) -> None:
 
 
 def test_get_or_create():
-    get_or_create_tracker_store(InMemoryTrackerStore(domain))
+    get_or_create_tracker_store(InMemoryTrackerStore(test_domain))
 
 
 # noinspection PyPep8Naming
 @mock_dynamodb2
 def test_dynamo_get_or_create():
-    get_or_create_tracker_store(DynamoTrackerStore(domain))
+    get_or_create_tracker_store(DynamoTrackerStore(test_domain))
 
 
 @mock_dynamodb2
 def test_dynamo_tracker_floats():
     conversation_id = uuid.uuid4().hex
 
-    tracker_store = DynamoTrackerStore(domain)
+    tracker_store = DynamoTrackerStore(test_domain)
     tracker = tracker_store.get_or_create_tracker(
         conversation_id, append_action_listen=False
     )
@@ -93,8 +99,8 @@ def test_dynamo_tracker_floats():
     assert retrieved_timestamp == timestamp
 
 
-def test_restart_after_retrieval_from_tracker_store(default_domain: Domain):
-    store = InMemoryTrackerStore(default_domain)
+def test_restart_after_retrieval_from_tracker_store(domain: Domain):
+    store = InMemoryTrackerStore(domain)
     tr = store.get_or_create_tracker("myuser")
     synth = [ActionExecuted("action_listen") for _ in range(4)]
 
@@ -110,8 +116,8 @@ def test_restart_after_retrieval_from_tracker_store(default_domain: Domain):
     assert latest_restart == latest_restart_after_loading
 
 
-def test_tracker_store_remembers_max_history(default_domain: Domain):
-    store = InMemoryTrackerStore(default_domain)
+def test_tracker_store_remembers_max_history(domain: Domain):
+    store = InMemoryTrackerStore(domain)
     tr = store.get_or_create_tracker("myuser", max_event_history=42)
     tr.update(Restarted())
 
@@ -120,8 +126,8 @@ def test_tracker_store_remembers_max_history(default_domain: Domain):
     assert tr._max_event_history == tr2._max_event_history == 42
 
 
-def test_tracker_store_endpoint_config_loading():
-    cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+def test_tracker_store_endpoint_config_loading(endpoints_path: Text):
+    cfg = read_endpoint_config(endpoints_path, "tracker_store")
 
     assert cfg == EndpointConfig.from_dict(
         {
@@ -135,10 +141,12 @@ def test_tracker_store_endpoint_config_loading():
     )
 
 
-def test_create_tracker_store_from_endpoint_config(default_domain: Domain):
-    store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+def test_create_tracker_store_from_endpoint_config(
+    domain: Domain, endpoints_path: Text
+):
+    store = read_endpoint_config(endpoints_path, "tracker_store")
     tracker_store = RedisTrackerStore(
-        domain=default_domain,
+        domain=domain,
         host="localhost",
         port=6379,
         db=0,
@@ -146,15 +154,15 @@ def test_create_tracker_store_from_endpoint_config(default_domain: Domain):
         record_exp=3000,
     )
 
-    assert isinstance(tracker_store, type(TrackerStore.create(store, default_domain)))
+    assert isinstance(tracker_store, type(TrackerStore.create(store, domain)))
 
 
-def test_redis_tracker_store_invalid_key_prefix(default_domain: Domain):
+def test_redis_tracker_store_invalid_key_prefix(domain: Domain):
 
     test_invalid_key_prefix = "$$ &!"
 
     tracker_store = RedisTrackerStore(
-        domain=default_domain,
+        domain=domain,
         host="localhost",
         port=6379,
         db=0,
@@ -166,11 +174,11 @@ def test_redis_tracker_store_invalid_key_prefix(default_domain: Domain):
     assert tracker_store._get_key_prefix() == DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
 
 
-def test_redis_tracker_store_valid_key_prefix(default_domain: Domain):
+def test_redis_tracker_store_valid_key_prefix(domain: Domain):
     test_valid_key_prefix = "spanish"
 
     tracker_store = RedisTrackerStore(
-        domain=default_domain,
+        domain=domain,
         host="localhost",
         port=6379,
         db=0,
@@ -186,7 +194,7 @@ def test_redis_tracker_store_valid_key_prefix(default_domain: Domain):
 
 
 def test_exception_tracker_store_from_endpoint_config(
-    default_domain: Domain, monkeypatch: MonkeyPatch
+    domain: Domain, monkeypatch: MonkeyPatch, endpoints_path: Text
 ):
     """Check if tracker store properly handles exceptions.
 
@@ -194,73 +202,84 @@ def test_exception_tracker_store_from_endpoint_config(
     expected type (e.g. due to an exception) we should fallback to
     the default `InMemoryTrackerStore`."""
 
-    store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+    store = read_endpoint_config(endpoints_path, "tracker_store")
     mock = Mock(side_effect=Exception("test exception"))
     monkeypatch.setattr(rasa.core.tracker_store, "RedisTrackerStore", mock)
 
     with pytest.raises(Exception) as e:
-        TrackerStore.create(store, default_domain)
+        TrackerStore.create(store, domain)
 
     assert "test exception" in str(e.value)
 
 
-class URLExampleTrackerStore(RedisTrackerStore):
-    def __init__(self, domain, url, port, db, password, record_exp, event_broker=None):
-        super().__init__(
+def test_raise_connection_exception_redis_tracker_store_creation(
+    domain: Domain, monkeypatch: MonkeyPatch, endpoints_path: Text
+):
+    store = read_endpoint_config(endpoints_path, "tracker_store")
+    monkeypatch.setattr(
+        rasa.core.tracker_store,
+        "RedisTrackerStore",
+        Mock(side_effect=ConnectionError()),
+    )
+
+    with pytest.raises(ConnectionException):
+        TrackerStore.create(store, domain)
+
+
+def test_mongo_tracker_store_raise_exception(
+    domain: Domain, monkeypatch: MonkeyPatch,
+):
+    monkeypatch.setattr(
+        rasa.core.tracker_store,
+        "MongoTrackerStore",
+        Mock(
+            side_effect=OperationFailure("not authorized on logs to execute command.")
+        ),
+    )
+    with pytest.raises(ConnectionException) as error:
+        TrackerStore.create(
+            EndpointConfig(username="username", password="password", type="mongod"),
             domain,
-            event_broker=event_broker,
-            host=url,
-            port=port,
-            db=db,
-            password=password,
-            record_exp=record_exp,
         )
+
+    assert "not authorized on logs to execute command." in str(error.value)
 
 
 class HostExampleTrackerStore(RedisTrackerStore):
     pass
 
 
-def test_tracker_store_deprecated_url_argument_from_string(default_domain: Domain):
-    endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
-    store_config = read_endpoint_config(endpoints_path, "tracker_store")
-    store_config.type = "tests.core.test_tracker_stores.URLExampleTrackerStore"
-
-    with pytest.raises(Exception):
-        TrackerStore.create(store_config, default_domain)
-
-
-def test_tracker_store_with_host_argument_from_string(default_domain: Domain):
+def test_tracker_store_with_host_argument_from_string(domain: Domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.HostExampleTrackerStore"
 
     with pytest.warns(None) as record:
-        tracker_store = TrackerStore.create(store_config, default_domain)
+        tracker_store = TrackerStore.create(store_config, domain)
 
     assert len(record) == 0
 
     assert isinstance(tracker_store, HostExampleTrackerStore)
 
 
-def test_tracker_store_from_invalid_module(default_domain: Domain):
+def test_tracker_store_from_invalid_module(domain: Domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "a.module.which.cannot.be.found"
 
     with pytest.warns(UserWarning):
-        tracker_store = TrackerStore.create(store_config, default_domain)
+        tracker_store = TrackerStore.create(store_config, domain)
 
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
-def test_tracker_store_from_invalid_string(default_domain: Domain):
+def test_tracker_store_from_invalid_string(domain: Domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "any string"
 
     with pytest.warns(UserWarning):
-        tracker_store = TrackerStore.create(store_config, default_domain)
+        tracker_store = TrackerStore.create(store_config, domain)
 
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
@@ -273,7 +292,7 @@ def _tracker_store_and_tracker_with_slot_set() -> Tuple[
     slot_key = "cuisine"
     slot_val = "French"
 
-    store = InMemoryTrackerStore(domain)
+    store = InMemoryTrackerStore(test_domain)
     tracker = store.get_or_create_tracker(DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
@@ -286,30 +305,6 @@ def test_tracker_serialisation():
     serialised = store.serialise_tracker(tracker)
 
     assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
-
-
-def test_deprecated_pickle_deserialisation():
-    def pickle_serialise_tracker(_tracker):
-        # mocked version of TrackerStore.serialise_tracker() that uses
-        # the deprecated pickle serialisation
-        import pickle
-
-        dialogue = _tracker.as_dialogue()
-
-        return pickle.dumps(dialogue)
-
-    store, tracker = _tracker_store_and_tracker_with_slot_set()
-
-    serialised = pickle_serialise_tracker(tracker)
-
-    # deprecation warning should be emitted
-
-    with pytest.warns(FutureWarning) as record:
-        assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
-    assert len(record) == 1
-    assert (
-        "Deserialization of pickled trackers is deprecated" in record[0].message.args[0]
-    )
 
 
 @pytest.mark.parametrize(
@@ -489,13 +484,13 @@ def test_fail_safe_tracker_store_with_retrieve_error():
     on_error_callback.assert_called_once()
 
 
-def test_set_fail_safe_tracker_store_domain(default_domain: Domain):
+def test_set_fail_safe_tracker_store_domain(domain: Domain):
     tracker_store = InMemoryTrackerStore(domain)
     fallback_tracker_store = InMemoryTrackerStore(None)
     failsafe_store = FailSafeTrackerStore(tracker_store, None, fallback_tracker_store)
 
-    failsafe_store.domain = default_domain
-    assert failsafe_store.domain is default_domain
+    failsafe_store.domain = domain
+    assert failsafe_store.domain is domain
     assert tracker_store.domain is failsafe_store.domain
     assert fallback_tracker_store.domain is failsafe_store.domain
 
@@ -538,8 +533,8 @@ def _saved_tracker_with_multiple_session_starts(
     return tracker_store.retrieve(sender_id)
 
 
-def test_mongo_additional_events(default_domain: Domain):
-    tracker_store = MockedMongoTrackerStore(default_domain)
+def test_mongo_additional_events(domain: Domain):
+    tracker_store = MockedMongoTrackerStore(domain)
     events, tracker = create_tracker_with_partially_saved_events(tracker_store)
 
     # make sure only new events are returned
@@ -547,9 +542,9 @@ def test_mongo_additional_events(default_domain: Domain):
     assert list(tracker_store._additional_events(tracker)) == events
 
 
-def test_mongo_additional_events_with_session_start(default_domain: Domain):
+def test_mongo_additional_events_with_session_start(domain: Domain):
     sender = "test_mongo_additional_events_with_session_start"
-    tracker_store = MockedMongoTrackerStore(default_domain)
+    tracker_store = MockedMongoTrackerStore(domain)
     tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 
     tracker.update(UserUttered("hi2"))
@@ -563,8 +558,8 @@ def test_mongo_additional_events_with_session_start(default_domain: Domain):
 
 # we cannot parametrise over this and the previous test due to the different ways of
 # calling _additional_events()
-def test_sql_additional_events(default_domain: Domain):
-    tracker_store = SQLTrackerStore(default_domain)
+def test_sql_additional_events(domain: Domain):
+    tracker_store = SQLTrackerStore(domain)
     additional_events, tracker = create_tracker_with_partially_saved_events(
         tracker_store
     )
@@ -578,12 +573,12 @@ def test_sql_additional_events(default_domain: Domain):
         )
 
 
-def test_sql_additional_events_with_session_start(default_domain: Domain):
+def test_sql_additional_events_with_session_start(domain: Domain):
     sender = "test_sql_additional_events_with_session_start"
-    tracker_store = SQLTrackerStore(default_domain)
+    tracker_store = SQLTrackerStore(domain)
     tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 
-    tracker.update(UserUttered("hi2"), default_domain)
+    tracker.update(UserUttered("hi2"), domain)
 
     # make sure only new events are returned
     with tracker_store.session_scope() as session:
@@ -598,11 +593,9 @@ def test_sql_additional_events_with_session_start(default_domain: Domain):
     [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
 def test_tracker_store_retrieve_with_session_started_events(
-    tracker_store_type: Type[TrackerStore],
-    tracker_store_kwargs: Dict,
-    default_domain: Domain,
+    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain: Domain,
 ):
-    tracker_store = tracker_store_type(default_domain, **tracker_store_kwargs)
+    tracker_store = tracker_store_type(domain, **tracker_store_kwargs)
     events = [
         UserUttered("Hola", {"name": "greet"}, timestamp=1),
         BotUttered("Hi", timestamp=2),
@@ -629,11 +622,9 @@ def test_tracker_store_retrieve_with_session_started_events(
     [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
 def test_tracker_store_retrieve_without_session_started_events(
-    tracker_store_type: Type[TrackerStore],
-    tracker_store_kwargs: Dict,
-    default_domain: Domain,
+    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain,
 ):
-    tracker_store = tracker_store_type(default_domain, **tracker_store_kwargs)
+    tracker_store = tracker_store_type(domain, **tracker_store_kwargs)
 
     # Create tracker with a SessionStarted event
     events = [
@@ -688,35 +679,10 @@ def test_tracker_store_retrieve_with_events_from_previous_sessions(
     assert len(actual.events) == len(tracker.events)
 
 
-def test_tracker_store_deprecated_session_retrieval_kwarg():
-    tracker_store = SQLTrackerStore(
-        Domain.empty(), retrieve_events_from_previous_conversation_sessions=True
-    )
-
-    conversation_id = uuid.uuid4().hex
-    tracker = DialogueStateTracker.from_events(
-        conversation_id,
-        [
-            ActionExecuted(ACTION_SESSION_START_NAME),
-            SessionStarted(),
-            UserUttered("hi"),
-        ],
-    )
-
-    mocked_retrieve_full_tracker = Mock()
-    tracker_store.retrieve_full_tracker = mocked_retrieve_full_tracker
-
-    tracker_store.save(tracker)
-
-    _ = tracker_store.retrieve(conversation_id)
-
-    mocked_retrieve_full_tracker.assert_called_once()
-
-
 def test_session_scope_error(
-    monkeypatch: MonkeyPatch, capsys: CaptureFixture, default_domain: Domain
+    monkeypatch: MonkeyPatch, capsys: CaptureFixture, domain: Domain
 ):
-    tracker_store = SQLTrackerStore(default_domain)
+    tracker_store = SQLTrackerStore(domain)
     tracker_store.sessionmaker = Mock()
 
     requested_schema = uuid.uuid4().hex
@@ -871,8 +837,8 @@ def test_ensure_schema_exists(
         rasa.core.tracker_store.ensure_schema_exists(session)
 
 
-def test_current_state_without_events(default_domain: Domain):
-    tracker_store = MockedMongoTrackerStore(default_domain)
+def test_current_state_without_events(domain: Domain):
+    tracker_store = MockedMongoTrackerStore(domain)
 
     # insert some events
     events = [
@@ -891,3 +857,77 @@ def test_current_state_without_events(default_domain: Domain):
 
     # `events` key should not be in there
     assert state and "events" not in state
+
+
+def test_login_db_with_no_postgresql(tmp_path: Path):
+    with pytest.warns(UserWarning):
+        SQLTrackerStore(db=str(tmp_path / "rasa.db"), login_db=str(tmp_path / "other"))
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {
+            "type": "mongod",
+            "url": "mongodb://0.0.0.0:42/?serverSelectionTimeoutMS=5000",
+        },
+        {"type": "dynamo",},
+    ],
+)
+def test_tracker_store_connection_error(config: Dict, domain: Domain):
+    store = EndpointConfig.from_dict(config)
+
+    with pytest.raises(ConnectionException):
+        TrackerStore.create(store, domain)
+
+
+def prepare_token_serialisation(
+    tracker_store: TrackerStore,
+    response_selector_interpreter: Interpreter,
+    sender_id: Text,
+):
+    text = "Good morning"
+    tokenizer = WhitespaceTokenizer()
+    tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
+    indices = [[t.start, t.end] for t in tokens]
+
+    tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)
+    parse_data = response_selector_interpreter.parse(text)
+    event = UserUttered(
+        "Good morning",
+        parse_data.get("intent"),
+        parse_data.get("entities", []),
+        parse_data,
+    )
+
+    tracker.update(event)
+    tracker_store.save(tracker)
+
+    retrieved_tracker = tracker_store.retrieve(sender_id=sender_id)
+    event = retrieved_tracker.get_last_event_for(event_type=UserUttered)
+    event_tokens = event.as_dict().get("parse_data").get("text_tokens")
+
+    assert event_tokens == indices
+
+
+def test_inmemory_tracker_store_with_token_serialisation(
+    domain: Domain, response_selector_interpreter: Interpreter
+):
+    tracker_store = InMemoryTrackerStore(domain)
+    prepare_token_serialisation(
+        tracker_store, response_selector_interpreter, "inmemory"
+    )
+
+
+def test_mongo_tracker_store_with_token_serialisation(
+    domain: Domain, response_selector_interpreter: Interpreter
+):
+    tracker_store = MockedMongoTrackerStore(domain)
+    prepare_token_serialisation(tracker_store, response_selector_interpreter, "mongo")
+
+
+def test_sql_tracker_store_with_token_serialisation(
+    domain: Domain, response_selector_interpreter: Interpreter
+):
+    tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
+    prepare_token_serialisation(tracker_store, response_selector_interpreter, "sql")

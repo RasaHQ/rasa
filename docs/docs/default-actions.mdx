@@ -32,6 +32,13 @@ to use the custom definition instead of the default one:
     - action_restart
   ```
 
+:::caution
+After adding this action to your domain file, re-train your model with
+`rasa train --force`. Otherwise Rasa won't know you've changed anything
+and may skip re-training your dialogue model.
+
+:::
+
 ## action_listen
 This action is predicted to signal that the assistant should do nothing and wait
 for the next user input.
@@ -63,7 +70,7 @@ slots, but only a user's name and their phone number. To do that, you'd override
 `action_session_start` with a custom action that might look like this:
 
 ```python
-from typing import Any, Text, Dict, List, Type
+from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker
 from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
 
@@ -100,6 +107,32 @@ class ActionSessionStart(Action):
         return events
 ```
 
+If you want to access the metadata which was sent with the user message which triggered
+the session start, you can access the special slot `session_started_metadata`:
+
+```python
+from typing import Any, Text, Dict, List
+from rasa_sdk import Action, Tracker
+from rasa_sdk.events import SessionStarted, ActionExecuted
+
+
+class ActionSessionStart(Action):
+    def name(self) -> Text:
+        return "action_session_start"
+
+    async def run(
+      self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+        metadata = tracker.get_slot("session_started_metadata")
+
+        # Do something with the metadata
+        print(metadata)
+
+        # the session should begin with a `session_started` event and an `action_listen`
+        # as a user message follows
+        return [SessionStarted(), ActionExecuted("action_listen")]
+```
+
 ## action_default_fallback
 
 This action undoes the last user-bot interaction and sends the `utter_default` response if it is defined.
@@ -109,6 +142,11 @@ It is triggered by low action prediction confidence, if you have this [fallback 
 
 This action deactivates the active loop and resets the requested slot. This is used when
 [handling unhappy paths in forms](./forms.mdx#writing-stories--rules-for-unhappy-form-paths).
+
+:::note
+If you wish to reset all slots, we recommend using a custom action
+that returns the [`AllSlotsReset`](https://rasa.com/docs/rasa/reference/rasa/shared/core/events#allslotsreset-objects) event after form deactivation.
+:::
 
 ## action_revert_fallback_events
 
@@ -149,3 +187,53 @@ Overriding the default action for forms should **only** be used during the proce
 migrating from Rasa Open Source 1 to 2. In this case you can override the default
 action to instruct Rasa Open Source to use the deprecated `FormAction` which is part of
 the Rasa SDK.
+
+## action_unlikely_intent
+
+Rasa Open Source triggers `action_unlikely_intent` via [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy).
+You can control how often this action is predicted by tuning the [`tolerance`](./policies.mdx#unexpected-intent-policy)
+parameter of `UnexpecTEDIntentPolicy`.
+
+### Customization
+
+You can customize your assistant's behaviour to configure what should happen once `action_unlikely_intent`
+is triggered. For example, as a follow up you can trigger a hand-off to a human agent with a rule:
+
+```yaml
+- rule: trigger human handoff with action_unlikely_intent
+  steps:
+    - action: action_unlikely_intent
+    - action: ask_human_handoff
+    - intent: affirm
+    - action: trigger_human_handoff
+```
+
+Alternatively, you can also override it's behaviour as a [`custom action`](./custom-actions.mdx) by
+adding `action_unlikely_intent` to the list of actions in the domain and implementing the custom behaviour:
+
+```python
+class ActionUnlikelyIntent(Action):
+
+    def name(self) -> Text:
+        return "action_unlikely_intent"
+
+    async def run(
+        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+
+        # Implement custom logic here
+        return []
+```
+
+:::note
+Since `action_unlikely_intent` can be triggered at any conversation step during inference,
+all policies which are trained on only story data, for example - `TEDPolicy`, `UnexpecTEDIntentPolicy`,
+`MemoizationPolicy` ignore its presence in the tracker when making a prediction. However, `RulePolicy`
+takes its presence into account so that [conversation behaviour is customizable](./default-actions.mdx#customization-1).
+
+:::
+
+:::note
+`action_unlikely_intent` cannot be included in the training stories. It can **only** be added to rules.
+
+:::

@@ -3,16 +3,15 @@ import os
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
-TEST_DATA_FILE = "test.md"
-TRAIN_DATA_FILE = "train.md"
-NLG_DATA_FILE = "responses.md"
+TEST_DATA_FILE = "test.yml"
+TRAIN_DATA_FILE = "train.yml"
+NLG_DATA_FILE = "responses.yml"
 RESULTS_FILE = "results.json"
 NUMBER_OF_TRAINING_STORIES_FILE = "num_stories.json"
 PERCENTAGE_KEY = "__percentage__"
 
 PACKAGE_NAME = "rasa"
 NLU_MODEL_NAME_PREFIX = "nlu_"
-CHECKPOINT_MODEL_NAME = "rasa_model_checkpoint"
 
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
@@ -24,7 +23,7 @@ CONFIG_TELEMETRY_ID = "rasa_user_id"
 CONFIG_TELEMETRY_ENABLED = "enabled"
 CONFIG_TELEMETRY_DATE = "date"
 
-MINIMUM_COMPATIBLE_VERSION = "2.1.0"
+MINIMUM_COMPATIBLE_VERSION = "2.8.0"
 
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
 

@@ -1,25 +1,29 @@
 import logging
 from collections import OrderedDict
 from pathlib import Path
-from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional
+from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional, Callable
 
 import rasa.shared.data
+from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import YamlException
 from rasa.shared.utils import validation
 from ruamel.yaml import StringIO
+from ruamel.yaml.scalarstring import LiteralScalarString
 
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
+from rasa.shared.nlu.constants import METADATA_INTENT, METADATA_EXAMPLE
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
 import rasa.shared.utils.io
-
+import rasa.shared.nlu.training_data.util
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+
 
 logger = logging.getLogger(__name__)
 
@@ -277,8 +281,8 @@ class RasaYAMLReader(TrainingDataReader):
         for example in self._parse_multiline_example(regex_name, examples):
             self.regex_features.append({"name": regex_name, "pattern": example})
 
-    def _parse_lookup(self, nlu_item: Dict[Text, Any]):
-        import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser
+    def _parse_lookup(self, nlu_item: Dict[Text, Any]) -> None:
+        import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser  # noqa: E501
 
         lookup_item_name = nlu_item[KEY_LOOKUP]
         if not lookup_item_name:
@@ -330,7 +334,7 @@ class RasaYAMLReader(TrainingDataReader):
             yield example[1:].strip(STRIP_SYMBOLS)
 
     @staticmethod
-    def is_yaml_nlu_file(filename: Text) -> bool:
+    def is_yaml_nlu_file(filename: Union[Text, Path]) -> bool:
         """Checks if the specified file possibly contains NLU training data in YAML.
 
         Args:
@@ -347,9 +351,7 @@ class RasaYAMLReader(TrainingDataReader):
         if not rasa.shared.data.is_likely_yaml_file(filename):
             return False
 
-        content = rasa.shared.utils.io.read_yaml_file(filename)
-
-        return any(key in content for key in {KEY_NLU, KEY_RESPONSES})
+        return rasa.shared.utils.io.is_key_in_yaml(filename, KEY_NLU, KEY_RESPONSES)
 
 
 class RasaYAMLWriter(TrainingDataWriter):
@@ -409,7 +411,9 @@ class RasaYAMLWriter(TrainingDataWriter):
             result[KEY_NLU] = nlu_items
 
         if training_data.responses:
-            result[KEY_RESPONSES] = training_data.responses
+            result[KEY_RESPONSES] = Domain.get_responses_with_multilines(
+                training_data.responses
+            )
 
         return result
 
@@ -432,7 +436,10 @@ class RasaYAMLWriter(TrainingDataWriter):
             inverted_synonyms[synonym].append(example)
 
         return cls.process_training_examples_by_key(
-            inverted_synonyms, KEY_SYNONYM, KEY_SYNONYM_EXAMPLES
+            inverted_synonyms,
+            KEY_SYNONYM,
+            KEY_SYNONYM_EXAMPLES,
+            example_extraction_predicate=lambda x: str(x),
         )
 
     @classmethod
@@ -444,12 +451,23 @@ class RasaYAMLWriter(TrainingDataWriter):
             inverted_regexes[regex["name"]].append(regex["pattern"])
 
         return cls.process_training_examples_by_key(
-            inverted_regexes, KEY_REGEX, KEY_REGEX_EXAMPLES
+            inverted_regexes,
+            KEY_REGEX,
+            KEY_REGEX_EXAMPLES,
+            example_extraction_predicate=lambda x: str(x),
         )
 
     @classmethod
     def process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]:
-        prepared_lookup_tables = OrderedDict()
+        """Serializes the look up tables.
+
+        Args:
+            training_data: The training data object with potential look up tables.
+
+        Returns:
+            The serialized lookup tables.
+        """
+        prepared_lookup_tables: Dict[Text, List[Text]] = OrderedDict()
         for lookup_table in training_data.lookup_tables:
             # this is a lookup table filename
             if isinstance(lookup_table["elements"], str):
@@ -457,31 +475,122 @@ class RasaYAMLWriter(TrainingDataWriter):
             prepared_lookup_tables[lookup_table["name"]] = lookup_table["elements"]
 
         return cls.process_training_examples_by_key(
-            prepared_lookup_tables, KEY_LOOKUP, KEY_LOOKUP_EXAMPLES
+            prepared_lookup_tables,
+            KEY_LOOKUP,
+            KEY_LOOKUP_EXAMPLES,
+            example_extraction_predicate=lambda x: str(x),
         )
 
     @staticmethod
     def process_training_examples_by_key(
-        training_examples: Dict,
+        training_examples: Dict[Text, List[Union[Dict, Text]]],
         key_name: Text,
         key_examples: Text,
-        example_extraction_predicate=lambda x: x,
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text],
     ) -> List[OrderedDict]:
-        from ruamel.yaml.scalarstring import LiteralScalarString
+        """Prepares training examples  to be written to YAML.
 
-        result = []
-        for entity_key, examples in training_examples.items():
+        This can be any NLU training data (intent examples, lookup tables, etc.)
 
-            converted_examples = [
-                TrainingDataWriter.generate_list_item(
-                    example_extraction_predicate(example).strip(STRIP_SYMBOLS)
+        Args:
+            training_examples: Multiple training examples. Mappings in case additional
+                values were specified for an example (e.g. metadata) or just the plain
+                value.
+            key_name: The top level key which the examples belong to (e.g. `intents`)
+            key_examples: The sub key which the examples should be added to
+                (e.g. `examples`).
+            example_extraction_predicate: Function to extract example value (e.g. the
+                the text for an intent example)
+
+        Returns:
+            NLU training data examples prepared for writing to YAML.
+        """
+        intents = []
+
+        for intent_name, examples in training_examples.items():
+            converted, intent_metadata = RasaYAMLWriter._convert_training_examples(
+                examples, example_extraction_predicate
+            )
+
+            intent = OrderedDict()
+            intent[key_name] = intent_name
+            if intent_metadata:
+                intent[KEY_METADATA] = intent_metadata
+
+            examples_have_metadata = any(KEY_METADATA in ex for ex in converted)
+            example_texts_have_escape_chars = any(
+                rasa.shared.nlu.training_data.util.has_string_escape_chars(
+                    ex.get(KEY_INTENT_TEXT, "")
                 )
-                for example in examples
-            ]
+                for ex in converted
+            )
 
-            next_item = OrderedDict()
-            next_item[key_name] = entity_key
-            next_item[key_examples] = LiteralScalarString("".join(converted_examples))
-            result.append(next_item)
+            if examples_have_metadata or example_texts_have_escape_chars:
+                rendered = RasaYAMLWriter._render_training_examples_as_objects(
+                    converted
+                )
+            else:
+                rendered = RasaYAMLWriter._render_training_examples_as_text(converted)
+            intent[key_examples] = rendered
 
-        return result
+            intents.append(intent)
+
+        return intents
+
+    @staticmethod
+    def _convert_training_examples(
+        training_examples: List[Union[Dict, List[Text]]],
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text],
+    ) -> Tuple[List[Dict], Optional[Dict]]:
+        """Returns converted training examples and potential intent metadata."""
+        converted_examples = []
+        intent_metadata = None
+
+        for example in training_examples:
+            converted = {
+                KEY_INTENT_TEXT: example_extraction_predicate(example).strip(
+                    STRIP_SYMBOLS
+                )
+            }
+
+            if isinstance(example, dict) and KEY_METADATA in example:
+                metadata = example[KEY_METADATA]
+
+                if METADATA_EXAMPLE in metadata:
+                    converted[KEY_METADATA] = metadata[METADATA_EXAMPLE]
+
+                if intent_metadata is None and METADATA_INTENT in metadata:
+                    intent_metadata = metadata[METADATA_INTENT]
+
+            converted_examples.append(converted)
+
+        return converted_examples, intent_metadata
+
+    @staticmethod
+    def _render_training_examples_as_objects(examples: List[Dict]) -> List[Dict]:
+        """Renders training examples as objects.
+
+        The `text` item is rendered as a literal scalar string.
+
+        Given the input of a single example:
+            {'text': 'how much CO2 will that use?'}
+        Its return value is a dictionary that will be rendered in YAML as:
+        ```
+            text: |
+              how much CO2 will that use?
+        ```
+        """
+
+        def render(example: Dict) -> Dict:
+            text = example[KEY_INTENT_TEXT]
+            example[KEY_INTENT_TEXT] = LiteralScalarString(text + "\n")
+            return example
+
+        return [render(ex) for ex in examples]
+
+    @staticmethod
+    def _render_training_examples_as_text(examples: List[Dict]) -> LiteralScalarString:
+        def render(example: Dict) -> Text:
+            return TrainingDataWriter.generate_list_item(example[KEY_INTENT_TEXT])
+
+        return LiteralScalarString("".join([render(example) for example in examples]))

@@ -1,7 +1,5 @@
-import copy
-import os
 from pathlib import Path
-
+from typing import Dict, Text
 import pytest
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError
@@ -10,19 +8,7 @@ import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 
 
-@pytest.mark.parametrize("file, parents", [("A/test.md", "A"), ("A", "A")])
-def test_file_in_path(file, parents):
-    assert rasa.shared.utils.io.is_subdirectory(file, parents)
-
-
-@pytest.mark.parametrize(
-    "file, parents", [("A", "A/B"), ("B", "A"), ("A/test.md", "A/B"), (None, "A")]
-)
-def test_file_not_in_path(file, parents):
-    assert not rasa.shared.utils.io.is_subdirectory(file, parents)
-
-
-@pytest.mark.parametrize("actual_path", ["", "file.md", "file"])
+@pytest.mark.parametrize("actual_path", ["", "file.json", "file"])
 def test_file_path_validator_with_invalid_paths(actual_path):
     test_error_message = actual_path
 
@@ -84,43 +70,17 @@ def test_create_validator_from_callable():
     assert e.value.message == error_message
 
 
-def test_write_utf_8_yaml_file(tmp_path: Path):
-    """This test makes sure that dumping a yaml doesn't result in Uxxxx sequences
-    but rather directly dumps the unicode character."""
-
-    file_path = str(tmp_path / "test.yml")
-    data = {"data": "amazing 🌈"}
-
-    rasa.shared.utils.io.write_yaml(data, file_path)
-    assert rasa.shared.utils.io.read_file(file_path) == "data: amazing 🌈\n"
-
-
 @pytest.mark.parametrize(
-    "container",
+    "input,kwargs,expected",
     [
-        {},
-        {"hello": "world"},
-        {1: 2},
-        {"foo": ["bar"]},
-        {"a": []},
-        [],
-        ["a"],
-        [{}],
-        [None],
+        ({(1, 2): 3}, {}, {repr((1, 2)): 3}),
+        ({(1, 2): 3}, {"encode_non_string_keys": True}, {(1, 2): 3}),
     ],
 )
-def test_fingerprint_containers(container):
-    assert rasa.shared.utils.io.deep_container_fingerprint(
-        container
-    ) == rasa.shared.utils.io.deep_container_fingerprint(copy.deepcopy(container))
-
-
-def test_fingerprint_does_not_use_string_hashing(monkeypatch):
-    dictionary = {"a": ["b"], "c": {"d": "e"}}
-    f1 = rasa.shared.utils.io.deep_container_fingerprint(dictionary)
-
-    # in case we would rely on string hashes anywhere, using a different seed
-    # would lead to different fingerprints and let this test fail
-    monkeypatch.setenv("PYTHONHASHSEED", "42")
-    f2 = rasa.shared.utils.io.deep_container_fingerprint(dictionary)
-    assert f1 == f2
+def test_write_and_load_dict_via_jsonpickle(
+    tmp_path: Path, input: Dict, kwargs: Dict[Text, bool], expected: Dict
+):
+    file_name = tmp_path / "bla.pkl"
+    rasa.utils.io.json_pickle(file_name=file_name, obj=input, **kwargs)
+    loaded = rasa.utils.io.json_unpickle(file_name=file_name, **kwargs)
+    assert loaded == expected

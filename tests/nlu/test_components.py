@@ -1,14 +1,16 @@
 from pathlib import Path
-from typing import List, Optional, Text, Type
+from typing import List, Optional, Text, Type, Dict
 
 import pytest
 
-from rasa.nlu import registry, train
-from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
+from rasa.nlu import registry
+import rasa.nlu.train
+import rasa.nlu.components
+import rasa.shared.nlu.training_data.loading
+from rasa.nlu.components import Component, ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.nlu.model import Interpreter, Metadata
-from tests.nlu.conftest import DEFAULT_DATA_PATH
+from rasa.nlu.model import Interpreter, Metadata, Trainer
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -41,13 +43,6 @@ def test_all_required_components_can_be_satisfied(component_class: Type[Componen
         f"There is no required components {missing_components} "
         f"for '{component_class.name}'."
     )
-
-
-def test_find_unavailable_packages():
-    unavailable = find_unavailable_packages(
-        ["my_made_up_package_name", "io", "foo_bar", "foo_bar"]
-    )
-    assert unavailable == {"my_made_up_package_name", "foo_bar"}
 
 
 def test_builder_create_by_module_path(
@@ -89,18 +84,20 @@ def test_create_component_exception_messages(
 def test_builder_load_unknown(component_builder: ComponentBuilder):
     with pytest.raises(Exception) as excinfo:
         component_meta = {"name": "my_made_up_componment"}
-        component_builder.load_component(component_meta, "", Metadata({}, None))
+        component_builder.load_component(component_meta, "", Metadata({}))
     assert "Cannot find class" in str(excinfo.value)
 
 
-async def test_example_component(component_builder: ComponentBuilder, tmp_path: Path):
+async def test_example_component(
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_as_json_path: Text
+):
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "tests.nlu.example_component.MyComponent"}]}
     )
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
-        data=DEFAULT_DATA_PATH,
+        data=nlu_as_json_path,
         path=str(tmp_path),
         component_builder=component_builder,
     )
@@ -191,7 +188,7 @@ def test_can_handle_language_guard_clause(
 
 
 async def test_validate_requirements_raises_exception_on_component_without_name(
-    tmp_path: Path,
+    tmp_path: Path, nlu_as_json_path: Text
 ):
     _config = RasaNLUModelConfig(
         # config with a component that does not have a `name` property
@@ -199,20 +196,188 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
     )
 
     with pytest.raises(InvalidConfigException):
-        await train(
-            _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
+        await rasa.nlu.train.train(
+            _config, data=nlu_as_json_path, path=str(tmp_path),
         )
 
 
-async def test_validate_component_keys_raises_warning_on_invalid_key(tmp_path: Path,):
+async def test_validate_component_keys_raises_warning_on_invalid_key(
+    tmp_path: Path, nlu_as_json_path: Text
+):
     _config = RasaNLUModelConfig(
         # config with a component that does not have a `confidence_threshold ` property
         {"pipeline": [{"name": "WhitespaceTokenizer", "confidence_threshold": 0.7}]}
     )
 
     with pytest.warns(UserWarning) as record:
-        await train(
-            _config, data=DEFAULT_DATA_PATH, path=str(tmp_path),
+        await rasa.nlu.train.train(
+            _config, data=nlu_as_json_path, path=str(tmp_path),
         )
 
     assert "You have provided an invalid key" in record[0].message.args[0]
+
+
+@pytest.mark.parametrize(
+    "pipeline_template,should_warn",
+    [
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "CRFEntityExtractor"},
+                {"name": "DIETClassifier"},
+            ],
+            True,
+        ),
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "DIETClassifier"},
+            ],
+            False,
+        ),
+    ],
+)
+def test_warn_of_competing_extractors(
+    pipeline_template: List[Dict[Text, Text]], should_warn: bool
+):
+    config = RasaNLUModelConfig({"pipeline": pipeline_template})
+    trainer = Trainer(config)
+
+    if should_warn:
+        with pytest.warns(UserWarning):
+            rasa.nlu.components.warn_of_competing_extractors(trainer.pipeline)
+    else:
+        with pytest.warns(None) as records:
+            rasa.nlu.components.warn_of_competing_extractors(trainer.pipeline)
+
+        assert len(records) == 0
+
+
+@pytest.mark.parametrize(
+    "pipeline_template,data_path,should_warn",
+    [
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "RegexEntityExtractor"},
+                {"name": "DIETClassifier"},
+            ],
+            "data/test/overlapping_regex_entities.yml",
+            True,
+        ),
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "RegexEntityExtractor"},
+            ],
+            "data/test/overlapping_regex_entities.yml",
+            False,
+        ),
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "DIETClassifier"},
+            ],
+            "data/test/overlapping_regex_entities.yml",
+            False,
+        ),
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "RegexEntityExtractor"},
+                {"name": "DIETClassifier"},
+            ],
+            "data/examples/rasa/demo-rasa.yml",
+            False,
+        ),
+    ],
+)
+def test_warn_of_competition_with_regex_extractor(
+    pipeline_template: List[Dict[Text, Text]], data_path: Text, should_warn: bool
+):
+    training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
+
+    config = RasaNLUModelConfig({"pipeline": pipeline_template})
+    trainer = Trainer(config)
+
+    if should_warn:
+        with pytest.warns(UserWarning):
+            rasa.nlu.components.warn_of_competition_with_regex_extractor(
+                trainer.pipeline, training_data
+            )
+    else:
+        with pytest.warns(None) as records:
+            rasa.nlu.components.warn_of_competition_with_regex_extractor(
+                trainer.pipeline, training_data
+            )
+
+        assert len(records) == 0
+
+
+OVERLAP_TESTS_CONFIG = RasaNLUModelConfig(
+    {
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "RegexEntityExtractor", "use_lookup_tables": False},
+            {"name": "RegexEntityExtractor", "use_regexes": False},
+        ]
+    }
+)
+
+OVERLAP_TESTS_DATA = "data/test/overlapping_regex_entities.yml"
+
+
+async def test_do_not_warn_for_non_overlapping_entities(tmp_path: Path):
+    _, interpreter, _ = await rasa.nlu.train.train(
+        OVERLAP_TESTS_CONFIG, data=OVERLAP_TESTS_DATA, path=str(tmp_path)
+    )
+
+    msg = "I am looking for some pasta"
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_msg = interpreter.parse(msg)
+
+    assert len(parsed_msg.get("entities", [])) == 1
+    assert len(records) == 0
+
+
+async def test_warn_for_overlapping_entities(tmp_path: Path):
+    _, interpreter, _ = await rasa.nlu.train.train(
+        OVERLAP_TESTS_CONFIG, data=OVERLAP_TESTS_DATA, path=str(tmp_path)
+    )
+
+    msg = "I am looking for some pizza"
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_msg = interpreter.parse(msg)
+
+    assert len(parsed_msg.get("entities", [])) == 2
+    assert len(records) == 1
+    for word in ["pizza", "meal", "zz-words", "RegexEntityExtractor"]:
+        assert word in records[0].message.args[0]
+
+
+async def test_warn_only_once_for_overlapping_entities(tmp_path: Path):
+    _, interpreter, _ = await rasa.nlu.train.train(
+        OVERLAP_TESTS_CONFIG, data=OVERLAP_TESTS_DATA, path=str(tmp_path)
+    )
+
+    msg = "I am looking for some pizza"
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_msg = interpreter.parse(msg)
+
+    assert len(parsed_msg.get("entities", [])) == 2
+    assert len(records) == 1
+    for word in ["pizza", "meal", "zz-words", "RegexEntityExtractor"]:
+        assert word in records[0].message.args[0]
+
+    # parse again but this time without warning again
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_again_msg = interpreter.parse(msg)
+
+    assert len(parsed_again_msg.get("entities", [])) == 2
+    assert len(records) == 0

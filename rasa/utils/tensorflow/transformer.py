@@ -1,10 +1,10 @@
-from typing import List, Optional, Text, Tuple, Union
+from typing import Optional, Text, Tuple, Union
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 import numpy as np
-from rasa.utils.tensorflow.layers import DenseWithSparseWeights
+from rasa.utils.tensorflow.layers import RandomlyConnectedDense
 
 
 # from https://www.tensorflow.org/tutorials/text/transformer
@@ -17,8 +17,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         num_heads: Positive integer, number of heads
             to repeat the same attention structure.
         attention_dropout_rate: Float, dropout rate inside attention for training.
-        sparsity: Float between 0 and 1. Fraction of the `kernel`
-            weights to set to zero.
+        density: Approximate fraction of trainable weights (in
+            `RandomlyConnectedDense` layers).
         unidirectional: Boolean, use a unidirectional or bidirectional encoder.
         use_key_relative_position: Boolean, if 'True' use key
             relative embeddings in attention.
@@ -34,11 +34,11 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         units: int,
         num_heads: int,
         attention_dropout_rate: float = 0.0,
-        sparsity: float = 0.8,
+        density: float = 0.2,
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
     ) -> None:
         super().__init__()
@@ -56,28 +56,25 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.use_key_relative_position = use_key_relative_position
         self.use_value_relative_position = use_value_relative_position
         self.relative_length = max_relative_position
-        if self.relative_length is not None:
-            self.relative_length += 1  # include current time
+        self.relative_length += 1  # include current time
         self.heads_share_relative_embedding = heads_share_relative_embedding
 
         self._depth = units // self.num_heads
 
         # process queries
-        self._query_dense_layer = DenseWithSparseWeights(
-            units=units, use_bias=False, sparsity=sparsity
+        self._query_dense_layer = RandomlyConnectedDense(
+            units=units, use_bias=False, density=density
         )
         # process keys
-        self._key_dense_layer = DenseWithSparseWeights(
-            units=units, use_bias=False, sparsity=sparsity
+        self._key_dense_layer = RandomlyConnectedDense(
+            units=units, use_bias=False, density=density
         )
         # process values
-        self._value_dense_layer = DenseWithSparseWeights(
-            units=units, use_bias=False, sparsity=sparsity
+        self._value_dense_layer = RandomlyConnectedDense(
+            units=units, use_bias=False, density=density
         )
         # process attention output
-        self._output_dense_layer = DenseWithSparseWeights(
-            units=units, sparsity=sparsity
-        )
+        self._output_dense_layer = RandomlyConnectedDense(units=units, density=density)
 
         self._create_relative_embeddings()
 
@@ -394,8 +391,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         filter_units: Positive integer, output dim of the first ffn hidden layer.
         dropout_rate: Float between 0 and 1; fraction of the input units to drop.
         attention_dropout_rate: Float, dropout rate inside attention for training.
-        sparsity: Float between 0 and 1. Fraction of the `kernel`
-            weights to set to zero.
+        density: Fraction of trainable weights in `RandomlyConnectedDense` layers.
         unidirectional: Boolean, use a unidirectional or bidirectional encoder.
         use_key_relative_position: Boolean, if 'True' use key
             relative embeddings in attention.
@@ -413,11 +409,11 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         filter_units: int,
         dropout_rate: float = 0.1,
         attention_dropout_rate: float = 0.0,
-        sparsity: float = 0.8,
+        density: float = 0.2,
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
     ) -> None:
         super().__init__()
@@ -427,7 +423,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             units,
             num_heads,
             attention_dropout_rate,
-            sparsity,
+            density,
             unidirectional,
             use_key_relative_position,
             use_value_relative_position,
@@ -438,12 +434,12 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
 
         self._ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
-            DenseWithSparseWeights(
-                units=filter_units, activation=tfa.activations.gelu, sparsity=sparsity
+            RandomlyConnectedDense(
+                units=filter_units, activation=tfa.activations.gelu, density=density
             ),  # (batch_size, length, filter_units)
             tf.keras.layers.Dropout(dropout_rate),
-            DenseWithSparseWeights(
-                units=units, sparsity=sparsity
+            RandomlyConnectedDense(
+                units=units, density=density
             ),  # (batch_size, length, units)
             tf.keras.layers.Dropout(dropout_rate),
         ]
@@ -453,7 +449,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         x: tf.Tensor,
         pad_mask: Optional[tf.Tensor] = None,
         training: Optional[Union[tf.Tensor, bool]] = None,
-    ) -> tf.Tensor:
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Apply transformer encoder layer.
 
         Arguments:
@@ -469,7 +465,9 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             training = K.learning_phase()
 
         x_norm = self._layer_norm(x)  # (batch_size, length, units)
-        attn_out, _ = self._mha(x_norm, x_norm, pad_mask=pad_mask, training=training)
+        attn_out, attn_weights = self._mha(
+            x_norm, x_norm, pad_mask=pad_mask, training=training
+        )
         attn_out = self._dropout(attn_out, training=training)
         x += attn_out
 
@@ -478,7 +476,8 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             ffn_out = layer(ffn_out, training=training)
         x += ffn_out
 
-        return x  # (batch_size, length, units)
+        # (batch_size, length, units), (batch_size, num_heads, length, length)
+        return x, attn_weights
 
 
 class TransformerEncoder(tf.keras.layers.Layer):
@@ -495,8 +494,8 @@ class TransformerEncoder(tf.keras.layers.Layer):
         reg_lambda: Float, regularization factor.
         dropout_rate: Float between 0 and 1; fraction of the input units to drop.
         attention_dropout_rate: Float, dropout rate inside attention for training.
-        sparsity: Float between 0 and 1. Fraction of the `kernel`
-            weights to set to zero.
+        density: Approximate fraction of trainable weights (in
+            `RandomlyConnectedDense` layers).
         unidirectional: Boolean, use a unidirectional or bidirectional encoder.
         use_key_relative_position: Boolean, if 'True' use key
             relative embeddings in attention.
@@ -517,11 +516,11 @@ class TransformerEncoder(tf.keras.layers.Layer):
         reg_lambda: float,
         dropout_rate: float = 0.1,
         attention_dropout_rate: float = 0.0,
-        sparsity: float = 0.8,
+        density: float = 0.2,
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
         name: Optional[Text] = None,
     ) -> None:
@@ -531,8 +530,8 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self.unidirectional = unidirectional
 
         l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
-        self._embedding = DenseWithSparseWeights(
-            units=units, kernel_regularizer=l2_regularizer, sparsity=sparsity
+        self._embedding = RandomlyConnectedDense(
+            units=units, kernel_regularizer=l2_regularizer, density=density
         )
         # positional encoding helpers
         self._angles = self._get_angles()
@@ -548,7 +547,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
                 filter_units,
                 dropout_rate,
                 attention_dropout_rate,
-                sparsity,
+                density,
                 unidirectional,
                 use_key_relative_position,
                 use_value_relative_position,
@@ -560,8 +559,8 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
     def _get_angles(self) -> np.ndarray:
-        i = np.arange(self.units)[np.newaxis, :]
-        return 1 / np.power(10000, (2 * (i // 2)) / np.float32(self.units))
+        array_2d = np.arange(self.units)[np.newaxis, :]
+        return 1 / np.power(10000, (2 * (array_2d // 2)) / np.float32(self.units))
 
     def _positional_encoding(self, max_position: tf.Tensor) -> tf.Tensor:
         max_position = tf.cast(max_position, dtype=tf.float32)
@@ -591,7 +590,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         x: tf.Tensor,
         pad_mask: Optional[tf.Tensor] = None,
         training: Optional[Union[tf.Tensor, bool]] = None,
-    ) -> tf.Tensor:
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Apply transformer encoder.
 
         Arguments:
@@ -603,7 +602,6 @@ class TransformerEncoder(tf.keras.layers.Layer):
         Returns:
             Transformer encoder output with shape [batch_size, length, units]
         """
-
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, length, units)
         x *= tf.math.sqrt(tf.cast(self.units, tf.float32))
@@ -620,10 +618,22 @@ class TransformerEncoder(tf.keras.layers.Layer):
                     1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
                 )  # (batch_size, 1, length, length)
 
+        layer_attention_weights = []
+
         for layer in self._enc_layers:
-            x = layer(x, pad_mask=pad_mask, training=training)
+            x, attn_weights = layer(x, pad_mask=pad_mask, training=training)
+            layer_attention_weights.append(attn_weights)
 
         # if normalization is done in encoding layers, then it should also be done
         # on the output, since the output can grow very large, being the sum of
         # a whole stack of unnormalized layer outputs.
-        return self._layer_norm(x)  # (batch_size, length, units)
+        x = self._layer_norm(x)  # (batch_size, length, units)
+
+        # Keep the batch dimension on the first axis
+        attention_weights_as_output = tf.transpose(
+            tf.stack(layer_attention_weights), (1, 0, 2, 3, 4)
+        )
+
+        # (batch_size, length, units),
+        # (batch_size, num_layers, num_heads, length, length)
+        return x, attention_weights_as_output

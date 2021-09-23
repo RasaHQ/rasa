@@ -4,6 +4,7 @@ import pytest
 from _pytest.fixtures import SubRequest
 
 import rasa.shared.core.constants
+from rasa.shared.core.events import SlotSet
 from rasa.shared.core.slots import (
     InvalidSlotTypeException,
     Slot,
@@ -11,11 +12,12 @@ from rasa.shared.core.slots import (
     BooleanSlot,
     FloatSlot,
     ListSlot,
-    UnfeaturizedSlot,
     CategoricalSlot,
     bool_from_any,
     AnySlot,
+    InvalidSlotConfigError,
 )
+from rasa.shared.core.trackers import DialogueStateTracker
 
 
 class SlotTestCollection:
@@ -95,6 +97,34 @@ class SlotTestCollection:
         assert isinstance(slot, slot_type)
         assert recreated.persistence_info() == persistence_info
 
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_has_been_set(
+        self, influence_conversation: bool, value_feature_pair: Tuple[Any, List[float]]
+    ):
+        slot = self.create_slot(influence_conversation)
+        assert not slot.has_been_set
+        value, _ = value_feature_pair
+        slot.value = value
+        assert slot.has_been_set
+        slot.reset()
+        assert not slot.has_been_set
+
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_fingerprint_consistency(self, influence_conversation: bool):
+        slot1 = self.create_slot(influence_conversation)
+        slot2 = self.create_slot(influence_conversation)
+        f1 = slot1.fingerprint()
+        f2 = slot2.fingerprint()
+        assert f1 == f2
+
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_fingerprint_uniqueness(self, influence_conversation: bool):
+        slot = self.create_slot(influence_conversation)
+        f1 = slot.fingerprint()
+        slot.value = "changed"
+        f2 = slot.fingerprint()
+        assert f1 != f2
+
 
 class TestTextSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
@@ -163,13 +193,13 @@ class TestFloatSlot(SlotTestCollection):
 
     @pytest.fixture(
         params=[
-            (None, [0]),
-            (True, [1]),
-            (2.0, [1]),
-            (1.0, [1]),
-            (0.5, [0.5]),
-            (0, [0]),
-            (-0.5, [0.0]),
+            (None, [0, 0]),
+            (True, [1, 1]),
+            (2.0, [1, 1]),
+            (1.0, [1, 1]),
+            (0.5, [1, 0.5]),
+            (0, [1, 0]),
+            (-0.5, [1, 0.0]),
         ]
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
@@ -188,50 +218,43 @@ class TestListSlot(SlotTestCollection):
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
+    @pytest.mark.parametrize("value", ["cat", ["cat"]])
+    def test_apply_single_item_to_slot(self, value: Any):
+        slot = self.create_slot(influence_conversation=False)
+        tracker = DialogueStateTracker.from_events("sender", evts=[], slots=[slot])
 
-class TestUnfeaturizedSlot(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool) -> Slot:
-        return UnfeaturizedSlot("test", influence_conversation=False)
+        slot_event = SlotSet(slot.name, value)
+        tracker.update(slot_event)
 
-    @pytest.fixture(params=["there is nothing invalid, but we need to pass something"])
-    def invalid_value(self, request: SubRequest) -> Any:
-        return request.param
-
-    @pytest.fixture(params=[(None, []), ([23], []), (1, []), ("asd", [])])
-    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
-        return request.param
-
-    def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
-            UnfeaturizedSlot("⛔️", influence_conversation=True)
-
-    def test_deprecation_warning(self):
-        with pytest.warns(FutureWarning):
-            self.create_slot(False)
+        assert tracker.slots[slot.name].value == ["cat"]
 
 
 class TestCategoricalSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
         return CategoricalSlot(
             "test",
-            values=[1, "two", "小于", {"three": 3}, None],
+            values=[1, "two", "小于", {"three": 3}, "nOnE", "None", "null"],
             influence_conversation=influence_conversation,
         )
 
-    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴"])
+    # None is a special value reserved for unset slots.
+    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴", None])
     def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(
         params=[
-            (None, [0, 0, 0, 0, 1]),
-            (1, [1, 0, 0, 0, 0]),
-            ("two", [0, 1, 0, 0, 0]),
-            ("小于", [0, 0, 1, 0, 0]),
-            ({"three": 3}, [0, 0, 0, 1, 0]),
+            (None, [0, 0, 0, 0, 0, 0, 0]),  # slot is unset
+            (1, [1, 0, 0, 0, 0, 0, 0]),
+            ("two", [0, 1, 0, 0, 0, 0, 0]),
+            ("小于", [0, 0, 1, 0, 0, 0, 0]),
+            ({"three": 3}, [0, 0, 0, 1, 0, 0, 0]),
+            ("nOnE", [0, 0, 0, 0, 1, 0, 0]),
+            ("None", [0, 0, 0, 0, 1, 0, 0]),  # same as for 'nOnE' (case insensivity)
+            ("null", [0, 0, 0, 0, 0, 0, 1]),
             (
                 rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
-                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
             ),
         ]
     )
@@ -243,28 +266,32 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
         slot = CategoricalSlot(
             "test",
-            values=[1, "two", "小于", {"three": 3}, None],
+            values=[1, "two", "小于", {"three": 3}, "nOnE", "None", "null"],
             influence_conversation=influence_conversation,
         )
         slot.add_default_value()
         return slot
 
-    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴"])
+    # None is a special value reserved for unset slots.
+    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴", None])
     def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(
         params=[
-            (None, [0, 0, 0, 0, 1, 0]),
-            (1, [1, 0, 0, 0, 0, 0]),
-            ("two", [0, 1, 0, 0, 0, 0]),
-            ("小于", [0, 0, 1, 0, 0, 0]),
-            ({"three": 3}, [0, 0, 0, 1, 0, 0]),
+            (None, [0, 0, 0, 0, 0, 0, 0, 0]),  # slot is unset
+            (1, [1, 0, 0, 0, 0, 0, 0, 0]),
+            ("two", [0, 1, 0, 0, 0, 0, 0, 0]),
+            ("小于", [0, 0, 1, 0, 0, 0, 0, 0]),
+            ({"three": 3}, [0, 0, 0, 1, 0, 0, 0, 0]),
+            ("nOnE", [0, 0, 0, 0, 1, 0, 0, 0]),
+            ("None", [0, 0, 0, 0, 1, 0, 0, 0]),  # same as for 'nOnE' (case insensivity)
+            ("null", [0, 0, 0, 0, 0, 0, 1, 0]),
             (
                 rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
-                [0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 0, 1],
             ),
-            ("unseen value", [0, 0, 0, 0, 0, 1]),
+            ("unseen value", [0, 0, 0, 0, 0, 0, 0, 1]),
         ]
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
@@ -291,10 +318,21 @@ class TestAnySlot(SlotTestCollection):
         return request.param
 
     def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
-            UnfeaturizedSlot("⛔️", influence_conversation=True)
+        with pytest.raises(InvalidSlotConfigError):
+            AnySlot("⛔️", influence_conversation=True)
 
 
 def test_raises_on_invalid_slot_type():
     with pytest.raises(InvalidSlotTypeException):
         Slot.resolve_by_type("foobar")
+
+
+def test_categorical_slot_ignores_none_value():
+    """Checks that None can't be added as a possible value for categorical slots."""
+    with pytest.warns(UserWarning) as records:
+        slot = CategoricalSlot(name="branch", values=["Berlin", None, "San Francisco"])
+
+    assert not ("none" in slot.values)
+
+    message_text = "Rasa will ignore `null` as a possible value for the 'branch' slot."
+    assert any(message_text in record.message.args[0] for record in records)

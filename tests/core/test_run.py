@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import pytest
 from typing import Text
 
@@ -7,9 +9,10 @@ from sanic import Sanic
 from asyncio import AbstractEventLoop
 from pathlib import Path
 from rasa.core import run, interpreter, policies
+from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.utils import AvailableEndpoints
 
-CREDENTIALS_FILE = "examples/moodbot/credentials.yml"
+CREDENTIALS_FILE = "data/test_moodbot/credentials.yml"
 
 
 def test_create_http_input_channels():
@@ -64,7 +67,7 @@ async def test_load_agent_on_start_with_good_model_file(
 
 
 async def test_load_agent_on_start_with_bad_model_file(
-    tmp_path: Path, rasa_server: Sanic, loop: AbstractEventLoop
+    tmp_path: Path, rasa_non_trained_server: Sanic, loop: AbstractEventLoop
 ):
     fake_model = tmp_path / "fake_model.tar.gz"
     fake_model.touch()
@@ -72,7 +75,7 @@ async def test_load_agent_on_start_with_bad_model_file(
 
     with pytest.warns(UserWarning) as warnings:
         agent = await run.load_agent_on_start(
-            fake_model_path, AvailableEndpoints(), None, rasa_server, loop
+            fake_model_path, AvailableEndpoints(), None, rasa_non_trained_server, loop
         )
         assert any(
             "fake_model.tar.gz' could not be loaded" in str(w.message) for w in warnings
@@ -82,3 +85,14 @@ async def test_load_agent_on_start_with_bad_model_file(
     assert isinstance(agent.interpreter, rasa.shared.nlu.interpreter.RegexInterpreter)
     assert agent.policy_ensemble is None
     assert isinstance(agent.domain, rasa.shared.core.domain.Domain)
+
+
+async def test_close_resources(loop: AbstractEventLoop):
+    broker = SQLEventBroker()
+    app = Mock()
+    app.agent.tracker_store.event_broker = broker
+
+    with pytest.warns(None) as warnings:
+        await run.close_resources(app, loop)
+
+    assert len(warnings) == 0

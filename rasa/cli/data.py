@@ -1,9 +1,6 @@
 import argparse
 import logging
-import os
-import shutil
-from pathlib import Path
-from typing import Dict, List, Text, TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -11,45 +8,20 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
 import rasa.cli.utils
-from rasa.core.training.converters.responses_prefix_converter import (
-    DomainResponsePrefixConverter,
-    StoryResponsePrefixConverter,
-)
-import rasa.nlu.convert
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
-    DEFAULT_DOMAIN_PATH,
-    DOCS_URL_MIGRATION_GUIDE,
 )
 import rasa.shared.data
-from rasa.shared.core.constants import (
-    USER_INTENT_OUT_OF_SCOPE,
-    ACTION_DEFAULT_FALLBACK_NAME,
-)
-from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-    YAMLStoryReader,
-)
-from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
-    YAMLStoryWriter,
-)
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.nlu.training_data.util
 import rasa.shared.utils.cli
 import rasa.utils.common
-from rasa.utils.converter import TrainingDataConverter
-from rasa.validator import Validator
-from rasa.shared.core.domain import Domain, InvalidDomain
 import rasa.shared.utils.io
-import rasa.core.config
-from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-from rasa.core.policies.mapping_policy import MappingPolicy
 
 if TYPE_CHECKING:
-    from rasa.shared.core.training_data.structures import StoryStep
+    from rasa.validator import Validator
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +52,7 @@ def add_subparser(
 
 
 def _add_data_convert_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     convert_parser = data_subparsers.add_parser(
         "convert",
@@ -98,66 +70,11 @@ def _add_data_convert_parsers(
         help="Converts NLU data between formats.",
     )
     convert_nlu_parser.set_defaults(func=_convert_nlu_data)
-
     arguments.set_convert_arguments(convert_nlu_parser, data_type="Rasa NLU")
-
-    convert_nlg_parser = convert_subparsers.add_parser(
-        "nlg",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        parents=parents,
-        help=(
-            "Converts NLG data between formats. If you're migrating from 1.x, "
-            "please run `rasa data convert responses` to adapt the training data "
-            "to the new response selector format."
-        ),
-    )
-    convert_nlg_parser.set_defaults(func=_convert_nlg_data)
-
-    arguments.set_convert_arguments(convert_nlg_parser, data_type="Rasa NLG")
-
-    convert_core_parser = convert_subparsers.add_parser(
-        "core",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        parents=parents,
-        help="Converts Core data between formats.",
-    )
-    convert_core_parser.set_defaults(func=_convert_core_data)
-
-    arguments.set_convert_arguments(convert_core_parser, data_type="Rasa Core")
-
-    migrate_config_parser = convert_subparsers.add_parser(
-        "config",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        parents=parents,
-        help="Migrate model configuration between Rasa Open Source versions.",
-    )
-    migrate_config_parser.set_defaults(func=_migrate_model_config)
-    default_arguments.add_config_param(migrate_config_parser)
-    default_arguments.add_domain_param(migrate_config_parser)
-    default_arguments.add_out_param(
-        migrate_config_parser,
-        default=os.path.join(DEFAULT_DATA_PATH, "rules.yml"),
-        help_text="Path to the file which should contain any rules which are created "
-        "as part of the migration. If the file doesn't exist, it will be created.",
-    )
-
-    convert_responses_parser = convert_subparsers.add_parser(
-        "responses",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        parents=parents,
-        help=(
-            "Convert retrieval intent responses between Rasa Open Source versions. "
-            "Please also run `rasa data convert nlg` to convert training data files "
-            "to the right format."
-        ),
-    )
-    convert_responses_parser.set_defaults(func=_migrate_responses)
-    arguments.set_convert_arguments(convert_responses_parser, data_type="Rasa stories")
-    default_arguments.add_domain_param(convert_responses_parser)
 
 
 def _add_data_split_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     split_parser = data_subparsers.add_parser(
         "split",
@@ -181,7 +98,7 @@ def _add_data_split_parsers(
 
 
 def _add_data_validate_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     validate_parser = data_subparsers.add_parser(
         "validate",
@@ -212,6 +129,7 @@ def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Number of turns taken into account for story structure validation.",
     )
+    default_arguments.add_config_param(parser)
 
 
 def split_nlu_data(args: argparse.Namespace) -> None:
@@ -241,11 +159,17 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         args: Commandline arguments
         stories_only: If `True`, only the story structure is validated.
     """
-    file_importer = RasaFileImporter(
-        domain_path=args.domain, training_data_paths=args.data
+    from rasa.validator import Validator
+
+    config = rasa.cli.utils.get_validated_path(
+        args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
     )
 
-    validator = rasa.utils.common.run_in_loop(Validator.from_importer(file_importer))
+    file_importer = RasaFileImporter(
+        domain_path=args.domain, training_data_paths=args.data, config_file=config,
+    )
+
+    validator = Validator.from_importer(file_importer)
 
     if stories_only:
         all_good = _validate_story_structure(validator, args)
@@ -272,19 +196,25 @@ def validate_stories(args: argparse.Namespace) -> None:
     validate_files(args, stories_only=True)
 
 
-def _validate_domain(validator: Validator) -> bool:
-    return validator.verify_domain_validity()
+def _validate_domain(validator: "Validator") -> bool:
+    return (
+        validator.verify_domain_validity()
+        and validator.verify_actions_in_stories_rules()
+        and validator.verify_forms_in_stories_rules()
+        and validator.verify_form_slots()
+    )
 
 
-def _validate_nlu(validator: Validator, args: argparse.Namespace) -> bool:
+def _validate_nlu(validator: "Validator", args: argparse.Namespace) -> bool:
     return validator.verify_nlu(not args.fail_on_warnings)
 
 
-def _validate_story_structure(validator: Validator, args: argparse.Namespace) -> bool:
+def _validate_story_structure(validator: "Validator", args: argparse.Namespace) -> bool:
     # Check if a valid setting for `max_history` was given
     if isinstance(args.max_history, int) and args.max_history < 1:
         raise argparse.ArgumentTypeError(
-            f"The value of `--max-history {args.max_history}` is not a positive integer."
+            f"The value of `--max-history {args.max_history}` "
+            f"is not a positive integer."
         )
 
     return validator.verify_story_structure(
@@ -293,359 +223,15 @@ def _validate_story_structure(validator: Validator, args: argparse.Namespace) ->
 
 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
-    from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
-        NLUMarkdownToYamlConverter,
-    )
+    import rasa.nlu.convert
 
-    if args.format in ["json", "md"]:
+    if args.format == "json":
         rasa.nlu.convert.convert_training_data(
             args.data, args.out, args.format, args.language
         )
         telemetry.track_data_convert(args.format, "nlu")
-    elif args.format == "yaml":
-        rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.data, NLUMarkdownToYamlConverter())
-        )
-        telemetry.track_data_convert(args.format, "nlu")
     else:
         rasa.shared.utils.cli.print_error_and_exit(
-            "Could not recognize output format. Supported output formats: 'json', "
-            "'md', 'yaml'. Specify the desired output format with '--format'."
+            "Could not recognize output format. Supported output formats: 'json' "
+            "and 'yaml'. Specify the desired output format with '--format'."
         )
-
-
-def _convert_core_data(args: argparse.Namespace) -> None:
-    from rasa.core.training.converters.story_markdown_to_yaml_converter import (
-        StoryMarkdownToYamlConverter,
-    )
-
-    if args.format == "yaml":
-        rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.data, StoryMarkdownToYamlConverter())
-        )
-        telemetry.track_data_convert(args.format, "core")
-    else:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Could not recognize output format. Supported output formats: "
-            "'yaml'. Specify the desired output format with '--format'."
-        )
-
-
-def _convert_nlg_data(args: argparse.Namespace) -> None:
-    from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
-        NLGMarkdownToYamlConverter,
-    )
-
-    if args.format == "yaml":
-        rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.data, NLGMarkdownToYamlConverter())
-        )
-        telemetry.track_data_convert(args.format, "nlg")
-    else:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Could not recognize output format. Supported output formats: "
-            "'yaml'. Specify the desired output format with '--format'."
-        )
-
-
-def _migrate_responses(args: argparse.Namespace) -> None:
-    """Migrate retrieval intent responses to the new 2.0 format.
-    It does so modifying the stories and domain files.
-    """
-    if args.format == "yaml":
-        rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.domain, DomainResponsePrefixConverter())
-        )
-        rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.data, StoryResponsePrefixConverter())
-        )
-        telemetry.track_data_convert(args.format, "responses")
-    else:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Could not recognize output format. Supported output formats: "
-            "'yaml'. Specify the desired output format with '--format'."
-        )
-
-
-async def _convert_to_yaml(
-    out_path: Text, data_path: Text, converter: TrainingDataConverter
-) -> None:
-
-    output = Path(out_path)
-    if not os.path.exists(output):
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"The output path '{output}' doesn't exist. Please make sure to specify "
-            f"an existing directory and try again."
-        )
-
-    training_data = Path(data_path)
-    if not os.path.exists(training_data):
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"The training data path {training_data} doesn't exist "
-            f"and will be skipped."
-        )
-
-    num_of_files_converted = 0
-
-    if os.path.isfile(training_data):
-        if await _convert_file_to_yaml(training_data, output, converter):
-            num_of_files_converted += 1
-    elif os.path.isdir(training_data):
-        for root, _, files in os.walk(training_data, followlinks=True):
-            for f in sorted(files):
-                source_path = Path(os.path.join(root, f))
-                if await _convert_file_to_yaml(source_path, output, converter):
-                    num_of_files_converted += 1
-
-    if num_of_files_converted:
-        rasa.shared.utils.cli.print_info(
-            f"Converted {num_of_files_converted} file(s), saved in '{output}'."
-        )
-    else:
-        rasa.shared.utils.cli.print_warning(
-            f"Didn't convert any files under '{training_data}' path. "
-            "Did you specify the correct file/directory?"
-        )
-
-
-async def _convert_file_to_yaml(
-    source_file: Path, target_dir: Path, converter: TrainingDataConverter
-) -> bool:
-    """Converts a single training data file to `YAML` format.
-
-    Args:
-        source_file: Training data file to be converted.
-        target_dir: Target directory for the converted file.
-        converter: Converter to be used.
-
-    Returns:
-        `True` if file was converted, `False` otherwise.
-    """
-    if not rasa.shared.data.is_valid_filetype(source_file):
-        return False
-
-    if converter.filter(source_file):
-        await converter.convert_and_write(source_file, target_dir)
-        return True
-
-    rasa.shared.utils.cli.print_warning(f"Skipped file: '{source_file}'.")
-
-    return False
-
-
-def _migrate_model_config(args: argparse.Namespace) -> None:
-    """Migrates old "rule-like" policies to the new `RulePolicy`.
-
-    Updates the config, domain, and generates the required rules.
-
-    Args:
-        args: The commandline args with the required paths.
-    """
-    configuration_file = Path(args.config)
-    model_configuration = _get_configuration(configuration_file)
-
-    domain_file = Path(args.domain)
-    domain = _get_domain(domain_file)
-
-    rule_output_file = _get_rules_path(args.out)
-
-    (
-        model_configuration,
-        domain,
-        new_rules,
-    ) = rasa.core.config.migrate_mapping_policy_to_rules(model_configuration, domain)
-
-    model_configuration, fallback_rule = rasa.core.config.migrate_fallback_policies(
-        model_configuration
-    )
-
-    if new_rules:
-        _backup(domain_file)
-        domain.persist_clean(domain_file)
-
-    if fallback_rule:
-        new_rules.append(fallback_rule)
-
-    if new_rules:
-        _backup(configuration_file)
-        rasa.shared.utils.io.write_yaml(model_configuration, configuration_file)
-        _dump_rules(rule_output_file, new_rules)
-
-    telemetry.track_data_convert("yaml", "config")
-
-    _print_success_message(new_rules, rule_output_file)
-
-
-def _get_configuration(path: Path) -> Dict:
-    config = {}
-    try:
-        config = rasa.shared.utils.io.read_config_file(path)
-    except Exception:
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"'{path}' is not a path to a valid model configuration. "
-            f"Please provide a valid path."
-        )
-
-    policy_names = [p.get("name") for p in config.get("policies", [])]
-
-    _assert_config_needs_migration(policy_names)
-    _assert_nlu_pipeline_given(config, policy_names)
-    _assert_two_stage_fallback_policy_is_migratable(config)
-    _assert_only_one_fallback_policy_present(policy_names)
-
-    if FormPolicy.__name__ in policy_names:
-        _warn_about_manual_forms_migration()
-
-    return config
-
-
-def _assert_config_needs_migration(policies: List[Text]) -> None:
-    migratable_policies = {
-        MappingPolicy.__name__,
-        FallbackPolicy.__name__,
-        TwoStageFallbackPolicy.__name__,
-    }
-
-    if not migratable_policies.intersection((set(policies))):
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"No policies were found which need migration. This command can migrate "
-            f"'{MappingPolicy.__name__}', '{FallbackPolicy.__name__}' and "
-            f"'{TwoStageFallbackPolicy.__name__}'."
-        )
-
-
-def _warn_about_manual_forms_migration() -> None:
-    rasa.shared.utils.cli.print_warning(
-        f"Your model configuration contains the '{FormPolicy.__name__}'. "
-        f"Note that this command does not migrate the '{FormPolicy.__name__}' and "
-        f"you have to migrate the '{FormPolicy.__name__}' manually. "
-        f"Please see the migration guide for further details: "
-        f"{DOCS_URL_MIGRATION_GUIDE}"
-    )
-
-
-def _assert_nlu_pipeline_given(config: Dict, policy_names: List[Text]) -> None:
-    if not config.get("pipeline") and any(
-        policy in policy_names
-        for policy in [FallbackPolicy.__name__, TwoStageFallbackPolicy.__name__]
-    ):
-        rasa.shared.utils.cli.print_error_and_exit(
-            "The model configuration has to include an NLU pipeline. This is required "
-            "in order to migrate the fallback policies."
-        )
-
-
-def _assert_two_stage_fallback_policy_is_migratable(config: Dict) -> None:
-    two_stage_fallback_config = next(
-        (
-            policy_config
-            for policy_config in config.get("policies", [])
-            if policy_config.get("name") == TwoStageFallbackPolicy.__name__
-        ),
-        None,
-    )
-    if not two_stage_fallback_config:
-        return
-
-    if (
-        two_stage_fallback_config.get(
-            "deny_suggestion_intent_name", USER_INTENT_OUT_OF_SCOPE
-        )
-        != USER_INTENT_OUT_OF_SCOPE
-    ):
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"The TwoStageFallback in Rasa Open Source 2.0 has to use the intent "
-            f"'{USER_INTENT_OUT_OF_SCOPE}' to recognize when users deny suggestions. "
-            f"Please change the parameter 'deny_suggestion_intent_name' to "
-            f"'{USER_INTENT_OUT_OF_SCOPE}' before migrating the model configuration. "
-        )
-
-    if (
-        two_stage_fallback_config.get(
-            "fallback_nlu_action_name", ACTION_DEFAULT_FALLBACK_NAME
-        )
-        != ACTION_DEFAULT_FALLBACK_NAME
-    ):
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"The Two-Stage Fallback in Rasa Open Source 2.0 has to use the action "
-            f"'{ACTION_DEFAULT_FALLBACK_NAME}' for cases when the user denies the "
-            f"suggestion multiple times. "
-            f"Please change the parameter 'fallback_nlu_action_name' to "
-            f"'{ACTION_DEFAULT_FALLBACK_NAME}' before migrating the model "
-            f"configuration. "
-        )
-
-
-def _assert_only_one_fallback_policy_present(policies: List[Text]) -> None:
-    if (
-        FallbackPolicy.__name__ in policies
-        and TwoStageFallbackPolicy.__name__ in policies
-    ):
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Your policy configuration contains two configured policies for handling "
-            "fallbacks. Please decide on one."
-        )
-
-
-def _get_domain(path: Path) -> Domain:
-    try:
-        return Domain.from_path(path)
-    except InvalidDomain:
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"'{path}' is not a path to a valid domain file. "
-            f"Please provide a valid domain."
-        )
-
-
-def _get_rules_path(path: Text) -> Path:
-    rules_file = Path(path)
-
-    if rules_file.is_dir():
-        rasa.shared.utils.cli.print_error_and_exit(
-            f"'{rules_file}' needs to be the path to a file."
-        )
-
-    if not rules_file.is_file():
-        rasa.shared.utils.cli.print_info(
-            f"Output file '{rules_file}' did not exist and will be created."
-        )
-        rasa.shared.utils.io.create_directory_for_file(rules_file)
-
-    return rules_file
-
-
-def _dump_rules(path: Path, new_rules: List["StoryStep"]) -> None:
-    existing_rules = []
-    if path.exists():
-        rules_reader = YAMLStoryReader()
-        existing_rules = rules_reader.read_from_file(path)
-        _backup(path)
-
-    if existing_rules:
-        rasa.shared.utils.cli.print_info(
-            f"Found existing rules in the output file '{path}'. The new rules will "
-            f"be appended to the existing rules."
-        )
-
-    rules_writer = YAMLStoryWriter()
-    rules_writer.dump(path, existing_rules + new_rules)
-
-
-def _backup(path: Path) -> None:
-    backup_file = path.parent / f"{path.name}.bak"
-    shutil.copy(path, backup_file)
-
-
-def _print_success_message(new_rules: List["StoryStep"], output_file: Path) -> None:
-    if len(new_rules) > 1:
-        suffix = "rule"
-        verb = "was"
-    else:
-        suffix = "rules"
-        verb = "were"
-
-    rasa.shared.utils.cli.print_success(
-        f"Finished migrating your policy configuration 🎉.\n"
-        f"The migration generated {len(new_rules)} {suffix} which {verb} added to "
-        f"'{output_file}'."
-    )

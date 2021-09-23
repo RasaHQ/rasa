@@ -231,7 +231,9 @@ using the following sequence:
       is asked to confirm the intent.
 4. The user confirms or denies the rephrased intent
     - If they confirm, the conversation continues as if the user had this intent from the beginning.
-    - If they deny, an ultimate fallback action is triggered (e.g. a handoff to a human).
+    - If they deny, an ultimate fallback action is triggered (e.g. a handoff to a human). The default ultimate 
+    fallback action is to call  `action_default_fallback`. This action causes the bot to utter the `utter_default` 
+    response and to reset the state of the conversation as if the turns that happened during the Two-Stage Fallback did not occur.
 
 The Two-Stage-Fallback can be enabled using the following steps:
 
@@ -282,6 +284,57 @@ rules:
   - action: action_two_stage_fallback
   - active_loop: action_two_stage_fallback
 ```
+
+### 4. Defining an ultimate fallback action
+
+To define the bot's response when the user denies the rephrased intent, define the response `utter_default`:
+
+```yaml-rasa title="domain.yml"
+responses:
+  utter_default:
+  - text: I'm sorry, I can't help you.
+```
+
+Or, you can customize `action_default_fallback` for more complex behavior by writing a [Custom Action](./actions.mdx#custom-actions). 
+For example, if you want the bot to call a human and stop interacting with the user:
+
+```python title="actions.py"
+from typing import Any, Dict, List, Text
+
+from rasa_sdk import Action, Tracker
+from rasa_sdk.events import UserUtteranceReverted
+from rasa_sdk.executor import CollectingDispatcher
+
+class ActionDefaultFallback(Action):
+    def name(self) -> Text:
+        return "action_default_fallback"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+
+        # tell the user they are being passed to a customer service agent
+        dispatcher.utter_message(text="I am passing you to a human...")
+        
+        # assume there's a function to call customer service
+        # pass the tracker so that the agent has a record of the conversation between the user
+        # and the bot for context
+        call_customer_service(tracker)
+     
+        # pause the tracker so that the bot stops responding to user input
+        return [ConversationPaused(), UserUtteranceReverted()]
+```
+
+:::caution Events Returned By A Custom Ultimate Fallback Action
+  You should include `UserUtteranceReverted()` as one of the events returned by your custom
+  `action_default_fallback`. Not including this event will cause the tracker to include all events that happened
+  during the Two-Stage Fallback process which could interfere with subsequent action predictions from the bot's policy
+  pipeline. It is better to treat events that occurred during the Two-Stage Fallback process as if they did not happen
+  so that your bot can apply its rules or memorized stories to correctly predict the next action.
+:::
 
 
 ## Human Handoff

@@ -47,7 +47,7 @@ mapping:
           type: "str"
         examples: *examples_anchor
   responses:
-    # see rasa/utils/schemas.yml
+    # see rasa/shared/nlu/training_data/schemas/responses.yml
     include: responses
   regex;(.*):
     type: "any"

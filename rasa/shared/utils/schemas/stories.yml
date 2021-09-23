@@ -1,0 +1,149 @@
+allowempty: True
+mapping:
+  version:
+    type: "str"
+    required: False
+    allowempty: False
+  stories:
+    type: "seq"
+    matching: "any"
+    sequence:
+    - type: "map"
+      mapping:
+        story:
+          type: "str"
+          allowempty: False
+        metadata:
+          type: "any"
+          required: False
+        steps:
+          type: "seq"
+          matching: "any"
+          sequence:
+          - type: "map"
+            mapping: &intent_and_entities
+              intent:
+                type: "str"
+                allowempty: False
+              user:
+                type: "str"
+                allowempty: False
+              entities:
+                type: "seq"
+                matching: "any"
+                sequence:
+                - type: "map"
+                  mapping:
+                    regex;(.*):
+                      type: "any"
+                    role:
+                      type: "str"
+                    group:
+                      type: "str"
+                - type: "str"
+          - type: "map"
+            mapping: &active_loop
+              active_loop:
+                type: "str"
+                allowempty: False
+          - type: "map"
+            mapping: &action
+              action:
+                type: "str"
+                allowempty: False
+          - type: "map"
+            mapping:
+              bot:
+                type: "str"
+                allowempty: False
+          - type: "map"
+            mapping: &slot_was_set_seq
+              slot_was_set: &slot_was_set_seq_value
+                type: "seq"
+                matching: "any"
+                sequence:
+                - type: "map"
+                  mapping:
+                    regex;(.*):
+                      type: "text"
+                - type: "map"
+                  mapping:
+                    regex;(.*):
+                      type: "bool"
+                - type: "map"
+                  mapping:
+                    regex;(.*):
+                      type: "seq"
+                      matching: "any"
+                      sequence:
+                      - type: "map"
+                        mapping:
+                          regex;(.*):
+                            type: "text"
+                      - type: "map"
+                        mapping:
+                          regex;(.*):
+                            type: "bool"
+                      - type: "text"
+                - type: "str"
+                - type: "map"
+                  allowempty: True
+          - type: "map"
+            matching-rule: 'any'
+            mapping:
+              checkpoint:
+                type: "str"
+                allowempty: False
+              slot_was_set: *slot_was_set_seq_value
+          - type: "map"
+            mapping: &or_statement
+              or:
+                type: "seq"
+                matching: "any"
+                sequence:
+                - type: "map"
+                  mapping: *intent_and_entities
+                - type: "map"
+                  mapping: *slot_was_set_seq
+  rules:
+    type: "seq"
+    matching: "any"
+    sequence:
+    - type: "map"
+      mapping:
+        rule:
+          type: "str"
+          allowempty: False
+        metadata:
+          type: "any"
+          required: False
+        steps:
+          type: "seq"
+          matching: "any"
+          sequence:
+          - type: "map"
+            mapping: *intent_and_entities
+          - type: "map"
+            mapping: *action
+          - type: "map"
+            mapping: *active_loop
+          - type: "map"
+            mapping: *slot_was_set_seq
+          - type: "map"
+            mapping: *or_statement
+        condition:
+          type: "seq"
+          matching: "any"
+          sequence:
+          - type: "map"
+            mapping: *active_loop
+          - type: "map"
+            mapping: *slot_was_set_seq
+        conversation_start:
+          type: "bool"
+          allowempty: False
+        wait_for_user_input:
+          type: "bool"
+          allowempty: False
+  regex;(.*):
+    type: "any"

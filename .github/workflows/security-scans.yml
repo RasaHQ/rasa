@@ -4,17 +4,25 @@ on:
   pull_request:
     types: [opened, synchronize, labeled]
 
-jobs:
-  cleanup_runs:
-    name: Cancel old branch builds
-    runs-on: ubuntu-latest
-    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
+concurrency:
+  group: security-scans-${{ github.head_ref }}  # head branch name
+  cancel-in-progress: true
 
+jobs:
+  changes:
+    name: Check for file changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      docker: ${{ steps.filter.outputs.docker }}
+      docs: ${{ steps.filter.outputs.docs }}
     steps:
-      - name: Find and cancel old builds of this branch
-        uses: styfle/cancel-workflow-action@0.6.0
+      - uses: actions/checkout@v2
+      - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
+        id: filter
         with:
-          access_token: "${{ secrets.GITHUB_TOKEN }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: .github/change_filters.yml
 
   gitleaks:
     name: Detecting hardcoded secrets
@@ -26,4 +34,54 @@ jobs:
         fetch-depth: '0'
 
     - name: Gitleaks - detecting hardcoded secrets
-      uses: zricethezav/gitleaks-action@v1.1.4
+      uses: zricethezav/gitleaks-action@v1.6.0
+      with:
+        config-path: .gitleaks.toml
+
+  bandit:
+    name: Detect python security issues
+    runs-on: ubuntu-latest
+    needs: [changes]
+
+    steps:
+    - name: Checkout git repository 🕝
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.7 🐍
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      with:
+        python-version: 3.7
+
+    - name: Read Poetry Version 🔢
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Install poetry 🦄
+      if: needs.changes.outputs.backend == 'true'
+      uses: Gr1N/setup-poetry@v7
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Set up virtual environment
+      if: needs.changes.outputs.backend == 'true'
+      run: poetry config virtualenvs.in-project true
+
+    - name: Load Poetry Cached Libraries ⬇
+      if: needs.changes.outputs.backend == 'true'
+      uses: actions/cache@v1
+      with:
+        path: .venv
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-3.7
+
+    - name: Install Dependencies (Linux) 📦
+      if: needs.changes.outputs.backend == 'true'
+      run: make install
+
+    - name: Run Bandit 🔪
+      if: needs.changes.outputs.backend == 'true'
+      run: make lint-security

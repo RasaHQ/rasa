@@ -161,7 +161,6 @@ nlu:
     - can I pay with credit card
     - book flight
     - Deliver a pizza
-    - How long will it take a letter to get from [new milford]{"entity": "city", "role": "from"} pa to [huntingdon]{"entity": "city", "role": "to"} pa
     - how to implement faq
     - What would you suggest where to go for a romance places
     - Can you fyling him here please i love him so much

@@ -22,7 +22,6 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     TEXT,
     ACTION_NAME,
-    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -61,6 +60,36 @@ class TrainingData:
 
         self._fill_response_phrases()
 
+    @staticmethod
+    def _load_lookup_table(lookup_table: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Loads the actual lookup table from file if there is a file specified.
+
+        Checks if the specified lookup table contains a filename in
+        `elements` and replaces it with actual elements from the file.
+        Returns the unchanged lookup table otherwise.
+        It works with JSON training data.
+
+        Params:
+            lookup_table: A lookup table.
+
+        Returns:
+            Updated lookup table where filenames are replaced with the contents of
+            these files.
+        """
+        elements = lookup_table["elements"]
+        potential_file = elements if isinstance(elements, str) else elements[0]
+
+        if Path(potential_file).is_file():
+            try:
+                lookup_table["elements"] = rasa.shared.utils.io.read_file(
+                    potential_file
+                )
+                return lookup_table
+            except (FileNotFoundError, UnicodeDecodeError):
+                return lookup_table
+
+        return lookup_table
+
     def fingerprint(self) -> Text:
         """Fingerprint the training data.
 
@@ -73,11 +102,27 @@ class TrainingData:
             ),
             "entity_synonyms": self.entity_synonyms,
             "regex_features": self.regex_features,
-            "lookup_tables": self.lookup_tables,
+            "lookup_tables": [
+                self._load_lookup_table(table) for table in self.lookup_tables
+            ],
             "responses": self.responses,
         }
-
         return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
+
+    def label_fingerprint(self) -> Text:
+        """Fingerprints the labels in the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data labels.
+        """
+        labels = {
+            "intents": sorted(self.intents),
+            "entities": sorted(self.entities),
+            "entity_groups": sorted(self.entity_groups),
+            "entity_roles": sorted(self.entity_roles),
+            "actions": sorted(self.action_names),
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(labels)
 
     def merge(self, *others: Optional["TrainingData"]) -> "TrainingData":
         """Return merged instance of this data with other training data.
@@ -162,18 +207,30 @@ class TrainingData:
 
     @lazy_property
     def nlu_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if not ex.is_core_message()]
+        """Return examples which have come from NLU training data.
+
+        E.g. If the example came from a story or domain it is not included.
+
+        Returns:
+            List of NLU training examples.
+        """
+        return [
+            ex for ex in self.training_examples if not ex.is_core_or_domain_message()
+        ]
 
     @lazy_property
     def intent_examples(self) -> List[Message]:
+        """Returns the list of examples that have intent."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT)]
 
     @lazy_property
     def response_examples(self) -> List[Message]:
+        """Returns the list of examples that have response."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT_RESPONSE_KEY)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
+        """Returns the list of examples that have entities."""
         return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
 
     @lazy_property
@@ -182,8 +239,13 @@ class TrainingData:
         return {ex.get(INTENT) for ex in self.training_examples} - {None}
 
     @lazy_property
+    def action_names(self) -> Set[Text]:
+        """Returns the set of action names in the training data."""
+        return {ex.get(ACTION_NAME) for ex in self.training_examples} - {None}
+
+    @lazy_property
     def retrieval_intents(self) -> Set[Text]:
-        """Returns the total number of response types in the training data"""
+        """Returns the total number of response types in the training data."""
         return {
             ex.get(INTENT)
             for ex in self.training_examples
@@ -193,7 +255,7 @@ class TrainingData:
     @lazy_property
     def number_of_examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
-        intents = [ex.get(INTENT) for ex in self.training_examples]
+        intents = [ex.get(INTENT) for ex in self.nlu_examples]
         return dict(Counter(intents))
 
     @lazy_property
@@ -209,30 +271,30 @@ class TrainingData:
     @lazy_property
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
-        entity_types = [e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()]
-        return set(entity_types)
+        return {e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()}
 
     @lazy_property
     def entity_roles(self) -> Set[Text]:
         """Returns the set of entity roles in the training data."""
-        entity_types = [
+        entity_types = {
             e.get(ENTITY_ATTRIBUTE_ROLE)
             for e in self.sorted_entities()
             if ENTITY_ATTRIBUTE_ROLE in e
-        ]
-        return set(entity_types) - {NO_ENTITY_TAG}
+        }
+        return entity_types - {NO_ENTITY_TAG}
 
     @lazy_property
     def entity_groups(self) -> Set[Text]:
         """Returns the set of entity groups in the training data."""
-        entity_types = [
+        entity_types = {
             e.get(ENTITY_ATTRIBUTE_GROUP)
             for e in self.sorted_entities()
             if ENTITY_ATTRIBUTE_GROUP in e
-        ]
-        return set(entity_types) - {NO_ENTITY_TAG}
+        }
+        return entity_types - {NO_ENTITY_TAG}
 
     def entity_roles_groups_used(self) -> bool:
+        """Checks if any entity roles or groups are used in the training data."""
         entity_groups_used = (
             self.entity_groups is not None and len(self.entity_groups) > 0
         )
@@ -266,10 +328,10 @@ class TrainingData:
         )
 
     def _fill_response_phrases(self) -> None:
-        """Set response phrase for all examples by looking up NLG stories"""
+        """Set response phrase for all examples by looking up NLG stories."""
         for example in self.training_examples:
-            # if intent_response_key is None, that means the corresponding intent is not a
-            # retrieval intent and hence no response text needs to be fetched.
+            # if intent_response_key is None, that means the corresponding intent is
+            # not a retrieval intent and hence no response text needs to be fetched.
             # If intent_response_key is set, fetch the corresponding response text
             if example.get(INTENT_RESPONSE_KEY) is None:
                 continue
@@ -296,14 +358,6 @@ class TrainingData:
 
         return RasaWriter().dumps(self, **kwargs)
 
-    def nlg_as_markdown(self) -> Text:
-        """Generates the markdown representation of the response phrases (NLG) of
-        TrainingData."""
-
-        from rasa.shared.nlu.training_data.formats import NLGMarkdownWriter
-
-        return NLGMarkdownWriter().dumps(self)
-
     def nlg_as_yaml(self) -> Text:
         """Generates yaml representation of the response phrases (NLG) of TrainingData.
 
@@ -317,13 +371,12 @@ class TrainingData:
         # can't do that until after we remove markdown support.
         return RasaYAMLWriter().dumps(TrainingData(responses=self.responses))
 
-    def nlu_as_markdown(self) -> Text:
-        """Generates the markdown representation of the NLU part of TrainingData."""
-        from rasa.shared.nlu.training_data.formats import MarkdownWriter
-
-        return MarkdownWriter().dumps(self)
-
     def nlu_as_yaml(self) -> Text:
+        """Generates YAML representation of NLU of TrainingData.
+
+        Returns:
+            data in YAML format as a string
+        """
         from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
         # avoid dumping NLG data (responses). this is a workaround until we
@@ -335,42 +388,39 @@ class TrainingData:
         return RasaYAMLWriter().dumps(no_responses_training_data)
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
+        """Saves NLU to a file."""
         if rasa.shared.data.is_likely_json_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_json(indent=2), filename)
-        elif rasa.shared.data.is_likely_markdown_file(filename):
-            rasa.shared.utils.io.write_text_file(self.nlu_as_markdown(), filename)
         elif rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_yaml(), filename)
         else:
             raise ValueError(
-                "Unsupported file format detected. Supported file formats are 'json', 'yml' "
+                "Unsupported file format detected. "
+                "Supported file formats are 'json', 'yml' "
                 "and 'md'."
             )
 
     def persist_nlg(self, filename: Text) -> None:
+        """Saves NLG to a file."""
         if rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
-        elif rasa.shared.data.is_likely_markdown_file(filename):
-            nlg_serialized_data = self.nlg_as_markdown()
-            if nlg_serialized_data:
-                rasa.shared.utils.io.write_text_file(nlg_serialized_data, filename)
         else:
             raise ValueError(
-                "Unsupported file format detected. Supported file formats are 'md' "
-                "and 'yml'."
+                "Unsupported file format detected. 'yml' is the only "
+                "supported file format."
             )
 
     @staticmethod
     def get_nlg_persist_filename(nlu_filename: Text) -> Text:
-
+        """Returns the full filename to persist NLG data."""
         extension = Path(nlu_filename).suffix
         if rasa.shared.data.is_likely_json_file(nlu_filename):
             # backwards compatibility: previously NLG was always dumped as md. now
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use
-            # md as we do not have a NLG json format
-            extension = rasa.shared.data.markdown_file_extension()
-        # Add nlg_ as prefix and change extension to .md
+            # YAML as we do not have a NLG json format
+            extension = rasa.shared.data.yaml_file_extension()
+        # Add nlg_ as prefix and change extension to the correct one
         filename = (
             Path(nlu_filename)
             .with_name("nlg_" + Path(nlu_filename).name)
@@ -401,19 +451,11 @@ class TrainingData:
         ]
         return sorted(entity_examples, key=lambda e: e["entity"])
 
-    def sorted_intent_examples(self) -> List[Message]:
-        """Sorts the intent examples by the name of the intent and then response"""
-
-        return sorted(
-            self.intent_examples,
-            key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
-        )
-
     def validate(self) -> None:
         """Ensures that the loaded training data is valid.
 
-        Checks that the data has a minimum of certain training examples."""
-
+        Checks that the data has a minimum of certain training examples.
+        """
         logger.debug("Validating training data...")
         if "" in self.intents:
             rasa.shared.utils.io.raise_warning(
@@ -659,7 +701,6 @@ class TrainingData:
 
     def is_empty(self) -> bool:
         """Checks if any training data was loaded."""
-
         lists_to_check = [
             self.training_examples,
             self.entity_synonyms,
@@ -668,9 +709,8 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    def can_train_nlu_model(self) -> bool:
+    def contains_no_pure_nlu_data(self) -> bool:
         """Checks if any NLU training data was loaded."""
-
         lists_to_check = [
             self.nlu_examples,
             self.entity_synonyms,
@@ -679,6 +719,20 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
+    def has_e2e_examples(self) -> bool:
+        """Checks if there are any training examples from e2e stories."""
+        return any(message.is_e2e_message() for message in self.training_examples)
+
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
+    """Converts list to a string.
+
+    Args:
+        lst: The list to convert.
+        delim: The delimiter that is used to separate list inputs.
+        quote: The quote that is used to wrap list inputs.
+
+    Returns:
+        The string.
+    """
     return delim.join([quote + e + quote for e in lst])

@@ -1,10 +1,8 @@
 import logging
+import operator
 from collections import defaultdict, Counter
-from typing import List, Tuple, Text, Optional, Dict, Any
+from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING
 
-from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     BILOU_ENTITIES,
@@ -21,6 +19,11 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
 )
+
+if TYPE_CHECKING:
+    from rasa.nlu.tokenizers.tokenizer import Token
+    from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +61,7 @@ def tag_without_prefix(tag: Text) -> Text:
 
 
 def bilou_tags_to_ids(
-    message: Message,
+    message: "Message",
     tag_id_dict: Dict[Text, int],
     tag_name: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> List[int]:
@@ -102,20 +105,8 @@ def get_bilou_key_for_tag(tag_name: Text) -> Text:
     return BILOU_ENTITIES
 
 
-def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
-    """Removes the BILOU prefixes from the given list of tags.
-
-    Args:
-        tags: the list of tags
-
-    Returns:
-        list of tags without BILOU prefix
-    """
-    return [tag_without_prefix(t) for t in tags]
-
-
 def build_tag_id_dict(
-    training_data: TrainingData, tag_name: Text = ENTITY_ATTRIBUTE_TYPE
+    training_data: "TrainingData", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> Optional[Dict[Text, int]]:
     """Create a mapping of unique tags to ids.
 
@@ -151,32 +142,41 @@ def build_tag_id_dict(
     return tag_id_dict
 
 
-def apply_bilou_schema(training_data: TrainingData) -> None:
+def apply_bilou_schema(training_data: "TrainingData") -> None:
     """Get a list of BILOU entity tags and set them on the given messages.
 
     Args:
         training_data: the training data
     """
     for message in training_data.nlu_examples:
-        entities = message.get(ENTITIES)
+        apply_bilou_schema_to_message(message)
 
-        if not entities:
-            continue
 
-        tokens = message.get(TOKENS_NAMES[TEXT])
+def apply_bilou_schema_to_message(message: "Message") -> None:
+    """Get a list of BILOU entity tags and set them on the given message.
 
-        for attribute, message_key in [
-            (ENTITY_ATTRIBUTE_TYPE, BILOU_ENTITIES),
-            (ENTITY_ATTRIBUTE_ROLE, BILOU_ENTITIES_ROLE),
-            (ENTITY_ATTRIBUTE_GROUP, BILOU_ENTITIES_GROUP),
-        ]:
-            entities = map_message_entities(message, attribute)
-            output = bilou_tags_from_offsets(tokens, entities)
-            message.set(message_key, output)
+    Args:
+        message: the message
+    """
+    entities = message.get(ENTITIES)
+
+    if not entities:
+        return
+
+    tokens = message.get(TOKENS_NAMES[TEXT])
+
+    for attribute, message_key in [
+        (ENTITY_ATTRIBUTE_TYPE, BILOU_ENTITIES),
+        (ENTITY_ATTRIBUTE_ROLE, BILOU_ENTITIES_ROLE),
+        (ENTITY_ATTRIBUTE_GROUP, BILOU_ENTITIES_GROUP),
+    ]:
+        entities = map_message_entities(message, attribute)
+        output = bilou_tags_from_offsets(tokens, entities)
+        message.set(message_key, output)
 
 
 def map_message_entities(
-    message: Message, attribute_key: Text = ENTITY_ATTRIBUTE_TYPE
+    message: "Message", attribute_key: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> List[Tuple[int, int, Text]]:
     """Maps the entities of the given message to their start, end, and tag values.
 
@@ -203,7 +203,7 @@ def map_message_entities(
 
 
 def bilou_tags_from_offsets(
-    tokens: List[Token], entities: List[Tuple[int, int, Text]]
+    tokens: List["Token"], entities: List[Tuple[int, int, Text]]
 ) -> List[Text]:
     """Creates BILOU tags for the given tokens and entities.
 
@@ -233,7 +233,7 @@ def _add_bilou_tags_to_entities(
     entities: List[Tuple[int, int, Text]],
     end_pos_to_token_idx: Dict[int, int],
     start_pos_to_token_idx: Dict[int, int],
-):
+) -> None:
     for start_pos, end_pos, label in entities:
         start_token_idx = start_pos_to_token_idx.get(start_pos)
         end_token_idx = end_pos_to_token_idx.get(end_pos)
@@ -353,8 +353,7 @@ def _tag_to_use(
         )
 
     # Take the tag with the highest score as the tag for the entity
-    tag = max(score_per_tag, key=score_per_tag.get)
-    score = score_per_tag[tag]
+    tag, score = max(score_per_tag.items(), key=operator.itemgetter(1))
 
     return tag, score
 
@@ -366,7 +365,7 @@ def _update_confidences(
     score: float,
     idx: int,
     last_idx: int,
-):
+) -> List[float]:
     """Update the confidence values.
 
     Set the confidence value of a tag to score value if the predicated

@@ -1,13 +1,21 @@
 import pytest
+from typing import Dict, Optional
 
 import rasa.shared.utils.io
-from rasa.nlu.components import UnsupportedLanguageError
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_TEXT, ACTION_NAME
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+
+
+def create_whitespace_tokenizer(
+    config: Optional[Dict] = None,
+) -> WhitespaceTokenizerGraphComponent:
+    config = config if config else {}
+    return WhitespaceTokenizerGraphComponent(
+        {**WhitespaceTokenizerGraphComponent.get_default_config(), **config},
+    )
 
 
 @pytest.mark.parametrize(
@@ -55,7 +63,8 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             ],
         ),
         (
-            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/rasa/components#whitespacetokenizer",
+            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 "  # noqa: E501, W505
+            "https://rasa.com/docs/rasa/components#whitespacetokenizer",
             [
                 "https://www.google.com/search?"
                 "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
@@ -75,7 +84,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 )
 def test_whitespace(text, expected_tokens, expected_indices):
 
-    tk = WhitespaceTokenizer()
+    tk = create_whitespace_tokenizer()
 
     tokens = tk.tokenize(Message.build(text=text), attribute=TEXT)
 
@@ -94,17 +103,17 @@ def test_whitespace(text, expected_tokens, expected_indices):
 def test_custom_intent_symbol(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
-    tk = WhitespaceTokenizer(component_config)
+    tk = create_whitespace_tokenizer(component_config)
 
     message = Message.build(text=text)
     message.set(INTENT, text)
 
-    tk.train(TrainingData([message]))
+    tk.process_training_data(TrainingData([message]))
 
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
 
 
-def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
+def test_whitespace_training():
     examples = [
         Message(
             data={
@@ -135,9 +144,9 @@ def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
     ]
 
     component_config = {"case_sensitive": False, "intent_tokenization_flag": True}
-    tk = WhitespaceTokenizer(component_config)
+    tk = create_whitespace_tokenizer(component_config)
 
-    tk.train(TrainingData(training_examples=examples), supervised_embeddings_config)
+    tk.process_training_data(TrainingData(training_examples=examples))
 
     assert examples[0].data.get(TOKENS_NAMES[TEXT])[0].text == "Any"
     assert examples[0].data.get(TOKENS_NAMES[TEXT])[1].text == "Mexican"
@@ -158,34 +167,24 @@ def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
 
 
 def test_whitespace_does_not_throw_error():
-    import rasa.utils.io as io_utils
-
     texts = rasa.shared.utils.io.read_json_file(
         "data/test_tokenizers/naughty_strings.json"
     )
 
-    tk = WhitespaceTokenizer()
+    tk = create_whitespace_tokenizer()
 
     for text in texts:
         tk.tokenize(Message.build(text=text), attribute=TEXT)
 
 
-@pytest.mark.parametrize("language, error", [("en", False), ("zh", True)])
-def test_whitespace_language_suuport(language, error, component_builder):
-    config = RasaNLUModelConfig(
-        {"language": language, "pipeline": [{"name": "WhitespaceTokenizer"}]}
-    )
-
-    if error:
-        with pytest.raises(UnsupportedLanguageError):
-            component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
-    else:
-        component_builder.create_component({"name": "WhitespaceTokenizer"}, config)
+@pytest.mark.parametrize("language, is_not_supported", [("en", False), ("zh", True)])
+def test_whitespace_language_support(language, is_not_supported):
+    assert (
+        language in WhitespaceTokenizerGraphComponent.not_supported_languages()
+    ) == is_not_supported
 
 
-def test_whitespace_processing_with_attribute(
-    supervised_embeddings_config: RasaNLUModelConfig,
-):
+def test_whitespace_processing_with_attribute():
     message = Message(
         data={
             TEXT: "Any Mexican restaurant will do",
@@ -198,10 +197,10 @@ def test_whitespace_processing_with_attribute(
     expected_tokens_intent = ["restaurant_search"]
     expected_tokens_text = ["Any", "Mexican", "restaurant", "will", "do"]
     component_config = {"case_sensitive": False}
-    tk = WhitespaceTokenizer(component_config)
-    tk.process(message)
+    tk = create_whitespace_tokenizer(component_config)
+    tk.process([message])
     tokens_intent = message.get(TOKENS_NAMES[INTENT])
-    tk.process(message)
+    tk.process([message])
     tokens_text = message.get(TOKENS_NAMES[TEXT])
     assert [t.text for t in tokens_intent] == expected_tokens_intent
     assert [t.text for t in tokens_text] == expected_tokens_text
@@ -216,10 +215,10 @@ def test_whitespace_processing_with_attribute(
     expected_action_tokens_text = ["Where", "are", "you", "going"]
 
     component_config = {"case_sensitive": False}
-    tk = WhitespaceTokenizer(component_config)
-    tk.process(message)
+    tk = create_whitespace_tokenizer(component_config)
+    tk.process([message])
     tokens_action_text = message.get(TOKENS_NAMES[ACTION_TEXT])
-    tk.process(message)
+    tk.process([message])
     tokens_text = message.get(TOKENS_NAMES[TEXT])
     assert [t.text for t in tokens_action_text] == expected_action_tokens_text
     assert [t.text for t in tokens_text] == expected_action_tokens_text

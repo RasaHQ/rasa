@@ -58,14 +58,18 @@ def interactive(args: argparse.Namespace) -> None:
     )
 
     if args.model is None:
-        story_graph = rasa.utils.common.run_in_loop(file_importer.get_stories())
+        story_graph = file_importer.get_stories()
         if not story_graph or story_graph.is_empty():
             rasa.shared.utils.cli.print_error_and_exit(
                 "Could not run interactive learning without either core "
                 "data or a model containing core data."
             )
 
-        zipped_model = train.train_core(args) if args.core_only else train.train(args)
+        zipped_model = (
+            train.run_core_training(args)
+            if args.core_only
+            else train.run_training(args)
+        )
         if not zipped_model:
             rasa.shared.utils.cli.print_error_and_exit(
                 "Could not train an initial model. Either pass paths "
@@ -89,11 +93,19 @@ def interactive(args: argparse.Namespace) -> None:
 def _set_not_required_args(args: argparse.Namespace) -> None:
     args.fixed_model_name = None
     args.store_uncompressed = False
+    args.dry_run = False
 
 
 def perform_interactive_learning(
     args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter
 ) -> None:
+    """Performs interactive learning.
+
+    Args:
+        args: Namespace arguments.
+        zipped_model: Path to zipped model.
+        file_importer: File importer which provides the training data and model config.
+    """
     from rasa.core.train import do_interactive_learning
 
     args.model = zipped_model

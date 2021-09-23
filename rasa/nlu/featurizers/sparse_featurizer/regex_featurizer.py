@@ -1,116 +1,185 @@
+from __future__ import annotations
 import logging
-import os
 import re
-from typing import Any, Dict, List, Optional, Text, Type, Tuple
-
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 import scipy.sparse
 
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from rasa.nlu import utils
-from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.constants import (
     TEXT,
     RESPONSE,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
 )
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer
-from rasa.shared.nlu.training_data.features import Features
-from rasa.nlu.model import Metadata
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.featurizers.sparse_featurizer._regex_featurizer import RegexFeaturizer
 
 logger = logging.getLogger(__name__)
 
+# TODO: remove after all references to old featurizer have been removed
+RegexFeaturizer = RegexFeaturizer
 
-class RegexFeaturizer(SparseFeaturizer):
-    @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [Tokenizer]
 
-    defaults = {
-        # text will be processed with case sensitive as default
-        "case_sensitive": True,
-        # use lookup tables to generate features
-        "use_lookup_tables": True,
-        # use regexes to generate features
-        "use_regexes": True,
-        # use match word boundaries for lookup table
-        "use_word_boundaries": True,
-    }
+class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
+    """Adds message features based on regex expressions."""
+
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config."""
+        return {
+            **SparseFeaturizer2.get_default_config(),
+            # text will be processed with case sensitive as default
+            "case_sensitive": True,
+            # use lookup tables to generate features
+            "use_lookup_tables": True,
+            # use regexes to generate features
+            "use_regexes": True,
+            # use match word boundaries for lookup table
+            "use_word_boundaries": True,
+        }
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         known_patterns: Optional[List[Dict[Text, Text]]] = None,
     ) -> None:
-        """Construct new features for regexes and lookup table using regex expressions."""
-        super().__init__(component_config)
+        """Constructs new features for regexes and lookup table using regex expressions.
+
+        Args:
+            config: Configuration for the component.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
+            resource: Resource locator for this component which can be used to persist
+                and load itself from the `model_storage`.
+            execution_context: Information about the current graph run.
+            known_patterns: Regex Patterns the component should pre-load itself with.
+        """
+        super().__init__(execution_context.node_name, config)
+
+        self._model_storage = model_storage
+        self._resource = resource
 
         self.known_patterns = known_patterns if known_patterns else []
-        self.case_sensitive = self.component_config["case_sensitive"]
+        self.case_sensitive = config["case_sensitive"]
+        self.finetune_mode = execution_context.is_finetuning
 
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> RegexFeaturizerGraphComponent:
+        """Creates a new untrained component (see parent class for full docstring)."""
+        return cls(config, model_storage, resource, execution_context)
 
-        self.known_patterns = pattern_utils.extract_patterns(
+    def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]) -> None:
+        """Updates already known patterns with new patterns extracted from data.
+
+        New patterns should always be added to the end of the existing
+        patterns and the order of the existing patterns should not be disturbed.
+
+        Args:
+            new_patterns: Patterns extracted from training data and to be merged with
+                known patterns.
+        """
+        pattern_name_index_map = {
+            pattern["name"]: index for index, pattern in enumerate(self.known_patterns)
+        }
+        for extra_pattern in new_patterns:
+            new_pattern_name = extra_pattern["name"]
+
+            # Some patterns may have just new examples added
+            # to them. These do not count as additional pattern.
+            if new_pattern_name in pattern_name_index_map:
+                self.known_patterns[pattern_name_index_map[new_pattern_name]][
+                    "pattern"
+                ] = extra_pattern["pattern"]
+            else:
+                self.known_patterns.append(extra_pattern)
+
+    def train(self, training_data: TrainingData,) -> Resource:
+        """Trains the component with all patterns extracted from training data."""
+        patterns_from_data = pattern_utils.extract_patterns(
             training_data,
-            use_lookup_tables=self.component_config["use_lookup_tables"],
-            use_regexes=self.component_config["use_regexes"],
-            use_word_boundaries=self.component_config["use_word_boundaries"],
+            use_lookup_tables=self._config["use_lookup_tables"],
+            use_regexes=self._config["use_regexes"],
+            use_word_boundaries=self._config["use_word_boundaries"],
         )
+        if self.finetune_mode:
+            # Merge patterns extracted from data with known patterns
+            self._merge_new_patterns(patterns_from_data)
+        else:
+            self.known_patterns = patterns_from_data
 
+        self._persist()
+        return self._resource
+
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
+        """Processes the training examples (see parent class for full docstring)."""
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
                 self._text_features_with_regex(example, attribute)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        self._text_features_with_regex(message, TEXT)
+        return training_data
+
+    def process(self, messages: List[Message]) -> List[Message]:
+        """Featurizes all given messages in-place.
+
+        Returns:
+          the given list of messages which have been modified in-place
+        """
+        for message in messages:
+            self._text_features_with_regex(message, TEXT)
+
+        return messages
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
+        """Helper method to extract features and set them appropriately in the message.
+
+        Args:
+            message: Message to be featurized.
+            attribute: Attribute of message to be featurized.
+        """
         if self.known_patterns:
             sequence_features, sentence_features = self._features_for_patterns(
                 message, attribute
             )
 
-            if sequence_features is not None:
-                final_sequence_features = Features(
-                    sequence_features,
-                    FEATURE_TYPE_SEQUENCE,
-                    attribute,
-                    self.component_config[FEATURIZER_CLASS_ALIAS],
-                )
-                message.add_features(final_sequence_features)
-
-            if sentence_features is not None:
-                final_sentence_features = Features(
-                    sentence_features,
-                    FEATURE_TYPE_SENTENCE,
-                    attribute,
-                    self.component_config[FEATURIZER_CLASS_ALIAS],
-                )
-                message.add_features(final_sentence_features)
+            self.add_features_to_message(
+                sequence_features, sentence_features, attribute, message
+            )
 
     def _features_for_patterns(
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.coo_matrix], Optional[scipy.sparse.coo_matrix]]:
         """Checks which known patterns match the message.
+
         Given a sentence, returns a vector of {1,0} values indicating which
         regexes did match. Furthermore, if the
         message is tokenized, the function will mark all tokens with a dict
-        relating the name of the regex to whether it was matched."""
+        relating the name of the regex to whether it was matched.
 
+        Args:
+            message: Message to be featurized.
+            attribute: Attribute of message to be featurized.
+
+        Returns:
+           Token and sentence level features of message attribute.
+        """
         # Attribute not set (e.g. response not present)
         if not message.get(attribute):
             return None, None
@@ -127,11 +196,15 @@ class RegexFeaturizer(SparseFeaturizer):
 
         sequence_length = len(tokens)
 
-        sequence_features = np.zeros([sequence_length, len(self.known_patterns)])
-        sentence_features = np.zeros([1, len(self.known_patterns)])
+        num_patterns = len(self.known_patterns)
+
+        sequence_features = np.zeros([sequence_length, num_patterns])
+        sentence_features = np.zeros([1, num_patterns])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
-            matches = re.finditer(pattern["pattern"], message.get(TEXT), flags=flags)
+            matches = re.finditer(
+                pattern["pattern"], message.get(attribute), flags=flags
+            )
             matches = list(matches)
 
             for token_index, t in enumerate(tokens):
@@ -142,7 +215,7 @@ class RegexFeaturizer(SparseFeaturizer):
                     if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
                         sequence_features[token_index][pattern_index] = 1.0
-                        if attribute in [RESPONSE, TEXT]:
+                        if attribute in [RESPONSE, TEXT, ACTION_TEXT]:
                             # sentence vector should contain all patterns
                             sentence_features[0][pattern_index] = 1.0
 
@@ -156,27 +229,48 @@ class RegexFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
-        model_metadata: Optional[Metadata] = None,
-        cached_component: Optional["RegexFeaturizer"] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "RegexFeaturizer":
+    ) -> RegexFeaturizerGraphComponent:
+        """Loads trained component (see parent class for full docstring)."""
+        known_patterns = None
 
-        file_name = meta.get("file")
-        regex_file = os.path.join(model_dir, file_name)
+        try:
+            with model_storage.read_from(resource) as model_dir:
+                patterns_file_name = model_dir / "patterns.pkl"
+                known_patterns = rasa.shared.utils.io.read_json_file(patterns_file_name)
+        except (ValueError, FileNotFoundError):
+            logger.warning(
+                f"Failed to load `{cls.__class__.__name__}` from model storage. "
+                f"Resource '{resource.name}' doesn't exist."
+            )
 
-        if os.path.exists(regex_file):
-            known_patterns = rasa.shared.utils.io.read_json_file(regex_file)
-            return RegexFeaturizer(meta, known_patterns=known_patterns)
-        else:
-            return RegexFeaturizer(meta)
+        return cls(
+            config,
+            model_storage,
+            resource,
+            execution_context,
+            known_patterns=known_patterns,
+        )
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
-        file_name = file_name + ".pkl"
-        regex_file = os.path.join(model_dir, file_name)
-        utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
+    def _persist(self) -> None:
+        with self._model_storage.write_to(self._resource) as model_dir:
+            regex_file = model_dir / "patterns.pkl"
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                regex_file, self.known_patterns
+            )
 
-        return {"file": file_name}
+    @classmethod
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
+        """Validates that the component is configured properly."""
+        pass
+
+    @classmethod
+    def validate_compatibility_with_tokenizer(
+        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
+    ) -> None:
+        """Validates that the featurizer is compatible with the given tokenizer."""
+        pass

@@ -17,7 +17,7 @@ external HTTP server that you define.
 
 ## Responding to Requests
 
-### Response Format
+### Request Format
 
 When your model predicts that your bot should send a response to the user,
 it will send a request to your server, giving you the information
@@ -28,7 +28,7 @@ like this:
 
 ```json
 {
-  "template":"utter_what_can_do",
+  "response":"utter_what_can_do",
   "arguments":{
     
   },
@@ -170,7 +170,7 @@ Here is an overview of the high-level keys in the post request:
 
 Key | Description
 ---|---
-`template` | The name of the response predicted by Rasa Open Source.
+`response` | The name of the response predicted by Rasa Open Source.
 `arguments` | Optional keyword arguments that can be provided by custom actions.
 `tracker` | A dictionary containing the entire conversation history.
 `channel` | The output channel this message will be sent to.
@@ -181,7 +181,7 @@ how to generate your response.
 ### Response Format
 
 The endpoint needs to respond with the generated response. 
-Rasa will then sent this response back to the user.
+Rasa will then send this response back to the user.
 
 Below are the possible keys of a response and their (empty) types: 
 

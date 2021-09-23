@@ -6,7 +6,7 @@ import os
 from async_generator import asynccontextmanager
 from typing import Text, Union, Optional, AsyncGenerator
 
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, ConnectionException
 import rasa.shared.utils.common
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
@@ -43,8 +43,11 @@ class LockStore:
 
         if isinstance(obj, LockStore):
             return obj
-        else:
+
+        try:
             return _create_from_endpoint_config(obj)
+        except ConnectionError as error:
+            raise ConnectionException("Cannot connect to lock store.") from error
 
     @staticmethod
     def create_lock(conversation_id: Text) -> TicketLock:
@@ -123,9 +126,13 @@ class LockStore:
                 logger.debug(f"Acquired lock for conversation '{conversation_id}'.")
                 return lock
 
+            items_before_this = ticket - (lock.now_serving or 0)
+
             logger.debug(
-                f"Failed to acquire lock for conversation ID '{conversation_id}'. "
-                f"Retrying..."
+                f"Failed to acquire lock for conversation ID '{conversation_id}' "
+                f"because {items_before_this} other item(s) for this "
+                f"conversation ID have to be finished processing first. "
+                f"Retrying in {wait_time_in_seconds} seconds ..."
             )
 
             # sleep and update lock
@@ -242,18 +249,20 @@ class RedisLockStore(LockStore):
             self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
         else:
             logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
+                f"Using default '{self.key_prefix}' instead."
             )
 
-    def _get_key_prefix(self) -> Text:
-        return self.key_prefix
-
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
+        """Retrieves lock (see parent docstring for more information)."""
         serialised_lock = self.red.get(self.key_prefix + conversation_id)
         if serialised_lock:
             return TicketLock.from_dict(json.loads(serialised_lock))
 
+        return None
+
     def delete_lock(self, conversation_id: Text) -> None:
+        """Deletes lock for conversation ID."""
         deletion_successful = self.red.delete(self.key_prefix + conversation_id)
         self._log_deletion(conversation_id, deletion_successful)
 

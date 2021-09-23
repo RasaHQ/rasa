@@ -32,12 +32,35 @@ The following example form `restaurant_form` will fill the slot
 ```yaml-rasa
 forms:
   restaurant_form:
-    cuisine:
-      - type: from_entity
-        entity: cuisine
-    num_people:
-      - type: from_entity
-        entity: number
+    required_slots:
+        cuisine:
+          - type: from_entity
+            entity: cuisine
+        num_people:
+          - type: from_entity
+            entity: number
+```
+
+You can define a list of intents to ignore for the whole form under the 
+`ignored_intents` key. Intents listed under `ignored_intents` will be added to the
+`not_intent` key of each slot mapping in the form.
+
+For example, if you do not want any of the required slots of a form to be filled when
+the intent is `chitchat`, then you would need to define the following (after the form
+name and under the `ignored_intents` keyword):
+
+```yaml-rasa
+forms:
+  restaurant_form:
+    ignored_intents: 
+    - chitchat
+    required_slots:
+        cuisine:
+          - type: from_entity
+            entity: cuisine
+        num_people:
+          - type: from_entity
+            entity: number
 ```
 
 Once the form action gets called for the first time, the form gets activated and will
@@ -119,13 +142,14 @@ also define lists of intents for the parameters `intent` and `not_intent`.
 ```yaml-rasa
 forms:
   your_form:
-    slot_name:
-    - type: from_entity
-      entity: entity_name
-      role: role_name
-      group: group name
-      intent: intent_name
-      not_intent: excluded_intent
+    required_slots:
+        slot_name:
+        - type: from_entity
+          entity: entity_name
+          role: role_name
+          group: group name
+          intent: intent_name
+          not_intent: excluded_intent
 ```
 
 In `from_entity` mapping, when an extracted entity uniquely maps onto a slot,
@@ -135,21 +159,22 @@ The extracted entity will be ignored if the mapping is not unique.
 ```yaml-rasa
 forms:
   your_form:
-    departure_city:
-      - type: from_entity
-        entity: city
-        role: from
-      - type: from_entity
-        entity: city
-    arrival_city:
-      - type: from_entity
-        entity: city
-        role: to
-      - type: from_entity
-        entity: city
-    arrival_date:
-      - type: from_entity
-        entity: date
+    required_slots:
+        departure_city:
+          - type: from_entity
+            entity: city
+            role: from
+          - type: from_entity
+            entity: city
+        arrival_city:
+          - type: from_entity
+            entity: city
+            role: to
+          - type: from_entity
+            entity: city
+        arrival_date:
+          - type: from_entity
+            entity: date
 ```
 
 In the example above, an entity `date` uniquely sets the slot `arrival_date`,
@@ -174,10 +199,11 @@ Note that you can define lists of intents for the parameters `intent` and `not_i
 ```yaml-rasa
 forms:
   your_form:
-    slot_name:
-    - type: from_text
-      intent: intent_name
-      not_intent: excluded_intent
+    required_slots:
+        slot_name:
+        - type: from_text
+          intent: intent_name
+          not_intent: excluded_intent
 ```
 
 #### from_intent
@@ -196,11 +222,12 @@ mapping.
 ```yaml-rasa
 forms:
   your_form:
-    slot_name:
-    - type: from_intent
-      value: my_value
-      intent: intent_name
-      not_intent: excluded_intent
+    required_slots:
+        slot_name:
+        - type: from_intent
+          value: my_value
+          intent: intent_name
+          not_intent: excluded_intent
 ```
 
 #### from_trigger_intent
@@ -214,11 +241,12 @@ also define lists of intents for the parameters `intent` and `not_intent`.
 ```yaml-rasa
 forms:
   your_form:
-    slot_name:
-    - type: from_trigger_intent
-      value: my_value
-      intent: intent_name
-      not_intent: excluded_intent
+    required_slots:
+        slot_name:
+        - type: from_trigger_intent
+          value: my_value
+          intent: intent_name
+          not_intent: excluded_intent
 ```
 
 ### Writing Stories / Rules for Unhappy Form Paths
@@ -510,7 +538,7 @@ Again, it is **strongly** recommended that you use
 As soon as the form determines which slot has to be filled next by the user, it will
 execute the action `utter_ask_<form_name>_<slot_name>` or `utter_ask_<slot_name>`
 to ask the user to provide the necessary information. If a regular utterance is not
-enough, you can also use a custom action `action_ask_<form_name>__<slot_name>` or
+enough, you can also use a custom action `action_ask_<form_name>_<slot_name>` or
 `action_ask_<slot_name>` to ask for the next slot.
 
 ```python

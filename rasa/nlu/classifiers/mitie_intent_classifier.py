@@ -1,58 +1,70 @@
-import os
+from __future__ import annotations
+import logging
 import typing
-from typing import Any, Dict, List, Optional, Text, Type
+from typing import Any, Dict, List, Optional, Text
 
-from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Metadata
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.utils.mitie_utils import MitieModel
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+import rasa.nlu.classifiers._mitie_intent_classifier
 
 if typing.TYPE_CHECKING:
     import mitie
 
+# TODO: This is a workaround around until we have all components migrated to
+# `GraphComponent`.
+MitieIntentClassifier = (
+    rasa.nlu.classifiers._mitie_intent_classifier.MitieIntentClassifier
+)
 
-class MitieIntentClassifier(IntentClassifier):
-    @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [MitieNLP, Tokenizer]
+logger = logging.getLogger(__name__)
+
+
+class MitieIntentClassifierGraphComponent(GraphComponent):
+    """Intent classifier which uses the `mitie` library."""
+
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns default config (see parent class for full docstring)."""
+        return {"num_threads": 1}
 
     def __init__(
-        self, component_config: Optional[Dict[Text, Any]] = None, clf=None
+        self,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        clf: Optional["mitie.text_categorizer"] = None,
     ) -> None:
-        """Construct a new intent classifier using the MITIE framework."""
-
-        super().__init__(component_config)
-
-        self.clf = clf
+        """Constructs a new intent classifier using the MITIE framework."""
+        self._config = config
+        self._model_storage = model_storage
+        self._resource = resource
+        self._clf = clf
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Lists required dependencies (see parent class for full docstring)."""
         return ["mitie"]
 
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
+    def train(self, training_data: TrainingData, model: MitieModel) -> Resource:
+        """Trains classifier.
+
+        Args:
+            training_data: The NLU training data.
+            model: The loaded mitie model provided by `MitieNLP`.
+
+        Returns:
+            The resource locator for the trained classifier.
+        """
         import mitie
 
-        model_file = kwargs.get("mitie_file")
-        if not model_file:
-            raise Exception(
-                "Can not run MITIE entity extractor without a "
-                "language model. Make sure this component is "
-                "preceeded by the 'MitieNLP' component."
-            )
-
-        trainer = mitie.text_categorizer_trainer(model_file)
-        trainer.num_threads = kwargs.get("num_threads", 1)
+        trainer = mitie.text_categorizer_trainer(str(model.model_path))
+        trainer.num_threads = self._config["num_threads"]
 
         for example in training_data.intent_examples:
             tokens = self._tokens_of_message(example)
@@ -60,62 +72,77 @@ class MitieIntentClassifier(IntentClassifier):
 
         if training_data.intent_examples:
             # we can not call train if there are no examples!
-            self.clf = trainer.train()
+            clf = trainer.train()
+            self._persist(clf)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+        return self._resource
 
-        mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
-        if not mitie_feature_extractor:
-            raise Exception(
-                "Failed to train 'MitieFeaturizer'. "
-                "Missing a proper MITIE feature extractor."
+    def process(self, messages: List[Message], model: MitieModel) -> None:
+        """Make intent predictions using `mitie`.
+
+        Args:
+            messages: The message which the intents should be predicted for.
+            model: The loaded mitie model provided by `MitieNLP`.
+        """
+        for message in messages:
+            if self._clf:
+                token_strs = self._tokens_of_message(message)
+                intent, confidence = self._clf(token_strs, model.word_feature_extractor)
+            else:
+                # either the model didn't get trained or it wasn't
+                # provided with any data
+                intent = None
+                confidence = 0.0
+
+            message.set(
+                "intent", {"name": intent, "confidence": confidence}, add_to_output=True
             )
 
-        if self.clf:
-            token_strs = self._tokens_of_message(message)
-            intent, confidence = self.clf(token_strs, mitie_feature_extractor)
-        else:
-            # either the model didn't get trained or it wasn't
-            # provided with any data
-            intent = None
-            confidence = 0.0
-
-        message.set(
-            "intent", {"name": intent, "confidence": confidence}, add_to_output=True
-        )
-
     @staticmethod
-    def _tokens_of_message(message) -> List[Text]:
+    def _tokens_of_message(message: Message) -> List[Text]:
         return [token.text for token in message.get(TOKENS_NAMES[TEXT], [])]
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> MitieIntentClassifierGraphComponent:
+        """Creates component for training see parent class for full docstring)."""
+        return cls(config, model_storage, resource)
 
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
-        model_metadata: Optional[Metadata] = None,
-        cached_component: Optional["MitieIntentClassifier"] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "MitieIntentClassifier":
+    ) -> MitieIntentClassifierGraphComponent:
+        """Loads component for inference see parent class for full docstring)."""
         import mitie
 
-        file_name = meta.get("file")
+        text_categorizer = None
 
-        if not file_name:
-            return cls(meta)
-        classifier_file = os.path.join(model_dir, file_name)
-        if os.path.exists(classifier_file):
-            classifier = mitie.text_categorizer(classifier_file)
-            return cls(meta, classifier)
-        else:
-            return cls(meta)
+        try:
+            with model_storage.read_from(resource) as directory:
+                text_categorizer = mitie.text_categorizer(str(directory / "model.dat"))
+        except (
+            ValueError,
+            Exception,
+        ):  # the latter is thrown by the `mitie.text_categorizer`
+            logger.warning(
+                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"'{resource.name}' doesn't exist."
+            )
 
-    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+        return cls(config, model_storage, resource, text_categorizer)
 
-        if self.clf:
-            file_name = file_name + ".dat"
-            classifier_file = os.path.join(model_dir, file_name)
-            self.clf.save_to_disk(classifier_file, pure_model=True)
-            return {"file": file_name}
-        else:
-            return {"file": None}
+    def _persist(self, text_categorizer: "mitie.text_categorizer") -> None:
+        """Persists trained model (see parent class for full docstring)."""
+        with self._model_storage.write_to(self._resource) as directory:
+            classifier_file = directory / "model.dat"
+            text_categorizer.save_to_disk(str(classifier_file), pure_model=True)

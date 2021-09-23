@@ -1,24 +1,39 @@
+from pathlib import Path
 from typing import Callable
-from _pytest.pytester import RunResult
+from _pytest.pytester import RunResult, Testdir
 import pytest
 import sys
 
 
-def test_cli_start(run: Callable[..., RunResult]):
+def test_cli_start_is_fast(testdir: Testdir):
     """
-    Checks that a call to ``rasa --help`` does not take longer than 7 seconds
-    (10 seconds on Windows).
+    Checks that a call to ``rasa --help`` does not import any slow imports.
+
+    If this is failing this means, that a simple "rasa --help" commands imports
+    `tensorflow` which makes our CLI extremely slow. In case this test is failing
+    you've very likely added a global import of "tensorflow" which should be
+    avoided. Consider making this import (or the import of its parent module)
+    a local import.
+
+    If you are clueless where that import happens, you can run
+    ```
+    python -X importtime -m rasa.__main__ --help  2> import.log
+    tuna import.log
+    ```
+    to get the import chain.
+    (make sure to run with python >= 3.7, and install tune (pip install tuna))
     """
-    import time
 
-    start = time.time()
-    run("--help")
-    end = time.time()
+    rasa_path = str(
+        (Path(__file__).parent / ".." / ".." / "rasa" / "__main__.py").absolute()
+    )
+    args = [sys.executable, "-X", "importtime", rasa_path, "--help"]
+    result = testdir.run(*args)
 
-    duration = end - start
+    assert result.ret == 0
 
-    # it sometimes takes a bit more time to start it on Windows
-    assert duration <= 20 if sys.platform == "win32" else 10
+    # tensorflow is slow -> can't get imported when running basic CLI commands
+    result.stderr.no_fnmatch_line("*tensorflow.python.eager")
 
 
 def test_data_convert_help(run: Callable[..., RunResult]):

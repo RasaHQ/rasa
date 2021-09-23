@@ -1,6 +1,6 @@
 import asyncio
+import contextlib
 from datetime import datetime
-import functools
 from functools import wraps
 import hashlib
 import json
@@ -12,10 +12,8 @@ import platform
 import sys
 import textwrap
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text
+from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
-
-import async_generator
 import requests
 from terminaltables import SingleTable
 
@@ -73,6 +71,9 @@ CI_ENVIRONMENT_TELL = [
     "JENKINS_URL",
     "TEAMCITY_VERSION",
     "TRAVIS",
+    "CODEBUILD_BUILD_ARN",
+    "CODEBUILD_BUILD_ID",
+    "CODEBUILD_BATCH_BUILD_IDENTIFIER",
 ]
 
 # If updating or creating a new event, remember to update
@@ -92,6 +93,9 @@ TELEMETRY_RASA_X_LOCAL_STARTED_EVENT = "Rasa X Local Started"
 TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
+
+# used to calculate the context on the first call and cache it afterwards
+TELEMETRY_CONTEXT = None
 
 
 def print_telemetry_reporting_info() -> None:
@@ -217,15 +221,15 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     if asyncio.iscoroutinefunction(f):
 
         @wraps(f)
-        async def decorated(*args, **kwargs):
+        async def decorated_coroutine(*args: Any, **kwargs: Any) -> Any:
             if is_telemetry_enabled():
                 return await f(*args, **kwargs)
             return None
 
-        return decorated
+        return decorated_coroutine
 
     @wraps(f)
-    def decorated(*args, **kwargs):
+    def decorated(*args: Any, **kwargs: Any) -> Any:
         if is_telemetry_enabled():
             return f(*args, **kwargs)
         return None
@@ -461,26 +465,33 @@ def with_default_context_fields(
     return {**_default_context_fields(), **context}
 
 
-@functools.lru_cache()
 def _default_context_fields() -> Dict[Text, Any]:
     """Return a dictionary that contains the default context values.
 
     Return:
         A new context containing information about the runtime environment.
     """
-    import tensorflow as tf
 
-    return {
-        "os": {"name": platform.system(), "version": platform.release()},
-        "ci": in_continuous_integration(),
-        "project": model.project_fingerprint(),
-        "directory": _hash_directory_path(os.getcwd()),
-        "python": sys.version.split(" ")[0],
-        "rasa_open_source": rasa.__version__,
-        "gpu": len(tf.config.list_physical_devices("GPU")),
-        "cpu": multiprocessing.cpu_count(),
-        "docker": _is_docker(),
-    }
+    global TELEMETRY_CONTEXT
+
+    if not TELEMETRY_CONTEXT:
+        # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+        # if you change / add context
+        TELEMETRY_CONTEXT = {
+            "os": {"name": platform.system(), "version": platform.release()},
+            "ci": in_continuous_integration(),
+            "project": model.project_fingerprint(),
+            "directory": _hash_directory_path(os.getcwd()),
+            "python": sys.version.split(" ")[0],
+            "rasa_open_source": rasa.__version__,
+            "cpu": multiprocessing.cpu_count(),
+            "docker": _is_docker(),
+        }
+
+    # avoid returning the cached dict --> caller could modify the dictionary...
+    # usually we would use `lru_cache`, but that doesn't return a dict copy and
+    # doesn't work on inner functions, so we need to roll our own caching...
+    return TELEMETRY_CONTEXT.copy()
 
 
 def _track(
@@ -555,6 +566,44 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
 
 
+def filter_errors(
+    event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    """Filter errors.
+
+    Args:
+        event: event to be logged to sentry
+        hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data or `None` if the event constitutes
+        an `ImportError` which should be discarded.
+    """
+    if hint and "exc_info" in hint:
+        exc_type, exc_value, tb = hint.get("exc_info")
+        if isinstance(exc_value, ImportError):
+            return None
+    return event
+
+
+def before_send(
+    event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    """Strips the sensitive data and filters errors before sending to sentry.
+
+    Args:
+        event: event to be logged to sentry
+        _unused_hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
+    """
+    event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
+    event = filter_errors(event, _unused_hint)
+    return event
+
+
 def strip_sensitive_data_from_sentry_event(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
 ) -> Optional[Dict[Text, Any]]:
@@ -623,7 +672,7 @@ def initialize_error_reporting() -> None:
     # and line numbers).
     sentry_sdk.init(
         f"https://{key}.ingest.sentry.io/2801673",
-        before_send=strip_sensitive_data_from_sentry_event,
+        before_send=before_send,
         integrations=[
             ExcepthookIntegration(),
             DedupeIntegration(),
@@ -631,7 +680,16 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=telemetry_id or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt, RasaException, NotImplementedError],
+        ignore_errors=[
+            # std lib errors
+            KeyboardInterrupt,  # user hit the interrupt key (Ctrl+C)
+            MemoryError,  # machine is running out of memory
+            NotImplementedError,  # user is using a feature that is not implemented
+            asyncio.CancelledError,  # an async operation has been cancelled by the user
+            # expected Rasa errors
+            RasaException,
+            OSError,
+        ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
@@ -656,10 +714,10 @@ def initialize_error_reporting() -> None:
             scope.set_context("Environment", default_context)
 
 
-@async_generator.asynccontextmanager
-async def track_model_training(
-    training_data: "TrainingDataImporter", model_type: Text
-) -> typing.AsyncGenerator[None, None]:
+@contextlib.contextmanager
+def track_model_training(
+    training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False
+) -> typing.Generator[None, None, None]:
     """Track a model training started.
 
     WARNING: since this is a generator, it can't use the ensure telemetry
@@ -670,19 +728,23 @@ async def track_model_training(
         training_data: Training data used for the training.
         model_type: Specifies the type of training, should be either "rasa", "core"
             or "nlu".
+        is_finetuning: `True` if the model is trained by finetuning another model.
     """
     if not initialize_telemetry():
         # telemetry reporting is disabled. we won't do any reporting
         yield  # runs the training
-        return  # closes the async context
+        return
 
-    config = await training_data.get_config()
-    stories = await training_data.get_stories()
-    nlu_data = await training_data.get_nlu_data()
-    domain = await training_data.get_domain()
+    config = training_data.get_config()
+    stories = training_data.get_stories()
+    nlu_data = training_data.get_nlu_data()
+    domain = training_data.get_domain()
+    count_conditional_responses = domain.count_conditional_response_variations()
 
     training_id = uuid.uuid4().hex
 
+    # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+    # if you change / add any properties
     _track(
         TRAINING_STARTED_EVENT,
         {
@@ -693,10 +755,11 @@ async def track_model_training(
             "policies": config.get("policies"),
             "num_intent_examples": len(nlu_data.intent_examples),
             "num_entity_examples": len(nlu_data.entity_examples),
-            "num_actions": len(domain.action_names),
+            "num_actions": len(domain.action_names_or_texts),
             # Old nomenclature from when 'responses' were still called
             # 'templates' in the domain
-            "num_templates": len(domain.templates),
+            "num_templates": len(domain.responses),
+            "num_conditional_response_variations": count_conditional_responses,
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),
@@ -705,6 +768,7 @@ async def track_model_training(
             "num_lookup_tables": len(nlu_data.lookup_tables),
             "num_synonyms": len(nlu_data.entity_synonyms),
             "num_regexes": len(nlu_data.regex_features),
+            "is_finetuning": is_finetuning,
         },
     )
     start = datetime.now()
@@ -822,7 +886,7 @@ def track_server_start(
 
     def project_fingerprint_from_model(
         _model_directory: Optional[Text],
-    ) -> Optional[Text]:
+    ) -> Optional[Union[Text, List[Text], int, float]]:
         """Get project fingerprint from an app's loaded model."""
         if _model_directory:
             try:
@@ -870,7 +934,7 @@ def track_project_init(path: Text) -> None:
         path: Location of the project
     """
     _track(
-        TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)},
+        TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)}
     )
 
 

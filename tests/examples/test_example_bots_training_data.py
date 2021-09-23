@@ -26,9 +26,9 @@ from rasa.shared.importers.importer import TrainingDataImporter
             "examples/knowledgebasebot/data",
         ),
         (
-            "examples/moodbot/config.yml",
-            "examples/moodbot/domain.yml",
-            "examples/moodbot/data",
+            "data/test_moodbot/config.yml",
+            "data/test_moodbot/domain.yml",
+            "data/test_moodbot/data",
         ),
         (
             "examples/reminderbot/config.yml",
@@ -42,7 +42,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
         ),
     ],
 )
-async def test_example_bot_training_data_not_raises(
+def test_example_bot_training_data_not_raises(
     config_file: Text, domain_file: Text, data_folder: Text
 ):
 
@@ -51,13 +51,13 @@ async def test_example_bot_training_data_not_raises(
     )
 
     with pytest.warns(None) as record:
-        await importer.get_nlu_data()
-        await importer.get_stories()
+        importer.get_nlu_data()
+        importer.get_stories()
 
     assert not len(record)
 
 
-async def test_example_bot_training_on_initial_project(tmp_path: Path):
+def test_example_bot_training_on_initial_project(tmp_path: Path):
     # we need to test this one separately, as we can't test it in place
     # configuration suggestions would otherwise change the initial file
     scaffold.create_initial_project(str(tmp_path))
@@ -69,7 +69,7 @@ async def test_example_bot_training_on_initial_project(tmp_path: Path):
     )
 
     with pytest.warns(None) as record:
-        await importer.get_nlu_data()
-        await importer.get_stories()
+        importer.get_nlu_data()
+        importer.get_stories()
 
     assert not len(record)

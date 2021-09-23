@@ -34,7 +34,7 @@ VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
 
 
 class UserMessageGenerator:
-    def __init__(self, nlu_training_data) -> None:
+    def __init__(self, nlu_training_data: "TrainingData") -> None:
         self.nlu_training_data = nlu_training_data
         self.mapping = self._create_reverse_mapping(self.nlu_training_data)
 
@@ -53,7 +53,7 @@ class UserMessageGenerator:
         return d
 
     @staticmethod
-    def _contains_same_entity(entities, e) -> bool:
+    def _contains_same_entity(entities: Dict[Text, Any], e: Dict[Text, Any]) -> bool:
         return entities.get(e.get(ENTITY_ATTRIBUTE_TYPE)) is None or entities.get(
             e.get(ENTITY_ATTRIBUTE_TYPE)
         ) != e.get(ENTITY_ATTRIBUTE_VALUE)
@@ -81,7 +81,9 @@ class UserMessageGenerator:
         return structured_info.get(TEXT)
 
 
-def _fingerprint_node(graph, node, max_history) -> Set[Text]:
+def _fingerprint_node(
+    graph: "networkx.MultiDiGraph", node: int, max_history: int
+) -> Set[Text]:
     """Fingerprint a node in a graph.
 
     Can be used to identify nodes that are similar and can be merged within the
@@ -123,15 +125,17 @@ def _fingerprint_node(graph, node, max_history) -> Set[Text]:
     }
 
 
-def _incoming_edges(graph, node) -> set:
+def _incoming_edges(graph: "networkx.MultiDiGraph", node: int) -> set:
     return {(prev_node, k) for prev_node, _, k in graph.in_edges(node, keys=True)}
 
 
-def _outgoing_edges(graph, node) -> set:
+def _outgoing_edges(graph: "networkx.MultiDiGraph", node: int) -> set:
     return {(succ_node, k) for _, succ_node, k in graph.out_edges(node, keys=True)}
 
 
-def _outgoing_edges_are_similar(graph, node_a, node_b) -> bool:
+def _outgoing_edges_are_similar(
+    graph: "networkx.MultiDiGraph", node_a: int, node_b: int
+) -> bool:
     """If the outgoing edges from the two nodes are similar enough,
     it doesn't matter if you are in a or b.
 
@@ -152,7 +156,9 @@ def _outgoing_edges_are_similar(graph, node_a, node_b) -> bool:
     return a_edges == b_edges or not a_edges or not b_edges
 
 
-def _nodes_are_equivalent(graph, node_a, node_b, max_history) -> bool:
+def _nodes_are_equivalent(
+    graph: "networkx.MultiDiGraph", node_a: int, node_b: int, max_history: int
+) -> bool:
     """Decides if two nodes are equivalent based on their fingerprints."""
     return graph.nodes[node_a]["label"] == graph.nodes[node_b]["label"] and (
         _outgoing_edges_are_similar(graph, node_a, node_b)
@@ -162,7 +168,14 @@ def _nodes_are_equivalent(graph, node_a, node_b, max_history) -> bool:
     )
 
 
-def _add_edge(graph, u, v, key, label=None, **kwargs) -> None:
+def _add_edge(
+    graph: "networkx.MultiDiGraph",
+    u: int,
+    v: int,
+    key: Optional[Text],
+    label: Optional[Text] = None,
+    **kwargs: Any,
+) -> None:
     """Adds an edge to the graph if the edge is not already present. Uses the
     label as the key."""
 
@@ -179,7 +192,9 @@ def _add_edge(graph, u, v, key, label=None, **kwargs) -> None:
         _transfer_style(kwargs, d)
 
 
-def _transfer_style(source, target: Dict[Text, Any]) -> Dict[Text, Any]:
+def _transfer_style(
+    source: Dict[Text, Any], target: Dict[Text, Any]
+) -> Dict[Text, Any]:
     """Copy over class names from source to target for all special classes.
 
     Used if a node is highlighted and merged with another node."""
@@ -199,7 +214,7 @@ def _transfer_style(source, target: Dict[Text, Any]) -> Dict[Text, Any]:
     return target
 
 
-def _merge_equivalent_nodes(graph, max_history) -> None:
+def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) -> None:
     """Searches for equivalent nodes in the graph and merges them."""
 
     changed = True
@@ -252,7 +267,10 @@ def _merge_equivalent_nodes(graph, max_history) -> None:
 
 
 async def _replace_edge_labels_with_nodes(
-    graph, next_id, interpreter, nlu_training_data
+    graph: "networkx.MultiDiGraph",
+    next_id: int,
+    interpreter: NaturalLanguageInterpreter,
+    nlu_training_data: "TrainingData",
 ) -> None:
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
@@ -260,8 +278,8 @@ async def _replace_edge_labels_with_nodes(
     The algorithms (e.g. merging) are simpler if the user messages are labels
     on the edges. But it sometimes
     looks better if in the final graphs the user messages are nodes instead
-    of edge labels."""
-
+    of edge labels.
+    """
     if nlu_training_data:
         message_generator = UserMessageGenerator(nlu_training_data)
     else:
@@ -374,7 +392,7 @@ def _add_message_edge(
     current_node: int,
     next_node_idx: int,
     is_current: bool,
-):
+) -> None:
     """Create an edge based on the user message."""
 
     if message:
@@ -404,9 +422,8 @@ async def visualize_neighborhood(
     should_merge_nodes: bool = True,
     max_distance: int = 1,
     fontsize: int = 12,
-):
+) -> "networkx.MultiDiGraph":
     """Given a set of event lists, visualizing the flows."""
-
     graph = _create_graph(fontsize)
     _add_default_nodes(graph)
 
@@ -531,9 +548,8 @@ async def visualize_stories(
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     fontsize: int = 12,
-):
-    """Given a set of stories, generates a graph visualizing the flows in the
-    stories.
+) -> "networkx.MultiDiGraph":
+    """Given a set of stories, generates a graph visualizing the flows in the stories.
 
     Visualization is always a trade off between making the graph as small as
     possible while
@@ -558,8 +574,8 @@ async def visualize_stories(
     The training data parameter can be used to pass in a Rasa NLU training
     data instance. It will
     be used to replace the user messages from the story file with actual
-    messages from the training data."""
-
+    messages from the training data.
+    """
     story_graph = StoryGraph(story_steps)
 
     g = TrainingDataGenerator(

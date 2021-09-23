@@ -22,12 +22,3 @@ responses:
     - text: Bye
   utter_iamabot:
     - text: I am a bot, powered by Rasa.
-
-actions:
-  - utter_chitchat
-  - utter_greet
-  - utter_cheer_up
-  - utter_did_that_help
-  - utter_happy
-  - utter_goodbye
-  - utter_iamabot

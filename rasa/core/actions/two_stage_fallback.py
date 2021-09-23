@@ -24,6 +24,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
 )
+from rasa.shared.nlu.constants import INTENT, PREDICTED_CONFIDENCE_KEY
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -54,7 +55,7 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        affirm_action = action.action_from_name(
+        affirm_action = action.action_for_name_or_text(
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME, domain, self._action_endpoint
         )
 
@@ -67,7 +68,7 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        rephrase = action.action_from_name(
+        rephrase = action.action_for_name_or_text(
             ACTION_DEFAULT_ASK_REPHRASE_NAME, domain, self._action_endpoint
         )
 
@@ -103,7 +104,8 @@ class TwoStageFallbackAction(LoopAction):
             return await self._give_up(output_channel, nlg, tracker, domain)
 
         # revert fallback events
-        return [UserUtteranceReverted()] + _message_clarification(tracker)
+        reverted_event: List[Event] = [UserUtteranceReverted()]
+        return reverted_event + _message_clarification(tracker)
 
     async def _give_up(
         self,
@@ -112,7 +114,7 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        fallback = action.action_from_name(
+        fallback = action.action_for_name_or_text(
             ACTION_DEFAULT_FALLBACK_NAME, domain, self._action_endpoint
         )
 
@@ -124,7 +126,7 @@ def _last_intent_name(tracker: DialogueStateTracker) -> Optional[Text]:
     if not last_message:
         return None
 
-    return last_message.intent.get("name")
+    return last_message.intent_name
 
 
 def _two_fallbacks_in_a_row(tracker: DialogueStateTracker) -> bool:
@@ -136,7 +138,7 @@ def _two_fallbacks_in_a_row(tracker: DialogueStateTracker) -> bool:
 
 def _last_n_intent_names(
     tracker: DialogueStateTracker, number_of_last_intent_names: int
-) -> List[Text]:
+) -> List[Optional[Text]]:
     intent_names = []
     for i in range(number_of_last_intent_names):
         message = tracker.get_last_event_for(
@@ -171,7 +173,14 @@ def _second_affirmation_failed(tracker: DialogueStateTracker) -> bool:
 
 
 def _message_clarification(tracker: DialogueStateTracker) -> List[Event]:
-    clarification = copy.deepcopy(tracker.latest_message)
-    clarification.parse_data["intent"]["confidence"] = 1.0
+    latest_message = tracker.latest_message
+    if not latest_message:
+        raise TypeError(
+            "Cannot issue message clarification because "
+            "latest message is not on tracker."
+        )
+
+    clarification = copy.deepcopy(latest_message)
+    clarification.parse_data[INTENT][PREDICTED_CONFIDENCE_KEY] = 1.0
     clarification.timestamp = time.time()
     return [ActionExecuted(ACTION_LISTEN_NAME), clarification]

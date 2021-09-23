@@ -1,50 +1,68 @@
-import os
+from __future__ import annotations
 import logging
 import re
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, List
 
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
-from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.model import Metadata
+
+from rasa.nlu.classifiers._keyword_intent_classifier import KeywordIntentClassifier
+
+# This is a workaround around until we have all components migrated to `GraphComponent`.
+KeywordIntentClassifier = KeywordIntentClassifier
 
 logger = logging.getLogger(__name__)
 
 
-class KeywordIntentClassifier(IntentClassifier):
+class KeywordIntentClassifierGraphComponent(GraphComponent):
     """Intent classifier using simple keyword matching.
-
 
     The classifier takes a list of keywords and associated intents as an input.
     An input sentence is checked for the keywords and the intent is returned.
-
     """
 
-    defaults = {"case_sensitive": True}
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """The component's default config (see parent class for full docstring)."""
+        return {"case_sensitive": True}
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         intent_keyword_map: Optional[Dict] = None,
     ) -> None:
-
-        super(KeywordIntentClassifier, self).__init__(component_config)
+        """Creates classifier."""
+        self.component_config = config
+        self._model_storage = model_storage
+        self._resource = resource
+        self._execution_context = execution_context
 
         self.case_sensitive = self.component_config.get("case_sensitive")
         self.intent_keyword_map = intent_keyword_map or {}
 
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> KeywordIntentClassifierGraphComponent:
+        """Creates a new untrained component (see parent class for full docstring)."""
+        return cls(config, model_storage, resource, execution_context)
 
+    def train(self, training_data: TrainingData,) -> Resource:
+        """Trains the intent classifier on a data set."""
         duplicate_examples = set()
         for ex in training_data.intent_examples:
             if (
@@ -70,6 +88,8 @@ class KeywordIntentClassifier(IntentClassifier):
             )
 
         self._validate_keyword_map()
+        self.persist()
+        return self._resource
 
     def _validate_keyword_map(self) -> None:
         re_flag = 0 if self.case_sensitive else re.IGNORECASE
@@ -94,18 +114,23 @@ class KeywordIntentClassifier(IntentClassifier):
         for intent, keyword in ambiguous_mappings:
             self.intent_keyword_map.pop(keyword)
             logger.debug(
-                f"Removed keyword '{keyword}' from intent '{intent}' because it matched a "
-                "keyword of another intent."
+                f"Removed keyword '{keyword}' from intent "
+                f"'{intent}' because it matched a "
+                f"keyword of another intent."
             )
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        intent_name = self._map_keyword_to_intent(message.get(TEXT))
+    def process(self, messages: List[Message]) -> List[Message]:
+        """Set the message intent and add it to the output if it exists."""
+        for message in messages:
+            intent_name = self._map_keyword_to_intent(message.get(TEXT))
 
-        confidence = 0.0 if intent_name is None else 1.0
-        intent = {"name": intent_name, "confidence": confidence}
+            confidence = 0.0 if intent_name is None else 1.0
+            intent = {"name": intent_name, "confidence": confidence}
 
-        if message.get(INTENT) is None or intent is not None:
-            message.set(INTENT, intent, add_to_output=True)
+            if message.get(INTENT) is None or intent is not None:
+                message.set(INTENT, intent, add_to_output=True)
+
+        return messages
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
         re_flag = 0 if self.case_sensitive else re.IGNORECASE
@@ -121,42 +146,46 @@ class KeywordIntentClassifier(IntentClassifier):
         logger.debug("KeywordClassifier did not find any keywords in the message.")
         return None
 
-    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
-        """Persist this model into the passed directory.
-
-        Return the metadata necessary to load the model again.
-        """
-
-        file_name = file_name + ".json"
-        keyword_file = os.path.join(model_dir, file_name)
-        utils.write_json_to_file(keyword_file, self.intent_keyword_map)
-
-        return {"file": file_name}
+    def persist(self) -> None:
+        """Persist this model into the passed directory."""
+        with self._model_storage.write_to(self._resource) as model_dir:
+            file_name = f"{self.__class__.__name__}.json"
+            keyword_file = model_dir / file_name
+            utils.write_json_to_file(keyword_file.name, self.intent_keyword_map)
 
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
-        model_metadata: Metadata = None,
-        cached_component: Optional["KeywordIntentClassifier"] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "KeywordIntentClassifier":
+    ) -> KeywordIntentClassifierGraphComponent:
+        """Loads trained component (see parent class for full docstring)."""
+        try:
+            with model_storage.read_from(resource) as model_dir:
+                keyword_file = list(model_dir.glob("**/*.json"))
 
-        if model_dir and meta.get("file"):
-            file_name = meta.get("file")
-            keyword_file = os.path.join(model_dir, file_name)
-            if os.path.exists(keyword_file):
-                intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
-            else:
-                rasa.shared.utils.io.raise_warning(
-                    f"Failed to load key word file for `IntentKeywordClassifier`, "
-                    f"maybe {keyword_file} does not exist?"
-                )
-                intent_keyword_map = None
-            return cls(meta, intent_keyword_map)
-        else:
-            raise Exception(
-                f"Failed to load keyword intent classifier model. "
-                f"Path {os.path.abspath(meta.get('file'))} doesn't exist."
+                if keyword_file:
+                    assert len(keyword_file) == 1
+                    intent_keyword_map = rasa.shared.utils.io.read_json_file(
+                        keyword_file[0]
+                    )
+                else:
+                    rasa.shared.utils.io.raise_warning(
+                        f"Failed to load key word file for "
+                        f"`KeywordIntentClassifierGraphComponent`, "
+                        f"maybe {keyword_file} does not exist?"
+                    )
+                    intent_keyword_map = None
+        except ValueError:
+            logger.warning(
+                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"'{resource.name}' doesn't exist."
             )
+            intent_keyword_map = None
+
+        return cls(
+            config, model_storage, resource, execution_context, intent_keyword_map,
+        )

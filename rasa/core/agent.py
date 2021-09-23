@@ -4,13 +4,23 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+)
 import uuid
 
 import aiohttp
 from aiohttp import ClientError
 
 import rasa
+import rasa.utils
 from rasa.core import jobs, training
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -22,12 +32,11 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
-from rasa.shared.exceptions import InvalidParameterException, RasaException
+from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
@@ -50,6 +59,8 @@ import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
+
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +268,7 @@ async def _run_model_pulling_worker(
 
 async def schedule_model_pulling(
     model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
-):
+) -> None:
     (await jobs.scheduler()).add_job(
         _run_model_pulling_worker,
         "interval",
@@ -265,6 +276,33 @@ async def schedule_model_pulling(
         args=[model_server, agent],
         id="pull-model-from-server",
         replace_existing=True,
+    )
+
+
+def create_agent(model: Text, endpoints: Text = None) -> "Agent":
+    """Create an agent instance based on a stored model.
+
+    Args:
+        model: file path to the stored model
+        endpoints: file path to the used endpoint configuration
+    """
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.brokers.broker import EventBroker
+    import rasa.utils.common
+
+    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
+
+    _broker = rasa.utils.common.run_in_loop(EventBroker.create(_endpoints.event_broker))
+    _tracker_store = TrackerStore.create(_endpoints.tracker_store, event_broker=_broker)
+    _lock_store = LockStore.create(_endpoints.lock_store)
+
+    return Agent.load(
+        model,
+        generator=_endpoints.nlg,
+        tracker_store=_tracker_store,
+        lock_store=_lock_store,
+        action_endpoint=_endpoints.action,
     )
 
 
@@ -277,7 +315,23 @@ async def load_agent(
     tracker_store: Optional[TrackerStore] = None,
     lock_store: Optional[LockStore] = None,
     action_endpoint: Optional[EndpointConfig] = None,
-):
+) -> Optional["Agent"]:
+    """Loads agent from server, remote storage or disk.
+
+    Args:
+        model_path: Path to the model if it's on disk.
+        model_server: Configuration for a potential server which serves the model.
+        remote_storage: URL of remote storage for model.
+        interpreter: NLU interpreter to parse incoming messages.
+        generator: Optional response generator.
+        tracker_store: TrackerStore for persisting the conversation history.
+        lock_store: LockStore to avoid that a conversation is modified by concurrent
+            actors.
+        action_endpoint: Action server configuration for executing custom actions.
+
+    Returns:
+        The instantiated `Agent` or `None`.
+    """
     try:
         if model_server is not None:
             return await load_from_server(
@@ -354,11 +408,6 @@ class Agent:
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
 
-        if self.domain is not None:
-            self.domain.add_requested_slot()
-            self.domain.add_knowledge_base_slots()
-            self.domain.add_categorical_slot_default_value()
-
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
         )
@@ -394,8 +443,8 @@ class Agent:
 
         # update domain on all instances
         self.tracker_store.domain = domain
-        if hasattr(self.nlg, "templates"):
-            self.nlg.templates = domain.templates if domain else {}
+        if hasattr(self.nlg, "responses"):
+            self.nlg.responses = domain.responses if domain else {}
 
         self.model_directory = model_directory
 
@@ -411,6 +460,8 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         path_to_model_archive: Optional[Text] = None,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         try:
@@ -441,7 +492,15 @@ class Agent:
 
         if core_model:
             domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-            ensemble = PolicyEnsemble.load(core_model) if core_model else None
+            ensemble = (
+                PolicyEnsemble.load(
+                    core_model,
+                    new_config=new_config,
+                    finetuning_epoch_fraction=finetuning_epoch_fraction,
+                )
+                if core_model
+                else None
+            )
 
             # ensures the domain hasn't changed between test and train
             domain.compare_with_specification(core_model)
@@ -507,15 +566,12 @@ class Agent:
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
-
-        def noop(_: Any) -> None:
-            logger.info("Ignoring message as there is no agent to handle it.")
-
         if not self.is_ready():
-            return noop(message)
+            logger.info("Ignoring message as there is no agent to handle it.")
+            return None
 
         processor = self.create_processor(message_preprocessor)
 
@@ -609,55 +665,7 @@ class Agent:
 
         return await self.handle_message(msg, message_preprocessor)
 
-    def toggle_memoization(self, activate: bool) -> None:
-        """Toggles the memoization on and off.
-
-        If a memoization policy is present in the ensemble, this will toggle
-        the prediction of that policy. When set to ``False`` the Memoization
-        policies present in the policy ensemble will not make any predictions.
-        Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. ``TEDPolicy``). Useful to test
-        prediction
-        capabilities of an ensemble when ignoring memorized turns from the
-        training data."""
-
-        if not self.policy_ensemble:
-            return
-
-        for p in self.policy_ensemble.policies:
-            # explicitly ignore inheritance (e.g. augmented memoization policy)
-            if type(p) is MemoizationPolicy:
-                p.toggle(activate)
-
-    def _max_history(self) -> int:
-        """Find maximum max_history."""
-
-        max_histories = [
-            policy.featurizer.max_history
-            for policy in self.policy_ensemble.policies
-            if policy.featurizer
-            and hasattr(policy.featurizer, "max_history")
-            and policy.featurizer.max_history is not None
-        ]
-
-        return max(max_histories or [0])
-
-    def _are_all_featurizers_using_a_max_history(self) -> bool:
-        """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
-
-        def has_max_history_featurizer(policy: Policy) -> bool:
-            return (
-                policy.featurizer
-                and hasattr(policy.featurizer, "max_history")
-                and policy.featurizer.max_history is not None
-            )
-
-        for p in self.policy_ensemble.policies:
-            if p.featurizer and not has_max_history_featurizer(p):
-                return False
-        return True
-
-    async def load_data(
+    def load_data(
         self,
         training_resource: Union[Text, TrainingDataImporter],
         remove_duplicates: bool = True,
@@ -667,38 +675,17 @@ class Agent:
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
         exclusion_percentage: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
+    ) -> List["TrackerWithCachedStates"]:
         """Load training data from a resource."""
-
-        max_history = self._max_history()
-
-        if unique_last_num_states is None:
-            # for speed up of data generation
-            # automatically detect unique_last_num_states
-            # if it was not set and
-            # if all featurizers are MaxHistoryTrackerFeaturizer
-            if self._are_all_featurizers_using_a_max_history():
-                unique_last_num_states = max_history
-        elif unique_last_num_states < max_history:
-            # possibility of data loss
-            rasa.shared.utils.io.raise_warning(
-                f"unique_last_num_states={unique_last_num_states} but "
-                f"maximum max_history={max_history}. "
-                f"Possibility of data loss. "
-                f"It is recommended to set "
-                f"unique_last_num_states to "
-                f"at least maximum max_history."
-            )
-
-        return await training.load_data(
+        return training.load_data(
             training_resource,
             self.domain,
             remove_duplicates,
             unique_last_num_states,
-            augmentation_factor,
-            tracker_limit,
-            use_story_concatenation,
-            debug_plots,
+            augmentation_factor=augmentation_factor,
+            tracker_limit=tracker_limit,
+            use_story_concatenation=use_story_concatenation,
+            debug_plots=debug_plots,
             exclusion_percentage=exclusion_percentage,
         )
 
@@ -736,7 +723,6 @@ class Agent:
         Only removes files if the directory seems to contain a previously
         persisted model. Otherwise does nothing to avoid deleting
         `/` by accident."""
-
         if not os.path.exists(model_path):
             return
 
@@ -790,7 +776,7 @@ class Agent:
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = await loading.load_data_from_resource(resource_name, self.domain)
+        story_steps = loading.load_data_from_resource(resource_name, self.domain)
         await visualize_stories(
             story_steps,
             self.domain,
@@ -819,6 +805,7 @@ class Agent:
             self.policy_ensemble,
             self.domain,
             self.tracker_store,
+            self.lock_store,
             self.nlg,
             action_endpoint=self.action_endpoint,
             message_preprocessor=preprocessor,
@@ -829,7 +816,7 @@ class Agent:
 
         if isinstance(domain, str):
             domain = Domain.load(domain)
-            domain.check_missing_templates()
+            domain.check_missing_responses()
             return domain
         elif isinstance(domain, Domain):
             return domain

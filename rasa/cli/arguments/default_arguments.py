@@ -7,6 +7,7 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_ENDPOINTS_PATH,
 )
 
 
@@ -83,15 +84,23 @@ def add_out_param(
     required: bool = False,
 ) -> None:
     parser.add_argument(
-        "--out", type=str, default=default, help=help_text, required=required
+        "--out",
+        type=str,
+        default=default,
+        help=help_text,
+        # The desired behaviour is that required indicates if this argument must
+        # have a value, but argparse interprets it as "must have a value
+        # from user input", so we toggle it only if our default is not set
+        required=required and default is None,
     )
 
 
 def add_endpoint_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
     help_text: Text,
-    default: Optional[Text] = None,
+    default: Optional[Text] = DEFAULT_ENDPOINTS_PATH,
 ) -> None:
+    """Adds an option to an argument parser to configure endpoints path."""
     parser.add_argument("--endpoints", type=str, default=default, help=help_text)
 
 
@@ -103,10 +112,14 @@ def add_data_param(
 ) -> None:
     parser.add_argument(
         "--data",
-        type=str,
         default=default,
-        help=f"Path to the file or directory containing {data_type} data.",
-        required=required,
+        nargs="+",
+        type=str,
+        help=f"Paths to the files or directories containing {data_type} data.",
+        # The desired behaviour is that required indicates if this argument must
+        # have a value, but argparse interprets it as "must have a value
+        # from user input", so we toggle it only if our default is not set
+        required=required and default is None,
     )
 
 

@@ -1,0 +1,3 @@
+from typing import NoReturn, Optional, Text
+
+def abort(status_code: int, message: Optional[Text] = None) -> NoReturn: ...

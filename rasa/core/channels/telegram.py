@@ -3,25 +3,28 @@ from copy import deepcopy
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
-from telegram import (
-    Bot,
+from telebot import TeleBot
+from telebot.apihelper import ApiTelegramException
+from telebot.types import (
     InlineKeyboardButton,
     Update,
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
+    Message,
 )
 from typing import Dict, Text, Any, List, Optional, Callable, Awaitable
 
 from rasa.core.channels.channel import InputChannel, UserMessage, OutputChannel
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import USER_INTENT_RESTART
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
 
-class TelegramOutput(Bot, OutputChannel):
-    """Output channel for Telegram"""
+class TelegramOutput(TeleBot, OutputChannel):
+    """Output channel for Telegram."""
 
     # skipcq: PYL-W0236
     @classmethod
@@ -61,31 +64,33 @@ class TelegramOutput(Bot, OutputChannel):
         :button_type reply: reply keyboard
         """
         if button_type == "inline":
+            reply_markup = InlineKeyboardMarkup()
             button_list = [
-                [
-                    InlineKeyboardButton(s["title"], callback_data=s["payload"])
-                    for s in buttons
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(button_list)
-
-        elif button_type == "vertical":
-            button_list = [
-                [InlineKeyboardButton(s["title"], callback_data=s["payload"])]
+                InlineKeyboardButton(s["title"], callback_data=s["payload"])
                 for s in buttons
             ]
-            reply_markup = InlineKeyboardMarkup(button_list)
+            reply_markup.row(*button_list)
+
+        elif button_type == "vertical":
+            reply_markup = InlineKeyboardMarkup()
+            [
+                reply_markup.row(
+                    InlineKeyboardButton(s["title"], callback_data=s["payload"])
+                )
+                for s in buttons
+            ]
 
         elif button_type == "reply":
-            button_list = []
-            for bttn in buttons:
-                if isinstance(bttn, list):
-                    button_list.append([KeyboardButton(s["title"]) for s in bttn])
-                else:
-                    button_list.append([KeyboardButton(bttn["title"])])
             reply_markup = ReplyKeyboardMarkup(
-                button_list, resize_keyboard=True, one_time_keyboard=True
+                resize_keyboard=False, one_time_keyboard=True
             )
+            # drop button_type from button_list
+            button_list = [b for b in buttons if b.get("title")]
+            for idx, button in enumerate(buttons):
+                if isinstance(button, list):
+                    reply_markup.add(KeyboardButton(s["title"]) for s in button)
+                else:
+                    reply_markup.add(KeyboardButton(button["title"]))
         else:
             logger.error(
                 "Trying to send text with buttons for unknown "
@@ -167,15 +172,19 @@ class TelegramInput(InputChannel):
         self.debug_mode = debug_mode
 
     @staticmethod
-    def _is_location(message) -> bool:
+    def _is_location(message: Message) -> bool:
         return message.location is not None
 
     @staticmethod
-    def _is_user_message(message) -> bool:
+    def _is_user_message(message: Message) -> bool:
         return message.text is not None
 
     @staticmethod
-    def _is_button(message) -> bool:
+    def _is_edited_message(message: Update) -> bool:
+        return message.edited_message is not None
+
+    @staticmethod
+    def _is_button(message: Update) -> bool:
         return message.callback_query is not None
 
     def blueprint(
@@ -202,14 +211,18 @@ class TelegramInput(InputChannel):
         async def message(request: Request) -> Any:
             if request.method == "POST":
 
-                if not out_channel.get_me()["username"] == self.verify:
+                request_dict = request.json
+                update = Update.de_json(request_dict)
+                if not out_channel.get_me().username == self.verify:
                     logger.debug("Invalid access token, check it matches Telegram")
                     return response.text("failed")
 
-                update = Update.de_json(request.json, out_channel)
                 if self._is_button(update):
                     msg = update.callback_query.message
                     text = update.callback_query.data
+                elif self._is_edited_message(update):
+                    msg = update.edited_message
+                    text = update.edited_message.text
                 else:
                     msg = update.message
                     if self._is_user_message(msg):
@@ -264,7 +277,14 @@ class TelegramInput(InputChannel):
         return telegram_webhook
 
     def get_output_channel(self) -> TelegramOutput:
+        """Loads the telegram channel."""
         channel = TelegramOutput(self.access_token)
-        channel.setWebhook(self.webhook_url)
+
+        try:
+            channel.set_webhook(url=self.webhook_url)
+        except ApiTelegramException as error:
+            raise RasaException(
+                "Failed to set channel webhook: " + str(error)
+            ) from error
 
         return channel

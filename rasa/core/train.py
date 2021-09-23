@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import logging
 import os
 import tempfile
@@ -16,12 +15,12 @@ from rasa.utils.common import TempDirectoryPath
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
-
+    from rasa.core.agent import Agent
 
 logger = logging.getLogger(__name__)
 
 
-async def train(
+def train(
     domain_file: Union[Domain, Text],
     training_resource: Union[Text, "TrainingDataImporter"],
     output_path: Text,
@@ -30,10 +29,12 @@ async def train(
     policy_config: Optional[Union[Text, Dict]] = None,
     exclusion_percentage: Optional[int] = None,
     additional_arguments: Optional[Dict] = None,
-):
-    from rasa.core.agent import Agent
+    model_to_finetune: Optional["Agent"] = None,
+) -> "Agent":
+    """Trains the model."""
     from rasa.core import config, utils
     from rasa.core.utils import AvailableEndpoints
+    from rasa.core.agent import Agent
 
     if not endpoints:
         endpoints = AvailableEndpoints()
@@ -61,16 +62,18 @@ async def train(
             "debug_plots",
         },
     )
-    training_data = await agent.load_data(
+    training_data = agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
+    if model_to_finetune:
+        agent.policy_ensemble = model_to_finetune.policy_ensemble
     agent.train(training_data, **additional_arguments)
     agent.persist(output_path)
 
     return agent
 
 
-async def train_comparison_models(
+def train_comparison_models(
     story_file: Text,
     domain: Text,
     output_path: Text = "",
@@ -78,7 +81,7 @@ async def train_comparison_models(
     policy_configs: Optional[List] = None,
     runs: int = 1,
     additional_arguments: Optional[Dict] = None,
-):
+) -> None:
     """Train multiple models for comparison of policies"""
     from rasa import model
 
@@ -105,17 +108,15 @@ async def train_comparison_models(
                 )
 
                 with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
-                    _, new_fingerprint = await asyncio.gather(
-                        train(
-                            domain,
-                            file_importer,
-                            train_path,
-                            policy_config=policy_config,
-                            exclusion_percentage=percentage,
-                            additional_arguments=additional_arguments,
-                        ),
-                        model.model_fingerprint(file_importer),
+                    train(
+                        domain,
+                        file_importer,
+                        train_path,
+                        policy_config=policy_config,
+                        exclusion_percentage=percentage,
+                        additional_arguments=additional_arguments,
                     )
+                    new_fingerprint = model.model_fingerprint(file_importer)
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
                     model_name = config_name + PERCENTAGE_KEY + str(percentage)
@@ -127,32 +128,31 @@ async def train_comparison_models(
                     )
 
 
-async def get_no_of_stories(story_file: Text, domain: Text) -> int:
+def get_no_of_stories(story_file: Text, domain: Text) -> int:
     """Get number of stories in a file."""
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.training_data import loading
 
-    stories = await loading.load_data_from_files([story_file], Domain.load(domain))
+    stories = loading.load_data_from_files([story_file], Domain.load(domain))
     return len(stories)
 
 
-async def do_compare_training(
+def do_compare_training(
     args: argparse.Namespace,
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
-):
-    _, no_stories = await asyncio.gather(
-        train_comparison_models(
-            story_file=story_file,
-            domain=args.domain,
-            output_path=args.out,
-            exclusion_percentages=args.percentages,
-            policy_configs=args.config,
-            runs=args.runs,
-            additional_arguments=additional_arguments,
-        ),
-        get_no_of_stories(args.stories, args.domain),
+) -> None:
+    """Train multiple models for comparison of policies and dumps the result."""
+    train_comparison_models(
+        story_file=story_file,
+        domain=args.domain,
+        output_path=args.out,
+        exclusion_percentages=args.percentages,
+        policy_configs=args.config,
+        runs=args.runs,
+        additional_arguments=additional_arguments,
     )
+    no_stories = get_no_of_stories(args.stories, args.domain)
 
     # store the list of the number of stories present at each exclusion
     # percentage
@@ -170,7 +170,7 @@ async def do_compare_training(
 
 def do_interactive_learning(
     args: argparse.Namespace, file_importer: TrainingDataImporter
-):
+) -> None:
     from rasa.core.training import interactive
 
     interactive.run_interactive_learning(

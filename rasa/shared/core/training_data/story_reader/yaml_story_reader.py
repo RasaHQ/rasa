@@ -13,6 +13,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
+    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
@@ -42,9 +43,9 @@ KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_USER_MESSAGE = "user"
 KEY_SLOT_NAME = "slot_was_set"
-KEY_SLOT_VALUE = "value"
 KEY_ACTIVE_LOOP = "active_loop"
 KEY_ACTION = "action"
+KEY_BOT_END_TO_END_MESSAGE = "bot"
 KEY_CHECKPOINT = "checkpoint"
 KEY_CHECKPOINT_SLOTS = "slot_was_set"
 KEY_METADATA = "metadata"
@@ -54,7 +55,7 @@ KEY_WAIT_FOR_USER_INPUT_AFTER_RULE = "wait_for_user_input"
 KEY_RULE_FOR_CONVERSATION_START = "conversation_start"
 
 
-CORE_SCHEMA_FILE = "utils/schemas/stories.yml"
+CORE_SCHEMA_FILE = "shared/utils/schemas/stories.yml"
 DEFAULT_VALUE_TEXT_SLOTS = "filled"
 DEFAULT_VALUE_LIST_SLOTS = [DEFAULT_VALUE_TEXT_SLOTS]
 
@@ -72,19 +73,17 @@ class YAMLStoryReader(StoryReader):
         Returns:
             A new reader instance.
         """
-        return cls(
-            reader.domain,
-            reader.template_variables,
-            reader.use_e2e,
-            reader.source_name,
-            reader._is_used_for_training,
-        )
+        return cls(reader.domain, reader.source_name)
 
-    def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
+    def read_from_file(
+        self, filename: Union[Text, Path], skip_validation: bool = False
+    ) -> List[StoryStep]:
         """Read stories or rules from file.
 
         Args:
             filename: Path to the story/rule file.
+            skip_validation: `True` if the file was already validated
+                e.g. when it was stored in the database.
 
         Returns:
             `StoryStep`s read from `filename`.
@@ -94,22 +93,29 @@ class YAMLStoryReader(StoryReader):
             return self.read_from_string(
                 rasa.shared.utils.io.read_file(
                     filename, rasa.shared.utils.io.DEFAULT_ENCODING
-                )
+                ),
+                skip_validation,
             )
         except YamlException as e:
             e.filename = filename
             raise e
 
-    def read_from_string(self, string: Text) -> List[StoryStep]:
+    def read_from_string(
+        self, string: Text, skip_validation: bool = False
+    ) -> List[StoryStep]:
         """Read stories or rules from a string.
 
         Args:
             string: Unprocessed YAML file content.
+            skip_validation: `True` if the string was already validated
+                e.g. when it was stored in the database.
 
         Returns:
             `StoryStep`s read from `string`.
         """
-        rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+        if not skip_validation:
+            rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
         return self.read_from_parsed_yaml(yaml_content)
@@ -157,27 +163,9 @@ class YAMLStoryReader(StoryReader):
             YamlException: if the file seems to be a YAML file (extension) but
                 can not be read / parsed.
         """
-        return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
-            file_path, KEY_STORIES, KEY_RULES
-        )
-
-    @classmethod
-    def is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
-        """Check if all keys are contained in the parsed dictionary from a yaml file.
-
-        Arguments:
-            file_path: path to the yaml file
-            keys: keys to look for
-
-        Returns:
-              `True` if all the keys are contained in the file, `False` otherwise.
-
-        Raises:
-            YamlException: if the file seems to be a YAML file (extension) but
-                can not be read / parsed.
-        """
-        content = rasa.shared.utils.io.read_yaml_file(file_path)
-        return any(key in content for key in keys)
+        return rasa.shared.data.is_likely_yaml_file(
+            file_path
+        ) and rasa.shared.utils.io.is_key_in_yaml(file_path, KEY_STORIES, KEY_RULES)
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:
@@ -279,6 +267,8 @@ class YAMLStoryReader(StoryReader):
             self._parse_or_statement(step)
         elif KEY_ACTION in step.keys():
             self._parse_action(step)
+        elif KEY_BOT_END_TO_END_MESSAGE in step.keys():
+            self._parse_bot_message(step)
         elif KEY_CHECKPOINT in step.keys():
             self._parse_checkpoint(step)
         # This has to be after the checkpoint test as there can be a slot key within
@@ -308,12 +298,19 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_user_utterance(self, step: Dict[Text, Any]) -> None:
         utterance = self._parse_raw_user_utterance(step)
-        if utterance:
+
+        if not utterance:
+            return
+
+        is_end_to_end_utterance = KEY_USER_INTENT not in step
+        if is_end_to_end_utterance:
+            utterance.intent = {INTENT_NAME_KEY: None}
+        else:
             self._validate_that_utterance_is_in_domain(utterance)
-            self.current_step_builder.add_user_messages([utterance])
+
+        self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
-
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
 
         # check if this is a retrieval intent
@@ -335,33 +332,63 @@ class YAMLStoryReader(StoryReader):
             )
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
-        utterances = []
+        events: List = []
 
-        for utterance in step.get(KEY_OR):
-            if KEY_USER_INTENT in utterance.keys():
-                utterance = self._parse_raw_user_utterance(utterance)
+        for item in step.get(KEY_OR):
+            if KEY_USER_INTENT in item.keys():
+                utterance = self._parse_raw_user_utterance(item)
                 if utterance:
-                    utterances.append(utterance)
+                    events.append(utterance)
+            elif KEY_CHECKPOINT_SLOTS in item.keys():
+                for slot in item.get(KEY_CHECKPOINT_SLOTS, []):
+                    if isinstance(slot, dict):
+                        for key, value in slot.items():
+                            parsed_events = self._parse_events(
+                                SlotSet.type_name, {key: value}
+                            )
+                            events.extend(parsed_events)
+                    elif isinstance(slot, str):
+                        parsed_events = self._parse_events(
+                            SlotSet.type_name, {slot: self._slot_default_value(slot)}
+                        )
+                        events.extend(parsed_events)
+                    else:
+                        rasa.shared.utils.io.raise_warning(
+                            f"Issue found in '{self.source_name}':\n"
+                            f"Invalid slot: \n{slot}\n"
+                            f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
+                            f"YAML dictionaries or Strings. "
+                            f"The checkpoint will be skipped.",
+                            docs=self._get_docs_link(),
+                        )
+                        return
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}': \n"
-                    f"`OR` statement can only have '{KEY_USER_INTENT}' "
+                    f"`OR` statement can have '{KEY_USER_INTENT}' or '{KEY_SLOT_NAME}'"
                     f"as a sub-element. This step will be skipped:\n"
-                    f"'{utterance}'\n",
+                    f"'{item}'\n",
                     docs=self._get_docs_link(),
                 )
                 return
 
-        self.current_step_builder.add_user_messages(
-            utterances, self._is_used_for_training
-        )
+        if events:
+            self.current_step_builder.add_events(events)
 
     def _user_intent_from_step(
         self, step: Dict[Text, Any]
     ) -> Tuple[Text, Optional[Text]]:
-        user_intent = step.get(KEY_USER_INTENT, "").strip()
+        try:
+            user_intent = step.get(KEY_USER_INTENT, "").strip()
+        except AttributeError:
+            rasa.shared.utils.io.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"Missing intent value in {self._get_item_title()} step: {step} .",
+                docs=self._get_docs_link(),
+            )
+            user_intent = ""
 
-        if not user_intent:
+        if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
                 f"User utterance cannot be empty. "
@@ -426,7 +453,7 @@ class YAMLStoryReader(StoryReader):
     @staticmethod
     def _parse_raw_entities(
         raw_entities: Union[List[Dict[Text, Text]], List[Text]]
-    ) -> List[Dict[Text, Text]]:
+    ) -> List[Dict[Text, Optional[Text]]]:
         final_entities = []
         for entity in raw_entities:
             if isinstance(entity, dict):
@@ -457,7 +484,6 @@ class YAMLStoryReader(StoryReader):
         return final_entities
 
     def _parse_slot(self, step: Dict[Text, Any]) -> None:
-
         for slot in step.get(KEY_CHECKPOINT_SLOTS, []):
             if isinstance(slot, dict):
                 for key, value in slot.items():
@@ -513,6 +539,10 @@ class YAMLStoryReader(StoryReader):
             return
 
         self._add_event(action_name, {})
+
+    def _parse_bot_message(self, step: Dict[Text, Any]) -> None:
+        bot_message = step.get(KEY_BOT_END_TO_END_MESSAGE, "")
+        self._add_event("", {ACTION_TEXT: bot_message})
 
     def _parse_active_loop(self, active_loop_name: Optional[Text]) -> None:
         self._add_event(ActiveLoop.type_name, {LOOP_NAME: active_loop_name})

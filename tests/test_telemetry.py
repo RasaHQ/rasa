@@ -6,7 +6,7 @@ from typing import Any, Dict, Generator, Text
 
 from _pytest.monkeypatch import MonkeyPatch
 import jsonschema
-from mock import Mock
+from unittest.mock import Mock
 import pytest
 import responses
 
@@ -18,7 +18,6 @@ from rasa.core.channels import CmdlineInput
 from rasa.core.tracker_store import TrackerStore
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from tests.conftest import DEFAULT_CONFIG_PATH
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
@@ -35,7 +34,9 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
 
 
-async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
+async def test_events_schema(
+    monkeypatch: MonkeyPatch, default_agent: Agent, config_path: Text
+):
     # this allows us to patch the printing part used in debug mode to collect the
     # reported events
     monkeypatch.setenv("RASA_TELEMETRY_DEBUG", "true")
@@ -46,12 +47,12 @@ async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
 
     with open(TELEMETRY_EVENTS_JSON) as f:
         schemas = json.load(f)["events"]
-
-    initial = asyncio.Task.all_tasks()
+    initial = asyncio.all_tasks()
     # Generate all known backend telemetry events, and then use events.json to
     # validate their schema.
-    training_data = TrainingDataImporter.load_from_config(DEFAULT_CONFIG_PATH)
-    async with telemetry.track_model_training(training_data, "rasa"):
+    training_data = TrainingDataImporter.load_from_config(config_path)
+
+    with telemetry.track_model_training(training_data, "rasa"):
         await asyncio.sleep(1)
 
     telemetry.track_telemetry_disabled()
@@ -80,13 +81,13 @@ async def test_events_schema(monkeypatch: MonkeyPatch, default_agent: Agent):
 
     telemetry.track_nlu_model_test(TrainingData())
 
-    pending = asyncio.Task.all_tasks() - initial
+    pending = asyncio.all_tasks() - initial
     await asyncio.gather(*pending)
 
     assert mock.call_count == 15
 
-    for call in mock.call_args_list:
-        event = call.args[0]
+    for args, _ in mock.call_args_list:
+        event = args[0]
         # `metrics_id` automatically gets added to all event but is
         # not part of the schema so we need to remove it before validation
         del event["properties"]["metrics_id"]
@@ -461,3 +462,13 @@ def test_sentry_strips_absolute_path_from_dist_packages():
 
     stack_frames = stripped["exception"]["values"][0]["stacktrace"]["frames"]
     assert stack_frames[0]["filename"] == f"dist-packages{os.path.sep}rasa\\train.py"
+
+
+def test_context_contains_os():
+    context = telemetry._default_context_fields()
+
+    assert "os" in context
+
+    context.pop("os")
+
+    assert "os" in telemetry._default_context_fields()

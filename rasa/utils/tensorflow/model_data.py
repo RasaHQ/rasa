@@ -2,7 +2,6 @@ import logging
 
 import numpy as np
 import scipy.sparse
-import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
 from typing import (
@@ -13,38 +12,237 @@ from typing import (
     Tuple,
     Any,
     Union,
-    Generator,
     NamedTuple,
-    ValuesView,
     ItemsView,
 )
-from collections import defaultdict
-from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
+from collections import defaultdict, OrderedDict
 
 logger = logging.getLogger(__name__)
 
 
-# Mapping of attribute name and feature name to a list of numpy arrays representing
-# the actual features
-# For example:
-# "text" -> { "sentence": [
-#   "numpy array containing dense features for every training example",
-#   "numpy array containing sparse features for every training example"
-# ]}
-Data = Dict[Text, Dict[Text, List[np.ndarray]]]
+class FeatureArray(np.ndarray):
+    """Stores any kind of features ready to be used by a RasaModel.
+
+    Next to the input numpy array of features, it also received the number of
+    dimensions of the features.
+    As our features can have 1 to 4 dimensions we might have different number of numpy
+    arrays stacked. The number of dimensions helps us to figure out how to handle this
+    particular feature array. Also, it is automatically determined whether the feature
+    array is sparse or not and the number of units is determined as well.
+
+    Subclassing np.array: https://numpy.org/doc/stable/user/basics.subclassing.html
+    """
+
+    def __new__(
+        cls, input_array: np.ndarray, number_of_dimensions: int
+    ) -> "FeatureArray":
+        """Create and return a new object.  See help(type) for accurate signature."""
+        FeatureArray._validate_number_of_dimensions(number_of_dimensions, input_array)
+
+        feature_array = np.asarray(input_array).view(cls)
+
+        if number_of_dimensions <= 2:
+            feature_array.units = input_array.shape[-1]
+            feature_array.is_sparse = isinstance(input_array[0], scipy.sparse.spmatrix)
+        elif number_of_dimensions == 3:
+            feature_array.units = input_array[0].shape[-1]
+            feature_array.is_sparse = isinstance(input_array[0], scipy.sparse.spmatrix)
+        elif number_of_dimensions == 4:
+            feature_array.units = input_array[0][0].shape[-1]
+            feature_array.is_sparse = isinstance(
+                input_array[0][0], scipy.sparse.spmatrix
+            )
+        else:
+            raise ValueError(
+                f"Number of dimensions '{number_of_dimensions}' currently not "
+                f"supported."
+            )
+
+        feature_array.number_of_dimensions = number_of_dimensions
+
+        return feature_array
+
+    def __init__(
+        self, input_array: Any, number_of_dimensions: int, **kwargs: Any
+    ) -> None:
+        """Initialize. FeatureArray.
+
+        Needed in order to avoid 'Invalid keyword argument number_of_dimensions
+        to function FeatureArray.__init__ '
+        Args:
+            input_array: the array that contains features
+            number_of_dimensions: number of dimensions in input_array
+        """
+        super().__init__(**kwargs)
+        self.number_of_dimensions = number_of_dimensions
+
+    def __array_finalize__(self, obj: Any) -> None:
+        """This method is called when the system allocates a new array from obj.
+
+        Args:
+            obj: A subclass (subtype) of ndarray.
+        """
+        if obj is None:
+            return
+
+        self.units = getattr(obj, "units", None)
+        self.number_of_dimensions = getattr(obj, "number_of_dimensions", None)
+        self.is_sparse = getattr(obj, "is_sparse", None)
+
+        default_attributes = {
+            "units": self.units,
+            "number_of_dimensions": self.number_of_dimensions,
+            "is_spare": self.is_sparse,
+        }
+        self.__dict__.update(default_attributes)
+
+    # pytype: disable=attribute-error
+    def __array_ufunc__(
+        self, ufunc: Any, method: Text, *inputs: Any, **kwargs: Any
+    ) -> Any:
+        """Overwrite this method as we are subclassing numpy array.
+
+        Args:
+            ufunc: The ufunc object that was called.
+            method: A string indicating which Ufunc method was called
+                    (one of "__call__", "reduce", "reduceat", "accumulate", "outer",
+                    "inner").
+            *inputs: A tuple of the input arguments to the ufunc.
+            **kwargs: Any additional arguments
+
+        Returns:
+            The result of the operation.
+        """
+        f = {
+            "reduce": ufunc.reduce,
+            "accumulate": ufunc.accumulate,
+            "reduceat": ufunc.reduceat,
+            "outer": ufunc.outer,
+            "at": ufunc.at,
+            "__call__": ufunc,
+        }
+        # convert the inputs to np.ndarray to prevent recursion, call the function,
+        # then cast it back as FeatureArray
+        output = FeatureArray(
+            f[method](*(i.view(np.ndarray) for i in inputs), **kwargs),
+            number_of_dimensions=kwargs["number_of_dimensions"],
+        )
+        output.__dict__ = self.__dict__  # carry forward attributes
+        return output
+
+    def __reduce__(self) -> Tuple[Any, Any, Any]:
+        """Needed in order to pickle this object.
+
+        Returns:
+            A tuple.
+        """
+        pickled_state = super(FeatureArray, self).__reduce__()
+        new_state = pickled_state[2] + (
+            self.number_of_dimensions,
+            self.is_sparse,
+            self.units,
+        )
+        return pickled_state[0], pickled_state[1], new_state
+
+    def __setstate__(self, state: Any, **kwargs: Any) -> None:
+        """Sets the state.
+
+        Args:
+            state: The state argument must be a sequence that contains the following
+                   elements version, shape, dtype, isFortan, rawdata.
+            **kwargs: Any additional parameter
+        """
+        # Needed in order to load the object
+        self.number_of_dimensions = state[-3]
+        self.is_sparse = state[-2]
+        self.units = state[-1]
+        super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
+
+    # pytype: enable=attribute-error
+
+    @staticmethod
+    def _validate_number_of_dimensions(
+        number_of_dimensions: int, input_array: np.ndarray
+    ) -> None:
+        """Validates if the the input array has given number of dimensions.
+
+        Args:
+            number_of_dimensions: number of dimensions
+            input_array: input array
+
+        Raises: ValueError in case the dimensions do not match
+        """
+        _sub_array = input_array
+        dim = 0
+        # Go number_of_dimensions into the given input_array
+        for i in range(1, number_of_dimensions + 1):
+            _sub_array = _sub_array[0]
+            if isinstance(_sub_array, scipy.sparse.spmatrix):
+                dim = i
+                break
+            if isinstance(_sub_array, np.ndarray) and _sub_array.shape[0] == 0:
+                # sequence dimension is 0, we are dealing with "fake" features
+                dim = i
+                break
+
+        # If the resulting sub_array is sparse, the remaining number of dimensions
+        # should be at least 2
+        if isinstance(_sub_array, scipy.sparse.spmatrix):
+            if dim > 2:
+                raise ValueError(
+                    f"Given number of dimensions '{number_of_dimensions}' does not "
+                    f"match dimensions of given input array: {input_array}."
+                )
+        elif isinstance(_sub_array, np.ndarray) and _sub_array.shape[0] == 0:
+            # sequence dimension is 0, we are dealing with "fake" features,
+            # but they should be of dim 2
+            if dim > 2:
+                raise ValueError(
+                    f"Given number of dimensions '{number_of_dimensions}' does not "
+                    f"match dimensions of given input array: {input_array}."
+                )
+        # If the resulting sub_array is dense, the sub_array should be a single number
+        elif not np.issubdtype(type(_sub_array), np.integer) and not isinstance(
+            _sub_array, (np.float32, np.float64)
+        ):
+            raise ValueError(
+                f"Given number of dimensions '{number_of_dimensions}' does not match "
+                f"dimensions of given input array: {input_array}."
+            )
 
 
 class FeatureSignature(NamedTuple):
-    """Stores the shape and the type (sparse vs dense) of features."""
+    """Signature of feature arrays.
+
+    Stores the number of units, the type (sparse vs dense), and the number of
+    dimensions of features.
+    """
 
     is_sparse: bool
-    feature_dimension: Optional[int]
+    units: Optional[int]
+    number_of_dimensions: int
+
+
+# Mapping of attribute name and feature name to a list of feature arrays representing
+# the actual features
+# For example:
+# "text" -> { "sentence": [
+#   "feature array containing dense features for every training example",
+#   "feature array containing sparse features for every training example"
+# ]}
+Data = Dict[Text, Dict[Text, List[FeatureArray]]]
 
 
 class RasaModelData:
     """Data object used for all RasaModels.
 
     It contains all features needed to train the models.
+    'data' is a mapping of attribute name, e.g. TEXT, INTENT, etc., and feature name,
+    e.g. SENTENCE, SEQUENCE, etc., to a list of feature arrays representing the actual
+    features.
+    'label_key' and 'label_sub_key' point to the labels inside 'data'. For
+    example, if your intent labels are stored under INTENT -> IDS, 'label_key' would
+    be "INTENT" and 'label_sub_key' would be "IDS".
     """
 
     def __init__(
@@ -61,16 +259,16 @@ class RasaModelData:
             label_sub_key: the sub key of a label used for balancing, etc.
             data: the data holding the features
         """
-
         self.data = data or defaultdict(lambda: defaultdict(list))
         self.label_key = label_key
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
+        self.sparse_feature_sizes = {}
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
-    ) -> Union[Dict[Text, List[np.ndarray]], List[np.ndarray]]:
+    ) -> Union[Dict[Text, List[FeatureArray]], List[FeatureArray]]:
         """Get the data under the given keys.
 
         Args:
@@ -96,7 +294,7 @@ class RasaModelData:
         """
         return self.data.items()
 
-    def values(self) -> ValuesView[Dict[Text, List[np.ndarray]]]:
+    def values(self) -> Any:
         """Return the values of the data attribute.
 
         Returns:
@@ -121,6 +319,12 @@ class RasaModelData:
 
         return []
 
+    def sort(self) -> None:
+        """Sorts data according to its keys."""
+        for key, attribute_data in self.data.items():
+            self.data[key] = OrderedDict(sorted(attribute_data.items()))
+        self.data = OrderedDict(sorted(self.data.items()))
+
     def first_data_example(self) -> Data:
         """Return the data with just one feature example per key, sub-key.
 
@@ -133,6 +337,18 @@ class RasaModelData:
             for sub_key, features in attribute_data.items():
                 out_data[key][sub_key] = [feature[:1] for feature in features]
         return out_data
+
+    def does_feature_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
+        """Check if feature key (and sub-key) is present and features are available.
+
+        Args:
+            key: The key.
+            sub_key: The optional sub-key.
+
+        Returns:
+            False, if no features for the given keys exists, True otherwise.
+        """
+        return not self.does_feature_not_exist(key, sub_key)
 
     def does_feature_not_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
         """Check if feature key (and sub-key) is present and features are available.
@@ -177,7 +393,7 @@ class RasaModelData:
             return 0
 
         example_lengths = [
-            f.shape[0]
+            len(f)
             for attribute_data in data.values()
             for features in attribute_data.values()
             for f in features
@@ -195,25 +411,25 @@ class RasaModelData:
 
         return example_lengths[0]
 
-    def feature_dimension(self, key: Text, sub_key: Text) -> int:
-        """Get the feature dimension of the given key.
+    def number_of_units(self, key: Text, sub_key: Text) -> int:
+        """Get the number of units of the given key.
 
         Args:
             key: The key.
             sub_key: The optional sub-key.
 
         Returns:
-            The feature dimension.
+            The number of units.
         """
         if key not in self.data or sub_key not in self.data[key]:
             return 0
 
-        number_of_features = 0
-        for data in self.data[key][sub_key]:
-            if data.size > 0:
-                number_of_features += data[0].shape[-1]
+        units = 0
+        for features in self.data[key][sub_key]:
+            if len(features) > 0:
+                units += features.units
 
-        return number_of_features
+        return units
 
     def add_data(self, data: Data, key_prefix: Optional[Text] = None) -> None:
         """Add incoming data to data.
@@ -229,8 +445,30 @@ class RasaModelData:
                 else:
                     self.add_features(key, sub_key, features)
 
+    def update_key(
+        self, from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text
+    ) -> None:
+        """Copies the features under the given keys to the new keys and deletes the old.
+
+        Args:
+            from_key: current feature key
+            from_sub_key: current feature sub-key
+            to_key: new key for feature
+            to_sub_key: new sub-key for feature
+        """
+        if from_key not in self.data or from_sub_key not in self.data[from_key]:
+            return
+
+        if to_key not in self.data:
+            self.data[to_key] = {}
+        self.data[to_key][to_sub_key] = self.get(from_key, from_sub_key)
+        del self.data[from_key][from_sub_key]
+
+        if not self.data[from_key]:
+            del self.data[from_key]
+
     def add_features(
-        self, key: Text, sub_key: Text, features: Optional[List[np.ndarray]]
+        self, key: Text, sub_key: Text, features: Optional[List[FeatureArray]]
     ) -> None:
         """Add list of features to data under specified key.
 
@@ -244,9 +482,9 @@ class RasaModelData:
         if features is None:
             return
 
-        for data in features:
-            if data.size > 0:
-                self.data[key][sub_key].append(data)
+        for feature_array in features:
+            if len(feature_array) > 0:
+                self.data[key][sub_key].append(feature_array)
 
         if not self.data[key][sub_key]:
             del self.data[key][sub_key]
@@ -257,7 +495,7 @@ class RasaModelData:
     def add_lengths(
         self, key: Text, sub_key: Text, from_key: Text, from_sub_key: Text
     ) -> None:
-        """Adds np.array of lengths of sequences to data under given key.
+        """Adds a feature array of lengths of sequences to data under given key.
 
         Args:
             key: The key to add the lengths to
@@ -272,11 +510,52 @@ class RasaModelData:
 
         self.data[key][sub_key] = []
 
-        for data in self.data[from_key][from_sub_key]:
-            if data.size > 0:
-                lengths = np.array([x.shape[0] for x in data])
-                self.data[key][sub_key].extend([lengths])
-                break
+        for features in self.data[from_key][from_sub_key]:
+            if len(features) == 0:
+                continue
+
+            if features.number_of_dimensions == 4:
+                lengths = FeatureArray(
+                    np.array(
+                        [
+                            # add one more dim so that dialogue dim
+                            # would be a sequence
+                            np.array([[[x.shape[0]]] for x in _features])
+                            for _features in features
+                        ]
+                    ),
+                    number_of_dimensions=4,
+                )
+            else:
+                lengths = FeatureArray(
+                    np.array([x.shape[0] for x in features]), number_of_dimensions=1
+                )
+            self.data[key][sub_key].extend([lengths])
+            break
+
+    def add_sparse_feature_sizes(
+        self, sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]
+    ) -> None:
+        """Adds a dictionary of feature sizes for different attributes.
+
+        Args:
+            sparse_feature_sizes: a dictionary of attribute that has sparse
+                           features to a dictionary of a feature type
+                           to a list of different sparse feature sizes.
+        """
+        self.sparse_feature_sizes = sparse_feature_sizes
+
+    def get_sparse_feature_sizes(self) -> Dict[Text, Dict[Text, List[int]]]:
+        """Get feature sizes of the model.
+
+        sparse_feature_sizes is a dictionary of attribute that has sparse features to
+        a dictionary of a feature type to a list of different sparse feature sizes.
+
+        Returns:
+            A dictionary of key and sub-key to a list of feature signatures
+            (same structure as the data attribute).
+        """
+        return self.sparse_feature_sizes
 
     def split(
         self, number_of_test_examples: int, random_seed: int
@@ -290,11 +569,10 @@ class RasaModelData:
         Returns:
             A tuple of train and test RasaModelData.
         """
-
         self._check_label_key()
 
         if self.label_key is None or self.label_sub_key is None:
-            # randomly split data as no label key is split
+            # randomly split data as no label key is set
             multi_values = [
                 v
                 for attribute_data in self.data.values()
@@ -347,7 +625,9 @@ class RasaModelData:
 
         return self._convert_train_test_split(output_values, solo_values)
 
-    def get_signature(self) -> Dict[Text, Dict[Text, List[FeatureSignature]]]:
+    def get_signature(
+        self, data: Optional[Data] = None
+    ) -> Dict[Text, Dict[Text, List[FeatureSignature]]]:
         """Get signature of RasaModelData.
 
         Signature stores the shape and whether features are sparse or not for every key.
@@ -356,139 +636,21 @@ class RasaModelData:
             A dictionary of key and sub-key to a list of feature signatures
             (same structure as the data attribute).
         """
+        if not data:
+            data = self.data
 
         return {
             key: {
                 sub_key: [
-                    FeatureSignature(
-                        True if isinstance(f[0], scipy.sparse.spmatrix) else False,
-                        f[0].shape[-1] if f[0].shape else None,
-                    )
+                    FeatureSignature(f.is_sparse, f.units, f.number_of_dimensions)
                     for f in features
                 ]
                 for sub_key, features in attribute_data.items()
             }
-            for key, attribute_data in self.data.items()
+            for key, attribute_data in data.items()
         }
 
-    def as_tf_dataset(
-        self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
-    ) -> tf.data.Dataset:
-        """Create tf dataset.
-
-        Args:
-            batch_size: The batch size to use.
-            batch_strategy: The batch strategy to use.
-            shuffle: Boolean indicating whether the data should be shuffled or not.
-
-        Returns:
-            The tf.data.Dataset.
-        """
-
-        shapes, types = self._get_shapes_types()
-
-        return tf.data.Dataset.from_generator(
-            lambda batch_size_: self._gen_batch(batch_size_, batch_strategy, shuffle),
-            output_types=types,
-            output_shapes=shapes,
-            args=([batch_size]),
-        )
-
-    def prepare_batch(
-        self,
-        data: Optional[Data] = None,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
-        tuple_sizes: Optional[Dict[Text, int]] = None,
-    ) -> Tuple[Optional[np.ndarray]]:
-        """Slices model data into batch using given start and end value.
-
-        Args:
-            data: The data to prepare.
-            start: The start index of the batch
-            end: The end index of the batch
-            tuple_sizes: In case the feature is not present we propagate the batch with
-              None. Tuple sizes contains the number of how many None values to add for
-              what kind of feature.
-
-        Returns:
-            The features of the batch.
-        """
-
-        if not data:
-            data = self.data
-
-        batch_data = []
-
-        for key, attribute_data in data.items():
-            for sub_key, f_data in attribute_data.items():
-                # add None for not present values during processing
-                if not f_data:
-                    if tuple_sizes:
-                        batch_data += [None] * tuple_sizes[key]
-                    else:
-                        batch_data.append(None)
-                    continue
-
-                for v in f_data:
-                    if start is not None and end is not None:
-                        _data = v[start:end]
-                    elif start is not None:
-                        _data = v[start:]
-                    elif end is not None:
-                        _data = v[:end]
-                    else:
-                        _data = v[:]
-
-                    if isinstance(_data[0], scipy.sparse.spmatrix):
-                        batch_data.extend(self._scipy_matrix_to_values(_data))
-                    else:
-                        batch_data.append(self._pad_dense_data(_data))
-
-        # len of batch_data is equal to the number of keys in model data
-        return tuple(batch_data)
-
-    def _get_shapes_types(self) -> Tuple:
-        """Extract shapes and types from model data.
-
-        Returns:
-            A tuple of shapes and a tuple of types.
-        """
-
-        types = []
-        shapes = []
-
-        def append_shape(features: np.ndarray) -> None:
-            if isinstance(features[0], scipy.sparse.spmatrix):
-                # scipy matrix is converted into indices, data, shape
-                shapes.append((None, features[0].ndim + 1))
-                shapes.append((None,))
-                shapes.append((features[0].ndim + 1))
-            elif features[0].ndim == 0:
-                shapes.append((None,))
-            elif features[0].ndim == 1:
-                shapes.append((None, features[0].shape[-1]))
-            else:
-                shapes.append((None, None, features[0].shape[-1]))
-
-        def append_type(features: np.ndarray) -> None:
-            if isinstance(features[0], scipy.sparse.spmatrix):
-                # scipy matrix is converted into indices, data, shape
-                types.append(tf.int64)
-                types.append(tf.float32)
-                types.append(tf.int64)
-            else:
-                types.append(tf.float32)
-
-        for attribute_data in self.data.values():
-            for features in attribute_data.values():
-                for f in features:
-                    append_shape(f)
-                    append_type(f)
-
-        return tuple(shapes), tuple(types)
-
-    def _shuffled_data(self, data: Data) -> Data:
+    def shuffled_data(self, data: Data) -> Data:
         """Shuffle model data.
 
         Args:
@@ -497,11 +659,10 @@ class RasaModelData:
         Returns:
             The shuffled data.
         """
-
         ids = np.random.permutation(self.num_examples)
         return self._data_for_ids(data, ids)
 
-    def _balanced_data(self, data: Data, batch_size: int, shuffle: bool) -> Data:
+    def balanced_data(self, data: Data, batch_size: int, shuffle: bool) -> Data:
         """Mix model data to account for class imbalance.
 
         This batching strategy puts rare classes approximately in every other batch,
@@ -580,46 +741,18 @@ class RasaModelData:
                 if min(num_data_cycles) > 0:
                     break
 
-        final_data = defaultdict(lambda: defaultdict(list))
+        final_data: Data = defaultdict(lambda: defaultdict(list))
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
-                    final_data[key][sub_key].append(np.concatenate(np.array(f)))
+                    final_data[key][sub_key].append(
+                        FeatureArray(
+                            np.concatenate(np.array(f)),
+                            number_of_dimensions=f[0].number_of_dimensions,
+                        )
+                    )
 
         return final_data
-
-    def _gen_batch(
-        self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
-    ) -> Generator[Tuple[Optional[np.ndarray]], None, None]:
-        """Generate batches.
-
-        Args:
-            batch_size: The batch size
-            batch_strategy: The batch strategy.
-            shuffle: Boolean indicating whether to shuffle the data or not.
-
-        Returns:
-            A generator over the batches.
-        """
-
-        data = self.data
-        num_examples = self.num_examples
-
-        if shuffle:
-            data = self._shuffled_data(data)
-
-        if batch_strategy == BALANCED:
-            data = self._balanced_data(data, batch_size, shuffle)
-            # after balancing, number of examples increased
-            num_examples = self.number_of_examples(data)
-
-        num_batches = num_examples // batch_size + int(num_examples % batch_size > 0)
-
-        for batch_num in range(num_batches):
-            start = batch_num * batch_size
-            end = start + batch_size
-
-            yield self.prepare_batch(data, start, end)
 
     def _check_train_test_sizes(
         self, number_of_test_examples: int, label_counts: Dict[Any, int]
@@ -633,7 +766,6 @@ class RasaModelData:
         Raises:
             A ValueError if the number of examples does not fit.
         """
-
         if number_of_test_examples >= self.num_examples - len(label_counts):
             raise ValueError(
                 f"Test set of {number_of_test_examples} is too large. Remaining "
@@ -657,8 +789,7 @@ class RasaModelData:
         Returns:
             The filtered data
         """
-
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: Data = defaultdict(lambda: defaultdict(list))
 
         if data is None:
             return new_data
@@ -682,10 +813,9 @@ class RasaModelData:
         Returns:
             Reorganized RasaModelData
         """
-
         label_data = []
         for label_id in unique_label_ids:
-            matching_ids = label_ids == label_id
+            matching_ids = np.array(label_ids) == label_id
             label_data.append(
                 RasaModelData(
                     self.label_key,
@@ -726,7 +856,6 @@ class RasaModelData:
         Returns:
             The test and train RasaModelData
         """
-
         data_train = defaultdict(lambda: defaultdict(list))
         data_val = defaultdict(lambda: defaultdict(list))
 
@@ -737,10 +866,12 @@ class RasaModelData:
         index = 0
         for key, attribute_data in self.data.items():
             for sub_key, features in attribute_data.items():
-                for _ in features:
+                for f in features:
                     data_train[key][sub_key].append(
                         self._combine_features(
-                            output_values[index * 2], solo_values[index]
+                            output_values[index * 2],
+                            solo_values[index],
+                            f.number_of_dimensions,
                         )
                     )
                     index += 1
@@ -762,7 +893,8 @@ class RasaModelData:
     def _combine_features(
         feature_1: Union[np.ndarray, scipy.sparse.spmatrix],
         feature_2: Union[np.ndarray, scipy.sparse.spmatrix],
-    ) -> Union[np.ndarray, scipy.sparse.spmatrix]:
+        number_of_dimensions: Optional[int] = 1,
+    ) -> FeatureArray:
         """Concatenate features.
 
         Args:
@@ -772,20 +904,23 @@ class RasaModelData:
         Returns:
             The combined features.
         """
-
         if isinstance(feature_1, scipy.sparse.spmatrix) and isinstance(
             feature_2, scipy.sparse.spmatrix
         ):
             if feature_2.shape[0] == 0:
-                return feature_1
+                return FeatureArray(feature_1, number_of_dimensions)
             if feature_1.shape[0] == 0:
-                return feature_2
-            return scipy.sparse.vstack([feature_1, feature_2])
+                return FeatureArray(feature_2, number_of_dimensions)
+            return FeatureArray(
+                scipy.sparse.vstack([feature_1, feature_2]), number_of_dimensions
+            )
 
-        return np.concatenate([feature_1, feature_2])
+        return FeatureArray(
+            np.concatenate([feature_1, feature_2]), number_of_dimensions
+        )
 
     @staticmethod
-    def _create_label_ids(label_ids: np.ndarray) -> np.ndarray:
+    def _create_label_ids(label_ids: FeatureArray) -> np.ndarray:
         """Convert various size label_ids into single dim array.
 
         For multi-label y, map each distinct row to a string representation
@@ -795,10 +930,12 @@ class RasaModelData:
         Args:
             label_ids: The label ids.
 
+        Raises:
+            ValueError if dimensionality of label ids is not supported
+
         Returns:
             The single dim label array.
         """
-
         if label_ids.ndim == 1:
             return label_ids
 
@@ -812,69 +949,3 @@ class RasaModelData:
             return np.array([" ".join(row.astype("str")) for row in label_ids[:, :, 0]])
 
         raise ValueError("Unsupported label_ids dimensions")
-
-    @staticmethod
-    def _pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
-        """Pad data of different lengths.
-
-        Sequential data is padded with zeros. Zeros are added to the end of data.
-
-        Args:
-            array_of_dense: The array to pad.
-
-        Returns:
-            The padded array.
-        """
-
-        if array_of_dense[0].ndim < 2:
-            # data doesn't contain a sequence
-            return array_of_dense.astype(np.float32)
-
-        data_size = len(array_of_dense)
-        max_seq_len = max([x.shape[0] for x in array_of_dense])
-
-        data_padded = np.zeros(
-            [data_size, max_seq_len, array_of_dense[0].shape[-1]],
-            dtype=array_of_dense[0].dtype,
-        )
-        for i in range(data_size):
-            data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
-
-        return data_padded.astype(np.float32)
-
-    @staticmethod
-    def _scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
-        """Convert a scipy matrix into indices, data, and shape.
-
-        Args:
-            array_of_sparse: The sparse data array.
-
-        Returns:
-            A list of dense numpy arrays representing the sparse data.
-        """
-
-        # we need to make sure that the matrices are coo_matrices otherwise the
-        # transformation does not work (e.g. you cannot access x.row, x.col)
-        if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
-            array_of_sparse = [x.tocoo() for x in array_of_sparse]
-
-        max_seq_len = max([x.shape[0] for x in array_of_sparse])
-
-        # get the indices of values
-        indices = np.hstack(
-            [
-                np.vstack([i * np.ones_like(x.row), x.row, x.col])
-                for i, x in enumerate(array_of_sparse)
-            ]
-        ).T
-
-        data = np.hstack([x.data for x in array_of_sparse])
-
-        number_of_features = array_of_sparse[0].shape[-1]
-        shape = np.array((len(array_of_sparse), max_seq_len, number_of_features))
-
-        return [
-            indices.astype(np.int64),
-            data.astype(np.float32),
-            shape.astype(np.int64),
-        ]

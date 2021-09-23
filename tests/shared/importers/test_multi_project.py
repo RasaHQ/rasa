@@ -6,11 +6,10 @@ import os
 
 import rasa.shared.utils.io
 from rasa.shared.constants import (
-    DEFAULT_E2E_TESTS_PATH,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
 )
-from rasa.shared.nlu.training_data.formats import RasaReader, RasaYAMLReader
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 import rasa.utils.io
 from rasa import model
 from rasa.core import utils
@@ -177,11 +176,11 @@ def test_importing_additional_files(tmp_path: Path):
     config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    additional_file = tmp_path / "directory" / "file.md"
+    additional_file = tmp_path / "directory" / "file.yml"
     additional_file.parent.mkdir()
 
     # create intermediate directories and fake files
-    rasa.shared.utils.io.write_text_file("""## story""", additional_file)
+    rasa.shared.utils.io.write_text_file("stories:\n  - story: simple", additional_file)
     selector = MultiProjectImporter(
         config_path,
         training_data_paths=[str(tmp_path / "directory"), str(additional_file)],
@@ -213,87 +212,16 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
     assert not selector.is_imported(str(not_relevant_file2))
 
 
-@pytest.mark.parametrize(
-    "test_stories_filename,test_story",
-    [
-        (
-            "test_stories.yml",
-            """
-        stories:
-        - story: story test
-          steps:
-          - user: hello
-            intent: greet
-          - action: utter_greet
-        """,
-        ),
-        (
-            "conversation_tests.md",
-            """
-        ## story test
-        * greet : "hello"
-            - utter_greet
-        """,
-        ),
-    ],
-)
-async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(
-    tmp_path: Path, test_stories_filename: Text, test_story: Text
-):
-    from rasa.shared.core.training_data.structures import StoryGraph
-    import rasa.shared.core.training_data.loading as core_loading
-
-    config = {"imports": ["bots/Bot A"]}
-    config_path = str(tmp_path / "config.yml")
-    utils.dump_obj_as_yaml_to_file(config_path, config)
-
-    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
-    story_file.parent.mkdir(parents=True)
-    rasa.shared.utils.io.write_text_file(
-        """
-        ## story
-        * greet
-            - utter_greet
-        """,
-        story_file,
-    )
-
-    story_test_file = (
-        tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / test_stories_filename
-    )
-    story_test_file.parent.mkdir(parents=True)
-    rasa.shared.utils.io.write_text_file(test_story, story_test_file)
-
-    selector = MultiProjectImporter(config_path)
-
-    story_steps = await core_loading.load_data_from_resource(
-        resource=str(story_test_file),
-        domain=Domain.empty(),
-        template_variables=None,
-        use_e2e=True,
-        exclusion_percentage=None,
-    )
-
-    expected = StoryGraph(story_steps)
-
-    actual = await selector.get_stories(use_e2e=True)
-
-    assert expected.as_story_string() == actual.as_story_string()
-
-
 def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path,):
     config = {"imports": ["bots/Bot A"]}
     config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
+    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.yml"
     story_file.parent.mkdir(parents=True)
-    rasa.shared.utils.io.write_text_file("""## story""", story_file)
+    rasa.shared.utils.io.write_text_file("stories:\n  - story: simple", story_file)
 
-    story_test_file = (
-        tmp_path / "bots" / "Bot A" / DEFAULT_E2E_TESTS_PATH / "test_stories.yml"
-    )
-    story_test_file.parent.mkdir(parents=True)
+    story_test_file = tmp_path / "bots" / "Bot A" / "test_stories.yml"
     rasa.shared.utils.io.write_text_file("""stories:""", story_test_file)
 
     selector = MultiProjectImporter(config_path)
@@ -364,4 +292,4 @@ async def test_multi_project_training(trained_async):
         "utter_goodbye",
     ]
 
-    assert all([a in domain.action_names for a in expected_actions])
+    assert all([a in domain.action_names_or_texts for a in expected_actions])

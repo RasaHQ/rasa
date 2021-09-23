@@ -2,6 +2,7 @@ language: "de"
 
 pipeline:
   - name: SpacyNLP
+    model: "de_core_news_md"
   - name: SpacyTokenizer
   - name: SpacyFeaturizer
   - name: RegexFeaturizer

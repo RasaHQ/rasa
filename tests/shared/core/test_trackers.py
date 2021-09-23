@@ -1,17 +1,19 @@
 import json
 import logging
 import os
+import textwrap
 import time
 from pathlib import Path
 import tempfile
 from typing import List, Text, Dict, Any, Type
 
 import fakeredis
+import freezegun
 import pytest
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core import training, restore
+from rasa.core import training
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
@@ -19,6 +21,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
+from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -36,6 +39,8 @@ from rasa.shared.core.events import (
     LegacyForm,
     LegacyFormValidation,
     LoopInterrupted,
+    DefinePrevUserUtteredFeaturization,
+    EntitiesAdded,
 )
 from rasa.shared.core.slots import (
     FloatSlot,
@@ -52,25 +57,24 @@ from rasa.core.tracker_store import (
 )
 from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
-from tests.core.conftest import (
-    DEFAULT_STORIES_FILE,
-    EXAMPLE_DOMAINS,
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
+from tests.core.conftest import MockedMongoTrackerStore
+from tests.dialogues import (
     TEST_DIALOGUES,
-    MockedMongoTrackerStore,
+    TEST_MOODBOT_DIALOGUE,
+    TEST_DOMAINS_FOR_DIALOGUES,
 )
 from tests.core.utilities import (
-    tracker_from_dialogue_file,
-    read_dialogue_file,
+    tracker_from_dialogue,
     user_uttered,
     get_tracker,
 )
 
-from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
-    MarkdownStoryWriter,
-)
 from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
 
-domain = Domain.load("examples/moodbot/domain.yml")
+test_domain = Domain.load("data/test_moodbot/domain.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
@@ -87,10 +91,10 @@ class MockRedisTrackerStore(RedisTrackerStore):
 def stores_to_be_tested():
     temp = tempfile.mkdtemp()
     return [
-        MockRedisTrackerStore(domain),
-        InMemoryTrackerStore(domain),
-        SQLTrackerStore(domain, db=os.path.join(temp, "rasa.db")),
-        MockedMongoTrackerStore(domain),
+        MockRedisTrackerStore(test_domain),
+        InMemoryTrackerStore(test_domain),
+        SQLTrackerStore(test_domain, db=os.path.join(temp, "rasa.db")),
+        MockedMongoTrackerStore(test_domain),
     ]
 
 
@@ -98,13 +102,14 @@ def stores_to_be_tested_ids():
     return ["redis-tracker", "in-memory-tracker", "SQL-tracker", "mongo-tracker"]
 
 
-def test_tracker_duplicate():
-    filename = "data/test_dialogues/moodbot.json"
-    dialogue = read_dialogue_file(filename)
-    tracker = DialogueStateTracker(dialogue.name, domain.slots)
-    tracker.recreate_from_dialogue(dialogue)
+def test_tracker_duplicate(moodbot_domain: Domain):
+    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
     num_actions = len(
-        [event for event in dialogue.events if isinstance(event, ActionExecuted)]
+        [
+            event
+            for event in TEST_MOODBOT_DIALOGUE.events
+            if isinstance(event, ActionExecuted)
+        ]
     )
 
     # There is always one duplicated tracker more than we have actions,
@@ -141,23 +146,21 @@ def test_tracker_store_storage_and_retrieval(store: TrackerStore):
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-@pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, EXAMPLE_DOMAINS))
+@pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, TEST_DOMAINS_FOR_DIALOGUES))
 def test_tracker_store(store, pair):
-    filename, domainpath = pair
+    dialogue, domainpath = pair
     domain = Domain.load(domainpath)
-    tracker = tracker_from_dialogue_file(filename, domain)
+    tracker = tracker_from_dialogue(dialogue, domain)
     store.save(tracker)
     restored = store.retrieve(tracker.sender_id)
     assert restored == tracker
 
 
-async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
-    tracker = tracker_from_dialogue_file(
-        "data/test_dialogues/moodbot.json", moodbot_domain
-    )
+def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
+    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
     p = tmp_path / "export.yml"
     tracker.export_stories_to_file(str(p))
-    trackers = await training.load_data(
+    trackers = training.load_data(
         str(p),
         moodbot_domain,
         use_story_concatenation=False,
@@ -204,10 +207,12 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
         None,
         "action_listen",
         "greet",
+        None,  # DefinePrevUserUtteredFeaturization
         "utter_greet",
         None,
         "action_listen",
         "greet",
+        None,  # DefinePrevUserUtteredFeaturization
         "utter_greet",
         None,
         "action_listen",
@@ -216,7 +221,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
     assert [e.as_story_string() for e in tracker.events] == expected
 
 
-async def test_bot_utterance_comes_after_action_event(default_agent):
+async def test_bot_utterance_comes_after_action_event(default_agent: Agent):
     sender_id = "test_bot_utterance_comes_after_action_event"
 
     await default_agent.handle_text("/greet", sender_id=sender_id)
@@ -230,6 +235,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
         "session_started",
         "action",
         "user",
+        "user_featurization",
         "action",
         "bot",
         "action",
@@ -281,13 +287,13 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
     ],
 )
 def test_get_latest_entity_values(
-    entities: List[Dict[Text, Any]], expected_values: List[Text], default_domain: Domain
+    entities: List[Dict[Text, Any]], expected_values: List[Text], domain: Domain
 ):
     entity_type = entities[0].get("entity")
     entity_role = entities[0].get("role")
     entity_group = entities[0].get("group")
 
-    tracker = DialogueStateTracker("default", default_domain.slots)
+    tracker = DialogueStateTracker("default", domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
     assert list(tracker.get_latest_entity_values(entity_type)) == []
@@ -306,10 +312,10 @@ def test_get_latest_entity_values(
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
-def test_tracker_update_slots_with_entity(default_domain: Domain):
-    tracker = DialogueStateTracker("default", default_domain.slots)
+def test_tracker_update_slots_with_entity(domain: Domain):
+    tracker = DialogueStateTracker("default", domain.slots)
 
-    test_entity = default_domain.entities[0]
+    test_entity = domain.entities[0]
     expected_slot_value = "test user"
 
     intent = {"name": "greet", PREDICTED_CONFIDENCE_KEY: 1.0}
@@ -327,14 +333,14 @@ def test_tracker_update_slots_with_entity(default_domain: Domain):
                 }
             ],
         ),
-        default_domain,
+        domain,
     )
 
     assert tracker.get_slot(test_entity) == expected_slot_value
 
 
-def test_restart_event(default_domain: Domain):
-    tracker = DialogueStateTracker("default", default_domain.slots)
+def test_restart_event(domain: Domain):
+    tracker = DialogueStateTracker("default", domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
@@ -361,7 +367,7 @@ def test_restart_event(default_domain: Domain):
 
     dialogue = tracker.as_dialogue()
 
-    recovered = DialogueStateTracker("default", default_domain.slots)
+    recovered = DialogueStateTracker("default", domain.slots)
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
@@ -370,8 +376,8 @@ def test_restart_event(default_domain: Domain):
     assert len(list(recovered.generate_all_prior_trackers())) == 1
 
 
-def test_session_start(default_domain: Domain):
-    tracker = DialogueStateTracker("default", default_domain.slots)
+def test_session_start(domain: Domain):
+    tracker = DialogueStateTracker("default", domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
@@ -382,8 +388,8 @@ def test_session_start(default_domain: Domain):
     assert len(tracker.events) == 1
 
 
-def test_revert_action_event(default_domain: Domain):
-    tracker = DialogueStateTracker("default", default_domain.slots)
+def test_revert_action_event(domain: Domain):
+    tracker = DialogueStateTracker("default", domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
@@ -410,7 +416,7 @@ def test_revert_action_event(default_domain: Domain):
 
     dialogue = tracker.as_dialogue()
 
-    recovered = DialogueStateTracker("default", default_domain.slots)
+    recovered = DialogueStateTracker("default", domain.slots)
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
@@ -418,8 +424,8 @@ def test_revert_action_event(default_domain: Domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
-def test_revert_user_utterance_event(default_domain: Domain):
-    tracker = DialogueStateTracker("default", default_domain.slots)
+def test_revert_user_utterance_event(domain: Domain):
+    tracker = DialogueStateTracker("default", domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
@@ -452,7 +458,7 @@ def test_revert_user_utterance_event(default_domain: Domain):
 
     dialogue = tracker.as_dialogue()
 
-    recovered = DialogueStateTracker("default", default_domain.slots)
+    recovered = DialogueStateTracker("default", domain.slots)
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
@@ -460,8 +466,8 @@ def test_revert_user_utterance_event(default_domain: Domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
-def test_traveling_back_in_time(default_domain: Domain):
-    tracker = DialogueStateTracker("default", default_domain.slots)
+def test_traveling_back_in_time(domain: Domain):
+    tracker = DialogueStateTracker("default", domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
@@ -493,15 +499,27 @@ def test_traveling_back_in_time(default_domain: Domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
-def test_tracker_init_copy(default_domain: Domain):
+def test_tracker_init_copy(domain: Domain):
     sender_id = "some-id"
-    tracker = DialogueStateTracker(sender_id, default_domain.slots)
+    tracker = DialogueStateTracker(sender_id, domain.slots)
     tracker_copy = tracker.init_copy()
     assert tracker.sender_id == tracker_copy.sender_id
 
 
-async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
-    trackers = await default_agent.load_data(DEFAULT_STORIES_FILE)
+def _load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueStateTracker:
+    """Read the json dump from the file and instantiate a tracker it."""
+
+    tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
+    sender_id = tracker_json.get("sender_id", DEFAULT_SENDER_ID)
+    return DialogueStateTracker.from_dict(
+        sender_id, tracker_json.get("events", []), domain.slots
+    )
+
+
+def test_dump_and_restore_as_json(
+    default_agent: Agent, tmp_path: Path, stories_path: Text
+):
+    trackers = default_agent.load_data(stories_path)
 
     for tracker in trackers:
         out_path = tmp_path / "dumped_tracker.json"
@@ -509,9 +527,7 @@ async def test_dump_and_restore_as_json(default_agent: Agent, tmp_path: Path):
         dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
         rasa.shared.utils.io.dump_obj_as_json_to_file(str(out_path), dumped)
 
-        restored_tracker = restore.load_tracker_from_json(
-            str(out_path), default_agent.domain
-        )
+        restored_tracker = _load_tracker_from_json(str(out_path), default_agent.domain)
 
         assert restored_tracker == tracker
 
@@ -520,9 +536,7 @@ def test_read_json_dump(default_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
-    restored_tracker = restore.load_tracker_from_json(
-        tracker_dump, default_agent.domain
-    )
+    restored_tracker = _load_tracker_from_json(tracker_dump, default_agent.domain)
 
     assert len(restored_tracker.events) == 7
     assert restored_tracker.latest_action.get(ACTION_NAME) == "action_listen"
@@ -552,7 +566,7 @@ def test_current_state_after_restart(default_agent):
     assert state.get("events") == events_after_restart
 
 
-def test_current_state_all_events(default_agent):
+def test_current_state_all_events(empty_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
@@ -561,7 +575,7 @@ def test_current_state_all_events(default_agent):
     tracker = DialogueStateTracker.from_dict(
         tracker_json.get("sender_id"),
         tracker_json.get("events", []),
-        default_agent.domain.slots,
+        empty_agent.domain.slots,
     )
 
     evts = [e.as_dict() for e in tracker.events]
@@ -570,21 +584,21 @@ def test_current_state_all_events(default_agent):
     assert state.get("events") == evts
 
 
-def test_current_state_no_events(default_agent):
+def test_current_state_no_events(empty_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
     tracker = DialogueStateTracker.from_dict(
         tracker_json.get("sender_id"),
         tracker_json.get("events", []),
-        default_agent.domain.slots,
+        empty_agent.domain.slots,
     )
 
     state = tracker.current_state(EventVerbosity.NONE)
     assert state.get("events") is None
 
 
-def test_current_state_applied_events(default_agent):
+def test_current_state_applied_events(empty_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
@@ -596,7 +610,7 @@ def test_current_state_applied_events(default_agent):
     tracker = DialogueStateTracker.from_dict(
         tracker_json.get("sender_id"),
         tracker_json.get("events", []),
-        default_agent.domain.slots,
+        empty_agent.domain.slots,
     )
 
     evts = [e.as_dict() for e in tracker.events]
@@ -606,7 +620,7 @@ def test_current_state_applied_events(default_agent):
     assert state.get("events") == applied_events
 
 
-def test_session_started_not_part_of_applied_events(default_agent: Agent):
+def test_session_started_not_part_of_applied_events(empty_agent: Agent):
     # take tracker dump and insert a SessionStarted event sequence
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
@@ -619,28 +633,12 @@ def test_session_started_not_part_of_applied_events(default_agent: Agent):
     tracker = DialogueStateTracker.from_dict(
         tracker_json.get("sender_id"),
         tracker_json.get("events", []),
-        default_agent.domain.slots,
+        empty_agent.domain.slots,
     )
 
     # the SessionStart event was at index 5, the tracker's `applied_events()` should
     # be the same as the list of events from index 6 onwards
     assert tracker.applied_events() == list(tracker.events)[6:]
-
-
-async def test_tracker_dump_e2e_story(default_agent: Agent):
-    sender_id = "test_tracker_dump_e2e_story"
-
-    await default_agent.handle_text("/greet", sender_id=sender_id)
-    await default_agent.handle_text("/goodbye", sender_id=sender_id)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
-
-    story = tracker.export_stories(MarkdownStoryWriter(), e2e=True)
-    assert story.strip().split("\n") == [
-        "## test_tracker_dump_e2e_story",
-        "* greet: /greet",
-        "    - utter_greet",
-        "* goodbye: /goodbye",
-    ]
 
 
 def test_get_last_event_for():
@@ -898,6 +896,36 @@ def test_tracker_does_not_modify_slots(
                 ActiveLoop(None),
             ],
         ),
+        (
+            [
+                user_uttered("trigger form"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("form"),
+                ActiveLoop("form"),
+                SlotSet(REQUESTED_SLOT, "some slot"),
+                BotUttered("ask slot"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("fill requested slots"),
+                SlotSet("some slot", "value"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("form"),
+                SlotSet("some slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+            [
+                user_uttered("trigger form"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("form"),
+                ActiveLoop("form"),
+                SlotSet(REQUESTED_SLOT, "some slot"),
+                BotUttered("ask slot"),
+                SlotSet("some slot", "value"),
+                SlotSet("some slot", "value"),
+                SlotSet(REQUESTED_SLOT, None),
+                ActiveLoop(None),
+            ],
+        ),
     ],
 )
 def test_applied_events_with_loop_happy_path(
@@ -1099,6 +1127,39 @@ def test_applied_events_with_loop_happy_path(
                 ActionExecuted("loop"),
             ],
         ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+                ActiveLoop("loop"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("affirm"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+            ],
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+                ActiveLoop("loop"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("chitchat"),
+                DefinePrevUserUtteredFeaturization(False),
+                # Different action than form action indicates unhappy path
+                ActionExecuted("handle_chitchat"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("affirm"),
+                DefinePrevUserUtteredFeaturization(False),
+                ActionExecuted("loop"),
+            ],
+        ),
     ],
 )
 def test_applied_events_with_loop_unhappy_path(
@@ -1139,15 +1200,6 @@ def test_writing_trackers_with_legacy_form_events():
         assert event["event"] == ActiveLoop.type_name
 
 
-def test_change_form_to_deprecation_warning():
-    tracker = DialogueStateTracker.from_events("conversation", evts=[])
-    new_form = "new form"
-    with pytest.warns(DeprecationWarning):
-        tracker.change_form_to(new_form)
-
-    assert tracker.active_loop_name == new_form
-
-
 def test_reading_of_trackers_with_legacy_form_validation_events():
     tracker = DialogueStateTracker.from_dict(
         "sender",
@@ -1178,16 +1230,6 @@ def test_writing_trackers_with_legacy_for_validation_events():
 
     assert not events_as_dict[0][LOOP_INTERRUPTED]
     assert events_as_dict[1][LOOP_INTERRUPTED]
-
-
-@pytest.mark.parametrize("validate", [True, False])
-def test_set_form_validation_deprecation_warning(validate: bool):
-    tracker = DialogueStateTracker.from_events("conversation", evts=[])
-
-    with pytest.warns(DeprecationWarning):
-        tracker.set_form_validation(validate)
-
-    assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)
 
 
 @pytest.mark.parametrize(
@@ -1237,3 +1279,236 @@ def test_trackers_for_conversation_sessions(
     subtrackers = trackers_module.get_trackers_for_conversation_sessions(tracker)
 
     assert len(subtrackers) == n_subtrackers
+
+
+def test_policy_predictions_dont_change_persistence():
+    original_user_message = UserUttered("hi", intent={"name": "greet"})
+    tracker = DialogueStateTracker.from_events(
+        "Vova",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("hi", intent={"name": "greet"}),
+            DefinePrevUserUtteredFeaturization(True),
+            EntitiesAdded(entities=[{"entity": "entity1", "value": "value1"}]),
+        ],
+    )
+
+    user_message: UserUttered = list(tracker.events)[1]
+    # The entities from the policy predictions are accessible
+    assert user_message.entities
+
+    actual_serialized = user_message.as_dict()
+
+    # Assert entities predicted by policies are not persisted
+    assert not actual_serialized["parse_data"]["entities"]
+
+    expected_serialized = original_user_message.as_dict()
+    # don't compare timestamps
+    expected_serialized.pop("timestamp")
+    actual_serialized.pop("timestamp")
+
+    assert actual_serialized == expected_serialized
+
+
+@freezegun.freeze_time("2018-01-01")
+def test_policy_prediction_reflected_in_tracker_state():
+    entities_predicted_by_policy = [{"entity": "entity1", "value": "value1"}]
+    nlu_entities = [{"entity": "entityNLU", "value": "value100"}]
+
+    tracker = DialogueStateTracker.from_events(
+        "Tester",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "hi",
+                intent={"name": "greet"},
+                entities=nlu_entities.copy(),
+                message_id="unique",
+                metadata={"some": "data"},
+            ),
+            DefinePrevUserUtteredFeaturization(True),
+            EntitiesAdded(entities=entities_predicted_by_policy),
+        ],
+    )
+
+    tracker_state = tracker.current_state()
+
+    expected_state = {
+        "sender_id": "Tester",
+        "slots": {},
+        "latest_message": {
+            "intent": {"name": "greet"},
+            "entities": nlu_entities + entities_predicted_by_policy,
+            "text": "hi",
+            "message_id": "unique",
+            "metadata": {"some": "data"},
+        },
+        "latest_event_time": 1514764800.0,
+        "followup_action": None,
+        "paused": False,
+        "events": None,
+        "latest_input_channel": None,
+        "active_loop": {},
+        "latest_action": {"action_name": "action_listen"},
+        "latest_action_name": "action_listen",
+    }
+
+    assert tracker_state == expected_state
+
+    # Make sure we didn't change the actual event
+    assert tracker.latest_message.parse_data["entities"] == nlu_entities
+
+
+def test_autofill_slots_for_policy_entities():
+    policy_entity, policy_entity_value = "policy_entity", "end-to-end"
+    nlu_entity, nlu_entity_value = "nlu_entity", "nlu rocks"
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+            version: "2.0"
+            entities:
+            - {nlu_entity}
+            - {policy_entity}
+            slots:
+                {nlu_entity}:
+                    type: text
+                {policy_entity}:
+                    type: text
+            """
+        )
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "some sender",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                "hi",
+                intent={"name": "greet"},
+                entities=[{"entity": nlu_entity, "value": nlu_entity_value}],
+            ),
+            DefinePrevUserUtteredFeaturization(True),
+            EntitiesAdded(
+                entities=[
+                    {"entity": policy_entity, "value": policy_entity_value},
+                    {"entity": nlu_entity, "value": nlu_entity_value},
+                ]
+            ),
+        ],
+        domain=domain,
+        slots=domain.slots,
+    )
+
+    # Slots are correctly set
+    assert tracker.slots[nlu_entity].value == nlu_entity_value
+    assert tracker.slots[policy_entity].value == policy_entity_value
+
+    expected_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "hi",
+            intent={"name": "greet"},
+            entities=[
+                {"entity": nlu_entity, "value": nlu_entity_value},
+                # Added by `DefinePrevUserUtteredEntities`
+                {"entity": policy_entity, "value": policy_entity_value},
+            ],
+        ),
+        # SlotSet event added for entity predicted by NLU
+        SlotSet(nlu_entity, nlu_entity_value),
+        DefinePrevUserUtteredFeaturization(True),
+        EntitiesAdded(
+            entities=[
+                {"entity": policy_entity, "value": policy_entity_value},
+                {"entity": nlu_entity, "value": nlu_entity_value},
+            ]
+        ),
+        # SlotSet event added for entity predicted by policies
+        # This event is somewhat duplicate. We don't deduplicate as this is a true
+        # reflection of the given events and it doesn't change the actual state.
+        SlotSet(nlu_entity, nlu_entity_value),
+        SlotSet(policy_entity, policy_entity_value),
+    ]
+
+    for actual, expected in zip(tracker.events, expected_events):
+        assert actual == expected
+
+
+def test_tracker_fingerprinting_consistency():
+    slot = TextSlot(name="name", influence_conversation=True)
+    slot.value = "example"
+    tr1 = DialogueStateTracker("test_sender_id", slots=[slot])
+    tr2 = DialogueStateTracker("test_sender_id", slots=[slot])
+    f1 = tr1.fingerprint()
+    f2 = tr2.fingerprint()
+    assert f1 == f2
+
+
+def test_tracker_unique_fingerprint(domain: Domain):
+    slot = TextSlot(name="name", influence_conversation=True)
+    slot.value = "example"
+    tr = DialogueStateTracker("test_sender_id", slots=[slot])
+    f1 = tr.fingerprint()
+
+    event1 = UserUttered(
+        text="hello",
+        parse_data={
+            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+            "entities": [
+                {"entity": "city", "value": "London"},
+                {"entity": "count", "value": 1},
+            ],
+            "text": "hi",
+            "message_id": "3f4c04602a4947098c574b107d3ccc59",
+            "metadata": {},
+            "intent_ranking": [
+                {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748},
+                {"id": 0, "name": "deny", "confidence": 0.011255578137934208},
+            ],
+        },
+    )
+    tr.update(event1)
+    f2 = tr.fingerprint()
+    assert f1 != f2
+
+    event2 = ActionExecuted(action_name="action_listen")
+    tr.update(event2)
+    f3 = tr.fingerprint()
+    assert f2 != f3
+
+
+def test_tracker_fingerprint_story_reading(domain: Domain):
+    def build_tracker(domain: Domain) -> DialogueStateTracker:
+        story_yaml = """
+            stories:
+            - story: test story
+              steps:
+              - intent: greet
+              - action: utter_greet
+            """
+        reader = YAMLStoryReader(domain)
+        story_steps = reader.read_from_string(story_yaml)
+        events = []
+        for step in story_steps:
+            evts = step.events
+            if isinstance(evts, list):
+                events += evts
+            else:
+                events.append(evts)
+
+        slot = TextSlot(name="name", influence_conversation=True)
+        slot.value = "example"
+
+        tracker = DialogueStateTracker.from_events("sender_id", events, [slot])
+        return tracker
+
+    tracker1 = build_tracker(domain)
+    f1 = tracker1.fingerprint()
+
+    time.sleep(0.1)
+
+    tracker2 = build_tracker(domain)
+    f2 = tracker2.fingerprint()
+
+    assert f1 == f2

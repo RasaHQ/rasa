@@ -2,6 +2,7 @@ import textwrap
 from typing import Text
 
 import pytest
+import pathlib
 
 from rasa.shared.exceptions import YamlException, YamlSyntaxException
 import rasa.shared.utils.io
@@ -12,21 +13,24 @@ from rasa.shared.nlu.constants import (
     METADATA_INTENT,
     METADATA_EXAMPLE,
 )
-from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
 )
 
 
-MULTILINE_INTENT_EXAMPLES = f"""
-version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+MULTILINE_INTENT_EXAMPLES = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: intent_name
   examples: |
     - how much CO2 will that use?
     - how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
-"""
+    - what's the carbon footprint of a flight from london to new york?
+    - how much co2 to new york?
+    - how much co2 is produced on a return flight from london to new york?
+    - what's the co2 usage of a return flight to new york?
+    - can you calculate the co2 footprint of a flight to london?
+"""  # noqa: E501
 
 MULTILINE_INTENT_EXAMPLE_WITH_SYNONYM = """
 nlu:
@@ -41,9 +45,9 @@ nlu:
   examples: |
     how much CO2 will that use?
     - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
-"""
+"""  # noqa: E501
 
-INTENT_EXAMPLES_WITH_METADATA = """
+INTENT_EXAMPLES_WITH_METADATA = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: intent_name
   metadata:
@@ -54,8 +58,25 @@ nlu:
     metadata:
       sentiment: positive
   - text: |
-      how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
-"""
+      how much carbon will a one way flight from [new york]{{"entity": "city", "role": "from"}} to california produce?
+    metadata: co2-trip-calculation
+  - text: |
+      how much CO2 to [new york]{{"entity": "city", "role": "to"}}?
+- intent: greet
+  metadata: initiate-conversation
+  examples: |
+    - Hi
+    - Hello
+- intent: goodbye
+  examples:
+  - text: |
+      bye
+    metadata: positive-sentiment
+  - text: |
+      goodbye
+    metadata: positive-sentiment
+"""  # noqa: E501
+
 
 MINIMAL_VALID_EXAMPLE = """
 nlu:\n
@@ -141,7 +162,7 @@ def test_multiline_intent_is_parsed(example: Text):
 
     assert not len(record)
 
-    assert len(training_data.training_examples) == 2
+    assert len(training_data.training_examples) == 7
     assert training_data.training_examples[0].get(
         INTENT
     ) == training_data.training_examples[1].get(INTENT)
@@ -156,13 +177,40 @@ def test_intent_with_metadata_is_parsed():
 
     assert not len(record)
 
-    assert len(training_data.training_examples) == 2
-    example_1, example_2 = training_data.training_examples
+    assert len(training_data.training_examples) == 7
+    example_1, example_2, *other_examples = training_data.training_examples
     assert example_1.get(METADATA) == {
         METADATA_INTENT: ["johnny"],
         METADATA_EXAMPLE: {"sentiment": "positive"},
     }
-    assert example_2.get(METADATA) == {METADATA_INTENT: ["johnny"]}
+    assert example_2.get(METADATA) == {
+        METADATA_INTENT: ["johnny"],
+        METADATA_EXAMPLE: "co2-trip-calculation",
+    }
+
+
+def test_metadata_roundtrip():
+    reader = RasaYAMLReader()
+    result = reader.reads(INTENT_EXAMPLES_WITH_METADATA)
+
+    dumped = RasaYAMLWriter().dumps(result)
+    assert dumped == INTENT_EXAMPLES_WITH_METADATA
+
+    validation_reader = RasaYAMLReader()
+    dumped_result = validation_reader.reads(dumped)
+
+    assert dumped_result.training_examples == result.training_examples
+
+
+def test_write_metadata_stripped():
+    reader = RasaYAMLReader()
+    result = reader.reads(INTENT_EXAMPLES_WITH_METADATA)
+
+    # Add strippable characters to first example text
+    result.training_examples[0].data["text"] += "    \r\n "
+
+    dumped = RasaYAMLWriter().dumps(result)
+    assert dumped == INTENT_EXAMPLES_WITH_METADATA
 
 
 # This test would work only with examples that have a `version` key specified
@@ -310,9 +358,9 @@ def test_minimal_valid_example():
     assert not len(record)
 
 
-def test_minimal_yaml_nlu_file(tmp_path):
+def test_minimal_yaml_nlu_file(tmp_path: pathlib.Path):
     target_file = tmp_path / "test_nlu_file.yaml"
-    rasa.shared.utils.io.write_yaml(MINIMAL_VALID_EXAMPLE, target_file, True)
+    rasa.shared.utils.io.write_text_file(MINIMAL_VALID_EXAMPLE, target_file)
     assert RasaYAMLReader.is_yaml_nlu_file(target_file)
 
 
@@ -422,16 +470,25 @@ def test_read_mixed_training_data_file():
         assert not len(record)
 
 
-def test_responses_are_converted_from_markdown():
-    responses_md = textwrap.dedent(
+def test_responses_text_multiline_is_preserved():
+    responses_yml = textwrap.dedent(
         """
-      ## ask name
-      * chitchat/ask_name
-        - my name is Sara, Rasa's documentation bot!
+      responses:
+        utter_confirm:
+        - text: |-
+            First line
+            Second line
+            Third line
+        - text: One more response
+        utter_cancel:
+        - text: First line
+        - text: Second line
     """
     )
 
-    result = NLGMarkdownReader().reads(responses_md)
+    reader = RasaYAMLReader()
+    result = reader.reads(responses_yml)
+
     dumped = RasaYAMLWriter().dumps(result)
 
     validation_reader = RasaYAMLReader()
@@ -441,3 +498,19 @@ def test_responses_are_converted_from_markdown():
 
     # dumping again should also not change the format
     assert dumped == RasaYAMLWriter().dumps(dumped_result)
+
+
+def test_intent_examples_multiline_consistency(tmp_path: pathlib.Path):
+    """Test that multiline examples are written back as multiline examples."""
+
+    training_data_file = (
+        pathlib.Path("data") / "test_multiline_intent_examples_yaml" / "nlu.yml"
+    )
+    training_data_from_disc = RasaYAMLReader().read(filename=training_data_file)
+
+    tmp_file = tmp_path / "nlu.yml"
+    RasaYAMLWriter().dump(tmp_file, training_data_from_disc)
+    rewritten_file_content = tmp_file.read_text(encoding="utf-8")
+    original_file_content = training_data_file.read_text(encoding="utf-8")
+
+    assert original_file_content == rewritten_file_content

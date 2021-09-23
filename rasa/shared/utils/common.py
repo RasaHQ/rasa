@@ -1,43 +1,63 @@
 import asyncio
 import functools
 import importlib
+import inspect
 import logging
-from typing import Text, Dict, Optional, Any, List, Callable, Collection
+from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
+
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
 
 def class_from_module_path(
     module_path: Text, lookup_path: Optional[Text] = None
-) -> Any:
+) -> Type:
     """Given the module name and path of a class, tries to retrieve the class.
 
-    The loaded class can be used to instantiate new objects."""
-    # load the module, will raise ImportError if module cannot be loaded
+    The loaded class can be used to instantiate new objects.
+
+    Args:
+        module_path: either an absolute path to a Python class,
+                     or the name of the class in the local / global scope.
+        lookup_path: a path where to load the class from, if it cannot
+                     be found in the local / global scope.
+
+    Returns:
+        a Python class
+
+    Raises:
+        ImportError, in case the Python class cannot be found.
+        RasaException, in case the imported result is something other than a class
+    """
+    klass = None
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition(".")
         m = importlib.import_module(module_name)
-        # get the class, will raise AttributeError if class cannot be found
-        return getattr(m, class_name)
-    else:
-        module = globals().get(module_path, locals().get(module_path))
-        if module is not None:
-            return module
+        klass = getattr(m, class_name, None)
+    elif lookup_path:
+        # try to import the class from the lookup path
+        m = importlib.import_module(lookup_path)
+        klass = getattr(m, module_path, None)
 
-        if lookup_path:
-            # last resort: try to import the class from the lookup path
-            m = importlib.import_module(lookup_path)
-            return getattr(m, module_path)
-        else:
-            raise ImportError(f"Cannot retrieve class from path {module_path}.")
+    if klass is None:
+        raise ImportError(f"Cannot retrieve class from path {module_path}.")
+
+    if not inspect.isclass(klass):
+        raise RasaException(
+            f"`class_from_module_path()` is expected to return a class, "
+            f"but for {module_path} we got a {type(klass)}."
+        )
+    return klass
 
 
 def all_subclasses(cls: Any) -> List[Any]:
     """Returns all known (imported) subclasses of a class."""
-
-    return cls.__subclasses__() + [
+    classes = cls.__subclasses__() + [
         g for s in cls.__subclasses__() for g in all_subclasses(s)
     ]
+
+    return [subclass for subclass in classes if not inspect.isabstract(subclass)]
 
 
 def module_path_from_instance(inst: Any) -> Text:
@@ -55,12 +75,12 @@ def lazy_property(function: Callable) -> Any:
 
     The result gets stored in a local var. Computation of the property
     will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property."""
-
+    succeeding calls will use the value stored in the private property.
+    """
     attr_name = "_lazy_" + function.__name__
 
     @property
-    def _lazyprop(self):
+    def _lazyprop(self: Any) -> Any:
         if not hasattr(self, attr_name):
             setattr(self, attr_name, function(self))
         return getattr(self, attr_name)

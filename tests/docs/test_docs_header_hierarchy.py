@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import List, Text, Tuple
-import re
 
 import pytest
 

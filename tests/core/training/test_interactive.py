@@ -4,34 +4,35 @@ import os
 import uuid
 from collections import deque
 from pathlib import Path
-from typing import Any, Dict, List, Text, Tuple, Callable
+from typing import Any, Dict, List, Text, Tuple
+from tests.conftest import AsyncMock
 
-import mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from mock import Mock
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
+import unittest.mock
+from unittest.mock import Mock
 
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.actions import action
 from rasa.core.training import interactive
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import BotUttered, ActionExecuted
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
-    MarkdownStoryReader,
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DEFAULT_SENDER_ID,
+    DOCS_URL_POLICIES,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import BotUttered, ActionExecuted, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT
-from rasa.shared.nlu.training_data.formats import RasaYAMLReader, MarkdownReader
-from rasa.shared.nlu.training_data.loading import RASA, MARKDOWN, UNK, RASA_YAML
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from rasa.shared.nlu.training_data.loading import RASA, UNK, RASA_YAML
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 from tests import utilities
@@ -44,15 +45,15 @@ def mock_endpoint() -> EndpointConfig:
 
 @pytest.fixture
 def mock_file_importer(
-    default_stack_config: Text, default_nlu_data: Text, default_stories_file: Text
+    stack_config_path: Text, nlu_data_path: Text, stories_path: Text, domain_path: Text
 ):
-    domain_path = DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    domain_path = domain_path
     return TrainingDataImporter.load_from_config(
-        default_stack_config, domain_path, [default_nlu_data, default_stories_file]
+        stack_config_path, domain_path, [nlu_data_path, stories_path]
     )
 
 
-async def test_send_message(mock_endpoint):
+async def test_send_message(mock_endpoint: EndpointConfig):
     sender_id = uuid.uuid4().hex
 
     url = f"{mock_endpoint.url}/conversations/{sender_id}/messages"
@@ -70,7 +71,7 @@ async def test_send_message(mock_endpoint):
         assert utilities.json_of_latest_request(r) == expected
 
 
-async def test_request_prediction(mock_endpoint):
+async def test_request_prediction(mock_endpoint: EndpointConfig):
     sender_id = uuid.uuid4().hex
 
     url = f"{mock_endpoint.url}/conversations/{sender_id}/predict"
@@ -167,14 +168,25 @@ def test_all_events_before_user_msg():
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
     evts = tracker_json.get("events")
 
-    m = interactive.all_events_before_latest_user_msg(evts)
+    m = all_events_before_latest_user_msg(evts)
 
     assert m is not None
     assert m == evts[:4]
 
 
+def all_events_before_latest_user_msg(
+    events: List[Dict[Text, Any]]
+) -> List[Dict[Text, Any]]:
+    """Return all events that happened before the most recent user message."""
+
+    for i, e in enumerate(reversed(events)):
+        if e.get("event") == UserUttered.type_name:
+            return events[: -(i + 1)]
+    return events
+
+
 def test_all_events_before_user_msg_on_no_events():
-    assert interactive.all_events_before_latest_user_msg([]) == []
+    assert all_events_before_latest_user_msg([]) == []
 
 
 async def test_print_history(mock_endpoint):
@@ -468,33 +480,8 @@ async def test_undo_latest_msg(mock_endpoint):
         assert corrected_event["event"] == "undo"
 
 
-@pytest.mark.parametrize(
-    "test_file_story, validator_story, test_file_nlu, validator_nlu, test_file_domain",
-    [
-        (
-            "stories.yml",
-            YAMLStoryReader.is_stories_file,
-            "nlu.yml",
-            RasaYAMLReader.is_yaml_nlu_file,
-            "domain.yml",
-        ),
-        (
-            "stories.md",
-            MarkdownStoryReader.is_stories_file,
-            "nlu.md",
-            MarkdownReader.is_markdown_nlu_file,
-            "domain.yml",
-        ),
-    ],
-)
 async def test_write_stories_to_file(
-    test_file_story: Text,
-    validator_story: Callable[[Text], bool],
-    test_file_nlu: Text,
-    validator_nlu: Callable[[Text], bool],
-    test_file_domain: Text,
-    mock_endpoint: EndpointConfig,
-    tmp_path,
+    mock_endpoint: EndpointConfig, tmp_path,
 ):
     tracker_dump = rasa.shared.utils.io.read_file(
         "data/test_trackers/tracker_moodbot_with_new_utterances.json"
@@ -507,9 +494,15 @@ async def test_write_stories_to_file(
     domain_url = f"{mock_endpoint.url}/domain"
 
     target_files = [
-        {"name": str(tmp_path / test_file_story), "validator": validator_story},
-        {"name": str(tmp_path / test_file_nlu), "validator": validator_nlu},
-        {"name": str(tmp_path / test_file_domain), "validator": lambda path: True},
+        {
+            "name": str(tmp_path / "stories.yml"),
+            "validator": YAMLStoryReader.is_stories_file,
+        },
+        {
+            "name": str(tmp_path / "nlu.yml"),
+            "validator": RasaYAMLReader.is_yaml_nlu_file,
+        },
+        {"name": str(tmp_path / "domain.yml"), "validator": lambda path: True},
     ]
 
     def info() -> Tuple[Text, Text, Text]:
@@ -582,14 +575,15 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
     form_name = "my_form"
     old_domain = Domain.from_yaml(
         f"""
-    actions:
-    - utter_greet
-    - utter_goodbye
-    forms:
-    - {form_name}
-    intents:
-    - greet
-    """
+        version: "2.0"
+        actions:
+        - utter_greet
+        - utter_goodbye
+        forms:
+          {form_name}: {{}}
+        intents:
+        - greet
+        """
     )
 
     events = [ActionExecuted(form_name), ActionExecuted(ACTION_LISTEN_NAME)]
@@ -597,12 +591,12 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
 
     interactive._write_domain_to_file(domain_path, events, old_domain)
 
-    assert set(Domain.from_path(domain_path).action_names) == set(
-        old_domain.action_names
+    assert set(Domain.from_path(domain_path).action_names_or_texts) == set(
+        old_domain.action_names_or_texts
     )
 
 
-async def test_filter_intents_before_save_nlu_file():
+async def test_filter_intents_before_save_nlu_file(domain_path: Text):
     # Test method interactive._filter_messages
     from random import choice
 
@@ -610,7 +604,7 @@ async def test_filter_intents_before_save_nlu_file():
     goodbye = {"text": "I am inevitable", "intent": "goodbye", "text_features": [0.5]}
     test_msgs = [Message(data=greet), Message(data=goodbye)]
 
-    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    domain_file = domain_path
     domain = Domain.load(domain_file)
     intents = domain.intents
 
@@ -625,12 +619,7 @@ async def test_filter_intents_before_save_nlu_file():
 
 @pytest.mark.parametrize(
     "path, expected_format",
-    [
-        ("bla.json", RASA),
-        ("other.md", MARKDOWN),
-        ("other.yml", RASA_YAML),
-        ("unknown", UNK),
-    ],
+    [("bla.json", RASA), ("other.yml", RASA_YAML), ("unknown", UNK),],
 )
 def test_get_nlu_target_format(path: Text, expected_format: Text):
     assert interactive._get_nlu_target_format(path) == expected_format
@@ -659,9 +648,7 @@ async def test_initial_plotting_call(
     mock_file_importer: TrainingDataImporter,
 ):
     get_training_trackers = Mock(return_value=trackers)
-    monkeypatch.setattr(
-        interactive, "_get_training_trackers", asyncio.coroutine(get_training_trackers)
-    )
+    monkeypatch.setattr(interactive, "_get_training_trackers", get_training_trackers)
 
     monkeypatch.setattr(interactive.utils, "is_limit_reached", lambda _, __: True)
 
@@ -722,11 +709,172 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
     m.assert_called_once_with("export_path", 1, a=2)
 
 
+@pytest.mark.parametrize(
+    "action_name, question, is_marked_as_correct, sent_action_name",
+    [
+        (
+            ACTION_UNLIKELY_INTENT_NAME,
+            f"The bot wants to run 'action_unlikely_intent' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"to learn more. Is that correct?",
+            True,
+            ACTION_UNLIKELY_INTENT_NAME,
+        ),
+        (
+            ACTION_UNLIKELY_INTENT_NAME,
+            f"The bot wants to run 'action_unlikely_intent' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"to learn more. Is that correct?",
+            False,
+            ACTION_UNLIKELY_INTENT_NAME,
+        ),
+        (
+            "action_test",
+            "The bot wants to run 'action_test', correct?",
+            True,
+            "action_test",
+        ),
+        (
+            "action_test",
+            "The bot wants to run 'action_test', correct?",
+            False,
+            "action_another_one",
+        ),
+    ],
+)
+async def test_correct_question_for_action_name_was_asked(
+    monkeypatch: MonkeyPatch,
+    mock_endpoint: EndpointConfig,
+    action_name: Text,
+    question: Text,
+    is_marked_as_correct: bool,
+    sent_action_name: Text,
+):
+    conversation_id = "conversation_id"
+    policy = "policy"
+    tracker = DialogueStateTracker.from_events("some_sender", [])
+
+    monkeypatch.setattr(
+        interactive,
+        "retrieve_tracker",
+        AsyncMock(return_value=tracker.current_state()),
+    )
+    monkeypatch.setattr(
+        interactive, "_ask_questions", AsyncMock(return_value=is_marked_as_correct)
+    )
+    monkeypatch.setattr(
+        interactive,
+        "_request_action_from_user",
+        AsyncMock(return_value=("action_another_one", False,)),
+    )
+
+    mocked_send_action = AsyncMock()
+    monkeypatch.setattr(interactive, "send_action", mocked_send_action)
+
+    mocked_confirm = Mock(return_value=None)
+    monkeypatch.setattr(interactive.questionary, "confirm", mocked_confirm)
+
+    # validate the action and make sure that the correct question was asked
+    await interactive._validate_action(
+        action_name, policy, 1.0, [], mock_endpoint, conversation_id
+    )
+    mocked_confirm.assert_called_once_with(question)
+    args, kwargs = mocked_send_action.call_args_list[-1]
+    assert args[2] == sent_action_name
+
+
 def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
 
     m = Mock(side_effect=PermissionError())
     with pytest.raises(PermissionError):
         interactive._retry_on_error(m, "export_path", 1, a=2)
-    c = mock.call("export_path", 1, a=2)
+    c = unittest.mock.call("export_path", 1, a=2)
     m.assert_has_calls([c, c, c])
+
+
+@pytest.mark.parametrize(
+    "text,wrapping_width,true_wrapping_width",
+    [
+        ("abcdefgh", 8, 8),
+        ("abcdefgh", 4, 4),
+        ("abcdefgh", 50, 50),
+        ("Well, hello there my friend!", 20, 20),
+        ("我要去北京", 8, 4),
+        (
+            "牙龈出血的症状对应得疾病可能有：肥大性龈炎、骨髓增生异常综合征、"
+            "口腔疾病、小儿出血性疾病、边缘性龈炎、获得性维生素K依赖性凝血因子异常、"
+            "小儿白血病、回归热、坏死性龈口炎、青春期功能失调性子宫出血、郎-奥韦综合征、"
+            "急性淋巴细胞白血病、感染性血小板减少性紫癜、单纯性牙周炎、单核细胞白血病、"
+            "δ-贮存池病、小儿特发性血小板减少性紫癜、老年人真性红细胞增多症、"
+            "急性根尖牙周炎、慢性根尖牙周炎、创伤性口炎、青少年牙周炎、慢性牙周炎",
+            119,
+            60,
+        ),
+    ],
+)
+def test_calc_true_wrapping_width(
+    text: Text, wrapping_width: int, true_wrapping_width: int
+) -> None:
+    assert (
+        interactive.calc_true_wrapping_width(text, wrapping_width)
+        == true_wrapping_width
+    )
+
+
+def test_no_chat_history_overflow() -> None:
+    """Should run without crashing.
+
+    originally the long chinese utterance lead to a table width overflow and
+    available width for new utterances being < 0."""
+    events = [
+        {
+            "event": "action",
+            "timestamp": 1619956299.2875981,
+            "name": "action_session_start",
+            "policy": None,
+            "confidence": 1.0,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+        {"event": "session_started", "timestamp": 1619956299.287627},
+        {
+            "event": "bot",
+            "timestamp": 1619956324.2313201,
+            "metadata": {"utter_action": "utter_long_chinese"},
+            "text": "牙龈出血的症状对应得疾病可能有：肥大性龈炎、骨髓增生异常综合征、"
+            "口腔疾病、小儿出血性疾病、边缘性龈炎、获得性维生素K依赖性凝血因子异常、"
+            "小儿白血病、回归热、坏死性龈口炎、青春期功能失调性子宫出血、"
+            "郎-奥韦综合征、急性淋巴细胞白血病、感染性血小板减少性紫癜、"
+            "单纯性牙周炎、单核细胞白血病、δ-贮存池病、小儿特发性血小板减少性紫癜、"
+            "老年人真性红细胞增多症、急性根尖牙周炎、慢性根尖牙周炎、创伤性口炎、"
+            "青少年牙周炎、慢性牙周炎",
+        },
+        {
+            "event": "user",
+            "timestamp": 1619956299.509249,
+            "text": "hi",
+            "parse_data": {
+                "intent": {
+                    "id": -2517711783688260279,
+                    "name": "greet",
+                    "confidence": 1.0,
+                },
+                "entities": [],
+                "text": "hi",
+                "message_id": "4a95248b3c6b480c9550f9c19062e2bc",
+                "metadata": {},
+            },
+            "input_channel": None,
+            "message_id": "4a95248b3c6b480c9550f9c19062e2bc",
+            "metadata": {},
+        },
+    ]
+
+    rasa.core.training.interactive._chat_history_table(events)

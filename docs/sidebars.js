@@ -115,6 +115,7 @@ module.exports = {
       collapsed: true,
       items: [
         'http-api',
+        'nlu-only-server'
         // 'jupyter-notebooks',
       ],
     },
@@ -131,7 +132,7 @@ module.exports = {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: ['changelog', 'migration-guide'],
+      items: ['changelog', 'migration-guide', 'actively-maintained-versions'],
     },
   ],
 };

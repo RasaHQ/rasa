@@ -1,5 +1,6 @@
 backend:
   - 'pyproject.toml'
+  - 'poetry.lock'
   - 'rasa/**/*'
   - 'tests/**/*'
   - 'data/**/*'
@@ -8,6 +9,7 @@ backend:
 
 docker:
   - 'pyproject.toml'
+  - 'poetry.lock'
   - 'rasa/**/*'
   - 'docker/**/*'
   - 'Makefile'

@@ -13,7 +13,10 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.constants import UTTER_PREFIX
+from rasa.shared.constants import (
+    UTTER_PREFIX,
+    IGNORED_INTENTS,
+)
 from rasa.shared.core.events import (
     Event,
     SlotSet,
@@ -22,6 +25,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.shared.core.slots import ListSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
@@ -44,9 +48,11 @@ class FormAction(LoopAction):
         self.action_endpoint = action_endpoint
         # creating it requires domain, which we don't have in init
         # we'll create it on the first call
-        self._unique_entity_mappings = None
+        self._unique_entity_mappings: Set[Text] = set()
+        self._have_unique_entity_mappings_been_initialized = False
 
     def name(self) -> Text:
+        """Return the form name."""
         return self._form_name
 
     def required_slots(self, domain: Domain) -> List[Text]:
@@ -76,7 +82,6 @@ class FormAction(LoopAction):
             - role if it is not None
             - group if it is not None
         """
-
         intent, not_intent = self._list_intents(intent, not_intent)
 
         return {
@@ -95,10 +100,9 @@ class FormAction(LoopAction):
 
         If None, map requested slot to an entity with the same name
         """
-
         requested_slot_mappings = self._to_list(
             domain.slot_mapping_for_form(self.name()).get(
-                slot_to_fill, self.from_entity(slot_to_fill)
+                slot_to_fill, self.from_entity(slot_to_fill),
             )
         )
         # check provided slot mappings
@@ -158,21 +162,45 @@ class FormAction(LoopAction):
     def _entity_mapping_is_unique(
         self, slot_mapping: Dict[Text, Any], domain: Domain
     ) -> bool:
-        if self._unique_entity_mappings is None:
+        if not self._have_unique_entity_mappings_been_initialized:
             # create unique entity mappings on the first call
             self._unique_entity_mappings = self._create_unique_entity_mappings(domain)
+            self._have_unique_entity_mappings_been_initialized = True
 
         mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
         return mapping_as_string in self._unique_entity_mappings
 
-    @staticmethod
-    def intent_is_desired(
-        requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker"
-    ) -> bool:
-        """Check whether user intent matches intent conditions"""
+    def get_ignored_intents(self, domain: Domain) -> List[Text]:
+        """Returns a list of ignored intents.
 
-        mapping_intents = requested_slot_mapping.get("intent", [])
-        mapping_not_intents = requested_slot_mapping.get("not_intent", [])
+        Args:
+            domain: The current model domain.
+
+        Returns:
+            The value/s found in `ignored_intents` parameter in the `domain.yml`
+            (under forms).
+        """
+        ignored_intents = domain.forms[self.name()].get(IGNORED_INTENTS, [])
+        if not isinstance(ignored_intents, list):
+            ignored_intents = [ignored_intents]
+
+        return ignored_intents
+
+    def intent_is_desired(
+        self,
+        requested_slot_mapping: Dict[Text, Any],
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+    ) -> bool:
+        """Check whether user intent matches intent conditions."""
+        mapping_intents = FormAction._to_list(requested_slot_mapping.get("intent", []))
+        mapping_not_intents = FormAction._to_list(
+            requested_slot_mapping.get("not_intent", [])
+        )
+
+        mapping_not_intents = set(
+            mapping_not_intents + self.get_ignored_intents(domain)
+        )
 
         intent = tracker.latest_message.intent.get("name")
 
@@ -200,7 +228,6 @@ class FormAction(LoopAction):
         Returns:
             True, if slot should be filled, false otherwise.
         """
-
         # slot name is equal to the entity type
         slot_equals_entity = slot == slot_mapping.get("entity")
         # if entity mapping is unique, it means that an entity always sets
@@ -215,9 +242,10 @@ class FormAction(LoopAction):
         ) or entity_type_of_slot_to_fill != slot_mapping.get("entity"):
             slot_fulfils_entity_mapping = False
         else:
-            matching_values = self.get_entity_value(
+            matching_values = self.get_entity_value_for_slot(
                 slot_mapping.get("entity"),
                 tracker,
+                slot,
                 slot_mapping.get("role"),
                 slot_mapping.get("group"),
             )
@@ -230,9 +258,10 @@ class FormAction(LoopAction):
         )
 
     @staticmethod
-    def get_entity_value(
+    def get_entity_value_for_slot(
         name: Text,
         tracker: "DialogueStateTracker",
+        slot_to_be_filled: Text,
         role: Optional[Text] = None,
         group: Optional[Text] = None,
     ) -> Any:
@@ -241,6 +270,7 @@ class FormAction(LoopAction):
         Args:
             name: entity type (name) of interest
             tracker: the tracker
+            slot_to_be_filled: Slot which is supposed to be filled by this entity.
             role: optional entity role of interest
             group: optional entity group of interest
 
@@ -251,10 +281,16 @@ class FormAction(LoopAction):
         value = list(
             tracker.get_latest_entity_values(name, entity_group=group, entity_role=role)
         )
+
+        if isinstance(tracker.slots.get(slot_to_be_filled), ListSlot):
+            return value
+
         if len(value) == 0:
-            value = None
-        elif len(value) == 1:
-            value = value[0]
+            return None
+
+        if len(value) == 1:
+            return value[0]
+
         return value
 
     def extract_other_slots(
@@ -264,7 +300,7 @@ class FormAction(LoopAction):
         if they are set by corresponding entities from the user input
         else return `None`.
         """
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        slot_to_fill = self.get_slot_to_fill(tracker)
 
         entity_type_of_slot_to_fill = self._get_entity_type_of_slot_to_fill(
             slot_to_fill, domain
@@ -281,7 +317,7 @@ class FormAction(LoopAction):
                     # check whether the slot should be filled by an entity in the input
                     should_fill_entity_slot = (
                         slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
-                        and self.intent_is_desired(slot_mapping, tracker)
+                        and self.intent_is_desired(slot_mapping, tracker, domain)
                         and self.entity_is_desired(
                             slot_mapping,
                             slot,
@@ -295,12 +331,13 @@ class FormAction(LoopAction):
                     should_fill_trigger_slot = (
                         tracker.active_loop_name != self.name()
                         and slot_mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
-                        and self.intent_is_desired(slot_mapping, tracker)
+                        and self.intent_is_desired(slot_mapping, tracker, domain)
                     )
                     if should_fill_entity_slot:
-                        value = self.get_entity_value(
+                        value = self.get_entity_value_for_slot(
                             slot_mapping["entity"],
                             tracker,
+                            slot,
                             slot_mapping.get("role"),
                             slot_mapping.get("group"),
                         )
@@ -317,28 +354,50 @@ class FormAction(LoopAction):
 
         return slot_values
 
-    def extract_requested_slot(
-        self, tracker: "DialogueStateTracker", domain: Domain
-    ) -> Dict[Text, Any]:
-        """Extract the value of requested slot from a user input
-        else return `None`.
+    def get_slot_to_fill(self, tracker: "DialogueStateTracker") -> Optional[str]:
+        """Gets the name of the slot which should be filled next.
+
+        When switching to another form, the requested slot setting is still from the
+        previous form and must be ignored.
+
+        Returns:
+            The slot name or `None`
         """
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        return (
+            tracker.get_slot(REQUESTED_SLOT)
+            if tracker.active_loop_name == self.name()
+            else None
+        )
+
+    def extract_requested_slot(
+        self, tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text,
+    ) -> Dict[Text, Any]:
+        """Extract the value of requested slot from a user input else return `None`.
+
+        Args:
+            tracker: a DialogueStateTracker instance
+            domain: the current domain
+            slot_to_fill: the name of the slot to fill
+
+        Returns:
+            a dictionary with one key being the name of the slot to fill
+            and its value being the slot value, or an empty dictionary
+            if no slot value was found.
+        """
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
         # get mapping for requested slot
         requested_slot_mappings = self.get_mappings_for_slot(slot_to_fill, domain)
-
         for requested_slot_mapping in requested_slot_mappings:
             logger.debug(f"Got mapping '{requested_slot_mapping}'")
 
-            if self.intent_is_desired(requested_slot_mapping, tracker):
+            if self.intent_is_desired(requested_slot_mapping, tracker, domain):
                 mapping_type = requested_slot_mapping["type"]
-
                 if mapping_type == str(SlotMapping.FROM_ENTITY):
-                    value = self.get_entity_value(
+                    value = self.get_entity_value_for_slot(
                         requested_slot_mapping.get("entity"),
                         tracker,
+                        slot_to_fill,
                         requested_slot_mapping.get("role"),
                         requested_slot_mapping.get("group"),
                     )
@@ -369,15 +428,15 @@ class FormAction(LoopAction):
         domain: Domain,
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
-    ) -> List[Event]:
+    ) -> List[Union[SlotSet, Event]]:
         """Validate the extracted slots.
 
         If a custom action is available for validating the slots, we call it to validate
         them. Otherwise there is no validation.
 
         Args:
-            slot_candidates: Extracted slots which are candidates to fill the slots required
-                by the form.
+            slot_candidates: Extracted slots which are candidates to fill the slots
+                required by the form.
             tracker: The current conversation tracker.
             domain: The current model domain.
             output_channel: The output channel which can be used to send messages
@@ -389,13 +448,13 @@ class FormAction(LoopAction):
             for the validated slots.
         """
         logger.debug(f"Validating extracted slots: {slot_candidates}")
-        events = [
+        events: List[Union[SlotSet, Event]] = [
             SlotSet(slot_name, value) for slot_name, value in slot_candidates.items()
         ]
 
         validate_name = f"validate_{self.name()}"
 
-        if validate_name not in domain.action_names:
+        if validate_name not in domain.action_names_or_texts:
             return events
 
         _tracker = self._temporary_tracker(tracker, events, domain)
@@ -422,10 +481,26 @@ class FormAction(LoopAction):
         return DialogueStateTracker.from_events(
             current_tracker.sender_id,
             current_tracker.events_after_latest_restart()
+            # Insert SlotSet event to make sure REQUESTED_SLOT belongs to active form.
+            + [SlotSet(REQUESTED_SLOT, self.get_slot_to_fill(current_tracker))]
             # Insert form execution event so that it's clearly distinguishable which
             # events were newly added.
             + [ActionExecuted(self.name())] + additional_events,
             slots=domain.slots,
+        )
+
+    def _user_rejected_manually(self, validation_events: List[Event]) -> bool:
+        """Checks if user rejected the form execution during a slot_validation.
+
+        Args:
+            validation_events: Events returned by the custom slot_validation action
+
+        Returns:
+            True if the validation_events include an ActionExecutionRejected event,
+            else False.
+        """
+        return any(
+            isinstance(event, ActionExecutionRejected) for event in validation_events
         )
 
     async def validate(
@@ -434,40 +509,47 @@ class FormAction(LoopAction):
         domain: Domain,
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
-    ) -> List[Event]:
+    ) -> List[Union[SlotSet, Event]]:
         """Extract and validate value of requested slot.
 
         If nothing was extracted reject execution of the form action.
         Subclass this method to add custom validation and rejection logic
         """
-
         # extract other slots that were not requested
         # but set by corresponding entity or trigger intent mapping
         slot_values = self.extract_other_slots(tracker, domain)
 
         # extract requested slot
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+        slot_to_fill = self.get_slot_to_fill(tracker)
         if slot_to_fill:
-            slot_values.update(self.extract_requested_slot(tracker, domain))
+            slot_values.update(
+                self.extract_requested_slot(tracker, domain, slot_to_fill)
+            )
 
         validation_events = await self.validate_slots(
             slot_values, tracker, domain, output_channel, nlg
         )
 
         some_slots_were_validated = any(
-            isinstance(event, SlotSet) for event in validation_events
+            isinstance(event, SlotSet)
+            for event in validation_events
+            # Ignore `SlotSet`s  for `REQUESTED_SLOT` as that's not a slot which needs
+            # to be filled by the user.
+            if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
-        user_rejected_manually = any(
-            isinstance(event, ActionExecutionRejected) for event in validation_events
-        )
+
         if (
             slot_to_fill
             and not some_slots_were_validated
-            and not user_rejected_manually
+            and not self._user_rejected_manually(validation_events)
         ):
             # reject to execute the form action
             # if some slot was requested but nothing was extracted
             # it will allow other policies to predict another action
+            #
+            # don't raise it here if the user rejected manually, to allow slots other
+            # than the requested slot to be filled.
+            #
             raise ActionExecutionRejection(
                 self.name(),
                 f"Failed to extract slot {slot_to_fill} with action {self.name()}",
@@ -481,9 +563,9 @@ class FormAction(LoopAction):
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
         events_so_far: List[Event],
-    ) -> List[Event]:
-        """Request the next slot and utter template if needed, else return `None`."""
-        request_slot_events = []
+    ) -> List[Union[SlotSet, Event]]:
+        """Request the next slot and response if needed, else return `None`."""
+        request_slot_events: List[Event] = []
 
         if await self.is_done(output_channel, nlg, tracker, domain, events_so_far):
             # The custom action for slot validation decided to stop the form early
@@ -525,20 +607,21 @@ class FormAction(LoopAction):
             None,
         )
 
-    def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Text:
+    def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Optional[Text]:
         search_path = [
             f"action_ask_{self._form_name}_{slot_name}",
             f"{UTTER_PREFIX}ask_{self._form_name}_{slot_name}",
             f"action_ask_{slot_name}",
+            f"{UTTER_PREFIX}ask_{slot_name}",
         ]
 
         found_actions = (
             action_name
             for action_name in search_path
-            if action_name in domain.action_names
+            if action_name in domain.action_names_or_texts
         )
 
-        return next(found_actions, f"{UTTER_PREFIX}ask_{slot_name}")
+        return next(found_actions, None)
 
     async def _ask_for_slot(
         self,
@@ -550,18 +633,26 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         logger.debug(f"Request next slot '{slot_name}'")
 
-        action_to_ask_for_next_slot = action.action_from_name(
-            self._name_of_utterance(domain, slot_name), domain, self.action_endpoint
+        action_to_ask_for_next_slot = self._name_of_utterance(domain, slot_name)
+        if not action_to_ask_for_next_slot:
+            # Use a debug log as the user might have asked as part of a custom action
+            logger.debug(
+                f"There was no action found to ask for slot '{slot_name}' "
+                f"name to be filled."
+            )
+            return []
+
+        action_to_ask_for_next_slot = action.action_for_name_or_text(
+            action_to_ask_for_next_slot, domain, self.action_endpoint
         )
-        events_to_ask_for_next_slot = await action_to_ask_for_next_slot.run(
+        return await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain
         )
-        return events_to_ask_for_next_slot
 
     # helpers
     @staticmethod
     def _to_list(x: Optional[Any]) -> List[Any]:
-        """Convert object to a list if it is not a list, `None` converted to empty list."""
+        """Convert object to a list if it isn't."""
         if x is None:
             x = []
         elif not isinstance(x, list):
@@ -574,7 +665,7 @@ class FormAction(LoopAction):
         intent: Optional[Union[Text, List[Text]]] = None,
         not_intent: Optional[Union[Text, List[Text]]] = None,
     ) -> Tuple[List[Text], List[Text]]:
-        """Check provided intent and not_intent"""
+        """Check provided intent and not_intent."""
         if intent and not_intent:
             raise ValueError(
                 f"Providing  both intent '{intent}' and not_intent '{not_intent}' "
@@ -602,17 +693,19 @@ class FormAction(LoopAction):
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
         )
+
         if needs_validation:
             logger.debug(f"Validating user input '{tracker.latest_message}'.")
             return await self.validate(tracker, domain, output_channel, nlg)
-
-        logger.debug("Skipping validation.")
-        return []
+        else:
+            # Needed to determine which slots to request although there are no slots
+            # to actually validate, which happens when coming back to the form after
+            # an unhappy path
+            return await self.validate_slots({}, tracker, domain, output_channel, nlg)
 
     @staticmethod
     def _should_request_slot(tracker: "DialogueStateTracker", slot_name: Text) -> bool:
-        """Check whether form action should request given slot"""
-
+        """Check whether form action should request given slot."""
         return tracker.get_slot(slot_name) is None
 
     async def activate(
@@ -638,7 +731,6 @@ class FormAction(LoopAction):
         Returns:
             Events from the activation.
         """
-
         logger.debug(f"Activated the form '{self.name()}'.")
         # collect values of required slots filled before activation
         prefilled_slots = {}
@@ -666,9 +758,10 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         events = await self._validate_if_required(tracker, domain, output_channel, nlg)
 
-        events += await self.request_next_slot(
-            tracker, domain, output_channel, nlg, events_so_far + events
-        )
+        if not self._user_rejected_manually(events):
+            events += await self.request_next_slot(
+                tracker, domain, output_channel, nlg, events_so_far + events
+            )
 
         return events
 

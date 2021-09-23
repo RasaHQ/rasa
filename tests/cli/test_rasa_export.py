@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from typing import Callable, Optional, Dict, Text, List, Tuple
+from typing import Callable, Optional, Text, List, Tuple
 from unittest.mock import Mock
 
 import pytest
@@ -176,10 +176,6 @@ def test_get_continuation_command(
         export._get_continuation_command(exporter, current_timestamp)
         == f"rasa export {expected}"
     )
-
-
-def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
-    event["sender_id"] = conversation_id
 
 
 def prepare_namespace_and_mocked_tracker_store_with_events(

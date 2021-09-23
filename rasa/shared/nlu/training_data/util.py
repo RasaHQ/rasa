@@ -2,8 +2,9 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, Optional, Text, Match
+from typing import Any, Dict, Optional, Text, Match, List
 
+import scipy.sparse
 from rasa.shared.nlu.constants import (
     ENTITIES,
     EXTRACTOR,
@@ -22,6 +23,7 @@ import rasa.shared.data
 logger = logging.getLogger(__name__)
 
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+ESCAPE_CHARS = set(ESCAPE_DCT.keys())
 ESCAPE = re.compile(f'[{"".join(ESCAPE_DCT.values())}]')
 UNESCAPE_DCT = {espaced_char: char for char, espaced_char in ESCAPE_DCT.items()}
 UNESCAPE = re.compile(f'[{"".join(UNESCAPE_DCT.values())}]')
@@ -29,7 +31,7 @@ GROUP_COMPLETE_MATCH = 0
 
 
 def transform_entity_synonyms(
-    synonyms, known_synonyms: Optional[Dict[Text, Any]] = None
+    synonyms: List[Dict[Text, Any]], known_synonyms: Optional[Dict[Text, Any]] = None
 ) -> Dict[Text, Any]:
     """Transforms the entity synonyms into a text->value dictionary"""
     entity_synonyms = known_synonyms if known_synonyms else {}
@@ -79,7 +81,6 @@ def get_file_format_extension(resource_name: Text) -> Text:
         return rasa.shared.data.yaml_file_extension()
 
     known_file_formats = {
-        loading.MARKDOWN: rasa.shared.data.markdown_file_extension(),
         loading.RASA_YAML: rasa.shared.data.yaml_file_extension(),
     }
     fformat = file_formats[0]
@@ -145,6 +146,12 @@ def template_key_to_intent_response_key(template_key: Text) -> Text:
     return template_key.split(UTTER_PREFIX)[1]
 
 
+def has_string_escape_chars(s: Text) -> bool:
+    """Checks whether there are any of the escape characters in the string."""
+    intersection = ESCAPE_CHARS.intersection(set(s))
+    return len(intersection) > 0
+
+
 def encode_string(s: Text) -> Text:
     """Return an encoded python string."""
 
@@ -203,3 +210,18 @@ def build_entity(
 
     entity.update(kwargs)
     return entity
+
+
+def sparse_matrix_to_string(m: scipy.sparse.spmatrix) -> Text:
+    """Turns a sparse matrix into a string.
+
+    Will return a line "(i,j)  v" for each value in the matrix.
+
+    taken from official scipy source to operate on full sparse matrix to not have
+    to change the `maxprint` property in-place.
+    https://github.com/scipy/scipy/blob/v1.7.0/scipy/sparse/base.py#L258
+    """
+    # make sure sparse matrix is in COOrdinate format
+    m_coo = m.tocoo()
+    triples = zip(list(zip(m_coo.row, m_coo.col)), m_coo.data)
+    return "\n".join([("  %s\t%s" % t) for t in triples])

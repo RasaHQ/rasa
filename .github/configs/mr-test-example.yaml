@@ -26,6 +26,17 @@
 ##    config: ["all"]
 ##  - dataset: ["Hermit"]
 ##    config: ["Sparse + DIET(seq) + ResponseSelector(t2t)", "BERT + DIET(seq) + ResponseSelector(t2t)"]
+#
+## Example: Define a branch name to check-out for a dataset repository. Default branch is 'main'
+## dataset_branch: "test-branch"
+## include:
+##  - dataset: ["Carbon Bot", "Sara"]
+##    config: ["all"]
+##
+## Shortcuts:
+## You can use the "all" shortcut to include all available configurations or datasets.
+## You can use the "all-nlu" shortcut to include all available NLU configurations or datasets.
+## You can use the "all-core" shortcut to include all available core configurations or datasets.
 
 include:
   - dataset: ["Carbon Bot"]

@@ -11,6 +11,9 @@ from rasa.shared.importers import utils
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.utils.common import mark_as_experimental_feature
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +26,7 @@ class MultiProjectImporter(TrainingDataImporter):
         training_data_paths: Optional[Union[List[Text], Text]] = None,
         project_directory: Optional[Text] = None,
     ):
-        self.config = rasa.shared.utils.io.read_config_file(config_file)
+        self.config = rasa.shared.utils.io.read_model_configuration(config_file)
         if domain_path:
             self._domain_paths = [domain_path]
         else:
@@ -41,7 +44,7 @@ class MultiProjectImporter(TrainingDataImporter):
             training_data_paths, rasa.shared.data.is_nlu_file
         )
         extra_story_files = rasa.shared.data.get_data_files(
-            training_data_paths, rasa.shared.data.is_story_file
+            training_data_paths, YAMLStoryReader.is_stories_file
         )
         self._story_paths += extra_story_files
         self._nlu_paths += extra_nlu_files
@@ -91,7 +94,7 @@ class MultiProjectImporter(TrainingDataImporter):
     def _is_explicitly_imported(self, path: Text) -> bool:
         return not self.no_skills_selected() and self.is_imported(path)
 
-    def _init_from_directory(self, path: Text):
+    def _init_from_directory(self, path: Text) -> None:
         for parent, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(parent, file)
@@ -99,13 +102,13 @@ class MultiProjectImporter(TrainingDataImporter):
                     # Check next file
                     continue
 
-                if rasa.shared.data.is_test_stories_file(full_path):
+                if YAMLStoryReader.is_test_stories_file(full_path):
                     self._e2e_story_paths.append(full_path)
                 elif Domain.is_domain_file(full_path):
                     self._domain_paths.append(full_path)
                 elif rasa.shared.data.is_nlu_file(full_path):
                     self._nlu_paths.append(full_path)
-                elif rasa.shared.data.is_story_file(full_path):
+                elif YAMLStoryReader.is_stories_file(full_path):
                     self._story_paths.append(full_path)
                 elif rasa.shared.data.is_config_file(full_path):
                     self._init_from_file(full_path)
@@ -163,38 +166,32 @@ class MultiProjectImporter(TrainingDataImporter):
 
         return included
 
-    def _is_in_imported_paths(self, path) -> bool:
+    def _is_in_imported_paths(self, path: Text) -> bool:
         return any(
             [rasa.shared.utils.io.is_subdirectory(path, i) for i in self._imports]
         )
 
-    def add_import(self, path: Text) -> None:
-        self._imports.append(path)
-
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
+        """Retrieves model domain (see parent class for full docstring)."""
         domains = [Domain.load(path) for path in self._domain_paths]
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
-    async def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
-        story_paths = self._story_paths if not use_e2e else self._e2e_story_paths
-
-        return await utils.story_graph_from_paths(
-            story_paths,
-            await self.get_domain(),
-            template_variables,
-            use_e2e,
-            exclusion_percentage,
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
+        """Retrieves training stories / rules (see parent class for full docstring)."""
+        return utils.story_graph_from_paths(
+            self._story_paths, self.get_domain(), exclusion_percentage,
         )
 
-    async def get_config(self) -> Dict:
+    def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves conversation test stories (see parent class for full docstring)."""
+        return utils.story_graph_from_paths(self._e2e_story_paths, self.get_domain())
+
+    def get_config(self) -> Dict:
+        """Retrieves model config (see parent class for full docstring)."""
         return self.config
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        """Retrieves NLU training data (see parent class for full docstring)."""
         return utils.training_data_from_paths(self._nlu_paths, language)

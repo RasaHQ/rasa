@@ -6,10 +6,11 @@ import tarfile
 import tempfile
 import warnings
 import zipfile
+import re
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
 from pathlib import Path
-from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING
+from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING, Pattern
 
 import rasa.shared.constants
 import rasa.shared.utils.io
@@ -171,22 +172,15 @@ def create_validator(
     return FunctionValidator
 
 
-def zip_folder(folder: Text) -> Text:
-    """Create an archive from a folder."""
-    import shutil
-
-    zipped_path = tempfile.NamedTemporaryFile(delete=False)
-    zipped_path.close()
-
-    # WARN: not thread-safe!
-    return shutil.make_archive(zipped_path.name, "zip", folder)
-
-
-def json_unpickle(file_name: Union[Text, Path]) -> Any:
+def json_unpickle(
+    file_name: Union[Text, Path], encode_non_string_keys: bool = False
+) -> Any:
     """Unpickle an object from file using json.
 
     Args:
         file_name: the file to load the object from
+        encode_non_string_keys: If set to `True` then jsonpickle will encode non-string
+          dictionary keys instead of coercing them into strings via `repr()`.
 
     Returns: the object
     """
@@ -196,19 +190,42 @@ def json_unpickle(file_name: Union[Text, Path]) -> Any:
     jsonpickle_numpy.register_handlers()
 
     file_content = rasa.shared.utils.io.read_file(file_name)
-    return jsonpickle.loads(file_content)
+    return jsonpickle.loads(file_content, keys=encode_non_string_keys)
 
 
-def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
+def json_pickle(
+    file_name: Union[Text, Path], obj: Any, encode_non_string_keys: bool = False
+) -> None:
     """Pickle an object to a file using json.
 
     Args:
         file_name: the file to store the object to
         obj: the object to store
+        encode_non_string_keys: If set to `True` then jsonpickle will encode non-string
+          dictionary keys instead of coercing them into strings via `repr()`.
     """
     import jsonpickle.ext.numpy as jsonpickle_numpy
     import jsonpickle
 
     jsonpickle_numpy.register_handlers()
 
-    rasa.shared.utils.io.write_text_file(jsonpickle.dumps(obj), file_name)
+    rasa.shared.utils.io.write_text_file(
+        jsonpickle.dumps(obj, keys=encode_non_string_keys), file_name
+    )
+
+
+def get_emoji_regex() -> Pattern:
+    """Returns regex to identify emojis."""
+    return re.compile(
+        "["
+        "\U0001F600-\U0001F64F"  # emoticons
+        "\U0001F300-\U0001F5FF"  # symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # transport & map symbols
+        "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+        "\U00002702-\U000027B0"
+        "\U000024C2-\U0001F251"
+        "\u200d"  # zero width joiner
+        "\u200c"  # zero width non-joiner
+        "]+",
+        flags=re.UNICODE,
+    )

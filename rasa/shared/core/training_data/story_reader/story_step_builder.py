@@ -60,46 +60,39 @@ class StoryStepBuilder:
             end_names = {e.name for s in self.current_steps for e in s.end_checkpoints}
             return [Checkpoint(name) for name in end_names]
 
-    def add_user_messages(
-        self, messages: List[UserUttered], is_used_for_training: bool = True
-    ) -> None:
+    def add_user_messages(self, messages: List[UserUttered]) -> None:
         """Adds next story steps with the user's utterances.
 
         Args:
             messages: User utterances.
-            is_used_for_training: Identifies if the user utterance is a part of
-              OR statement. This parameter is used only to simplify the conversation
-              from MD story files. Don't use it other ways, because it ends up
-              in a invalid story that cannot be user for real training.
-              Default value is `False`, which preserves the expected behavior
-              of the reader.
+        """
+        self.add_events(messages)
+
+    def add_events(self, events: List[Event]) -> None:
+        """Adds next story steps with the specified list of events.
+
+        Args:
+            events: Events that need to be added.
         """
         self.ensure_current_steps()
 
-        if len(messages) == 1:
-            # If there is only one possible intent, we'll keep things simple
+        if len(events) == 1:
+            # If there is only one possible event, we'll keep things simple
             for t in self.current_steps:
-                t.add_user_message(messages[0])
+                t.add_event(events[0])
         else:
-            # this simplifies conversion between formats, but breaks the logic
-            if not is_used_for_training:
-                for t in self.current_steps:
-                    t.add_events(messages)
-                return
-
-            # If there are multiple different intents the
+            # If there are multiple different events the
             # user can use the express the same thing
             # we need to copy the blocks and create one
             # copy for each possible message
-            prefix = GENERATED_CHECKPOINT_PREFIX + "OR_"
-            generated_checkpoint = rasa.shared.core.training_data.structures.generate_id(
-                prefix, GENERATED_HASH_LENGTH
+            generated_checkpoint = self._generate_checkpoint_name_for_or_statement(
+                events
             )
             updated_steps = []
             for t in self.current_steps:
-                for m in messages:
+                for event in events:
                     copied = t.create_copy(use_new_id=True)
-                    copied.add_user_message(m)
+                    copied.add_event(event)
                     copied.end_checkpoints = [Checkpoint(generated_checkpoint)]
                     updated_steps.append(copied)
             self.current_steps = updated_steps
@@ -107,7 +100,7 @@ class StoryStepBuilder:
     def add_event_as_condition(self, event: Event) -> None:
         self.add_event(event, True)
 
-    def add_event(self, event, is_condition: bool = False) -> None:
+    def add_event(self, event: Event, is_condition: bool = False) -> None:
         self.ensure_current_steps()
         for t in self.current_steps:
             # conditions are supported only for the RuleSteps
@@ -143,3 +136,33 @@ class StoryStepBuilder:
             )
         ]
         return current_turns
+
+    def _generate_checkpoint_name_for_or_statement(self, events: List[Event]) -> str:
+        """Generates a unique checkpoint name for an or statement.
+
+        The name is based on the current story/rule name,
+        the current place in the story since the last checkpoint or start,
+        the name of the starting checkpoints,
+        and the involved intents/e2e messages.
+        """
+        sorted_events = sorted([str(m) for m in events])
+        start_checkpoint_names = sorted(
+            list({chk.name for s in self.current_steps for chk in s.start_checkpoints})
+        )
+        events = [str(e) for s in self.current_steps for e in s.events]
+        # name: to identify the current story or rule
+        # events: to identify what has happened so far
+        #         within the current story/rule
+        # start checkpoint names: to identify the section
+        #                         within the current story/rule when there are
+        #                         multiple internal checkpoints
+        # messages texts or intents: identifying the members of the or statement
+        unique_id = (
+            f"{self.name}_<>_{'@@@'.join(events)}"
+            f"_<>_{'@@@'.join(start_checkpoint_names)}"
+            f"_<>_{'@@@'.join(sorted_events)}"
+        )
+        hashed_id = rasa.shared.utils.io.get_text_hash(unique_id)[
+            :GENERATED_HASH_LENGTH
+        ]
+        return f"{GENERATED_CHECKPOINT_PREFIX}OR_{hashed_id}"

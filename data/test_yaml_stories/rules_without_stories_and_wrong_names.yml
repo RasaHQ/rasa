@@ -1,0 +1,33 @@
+rules:
+- rule: rule 1
+  condition:
+  - active_loop: loop_q_form
+  - slot_was_set:
+    - requested_slot: some_slot
+  steps:
+  - intent: some_intent_that_doesnt_exist
+    entities:
+    - some_slot: bla
+  - action: loop_q_form
+
+- rule: rule 2
+  condition:
+  - active_loop: loop_q_form
+  - slot_was_set:
+    - requested_slot: some_slot
+  steps:
+    - intent: explain
+    - action: utter_some_action_that_doesnt_exist
+    - action: loop_q_form
+    - active_loop: loop_q_form
+
+- rule: rule 3
+  condition:
+  - active_loop: loop_q_form
+  - slot_was_set:
+    - requested_slot: some_slot
+  steps:
+    - intent: explain
+    - action: utter_some_action_that_doesnt_exist
+    - action: loop_q_form
+    - active_loop: loop_q_form

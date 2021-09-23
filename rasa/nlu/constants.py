@@ -1,12 +1,10 @@
 import rasa.shared.nlu.constants
-
+from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_CONFIDENCE
 
 BILOU_ENTITIES = "bilou_entities"
 BILOU_ENTITIES_ROLE = "bilou_entities_role"
 BILOU_ENTITIES_GROUP = "bilou_entities_group"
 
-ENTITY_ATTRIBUTE_TEXT = "text"
-ENTITY_ATTRIBUTE_CONFIDENCE = "confidence"
 ENTITY_ATTRIBUTE_CONFIDENCE_TYPE = (
     f"{ENTITY_ATTRIBUTE_CONFIDENCE}_{rasa.shared.nlu.constants.ENTITY_ATTRIBUTE_TYPE}"
 )
@@ -21,10 +19,8 @@ EXTRACTOR = "extractor"
 
 PRETRAINED_EXTRACTORS = {
     "DucklingEntityExtractor",
-    "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
     "SpacyEntityExtractor",
 }
-TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
@@ -71,10 +67,14 @@ RESPONSE_SELECTOR_RETRIEVAL_INTENTS = "all_retrieval_intents"
 RESPONSE_SELECTOR_DEFAULT_INTENT = "default"
 RESPONSE_SELECTOR_PREDICTION_KEY = "response"
 RESPONSE_SELECTOR_RANKING_KEY = "ranking"
-RESPONSE_SELECTOR_RESPONSES_KEY = "response_templates"
+RESPONSE_SELECTOR_RESPONSES_KEY = "responses"
+RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY = "response_templates"
+RESPONSE_SELECTOR_UTTER_ACTION_KEY = "utter_action"
 RESPONSE_SELECTOR_TEMPLATE_NAME_KEY = "template_name"
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 FEATURIZER_CLASS_ALIAS = "alias"
 
 NO_LENGTH_RESTRICTION = -1
+
+COMPONENT_INDEX = "index"

@@ -3,9 +3,14 @@ name: Publish Documentation
 on:
   push:
     branches:
-    - 'master'
+    - 'main'
     tags:
     - '**'
+
+concurrency:
+  # group workflow runs based on the branch or the tag ref
+  group: documentation-${{ github.ref }}
+  cancel-in-progress: true
 
 # SECRETS
 # - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)
@@ -20,19 +25,19 @@ jobs:
   docs:
     name: Build Docs
     runs-on: ubuntu-latest
-    if: github.repository == 'RasaHQ/rasa'  # don't run this for master branches of forks, would fail anyways
+    if: github.repository == 'RasaHQ/rasa'  # don't run this for main branches of forks, would fail anyways
 
     steps:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: 3.7
 
     - name: Set up Node 12.x 🦙
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v2.3.0
       with:
         node-version: '12.x'
 
@@ -42,7 +47,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -50,8 +55,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.6-non-full-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-3.6-non-full
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-3.7-non-full
 
     - name: Load Yarn Cached Packages ⬇
       uses: actions/cache@v1
@@ -64,7 +69,7 @@ jobs:
       run: make install install-docs
 
     - name: Pre-build Docs 🧶
-      run: cd $DOCS_FOLDER && poetry run yarn pre-build
+      run: make prepare-docs
 
     - name: Build & Publish Docs 🏃‍♀️
       env:
@@ -81,3 +86,13 @@ jobs:
         git remote set-url --push origin "git@github.com:${{github.repository}}"
 
         ./scripts/push_docs_to_branch.sh
+
+    - name: Notify slack on failure
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985  # v1.5.0
+      with:
+        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+        status: FAILED
+        color: warning

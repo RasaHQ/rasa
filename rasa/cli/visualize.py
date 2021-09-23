@@ -6,7 +6,7 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import visualize as arguments
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.data
-import rasa.utils.common
+import rasa.utils.common  # noqa: F401
 
 
 def add_subparser(
@@ -30,7 +30,7 @@ def add_subparser(
     arguments.set_visualize_stories_arguments(visualize_parser)
 
 
-def visualize_stories(args: argparse.Namespace):
+def visualize_stories(args: argparse.Namespace) -> None:
     import rasa.core.visualize
 
     args.stories = rasa.shared.data.get_core_directory(args.stories)
@@ -38,7 +38,7 @@ def visualize_stories(args: argparse.Namespace):
         args.nlu = rasa.shared.data.get_nlu_directory(DEFAULT_DATA_PATH)
 
     rasa.utils.common.run_in_loop(
-        rasa.core.visualize(
+        rasa.core.visualize.visualize(
             args.config, args.domain, args.stories, args.nlu, args.out, args.max_history
         )
     )

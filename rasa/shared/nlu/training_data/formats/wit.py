@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class WitReader(JsonTrainingDataReader):
-    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any):
+    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any) -> TrainingData:
         """Loads training data stored in the WIT.ai data format."""
         training_examples = []
 
@@ -28,7 +28,8 @@ class WitReader(JsonTrainingDataReader):
                 continue
             text = s.get(TEXT)
             # Out-of-scope WIT utterances won't have the intent field set,
-            # and that's the reason why we set it to `USER_INTENT_OUT_OF_SCOPE` by default.
+            # and that's the reason why we set it to `USER_INTENT_OUT_OF_SCOPE` by
+            # default.
             intent = s.get("intent", USER_INTENT_OUT_OF_SCOPE)
 
             for e in entities:

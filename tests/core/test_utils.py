@@ -11,20 +11,14 @@ import rasa.utils.io
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
 
 
 class CustomRedisLockStore(RedisLockStore):
     """Test class used to test the behavior of custom lock stores."""
-
-
-def test_is_int():
-    assert utils.is_int(1)
-    assert utils.is_int(1.0)
-    assert not utils.is_int(None)
-    assert not utils.is_int(1.2)
-    assert not utils.is_int("test")
 
 
 def test_one_hot():
@@ -36,36 +30,6 @@ def test_one_hot():
 def test_one_hot_out_of_range():
     with pytest.raises(ValueError):
         utils.one_hot(4, 3)
-
-
-def test_read_lines():
-    lines = utils.read_lines(
-        "data/test_stories/stories.md", max_line_limit=2, line_pattern=r"\*.*"
-    )
-
-    lines = list(lines)
-
-    assert len(lines) == 2
-
-
-def test_pad_lists_to_size():
-    list_x = [1, 2, 3]
-    list_y = ["a", "b"]
-    list_z = [None, None, None]
-
-    assert utils.pad_lists_to_size(list_x, list_y) == (list_x, ["a", "b", None])
-    assert utils.pad_lists_to_size(list_y, list_x, "c") == (["a", "b", "c"], list_x)
-    assert utils.pad_lists_to_size(list_z, list_x) == (list_z, list_x)
-
-
-def test_convert_bytes_to_string():
-    # byte string will be decoded
-    byte_string = b"\xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
-    decoded_string = "τoρνoς"
-    assert utils.convert_bytes_to_string(byte_string) == decoded_string
-
-    # string remains string
-    assert utils.convert_bytes_to_string(decoded_string) == decoded_string
 
 
 @pytest.mark.parametrize(
@@ -227,3 +191,19 @@ def test_read_endpoints_from_wrong_path():
             available_endpoints.nlu,
         )
     )
+
+
+def assert_predicted_action(
+    prediction: PolicyPrediction,
+    domain: Domain,
+    expected_action_name: Text,
+    confidence: float = 1.0,
+    is_end_to_end_prediction: bool = False,
+    is_no_user_prediction: bool = False,
+) -> None:
+    assert prediction.max_confidence == confidence
+    index_of_predicted_action = prediction.max_confidence_index
+    prediction_action_name = domain.action_names_or_texts[index_of_predicted_action]
+    assert prediction_action_name == expected_action_name
+    assert prediction.is_end_to_end_prediction == is_end_to_end_prediction
+    assert prediction.is_no_user_prediction == is_no_user_prediction
