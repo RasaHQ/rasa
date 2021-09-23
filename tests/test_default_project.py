@@ -41,7 +41,6 @@ def test_default_project_has_no_warnings(
     with pytest.warns(None) as warning_recorder:
         rasa.cli.data.validate_files(parser.parse_args(["data", "validate"]))
         rasa.cli.train.run_training(parser.parse_args(["train"]))
-        rasa.cli.shell.shell(parser.parse_args(["shell"]))
 
     assert not [
         w for w in warning_recorder._list if not _warning_should_be_filtered_out(w)
