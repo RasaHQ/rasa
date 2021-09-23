@@ -8,7 +8,7 @@ from unittest.mock import Mock
 from rasa.engine.graph import GraphComponent, GraphSchema, SchemaNode
 from rasa.graph_components.validators.config_validator import (
     POLICY_CLASSSES,
-    ConfigValidator,
+    DefaultV1ConfigValidator,
     TRAINABLE_EXTRACTORS,
 )
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
@@ -74,7 +74,7 @@ def _test_warn_if_some_training_data_is_not_used(
     graph_schema_without_critical_component = GraphSchema(
         {"tokenizer": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {})}
     )
-    validator = ConfigValidator(graph_schema_without_critical_component)
+    validator = DefaultV1ConfigValidator(graph_schema_without_critical_component)
     with pytest.warns(UserWarning, match=match):
         validator.validate(dummy_importer)
 
@@ -84,7 +84,7 @@ def _test_warn_if_some_training_data_is_not_used(
             "critical_component": SchemaNode({}, component_type, "", "", {}),
         }
     )
-    validator = ConfigValidator(graph_schema_with_critical_component)
+    validator = DefaultV1ConfigValidator(graph_schema_with_critical_component)
     with pytest.warns(None) as records:
         validator.validate(dummy_importer)
         assert len(records) == 0
@@ -131,7 +131,7 @@ def test_nlu_warn_if_training_examples_are_unused(
     _test_warn_if_some_training_data_is_not_used(
         training_data=training_data,
         component_type=component_type,
-        match=f"You have defined training data {warning}, but your NLU pipeline",
+        match=f"You have defined training data {warning}, but your NLU configuration",
     )
 
 
@@ -181,7 +181,7 @@ def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch():
 
     match = (
         f"You have defined training data consisting of lookup tables, "
-        f"but your NLU pipeline's "
+        f"but your NLU configuration's "
         f"'{CRFEntityExtractorGraphComponent.__name__}' does not include the "
         f"'pattern' feature"
     )
@@ -197,13 +197,13 @@ def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch():
             "crf": crf_schema_node,
         }
     )
-    validator = ConfigValidator(graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema)
     with pytest.warns(UserWarning, match=match):
         validator.validate(importer)
 
     # with 'pattern'
     crf_schema_node.config = {"features": [["suffix1", "pattern"], ["pos"]]}
-    validator = ConfigValidator(graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema)
     with pytest.warns(None) as records:
         validator.validate(importer)
         assert len(records) == 0
@@ -217,7 +217,7 @@ def test_nlu_raise_if_more_than_one_tokenizer():
         }
     )
     importer = DummyImporter()
-    validator = ConfigValidator(graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema)
     with pytest.raises(InvalidConfigException, match=".* more than one tokenizer"):
         validator.validate(importer)
 
@@ -254,7 +254,7 @@ def test_nlu_warn_of_competing_extractors(
         }
     )
     importer = DummyImporter()
-    nlu_validator = ConfigValidator(graph_schema)
+    nlu_validator = DefaultV1ConfigValidator(graph_schema)
     if should_warn:
         with pytest.warns(UserWarning, match=".*defined multiple entity extractors"):
             nlu_validator.validate(importer)
@@ -323,7 +323,7 @@ def test_nlu_warn_of_competition_with_regex_extractor(
             for idx, component_type in enumerate(component_types)
         }
     )
-    validator = ConfigValidator(graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema)
     monkeypatch.setattr(
         validator, "_warn_if_some_training_data_is_unused", lambda *args, **kwargs: None
     )
@@ -389,7 +389,7 @@ def test_nlu_raise_if_featurizers_are_not_compatible(
         }
     )
     importer = DummyImporter()
-    validator = ConfigValidator(graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema)
     if should_raise:
         with pytest.raises(InvalidConfigException):
             validator.validate(importer)
@@ -422,7 +422,7 @@ def test_core_warn_if_data_but_no_policy(
         nodes["some-policy"] = SchemaNode({}, policy_type, "", "", {})
     graph_schema = GraphSchema(nodes)
 
-    validator = ConfigValidator(graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema)
     monkeypatch.setattr(validator, "_validate_nlu", lambda _: None)
     monkeypatch.setattr(
         validator,
@@ -468,7 +468,7 @@ def test_core_warn_if_no_rule_policy(
         }
     )
     importer = DummyImporter()
-    validator = ConfigValidator(graph_schema=graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema=graph_schema)
     monkeypatch.setattr(
         validator,
         "_raise_if_a_rule_policy_is_incompatible_with_domain",
@@ -516,7 +516,7 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
             for policy_type in policy_types
         }
     )
-    validator = ConfigValidator(graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema)
     monkeypatch.setattr(validator, "_validate_nlu", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         validator, "_warn_if_no_rule_policy_is_contained", lambda *args, **kwargs: None
@@ -558,7 +558,7 @@ def test_core_raise_if_a_rule_policy_is_incompatible_with_domain(
         RulePolicyGraphComponent, "raise_if_incompatible_with_domain", mock
     )
 
-    validator = ConfigValidator(graph_schema=GraphSchema(nodes))
+    validator = DefaultV1ConfigValidator(graph_schema=GraphSchema(nodes))
     monkeypatch.setattr(
         validator,
         "_warn_if_rule_based_data_is_unused_or_missing",
@@ -602,7 +602,7 @@ def test_core_warn_if_policy_priorities_are_not_unique(
     for idx in range(num_duplicates):
         nodes[f"{priority+idx+1}"].config["priority"] = priority
 
-    validator = ConfigValidator(graph_schema=GraphSchema(nodes))
+    validator = DefaultV1ConfigValidator(graph_schema=GraphSchema(nodes))
     monkeypatch.setattr(
         validator,
         "_warn_if_rule_based_data_is_unused_or_missing",
@@ -643,12 +643,12 @@ def test_core_warn_if_rule_data_missing(
     graph_schema = GraphSchema(
         {"policy": SchemaNode({}, policy_type_consuming_rule_data, "", "", {})}
     )
-    validator = ConfigValidator(graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema)
 
     with pytest.warns(
         UserWarning,
         match=(
-            "Found a rule-based policy in your pipeline "
+            "Found a rule-based policy in your configuration "
             "but no rule-based training data."
         ),
     ):
@@ -674,7 +674,7 @@ def test_core_warn_if_rule_data_unused(
     graph_schema = GraphSchema(
         {"policy": SchemaNode({}, policy_type_not_consuming_rule_data, "", "", {})}
     )
-    validator = ConfigValidator(graph_schema)
+    validator = DefaultV1ConfigValidator(graph_schema)
 
     with pytest.warns(
         UserWarning,
