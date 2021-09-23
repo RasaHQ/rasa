@@ -1545,7 +1545,7 @@ def test_domain_with_no_form_slots():
           required_slots: []
         """
     )
-    assert domain.slot_mapping_for_form("contract_form") == []
+    assert domain.required_slots_for_form("contract_form") == []
 
 
 def test_domain_with_empty_required_slots():

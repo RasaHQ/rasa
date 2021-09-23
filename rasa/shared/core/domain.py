@@ -1239,9 +1239,9 @@ class Domain:
                     for entity in entities
                     if any(
                         [
-                            entity.get("entity")
-                            == mapping.get("entity", "no_entity_found")
+                            entity.get("entity") == mapping.get("entity")
                             for mapping in slot.mappings
+                            if mapping.get("type") == "from_entity"
                         ]
                     )
                 ]
@@ -1755,15 +1755,6 @@ class Domain:
 
         return any(key in content for key in ALL_DOMAIN_KEYS)
 
-    def slot_mapping_for_form(self, form_name: Text) -> List[Text]:
-        """Deprecated method in 3.0."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "Slot mappings defined in the form section of the domain have been "
-            "deprecated in 3.0.0.",
-            "4.0.0",
-        )
-        return self.required_slots_for_form(form_name)
-
     def required_slots_for_form(self, form_name: Text) -> List[Text]:
         """Retrieve the list of required slot names for a form defined in the domain.
 
@@ -1976,7 +1967,7 @@ def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     for slot_name, properties in domain_slots.items():
         if not isinstance(properties, dict):
             raise InvalidDomain(
-                f"The properties of slot {slot_name} were specified as "
+                f"The properties of slot '{slot_name}' were specified as "
                 f"'{type(properties)}'. They need to be specified as dictionary."
             )
         mappings = properties.get("mappings")
