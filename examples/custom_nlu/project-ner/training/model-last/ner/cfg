@@ -1,9 +1,0 @@
-{
-  "moves":null,
-  "update_with_oracle_cut_size":100,
-  "multitasks":[
-
-  ],
-  "min_action_freq":1,
-  "learn_tokens":false
-}
