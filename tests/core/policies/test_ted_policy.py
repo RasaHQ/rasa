@@ -1,17 +1,22 @@
 from pathlib import Path
 from typing import Optional, List, Type, Dict, Text, Any
+
 from unittest.mock import Mock
 import numpy as np
 import pytest
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
-from rasa.core.constants import POLICY_MAX_HISTORY
 
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.constants import POLICY_MAX_HISTORY
 from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer,
-    TrackerFeaturizer,
+    TrackerFeaturizer2 as TrackerFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import (
+    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
+)
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer2 as SingleStateFeaturizer,
 )
 from rasa.core.policies.policy import PolicyGraphComponent as Policy
 from rasa.core.policies.ted_policy import TEDPolicyGraphComponent as TEDPolicy
@@ -31,7 +36,6 @@ from rasa.shared.core.events import (
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.model_training import train_core
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.constants import (
@@ -46,7 +50,6 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     COSINE,
     AUTO,
-    LINEAR_NORM,
     LABEL,
     MASK,
     SENTENCE,
@@ -105,9 +108,10 @@ def test_diagnostics(
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
     )
-    policy.train([GREET_RULE], domain, RegexInterpreter())
+    precomputations = None
+    policy.train([GREET_RULE], domain, precomputations)
     prediction = policy.predict_action_probabilities(
-        GREET_RULE, domain, RegexInterpreter()
+        GREET_RULE, domain, precomputations,
     )
 
     assert prediction.diagnostic_data
@@ -253,7 +257,7 @@ class TestTEDPolicy(PolicyTestCollection):
             default_domain, str(stories), augmentation_factor=20
         )
         with pytest.raises(RasaException) as e:
-            policy.train(training_trackers, default_domain, RegexInterpreter())
+            policy.train(training_trackers, default_domain, precomputations=None)
 
         assert "No user features specified. Cannot train 'TED' model." == str(e.value)
 
@@ -270,9 +274,10 @@ class TestTEDPolicy(PolicyTestCollection):
         default_domain: Domain,
         monkeypatch: MonkeyPatch,
     ):
+        precomputations = None
         # first check the output is what we expect
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
+            tracker, default_domain, precomputations,
         )
         assert not prediction.is_end_to_end_prediction
         # count number of non-zero confidences
@@ -287,7 +292,7 @@ class TestTEDPolicy(PolicyTestCollection):
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
         trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
+            tracker, default_domain, precomputations,
         )
 
         mock.normalize.assert_called_once()
@@ -295,11 +300,9 @@ class TestTEDPolicy(PolicyTestCollection):
     def test_label_data_assembly(
         self, trained_policy: TEDPolicy, default_domain: Domain
     ):
-        interpreter = RegexInterpreter()
-
         state_featurizer = trained_policy.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_labels(
-            default_domain, interpreter
+            default_domain, precomputations=None
         )
 
         attribute_data, _ = model_data_utils.convert_to_data_format(encoded_all_labels)
@@ -328,11 +331,14 @@ class TestTEDPolicy(PolicyTestCollection):
         training_trackers = tests.core.test_policies.train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
-        interpreter = RegexInterpreter()
+        precomputations = None
         training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
-            training_trackers, default_domain, interpreter
+            training_trackers, default_domain, precomputations,
         )
-        _, all_labels = trained_policy._create_label_data(default_domain, interpreter)
+
+        _, all_labels = trained_policy._create_label_data(
+            default_domain, precomputations
+        )
         model_data = trained_policy._create_model_data(
             training_data, label_ids, entity_tags, all_labels
         )
@@ -521,7 +527,7 @@ class TestTEDPolicy(PolicyTestCollection):
         tracker_events_with_action: List[Event],
         tracker_events_without_action: List[Event],
     ):
-        interpreter = RegexInterpreter()
+        precomputations = None
         tracker_with_action = DialogueStateTracker.from_events(
             "test 1", evts=tracker_events_with_action
         )
@@ -529,10 +535,10 @@ class TestTEDPolicy(PolicyTestCollection):
             "test 2", evts=tracker_events_without_action
         )
         prediction_with_action = trained_policy.predict_action_probabilities(
-            tracker_with_action, default_domain, interpreter
+            tracker_with_action, default_domain, precomputations,
         )
         prediction_without_action = trained_policy.predict_action_probabilities(
-            tracker_without_action, default_domain, interpreter
+            tracker_without_action, default_domain, precomputations,
         )
 
         # If the weights didn't change then both trackers
@@ -610,7 +616,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
         trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
+            tracker, default_domain, precomputations=None,
         )
 
         # function should not get called for margin loss_type
@@ -621,7 +627,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
+            tracker, default_domain, precomputations=None,
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
@@ -663,9 +669,10 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         default_domain: Domain,
         monkeypatch: MonkeyPatch,
     ):
+        precomputations = None
         # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
+            tracker, default_domain, precomputations,
         ).probabilities
         # there should be no normalization
         assert all([confidence > 0 for confidence in predicted_probabilities])
@@ -674,61 +681,10 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
         trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
+            tracker, default_domain, precomputations,
         )
 
         mock.normalize.assert_not_called()
-
-
-class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
-    def _config(
-        self, config_override: Optional[Dict[Text, Any]] = None
-    ) -> Dict[Text, Any]:
-        config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            MODEL_CONFIDENCE: LINEAR_NORM,
-            **config_override,
-        }
-
-    def test_confidence_type(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[MODEL_CONFIDENCE] == LINEAR_NORM
-
-    def test_normalization(
-        self,
-        trained_policy: Policy,
-        tracker: DialogueStateTracker,
-        default_domain: Domain,
-        monkeypatch: MonkeyPatch,
-    ):
-        # first check the output is what we expect
-        predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        ).probabilities
-
-        output_sums_to_1 = sum(predicted_probabilities) == pytest.approx(1)
-        assert output_sums_to_1
-
-        # also check our function is not called
-        mock = Mock()
-        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        )
-
-        mock.normalize.assert_not_called()
-
-    def test_prediction_on_empty_tracker(
-        self, trained_policy: Policy, default_domain: Domain
-    ):
-        tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
-        prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
-        )
-        assert not prediction.is_end_to_end_prediction
-        assert len(prediction.probabilities) == default_domain.num_actions
-        assert max(prediction.probabilities) <= 1.0
-        assert min(prediction.probabilities) >= 0.0
 
 
 class TestTEDPolicyLowRankingLength(TestTEDPolicy):
@@ -797,6 +753,7 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         tmp_path: Path,
         execution_context: ExecutionContext,
     ):
+
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert isinstance(
             trained_policy.featurizer.state_featurizer, SingleStateFeaturizer

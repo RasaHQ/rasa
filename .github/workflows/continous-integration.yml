@@ -8,6 +8,10 @@ on:
     - '*'
   pull_request:
 
+concurrency:
+  group: continous-integration-${{ github.ref }}  # branch or tag name
+  cancel-in-progress: true
+
 # SECRETS
 # - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
 #                           (login for account in 1pw)
@@ -212,6 +216,13 @@ jobs:
         python-version: [ 3.7, 3.8 ]
 
     steps:
+    - name: Run DataDog Agent
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      run: |
+        docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
+        docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
+        docker port dd_agent
+
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
@@ -294,11 +305,18 @@ jobs:
       # (tests will still run in other envs, they will just not create annotations)
       run: pip install pytest-github-actions-annotate-failures
 
+    - name: Install ddtrace
+      if: needs.changes.outputs.backend == 'true'
+      run: poetry run pip install -U ddtrace
+
     - name: Test Code 🔍
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
+        DD_ENV: ${{ matrix.test }}
+        DD_SERVICE: rasa
+        DD_ARGS: --ddtrace
       run: |
         make ${{ matrix.test }}
 

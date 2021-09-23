@@ -17,6 +17,9 @@ how you can migrate from one version to another.
 Markdown is no longer supported — all the supporting code that was previously deprecated is
 now removed, and the convertors are removed as well.
 
+The related CLI commands `rasa data convert responses` and `rasa data convert config`
+were removed.
+
 If you still have training data in Markdown format then the recommended approach is to use Rasa 2.x
 to convert your data from Markdown to YAML. Please use the commands described
 [here](./migration-guide.mdx#training-data-files).
@@ -108,10 +111,10 @@ your assistant before using this version.
 If you had a custom tracker featurizer which relied on this method from any of the above classes, please use
 `training_states_labels_and_entities` instead.
 
-`training_states_actions` method of `TrackerFeaturizer`, `FullDialogueTrackerFeaturizer` and
+`training_states_and_actions` method of `TrackerFeaturizer`, `FullDialogueTrackerFeaturizer` and
 `MaxHistoryTrackerFeaturizer` classes is deprecated and will be removed in Rasa Open Source 3.0 .
 If you had a custom tracker featurizer which relied on this method from any of the above classes, please use
-`training_states_labels` instead.
+`training_states_and_labels` instead.
 
 #### State Featurizer
 

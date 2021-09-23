@@ -6,15 +6,11 @@ import dataclasses
 import numpy as np
 import pytest
 from _pytest.tmpdir import TempPathFactory
-from rasa.core.constants import POLICY_MAX_HISTORY
+
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-
-from rasa.shared.core.generator import TrackerWithCachedStates
-
-from rasa.core import training
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -28,30 +24,33 @@ from rasa.shared.core.events import (
     EntitiesAdded,
     SlotSet,
 )
-from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer,
-    IntentTokenizerSingleStateFeaturizer,
-)
+from rasa.core import training
+from rasa.core.constants import POLICY_MAX_HISTORY
 from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer,
-    TrackerFeaturizer,
-    IntentMaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer2 as TrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
+    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
 )
-from rasa.shared.nlu.interpreter import RegexInterpreter
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer2 as SingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+)
 from rasa.core.policies.policy import (
     SupportedData,
     Policy,
     InvalidPolicyConfig,
     PolicyGraphComponent,
 )
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
 from rasa.core.policies.memoization import (
     AugmentedMemoizationPolicyGraphComponent as AugmentedMemoizationPolicy,
     MemoizationPolicyGraphComponent as MemoizationPolicy,
+    MemoizationPolicyGraphComponent,
 )
 
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from tests.dialogues import TEST_DEFAULT_DIALOGUE
 from tests.core.utilities import get_tracker, tracker_from_dialogue
 
@@ -200,10 +199,10 @@ class PolicyTestCollection:
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
-                tracker, default_domain, RegexInterpreter()
+                tracker, default_domain
             )
             actual_probabilities = trained_policy.predict_action_probabilities(
-                tracker, default_domain, RegexInterpreter()
+                tracker, default_domain
             )
             assert predicted_probabilities == actual_probabilities
 
@@ -212,7 +211,7 @@ class PolicyTestCollection:
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, RegexInterpreter()
+            tracker, default_domain,
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
@@ -245,10 +244,7 @@ class PolicyTestCollection:
         policy: PolicyGraphComponent, events: List[Event], domain: Domain
     ) -> Text:
         tracker = get_tracker(events)
-
-        scores = policy.predict_action_probabilities(
-            tracker, domain, RegexInterpreter()
-        ).probabilities
+        scores = policy.predict_action_probabilities(tracker, domain,).probabilities
         index = scores.index(max(scores))
         return domain.action_names_or_texts[index]
 
@@ -258,8 +254,9 @@ class PolicyTestCollection:
             (
                 [
                     {
-                        "name": "MaxHistoryTrackerFeaturizer",
-                        POLICY_MAX_HISTORY: 12,
+                        # TODO: remove "2" when migration of policies is done
+                        "name": "MaxHistoryTrackerFeaturizer2",
+                        "max_history": 12,
                         "state_featurizer": [],
                     }
                 ],
@@ -267,17 +264,19 @@ class PolicyTestCollection:
                 type(None),
             ),
             (
-                [{"name": "MaxHistoryTrackerFeaturizer", POLICY_MAX_HISTORY: 12}],
+                # TODO: remove "2" when migration of policies is done
+                [{"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12}],
                 MaxHistoryTrackerFeaturizer(max_history=12),
                 type(None),
             ),
             (
                 [
                     {
-                        "name": "IntentMaxHistoryTrackerFeaturizer",
-                        POLICY_MAX_HISTORY: 12,
+                        # TODO: remove "2" when migration of policies is done
+                        "name": "IntentMaxHistoryTrackerFeaturizer2",
+                        "max_history": 12,
                         "state_featurizer": [
-                            {"name": "IntentTokenizerSingleStateFeaturizer"}
+                            {"name": "IntentTokenizerSingleStateFeaturizer2"}
                         ],
                     }
                 ],
@@ -322,16 +321,18 @@ class PolicyTestCollection:
         "featurizer_config",
         [
             [
-                {"name": "MaxHistoryTrackerFeaturizer", POLICY_MAX_HISTORY: 12},
-                {"name": "MaxHistoryTrackerFeaturizer", POLICY_MAX_HISTORY: 12},
+                # TODO: remove "2" when migration of policies is done
+                {"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12},
+                {"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12},
             ],
             [
                 {
-                    "name": "IntentMaxHistoryTrackerFeaturizer",
-                    POLICY_MAX_HISTORY: 12,
+                    # TODO: remove "2" when migration of policies is done
+                    "name": "IntentMaxHistoryTrackerFeaturizer2",
+                    "max_history": 12,
                     "state_featurizer": [
-                        {"name": "IntentTokenizerSingleStateFeaturizer"},
-                        {"name": "IntentTokenizerSingleStateFeaturizer"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer2"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer2"},
                     ],
                 }
             ],
@@ -372,7 +373,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         model_storage: ModelStorage,
         tmp_path: Path,
         execution_context: ExecutionContext,
-    ):
+    ) -> None:
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.state_featurizer is None
         loaded = trained_policy.__class__.load(
@@ -391,6 +392,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         stories_path: Text,
     ):
         trackers = train_trackers(default_domain, stories_path, augmentation_factor=20)
+
         trained_policy.train(trackers, default_domain)
         lookup_with_augmentation = trained_policy.lookup
 
@@ -406,7 +408,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         )
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
-            recalled = trained_policy.recall(states, tracker, default_domain)
+            recalled = trained_policy.recall(states, tracker, default_domain, None)
             assert recalled == actions[0]
 
         nums = np.random.randn(default_domain.num_states)
@@ -417,8 +419,8 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trackers_no_augmentation = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
-        trained_policy.train(trackers_no_augmentation, default_domain)
 
+        trained_policy.train(trackers_no_augmentation, default_domain)
         lookup_no_augmentation = trained_policy.lookup
 
         assert lookup_no_augmentation == lookup_with_augmentation
@@ -429,7 +431,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         tracker = tracker_from_dialogue(TEST_DEFAULT_DIALOGUE, default_domain)
         states = trained_policy._prediction_states(tracker, default_domain)
 
-        recalled = trained_policy.recall(states, tracker, default_domain)
+        recalled = trained_policy.recall(states, tracker, default_domain, None)
         assert recalled is not None
 
     def test_finetune_after_load(
@@ -463,7 +465,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
         original_train_data = train_trackers(
             default_domain, stories_path, augmentation_factor=20
         )
-        loaded_policy.train(original_train_data + [new_story], default_domain)
+
+        loaded_policy.train(
+            original_train_data + [new_story], default_domain,
+        )
 
         # Get the hash of the tracker state of new story
         new_story_states, _ = loaded_policy.featurizer.training_states_and_labels(
@@ -513,7 +518,6 @@ class TestMemoizationPolicy(PolicyTestCollection):
         tracker_events_with_action: List[Event],
         tracker_events_without_action: List[Event],
     ):
-        interpreter = RegexInterpreter()
         tracker_with_action = DialogueStateTracker.from_events(
             "test 1", evts=tracker_events_with_action, slots=default_domain.slots
         )
@@ -521,10 +525,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
             "test 2", evts=tracker_events_without_action, slots=default_domain.slots
         )
         prediction_with_action = trained_policy.predict_action_probabilities(
-            tracker_with_action, default_domain, interpreter
+            tracker_with_action, default_domain,
         )
         prediction_without_action = trained_policy.predict_action_probabilities(
-            tracker_without_action, default_domain, interpreter
+            tracker_without_action, default_domain,
         )
 
         # Memoization shouldn't be affected with the
@@ -630,9 +634,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             "training story", events[:-1], domain=domain, slots=domain.slots,
         )
         policy.train([training_story], domain)
-        prediction = policy.predict_action_probabilities(
-            test_story, domain, RegexInterpreter()
-        )
+        prediction = policy.predict_action_probabilities(test_story, domain)
         assert (
             domain.action_names_or_texts[
                 prediction.probabilities.index(max(prediction.probabilities))
@@ -716,9 +718,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             slots=domain.slots,
         )
         policy.train([training_story], domain)
-        prediction = policy.predict_action_probabilities(
-            test_story, domain, RegexInterpreter()
-        )
+        prediction = policy.predict_action_probabilities(test_story, domain)
         assert (
             domain.action_names_or_texts[
                 prediction.probabilities.index(max(prediction.probabilities))
@@ -730,33 +730,25 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
 @pytest.mark.parametrize(
     "policy,supported_data",
     [
-        (TEDPolicy, SupportedData.ML_DATA),
-        (RulePolicy, SupportedData.ML_AND_RULE_DATA),
-        (MemoizationPolicy, SupportedData.ML_DATA),
+        (TEDPolicyGraphComponent, SupportedData.ML_DATA),
+        (RulePolicyGraphComponent, SupportedData.ML_AND_RULE_DATA),
+        (MemoizationPolicyGraphComponent, SupportedData.ML_DATA),
     ],
 )
 def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
     assert policy.supported_data() == supported_data
 
 
-class OnlyRulePolicy(Policy):
-    """Test policy that supports only rule-based training data."""
-
-    @staticmethod
-    def supported_data() -> SupportedData:
-        return SupportedData.RULE_DATA
-
-
 @pytest.mark.parametrize(
-    "policy,n_rule_trackers,n_ml_trackers",
+    "supported_data,n_rule_trackers,n_ml_trackers",
     [
-        (TEDPolicy(), 0, 3),
-        (RulePolicy(), 2, 3),
-        (OnlyRulePolicy, 2, 0),  # policy can be passed as a `type` as well
+        (SupportedData.ML_DATA, 0, 3),
+        (SupportedData.ML_AND_RULE_DATA, 2, 3),
+        (SupportedData.RULE_DATA, 2, 0),
     ],
 )
 def test_get_training_trackers_for_policy(
-    policy: Policy, n_rule_trackers: int, n_ml_trackers: int
+    supported_data: SupportedData, n_rule_trackers: int, n_ml_trackers: int
 ):
     # create five trackers (two rule-based and three ML trackers)
     trackers = [
@@ -767,7 +759,7 @@ def test_get_training_trackers_for_policy(
         DialogueStateTracker("id5", slots=[], is_rule_tracker=False),
     ]
 
-    trackers = SupportedData.trackers_for_policy(policy, trackers)
+    trackers = SupportedData.trackers_for_supported_data(supported_data, trackers)
 
     rule_trackers = [tracker for tracker in trackers if tracker.is_rule_tracker]
     ml_trackers = [tracker for tracker in trackers if not tracker.is_rule_tracker]

@@ -8,11 +8,13 @@ from _pytest.logging import LogCaptureFixture
 import logging
 
 from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    IntentMaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer2 as TrackerFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import (
+    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
@@ -33,7 +35,6 @@ from rasa.shared.core.events import (
     ActiveLoop,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.utils.tensorflow.constants import (
     IGNORE_INTENTS_LIST,
     LABEL,
@@ -95,12 +96,11 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_label_data_assembly(
         self, trained_policy: UnexpecTEDIntentPolicy, default_domain: Domain
     ):
-        interpreter = RegexInterpreter()
 
         # Construct input data
         state_featurizer = trained_policy.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_labels(
-            default_domain, interpreter
+            default_domain, precomputations=None
         )
         attribute_data, _ = model_data_utils.convert_to_data_format(encoded_all_labels)
 
@@ -156,7 +156,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         )
 
         with pytest.warns(UserWarning):
-            policy.train(training_trackers, default_domain, RegexInterpreter())
+            policy.train(training_trackers, default_domain, precomputations=None)
 
     def test_prepared_data_for_threshold_prediction(
         self,
@@ -167,9 +167,8 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
-        interpreter = RegexInterpreter()
         training_model_data, _ = trained_policy._prepare_for_training(
-            training_trackers, default_domain, interpreter
+            training_trackers, default_domain, precomputations=None,
         )
 
         data_for_prediction = trained_policy._prepare_data_for_prediction(
@@ -310,9 +309,8 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
-        interpreter = RegexInterpreter()
         training_model_data, label_ids = trained_policy._prepare_for_training(
-            training_trackers, default_domain, interpreter
+            training_trackers, default_domain, precomputations=None,
         )
 
         trained_policy.compute_label_quantiles_post_training(
@@ -480,10 +478,10 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
 
         expected_probabilities = [0] * default_domain.num_actions
 
-        interpreter = RegexInterpreter()
+        precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         assert prediction.probabilities == expected_probabilities
@@ -496,7 +494,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain,
         )
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         assert prediction.probabilities == expected_probabilities
@@ -504,7 +502,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         loaded_policy.model = None
 
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         assert prediction.probabilities == expected_probabilities
@@ -538,7 +536,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
 
         loaded_policy.label_thresholds[dummy_intent_index] = threshold_value
 
-        interpreter = RegexInterpreter()
+        precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
 
         tracker.update_with_events(
@@ -554,7 +552,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         )
 
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         if not is_unlikely:
@@ -635,12 +633,12 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         loaded_policy = self.persist_and_load_policy(
             trained_policy, model_storage, resource, execution_context
         )
-        interpreter = RegexInterpreter()
+        precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
 
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         assert (
@@ -726,7 +724,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         loaded_policy = self.persist_and_load_policy(
             trained_policy, model_storage, resource, execution_context
         )
-        interpreter = RegexInterpreter()
+        precomputations = None
         tracker_with_action = DialogueStateTracker.from_events(
             "test 1", evts=tracker_events_with_action
         )
@@ -734,10 +732,10 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             "test 2", evts=tracker_events_without_action
         )
         prediction_with_action = loaded_policy.predict_action_probabilities(
-            tracker_with_action, default_domain, interpreter
+            tracker_with_action, default_domain, precomputations
         )
         prediction_without_action = loaded_policy.predict_action_probabilities(
-            tracker_without_action, default_domain, interpreter
+            tracker_without_action, default_domain, precomputations
         )
 
         # If the weights didn't change then both trackers
@@ -1159,6 +1157,6 @@ def test_train_with_e2e_data(
     ]
     if skip_training:
         with pytest.warns(UserWarning):
-            policy.train(trackers_for_training, domain, interpreter=RegexInterpreter())
+            policy.train(trackers_for_training, domain, precomputations=None)
     else:
-        policy.train(trackers_for_training, domain, interpreter=RegexInterpreter())
+        policy.train(trackers_for_training, domain, precomputations=None)

@@ -45,6 +45,7 @@ from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
@@ -471,10 +472,17 @@ class DynamoTrackerStore(TrackerStore):
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the `DynamoTrackerStore`."""
-        return [
-            i["sender_id"]
-            for i in self.db.scan(ProjectionExpression="sender_id")["Items"]
-        ]
+        response = self.db.scan(ProjectionExpression="sender_id")
+        sender_ids = [i["sender_id"] for i in response["Items"]]
+
+        while response.get("LastEvaluatedKey"):
+            response = self.db.scan(
+                ProjectionExpression="sender_id",
+                ExclusiveStartKey=response["LastEvaluatedKey"],
+            )
+            sender_ids.extend([i["sender_id"] for i in response["Items"]])
+
+        return sender_ids
 
 
 class MongoTrackerStore(TrackerStore):
@@ -745,8 +753,6 @@ def ensure_schema_exists(session: "Session") -> None:
 
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
-
-    from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
     Base: DeclarativeMeta = declarative_base()
 
