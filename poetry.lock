@@ -645,18 +645,6 @@ optional = true
 python-versions = "*"
 
 [[package]]
-name = "fire"
-version = "0.4.0"
-description = "A library for automatically generating command line interfaces."
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-six = "*"
-termcolor = "*"
-
-[[package]]
 name = "flake8"
 version = "3.9.2"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -2086,17 +2074,6 @@ prompt_toolkit = ">=2.0,<4.0"
 docs = ["Sphinx (>=3.3,<4.0)", "sphinx-rtd-theme (>=0.5.0,<0.6.0)", "sphinx-autobuild (>=2020.9.1,<2021.0.0)", "sphinx-copybutton (>=0.3.1,<0.4.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)"]
 
 [[package]]
-name = "randomname"
-version = "0.1.3"
-description = "Generate random adj-noun names like docker and github."
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-fire = "*"
-
-[[package]]
 name = "rasa-sdk"
 version = "2.8.2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
@@ -3182,7 +3159,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.9"
-content-hash = "00db2305f85254965f9b81aa6f368d43a031047d7601ca4365ad3f7a67022b6e"
+content-hash = "a4b4dcfc01a819cf42a36df78152580a03e380d0249cc5b9c334feb5147d4d0f"
 
 [metadata.files]
 absl-py = [
@@ -3573,9 +3550,6 @@ fbmessenger = [
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
     {file = "filelock-3.0.12.tar.gz", hash = "sha256:18d82244ee114f543149c66a6e0c14e9c4f8a1044b5cdaadd0f82159d6a6ff59"},
-]
-fire = [
-    {file = "fire-0.4.0.tar.gz", hash = "sha256:c5e2b8763699d1142393a46d0e3e790c5eb2f0706082df8f647878842c216a62"},
 ]
 flake8 = [
     {file = "flake8-3.9.2-py2.py3-none-any.whl", hash = "sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907"},
@@ -4698,9 +4672,6 @@ pyyaml = [
 questionary = [
     {file = "questionary-1.10.0-py3-none-any.whl", hash = "sha256:fecfcc8cca110fda9d561cb83f1e97ecbb93c613ff857f655818839dac74ce90"},
     {file = "questionary-1.10.0.tar.gz", hash = "sha256:600d3aefecce26d48d97eee936fdb66e4bc27f934c3ab6dd1e292c4f43946d90"},
-]
-randomname = [
-    {file = "randomname-0.1.3.tar.gz", hash = "sha256:188eaff19b472d12716a84fdd86e871f91770b725bde237745a6f24c7ea01afc"},
 ]
 rasa-sdk = [
     {file = "rasa-sdk-2.8.2.tar.gz", hash = "sha256:a34e79ff20026587e15f7f8392866addf8884f49beb4800c8e0adc15fbc5029d"},
