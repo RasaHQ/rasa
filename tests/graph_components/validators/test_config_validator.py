@@ -161,9 +161,10 @@ def test_nlu_warn_if_training_examples_with_entities_are_unused(
     "component_type, role_instead_of_group, warns",
     [
         (extractor, role_instead_of_group, True)
-        for extractor in TRAINABLE_EXTRACTORS.difference(
-            {DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent}
-        )
+        for extractor in {
+            DIETClassifierGraphComponent,
+            CRFEntityExtractorGraphComponent,
+        }.difference(TRAINABLE_EXTRACTORS)
         for role_instead_of_group in [True, False]
     ]
     + [

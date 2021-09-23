@@ -49,11 +49,11 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 
-TRAINABLE_EXTRACTORS = {
+TRAINABLE_EXTRACTORS = [
     MitieEntityExtractorGraphComponent,
     CRFEntityExtractorGraphComponent,
     DIETClassifierGraphComponent,
-}
+]
 
 # TODO: do we have a registries for these?
 FEATURIZER_CLASSES = {
