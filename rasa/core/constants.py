@@ -70,3 +70,7 @@ STORIES_WITH_WARNINGS_FILE = "stories_with_warnings.yml"
 POLICY_PRIORITY = "priority"
 POLICY_FEATURIZER = "featurizer"
 POLICY_MAX_HISTORY = "max_history"
+
+DEFAULT_PROTOCOL = "UDP"
+DEFAULT_SYSLOG_HOST = 'localhost'
+DEFAULT_SYSLOG_PORT = 514
