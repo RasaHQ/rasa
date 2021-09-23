@@ -139,7 +139,7 @@ def test_generate_graphs(
     config = rasa.shared.utils.io.read_yaml_file(config_path)
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
-    train_schema, predict_schema = recipe.schemas_for_config(
+    train_schema, predict_schema, _ = recipe.schemas_for_config(
         config, {}, training_type=training_type, is_finetuning=is_finetuning
     )
 
@@ -162,6 +162,23 @@ def test_generate_graphs(
     )
 
 
+def test_language_returning():
+    config = rasa.shared.utils.io.read_yaml(
+        """
+    language: "xy"
+    version: '2.0'
+
+    policies:
+    - name: RulePolicy
+    """
+    )
+
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
+    _, _, language = recipe.schemas_for_config(config, {},)
+
+    assert language == "xy"
+
+
 def test_tracker_generator_parameter_interpolation():
     config = rasa.shared.utils.io.read_yaml(
         """
@@ -176,7 +193,7 @@ def test_tracker_generator_parameter_interpolation():
     debug_plots = True
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, _ = recipe.schemas_for_config(
+    train_schema, _, _ = recipe.schemas_for_config(
         config, {"augmentation": augmentation, "debug_plots": debug_plots},
     )
 
@@ -199,7 +216,7 @@ def test_nlu_training_data_persistence():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, _ = recipe.schemas_for_config(
+    train_schema, _, _ = recipe.schemas_for_config(
         config, {"persist_nlu_training_data": True},
     )
 
@@ -236,7 +253,7 @@ def test_num_threads_interpolation():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, predict_schema = recipe.schemas_for_config(
+    train_schema, predict_schema, _ = recipe.schemas_for_config(
         config, {"num_threads": 20}
     )
 
@@ -262,7 +279,7 @@ def test_epoch_fraction_cli_param():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, predict_schema = recipe.schemas_for_config(
+    train_schema, predict_schema, _ = recipe.schemas_for_config(
         config, {"finetuning_epoch_fraction": 0.5}, is_finetuning=True
     )
 
@@ -320,7 +337,7 @@ def test_retrieve_not_registered_class():
 
 
 def test_retrieve_via_module_path():
-    train_schema, predict_schema = DefaultV1Recipe().schemas_for_config(
+    train_schema, predict_schema, _ = DefaultV1Recipe().schemas_for_config(
         {
             "policies": [
                 {"name": "rasa.core.policies.ted_policy.TEDPolicyGraphComponent"}

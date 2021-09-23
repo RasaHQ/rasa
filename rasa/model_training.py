@@ -12,6 +12,7 @@ from typing import (
 )
 
 import rasa.core.interpreter
+import rasa.engine.validation
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
@@ -207,9 +208,12 @@ def _train_graph(
 
     config = file_importer.get_config()
     recipe = Recipe.recipe_for_name(config.get("recipe"))
-    train_schema, predict_schema = recipe.schemas_for_config(
+    train_schema, predict_schema, language = recipe.schemas_for_config(
         config, kwargs, training_type=training_type, is_finetuning=is_finetuning
     )
+
+    rasa.engine.validation.validate(train_schema, language, is_train_graph=True)
+    rasa.engine.validation.validate(predict_schema, language, is_train_graph=False)
 
     with tempfile.TemporaryDirectory() as temp_model_dir:
         model_storage = _create_model_storage(

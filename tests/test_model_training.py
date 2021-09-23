@@ -2,6 +2,7 @@ import logging
 import secrets
 import tempfile
 import os
+import textwrap
 from pathlib import Path
 from typing import Text
 from unittest.mock import Mock
@@ -20,6 +21,7 @@ import rasa.model_training
 import rasa.core
 import rasa.core.train
 import rasa.nlu
+from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.training.graph_trainer import GraphTrainer
 
@@ -944,3 +946,31 @@ def test_models_not_retrained_if_only_new_action(
     )
 
     assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
+
+
+def test_invalid_graph_schema(
+    tmp_path: Path, domain_path: Text, stories_path: Text, nlu_data_path: Text,
+):
+    config = textwrap.dedent(
+        """
+    version: "2.0"
+    recipe: "default.v1"
+    
+    pipeline:
+    - name: WhitespaceTokenizer
+    - name: TEDPolicy
+    """
+    )
+
+    new_config_path = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(
+        rasa.shared.utils.io.read_yaml(config), new_config_path
+    )
+
+    with pytest.raises(GraphSchemaValidationException):
+        rasa.train(
+            domain_path,
+            str(new_config_path),
+            [stories_path, nlu_data_path],
+            output=str(tmp_path),
+        )

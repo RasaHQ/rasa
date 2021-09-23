@@ -263,7 +263,7 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
         is_finetuning: bool = False,
-    ) -> Tuple[GraphSchema, GraphSchema]:
+    ) -> Tuple[GraphSchema, GraphSchema, Optional[Text]]:
         """Converts the default config to graphs (see interface for full docstring)."""
         self._use_core = (
             bool(config.get("policies")) and not training_type == TrainingType.NLU
@@ -295,7 +295,11 @@ class DefaultV1Recipe(Recipe):
         train_nodes, preprocessors = self._create_train_nodes(config, cli_parameters)
         predict_nodes = self._create_predict_nodes(config, preprocessors, train_nodes)
 
-        return GraphSchema(train_nodes), GraphSchema(predict_nodes)
+        return (
+            GraphSchema(train_nodes),
+            GraphSchema(predict_nodes),
+            config.get("language"),
+        )
 
     def _create_train_nodes(
         self, config: Dict[Text, Any], cli_parameters: Dict[Text, Any]

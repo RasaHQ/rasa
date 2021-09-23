@@ -56,7 +56,7 @@ class Recipe(abc.ABC):
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
         is_finetuning: bool = False,
-    ) -> Tuple[GraphSchema, GraphSchema]:
+    ) -> Tuple[GraphSchema, GraphSchema, Optional[Text]]:
         """Converts a config to graph schemas for training and prediction.
 
         Args:
@@ -71,6 +71,7 @@ class Recipe(abc.ABC):
 
         Returns:
             A schema for training a model and a schema for making predictions with this
-            trained model.
+            trained model and the language of the model (`None` in case the language
+            was not specified)
         """
         ...
