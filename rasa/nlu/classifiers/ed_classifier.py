@@ -28,6 +28,11 @@ if typing.TYPE_CHECKING:
 
 SKLEARN_MODEL_FILE_NAME = "intent_classifier_sklearn.pkl"
 
+# FLASK_SERVER_IP = 'custom-nlu'
+FLASK_SERVER_IP = 'host.docker.internal'
+# FLASK_SERVER_IP = '127.0.0.1'
+FLASK_SERVER_PORT = '9000'
+
 
 def _sklearn_numpy_warning_fix():
     """Fixes unecessary warnings emitted by sklearns use of numpy.
@@ -117,9 +122,7 @@ class flask_serving_classifier(IntentClassifier):
 
             y = self.transform_labels_str2num(labels).tolist()
             categories = [i for i in set(y)]
-            host = '127.0.0.1'
-            port = 9000
-            url = f'http://{host}:{port}/train'
+            url = f'http://{FLASK_SERVER_IP}:{FLASK_SERVER_PORT}/train'
             # data = {'text': X, 'labels': y, 'unique_labels': categories}
             data = {'text': X, 'labels': y, 'unique_labels': categories, 'eqa_content': eqa_content}
             # print('ED DATA', data)
@@ -168,10 +171,8 @@ class flask_serving_classifier(IntentClassifier):
 
         :param X: bow of input text
         :return: vector of probabilities containing one entry for each label"""
-        data = {'text': X,'labels':[], 'unique_labels':[]}
-        host = '127.0.0.1'
-        port = 9000
-        url = f'http://{host}:{port}/predict'
+        data = {'text': X,'labels':[], 'unique_labels': [], 'eqa_content': []}
+        url = f'http://{FLASK_SERVER_IP}:{FLASK_SERVER_PORT}/predict'
         pred = requests.post(url, json=data)
         out = np.array(pred.json()['prediction'])
         return out
