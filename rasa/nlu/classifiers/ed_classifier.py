@@ -19,6 +19,7 @@ from rasa.shared.nlu.training_data.message import Message
 import requests
 
 
+
 print('ED CLASSIFIER v2')
 
 logger = logging.getLogger(__name__)
