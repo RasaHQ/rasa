@@ -420,8 +420,8 @@ def _create_data_generator(
     if agent.model_directory:
         core_model, _ = get_model_subdirectories(agent.model_directory)
 
-    if core_model and os.path.exists(os.path.join(core_model, DEFAULT_DOMAIN_PATH)):
-        domain_path = os.path.join(core_model, DEFAULT_DOMAIN_PATH)
+    if core_model and Path.exists(Path.joinpath(core_model, DEFAULT_DOMAIN_PATH)):
+        domain_path = Path.joinpath(core_model, DEFAULT_DOMAIN_PATH)
     else:
         domain_path = None
 
@@ -1049,7 +1049,7 @@ async def test(
                     "with_warnings": num_warnings,
                     "total": num_convs,
                 }
-            report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
+            report_filename = Path.joinpath(out_directory, REPORT_STORIES_FILE)
             rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
 
@@ -1088,19 +1088,19 @@ async def test(
     if errors and out_directory:
         _log_stories(
             story_evaluation.failed_stories,
-            os.path.join(out_directory, FAILED_STORIES_FILE),
+            Path.joinpath(out_directory, FAILED_STORIES_FILE),
             "None of the test stories failed - all good!",
         )
     if successes and out_directory:
         _log_stories(
             story_evaluation.successful_stories,
-            os.path.join(out_directory, SUCCESSFUL_STORIES_FILE),
+            Path.joinpath(out_directory, SUCCESSFUL_STORIES_FILE),
             "None of the test stories succeeded :(",
         )
     if warnings and out_directory:
         _log_stories(
             story_evaluation.stories_with_warnings,
-            os.path.join(out_directory, STORIES_WITH_WARNINGS_FILE),
+            Path.joinpath(out_directory, STORIES_WITH_WARNINGS_FILE),
             "No warnings for test stories",
         )
 
