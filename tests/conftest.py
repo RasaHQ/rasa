@@ -2,16 +2,23 @@ import asyncio
 import copy
 import os
 import random
+import textwrap
+
 import pytest
 import sys
 import uuid
 
 from _pytest.python import Function
+from spacy import Language
+
+from rasa.engine.graph import ExecutionContext, GraphSchema
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.storage import ModelStorage
 from sanic.request import Request
 
 from typing import Iterator, Callable, Generator
 
-from _pytest.tmpdir import TempdirFactory
+from _pytest.tmpdir import TempPathFactory
 from pathlib import Path
 from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
@@ -21,17 +28,17 @@ import rasa.shared.utils.io
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa import server
-from rasa.core import config as core_config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
-from rasa.core.policies.rule_policy import RulePolicy
+
 from rasa.nlu.model import Interpreter
+from rasa.nlu.utils.spacy_utils import SpacyModelProvider
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
 from rasa.core.exporter import Exporter
-from rasa.core.policies import Policy
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy
+
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
@@ -72,20 +79,6 @@ PATH_PYTEST_MARKER_MAPPINGS = {
     ],
     "category_performance": [Path("tests", "test_memory_leak.py").absolute()],
 }
-
-
-TEST_DIALOGUES = [
-    "data/test_dialogues/default.json",
-    "data/test_dialogues/formbot.json",
-    "data/test_dialogues/moodbot.json",
-]
-
-EXAMPLE_DOMAINS = [
-    "data/test_domains/default_with_mapping.yml",
-    "data/test_domains/default_with_slots.yml",
-    "examples/formbot/domain.yml",
-    "data/test_moodbot/domain.yml",
-]
 
 
 @pytest.fixture(scope="session")
@@ -144,11 +137,6 @@ def end_to_end_story_path() -> Text:
 
 
 @pytest.fixture(scope="session")
-def end_to_end_story_md_path() -> Text:
-    return "data/test_md/end_to_end_story.md"
-
-
-@pytest.fixture(scope="session")
 def e2e_story_file_unknown_entity_path() -> Text:
     return "data/test_evaluations/test_story_unknown_entity.yml"
 
@@ -185,20 +173,26 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 @pytest.fixture(scope="session")
 async def _trained_default_agent(
-    tmpdir_factory: TempdirFactory, stories_path: Text
+    tmp_path_factory: TempPathFactory, stories_path: Text, trained_async: Callable
 ) -> Agent:
-    model_path = tmpdir_factory.mktemp("model").strpath
+    project_path = tmp_path_factory.mktemp("project")
 
-    agent = Agent(
-        "data/test_domains/default_with_slots.yml",
-        policies=[AugmentedMemoizationPolicy(max_history=3), RulePolicy()],
-        model_directory=model_path,
+    config = textwrap.dedent(
+        f"""
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    policies:
+    - name: AugmentedMemoizationPolicy
+      max_history: 3
+    - name: RulePolicy
+    """
+    )
+    config_path = project_path / "config.yml"
+    rasa.shared.utils.io.write_text_file(config, config_path)
+    model_path = await trained_async(
+        "data/test_domains/default_with_slots.yml", str(config_path), [stories_path]
     )
 
-    training_data = await agent.load_data(stories_path)
-    agent.train(training_data)
-    agent.persist(model_path)
-    return agent
+    return Agent.load_local_model(model_path)
 
 
 @pytest.fixture()
@@ -307,17 +301,12 @@ def domain(_domain: Domain) -> Domain:
 
 
 @pytest.fixture(scope="session")
-def config(config_path: Text) -> List[Policy]:
-    return core_config.load(config_path)
-
-
-@pytest.fixture(scope="session")
-def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
+def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
     async def _train(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
     ) -> Optional[Text]:
         if output_path is None:
-            output_path = str(tmpdir_factory.mktemp("models"))
+            output_path = str(tmp_path_factory.mktemp("models"))
 
         result = await train_async(*args, output=output_path, **kwargs)
         return result.model
@@ -326,12 +315,12 @@ def trained_async(tmpdir_factory: TempdirFactory) -> Callable:
 
 
 @pytest.fixture(scope="session")
-def trained_nlu_async(tmpdir_factory: TempdirFactory) -> Callable:
+def trained_nlu_async(tmp_path_factory: TempPathFactory) -> Callable:
     async def _train_nlu(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
     ) -> Optional[Text]:
         if output_path is None:
-            output_path = str(tmpdir_factory.mktemp("models"))
+            output_path = str(tmp_path_factory.mktemp("models"))
 
         return await train_nlu_async(*args, output=output_path, **kwargs)
 
@@ -424,9 +413,18 @@ async def trained_e2e_model(
 
 
 @pytest.fixture(scope="session")
-def moodbot_domain() -> Domain:
-    domain_path = os.path.join("data", "test_moodbot", "domain.yml")
-    return Domain.load(domain_path)
+def moodbot_domain_path() -> Path:
+    return Path("data", "test_moodbot", "domain.yml")
+
+
+@pytest.fixture(scope="session")
+def moodbot_domain(moodbot_domain_path: Path) -> Domain:
+    return Domain.load(moodbot_domain_path)
+
+
+@pytest.fixture(scope="session")
+def moodbot_nlu_data_path() -> Path:
+    return Path(os.getcwd()) / "data" / "test_moodbot" / "data" / "nlu.yml"
 
 
 @pytest.fixture
@@ -495,14 +493,27 @@ def component_builder():
 
 
 @pytest.fixture(scope="session")
-def spacy_nlp(component_builder: ComponentBuilder, blank_config: RasaNLUModelConfig):
-    spacy_nlp_config = {"name": "SpacyNLP", "model": "en_core_web_md"}
-    return component_builder.create_component(spacy_nlp_config, blank_config).nlp
+def spacy_nlp() -> Language:
+    spacy_provider = SpacyModelProvider.create(
+        {"model": "en_core_web_md"}, Mock(), Mock(), Mock()
+    )
+
+    return spacy_provider.provide().model
 
 
 @pytest.fixture(scope="session")
 def blank_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig({"language": "en", "pipeline": []})
+
+
+@pytest.fixture(scope="session")
+async def response_selector_test_stories() -> Path:
+    return Path("data/test_response_selector_bot/tests/test_stories.yml")
+
+
+@pytest.fixture(scope="session")
+async def response_selector_results() -> Path:
+    return Path("data/test_response_selector_bot/results/")
 
 
 @pytest.fixture(scope="session")
@@ -512,7 +523,6 @@ async def trained_response_selector_bot(trained_async: Callable) -> Path:
         config="data/test_response_selector_bot/config.yml",
         training_files=[
             "data/test_response_selector_bot/data/rules.yml",
-            "data/test_response_selector_bot/data/stories.yml",
             "data/test_response_selector_bot/data/nlu.yml",
         ],
     )
@@ -669,3 +679,19 @@ def pytest_collection_modifyitems(items: List[Function]) -> None:
     for item in items:
         marker = _get_marker_for_ci_matrix(item)
         item.add_marker(marker)
+
+
+def create_test_file_with_size(directory: Path, size_in_mb: float) -> None:
+    with open(directory / f"{uuid.uuid4().hex}", mode="wb") as f:
+        f.seek(int(1024 * 1024 * size_in_mb))
+        f.write(b"\0")
+
+
+@pytest.fixture()
+def default_model_storage(tmp_path: Path) -> ModelStorage:
+    return LocalModelStorage.create(tmp_path)
+
+
+@pytest.fixture()
+def default_execution_context() -> ExecutionContext:
+    return ExecutionContext(GraphSchema({}), uuid.uuid4().hex)

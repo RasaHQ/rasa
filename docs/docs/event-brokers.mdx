@@ -84,26 +84,25 @@ import json
 import pika
 
 
-def _callback(self, ch, method, properties, body):
+def _callback(ch, method, properties, body):
         # Do something useful with your incoming message body here, e.g.
         # saving it to a database
-        print('Received event {}'.format(json.loads(body)))
+        print("Received event {}".format(json.loads(body)))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # RabbitMQ credentials with username and password
-    credentials = pika.PlainCredentials('username', 'password')
+    credentials = pika.PlainCredentials("username", "password")
 
     # Pika connection to the RabbitMQ host - typically 'rabbit' in a
     # docker environment, or 'localhost' in a local environment
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters('rabbit', credentials=credentials))
+        pika.ConnectionParameters("rabbit", credentials=credentials)
+    )
 
     # start consumption of channel
     channel = connection.channel()
-    channel.basic_consume(_callback,
-                          queue='rasa_events',
-                          no_ack=True)
+    channel.basic_consume(queue="rasa_events", on_message_callback=_callback, auto_ack=True)
     channel.start_consuming()
 ```
 

@@ -441,36 +441,6 @@ stories:
   - action: action_explain_table_limit
 ```
 
-#### Unfeaturized Slot
-
-:::caution deprecated
-The slot type `unfeaturized` is deprecated. Please use the property
-`influence_conversation` as described
-[here](domain.mdx#slots-and-conversation-behavior) or the slot type
-[`any`](domain.mdx#any-slot) instead.
-
-:::
-
-* **Type**
-
-  `unfeaturized`
-
-* **Use For**
-
-  Data you want to store which shouldn't influence the dialogue flow.
-
-* **Example**
-
-  ```yaml-rasa
-  slots:
-    internal_user_id:
-      type: unfeaturized
-  ```
-
-* **Description**
-
-  Slots of this type will never influence the conversation.
-
 ### Slot Auto-fill
 
 The slot will be set automatically if your NLU model picks up an entity, and your domain

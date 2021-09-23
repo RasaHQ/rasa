@@ -3,24 +3,15 @@ import shutil
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Text, Optional, Union, List, Tuple, Callable, Set, Iterable
-import rasa.shared.utils.io
+from typing import Text, Optional, Union, List, Callable, Set, Iterable
 
 YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSIONS = [".json"]
-MARKDOWN_FILE_EXTENSIONS = [".md"]
-TRAINING_DATA_EXTENSIONS = set(
-    JSON_FILE_EXTENSIONS + MARKDOWN_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS
-)
-
-
-def markdown_file_extension() -> Text:
-    """Return Markdown file extension"""
-    return MARKDOWN_FILE_EXTENSIONS[0]
+TRAINING_DATA_EXTENSIONS = set(JSON_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS)
 
 
 def yaml_file_extension() -> Text:
-    """Return Markdown file extension"""
+    """Return YAML file extension."""
     return YAML_FILE_EXTENSIONS[0]
 
 
@@ -48,36 +39,6 @@ def is_likely_json_file(file_path: Text) -> bool:
     return Path(file_path).suffix in set(JSON_FILE_EXTENSIONS)
 
 
-def is_likely_markdown_file(file_path: Text) -> bool:
-    """Check if a file likely contains markdown.
-
-    Arguments:
-        file_path: path to the file
-
-    Returns:
-        `True` if the file likely contains data in markdown format,
-        `False` otherwise.
-    """
-    return Path(file_path).suffix in set(MARKDOWN_FILE_EXTENSIONS)
-
-
-def get_test_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
-    """Recursively collects all Core training files from a list of paths.
-
-    Args:
-        paths: List of paths to training files or folders containing them.
-
-    Returns:
-        Path to temporary directory containing all found Core training files.
-    """
-    rasa.shared.utils.io.raise_warning(
-        "`get_test_directory` is deprecated and will be removed in Rasa 3.0.0. ",
-        category=DeprecationWarning,
-    )
-    test_files = get_data_files(paths, is_test_stories_file)
-    return _copy_files_to_new_dir(test_files)
-
-
 def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     """Recursively collects all Core training files from a list of paths.
 
@@ -87,7 +48,11 @@ def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     Returns:
         Path to temporary directory containing all found Core training files.
     """
-    core_files = get_data_files(paths, is_story_file)
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        YAMLStoryReader,
+    )
+
+    core_files = get_data_files(paths, YAMLStoryReader.is_stories_file)
     return _copy_files_to_new_dir(core_files)
 
 
@@ -102,31 +67,6 @@ def get_nlu_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
     """
     nlu_files = get_data_files(paths, is_nlu_file)
     return _copy_files_to_new_dir(nlu_files)
-
-
-def get_core_nlu_directories(
-    paths: Optional[Union[Text, List[Text]]]
-) -> Tuple[Text, Text]:
-    """Recursively collects all training files from a list of paths.
-
-    Args:
-        paths: List of paths to training files or folders containing them.
-
-    Returns:
-        Path to directory containing the Core files and path to directory
-        containing the NLU training files.
-    """
-    rasa.shared.utils.io.raise_warning(
-        "`get_core_nlu_directories` is deprecated and will be removed in Rasa 3.0.0. ",
-        category=DeprecationWarning,
-    )
-    story_files = get_data_files(paths, is_story_file)
-    nlu_data_files = get_data_files(paths, is_nlu_file)
-
-    story_directory = _copy_files_to_new_dir(story_files)
-    nlu_directory = _copy_files_to_new_dir(nlu_data_files)
-
-    return story_directory, nlu_directory
 
 
 def get_data_files(
@@ -209,48 +149,6 @@ def is_nlu_file(file_path: Text) -> bool:
     return nlu_loading.guess_format(file_path) != nlu_loading.UNK
 
 
-def is_story_file(file_path: Text) -> bool:
-    """Checks if a file is a Rasa story file.
-
-    Args:
-        file_path: Path of the file which should be checked.
-
-    Returns:
-        `True` if it's a story file, otherwise `False`.
-    """
-    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-        YAMLStoryReader,
-    )
-    from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
-        MarkdownStoryReader,
-    )
-
-    return YAMLStoryReader.is_stories_file(
-        file_path
-    ) or MarkdownStoryReader.is_stories_file(file_path)
-
-
-def is_test_stories_file(file_path: Text) -> bool:
-    """Checks if a file is a test stories file.
-
-    Args:
-        file_path: Path of the file which should be checked.
-
-    Returns:
-        `True` if it's a story file containing tests, otherwise `False`.
-    """
-    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-        YAMLStoryReader,
-    )
-    from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
-        MarkdownStoryReader,
-    )
-
-    return YAMLStoryReader.is_test_stories_file(
-        file_path
-    ) or MarkdownStoryReader.is_test_stories_file(file_path)
-
-
 def is_config_file(file_path: Text) -> bool:
     """Checks whether the given file path is a Rasa config file.
 
@@ -260,7 +158,6 @@ def is_config_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a Rasa config file, otherwise `False`.
     """
-
     file_name = os.path.basename(file_path)
 
     return file_name in ["config.yml", "config.yaml"]

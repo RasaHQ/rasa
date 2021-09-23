@@ -4,9 +4,11 @@ import pytest
 
 import rasa.core.interpreter
 from rasa.core.interpreter import RasaNLUHttpInterpreter, RasaNLUInterpreter
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.model import get_model_subdirectories, get_model
 from rasa.nlu.model import Interpreter
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -70,3 +72,19 @@ def test_create_interpreter(parameters, trained_nlu_model):
     )
 
     assert isinstance(interpreter, parameters["type"])
+
+
+async def test_interpreter_parses_text_tokens(
+    response_selector_interpreter: Interpreter,
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+):
+    text = "Hello there"
+    tokens = whitespace_tokenizer.tokenize(Message(data={"text": text}), "text")
+    indices = [(t.start, t.end) for t in tokens]
+
+    parsed_data = response_selector_interpreter.parse(text)
+    assert "text_tokens" in parsed_data.keys()
+
+    parsed_tokens = parsed_data.get("text_tokens")
+
+    assert parsed_tokens == indices

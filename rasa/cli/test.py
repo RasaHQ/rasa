@@ -184,7 +184,7 @@ async def run_nlu_test_async(
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
-    nlu_data = await test_data_importer.get_nlu_data()
+    nlu_data = test_data_importer.get_nlu_data()
 
     output = output_dir or DEFAULT_RESULTS_PATH
     all_args["errors"] = not no_errors
@@ -224,13 +224,16 @@ async def run_nlu_test_async(
         config = rasa.cli.utils.get_validated_path(
             config, "config", DEFAULT_CONFIG_PATH
         )
-        perform_nlu_cross_validation(config, nlu_data, output, all_args)
+        config_importer = TrainingDataImporter.load_from_dict(config_path=config)
+
+        config_dict = config_importer.get_config()
+        perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
     else:
         model_path = rasa.cli.utils.get_validated_path(
             models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        await test_nlu(model_path, data_path, output, all_args)
+        test_nlu(model_path, data_path, output, all_args)
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
