@@ -44,7 +44,7 @@ class TempDirectoryPath(str, ContextManager):
         _value: Optional[Exception],
         _tb: Optional[TracebackType],
     ) -> None:
-        if os.path.exists(self):
+        if Path.exists(self):
             shutil.rmtree(self)
 
 

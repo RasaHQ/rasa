@@ -157,7 +157,7 @@ class EndpointConfig:
             except FileNotFoundError as e:
                 raise FileNotFoundException(
                     f"Failed to find certificate file, "
-                    f"'{os.path.abspath(self.cafile)}' does not exist."
+                    f"'{Path.absolute(self.cafile)}' does not exist."
                 ) from e
 
         async with self.session() as session:
