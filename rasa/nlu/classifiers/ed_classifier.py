@@ -140,7 +140,7 @@ class flask_serving_classifier(IntentClassifier):
         print('FLASK PROCESS PRINT')
         print('ED message', message.get(TEXT))
         X = [message.get(TEXT)] # this inputs should be a list
-        intent_ids, probabilities = self.predict(X)
+        intent_ids, probabilities, eqa_response = self.predict(X)
         intents = self.transform_labels_num2str(np.ravel(intent_ids))
         # `predict` returns a matrix as it is supposed
         # to work for multiple examples as well, hence we need to flatten
@@ -160,11 +160,11 @@ class flask_serving_classifier(IntentClassifier):
         print(intent)
         print(intent_ranking)
         message.set("intent", intent, add_to_output=True)
-        message.set("eqa_response", "This is a dummy response from EQA.", add_to_output=True)
+        message.set("eqa_response", eqa_response, add_to_output=True)
         message.set("intent_ranking", intent_ranking, add_to_output=True)
 
     def predict_prob(self, X):
-        # type: (np.ndarray) -> np.ndarray
+        # type: (np.ndarray) -> Tuple[np.ndarray, Text]
         """Given a bow vector of an input text, predict the intent label.
 
         Return probabilities for all labels.
@@ -175,10 +175,11 @@ class flask_serving_classifier(IntentClassifier):
         url = f'http://{FLASK_SERVER_IP}:{FLASK_SERVER_PORT}/predict'
         pred = requests.post(url, json=data)
         out = np.array(pred.json()['prediction'])
-        return out
+        eqa_response = pred.json()['eqa_response']
+        return out, eqa_response
 
     def predict(self, X):
-        # type: (np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+        # type: (np.ndarray) -> Tuple[np.ndarray, np.ndarray, Text]
         """Given a bow vector of an input text, predict most probable label.
 
         Return only the most likely label.
@@ -187,11 +188,11 @@ class flask_serving_classifier(IntentClassifier):
         :return: tuple of first, the most probable label and second,
                  its probability."""
 
-        pred_result = self.predict_prob(X)
+        pred_result, eqa_response = self.predict_prob(X)
         # sort the probabilities retrieving the indices of
         # the elements in sorted order
         sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
-        return sorted_indices, pred_result[:, sorted_indices]
+        return sorted_indices, pred_result[:, sorted_indices], eqa_response
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
