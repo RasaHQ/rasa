@@ -38,7 +38,11 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
+from rasa.core.policies.policy import (
+    PolicyPrediction,
+    PolicyGraphComponent,
+    SupportedData,
+)
 from rasa.core.constants import (
     DIALOGUE,
     POLICY_MAX_HISTORY,
@@ -322,10 +326,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             ENTITY_RECOGNITION: True,
             # if 'True' applies sigmoid on all similarity terms and adds
             # it to the loss function to ensure that similarity values are
-            # approximately bounded. Used inside softmax loss only.
+            # approximately bounded. Used inside cross-entropy loss only.
             CONSTRAIN_SIMILARITIES: False,
-            # Model confidence to be returned during inference. Possible values -
-            # 'softmax' and 'linear_norm'.
+            # Model confidence to be returned during inference. Currently, the only
+            # possible value is `softmax`.
             MODEL_CONFIDENCE: SOFTMAX,
             # 'BILOU_flag' determines whether to use BILOU tagging or not.
             # If set to 'True' labelling is more rigorous, however more
@@ -402,12 +406,8 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         """Takes care of deprecations and compatibility of parameters."""
         self.config = rasa.utils.train_utils.update_confidence_type(self.config)
         rasa.utils.train_utils.validate_configuration_settings(self.config)
-        self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
-        self.config = rasa.utils.train_utils.update_deprecated_sparsity_to_density(
-            self.config
-        )
 
     def _create_label_data(
         self,
@@ -695,6 +695,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
                 category=UserWarning,
             )
             return self._resource
+
+        training_trackers = SupportedData.trackers_for_supported_data(
+            self.supported_data(), training_trackers
+        )
 
         model_data, label_ids = self._prepare_for_training(
             training_trackers, domain, precomputations,
@@ -1134,7 +1138,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
         meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
-        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
 
         return meta
 
