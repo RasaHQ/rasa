@@ -22,14 +22,12 @@ slots:
   cuisine:
     type: text
     influence_conversation: false
-    auto_fill: false
     mappings:
     - type: from_entity
       entity: cuisine
   num_people:
     type: float
     influence_conversation: false
-    auto_fill: false
     mappings:
     - type: from_entity
       entity: number
@@ -37,7 +35,6 @@ slots:
   outdoor_seating:
     type: text
     influence_conversation: false
-    auto_fill: false
     mappings:
     - type: from_entity
       entity: seating
@@ -50,7 +47,6 @@ slots:
   preferences:
     type: text
     influence_conversation: false
-    auto_fill: false
     mappings:
     - type: from_intent
       intent: deny
@@ -60,7 +56,6 @@ slots:
   feedback:
     type: text
     influence_conversation: false
-    auto_fill: false
     mappings:
     - type: from_entity
       entity: feedback
