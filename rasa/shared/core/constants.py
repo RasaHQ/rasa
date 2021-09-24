@@ -30,6 +30,7 @@ ACTION_BACK_NAME = "action_back"
 ACTION_TWO_STAGE_FALLBACK_NAME = "action_two_stage_fallback"
 ACTION_UNLIKELY_INTENT_NAME = "action_unlikely_intent"
 RULE_SNIPPET_ACTION_NAME = "..."
+ACTION_EXTRACT_SLOTS = "action_extract_slots"
 
 DEFAULT_ACTION_NAMES = [
     ACTION_LISTEN_NAME,
@@ -44,6 +45,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_UNLIKELY_INTENT_NAME,
     ACTION_BACK_NAME,
     RULE_SNIPPET_ACTION_NAME,
+    ACTION_EXTRACT_SLOTS,
 ]
 
 # rules allow setting a value of slots or active_loops to None;

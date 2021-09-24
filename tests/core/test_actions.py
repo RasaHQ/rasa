@@ -1,6 +1,6 @@
 import textwrap
 from datetime import datetime
-from typing import List, Text
+from typing import List, Text, Any
 
 import pytest
 from aioresponses import aioresponses
@@ -20,6 +20,7 @@ from rasa.core.actions.action import (
     RemoteAction,
     ActionSessionStart,
     ActionEndToEndResponse,
+    ActionExtractSlots,
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
@@ -1118,3 +1119,91 @@ async def test_run_end_to_end_utterance_action():
             {},
         )
     ]
+
+
+@pytest.mark.parametrize(
+    "user, slot_name, slot_value",
+    [
+        (
+            UserUttered(
+                intent={"name": "inform"},
+                entities=[{"entity": "city", "value": "London"}],
+            ),
+            "location",
+            "London",
+        ),
+        (
+            UserUttered(text="test@example.com", intent={"name": "inform"}),
+            "email",
+            "test@example.com",
+        ),
+        (UserUttered(intent={"name": "affirm"}), "cancel_booking", True),
+        (UserUttered(intent={"name": "deny"}), "cancel_booking", False),
+        (
+            UserUttered(
+                intent={"name": "inform"},
+                entities=[
+                    {"entity": "name", "value": "Bob"},
+                    {"entity": "name", "value": "Mary"},
+                ],
+            ),
+            "guest_names",
+            ["Bob", "Mary"],
+        ),
+    ],
+)
+async def test_action_extract_slots_predefined_mappings(
+    user: Event, slot_name: Text, slot_value: Any
+):
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            """
+            intents:
+            - inform
+            - greet
+            - affirm
+            - deny
+            entities:
+            - city
+            slots:
+              location:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: city
+              email:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_text
+                  intent: inform
+                  not_intent: greet
+              cancel_booking:
+                type: bool
+                influence_conversation: false
+                mappings:
+                - type: from_intent
+                  intent: affirm
+                  value: true
+                - type: from_intent
+                  intent: deny
+                  value: false
+              guest_names:
+                type: list
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: name"""
+        )
+    )
+
+    action_extract_slots = ActionExtractSlots()
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        DialogueStateTracker.from_events("sender", evts=[user]),
+        domain,
+    )
+
+    assert events == [SlotSet(slot_name, slot_value)]
