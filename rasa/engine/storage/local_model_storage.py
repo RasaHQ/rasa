@@ -148,6 +148,9 @@ class LocalModelStorage(ModelStorage):
             )
             self._persist_metadata(model_metadata, temporary_directory)
 
+            if not model_archive_path.parent.exists():
+                model_archive_path.parent.mkdir(parents=True)
+
             with tarfile.open(model_archive_path, "w:gz") as tar:
                 tar.add(temporary_directory, arcname="")
 

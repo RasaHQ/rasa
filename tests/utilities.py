@@ -1,3 +1,6 @@
+import filecmp
+from pathlib import Path
+
 from yarl import URL
 
 

@@ -3,6 +3,7 @@ from typing import Text, Dict, Any
 import pytest
 
 import rasa.shared.utils.io
+from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
 from rasa.engine.graph import GraphSchema, GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import (
     DefaultV1Recipe,
@@ -20,6 +21,7 @@ from rasa.nlu.classifiers.sklearn_intent_classifier import (
 from rasa.nlu.extractors.mitie_entity_extractor import (
     MitieEntityExtractorGraphComponent,
 )
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.autoconfig import TrainingType
 import rasa.engine.validation
 
@@ -34,6 +36,14 @@ def test_recipe_for_name():
     "training_type, is_finetuning",
     [
         # The default config is the config which most users run
+        (
+            "rasa/shared/importers/default_config.yml",
+            "data/graph_schemas/default_config_e2e_train_schema.yml",
+            "data/graph_schemas/default_config_e2e_predict_schema.yml",
+            TrainingType.END_TO_END,
+            False,
+        ),
+        # The default config without end to end
         (
             "rasa/shared/importers/default_config.yml",
             "data/graph_schemas/default_config_train_schema.yml",
@@ -129,7 +139,7 @@ def test_generate_graphs(
     config = rasa.shared.utils.io.read_yaml_file(config_path)
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
-    train_schema, predict_schema = recipe.schemas_for_config(
+    train_schema, predict_schema, _ = recipe.schemas_for_config(
         config, {}, training_type=training_type, is_finetuning=is_finetuning
     )
 
@@ -152,37 +162,21 @@ def test_generate_graphs(
     )
 
 
-def test_importer_parameter_interpolation():
+def test_language_returning():
     config = rasa.shared.utils.io.read_yaml(
         """
+    language: "xy"
     version: '2.0'
 
     policies:
     - name: RulePolicy
     """
     )
-    data_path = "my_data/dir"
-    path_to_domain = "my_domain.yml"
-    stories_path = "extra_dir/for_stories"
-    nlu_path = "extra_dir/for_nlu_files"
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, _ = recipe.schemas_for_config(
-        config,
-        {
-            "data": [data_path],
-            "domain": path_to_domain,
-            "stories": stories_path,
-            "nlu": nlu_path,
-        },
-    )
+    _, _, language = recipe.schemas_for_config(config, {},)
 
-    node = train_schema.nodes["project_provider"]
-
-    assert node.config == {
-        "domain_path": path_to_domain,
-        "training_data_paths": [data_path, stories_path, nlu_path],
-    }
+    assert language == "xy"
 
 
 def test_tracker_generator_parameter_interpolation():
@@ -199,7 +193,7 @@ def test_tracker_generator_parameter_interpolation():
     debug_plots = True
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, _ = recipe.schemas_for_config(
+    train_schema, _, _ = recipe.schemas_for_config(
         config, {"augmentation": augmentation, "debug_plots": debug_plots},
     )
 
@@ -222,7 +216,9 @@ def test_nlu_training_data_persistence():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, _ = recipe.schemas_for_config(config, {"persist_nlu_data": True},)
+    train_schema, _, _ = recipe.schemas_for_config(
+        config, {"persist_nlu_training_data": True},
+    )
 
     node = train_schema.nodes["nlu_training_data_provider"]
 
@@ -257,7 +253,7 @@ def test_num_threads_interpolation():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, predict_schema = recipe.schemas_for_config(
+    train_schema, predict_schema, _ = recipe.schemas_for_config(
         config, {"num_threads": 20}
     )
 
@@ -272,37 +268,25 @@ def test_num_threads_interpolation():
     assert predict_schema == expected_predict_schema
 
 
-# TODO: comment in once a all components were adapted
-# def test_epoch_fraction_cli_param():
-#     expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
-#         "data/graph_schemas/default_config_train_schema.yml"
-#     )
-#     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
-#
-#     expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
-#         "data/graph_schemas/default_config_predict_schema.yml"
-#     )
-#     expected_predict_schema = GraphSchema.from_dict(expected_schema_as_dict)
-#
-#
-#     config = rasa.shared.utils.io.read_yaml_file(
-#         "rasa/shared/importers/default_config.yml"
-#     )
-#
-#     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-#     train_schema, predict_schema = recipe.schemas_for_config(
-#         config, {"epoch_fraction": 0.5}
-#     )
-#
-#     for node_name, node in expected_train_schema.nodes.items():
-#         assert train_schema.nodes[node_name] == node
-#
-#     assert train_schema == expected_train_schema
-#
-#     for node_name, node in expected_predict_schema.nodes.items():
-#         assert predict_schema.nodes[node_name] == node
-#
-#     assert predict_schema == expected_predict_schema
+def test_epoch_fraction_cli_param():
+    expected_schema_as_dict = rasa.shared.utils.io.read_yaml_file(
+        "data/graph_schemas/default_config_finetune_epoch_fraction_schema.yml"
+    )
+    expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
+
+    config = rasa.shared.utils.io.read_yaml_file(
+        "rasa/shared/importers/default_config.yml"
+    )
+
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
+    train_schema, predict_schema, _ = recipe.schemas_for_config(
+        config, {"finetuning_epoch_fraction": 0.5}, is_finetuning=True
+    )
+
+    for node_name, node in expected_train_schema.nodes.items():
+        assert train_schema.nodes[node_name] == node
+
+    assert train_schema == expected_train_schema
 
 
 def test_register_component():
@@ -347,6 +331,56 @@ def test_retrieve_not_registered_class():
     class NotRegisteredClass:
         pass
 
-    with pytest.raises(KeyError):
+    with pytest.raises(InvalidConfigException):
         # noinspection PyTypeChecker
         DefaultV1Recipe._from_registry(NotRegisteredClass.__name__)
+
+
+def test_retrieve_via_module_path():
+    train_schema, predict_schema, _ = DefaultV1Recipe().schemas_for_config(
+        {
+            "policies": [
+                {"name": "rasa.core.policies.ted_policy.TEDPolicyGraphComponent"}
+            ]
+        },
+        {},
+        TrainingType.CORE,
+    )
+
+    assert any(
+        issubclass(node.uses, TEDPolicyGraphComponent)
+        for node in train_schema.nodes.values()
+    )
+    assert any(
+        issubclass(node.uses, TEDPolicyGraphComponent)
+        for node in predict_schema.nodes.values()
+    )
+
+
+def test_retrieve_via_invalid_module_path():
+    with pytest.raises(ImportError):
+        DefaultV1Recipe().schemas_for_config(
+            {
+                "policies": [
+                    {
+                        "name": "rasa.core.policies.ted_policy.TEDPolicyGraphComponent1000"
+                    }
+                ]
+            },
+            {},
+            TrainingType.CORE,
+        )
+
+
+def test_train_nlu_without_nlu_pipeline():
+    with pytest.raises(InvalidConfigException):
+        DefaultV1Recipe().schemas_for_config(
+            {"pipeline": []}, {}, TrainingType.NLU,
+        )
+
+
+def test_train_core_without_nlu_pipeline():
+    with pytest.raises(InvalidConfigException):
+        DefaultV1Recipe().schemas_for_config(
+            {"policies": []}, {}, TrainingType.CORE,
+        )

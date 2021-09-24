@@ -57,18 +57,11 @@ def test_provide(
         original_domain.responses
     ), reminder
 
-    # Assert that the recreated copy does not contain any response information
-    assert not modified_domain.responses
-    assert all(
-        action in original_domain._custom_actions
-        for action in modified_domain.user_actions
-    )
-    assert set(modified_domain.action_names_or_texts) < set(
-        original_domain.action_names_or_texts
-    )
-    assert all(
-        response not in modified_domain.action_names_or_texts
-        for response in set(original_domain.responses).difference(
-            original_domain._custom_actions
-        )
+    # The responses are empty
+    for _, responses_for_action in modified_domain.responses.items():
+        assert not responses_for_action
+
+    # We still have all the same labels
+    assert (
+        original_domain.action_names_or_texts == modified_domain.action_names_or_texts
     )

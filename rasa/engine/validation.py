@@ -28,6 +28,7 @@ from rasa.engine.graph import (
     SchemaNode,
     ExecutionContext,
 )
+from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import RasaException
@@ -116,7 +117,14 @@ def _walk_and_check_for_cycles(
 
     parents = schema.nodes[node_name].needs.values()
     for parent_name in parents:
-        _walk_and_check_for_cycles([*visited_so_far, node_name], parent_name, schema)
+        if not _is_placeholder_input(parent_name):
+            _walk_and_check_for_cycles(
+                [*visited_so_far, node_name], parent_name, schema
+            )
+
+
+def _is_placeholder_input(name: Text) -> bool:
+    return name in RESERVED_PLACEHOLDERS
 
 
 def _validate_interface_usage(node_name: Text, node: SchemaNode) -> None:
@@ -281,7 +289,7 @@ def _validate_run_fn_return_type(
 
     # TODO: Handle forward references here
     if typing_utils.issubtype(return_type, typing.List):
-        return_type = typing.get_args(return_type)[0]
+        return_type = typing_utils.get_args(return_type)[0]
 
     if is_training and not isinstance(return_type, Fingerprintable):
         raise GraphSchemaValidationException(
@@ -349,9 +357,6 @@ def _validate_needs(
     )
 
     for param_name, parent_name in node.needs.items():
-        if parent_name == "__input__":
-            continue
-
         if not has_kwargs and param_name not in available_args:
             raise GraphSchemaValidationException(
                 f"Node '{node_name}' is configured to retrieve a value for the "
@@ -361,14 +366,20 @@ def _validate_needs(
                 f"correctly specified."
             )
 
-        parent = graph.nodes[parent_name]
-
         required_type = available_args.get(param_name)
         needs_passed_to_kwargs = has_kwargs and required_type is None
 
         if not needs_passed_to_kwargs:
+            if _is_placeholder_input(parent_name):
+                parent_return_type = RESERVED_PLACEHOLDERS[parent_name]
+            else:
+                parent = graph.nodes[parent_name]
+                _, parent_return_type = _get_parameter_information(
+                    parent_name, parent.uses, parent.fn
+                )
+
             _validate_parent_return_type(
-                node_name, node, parent_name, parent, required_type.type_annotation
+                node_name, node, parent_return_type, required_type.type_annotation
             )
 
 
@@ -392,13 +403,10 @@ def _get_available_args(
 def _validate_parent_return_type(
     node_name: Text,
     node: SchemaNode,
-    parent_name: Text,
-    parent: SchemaNode,
+    parent_return_type: TypeAnnotation,
     required_type: TypeAnnotation,
 ) -> None:
-    _, parent_return_type = _get_parameter_information(
-        parent_name, parent.uses, parent.fn
-    )
+
     if not typing_utils.issubtype(parent_return_type, required_type):
         raise GraphSchemaValidationException(
             f"Parent of node '{node_name}' returns type "

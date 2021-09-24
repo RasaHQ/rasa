@@ -216,7 +216,7 @@ def background_server(
     # Fake training function which blocks until we tell it to stop blocking
     # If we can send a status request while this is blocking, we can be sure that the
     # actual training is also not blocking
-    async def mocked_training_function(*_, **__) -> TrainingResult:
+    def mocked_training_function(*_, **__) -> TrainingResult:
         # Tell the others that we are now blocking
         shared_statuses["started_training"] = True
         # Block until somebody tells us to not block anymore
@@ -229,7 +229,7 @@ def background_server(
         import sys
 
         monkeypatch.setattr(
-            sys.modules["rasa.model_training"], "train_async", mocked_training_function,
+            sys.modules["rasa.model_training"], "train", mocked_training_function,
         )
 
         from rasa import __main__
@@ -613,10 +613,8 @@ async def test_train_with_yaml_with_params(
     fake_model = Path(tmp_path) / "fake_model.tar.gz"
     fake_model.touch()
     fake_model_path = str(fake_model)
-    future = asyncio.Future()
-    future.set_result(TrainingResult(model=fake_model_path))
-    mock_train = Mock(return_value=future)
-    monkeypatch.setattr(rasa.model_training, "train_async", mock_train)
+    mock_train = Mock(return_value=TrainingResult(model=fake_model_path))
+    monkeypatch.setattr(rasa.model_training, "train", mock_train)
 
     training_data = """
 stories: []

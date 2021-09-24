@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple
 
-
 from rasa.engine.exceptions import (
     GraphComponentException,
     GraphSchemaException,
@@ -15,7 +14,7 @@ import rasa.shared.utils.common
 from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
-
+from rasa.shared.exceptions import InvalidConfigException
 
 logger = logging.getLogger(__name__)
 
@@ -357,6 +356,10 @@ class GraphNode:
                 execution_context=self._execution_context,
                 **kwargs,
             )
+        except InvalidConfigException:
+            # Pass through somewhat expected exception to allow more fine granular
+            # handling of exceptions.
+            raise
         except Exception as e:
             raise GraphComponentException(
                 f"Error initializing graph component for node {self._node_name}."
@@ -420,6 +423,10 @@ class GraphNode:
 
         try:
             output = self._fn(self._component, **run_kwargs)
+        except InvalidConfigException:
+            # Pass through somewhat expected exception to allow more fine granular
+            # handling of exceptions.
+            raise
         except Exception as e:
             raise GraphComponentException(
                 f"Error running graph component for node {self._node_name}."

@@ -118,7 +118,7 @@ class DaskGraphRunner(GraphRunner):
     @staticmethod
     def _add_inputs_to_graph(inputs: Optional[Dict[Text, Any]], graph: Any,) -> None:
         for input_name, input_value in inputs.items():
-            if input_value in graph.keys():
+            if isinstance(input_value, str) and input_value in graph.keys():
                 raise GraphRunError(
                     f"Input value '{input_value}' clashes with a node name. Make sure "
                     f"that none of the input names passed to the `run` method are the "

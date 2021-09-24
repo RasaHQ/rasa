@@ -17,7 +17,7 @@ def test_nlu_message_converter_converts_message(
     )
 
     message = UserMessage(text="Hello", metadata=None)
-    nlu_message = component.convert_user_message(message)
+    nlu_message = component.convert_user_message([message])
     assert len(nlu_message) == 1
     assert isinstance(nlu_message[0], Message)
 
@@ -33,7 +33,7 @@ def test_nlu_message_converter_converts_message_with_metadata(
     )
 
     message = UserMessage(text="Hello", metadata={"test_key": "test_value"})
-    nlu_message = component.convert_user_message(message)
+    nlu_message = component.convert_user_message([message])
     assert len(nlu_message) == 1
     assert isinstance(nlu_message[0], Message)
 
@@ -51,6 +51,5 @@ def test_nlu_message_converter_handles_no_user_message(
         default_execution_context,
     )
 
-    message = None
-    nlu_message = component.convert_user_message(message)
+    nlu_message = component.convert_user_message([])
     assert len(nlu_message) == 0

@@ -14,8 +14,20 @@ class InvalidRecipeException(RasaException):
 
 
 class Recipe(abc.ABC):
+    """Base class for `Recipe`s which convert configs to graph schemas."""
+
     @staticmethod
     def recipe_for_name(name: Optional[Text]) -> Recipe:
+        """Returns `Recipe` based on an optional recipe identifier.
+
+        Args:
+            name: The identifier which is used to select a certain `Recipe`. If `None`
+                the default recipe will be used.
+
+        Returns:
+            A recipe which can be used to convert a given config to train and predict
+            graph schemas.
+        """
         from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 
         if name is None:
@@ -44,7 +56,7 @@ class Recipe(abc.ABC):
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
         is_finetuning: bool = False,
-    ) -> Tuple[GraphSchema, GraphSchema]:
+    ) -> Tuple[GraphSchema, GraphSchema, Optional[Text]]:
         """Converts a config to graph schemas for training and prediction.
 
         Args:
@@ -59,6 +71,7 @@ class Recipe(abc.ABC):
 
         Returns:
             A schema for training a model and a schema for making predictions with this
-            trained model.
+            trained model and the language of the model (`None` in case the language
+            was not specified)
         """
         ...

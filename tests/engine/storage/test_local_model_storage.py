@@ -126,6 +126,17 @@ def test_create_model_package(
     assert list(persisted_resources) == [Path(load_model_storage_dir, "resource1")]
 
 
+def test_create_package_with_non_existing_parent(tmp_path: Path):
+    storage = LocalModelStorage.create(tmp_path)
+    model_file = tmp_path / "new" / "sub" / "dir" / "file.tar.gz"
+
+    storage.create_model_package(
+        model_file, GraphSchema({}), GraphSchema({}), Domain.empty()
+    )
+
+    assert model_file.is_file()
+
+
 def test_create_model_package_with_non_empty_model_storage(tmp_path: Path):
     # Put something in the future model storage directory
     (tmp_path / "somefile.json").touch()
@@ -133,3 +144,14 @@ def test_create_model_package_with_non_empty_model_storage(tmp_path: Path):
     with pytest.raises(ValueError):
         # Unpacking into an already filled `ModelStorage` raises an exception.
         _ = LocalModelStorage.from_model_archive(tmp_path, Path("does not matter"))
+
+
+def test_create_model_package_with_non_existing_dir(
+    tmp_path: Path, default_model_storage: ModelStorage
+):
+    path = tmp_path / "some_dir" / "another" / "model.tar.gz"
+    default_model_storage.create_model_package(
+        path, GraphSchema({}), GraphSchema({}), Domain.empty()
+    )
+
+    assert path.exists()

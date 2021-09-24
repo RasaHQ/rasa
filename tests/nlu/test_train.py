@@ -1,13 +1,17 @@
-import os
-import pytest
+from pathlib import Path
 
+import pytest
+from _pytest.tmpdir import TempPathFactory
+
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.nlu import registry
 import rasa.nlu.train
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Interpreter, Trainer
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.model import Interpreter
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.tensorflow.constants import EPOCHS
-from typing import Any, Dict, List, Tuple, Text, Union
+from typing import Any, Dict, List, Tuple, Text, Union, Optional
+import rasa.model_training
+import rasa.shared.utils.io
 
 COMPONENTS_TEST_PARAMS = {
     "DIETClassifier": {EPOCHS: 1},
@@ -137,18 +141,24 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 
 @pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-async def test_train_persist_load_parse(
-    language, pipeline, component_builder, tmpdir, nlu_as_json_path: Text
+def test_train_persist_load_parse(
+    language: Optional[Text],
+    pipeline: List[Dict],
+    tmp_path: Path,
+    nlu_as_json_path: Text,
 ):
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
-
-    (trained, _, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=tmpdir.strpath,
-        data=nlu_as_json_path,
-        component_builder=component_builder,
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        config_file, {"pipeline": pipeline, "language": language}
     )
 
+    persisted_path = rasa.model_training.train_nlu(
+        str(config_file), nlu_as_json_path, output=str(tmp_path),
+    )
+
+    assert Path(persisted_path).is_file()
+
+    # TODO: Fix model loading
     assert trained.pipeline
 
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -160,143 +170,92 @@ async def test_train_persist_load_parse(
 @pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
-async def test_train_persist_load_parse_non_windows(
-    language, pipeline, component_builder, tmpdir, nlu_as_json_path: Text
+def test_train_persist_load_parse_non_windows(
+    language, pipeline, component_builder, tmp_path, nlu_as_json_path: Text
 ):
-    await test_train_persist_load_parse(
-        language, pipeline, component_builder, tmpdir, nlu_as_json_path
-    )
+    test_train_persist_load_parse(language, pipeline, tmp_path, nlu_as_json_path)
 
 
-@pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-def test_train_model_without_data(language, pipeline, component_builder, tmpdir):
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
-
-    trainer = Trainer(_config, component_builder)
-    trainer.train(TrainingData())
-    persisted_path = trainer.persist(tmpdir.strpath)
-
-    loaded = Interpreter.load(persisted_path, component_builder)
-
-    assert loaded.pipeline
-    assert loaded.parse("Rasa is great!") is not None
-
-
-@pytest.mark.timeout(600, func_only=True)
-@pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
-@pytest.mark.skip_on_windows
-def test_train_model_without_data_non_windows(
-    language, pipeline, component_builder, tmpdir
-):
-    test_train_model_without_data(language, pipeline, component_builder, tmpdir)
-
-
-@pytest.mark.timeout(600, func_only=True)
-@pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-def test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir):
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
-
-    trainer = Trainer(_config, component_builder)
-    persisted_path = trainer.persist(tmpdir.strpath)
-
-    loaded = Interpreter.load(persisted_path, component_builder)
-
-    assert loaded.pipeline
-    assert loaded.parse("Rasa is great!") is not None
-
-
-@pytest.mark.timeout(600, func_only=True)
-@pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
-@pytest.mark.skip_on_windows
-def test_load_and_persist_without_train_non_windows(
-    language, pipeline, component_builder, tmpdir
-):
-    test_load_and_persist_without_train(language, pipeline, component_builder, tmpdir)
-
-
-async def test_train_model_empty_pipeline(component_builder, nlu_as_json_path: Text):
-    _config = RasaNLUModelConfig({"pipeline": None, "language": "en"})
+def test_train_model_empty_pipeline(nlu_as_json_path: Text, tmp_path: Path):
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.dump_obj_as_json_to_file(config_file, {"pipeline": [],})
 
     with pytest.raises(ValueError):
-        await rasa.nlu.train.train(
-            _config, data=nlu_as_json_path, component_builder=component_builder
+        rasa.model_training.train_nlu(
+            str(config_file), nlu_as_json_path, output=str(tmp_path),
         )
 
 
-async def test_train_named_model(component_builder, tmpdir, nlu_as_json_path: Text):
-    _config = RasaNLUModelConfig(
-        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
-    )
-
-    (trained, _, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=tmpdir.strpath,
-        data=nlu_as_json_path,
-        component_builder=component_builder,
-    )
-
-    assert trained.pipeline
-
-    normalized_path = os.path.dirname(os.path.normpath(persisted_path))
-    # should be saved in a dir named after a project
-    assert normalized_path == tmpdir.strpath
-
-
-async def test_handles_pipeline_with_non_existing_component(
-    component_builder, pretrained_embeddings_spacy_config, nlu_as_json_path: Text
+def test_handles_pipeline_with_non_existing_component(
+    tmp_path: Path, pretrained_embeddings_spacy_config: Dict, nlu_as_json_path: Text
 ):
-    pretrained_embeddings_spacy_config.pipeline.append({"name": "my_made_up_component"})
+    pretrained_embeddings_spacy_config["pipeline"].append(
+        {"name": "my_made_up_component"}
+    )
 
-    with pytest.raises(Exception) as execinfo:
-        await rasa.nlu.train.train(
-            pretrained_embeddings_spacy_config,
-            data=nlu_as_json_path,
-            component_builder=component_builder,
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        config_file, pretrained_embeddings_spacy_config
+    )
+
+    with pytest.raises(
+        Exception,
+        match="Can't load class for name 'my_made_up_componentGraphComponent'",
+    ):
+        rasa.model_training.train_nlu(
+            str(config_file), nlu_as_json_path, output=str(tmp_path),
         )
-    assert "Cannot find class" in str(execinfo.value)
 
 
-async def test_train_model_training_data_persisted(
-    component_builder, tmpdir, nlu_as_json_path: Text
+def test_train_model_training_data_persisted(
+    tmp_path: Path, nlu_as_json_path: Text, tmp_path_factory: TempPathFactory
 ):
-    _config = RasaNLUModelConfig(
-        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        config_file,
+        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"},
     )
 
-    (trained, _, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=tmpdir.strpath,
-        data=nlu_as_json_path,
-        component_builder=component_builder,
+    persisted_path = rasa.model_training.train_nlu(
+        str(config_file),
+        nlu_as_json_path,
+        output=str(tmp_path),
         persist_nlu_training_data=True,
     )
 
-    assert trained.pipeline
+    assert Path(persisted_path).is_file()
 
-    loaded = Interpreter.load(persisted_path, component_builder)
+    model_dir = tmp_path_factory.mktemp("loaded")
+    storage, _ = LocalModelStorage.from_model_archive(model_dir, Path(persisted_path))
 
-    assert loaded.pipeline
-    assert loaded.model_metadata.get("training_data") is not None
+    nlu_data_dir = model_dir / "nlu_training_data_provider"
+
+    assert nlu_data_dir.is_dir()
+
+    assert not RasaYAMLReader().read(nlu_data_dir / "training_data.yml").is_empty()
 
 
-async def test_train_model_no_training_data_persisted(
-    component_builder, tmpdir, nlu_as_json_path: Text
+def test_train_model_no_training_data_persisted(
+    tmp_path: Path, nlu_as_json_path: Text, tmp_path_factory: TempPathFactory
 ):
-    _config = RasaNLUModelConfig(
-        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        config_file,
+        {"pipeline": [{"name": "KeywordIntentClassifier"}], "language": "en"},
     )
 
-    (trained, _, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=tmpdir.strpath,
-        data=nlu_as_json_path,
-        component_builder=component_builder,
+    persisted_path = rasa.model_training.train_nlu(
+        str(config_file),
+        nlu_as_json_path,
+        output=str(tmp_path),
         persist_nlu_training_data=False,
     )
 
-    assert trained.pipeline
+    assert Path(persisted_path).is_file()
 
-    loaded = Interpreter.load(persisted_path, component_builder)
+    model_dir = tmp_path_factory.mktemp("loaded")
+    storage, _ = LocalModelStorage.from_model_archive(model_dir, Path(persisted_path))
 
-    assert loaded.pipeline
-    assert loaded.model_metadata.get("training_data") is None
+    nlu_data_dir = model_dir / "nlu_training_data_provider"
+
+    assert not nlu_data_dir.is_dir()
