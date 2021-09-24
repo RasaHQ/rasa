@@ -615,14 +615,3 @@ def test_vocabulary_expand_for_finetuning(
         if pattern["name"] == "hello"
     ]
     assert pattern_to_check == [new_patterns[1]]
-
-
-def test_additional_patterns_deprecation(
-    create_featurizer: Callable[..., RegexFeaturizerGraphComponent]
-):
-    with pytest.warns(FutureWarning) as warning:
-        _ = create_featurizer({"number_additional_patterns": 5})
-    assert (
-        "The parameter `number_additional_patterns` has been deprecated"
-        in warning[0].message.args[0]
-    )
