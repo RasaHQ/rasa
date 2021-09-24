@@ -74,6 +74,33 @@ mapping:
            sequence:
               - type: "map"
                 allowempty: True
+                mapping:
+                  type:
+                    type: "str"
+                  intent:
+                    type: "any"
+                  not_intent:
+                    type: "any"
+                  entity:
+                    type: "str"
+                  role:
+                    type: "str"
+                  group:
+                    type: "str"
+                  value:
+                    type: "any"
+                  action:
+                    type: "str"
+                  conditions:
+                    type: "seq"
+                    sequence:
+                      - type: "map"
+                        mapping:
+                          active_loop:
+                            type: "str"
+                            required: True
+                          requested_slot:
+                            type: "str"
   forms:
     type: "map"
     required: False
