@@ -99,6 +99,11 @@ def config_path() -> Text:
 
 
 @pytest.fixture(scope="session")
+def default_config(config_path: Text) -> Dict[Text, Any]:
+    return rasa.shared.utils.io.read_yaml_file(config_path)
+
+
+@pytest.fixture(scope="session")
 def domain_with_categorical_slot_path() -> Text:
     return "data/test_domains/domain_with_categorical_slot.yml"
 
@@ -542,13 +547,22 @@ def blank_config() -> RasaNLUModelConfig:
 
 
 @pytest.fixture(scope="session")
+async def response_selector_test_stories() -> Path:
+    return Path("data/test_response_selector_bot/tests/test_stories.yml")
+
+
+@pytest.fixture(scope="session")
+async def response_selector_results() -> Path:
+    return Path("data/test_response_selector_bot/results/")
+
+
+@pytest.fixture(scope="session")
 async def trained_response_selector_bot(trained_async: Callable) -> Path:
     zipped_model = await trained_async(
         domain="data/test_response_selector_bot/domain.yml",
         config="data/test_response_selector_bot/config.yml",
         training_files=[
             "data/test_response_selector_bot/data/rules.yml",
-            "data/test_response_selector_bot/data/stories.yml",
             "data/test_response_selector_bot/data/nlu.yml",
         ],
     )

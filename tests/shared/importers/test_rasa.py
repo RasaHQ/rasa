@@ -37,7 +37,7 @@ def test_rasa_file_importer(project: Text):
 
     nlu_data = importer.get_nlu_data("en")
     assert len(nlu_data.intents) == 7
-    assert len(nlu_data.intent_examples) == 69
+    assert len(nlu_data.intent_examples) == 68
 
 
 def test_read_conversation_tests(project: Text):

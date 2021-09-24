@@ -472,10 +472,17 @@ class DynamoTrackerStore(TrackerStore):
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the `DynamoTrackerStore`."""
-        return [
-            i["sender_id"]
-            for i in self.db.scan(ProjectionExpression="sender_id")["Items"]
-        ]
+        response = self.db.scan(ProjectionExpression="sender_id")
+        sender_ids = [i["sender_id"] for i in response["Items"]]
+
+        while response.get("LastEvaluatedKey"):
+            response = self.db.scan(
+                ProjectionExpression="sender_id",
+                ExclusiveStartKey=response["LastEvaluatedKey"],
+            )
+            sender_ids.extend([i["sender_id"] for i in response["Items"]])
+
+        return sender_ids
 
 
 class MongoTrackerStore(TrackerStore):

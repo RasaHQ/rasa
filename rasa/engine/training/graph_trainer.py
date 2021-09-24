@@ -126,7 +126,7 @@ class GraphTrainer:
             graph_schema=fingerprint_schema,
             model_storage=self._model_storage,
             execution_context=ExecutionContext(
-                graph_schema=fingerprint_schema, is_finetuning=is_finetuning
+                graph_schema=train_schema, is_finetuning=is_finetuning
             ),
         )
 

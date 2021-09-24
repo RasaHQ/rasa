@@ -57,8 +57,25 @@ jobs:
           curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           chmod 755 gomplate
 
+      - name: Get TensorFlow version
+        run: |-
+          # Read TF version, trim special characters ^~><+
+          TF_VERSION=$(grep "tensorflow =" pyproject.toml | sed 's/^[^"]*"\([^"]*\),.*/\1/' | sed 's/[\^~><=]//g')
+          # Keep the first 3 characters, e.g. we keep 2.3 if TF_VERSION is 2.3.4
+          TF_VERSION=${TF_VERSION::3}
+          echo "TensorFlow version: $TF_VERSION"
+          echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
+
+       # Use compatible CUDA/cuDNN with the given TF version
+      - name: Prepare GitHub runner image tag
+        run: |-
+          GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
+          echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
+          echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
+
       - name: Render deployment template
         run: |-
+          export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
           export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
