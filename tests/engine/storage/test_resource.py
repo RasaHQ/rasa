@@ -115,8 +115,26 @@ def test_resource_fingerprinting():
     assert fingerprint1 != fingerprint2
 
 
-def test_caching_empty_resource(default_model_storage: ModelStorage, tmp_path: Path):
-    resource = Resource("my resource")
+def test_caching_empty_resource(
+    default_model_storage: ModelStorage,
+    tmp_path: Path,
+    tmp_path_factory: TempPathFactory,
+):
+    resource_name = "my resource"
+    resource = Resource(resource_name)
 
     # does not raise
     resource.to_cache(tmp_path, default_model_storage)
+
+    with pytest.raises(ValueError):
+        with default_model_storage.read_from(resource) as _:
+            pass
+
+    cache_dir = tmp_path_factory.mktemp("cache_dir")
+
+    # this doesn't create an empty directory in `default_model_storage`
+    Resource.from_cache(resource_name, cache_dir, default_model_storage)
+
+    with pytest.raises(ValueError):
+        with default_model_storage.read_from(resource) as _:
+            pass

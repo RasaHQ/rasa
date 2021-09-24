@@ -40,6 +40,10 @@ class Resource:
         logger.debug(f"Loading resource '{node_name}' from cache.")
 
         resource = Resource(node_name)
+        if not any(directory.glob("*")):
+            logger.debug(f"Cached resource for '{node_name}' was empty.")
+            return resource
+
         try:
             with model_storage.write_to(resource) as resource_directory:
                 rasa.utils.common.copy_directory(directory, resource_directory)
