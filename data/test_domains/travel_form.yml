@@ -31,7 +31,7 @@ slots:
     type: text
     influence_conversation: false
     mappings:
-    - type: from_text
+    - type: custom
 
 responses:
   utter_ask_GPE_origin:

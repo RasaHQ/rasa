@@ -8,14 +8,18 @@ slots:
   cuisine:
     type: text
     mappings:
-      - type: from_text
+      - type: from_entity
+        entity: cuisine
   location:
     type: text
     mappings:
-      - type: from_text
+      - type: from_entity
+        entity: location
 
 entities:
   - name
+  - cuisine
+  - location
 
 responses:
   utter_greet:

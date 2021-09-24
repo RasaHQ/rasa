@@ -13,7 +13,7 @@ slots:
       - primary
       - secondary
     mappings:
-      - type: from_text
+      - type: custom
   can_withdraw:
     type: bool
     mappings:

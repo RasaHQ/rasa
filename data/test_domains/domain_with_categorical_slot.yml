@@ -5,7 +5,7 @@ slots:
       - value_one
       - value_two
     mappings:
-      - type: from_text
+      - type: custom
 
 responses:
   utter_greet:
