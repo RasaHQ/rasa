@@ -993,26 +993,30 @@ async def test_action_default_ask_rephrase(
 
 
 @pytest.mark.parametrize(
-    "slot_mapping",
+    "slot",
     [
-        """my_slot:
-          - type: from_text
+        """- my_slot
         """,
-        "{}",
+        "[]",
     ],
 )
-def test_get_form_action(slot_mapping: Text):
+def test_get_form_action(slot: Text):
     form_action_name = "my_business_logic"
 
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
+    slots:
+      my_slot:
+        type: text
+        mappings:
+        - type: from_text
     actions:
     - my_action
     forms:
       {form_action_name}:
         {REQUIRED_SLOTS_KEY}:
-          {slot_mapping}
+          {slot}
     """
         )
     )
@@ -1030,7 +1034,8 @@ def test_overridden_form_action():
     - my_action
     - {form_action_name}
     forms:
-        {form_action_name}: {{}}
+        {form_action_name}:
+          {REQUIRED_SLOTS_KEY}: []
     """
         )
     )

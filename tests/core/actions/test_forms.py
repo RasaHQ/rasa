@@ -40,12 +40,16 @@ async def test_activate():
     action = FormAction(form_name, None)
     slot_name = "num_people"
     domain = f"""
+slots:
+  {slot_name}:
+    type: float
+    mappings:
+    - type: from_entity
+      entity: number
 forms:
   {form_name}:
     {REQUIRED_SLOTS_KEY}:
-        {slot_name}:
-        - type: from_entity
-          entity: number
+        - {slot_name}
 responses:
     utter_ask_num_people:
     - text: "How many people?"
@@ -77,14 +81,18 @@ async def test_activate_with_prefilled_slot():
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-            {slot_name}:
-            - type: from_entity
-              entity: {slot_name}
-            {next_slot_to_request}:
-            - type: from_text
+            - {slot_name}
+            - {next_slot_to_request}
     slots:
       {slot_name}:
         type: any
+        mappings:
+        - type: from_entity
+          entity: {slot_name}
+      {next_slot_to_request}:
+        type: text
+        mappings:
+        - type: from_text
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -125,17 +133,19 @@ nlu:
   examples: |
     - start a return
     - I don't want my shoes anymore
+slots:
+ {slot_a}:
+   type: float
+   mappings:
+   - type: from_entity
+     entity: number
 forms:
   {form_1}:
     {REQUIRED_SLOTS_KEY}:
-        {slot_a}:
-        - type: from_entity
-          entity: number
+        - {slot_a}
   {form_2}:
     {REQUIRED_SLOTS_KEY}:
-        {slot_a}:
-        - type: from_entity
-          entity: number
+        - {slot_a}
 responses:
     utter_ask_{form_1}_{slot_a}:
     - text: {utter_ask_form_1}
@@ -256,12 +266,13 @@ async def test_activate_and_immediate_deactivate():
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-            {slot_name}:
-            - type: from_entity
-              entity: {slot_name}
+            - {slot_name}
     slots:
       {slot_name}:
         type: any
+        mappings:
+        - type: from_entity
+          entity: {slot_name}
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -294,12 +305,13 @@ async def test_set_slot_and_deactivate():
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-            {slot_name}:
-            - type: from_text
+            - {slot_name}
     slots:
       {slot_name}:
         type: text
         influence_conversation: false
+        mappings:
+        - type: from_text
     """
     domain = Domain.from_yaml(domain)
 
@@ -335,12 +347,13 @@ async def test_action_rejection():
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-            {slot_to_fill}:
-            - type: from_entity
-              entity: some_entity
+            - {slot_to_fill}
     slots:
       {slot_to_fill}:
         type: any
+        mappings:
+        - type: from_entity
+          entity: some_entity
     """
     domain = Domain.from_yaml(domain)
 
@@ -469,16 +482,18 @@ async def test_validate_slots(
     slots:
       {slot_name}:
         type: any
+        mappings:
+        - type: from_text
       num_tables:
         type: any
+        mappings:
+        - type: from_entity
+          entity: num_tables
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-            {slot_name}:
-            - type: from_text
-            num_tables:
-            - type: from_entity
-              entity: num_tables
+            - {slot_name}
+            - num_tables
     actions:
     - validate_{form_name}
     """
@@ -509,19 +524,21 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
         slots:
           {slot_name_1}:
             type: any
+            mappings:
+            - type: from_intent
+              intent: some_intent
+              value: some_value
           {slot_name_2}:
             type: any
+            mappings:
+            - type: from_intent
+              intent: some_intent
+              value: some_value
         forms:
           {form_name}:
             {REQUIRED_SLOTS_KEY}:
-                {slot_name_1}:
-                - type: from_intent
-                  intent: some_intent
-                  value: some_value
-                {slot_name_2}:
-                - type: from_intent
-                  intent: some_intent
-                  value: some_value
+                - {slot_name_1}
+                - {slot_name_2}
         actions:
         - validate_{form_name}
         """
@@ -589,12 +606,13 @@ async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[
     slots:
       num_tables:
         type: any
+        mappings:
+        - type: from_entity
+          entity: num_tables
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-            num_tables:
-            - type: from_entity
-              entity: num_tables
+            - num_tables
     actions:
     - validate_{form_name}
     """
@@ -631,11 +649,12 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
     slots:
       {slot_name}:
         type: any
+        mappings:
+        - type: from_text
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-            {slot_name}:
-            - type: from_text
+            - {slot_name}
     actions:
     - validate_{form_name}
     """
@@ -679,11 +698,15 @@ def test_name_of_utterance(utterance_name: Text):
     slot_name = "num_people"
 
     domain = f"""
+    slots:
+      {slot_name}:
+        type: any
+        mappings:
+        - type: from_text
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-            {slot_name}:
-            - type: from_text
+            - {slot_name}
     responses:
         {utterance_name}:
         - text: "How many people?"
@@ -704,6 +727,8 @@ def test_temporary_tracker():
         slots:
           {extra_slot}:
             type: any
+            mappings:
+            - type: from_text
         """
     )
 
@@ -731,19 +756,19 @@ def test_extract_requested_slot_default():
 
     domain = Domain.from_dict(
         {
-            "forms": {
-                form_name: {
-                    REQUIRED_SLOTS_KEY: {
-                        "some_slot": [
-                            {
-                                "type": "from_entity",
-                                "entity": "some_slot",
-                                "value": "some_value",
-                            }
-                        ]
-                    }
+            "slots": {
+                "some_slot": {
+                    "type": "text",
+                    "mappings": [
+                        {
+                            "type": "from_entity",
+                            "entity": "some_slot",
+                            "value": "some_value",
+                        }
+                    ],
                 }
-            }
+            },
+            "forms": {form_name: {REQUIRED_SLOTS_KEY: ["some_slot"]}},
         }
     )
 
@@ -787,7 +812,10 @@ def test_extract_requested_slot_when_mapping_applies(
     form = FormAction(form_name, None)
 
     domain = Domain.from_dict(
-        {"forms": {form_name: {REQUIRED_SLOTS_KEY: {entity_name: [slot_mapping]}}}}
+        {
+            "slots": {entity_name: {"type": "text", "mappings": [slot_mapping]}},
+            "forms": {form_name: {REQUIRED_SLOTS_KEY: [entity_name]}},
+        }
     )
 
     tracker = DialogueStateTracker.from_events(
@@ -840,13 +868,14 @@ def test_extract_requested_slot_with_list_slot(
       {slot_name}:
         type: list
         influence_conversation: false
+        mappings:
+        - type: from_entity
+          entity: topping
 
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-          {slot_name}:
-          - type: from_entity
-            entity: topping
+          - {slot_name}
     """
         )
     )
@@ -886,7 +915,10 @@ def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
     form = FormAction(form_name, None)
 
     domain = Domain.from_dict(
-        {"forms": {form_name: {REQUIRED_SLOTS_KEY: {entity_name: [slot_mapping]}}}}
+        {
+            "slots": {entity_name: {"type": "text", "mappings": [slot_mapping]}},
+            "forms": {form_name: {REQUIRED_SLOTS_KEY: [entity_name]}},
+        }
     )
 
     tracker = DialogueStateTracker.from_events(
@@ -931,20 +963,27 @@ async def test_trigger_slot_mapping_applies(
 
     domain = Domain.from_dict(
         {
+            "slots": {
+                entity_name: {
+                    "type": "text",
+                    "mappings": [
+                        {
+                            "type": "from_entity",
+                            "entity": entity_name,
+                            "intent": "some_intent",
+                        }
+                    ],
+                },
+                slot_filled_by_trigger_mapping: {
+                    "type": "text",
+                    "mappings": [trigger_slot_mapping],
+                },
+            },
             "forms": {
                 form_name: {
-                    REQUIRED_SLOTS_KEY: {
-                        entity_name: [
-                            {
-                                "type": "from_entity",
-                                "entity": entity_name,
-                                "intent": "some_intent",
-                            }
-                        ],
-                        slot_filled_by_trigger_mapping: [trigger_slot_mapping],
-                    }
+                    REQUIRED_SLOTS_KEY: [entity_name, slot_filled_by_trigger_mapping,]
                 }
-            }
+            },
         }
     )
 
@@ -980,20 +1019,27 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
 
     domain = Domain.from_dict(
         {
+            "slots": {
+                entity_name: {
+                    "type": "text",
+                    "mappings": [
+                        {
+                            "type": "from_entity",
+                            "entity": entity_name,
+                            "intent": "some_intent",
+                        }
+                    ],
+                },
+                slot_filled_by_trigger_mapping: {
+                    "type": "text",
+                    "mappings": [trigger_slot_mapping],
+                },
+            },
             "forms": {
                 form_name: {
-                    REQUIRED_SLOTS_KEY: {
-                        entity_name: [
-                            {
-                                "type": "from_entity",
-                                "entity": entity_name,
-                                "intent": "some_intent",
-                            }
-                        ],
-                        slot_filled_by_trigger_mapping: [trigger_slot_mapping],
-                    }
+                    REQUIRED_SLOTS_KEY: [entity_name, slot_filled_by_trigger_mapping,]
                 }
-            }
+            },
         }
     )
 
@@ -1148,7 +1194,10 @@ def test_extract_requested_slot_from_entity(
         not_intent=mapping_not_intent,
     )
     domain = Domain.from_dict(
-        {"forms": {form_name: {REQUIRED_SLOTS_KEY: {"some_slot": [mapping]}}}}
+        {
+            "slots": {"some_slot": {"type": "any", "mappings": [mapping],}},
+            "forms": {form_name: {REQUIRED_SLOTS_KEY: ["some_slot"]}},
+        }
     )
 
     tracker = DialogueStateTracker.from_events(
@@ -1334,14 +1383,16 @@ def test_extract_other_slots_with_entity(
 
     domain = Domain.from_dict(
         {
+            "slots": {
+                "some_other_slot": {
+                    "type": "any",
+                    "mappings": some_other_slot_mapping,
+                },
+                "some_slot": {"type": "any", "mappings": some_slot_mapping,},
+            },
             "forms": {
-                form_name: {
-                    REQUIRED_SLOTS_KEY: {
-                        "some_other_slot": some_other_slot_mapping,
-                        "some_slot": some_slot_mapping,
-                    }
-                }
-            }
+                form_name: {REQUIRED_SLOTS_KEY: ["some_other_slot", "some_slot"]}
+            },
         }
     )
 
@@ -1390,13 +1441,14 @@ def test_extract_other_list_slot_from_entity(
       {slot_name}:
         type: list
         influence_conversation: false
+        mappings:
+        - type: from_entity
+          entity: topping
 
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
-          {slot_name}:
-          - type: from_entity
-            entity: topping
+          - {slot_name}
     """
         )
     )
@@ -1538,20 +1590,24 @@ def test_ignored_intents_with_slot_type_from_entity(
 
     domain = Domain.from_dict(
         {
+            "slots": {
+                entity_name: {
+                    "type": "any",
+                    "mappings": [
+                        {
+                            "type": "from_entity",
+                            "entity": entity_name,
+                            "not_intent": slot_not_intent,
+                        }
+                    ],
+                }
+            },
             "forms": {
                 form_name: {
                     IGNORED_INTENTS: ignored_intents,
-                    REQUIRED_SLOTS_KEY: {
-                        entity_name: [
-                            {
-                                "type": "from_entity",
-                                "entity": entity_name,
-                                "not_intent": slot_not_intent,
-                            }
-                        ],
-                    },
+                    REQUIRED_SLOTS_KEY: [entity_name],
                 }
-            }
+            },
         }
     )
 
@@ -1609,20 +1665,24 @@ def test_ignored_intents_with_slot_type_from_text(
 
     domain = Domain.from_dict(
         {
+            "slots": {
+                entity_name: {
+                    "type": "any",
+                    "mappings": [
+                        {
+                            "type": "from_text",
+                            "intent": "some_intent",
+                            "not_intent": slot_not_intent,
+                        }
+                    ],
+                }
+            },
             "forms": {
                 form_name: {
                     IGNORED_INTENTS: ignored_intents,
-                    REQUIRED_SLOTS_KEY: {
-                        entity_name: [
-                            {
-                                "type": "from_text",
-                                "intent": "some_intent",
-                                "not_intent": slot_not_intent,
-                            }
-                        ],
-                    },
+                    REQUIRED_SLOTS_KEY: [entity_name],
                 }
-            }
+            },
         }
     )
 
@@ -1713,21 +1773,25 @@ def test_ignored_intents_with_other_type_of_slots(
 
     domain = Domain.from_dict(
         {
+            "slots": {
+                entity_name: {
+                    "type": "any",
+                    "mappings": [
+                        {
+                            "type": entity_type,
+                            "value": "affirm",
+                            "intent": "true",
+                            "not_intent": slot_not_intent,
+                        }
+                    ],
+                }
+            },
             "forms": {
                 form_name: {
                     IGNORED_INTENTS: ignored_intents,
-                    REQUIRED_SLOTS_KEY: {
-                        entity_name: [
-                            {
-                                "type": entity_type,
-                                "value": "affirm",
-                                "intent": "true",
-                                "not_intent": slot_not_intent,
-                            }
-                        ],
-                    },
+                    REQUIRED_SLOTS_KEY: [entity_name],
                 }
-            }
+            },
         }
     )
 

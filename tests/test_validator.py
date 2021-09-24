@@ -263,17 +263,22 @@ def test_early_exit_on_invalid_domain():
     importer = RasaFileImporter(domain_path=domain_path)
     with pytest.warns(UserWarning) as record:
         validator = Validator.from_importer(importer)
+    print([r.message for r in record])
     validator.verify_domain_validity()
 
-    # two for non-unique domains
-    assert len(record) == 2
-    assert (
-        f"Loading domain from '{domain_path}' failed. Using empty domain. "
-        "Error: 'Intents are not unique! Found multiple intents with name(s) "
-        "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
-        in record[0].message.args[0]
+    # two for non-unique domains, two for auto-fill removal
+    assert len(record) == 4
+    assert any(
+        [
+            f"Loading domain from '{domain_path}' failed. Using empty domain. "
+            "Error: 'Intents are not unique! Found multiple intents with name(s) "
+            "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
+            in warning.message.args[0]
+            for warning in record
+        ]
     )
-    assert record[0].message.args[0] == record[1].message.args[0]
+    assert record[0].message.args[0] == record[2].message.args[0]
+    assert record[1].message.args[0] == record[3].message.args[0]
 
 
 def test_verify_there_is_not_example_repetition_in_intents():
@@ -346,27 +351,30 @@ def test_verify_form_slots_invalid_domain(tmp_path: Path):
         forms:
           name_form:
             required_slots:
-              first_name:
-              - type: from_text
-              last_name:
-              - type: from_text
+              - first_name
+              - last_nam
         slots:
              first_name:
                 type: text
-             last_nam:
+                mappings:
+                - type: from_text
+             last_name:
                 type: text
+                mappings:
+                - type: from_text
         """
     )
     importer = RasaFileImporter(domain_path=domain)
-    validator = Validator.from_importer(importer)
-    with pytest.warns(UserWarning) as w:
-        validity = validator.verify_form_slots()
-        assert validity is False
+    with pytest.warns(UserWarning) as warning:
+        Validator.from_importer(importer)
 
-    assert (
-        w[0].message.args[0] == "The form slot 'last_name' in form 'name_form' "
-        "is not present in the domain slots."
-        "Please add the correct slot or check for typos."
+    assert any(
+        [
+            f"Loading domain from '{domain}' failed. Using empty domain. "
+            f"Error: 'The slot 'last_nam' in form 'name_form' is "
+            f"not mapped in domain slots.'" == record.message.args[0]
+            for record in warning
+        ]
     )
 
 
@@ -461,15 +469,17 @@ def test_valid_form_slots_in_domain(tmp_path: Path):
         forms:
           name_form:
             required_slots:
-              first_name:
-              - type: from_text
-              last_name:
-              - type: from_text
+              - first_name
+              - last_name
         slots:
              first_name:
                 type: text
+                mappings:
+                - type: from_text
              last_name:
                 type: text
+                mappings:
+                - type: from_text
         """
     )
     importer = RasaFileImporter(domain_path=domain)

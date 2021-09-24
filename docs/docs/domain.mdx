@@ -182,6 +182,9 @@ information before it is able to predict the weather.
   slots:
      cuisine:
         type: text
+        mappings:
+        - type: from_entity
+          entity: cuisine
   ```
 
 * **Description**
@@ -221,6 +224,8 @@ information before it is able to predict the weather.
   slots:
      is_authenticated:
         type: bool
+        mappings:
+        - type: custom
   ```
 
 * **Description**
@@ -250,6 +255,8 @@ information before it is able to predict the weather.
         - low
         - medium
         - high
+      mappings:
+      - type: custom
   ```
 
 * **Description**
@@ -283,6 +290,8 @@ information before it is able to predict the weather.
       type: float
       min_value: -100.0
       max_value:  100.0
+      mappings:
+      - type: custom
   ```
 
 * **Defaults**
@@ -314,6 +323,8 @@ information before it is able to predict the weather.
   slots:
     shopping_items:
       type: list
+      mappings:
+      - type: custom
   ```
 
 * **Description**
@@ -338,6 +349,8 @@ information before it is able to predict the weather.
   slots:
     shopping_items:
       type: any
+      mappings:
+      - type: custom
   ```
 
 * **Description**
@@ -412,6 +425,8 @@ slots:
   people:
     type: addons.my_custom_slots.NumberOfPeopleSlot
     influence_conversation: true
+    mappings:
+    - type: custom
 ```
 
 Now that your custom slot class can be used by Rasa Open Source, add training stories that diverge based on the value of the `people` slot.
@@ -498,7 +513,9 @@ To disable auto-filling for a particular slot, you can set the
 slots:
   name:
     type: text
-    auto_fill: false
+    mappings:
+    - type: from_entity
+      entity: name
 ```
 
 ### Initial slot values
@@ -510,6 +527,8 @@ slots:
   num_fallbacks:
     type: float
     initial_value: 0
+    mappings:
+    - type: custom
 ```
 
 ## Responses

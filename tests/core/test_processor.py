@@ -174,7 +174,9 @@ async def mocked_parse(self, text, message_id=None, tracker=None, metadata=None)
 
 
 async def test_parsing_with_tracker():
-    tracker = DialogueStateTracker.from_dict("1", [], [Slot("requested_language")])
+    tracker = DialogueStateTracker.from_dict(
+        "1", [], [Slot("requested_language", mappings=[{}])]
+    )
 
     # we'll expect this value 'en' to be part of the result from the interpreter
     tracker._set_slot("requested_language", "en")
@@ -1232,8 +1234,12 @@ async def test_predict_next_action_with_hidden_rules(
         slots:
           {rule_slot}:
             type: text
+            mappings:
+            - type: from_text
           {story_slot}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
     domain = Domain.from_yaml(domain_content)

@@ -605,12 +605,20 @@ class TestMemoizationPolicy(PolicyTestCollection):
             slots:
                 slot_1:
                     type: bool
+                    mappings:
+                    - type: from_text
                 slot_2:
                     type: bool
+                    mappings:
+                    - type: from_text
                 slot_3:
                     type: bool
+                    mappings:
+                    - type: from_text
                 slot_4:
                     type: bool
+                    mappings:
+                    - type: from_text
             """
         )
         events = [
@@ -679,10 +687,16 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
                     slot_1:
                         type: bool
                         initial_value: true
+                        mappings:
+                        - type: from_text
                     slot_2:
                         type: bool
+                        mappings:
+                        - type: from_text
                     slot_3:
                         type: bool
+                        mappings:
+                        - type: from_text
                 """
         )
         training_story = TrackerWithCachedStates.from_events(

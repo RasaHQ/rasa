@@ -115,7 +115,7 @@ class AnySlotDict(dict):
     e.g. properly featurizing the slot."""
 
     def __missing__(self, key: Text) -> Slot:
-        value = self[key] = Slot(key)
+        value = self[key] = Slot(key, mappings=[{}])
         return value
 
     def __contains__(self, key: Text) -> bool:

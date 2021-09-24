@@ -313,8 +313,8 @@ class Validator:
         everything_is_alright = True
 
         for form in self.domain.form_names:
-            form_slots = self.domain.slot_mapping_for_form(form)
-            for slot in form_slots.keys():
+            form_slots = self.domain.required_slots_for_form(form)
+            for slot in form_slots:
                 if slot in domain_slot_names:
                     continue
                 else:

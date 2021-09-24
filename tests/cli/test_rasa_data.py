@@ -202,15 +202,17 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
         forms:
           name_form:
             required_slots:
-              first_name:
-              - type: from_text
-              last_name:
-              - type: from_text
+              - first_name
+              - last_name
         slots:
              first_name:
                 type: text
+                mappings:
+                - type: from_text
              last_nam:
                 type: text
+                mappings:
+                - type: from_text
         """
     )
     args = {
