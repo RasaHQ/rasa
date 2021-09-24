@@ -54,7 +54,6 @@ from rasa.utils.tensorflow.constants import (
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.constants import (
     BILOU_ENTITIES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
     TOKENS_NAMES,
 )
 from rasa.nlu.components import ComponentBuilder
@@ -83,55 +82,87 @@ def test_init_raises_when_there_is_no_target():
 
 
 @dataclass
-class FeatureGenerator:
-    """Generates pseudo-random dense features.
+class FeaturizerDescription:
+    """A description of a featurizer.
 
-    It can generate a pseudo-random feature value that is determined (and can be
-    re-created) using a message text, attribute, featurizer and feature type.
+    Args:
+        name: featurizer name
+          - feature dimension of sequence features,
+          - feature dimension of sentence features,
+          - whether sparse features should be created, and
+          - whether dense features should be created
+    """
+
+    name: Text
+    seq_feat_dim: int
+    sent_feat_dim: int
+    sparse: int
+    dense: int
+
+
+@dataclass
+class FeatureGenerator:
+    """Generates pseudo-random features.
+
+    It can generate a pseudo-random feature value and sequence length that is
+    determined (and hence can be re-created) using a message attribute value,
+    the attribute itself, a featurizer name, the feature type and the feature level
+    (i.e. sequence/sentence level).
 
     Assuming the given message texts are unique, this enables us to identify
     features after they have been concatenated and stacked in various ways.
 
     Moreover, this generator can be used to generate specific concatenated versions
-    of these pseudo-random features. Given a list of messages, it can concatenate
+    of these pseudo-random features. For each given message, it can concatenate
     the respective features that are of the same type (sequence and sentence)
-    to a 2d matrix where the first axis corresponds to the messages and
+    and have the same sparseness property to a 2d matrix where the first axis
+    corresponds to the sequence length of the message and
     the second axis corresponds to the respective dummy features
     concatenated (in the order specified by the `used_featurizers`).
-
     This kind of concatenation is what our sequence models expect from their input.
 
+    The assumptions that are baked into this generator are:
+    - each featurizer may produce sparse and/or dense features
+    - if a featurizer produces features of a certain kind (sparse/dense), then it
+      produces sequence *and* sentence features of that kind
+    - each featurizer produces at most one pair of sequence and sentence features
+      for each kind (sparse/dense)
+    - the dimensions of the features produced by each featurizer may differ between
+      different feature types and feature levels (sequence/sentence)
+    - for each message, each featurizer always produces a features with the *same*
+      sequence length, which is determined by the message and the feature type
+
     Args:
-        featurizers: list of featurizers which add features
+        featurizer_descriptions: list of featurizer descriptions
         used_featurizers: list of featurizers which will be considered when
-        constructing the expected concatenated features
-        seq_len: length of all sequence features
-        sentence_feature_dim: "units" of all sentence features (these could differ,
-        but for the sake of simplicity we fix it)
-        sequence_feature_dim: "units" of all sentence features (these could differ,
-        but for the sake of simplicity we fix it)
+            constructing the expected concatenated features
+        seq_len: a sequence length that will be used instead of the true sequence
+           length of the message (hence, no need to tokenize the message)
+        default_seq_feat_dim: used if no `featurizer_description` is provided
+        default_sent_feat_dim:  used if no `featurizer_description` is provided
+
     """
 
-    featurizers: List[Text]
+    featurizer_descriptions: Optional[List[FeaturizerDescription]]
     used_featurizers: Optional[List[Text]] = None
     seq_len: int = 3
-    sentence_feature_dim: int = 4
-    sequence_feature_dim: int = 5
+    default_seq_feat_dim: int = 4
+    default_sent_feat_dim: int = 5
 
     @staticmethod
     def generate_feature_value(
-        attribute: Optional[Text],
-        featurizer: Text,
+        attribute: Text,
+        attribute_value: Optional[Text],
+        featurizer_name: Text,
         feature_type: Text,
-        feature_value: Text,
     ) -> float:
         """Creates a pseudo-random value using the given parameters as seed.
 
         Args:
             attribute: an attribute name
-            featurizer: a featurizer identifier
+            attribute_value: string representation of the attribute value
+            featurizer_name: the name of a featurizer
             feature_type: either `sequence` or `sentence`
-            feature_value: text representation of the feature value
 
         Returns:
             a value
@@ -142,34 +173,150 @@ class FeatureGenerator:
                     f"{seed_part}"
                     for seed_part in [
                         attribute,
-                        featurizer,
+                        attribute_value,
+                        featurizer_name,
                         feature_type,
-                        feature_value,
                     ]
                 ]
             )
         )
         return rng.uniform(0, 100)
 
+    @staticmethod
+    def generate_seq_len(attribute: Text, attribute_value: Optional[Text],) -> int:
+        rng = random.Random(
+            "".join([f"{part}" for part in [attribute, attribute_value]])
+        )
+        return rng.uniform(1, 100)
+
     def generate_features(
         self,
-        messages: List[Message],
+        message: Message,
         attributes: Optional[List[Text]] = None,
-        add_to_messages: bool = True,
-        sparse: bool = False,
-    ) -> Dict[Text, Dict[Text, Union[List[np.ndarray], List[scipy.sparse.spmatrix]]]]:
-        """Generates pseudo-random dense features and concatenates them.
+        add_to_message: bool = True,
+    ) -> Tuple[
+        Dict[Text, Dict[Text, Dict[bool, Union[np.ndarray, scipy.sparse.spmatrix]]]],
+        int,
+    ]:
+        """Generates pseudo-random features and concatenates them.
+
+        This method will generate
+        - sentence features of shape `[1, sentence_feature_dim]`
+          if the attribute value is non-empty and `[0, sentence_feature_dim]` otherwise
+        - sequence features of shape `[seq_len, sequence_feature_dim]`
+          if the attribute value is non-empty and `[0, sequence_feature_dim]` otherwise
+        where the `seq_len` is a fixed value.
 
         Note that if a message does not contain any value for the specificed attribute,
         a pseudo-random feature will be created nontheless (using `None` as feature
         value).
+        Hence, this generator is *not* suitable for mocking features that are
+        only generated if and only if a certain attribute is present in the given
+        message:
 
-        This method will always generate sequence as well as sentence features:
-        - sentence features will be of shape `[1, sentence_feature_dim]`
-          if the attribute value is non-empty and `[0, sentence_feature_dim]` otherwise
-        - sequence features will be of shape `[seq_len, sequence_feature_dim]`
-          if the attribute value is non-empty and `[0, sequence_feature_dim]` otherwise
-        for each message.
+        Args:
+            message: a message
+            add_to_message: determines whether the generated features are added to
+               the message
+            attributes: A list of attributes for which we want to create features.
+               If this is set to `None`, then only the 'text' attribute will be created.
+        Returns:
+            a nested mapping from attribute type, feature type and sparseness indicator
+            to 2d-matrices containing a concatenation of the features that were
+            generated for the `self.used_featurizers` and a sequence length generated
+        """
+        attributes = attributes or [TEXT]
+        concatenations = dict()
+
+        # per attribute and feature_type
+        for attribute, feature_type in itertools.product(
+            attributes, [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE]
+        ):
+
+            # (1) create features and add them to the messages if required
+
+            # sequence length
+            type_seq_len = 1 if feature_type == FEATURE_TYPE_SENTENCE else self.seq_len
+            attribute_seq_len = type_seq_len if message.get(attribute) else 0
+            # create and collect features per featurizer + sparseness property
+            collection = dict()
+            for featurizer_description in self.featurizer_descriptions:
+                # feature dimension ("units")
+                feat_dim = (
+                    featurizer_description.sent_feat_dim
+                    if feature_type == FEATURE_TYPE_SENTENCE
+                    else featurizer_description.seq_feat_dim
+                )
+                # sparse and/or dense?
+                sparse_indicators = []
+                if featurizer_description.sparse:
+                    sparse_indicators.append(True)
+                if featurizer_description.dense:
+                    sparse_indicators.append(False)
+                # create and collect
+                collection[featurizer_description.name] = dict()
+                for sparse in sparse_indicators:
+                    # create a unique value
+                    value = FeatureGenerator.generate_feature_value(
+                        attribute,
+                        str(message.get(attribute, None)),
+                        featurizer_description.name,
+                        feature_type,
+                    )
+                    # fill a sparse/dense matrix with this value
+                    if not sparse:
+                        matrix = np.full(
+                            shape=(attribute_seq_len, feat_dim), fill_value=value,
+                        )
+                    else:
+                        matrix = (
+                            scipy.sparse.eye(m=attribute_seq_len, n=feat_dim) * value
+                        )
+                    # add it to the message if required
+                    if add_to_message:
+                        feature = Features(
+                            features=matrix,
+                            feature_type=feature_type,
+                            attribute=attribute,
+                            origin=featurizer_description.name,
+                        )
+                        message.features.append(feature)
+                    # ... and collect it to be able to concatenate it later
+                    collection[featurizer_description.name][sparse] = matrix
+
+            # (2) concatenate the collected features
+
+            concatenations.setdefault(attribute, dict()).setdefault(
+                feature_type, dict()
+            )
+            for sparse in [True, False]:  # sparse first
+                matrix_list = [
+                    collection[featurizer][sparse]
+                    for featurizer in self.used_featurizers
+                    if sparse in collection[featurizer]
+                ]
+                if not matrix_list:
+                    continue
+                if sparse:
+                    concat_matrix = scipy.sparse.hstack(matrix_list)
+                else:
+                    concat_matrix = np.concatenate(matrix_list, axis=-1)
+                concatenations[attribute][feature_type][sparse] = concat_matrix
+
+        return concatenations
+
+    def generate_features_for_all_messages(
+        self,
+        messages: List[Message],
+        attributes: Optional[List[Text]] = None,
+        add_to_messages: bool = True,
+    ) -> Dict[
+        Text,
+        Dict[Text, Dict[bool, Union[List[np.ndarray], List[scipy.sparse.spmatrix]]]],
+    ]:
+        """Generates pseudo-random dense features and concatenates them.
+
+        For more details, see `generate_features`.
 
         Args:
             messages: a list of messages
@@ -177,90 +324,43 @@ class FeatureGenerator:
                the messages
             attributes: A list of attributes for which we want to create features.
                If this is set to `None`, then only the 'text' attribute will be created.
-            sparse: determines whether the generated features will be sparse or
-               dense.
         Returns:
-            a nested mapping from feature type and attribute to lists of 2d-matrices
-                containing the features generated for the chosen `used_featurizers` and
-                all messages
-
+            a nested mapping from attribute type, feature type and sparseness indicator
+            to 2d-matrices containing a list that contains, for each given message,
+            a concatenation of the features that were generated for the
+            `self.used_featurizers` and the respective message.
         """
-        attributes = attributes or [TEXT]
-        featurizers = self.featurizers or [None]
-        concatenations = dict()
-        # per feature type
-        for shape, feature_type in [
-            ((1, self.sentence_feature_dim), FEATURE_TYPE_SENTENCE),
-            ((self.seq_len, self.sequence_feature_dim), FEATURE_TYPE_SEQUENCE),
-        ]:
-            concatenations[feature_type] = dict()
-            # per attribute
+        concatenated_features = {
+            attribute: {
+                feature_type: dict()  # mapping is_sparse (bool) to list of matrices
+                for feature_type in [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE]
+            }
+            for attribute in attributes
+        }
+        for message in messages:
+            message_features = self.generate_features(
+                message=message, add_to_message=add_to_messages, attributes=attributes,
+            )
             for attribute in attributes:
-                # per message
-                matrices_per_message = []
-                for message in messages:
-                    # if the attribute is empty, set the sequence length to 0
-                    if not message.get(attribute):
-                        _shape = (0, shape[1])
-                    else:
-                        _shape = shape
-                    matrices_per_featurizer = []
-                    # per featurizer
-                    for featurizer in featurizers:
-                        # create a unique value
-                        value = FeatureGenerator.generate_feature_value(
-                            attribute,
-                            featurizer,
-                            feature_type,
-                            str(message.get(attribute, None)),
-                        )
-                        # fill a sparse/dense matrix with this value
-                        if not sparse:
-                            matrix = np.full(shape=_shape, fill_value=value,)
-                        else:
-                            matrix = scipy.sparse.eye(m=_shape[0], n=_shape[1]) * value
-                        # add it to the message if required
-                        if add_to_messages:
-                            feature = Features(
-                                features=matrix,
-                                feature_type=feature_type,
-                                attribute=attribute,
-                                origin=featurizer,
-                            )
-                            message.features.append(feature)
-                        # add it to our collection if we expect the featurizer
-                        # to be used (by whatever model we're testing via this function)
-                        if (
-                            self.used_featurizers is None
-                            or featurizer in self.used_featurizers
-                        ):
-                            matrices_per_featurizer.append(matrix)
-                    if not sparse:
-                        concatenated = np.concatenate(matrices_per_featurizer, axis=-1)
-                    else:
-                        concatenated = scipy.sparse.hstack(matrices_per_featurizer)
-                    # Remember that the sequence lengths can differ even though
-                    # we use the fixed `seq_len` parameter -- since we set the
-                    # sequence length to 0 if the corresponding attribute value is
-                    # missing. Hence, we cannot concatenate the collected matrices
-                    # and instead collect them in a list.
-                    # Moreover, one cannot assemble 3d sparse scipy matrices anyway.
-                    matrices_per_message.append(concatenated)
-                concatenations[feature_type][attribute] = matrices_per_message
-        return concatenations
+                for feature_type in [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE]:
+                    sparse_and_dense = message_features[attribute][feature_type]
+                    for is_sparse, matrix in sparse_and_dense.items():
+                        concatenated_features[attribute][feature_type].setdefault(
+                            is_sparse, list()
+                        ).append(matrix)
+        return concatenated_features
 
     @classmethod
     def compare_features_of_same_type_and_sparseness(
         cls,
-        actual: Dict[
-            Text, Dict[Text, Union[List[np.ndarray], List[scipy.sparse.spmatrix]]]
-        ],
-        expected: Dict[
-            Text, Dict[Text, Union[List[np.ndarray], List[scipy.sparse.spmatrix]]]
-        ],
-        indices: Optional[List[int]] = None,
+        actual: Dict[Text, Union[List[np.ndarray], List[scipy.sparse.spmatrix]]],
+        expected: Dict[Text, Dict[bool, Union[np.ndarray, scipy.sparse.spmatrix]]],
+        indices_of_expected: Optional[List[int]] = None,
     ) -> None:
         """Compares mappings from feature type and sparseness indicator to features.
+
+        Note that this comparison allows for feature types to be missing,
+        while it always expects 'sparse' *and* 'dense' features to be populated.
 
         Args:
             actual: mapping feature type to a mapping of sparseness
@@ -268,21 +368,29 @@ class FeatureGenerator:
               (i.e. dense numpy array or sparse scipy matrices)
             expected: the expected features in a mapping that has the same form
                as the `actual` features
-            indices: indices describing which messages from `expected`
+            indices_of_expected: indices describing which messages from `expected`
                should be considered for the comparison
         """
         for feature_type in [SENTENCE, SEQUENCE]:
-            type_features = actual.get(feature_type)
-            assert len(type_features) == 2
-            for sparse_idx, sparse in enumerate([True, False]):  # sparse first
-                feature_array = type_features[sparse_idx]
-                expected_feature_array = expected[feature_type][sparse]
-                relevant_indices = indices or np.arange(len(expected_feature_array))
+            if feature_type not in expected:
+                assert feature_type not in actual
+                continue
+            assert len(actual[feature_type]) == len(expected[feature_type])
+            for is_sparse in expected[feature_type]:
+                if len(expected[feature_type]) == 2:
+                    sparse_idx = not is_sparse  # i.e. sparse 0, dense 1
+                else:
+                    sparse_idx = 0
+                feature_array = actual[feature_type][sparse_idx]
+                expected_feature_array = expected[feature_type][is_sparse]
+                relevant_indices = indices_of_expected or np.arange(
+                    len(expected_feature_array)
+                )
                 assert len(feature_array) == len(relevant_indices)
-                for message_idx in relevant_indices:
-                    actual_matrix = feature_array[message_idx]
-                    expected_matrix = expected_feature_array[message_idx]
-                    if sparse:
+                for idx_actual, idx_expected in enumerate(relevant_indices):
+                    actual_matrix = feature_array[idx_actual]
+                    expected_matrix = expected_feature_array[idx_expected]
+                    if is_sparse:
                         actual_matrix = actual_matrix.todense()
                         expected_matrix = expected_matrix.todense()
                     else:
@@ -307,9 +415,9 @@ class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
     For a full docstring see parent class.
     """
 
-    def generate_input_and_expected_extracted_features(
+    def generate_input_and_concatenated_features(
         self, input_contains_features_for_intent: bool,
-    ) -> Dict[Text, Any]:
+    ) -> Tuple[List[Message], Dict[Text, Any]]:
         """Creates input messages and concatentations of their features.
 
         Creates a list of dummy messages with texts, tokens, intents, and entities
@@ -406,87 +514,99 @@ class SimpleIntentClassificationTestCaseWithEntities(FeatureGenerator):
         if input_contains_features_for_intent:
             attributes_with_features.append(INTENT)
 
-        # ... we add features for some unrelated attribute to illustrate that this
-        # attribute will not show up in the final model data
-        concatenated_features = dict()
-        for sparse in [True, False]:
-            concatenated_features[sparse] = self.generate_features(
-                messages,
-                add_to_messages=True,
-                attributes=attributes_with_features + ["other"],  # see comment above
-                sparse=sparse,
-            )
+        # Add features for some unrelated attributes to the messages
+        # (to illustrate that this attribute will not show up in the final model data)
+        _ = self.generate_features_for_all_messages(
+            messages, add_to_messages=True, attributes=["other"],  # see comment above
+        )
+        concatenated_features = self.generate_features_for_all_messages(
+            messages, add_to_messages=True, attributes=attributes_with_features,
+        )
 
-        # we only expect these features:
-        expected_extracted_features = {
-            attribute: {
-                feature_type: {
-                    sparse: concatenated_features[sparse]
-                    .get(feature_type, {})
-                    .get(attribute, None)
-                    for sparse in [True, False]
-                }
-                for feature_type in [SEQUENCE, SENTENCE]
-            }
-            for attribute in attributes_with_features
-        }
-
-        return {
-            "messages": messages,
-            "expected_extracted_features": expected_extracted_features,
-        }
+        return messages, concatenated_features
 
 
 @pytest.mark.parametrize(
-    "component_config, input_contains_features_for_intent",
+    (
+        "intent_classification, entity_recognition, bilou_tagging, "
+        "input_contains_features_for_intent, used_featurizers"
+    ),
     [
         (
-            {
-                INTENT_CLASSIFICATION: intent,
-                ENTITY_RECOGNITION: entities,
-                FEATURIZERS: ["1", "2"],
-                BILOU_FLAG: bilou,
-            },
+            intent_classification,
+            entity_recognition,
+            bilou_tagging,
             input_contains_features_for_intent,
+            used_featurizers,
         )
-        for intent, entities, input_contains_features_for_intent, bilou in itertools.product(
-            [True, False], repeat=4
-        )
-        if (intent or entities)  # see: `test_init_raises_when_there_is_no_target`
-        and (not bilou or entities)  # can skip bilou if no entities recognition enabled
+        for (
+            intent_classification,
+            entity_recognition,
+            bilou_tagging,
+            input_contains_features_for_intent,
+        ) in itertools.product([True, False], repeat=4)
+        for used_featurizers in [None, ["1", "2"]]
+        if (intent_classification or entity_recognition)
+        and not (bilou_tagging and not entity_recognition)
     ],
 )
 def test_preprocess_train_data_and_create_data_for_prediction(
-    component_config: Dict[Text, Any], input_contains_features_for_intent: bool
+    intent_classification: bool,
+    entity_recognition: bool,
+    bilou_tagging: bool,
+    input_contains_features_for_intent: bool,
+    used_featurizers: Optional[List[Text]],
 ):
 
-    model = DIETClassifier(component_config=component_config,)
-    intent_classification = model.component_config.get(INTENT_CLASSIFICATION, False)
-    entity_recognition = model.component_config.get(ENTITY_RECOGNITION, False)
-    bilou_tagging = model.component_config.get(BILOU_FLAG, False)
-    used_featurizers = model.component_config.get(FEATURIZERS, None)
+    # Create and choose featurizers
+    featurizer_descriptions = [
+        FeaturizerDescription(
+            name="1", seq_feat_dim=2, sent_feat_dim=2, sparse=True, dense=False
+        ),
+        FeaturizerDescription(
+            name="2", seq_feat_dim=4, sent_feat_dim=4, sparse=False, dense=False
+        ),
+        FeaturizerDescription(
+            name="3", seq_feat_dim=8, sent_feat_dim=8, sparse=True, dense=True
+        ),
+    ]
+    used_featurizers = used_featurizers or ["1", "2", "3"]
+    assert set(used_featurizers) <= {"1", "2", "3"}
 
-    if used_featurizers is None:
-        used_featurizers = ["1", "2", "3"]
-        featurizers = used_featurizers
-    else:
-        featurizers = used_featurizers + ["unused-featurizer"]
+    # Create the model
+    model = DIETClassifier(
+        component_config={
+            INTENT_CLASSIFICATION: intent_classification,
+            ENTITY_RECOGNITION: entity_recognition,
+            FEATURIZERS: used_featurizers,
+            BILOU_FLAG: bilou_tagging,
+            EPOCHS: 1,
+            CONSTRAIN_SIMILARITIES: True,
+        }
+    )
 
     # Create input and expected output
     test_case = SimpleIntentClassificationTestCaseWithEntities(
-        featurizers, used_featurizers=used_featurizers
+        featurizer_descriptions, used_featurizers=used_featurizers
     )
-    test_case_data = test_case.generate_input_and_expected_extracted_features(
+    messages, expected_outputs = test_case.generate_input_and_concatenated_features(
         input_contains_features_for_intent=input_contains_features_for_intent,
     )
-    messages = test_case_data["messages"]
-    expected_outputs = test_case_data["expected_extracted_features"]
 
     # Preprocess Training Data
     messages_for_training = copy.deepcopy(messages)
     model_data_for_training = model.preprocess_train_data(
         training_data=TrainingData(messages_for_training)
     )
+
+    # Check index to label id mapping
+    if intent_classification:
+        # Note that this mapping is needed by predict, so we test this separately.
+        assert model.index_label_id_mapping == {0: "intent1", 1: "intent2"}
+    else:
+        # we only create a dummy mapping in this case since RasaModel can't deal
+        # with empty label data
+        assert model.index_label_id_mapping == {0: "0"}
 
     # Imitate Creation of Model Data during Predict
     messages_for_prediction = copy.deepcopy(messages)
@@ -507,10 +627,7 @@ def test_preprocess_train_data_and_create_data_for_prediction(
             relevant_indices = [0, 1, 2]
 
         # Check size and attributes
-        try:
-            assert model_data.number_of_examples() == len(relevant_indices)
-        except:
-            breakpoint()
+        assert model_data.number_of_examples() == len(relevant_indices)
         expected_keys = {TEXT}
         if training and intent_classification:
             expected_keys.add(LABEL)
@@ -518,17 +635,25 @@ def test_preprocess_train_data_and_create_data_for_prediction(
             expected_keys.add(ENTITIES)
         assert set(model_data.keys()) == expected_keys
 
+        # TODO: test that DIET is able to fill in sentence features where
+        # required - if that is needed/used at all
+
+        # NOTE: Observe that DIET always uses sequence features for text input
+        # (no matter the configuration) which is why we do not need to test whether
+        # the data perpartion skips sequence features.
+        # This does happens and get tested for the `ResponseSelector`.
+
         # Check subkeys for TEXT
         expected_text_sub_keys = {MASK, SENTENCE, SEQUENCE, SEQUENCE_LENGTH}
         assert set(model_data.get(TEXT).keys()) == expected_text_sub_keys
         text_features = model_data.get(TEXT)
         # - subkey: mask (this is a "turn" mask)
         # TODO: Masks are irrelevant for DIET. Check whether we can remove them.
+        # Note: mask entry will be 0 if text is None but 1 if text is ""
         mask_features = text_features.get(MASK)
         assert len(mask_features) == 1
         mask = np.array(mask_features[0])  # because it's a feature array
         assert mask.shape == (len(relevant_indices), 1, 1)
-        # TODO/NOTE: mask entry will be 0 if text is None but 1 if text is ""
         assert np.all(mask == 1)
         # - subkey: sequence-length
         length_features = text_features.get(SEQUENCE_LENGTH)
@@ -546,7 +671,7 @@ def test_preprocess_train_data_and_create_data_for_prediction(
         test_case.compare_features_of_same_type_and_sparseness(
             actual=text_features,
             expected=expected_outputs[TEXT],
-            indices=relevant_indices,
+            indices_of_expected=relevant_indices,
         )
 
         # TODO: check sparse feature sizes
@@ -566,6 +691,7 @@ def test_preprocess_train_data_and_create_data_for_prediction(
             #   The label id mapping should map intent1 to 0 and intent2 to 1.
             id_features = label_features.get(LABEL_SUB_KEY)
             assert len(id_features) == 1
+            assert id_features[0].shape == (len(relevant_indices), 1)
             ids = np.array(id_features[0].flatten())
             assert np.all(ids == [0, 1, 1])
             # - subkey: sentence
@@ -586,7 +712,7 @@ def test_preprocess_train_data_and_create_data_for_prediction(
                 test_case.compare_features_of_same_type_and_sparseness(
                     expected=expected_outputs[INTENT],
                     actual=label_features,
-                    indices=relevant_indices,
+                    indices_of_expected=relevant_indices,
                 )
             # - subkey: mask  (this is a "turn" mask, hence all masks are just "[1]")
             assert len(label_features.get(MASK)) == 1
@@ -799,12 +925,16 @@ def test_model_data_signature_with_entities(
 
     training_data = TrainingData(messages)
     feature_generator = FeatureGenerator(
-        featurizers=["1", "2", "3"],
-        seq_len=3,
-        sentence_feature_dim=4,
-        sequence_feature_dim=5,
+        featurizer_descriptions=[
+            FeaturizerDescription(
+                "featurizer-1", seq_feat_dim=2, sent_feat_dim=3, sparse=True, dense=True
+            )
+        ],
+        seq_len=4,
     )
-    feature_generator.generate_features(training_data.intent_examples)
+    feature_generator.generate_features_for_all_messages(
+        training_data.intent_examples, add_to_messages=True
+    )
 
     # create tokens for entity parsing inside DIET
     tokenizer = WhitespaceTokenizer()

@@ -920,24 +920,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if not training_data.nlu_examples:
             return RasaModelData()
 
-        # apply bilou tagging to all messages
+        # apply bilou tagging to all messages - if requested
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
-        self._entity_tag_specs = self._create_entity_tag_specs(training_data)
+
+        # extract the entity specs - if needed
+        if self.component_config[ENTITY_RECOGNITION]:
+            self._entity_tag_specs = self._create_entity_tag_specs(training_data)
+        else:
+            self._entity_tag_specs = []
 
         # filter messages and extract labels
         training_messages = training_data.nlu_examples
         if self.label_attribute is not None:
-            # keep only the messages that have the label attribute
-            # NOTE: This is not needed for the `DIETClassifier` since only "nlu"
-            # messages are used for training (see above) and messages with test but
-            # no intent are no "nlu" messages. However, the following filter **is**
-            # needed for the `rasa.nlu.selectors.ResponseSelector`!
-            training_messages = [
-                example
-                for example in training_messages
-                if self.label_attribute in example.data
-            ]
+
             # construct a label to index mapping
             label_id_index_mapping = self._create_label_id_to_index_mapping(
                 training_messages,
@@ -949,7 +945,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
             self._label_data = self._create_label_data(
-                training_messages, label_id_index_mapping, self.label_attribute
+                messages=training_messages,
+                label_id_dict=label_id_index_mapping,
+                label_attribute=self.label_attribute,
             )
         else:
             # TODO: check that at least some entities are contained... ?

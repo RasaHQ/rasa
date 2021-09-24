@@ -414,9 +414,13 @@ class ResponseSelector(DIETClassifier):
         Args:
             training_data: training data to preprocessed.
         """
-        # Collect all retrieval intents present in the data before filtering
+        # Note that `retrieval_intents` is a lazy property that *needs* to be collected
+        # before we filter, while `responses` are not (but we collect them here anyway)
         self.all_retrieval_intents = list(training_data.retrieval_intents)
+        self.responses = training_data.responses
 
+        # Filter data
+        # (a) by retrieval intent if needed
         if self.retrieval_intent:
             training_data = training_data.filter_training_examples(
                 lambda ex: self.retrieval_intent == ex.get(INTENT)
@@ -428,35 +432,17 @@ class ResponseSelector(DIETClassifier):
                 "response selector will be trained on training examples combining "
                 "all retrieval intents."
             )
-
-        self.responses = training_data.responses
-
+        # (b) keep only messages who have a label
         training_messages = [
             message
             for message in training_data.intent_examples
             if self.label_attribute in message.data
         ]
 
-        label_id_index_mapping = self._create_label_id_to_index_mapping(
-            training_messages
+        # Prepare data same way we did for DIET
+        return super().preprocess_train_data(
+            training_data=TrainingData(training_messages)
         )
-        if not label_id_index_mapping:
-            # no labels are present to train
-            return RasaModelData()
-
-        self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
-
-        self._label_data = self._create_label_data(
-            training_messages, label_id_index_mapping, self.label_attribute,
-        )
-
-        model_data = self._create_model_data(
-            training_messages, training=True, label_id_dict=label_id_index_mapping,
-        )
-
-        self._check_input_dimension_consistency(model_data)
-
-        return model_data
 
     def _resolve_intent_response_key(
         self, label: Dict[Text, Optional[Text]]
