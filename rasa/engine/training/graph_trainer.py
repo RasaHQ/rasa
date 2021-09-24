@@ -68,7 +68,8 @@ class GraphTrainer:
         graph_runner = self._graph_runner_class.create(
             graph_schema=pruned_training_schema,
             model_storage=self._model_storage,
-            execution_context=ExecutionContext(graph_schema=pruned_training_schema),
+            # passing on the original train schema here (due to fine tuning validator)
+            execution_context=ExecutionContext(graph_schema=train_schema),
             hooks=hooks,
         )
 
@@ -107,7 +108,7 @@ class GraphTrainer:
         fingerprint_graph_runner = self._graph_runner_class.create(
             graph_schema=fingerprint_schema,
             model_storage=self._model_storage,
-            execution_context=ExecutionContext(graph_schema=fingerprint_schema),
+            execution_context=ExecutionContext(graph_schema=train_schema),
         )
 
         logger.debug("Running the train graph in fingerprint mode.")
