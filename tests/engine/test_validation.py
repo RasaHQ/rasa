@@ -9,9 +9,8 @@ from rasa.engine.graph import (
     ExecutionContext,
     GraphSchema,
     SchemaNode,
-    PLACEHOLDER_IMPORTER,
-    RESERVED_PLACEHOLDERS,
 )
+from rasa.engine.constants import PLACEHOLDER_IMPORTER, RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain

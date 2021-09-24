@@ -27,8 +27,8 @@ from rasa.engine.graph import (
     GraphComponent,
     SchemaNode,
     ExecutionContext,
-    RESERVED_PLACEHOLDERS,
 )
+from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import RasaException

@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, Text, Type, Union
 
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import ExecutionContext, GraphSchema, PLACEHOLDER_IMPORTER
+from rasa.engine.graph import ExecutionContext, GraphSchema
+from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.runner.interface import GraphRunner
 from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.training.components import (

@@ -20,6 +20,8 @@ from rasa.engine.graph import (
     GraphComponent,
     SchemaNode,
     ExecutionContext,
+)
+from rasa.engine.constants import (
     PLACEHOLDER_IMPORTER,
     PLACEHOLDER_MESSAGE,
     PLACEHOLDER_TRACKER,
