@@ -218,6 +218,29 @@ def test_validate_after_changing_epochs_in_config(
     validate(importer=EmptyDataImporter())
 
     # change schema - replace all epoch settings by a different value
+    schema2 = _get_example_schema(num_epochs=5)
+    for node in schema2.nodes.values():
+        node.constructor_name = "other"
+
+    # finetuning - does not complain
+    loaded_validate = get_validation_method(
+        finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema2
+    )
+    loaded_validate(importer=EmptyDataImporter())
+
+
+@pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
+def test_validate_after_changing_constructor(
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+):
+    # training
+    schema1 = _get_example_schema(num_epochs=5)
+    validate = get_validation_method(
+        finetuning=False, load=False, nlu=nlu, core=core, graph_schema=schema1
+    )
+    validate(importer=EmptyDataImporter())
+
+    # change schema - replace all epoch settings by a different value
     schema2 = _get_example_schema(num_epochs=10)
 
     # finetuning - does not complain

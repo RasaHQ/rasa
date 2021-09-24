@@ -232,6 +232,7 @@ class FinetuningValidator(GraphComponent):
             config_copy.pop(EPOCHS, None)
             node_dict["config"] = config_copy
             node_dict.pop("eager")
+            node_dict.pop("constructor_name")
         return rasa.shared.utils.io.deep_container_fingerprint(schema_as_dict)
 
     @classmethod
