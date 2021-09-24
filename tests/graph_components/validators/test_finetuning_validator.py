@@ -93,7 +93,7 @@ def get_validation_method(
     return inner
 
 
-class DummyNluDataImporter(NluDataImporter):
+class DummyNLUDataImporter(NluDataImporter):
     def __init__(self, messages: List[Message]) -> None:
         self.training_data = TrainingData(training_examples=messages)
 
@@ -104,7 +104,7 @@ class DummyNluDataImporter(NluDataImporter):
         return self.training_data
 
 
-class EmptyDataImporter(DummyNluDataImporter):
+class EmptyDataImporter(DummyNLUDataImporter):
     def __init__(self) -> None:
         super().__init__([])
 
@@ -282,7 +282,7 @@ def test_validate_after_adding_node_to_schema(
     "nlu, core, what",
     [
         (nlu, core, what)
-        for what in ["uses"]  # , 'needs', 'fn', 'config' ]
+        for what in ["uses", "needs", "fn", "config"]
         for nlu, core in [(True, False), (False, True), (True, True)]
     ],
 )
@@ -342,7 +342,7 @@ def test_validate_after_removing_or_adding_intent_or_action_name(
     message_with_new_item = Message(data={key: "item-3"})
 
     # training
-    importer = DummyNluDataImporter(messages)
+    importer = DummyNLUDataImporter(messages)
     validate = get_validation_method(finetuning=False, load=False, nlu=nlu, core=core)
     validate(importer=importer)
 
@@ -350,7 +350,7 @@ def test_validate_after_removing_or_adding_intent_or_action_name(
     validate = get_validation_method(finetuning=True, load=True, nlu=nlu, core=core)
 
     # ... apply with something suddenly missing
-    importer2 = DummyNluDataImporter(messages[1:])
+    importer2 = DummyNLUDataImporter(messages[1:])
     if nlu:
         with pytest.raises(InvalidConfigException):
             validate(importer=importer2)
@@ -358,7 +358,7 @@ def test_validate_after_removing_or_adding_intent_or_action_name(
         validate(importer=importer2)
 
     # ... apply with additional item
-    importer3 = DummyNluDataImporter(messages + [message_with_new_item])
+    importer3 = DummyNLUDataImporter(messages + [message_with_new_item])
     if nlu:
         with pytest.raises(InvalidConfigException):
             validate(importer=importer3)
@@ -386,7 +386,7 @@ def test_validate_with_different_examples_for_intent_or_action_name(
     ]
 
     # training
-    importer = DummyNluDataImporter(messages)
+    importer = DummyNLUDataImporter(messages)
     validate = get_validation_method(finetuning=False, load=False, nlu=nlu, core=core)
     validate(importer=importer)
 
@@ -400,7 +400,7 @@ def test_validate_with_different_examples_for_intent_or_action_name(
         Message(data={key: "item-2", TEXT: "e"}),
         Message(data={key: "item-2", TEXT: "f"}),
     ]
-    importer2 = DummyNluDataImporter(messages)
+    importer2 = DummyNLUDataImporter(messages)
     # does not complain:
     validate(importer=importer2)
 
@@ -434,7 +434,7 @@ def test_validate_with_other_version(
     )
 
     # training
-    importer = DummyNluDataImporter([Message(data={INTENT: "dummy"})])
+    importer = DummyNLUDataImporter([Message(data={INTENT: "dummy"})])
     validate = get_validation_method(finetuning=False, load=False, nlu=nlu, core=core)
     validate(importer=importer)
 
