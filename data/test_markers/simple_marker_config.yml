@@ -1,0 +1,10 @@
+markers:
+- marker: carbon_offset_calculated
+  conditions:
+  - type: AND
+  - slot_filled:
+    - travel_flight_class
+    - travel_departure
+    - travel_destination
+  - action_executed:
+    - provide_carbon_estimate
