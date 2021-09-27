@@ -12,7 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable, Type, Any
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, AsyncMock
 
 import rasa.shared.utils.io
 from rasa.core.policies.rule_policy import RulePolicyGraphComponent
@@ -21,6 +21,7 @@ from rasa.core.actions.action import (
     ActionListen,
     ActionExecutionRejection,
     ActionUnlikelyIntent,
+    ActionExtractSlots,
 )
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
@@ -53,6 +54,7 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
     ActionExecutionRejected,
     LoopInterrupted,
+    ActiveLoop,
 )
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -1377,3 +1379,59 @@ async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
 
     assert event_tokens == indices
+
+
+async def test_processor_valid_slot_setting(form_bot_agent: Agent,):
+    tracker_store = InMemoryTrackerStore(form_bot_agent.domain)
+    lock_store = InMemoryLockStore()
+    processor = MessageProcessor(
+        form_bot_agent.interpreter,
+        form_bot_agent.policy_ensemble,
+        form_bot_agent.domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(form_bot_agent.domain.responses),
+    )
+    message = UserMessage(
+        "Only outdoor seating, yes.",
+        CollectingOutputChannel(),
+        "test",
+        parse_data={"intent": {"name": "affirm"}, "entities": [],},
+    )
+    await processor.handle_message(message)
+    tracker = processor.get_tracker("test")
+    assert tracker.get_slot("outdoor_seating") is True
+    assert tracker.get_slot("preferences") is None
+
+
+async def test_processor_does_not_run_action_extract_slots_if_active_loop(
+    form_bot_agent: Agent,
+):
+    tracker_store = InMemoryTrackerStore(form_bot_agent.domain)
+    lock_store = InMemoryLockStore()
+    processor = MessageProcessor(
+        form_bot_agent.interpreter,
+        form_bot_agent.policy_ensemble,
+        form_bot_agent.domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(form_bot_agent.domain.responses),
+    )
+    initial_msg = UserMessage("Hi", CollectingOutputChannel(), "test-id")
+    tracker = await processor.log_message(initial_msg)
+    tracker.update(ActiveLoop("restaurant_form"), form_bot_agent.domain)
+    assert tracker.active_loop_name
+    processor.tracker_store.save(tracker)
+
+    message = UserMessage(
+        "I'm searching for Thai restaurants.",
+        CollectingOutputChannel(),
+        "test-id",
+        parse_data={
+            "intent": {"name": "request_restaurant"},
+            "entities": [{"entity": "cuisine", "value": "Thai"}],
+        },
+    )
+    default_action_mock = AsyncMock(ActionExtractSlots)
+    await processor.handle_message(message)
+    default_action_mock.assert_not_awaited()
