@@ -153,4 +153,3 @@ def test(
     rasa.utils.common.run_in_loop(
         test_nlu(model, nlu_data, output, additional_arguments)
     )
-
