@@ -9,19 +9,6 @@ abstract: This page explains when and how to deploy an assistant built with Rasa
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from './variables.json';
 
-## When to Deploy Your Assistant
-
-The best time to deploy your assistant and make it available to test users is once it can handle the most
-important happy paths or is what we call a [minimum viable assistant](./glossary.mdx).
-
-The recommended deployment method described below make it easy to share your assistant
-with test users via the [share your assistant feature in
-Rasa X](https://rasa.com/docs/rasa-x/user-guide/share-assistant#share-your-bot).
-Then, when you're ready to make your assistant available via one or more [Messaging and Voice Channels](./messaging-and-voice-channels.mdx),
-you can easily add them to your existing deployment set up.
-
-## Recommended Deployment Method
-
 The recommended way to deploy an assistant is using Helm Chart option we support. It is the easiest way to deploy your assistant,
 it allows you in an easy way to connect Rasa OSS deployment with Rasa X deployment where you can view conversations and turn them into training data,
 and is production-ready.
