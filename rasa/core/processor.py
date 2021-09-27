@@ -121,8 +121,13 @@ class MessageProcessor:
             extraction_events = await action_extract_slots.run(
                 output_channel, self.nlg, tracker, self.domain
             )
-            print([str(e) for e in extraction_events])
             tracker.update_with_events(extraction_events, self.domain)
+
+            events_as_str = "\n".join([str(e) for e in extraction_events])
+            logger.debug(
+                f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
+                f"the following events were logged: {events_as_str}"
+            )
 
         await self._predict_and_execute_next_action(message.output_channel, tracker)
 

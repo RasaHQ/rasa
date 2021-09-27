@@ -12,7 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable, Type, Any
-from unittest.mock import patch, Mock, AsyncMock
+from unittest.mock import patch, Mock
 
 import rasa.shared.utils.io
 from rasa.core.policies.rule_policy import RulePolicyGraphComponent
@@ -21,7 +21,6 @@ from rasa.core.actions.action import (
     ActionListen,
     ActionExecutionRejection,
     ActionUnlikelyIntent,
-    ActionExtractSlots,
 )
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
@@ -77,6 +76,7 @@ from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
     SESSION_START_METADATA_SLOT,
+    ACTION_EXTRACT_SLOTS,
 )
 
 import logging
@@ -1405,7 +1405,7 @@ async def test_processor_valid_slot_setting(form_bot_agent: Agent,):
 
 
 async def test_processor_does_not_run_action_extract_slots_if_active_loop(
-    form_bot_agent: Agent,
+    form_bot_agent: Agent, caplog: LogCaptureFixture,
 ):
     tracker_store = InMemoryTrackerStore(form_bot_agent.domain)
     lock_store = InMemoryLockStore()
@@ -1432,6 +1432,12 @@ async def test_processor_does_not_run_action_extract_slots_if_active_loop(
             "entities": [{"entity": "cuisine", "value": "Thai"}],
         },
     )
-    default_action_mock = AsyncMock(ActionExtractSlots)
-    await processor.handle_message(message)
-    default_action_mock.assert_not_awaited()
+    with caplog.at_level(logging.DEBUG):
+        await processor.handle_message(message)
+
+    assert all(
+        [
+            f"Default action '{ACTION_EXTRACT_SLOTS}' was not executed" not in m
+            for m in caplog.messages
+        ]
+    )
