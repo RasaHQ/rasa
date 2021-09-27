@@ -97,6 +97,11 @@ def config_path() -> Text:
 
 
 @pytest.fixture(scope="session")
+def default_config(config_path: Text) -> Dict[Text, Any]:
+    return rasa.shared.utils.io.read_yaml_file(config_path)
+
+
+@pytest.fixture(scope="session")
 def domain_with_categorical_slot_path() -> Text:
     return "data/test_domains/domain_with_categorical_slot.yml"
 
