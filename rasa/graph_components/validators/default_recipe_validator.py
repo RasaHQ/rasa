@@ -1,6 +1,5 @@
 from __future__ import annotations
 from collections import defaultdict
-import itertools
 from typing import Iterable, List, Dict, Text, Any, Set, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
@@ -13,7 +12,10 @@ from rasa.nlu.extractors.mitie_entity_extractor import (
 from rasa.nlu.extractors.regex_entity_extractor import (
     RegexEntityExtractorGraphComponent,
 )
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractorGraphComponent
+from rasa.nlu.extractors.crf_entity_extractor import (
+    CRFEntityExtractorGraphComponent,
+    CRFEntityExtractorOptions,
+)
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperComponent
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
     RegexFeaturizerGraphComponent,
@@ -25,9 +27,6 @@ from rasa.core.policies.rule_policy import RulePolicyGraphComponent
 from rasa.core.policies.policy import PolicyGraphComponent, SupportedData
 from rasa.core.policies.memoization import MemoizationPolicyGraphComponent
 from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
-from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
-    LexicalSyntacticFeaturizerGraphComponent,
-)
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -49,26 +48,21 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 
+# TODO: replace these once the Recipe is merged
 TRAINABLE_EXTRACTORS = [
     MitieEntityExtractorGraphComponent,
     CRFEntityExtractorGraphComponent,
     DIETClassifierGraphComponent,
 ]
-
-# TODO: do we have a registries for these?
-FEATURIZER_CLASSES = {
-    LexicalSyntacticFeaturizerGraphComponent,
-    RegexFeaturizerGraphComponent,
-    # TODO: add rest / replace
-}
-POLICY_CLASSSES = {  # Note: this is used in tests only, should belong elsewhere anyway
+# TODO: replace these once the Recipe is merged (used in tests)
+POLICY_CLASSSES = {
     TEDPolicyGraphComponent,
     MemoizationPolicyGraphComponent,
     RulePolicyGraphComponent,
 }
 
 
-def types_to_str(types: Iterable[Type]) -> Text:
+def _types_to_str(types: Iterable[Type]) -> Text:
     """Returns a text containing the names of all given types.
 
     Args:
@@ -79,7 +73,7 @@ def types_to_str(types: Iterable[Type]) -> Text:
     return ", ".join([type.__name__ for type in types])
 
 
-class DefaultV1ConfigValidator(GraphComponent):
+class DefaultV1RecipeValidator(GraphComponent):
     """Validates the current graph schema against the training data and domain.
 
     This validator is just a replacement for the configuration checks done in Rasa 2.x
@@ -95,7 +89,7 @@ class DefaultV1ConfigValidator(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> DefaultV1ConfigValidator:
+    ) -> DefaultV1RecipeValidator:
         """Creates a new `ConfigValidator` (see parent class for full docstring)."""
         return cls(execution_context.graph_schema)
 
@@ -131,7 +125,7 @@ class DefaultV1ConfigValidator(GraphComponent):
         """Validates whether the configuration matches the training data.
 
         Args:
-           training_data: training_data
+           training_data: The training data for the NLU components.
         """
         self._raise_if_more_than_one_tokenizer()
         self._raise_if_featurizers_are_not_compatible()
@@ -149,7 +143,7 @@ class DefaultV1ConfigValidator(GraphComponent):
         issues a warning.
 
         Args:
-            training_data: training data
+            training_data: The training data for the NLU components.
         """
         if (
             training_data.response_examples
@@ -172,7 +166,7 @@ class DefaultV1ConfigValidator(GraphComponent):
                 f"your NLU configuration does not include an entity extractor "
                 f"trained on your training data. "
                 f"To extract non-pretrained entities, add one of "
-                f"{types_to_str(TRAINABLE_EXTRACTORS)} to your configuration.",
+                f"{_types_to_str(TRAINABLE_EXTRACTORS)} to your configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
@@ -245,11 +239,11 @@ class DefaultV1ConfigValidator(GraphComponent):
                     for schema_node in self._graph_schema.nodes.values()
                     if schema_node.uses == CRFEntityExtractorGraphComponent
                 ]
-
-                has_pattern_feature = False
-                for crf in crf_schema_nodes:
-                    crf_features = crf.config.get("features", [])
-                    has_pattern_feature = "pattern" in itertools.chain(*crf_features)
+                has_pattern_feature = any(
+                    CRFEntityExtractorOptions.PATTERN in feature_list
+                    for crf in crf_schema_nodes
+                    for feature_list in crf.config.get("features", [])
+                )
 
                 if not has_pattern_feature:
                     rasa.shared.utils.io.raise_warning(
@@ -287,21 +281,18 @@ class DefaultV1ConfigValidator(GraphComponent):
         Raises:
             `InvalidConfigException` in case there is more than one tokenizer
         """
-        tokenizer_schema_nodes = [
-            schema_node
+        types_of_tokenizer_schema_nodes = [
+            schema_node.uses
             for schema_node in self._graph_schema.nodes.values()
             if issubclass(schema_node.uses, TokenizerGraphComponent)
         ]
 
-        if len(tokenizer_schema_nodes) > 1:
-            names = [
-                schema_node.uses.__name__ for schema_node in tokenizer_schema_nodes
-            ]
+        if len(types_of_tokenizer_schema_nodes) > 1:
             raise InvalidConfigException(
                 f"The configuration configuration contains more than one tokenizer, "
                 f"which is not possible at this time. You can only use one tokenizer. "
                 f"The configuration contains the following tokenizers: "
-                f"{names}. "
+                f"{_types_to_str(types_of_tokenizer_schema_nodes)}. "
             )
 
     def _warn_of_competing_extractors(self) -> None:
@@ -321,11 +312,11 @@ class DefaultV1ConfigValidator(GraphComponent):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined multiple entity extractors that do the same job "
                 f"in your configuration: "
-                f"{types_to_str(extractors_in_configuration)}. "
+                f"{_types_to_str(extractors_in_configuration)}. "
                 f"This can lead to the same entity getting "
                 f"extracted multiple times. Please read the documentation section "
-                f"on entity extractors to make sure you understand the implications: "
-                f"{DOCS_URL_COMPONENTS}#entity-extractors"
+                f"on entity extractors to make sure you understand the implications.",
+                docs=f"{DOCS_URL_COMPONENTS}#entity-extractors",
             )
 
     def _warn_of_competition_with_regex_extractor(
@@ -339,7 +330,7 @@ class DefaultV1ConfigValidator(GraphComponent):
         * AND you have annotated text examples for entity type A
 
         Args:
-            training_data: the training data
+            training_data: The training data for the NLU components.
         """
         present_general_extractors = self._component_types.intersection(
             TRAINABLE_EXTRACTORS
@@ -358,7 +349,7 @@ class DefaultV1ConfigValidator(GraphComponent):
                 f"You have an overlap between the "
                 f"{RegexEntityExtractorGraphComponent.__name__} and the "
                 f"statistical entity extractors "
-                f"{types_to_str(present_general_extractors)} "
+                f"{_types_to_str(present_general_extractors)} "
                 f"in your configuration. Specifically both types of extractors will "
                 f"attempt to extract entities of the types "
                 f"{', '.join(overlap_between_types)}. "
@@ -366,14 +357,15 @@ class DefaultV1ConfigValidator(GraphComponent):
                 f"extraction of entities. Please read "
                 f"{RegexEntityExtractorGraphComponent.__name__}'s "
                 f"documentation section to make sure you understand the "
-                f"implications: {DOCS_URL_COMPONENTS}#regexentityextractor"
+                f"implications.",
+                docs=f"{DOCS_URL_COMPONENTS}#regexentityextractor",
             )
 
     def _raise_if_featurizers_are_not_compatible(self,) -> None:
         """Raises or warns if there are problems regarding the featurizers.
 
         Raises:
-            `InvalidConfigException`
+            `InvalidConfigException` in case the featurizers are not compatible
         """
         featurizers: List[SchemaNode] = [
             node
@@ -460,13 +452,12 @@ class DefaultV1ConfigValidator(GraphComponent):
         for schema_node in self._policy_schema_nodes:
             default_priority = schema_node.uses.get_default_config()["priority"]
             priority = schema_node.config.get("priority", default_priority)
-            name = schema_node.uses.__name__
-            priority_dict[priority].append(name)
+            priority_dict[priority].append(schema_node.uses)
 
         for k, v in priority_dict.items():
             if len(v) > 1:
                 rasa.shared.utils.io.raise_warning(
-                    f"Found policies {v} with same priority {k} "
+                    f"Found policies {_types_to_str(v)} with same priority {k} "
                     f"in PolicyEnsemble. When personalizing "
                     f"priorities, be sure to give all policies "
                     f"different priorities.",

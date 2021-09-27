@@ -1,3 +1,4 @@
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperComponent
 from typing import Dict, List, Optional, Set, Text, Any, Tuple, Type
 import re
 
@@ -6,17 +7,21 @@ from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
 
 from rasa.engine.graph import GraphComponent, GraphSchema, SchemaNode
-from rasa.graph_components.validators.config_validator import (
+from rasa.graph_components.validators.default_recipe_validator import (
     POLICY_CLASSSES,
-    DefaultV1ConfigValidator,
+    DefaultV1RecipeValidator,
     TRAINABLE_EXTRACTORS,
+    _types_to_str,
 )
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
 from rasa.nlu.extractors.regex_entity_extractor import (
     RegexEntityExtractorGraphComponent,
 )
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractorGraphComponent
+from rasa.nlu.extractors.crf_entity_extractor import (
+    CRFEntityExtractorGraphComponent,
+    CRFEntityExtractorOptions,
+)
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizerGraphComponent,
 )
@@ -86,11 +91,11 @@ def _test_validation_warnings_with_default_configs(
             for idx, component_type in enumerate(component_types)
         }
     )
-    validator = DefaultV1ConfigValidator(graph_schema)
+    validator = DefaultV1RecipeValidator(graph_schema)
     if not warnings:
         with pytest.warns(None) as records:
             validator.validate(dummy_importer)
-            assert len(records) == 0
+            assert len(records) == 0, [warning.message for warning in records.list]
     else:
         with pytest.warns(None) as records:
             validator.validate(dummy_importer)
@@ -160,19 +165,13 @@ def test_nlu_warn_if_training_examples_with_entities_are_unused(
 @pytest.mark.parametrize(
     "component_type, role_instead_of_group, warns",
     [
-        (extractor, role_instead_of_group, True)
-        for extractor in {
-            DIETClassifierGraphComponent,
-            CRFEntityExtractorGraphComponent,
-        }.difference(TRAINABLE_EXTRACTORS)
-        for role_instead_of_group in [True, False]
-    ]
-    + [
-        (extractor, role_instead_of_group, False)
-        for extractor in {
-            DIETClassifierGraphComponent,
-            CRFEntityExtractorGraphComponent,
-        }
+        (
+            extractor,
+            role_instead_of_group,
+            extractor
+            not in {DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent},
+        )
+        for extractor in TRAINABLE_EXTRACTORS
         for role_instead_of_group in [True, False]
     ],
 )
@@ -290,7 +289,63 @@ def test_nlu_warn_if_lookup_table_is_not_used(
     )
 
 
-def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch():
+@pytest.mark.parametrize(
+    "nodes, warns",
+    [
+        (
+            [
+                SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+                SchemaNode({}, RegexFeaturizerGraphComponent, "", "", {}),
+                SchemaNode(
+                    {},
+                    CRFEntityExtractorGraphComponent,
+                    "",
+                    "",
+                    {"features": [["pos"]]},
+                ),
+            ],
+            True,
+        ),
+        (
+            [
+                SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+                SchemaNode({}, RegexFeaturizerGraphComponent, "", "", {}),
+                SchemaNode(
+                    {},
+                    CRFEntityExtractorGraphComponent,
+                    "",
+                    "",
+                    {"features": [["suffix1", "pattern"], ["pos"]]},
+                ),
+            ],
+            False,
+        ),
+        (
+            [
+                SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+                SchemaNode({}, RegexFeaturizerGraphComponent, "", "", {}),
+                SchemaNode(
+                    {},
+                    CRFEntityExtractorGraphComponent,
+                    "",
+                    "",
+                    {"features": [["pos"]]},
+                ),
+                SchemaNode(
+                    {},
+                    CRFEntityExtractorGraphComponent,
+                    "",
+                    "",
+                    {"features": [["suffix1", "pattern"], ["pos"]]},
+                ),
+            ],
+            False,
+        ),
+    ],
+)
+def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch(
+    nodes: List[SchemaNode], warns: bool
+):
     training_data = TrainingData(
         training_examples=[Message({})],
         lookup_tables=[{"elements": "this-is-no-file-and-that-does-not-matter"}],
@@ -298,34 +353,69 @@ def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch():
     assert training_data.lookup_tables is not None
     importer = DummyImporter(training_data=training_data)
 
-    match = (
-        f"You have defined training data consisting of lookup tables, "
-        f"but your NLU configuration's "
-        f"'{CRFEntityExtractorGraphComponent.__name__}' does not include the "
-        f"'pattern' feature"
-    )
+    graph_schema = GraphSchema({f"{idx}": node for idx, node in enumerate(nodes)})
+    validator = DefaultV1RecipeValidator(graph_schema)
 
-    # without 'pattern'
-    crf_schema_node = SchemaNode(
-        {}, CRFEntityExtractorGraphComponent, "", "", {"features": [["pos"]]},
+    if warns:
+        match = (
+            f"You have defined training data consisting of lookup tables, "
+            f"but your NLU configuration's "
+            f"'{CRFEntityExtractorGraphComponent.__name__}' does not include the "
+            f"'{CRFEntityExtractorOptions.PATTERN}' feature"
+        )
+
+        with pytest.warns(UserWarning, match=match):
+            validator.validate(importer)
+    else:
+        with pytest.warns(None) as records:
+            validator.validate(importer)
+            assert len(records) == 0
+
+
+@pytest.mark.parametrize(
+    "components, warns",
+    [
+        ([WhitespaceTokenizerGraphComponent, CRFEntityExtractorGraphComponent,], True,),
+        (
+            [
+                WhitespaceTokenizerGraphComponent,
+                CRFEntityExtractorGraphComponent,
+                EntitySynonymMapperComponent,
+            ],
+            False,
+        ),
+    ],
+)
+def test_nlu_warn_if_entity_synonyms_unused(
+    components: List[GraphComponent], warns: bool
+):
+    training_data = TrainingData(
+        training_examples=[Message({})], entity_synonyms={"cat": "dog"},
     )
+    assert training_data.entity_synonyms is not None
+    importer = DummyImporter(training_data=training_data)
+
     graph_schema = GraphSchema(
         {
-            "tokenizer": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-            "featurizer": SchemaNode({}, RegexFeaturizerGraphComponent, "", "", {}),
-            "crf": crf_schema_node,
+            f"{idx}": SchemaNode({}, component, "", "", {})
+            for idx, component in enumerate(components)
         }
     )
-    validator = DefaultV1ConfigValidator(graph_schema)
-    with pytest.warns(UserWarning, match=match):
-        validator.validate(importer)
+    validator = DefaultV1RecipeValidator(graph_schema)
 
-    # with 'pattern'
-    crf_schema_node.config = {"features": [["suffix1", "pattern"], ["pos"]]}
-    validator = DefaultV1ConfigValidator(graph_schema)
-    with pytest.warns(None) as records:
-        validator.validate(importer)
-        assert len(records) == 0
+    if warns:
+        match = (
+            f"You have defined synonyms in your training data, but "
+            f"your NLU configuration does not include an "
+            f"'{EntitySynonymMapperComponent.__name__}'. "
+        )
+
+        with pytest.warns(UserWarning, match=match):
+            validator.validate(importer)
+    else:
+        with pytest.warns(None) as records:
+            validator.validate(importer)
+            assert len(records) == 0
 
 
 def test_nlu_raise_if_more_than_one_tokenizer():
@@ -336,7 +426,7 @@ def test_nlu_raise_if_more_than_one_tokenizer():
         }
     )
     importer = DummyImporter()
-    validator = DefaultV1ConfigValidator(graph_schema)
+    validator = DefaultV1RecipeValidator(graph_schema)
     with pytest.raises(InvalidConfigException, match=".* more than one tokenizer"):
         validator.validate(importer)
 
@@ -373,7 +463,7 @@ def test_nlu_warn_of_competing_extractors(
         }
     )
     importer = DummyImporter()
-    nlu_validator = DefaultV1ConfigValidator(graph_schema)
+    nlu_validator = DefaultV1RecipeValidator(graph_schema)
     if should_warn:
         with pytest.warns(UserWarning, match=".*defined multiple entity extractors"):
             nlu_validator.validate(importer)
@@ -442,7 +532,7 @@ def test_nlu_warn_of_competition_with_regex_extractor(
             for idx, component_type in enumerate(component_types)
         }
     )
-    validator = DefaultV1ConfigValidator(graph_schema)
+    validator = DefaultV1RecipeValidator(graph_schema)
     monkeypatch.setattr(
         validator, "_warn_if_some_training_data_is_unused", lambda *args, **kwargs: None
     )
@@ -508,7 +598,7 @@ def test_nlu_raise_if_featurizers_are_not_compatible(
         }
     )
     importer = DummyImporter()
-    validator = DefaultV1ConfigValidator(graph_schema)
+    validator = DefaultV1RecipeValidator(graph_schema)
     if should_raise:
         with pytest.raises(InvalidConfigException):
             validator.validate(importer)
@@ -536,13 +626,15 @@ def test_core_warn_if_data_but_no_policy(
         ],
     )
 
-    nodes = {"tokenizer": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {})}
+    nodes = {
+        "tokenizer": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+        "nlu-component": SchemaNode({}, DIETClassifierGraphComponent, "", "", {}),
+    }
     if policy_type is not None:
         nodes["some-policy"] = SchemaNode({}, policy_type, "", "", {})
     graph_schema = GraphSchema(nodes)
 
-    validator = DefaultV1ConfigValidator(graph_schema)
-    monkeypatch.setattr(validator, "_validate_nlu", lambda _: None)
+    validator = DefaultV1RecipeValidator(graph_schema)
     monkeypatch.setattr(
         validator,
         "_raise_if_a_rule_policy_is_incompatible_with_domain",
@@ -564,7 +656,7 @@ def test_core_warn_if_data_but_no_policy(
     else:
         with pytest.warns(None) as records:
             validator.validate(importer)
-        assert len(records) == 0
+        assert len(records) == 0, [warn.message for warn in records.list]
 
 
 @pytest.mark.parametrize(
@@ -587,7 +679,7 @@ def test_core_warn_if_no_rule_policy(
         }
     )
     importer = DummyImporter()
-    validator = DefaultV1ConfigValidator(graph_schema=graph_schema)
+    validator = DefaultV1RecipeValidator(graph_schema=graph_schema)
     monkeypatch.setattr(
         validator,
         "_raise_if_a_rule_policy_is_incompatible_with_domain",
@@ -635,7 +727,7 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
             for policy_type in policy_types
         }
     )
-    validator = DefaultV1ConfigValidator(graph_schema)
+    validator = DefaultV1RecipeValidator(graph_schema)
     monkeypatch.setattr(validator, "_validate_nlu", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         validator, "_warn_if_no_rule_policy_is_contained", lambda *args, **kwargs: None
@@ -677,7 +769,7 @@ def test_core_raise_if_a_rule_policy_is_incompatible_with_domain(
         RulePolicyGraphComponent, "raise_if_incompatible_with_domain", mock
     )
 
-    validator = DefaultV1ConfigValidator(graph_schema=GraphSchema(nodes))
+    validator = DefaultV1RecipeValidator(graph_schema=GraphSchema(nodes))
     monkeypatch.setattr(
         validator,
         "_warn_if_rule_based_data_is_unused_or_missing",
@@ -721,7 +813,7 @@ def test_core_warn_if_policy_priorities_are_not_unique(
     for idx in range(num_duplicates):
         nodes[f"{priority+idx+1}"].config["priority"] = priority
 
-    validator = DefaultV1ConfigValidator(graph_schema=GraphSchema(nodes))
+    validator = DefaultV1RecipeValidator(graph_schema=GraphSchema(nodes))
     monkeypatch.setattr(
         validator,
         "_warn_if_rule_based_data_is_unused_or_missing",
@@ -732,11 +824,13 @@ def test_core_warn_if_policy_priorities_are_not_unique(
 
     if num_duplicates > 0:
         duplicates = [
-            node.uses.__name__
+            node.uses
             for idx_str, node in nodes.items()
             if priority <= int(idx_str) <= priority + num_duplicates
         ]
-        expected_message = f"Found policies {duplicates} with same priority {priority} "
+        expected_message = (
+            f"Found policies {_types_to_str(duplicates)} with same priority {priority} "
+        )
         expected_message = re.escape(expected_message)
         with pytest.warns(UserWarning, match=expected_message):
             validator.validate(importer)
@@ -762,7 +856,7 @@ def test_core_warn_if_rule_data_missing(
     graph_schema = GraphSchema(
         {"policy": SchemaNode({}, policy_type_consuming_rule_data, "", "", {})}
     )
-    validator = DefaultV1ConfigValidator(graph_schema)
+    validator = DefaultV1RecipeValidator(graph_schema)
 
     with pytest.warns(
         UserWarning,
@@ -793,7 +887,7 @@ def test_core_warn_if_rule_data_unused(
     graph_schema = GraphSchema(
         {"policy": SchemaNode({}, policy_type_not_consuming_rule_data, "", "", {})}
     )
-    validator = DefaultV1ConfigValidator(graph_schema)
+    validator = DefaultV1RecipeValidator(graph_schema)
 
     with pytest.warns(
         UserWarning,
