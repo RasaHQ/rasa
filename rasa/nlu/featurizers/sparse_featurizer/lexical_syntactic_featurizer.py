@@ -387,12 +387,27 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
     def process(self, messages: List[Message]) -> List[Message]:
         """Featurizes all given messages in-place.
 
+        Args:
+          messages: messages to be featurized.
+
         Returns:
-          the given list of messages which have been modified in-place
+          The same list with the same messages after featurization.
         """
         for message in messages:
             self._process_message(message)
         return messages
+
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
+        """Processes the training examples in the given training data in-place.
+
+        Args:
+          training_data: the training data
+
+        Returns:
+          same training data after processing
+        """
+        self.process(training_data.training_examples)
+        return training_data
 
     def _process_message(self, message: Message) -> None:
         """Featurizes the given message in-place.
