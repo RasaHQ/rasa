@@ -1,13 +1,11 @@
 from rasa.core.evaluation.markers import MarkerConfig, InvalidMarkersConfig
 import pytest
-from typing import (
-    Dict,
-    Text,
-)
+from typing import Text
 
 
 @pytest.fixture
-def simple_marker_config_json() -> Dict:
+def simple_marker_config_json() -> dict:
+    """Returns a json dict equivalent to simple_marker_config fixture"""
     sample_json = {
         "markers": [
             {
@@ -30,7 +28,8 @@ def simple_marker_config_json() -> Dict:
 
 
 @pytest.fixture
-def multi_marker_config_json() -> Dict:
+def multi_marker_config_json() -> dict:
+    """Returns a json dict equivalent to multi_marker_config_folder fixture"""
     sample_json = {
         "markers": [
             {
@@ -74,7 +73,7 @@ def test_empty_config():
 
 
 def test_from_yaml(simple_marker_config_json):
-    """Tests the expected dict format of markers config"""
+    """Tests the creation of a dict config from yaml string"""
     simple_yaml_markers_config = """
     markers:
     - marker: carbon_offset_calculated
@@ -92,7 +91,7 @@ def test_from_yaml(simple_marker_config_json):
 
 
 def test_load_invalid_path():
-    """Tests the exception raised when an invalid path is supplied"""
+    """Checks that the correct exception is raised when an invalid path is supplied"""
     with pytest.raises(InvalidMarkersConfig):
         MarkerConfig.load_config_from_path("not a path")
 

@@ -15,13 +15,14 @@ import rasa.shared.utils.common
 
 
 class InvalidMarkersConfig(RasaException):
-    """Exception that can be raised when domain is not valid."""
+    """Exception that can be raised when markers config is not valid."""
 
 
 class MarkerConfig:
-    """
-    A class that represents the configuration file which lists the different marker
-    and the conditions for when each of them applies.
+    """A class that represents the markers config.
+
+    A markers config contains the markers and the conditions for when they apply.
+    The class reads the config, validates the schema, and validates the conditions.
     """
 
     @classmethod
@@ -31,8 +32,8 @@ class MarkerConfig:
 
     @classmethod
     def load_config_from_path(cls, path: Union[Text, Path]) -> Dict:
+        """Loads the config from a file or directory."""
         path = os.path.abspath(path)
-
         if os.path.isfile(path):
             config = cls.from_file(path)
         elif os.path.isdir(path):
@@ -42,7 +43,6 @@ class MarkerConfig:
                 "Failed to load markers configuration from '{}'. "
                 "File not found!".format(os.path.abspath(path))
             )
-
         return config
 
     @classmethod
@@ -54,20 +54,19 @@ class MarkerConfig:
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> Dict:
         """Loads the config from YAML text after validating it."""
         try:
-            # TODO impleemnt schema validation
+            # TODO implement and call the yaml schema validation
             #  rasa.shared.utils.validation.validate_yaml_schema(yaml,
             #  MAKERS_SCHEMA_FILE)
 
-            data = rasa.shared.utils.io.read_yaml(yaml)
-            return data
+            config = rasa.shared.utils.io.read_yaml(yaml)
+            return config
         except YamlException as e:
             e.filename = original_filename
             raise e
 
     @classmethod
     def from_directory(cls, path: Text) -> Dict:
-        """Loads and appends multiple configs files from a directory tree."""
-
+        """Loads and appends multiple configs from a directory tree."""
         config = cls.empty_config()
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
@@ -79,7 +78,7 @@ class MarkerConfig:
 
     @classmethod
     def _merge(cls, config_a: Dict, config_b: Dict) -> Dict:
-        """Merges multiple marker dictionaries"""
+        """Merges multiple marker configs."""
         copy_config_a = config_a.copy()
         if "markers" in copy_config_a.keys():
             copy_config_a["markers"].extend(config_b["markers"])
@@ -98,8 +97,8 @@ class MarkerConfig:
             `True` if it's a config file, otherwise `False`.
 
         Raises:
-            YamlException: if the file seems to be a YAML file (extension) but
-                can not be read / parsed.
+            YamlException: raised when the file has a YAML extension but
+                cannot be read / parsed.
         """
         from rasa.shared.data import is_likely_yaml_file
 
@@ -114,7 +113,7 @@ class MarkerConfig:
                 message=f"The file {filename} could not be loaded "
                 f"as a markers config file. "
                 f"You can use https://yamlchecker.com/ to validate "
-                f"the YAML syntax of your file.",
+                f"the YAML syntax of the file.",
                 category=UserWarning,
             )
             return False
