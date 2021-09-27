@@ -78,6 +78,7 @@ from rasa.shared.core.constants import (
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
+    ACTION_EXTRACT_SLOTS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -125,7 +126,7 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 15
+    assert len(instantiated_actions) == 16
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -138,9 +139,10 @@ def test_domain_action_instantiation():
     assert instantiated_actions[9].name() == ACTION_UNLIKELY_INTENT_NAME
     assert instantiated_actions[10].name() == ACTION_BACK_NAME
     assert instantiated_actions[11].name() == RULE_SNIPPET_ACTION_NAME
-    assert instantiated_actions[12].name() == "my_module.ActionTest"
-    assert instantiated_actions[13].name() == "utter_test"
-    assert instantiated_actions[14].name() == "utter_chitchat"
+    assert instantiated_actions[12].name() == ACTION_EXTRACT_SLOTS
+    assert instantiated_actions[13].name() == "my_module.ActionTest"
+    assert instantiated_actions[14].name() == "utter_test"
+    assert instantiated_actions[15].name() == "utter_chitchat"
 
 
 async def test_remote_action_runs(

@@ -17,9 +17,12 @@ def _warning_should_be_filtered_out(warning: WarningMessage) -> bool:
     # we filter out `gelu` warnings because of this issue:
     # https://github.com/RasaHQ/rasa/issues/9129
     # this function can be removed once we migrate to TensorFlow 2.6
-    return type(warning.message) == DeprecationWarning and str(
-        warning.message
-    ).startswith("gelu activation has been migrated to core TensorFlow")
+    return (
+        type(warning.message) == DeprecationWarning
+        and str(warning.message).startswith(
+            "gelu activation has been migrated to core TensorFlow"
+        )
+    ) or str(warning.message).startswith("Slot auto-fill has been removed in 3.0")
 
 
 @pytest.mark.timeout(300, func_only=True)
