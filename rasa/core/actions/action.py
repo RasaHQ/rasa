@@ -1056,16 +1056,23 @@ class ActionExtractSlots(Action):
                         remote_action = RemoteAction(
                             custom_action, self.action_endpoint
                         )
-                        custom_events = remote_action.run(
-                            output_channel, nlg, tracker, domain
-                        )
                         disallowed_types = set()
-
-                        for event in custom_events:
-                            if isinstance(event, (SlotSet, BotUttered)):
-                                slot_events.append(event)
-                            else:
-                                disallowed_types.add(event.type_name)
+                        try:
+                            custom_events = remote_action.run(
+                                output_channel, nlg, tracker, domain
+                            )
+                            for event in custom_events:
+                                if isinstance(event, (SlotSet, BotUttered)):
+                                    slot_events.append(event)
+                                else:
+                                    disallowed_types.add(event.type_name)
+                        except (RasaException, ClientResponseError) as e:
+                            rasa.shared.utils.io.raise_warning(
+                                f"Failed to execute custom action '{custom_action}' "
+                                f"as a result of error '{str(e)}'. The default action"
+                                f"extract slots failed to fill slots with custom "
+                                f"mappings."
+                            )
 
                         for type_name in disallowed_types:
                             logger.info(
