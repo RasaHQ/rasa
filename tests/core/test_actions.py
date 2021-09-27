@@ -1124,7 +1124,7 @@ async def test_run_end_to_end_utterance_action():
 
 
 @pytest.mark.parametrize(
-    "user, slot_name, slot_value",
+    "user, slot_name, slot_value, new_user, updated_value",
     [
         (
             UserUttered(
@@ -1133,14 +1133,33 @@ async def test_run_end_to_end_utterance_action():
             ),
             "location",
             "London",
+            UserUttered(
+                intent={"name": "inform"},
+                entities=[{"entity": "city", "value": "Berlin"}],
+            ),
+            "Berlin",
         ),
         (
             UserUttered(text="test@example.com", intent={"name": "inform"}),
             "email",
             "test@example.com",
+            UserUttered(text="updated_test@example.com", intent={"name": "inform"}),
+            "updated_test@example.com",
         ),
-        (UserUttered(intent={"name": "affirm"}), "cancel_booking", True),
-        (UserUttered(intent={"name": "deny"}), "cancel_booking", False),
+        (
+            UserUttered(intent={"name": "affirm"}),
+            "cancel_booking",
+            True,
+            UserUttered(intent={"name": "deny"}),
+            False,
+        ),
+        (
+            UserUttered(intent={"name": "deny"}),
+            "cancel_booking",
+            False,
+            UserUttered(intent={"name": "affirm"}),
+            True,
+        ),
         (
             UserUttered(
                 intent={"name": "inform"},
@@ -1151,11 +1170,16 @@ async def test_run_end_to_end_utterance_action():
             ),
             "guest_names",
             ["Bob", "Mary"],
+            UserUttered(
+                intent={"name": "inform"},
+                entities=[{"entity": "name", "value": "John"},],
+            ),
+            ["John"],
         ),
     ],
 )
 async def test_action_extract_slots_predefined_mappings(
-    user: Event, slot_name: Text, slot_value: Any
+    user: Event, slot_name: Text, slot_value: Any, new_user: Event, updated_value: Any,
 ):
     domain = Domain.from_yaml(
         textwrap.dedent(
@@ -1200,12 +1224,41 @@ async def test_action_extract_slots_predefined_mappings(
         )
     )
 
-    action_extract_slots = ActionExtractSlots()
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+    tracker = DialogueStateTracker.from_events("sender", evts=[user])
     events = await action_extract_slots.run(
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.responses),
-        DialogueStateTracker.from_events("sender", evts=[user]),
+        tracker,
         domain,
     )
 
     assert events == [SlotSet(slot_name, slot_value)]
+
+    events.extend([user])
+    tracker.update_with_events(events, domain)
+
+    new_events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert not new_events
+
+    new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
+    tracker.update_with_events(new_events, domain)
+
+    updated_evts = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+
+    if new_user.entities:
+        # the slot gets filled with extracted entities during tracker.update
+        assert not updated_evts
+        assert tracker.get_slot(slot_name) == updated_value
+    else:
+        assert updated_evts == [SlotSet(slot_name, updated_value)]

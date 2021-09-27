@@ -83,7 +83,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         TwoStageFallbackAction(action_endpoint),
         ActionUnlikelyIntent(),
         ActionBack(),
-        ActionExtractSlots(),
+        ActionExtractSlots(action_endpoint),
     ]
 
 
@@ -958,6 +958,10 @@ class ActionExtractSlots(Action):
     according to assigned slot mappings.
     """
 
+    def __init__(self, action_endpoint: Optional[EndpointConfig]) -> None:
+        """Initializes default action extract slots."""
+        self.action_endpoint = action_endpoint
+
     def name(self) -> Text:
         """Returns action_extract_slots name."""
         return ACTION_EXTRACT_SLOTS
@@ -973,13 +977,13 @@ class ActionExtractSlots(Action):
         slot_events: List[Event] = []
         extracted_entities = tracker.latest_message.entities
 
-        default_slots = [
+        default_slots = {
             rasa.shared.core.constants.REQUESTED_SLOT,
             rasa.shared.core.constants.SESSION_START_METADATA_SLOT,
             rasa.shared.core.constants.SLOT_LISTED_ITEMS,
             rasa.shared.core.constants.SLOT_LAST_OBJECT,
             rasa.shared.core.constants.SLOT_LAST_OBJECT_TYPE,
-        ]
+        }
         user_slots = [slot for slot in domain.slots if slot.name not in default_slots]
 
         for slot in user_slots:
@@ -1036,16 +1040,46 @@ class ActionExtractSlots(Action):
                     value = [mapping.get("value")]
                 elif should_fill_text_slot:
                     value = [tracker.latest_message.text]
+                elif should_fill_custom_slot:
+                    custom_action = mapping.get("action")
 
-                if should_fill_custom_slot:
-                    # TODO
-                    pass
+                    if not custom_action:
+                        # find if there is any validation action in the domain
+                        custom_action = next(
+                            filter(
+                                lambda x: x.startswith("validate_slots"),
+                                domain.user_actions,
+                            )
+                        )
+
+                    if custom_action:
+                        remote_action = RemoteAction(
+                            custom_action, self.action_endpoint
+                        )
+                        custom_events = remote_action.run(
+                            output_channel, nlg, tracker, domain
+                        )
+                        disallowed_types = set()
+
+                        for event in custom_events:
+                            if isinstance(event, (SlotSet, BotUttered)):
+                                slot_events.append(event)
+                            else:
+                                disallowed_types.add(event.type_name)
+
+                        for type_name in disallowed_types:
+                            logger.info(
+                                f"Running custom action '{custom_action} has resulted"
+                                f" in an event of type '{type_name}'. This is "
+                                f"disallowed and the tracker will not be"
+                                f" updated with this event."
+                            )
 
                 if value:
                     if slot.type_name != "list":
                         value = value[-1]
 
-                    if slot.value != value:
+                    if tracker.get_slot(slot.name) != value:
                         slot_events.append(SlotSet(slot.name, value))
 
         return slot_events
