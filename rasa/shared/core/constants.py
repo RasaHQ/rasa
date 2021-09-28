@@ -76,6 +76,14 @@ SLOT_LAST_OBJECT = "knowledge_base_last_object"
 SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
 DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
+DEFAULT_SLOT_NAMES = {
+    REQUESTED_SLOT,
+    SESSION_START_METADATA_SLOT,
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_OBJECT,
+    SLOT_LAST_OBJECT_TYPE,
+}
+
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a `SubState`
 USER = "user"
