@@ -351,14 +351,14 @@ jobs:
       - name: Move all xml files to parent dir
         if: needs.changes.outputs.backend == 'true'
         run: |
-          dir1="${{ github.workspace }}/tests_coverage"
           subs=`ls ${{ github.workspace }}/tests_coverage`
-          dir2="${{ github.workspace }}/tests_coverage/final"
+          download_dir="${{ github.workspace }}/tests_coverage"
+          final_dir="${{ github.workspace }}/tests_coverage/final"
 
-          # Downloaded artifacts go into folders, gotta extract them all
-          mkdir "${dir2}/"
+          # Downloaded artifacts go into folders, gotta extract them all into one folder for upload
+          mkdir "${final_dir}/"
           for i in $subs; do
-            mv "${dir1}/$i"/* "${dir2}/"
+            mv "${download_dir}/$i"/* "${final_dir}/"
           done
 
       - name: Upload reports to codeclimate
