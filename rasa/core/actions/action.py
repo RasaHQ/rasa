@@ -1081,7 +1081,7 @@ class ActionExtractSlots(Action):
                 elif should_fill_text_slot:
                     value = [tracker.latest_message.text]
                 elif should_fill_custom_slot:
-                    custom_evts = self._execute_custom_action(
+                    custom_evts = await self._execute_custom_action(
                         mapping, output_channel, nlg, tracker, domain
                     )
                     slot_events.extend(custom_evts)
