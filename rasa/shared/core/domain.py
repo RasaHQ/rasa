@@ -1885,21 +1885,19 @@ class SlotMapping(Enum):
 
     @staticmethod
     def entity_is_desired(
-        mapping: Dict[Text, Any],
-        extracted_entities: List[Dict],
-        tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
     ) -> bool:
         """Checks whether slot should be filled by an entity in the input or not.
 
         Args:
             mapping: Slot mapping.
-            extracted_entities: List of entities extracted from last user message.
             tracker: The tracker.
 
         Returns:
             True, if slot should be filled, false otherwise.
         """
         slot_fulfils_entity_mapping = False
+        extracted_entities = tracker.latest_message.entities
 
         for entity in extracted_entities:
             if (

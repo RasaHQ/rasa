@@ -169,55 +169,6 @@ class FormAction(LoopAction):
         mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
         return mapping_as_string in self._unique_entity_mappings
 
-    def entity_is_desired(
-        self,
-        slot_mapping: Dict[Text, Any],
-        slot: Text,
-        entity_type_of_slot_to_fill: Optional[Text],
-        tracker: DialogueStateTracker,
-        domain: Domain,
-    ) -> bool:
-        """Check whether slot should be filled by an entity in the input or not.
-
-        Args:
-            slot_mapping: Slot mapping.
-            slot: The slot to be filled.
-            entity_type_of_slot_to_fill: Entity type of slot to fill.
-            tracker: The tracker.
-            domain: The domain.
-
-        Returns:
-            True, if slot should be filled, false otherwise.
-        """
-        # slot name is equal to the entity type
-        slot_equals_entity = slot == slot_mapping.get("entity")
-        # if entity mapping is unique, it means that an entity always sets
-        # a certain slot, so try to extract this slot if entity matches slot mapping
-        entity_mapping_is_unique = self._entity_mapping_is_unique(slot_mapping, domain)
-
-        # use the custom slot mapping 'from_entity' defined by the user to check
-        # whether we can fill a slot with an entity (only if a role or a group label
-        # is set)
-        if (
-            slot_mapping.get("role") is None and slot_mapping.get("group") is None
-        ) or entity_type_of_slot_to_fill != slot_mapping.get("entity"):
-            slot_fulfils_entity_mapping = False
-        else:
-            matching_values = self.get_entity_value_for_slot(
-                slot_mapping.get("entity"),
-                tracker,
-                slot,
-                slot_mapping.get("role"),
-                slot_mapping.get("group"),
-            )
-            slot_fulfils_entity_mapping = matching_values is not None
-
-        return (
-            slot_equals_entity
-            or entity_mapping_is_unique
-            or slot_fulfils_entity_mapping
-        )
-
     @staticmethod
     def get_entity_value_for_slot(
         name: Text,
@@ -263,10 +214,6 @@ class FormAction(LoopAction):
         """
         slot_to_fill = self.get_slot_to_fill(tracker)
 
-        entity_type_of_slot_to_fill = self._get_entity_type_of_slot_to_fill(
-            slot_to_fill, domain
-        )
-
         slot_values = {}
         for slot in self.required_slots(domain):
             # look for other slots
@@ -276,16 +223,13 @@ class FormAction(LoopAction):
 
                 for slot_mapping in slot_mappings:
                     # check whether the slot should be filled by an entity in the input
+                    entity_is_desired = SlotMapping.entity_is_desired(
+                        slot_mapping, tracker
+                    ) and self._entity_mapping_is_unique(slot_mapping, domain)
                     should_fill_entity_slot = (
                         slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
                         and SlotMapping.intent_is_desired(slot_mapping, tracker, domain)
-                        and self.entity_is_desired(
-                            slot_mapping,
-                            slot,
-                            entity_type_of_slot_to_fill,
-                            tracker,
-                            domain,
-                        )
+                        and entity_is_desired
                     )
                     # check whether the slot should be
                     # filled from trigger intent mapping
@@ -736,27 +680,6 @@ class FormAction(LoopAction):
         )
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:
+        """Deactivates form."""
         logger.debug(f"Deactivating the form '{self.name()}'")
         return []
-
-    def _get_entity_type_of_slot_to_fill(
-        self, slot_to_fill: Text, domain: "Domain"
-    ) -> Optional[Text]:
-        if not slot_to_fill:
-            return None
-
-        mappings = self.get_mappings_for_slot(slot_to_fill, domain)
-        mappings = [
-            m for m in mappings if m.get("type") == str(SlotMapping.FROM_ENTITY)
-        ]
-
-        if not mappings:
-            return None
-
-        entity_type = mappings[0].get("entity")
-
-        for i in range(1, len(mappings)):
-            if entity_type != mappings[i].get("entity"):
-                return None
-
-        return entity_type

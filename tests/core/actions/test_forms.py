@@ -1399,6 +1399,7 @@ def test_extract_other_slots_with_entity(
     tracker = DialogueStateTracker.from_events(
         "default",
         [
+            ActiveLoop("some_form"),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "bla", intent={"name": intent, "confidence": 1.0}, entities=entities

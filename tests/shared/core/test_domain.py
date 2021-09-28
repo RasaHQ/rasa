@@ -1670,11 +1670,7 @@ def test_slot_mapping_entity_is_desired(slot_name, expected):
     )
     tracker.update(event, domain)
     slot_mappings = domain.as_dict().get("slots").get(slot_name).get("mappings")
-    extracted_entities = tracker.latest_message.entities
-    assert (
-        SlotMapping.entity_is_desired(slot_mappings[0], extracted_entities, tracker)
-        is expected
-    )
+    assert SlotMapping.entity_is_desired(slot_mappings[0], tracker) is expected
 
 
 def test_slot_mapping_intent_is_desired(domain: Domain):

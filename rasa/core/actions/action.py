@@ -975,7 +975,6 @@ class ActionExtractSlots(Action):
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         slot_events: List[Event] = []
-        extracted_entities = tracker.latest_message.entities
 
         default_slots = {
             rasa.shared.core.constants.REQUESTED_SLOT,
@@ -1013,9 +1012,7 @@ class ActionExtractSlots(Action):
                 should_fill_entity_slot = (
                     mapping["type"] == str(SlotMapping.FROM_ENTITY)
                     and intent_is_desired
-                    and SlotMapping.entity_is_desired(
-                        mapping, extracted_entities, tracker
-                    )
+                    and SlotMapping.entity_is_desired(mapping, tracker,)
                 )
 
                 should_fill_intent_slot = (
