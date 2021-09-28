@@ -1024,6 +1024,7 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     loaded = Interpreter.load(persisted_path, component_builder, new_config=_config,)
     assert loaded.pipeline
     assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
+    
     if should_raise_exception:
         with pytest.raises(Exception) as exec_info:
             (_, trained, _) = await rasa.nlu.train.train(
