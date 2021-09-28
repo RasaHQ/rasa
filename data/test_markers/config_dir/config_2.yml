@@ -1,0 +1,7 @@
+markers:
+  - marker: all_required_data_gathered
+    condition:
+      - slot_filled:
+        - travel_flight_class
+        - travel_departure
+        - travel_destination
