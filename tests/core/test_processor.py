@@ -1437,7 +1437,7 @@ async def test_processor_does_not_run_action_extract_slots_if_active_loop(
 
     assert all(
         [
-            f"Default action '{ACTION_EXTRACT_SLOTS}' was not executed" not in m
+            f"Default action '{ACTION_EXTRACT_SLOTS}' was executed," not in m
             for m in caplog.messages
         ]
     )

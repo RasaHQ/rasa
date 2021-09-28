@@ -126,7 +126,7 @@ class MessageProcessor:
             events_as_str = "\n".join([str(e) for e in extraction_events])
             logger.debug(
                 f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
-                f"the following events were logged: {events_as_str}"
+                f"resulting in {len(extraction_events)} events: {events_as_str}"
             )
 
         await self._predict_and_execute_next_action(message.output_channel, tracker)
