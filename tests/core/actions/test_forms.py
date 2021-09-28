@@ -1614,6 +1614,7 @@ def test_ignored_intents_with_slot_type_from_entity(
     tracker = DialogueStateTracker.from_events(
         "default",
         [
+            ActiveLoop("some_form"),
             SlotSet(REQUESTED_SLOT, "some_slot"),
             UserUttered(
                 "hello",

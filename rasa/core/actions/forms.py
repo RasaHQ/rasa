@@ -1,4 +1,4 @@
-from typing import Text, List, Optional, Union, Any, Dict, Tuple, Set
+from typing import Text, List, Optional, Union, Any, Dict, Set
 import logging
 import json
 
@@ -13,10 +13,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.constants import (
-    UTTER_PREFIX,
-    IGNORED_INTENTS,
-)
+from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.events import (
     Event,
     SlotSet,
@@ -82,7 +79,10 @@ class FormAction(LoopAction):
             - role if it is not None
             - group if it is not None
         """
-        intent, not_intent = self._list_intents(intent, not_intent)
+        intent, not_intent = (
+            SlotMapping.to_list(intent),
+            SlotMapping.to_list(not_intent),
+        )
 
         return {
             "type": str(SlotMapping.FROM_ENTITY),
@@ -168,44 +168,6 @@ class FormAction(LoopAction):
 
         mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
         return mapping_as_string in self._unique_entity_mappings
-
-    def get_ignored_intents(self, domain: Domain) -> List[Text]:
-        """Returns a list of ignored intents.
-
-        Args:
-            domain: The current model domain.
-
-        Returns:
-            The value/s found in `ignored_intents` parameter in the `domain.yml`
-            (under forms).
-        """
-        ignored_intents = domain.forms[self.name()].get(IGNORED_INTENTS, [])
-        if not isinstance(ignored_intents, list):
-            ignored_intents = [ignored_intents]
-
-        return ignored_intents
-
-    def intent_is_desired(
-        self,
-        requested_slot_mapping: Dict[Text, Any],
-        tracker: "DialogueStateTracker",
-        domain: Domain,
-    ) -> bool:
-        """Check whether user intent matches intent conditions."""
-        mapping_intents = FormAction._to_list(requested_slot_mapping.get("intent", []))
-        mapping_not_intents = FormAction._to_list(
-            requested_slot_mapping.get("not_intent", [])
-        )
-
-        mapping_not_intents = set(
-            mapping_not_intents + self.get_ignored_intents(domain)
-        )
-
-        intent = tracker.latest_message.intent.get("name")
-
-        intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
-
-        return intent_not_blocked or intent in mapping_intents
 
     def entity_is_desired(
         self,
@@ -316,7 +278,7 @@ class FormAction(LoopAction):
                     # check whether the slot should be filled by an entity in the input
                     should_fill_entity_slot = (
                         slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
-                        and self.intent_is_desired(slot_mapping, tracker, domain)
+                        and SlotMapping.intent_is_desired(slot_mapping, tracker, domain)
                         and self.entity_is_desired(
                             slot_mapping,
                             slot,
@@ -330,7 +292,7 @@ class FormAction(LoopAction):
                     should_fill_trigger_slot = (
                         tracker.active_loop_name != self.name()
                         and slot_mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
-                        and self.intent_is_desired(slot_mapping, tracker, domain)
+                        and SlotMapping.intent_is_desired(slot_mapping, tracker, domain)
                     )
                     if should_fill_entity_slot:
                         value = self.get_entity_value_for_slot(
@@ -390,7 +352,7 @@ class FormAction(LoopAction):
         for requested_slot_mapping in requested_slot_mappings:
             logger.debug(f"Got mapping '{requested_slot_mapping}'")
 
-            if self.intent_is_desired(requested_slot_mapping, tracker, domain):
+            if SlotMapping.intent_is_desired(requested_slot_mapping, tracker, domain):
                 mapping_type = requested_slot_mapping["type"]
                 if mapping_type == str(SlotMapping.FROM_ENTITY):
                     value = self.get_entity_value_for_slot(
@@ -647,31 +609,6 @@ class FormAction(LoopAction):
         return await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain
         )
-
-    # helpers
-    @staticmethod
-    def _to_list(x: Optional[Any]) -> List[Any]:
-        """Convert object to a list if it isn't."""
-        if x is None:
-            x = []
-        elif not isinstance(x, list):
-            x = [x]
-
-        return x
-
-    def _list_intents(
-        self,
-        intent: Optional[Union[Text, List[Text]]] = None,
-        not_intent: Optional[Union[Text, List[Text]]] = None,
-    ) -> Tuple[List[Text], List[Text]]:
-        """Check provided intent and not_intent."""
-        if intent and not_intent:
-            raise ValueError(
-                f"Providing  both intent '{intent}' and not_intent '{not_intent}' "
-                f"is not supported."
-            )
-
-        return self._to_list(intent), self._to_list(not_intent)
 
     async def _validate_if_required(
         self,
