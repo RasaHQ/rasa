@@ -7,11 +7,13 @@ from typing import (
 )
 
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
+from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
+from rasa.shared.data import is_likely_yaml_file
+from ruamel.yaml.parser import ParserError
 
 
 class InvalidMarkersConfig(RasaException):
@@ -28,7 +30,7 @@ class MarkerConfig:
     @classmethod
     def empty_config(cls) -> Dict:
         """Returns an empty config file."""
-        return {}  # currently represented as a simple dict. Might change later.
+        return {}
 
     @classmethod
     def load_config_from_path(cls, path: Union[Text, Path]) -> Dict:
@@ -51,30 +53,36 @@ class MarkerConfig:
         return cls.from_yaml(rasa.shared.utils.io.read_file(path), path)
 
     @classmethod
-    def from_yaml(cls, yaml: Text, original_filename: Text = "") -> Dict:
+    def from_yaml(cls, yaml: Text, filename: Text = "") -> Dict:
         """Loads the config from YAML text after validating it."""
         try:
             # TODO implement and call the yaml schema validation
             #  rasa.shared.utils.validation.validate_yaml_schema(yaml,
             #  MAKERS_SCHEMA_FILE)
 
-            config = rasa.shared.utils.io.read_yaml(yaml)
-            return config
-        except YamlException as e:
-            e.filename = original_filename
+            return rasa.shared.utils.io.read_yaml(yaml)
+        except ParserError as e:
+            e.filename = filename
+            rasa.shared.utils.io.raise_warning(
+                message=f"The file {filename} could not be loaded "
+                f"as a markers config file. "
+                f"You can use https://yamlchecker.com/ to validate "
+                f"the YAML syntax of the file.",
+                category=UserWarning,
+            )
             raise e
 
     @classmethod
     def from_directory(cls, path: Text) -> Dict:
         """Loads and appends multiple configs from a directory tree."""
-        config = cls.empty_config()
+        combined_configs = cls.empty_config()
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
-                if cls.is_markers_config_file(full_path):
-                    other = cls.from_file(full_path)
-                    config = cls._merge(config, other)
-        return config
+                if is_likely_yaml_file(full_path):
+                    config = cls.from_file(full_path)
+                    combined_configs = cls._merge(combined_configs, config)
+        return combined_configs
 
     @classmethod
     def _merge(cls, config_a: Dict, config_b: Dict) -> Dict:
@@ -85,36 +93,3 @@ class MarkerConfig:
             return copy_config_a
         else:
             return config_b
-
-    @staticmethod
-    def is_markers_config_file(filename: Text) -> bool:
-        """Checks whether the given file path is a config file.
-
-        Args:
-            filename: Path of the file which should be checked.
-
-        Returns:
-            `True` if it's a config file, otherwise `False`.
-
-        Raises:
-            YamlException: raised when the file has a YAML extension but
-                cannot be read / parsed.
-        """
-        from rasa.shared.data import is_likely_yaml_file
-
-        if not is_likely_yaml_file(filename):
-            return False
-
-        try:
-            # check if the file can be read as a yaml file.
-            rasa.shared.utils.io.read_yaml_file(filename)
-        except (RasaException, YamlSyntaxException):
-            rasa.shared.utils.io.raise_warning(
-                message=f"The file {filename} could not be loaded "
-                f"as a markers config file. "
-                f"You can use https://yamlchecker.com/ to validate "
-                f"the YAML syntax of the file.",
-                category=UserWarning,
-            )
-            return False
-        return True

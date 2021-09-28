@@ -1,6 +1,8 @@
 from rasa.core.evaluation.markers import MarkerConfig, InvalidMarkersConfig
+
 import pytest
 from typing import Text
+from ruamel.yaml.parser import ParserError
 
 
 @pytest.fixture
@@ -90,8 +92,14 @@ def test_from_yaml(simple_marker_config_json):
     assert yaml_as_dict == simple_marker_config_json
 
 
+def test_invalid_yaml_exceptions(invalid_markers_config: Text):
+    """Checks that an exception is raised when an invalid config file is supplied"""
+    with pytest.raises(ParserError):
+        MarkerConfig.from_file(invalid_markers_config)
+
+
 def test_load_invalid_path():
-    """Checks that the correct exception is raised when an invalid path is supplied"""
+    """Checks that an exception is raised when an invalid path is supplied"""
     with pytest.raises(InvalidMarkersConfig):
         MarkerConfig.load_config_from_path("not a path")
 

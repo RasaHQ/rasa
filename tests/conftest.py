@@ -176,6 +176,11 @@ def multi_marker_config_folder() -> Text:
     return "data/test_markers/config_dir"
 
 
+@pytest.fixture(scope="session")
+def invalid_markers_config() -> Text:
+    return "data/test_markers/invalid.yml"
+
+
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
