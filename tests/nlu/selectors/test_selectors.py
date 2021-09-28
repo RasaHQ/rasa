@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from typing import List, Dict, Text, Any, Optional, Tuple, Union
+from typing import List, Dict, Text, Any, Optional, Union
 from unittest.mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -58,10 +58,12 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from tests.nlu.classifiers.test_diet_classifier import (
-    FeatureGenerator,
-    FeaturizerDescription,
     SimpleIntentClassificationTestCaseWithEntities,
     as_pipeline,
+)
+from tests.nlu.featurizers.dummy_feature_generation import (
+    FeatureGenerator,
+    FeaturizerDescription,
 )
 
 
@@ -191,7 +193,10 @@ def test_preprocess_creates_index_label_mapping(use_text_as_label, label_values)
         "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
-    FeatureGenerator.add_dense_dummy_features_to_messages(training_data.intent_examples)
+
+    FeatureGenerator().generate_features_for_all_messages(
+        training_data.intent_examples, attributes=[TEXT], add_to_messages=True,
+    )
 
     response_selector = ResponseSelector(
         component_config={"use_text_as_label": use_text_as_label}
@@ -225,7 +230,9 @@ def test_preprocess_resolve_intent_response_key_from_label(
     training_data = training_data.merge(training_data_responses)
 
     # add dummy features
-    FeatureGenerator.add_dense_dummy_features_to_messages(training_data)
+    FeatureGenerator().generate_features_for_all_messages(
+        training_data.training_examples, attributes=[TEXT], add_to_messages=True
+    )
 
     response_selector = ResponseSelector(
         component_config={"use_text_as_label": train_on_text}
@@ -845,31 +852,31 @@ class SimpleSelectorTestCase(FeatureGenerator):
         # Create messages with intent response keys and/or text
         # Note: we prepend "A", "B", "C" to test the lexicographical sorting
         # that is supposed to happen.
-        response_key_to_text = {
-            "intent1/C-faq": "C Just one response.",
-            "intent2/B-bielefeld_exists": "B does bielfeld exist?",
-            "intent2/A-bielefeld_does_not": "A bielefeld doesn't exist, does it?",
-        }
+        response_key_to_text = [
+            ("intent1/C-faq", "C Just one response."),
+            ("intent2/B-bielefeld_exists", "B does bielfeld exist?"),
+            ("intent2/A-bielefeld_does_not", "A bielefeld doesn't exist, does it?"),
+        ]
         messages_with_responses = []
-        for i in range(3):
-            # ... 3 of each kind:
-            # - with intent_response_key and response
-            # - with intent_response_key only
-            # - with response only
-            for intent_response_key, response in response_key_to_text.items():
+        for idx, (intent_response_key, response) in enumerate(response_key_to_text):
+            # Generate 3 messages per `response_key_to_text` item
+            # 1. with intent_response_key and response
+            # 2. with intent_response_key only
+            # 3. with response only
+            for i in range(3):
                 new_message = Message()
                 if i in [0, 1]:
                     new_message.set(INTENT_RESPONSE_KEY, intent_response_key)
                 if i in [0, 2]:
                     new_message.set(RESPONSE, response)
                 new_message.set(INTENT, intent_response_key.split("/")[0])
-                new_message.set(TEXT, "non-empty-text")
+                new_message.set(TEXT, f"seed-for-pseudo-random-feat-{idx}-{i}")
                 # this *is* important because messages without
                 new_message.set("other", "an-irrelevant-attribute")
                 messages_with_responses.append(new_message)
 
         # Add messages and generate expected outputs
-        all_messages = messages_not_used_for_training + messages_with_responses
+        all_messages = messages_with_responses + messages_not_used_for_training
 
         # Add some features to all messages
         attributes_with_features = [TEXT]
@@ -898,7 +905,7 @@ class SimpleSelectorTestCase(FeatureGenerator):
         [True, False],
         ["intent1", "intent2", None],
         [True, False],
-        [["1", "2"], None],
+        [["2", "1"], None],
         [0, 1],
     ),
 )
@@ -976,6 +983,7 @@ def test_preprocess_train_data_and_create_data_for_prediction(
     response_C = "C Just one response."
     key_1C = "intent1/C-faq"
     idx_to_label = model.index_label_id_mapping
+
     if retrieval_intent == "intent1":
         if model.label_attribute == RESPONSE:
             assert idx_to_label == {0: response_C}
@@ -1001,82 +1009,139 @@ def test_preprocess_train_data_and_create_data_for_prediction(
     )
 
     # Compare with expected results
-    for model_data, training in [
-        (model_data_for_training, True),
-        (model_data_for_prediction, False),
+    for data, training, only_label_data in [
+        (model_data_for_training, True, False),
+        (model._label_data, True, True),
+        (model_data_for_prediction, False, False),
     ]:
 
-        # Response Selector will filter the training data...
+        # Focus on the appropriate messages (via `relevant_indices`) for the
+        # kind of `data` that we inspect.
+        # Note that in the case of `only_label_data` case, the given `data` has
+        # been sorted according to the (lexicographically) sorted labels and that
+        # it contains exactly one example per label.
         if training:
-            if retrieval_intent is not None:
-                relevant_indices = [
-                    idx
-                    for idx, message in enumerate(all_messages)
-                    if message.get(INTENT) == retrieval_intent
-                    and model.label_attribute in message.data
-                ]
-                # Observe that the following works for both possible labels
-                # (response and intent_response_key)
-                if retrieval_intent == "intent1":
-                    assert len(relevant_indices) == 2
+            # Response selector will only use the messages with the right retrieval
+            # intent
+            if retrieval_intent == "intent1":
+                expected_ids = [0, 0] if not only_label_data else [0]
+                expected_mhot = [[[1]], [[1]]]
+                if model.label_attribute == INTENT_RESPONSE_KEY:
+                    relevant_indices = [0, 1] if not only_label_data else [1]
                 else:
-                    assert len(relevant_indices) == 4
-
+                    relevant_indices = [0, 2] if not only_label_data else [2]
+            elif retrieval_intent == "intent2":
+                expected_ids = [1, 1, 0, 0] if not only_label_data else [0, 1]
+                onehot_A = [[1.0, 0.0]]
+                onehot_B = [[0.0, 1.0]]
+                if not only_label_data:
+                    expected_mhot = [onehot_B] * 2 + [onehot_A] * 2
+                else:
+                    expected_mhot = [onehot_A, onehot_B]
+                if model.label_attribute == INTENT_RESPONSE_KEY:
+                    relevant_indices = [3, 4, 6, 7] if not only_label_data else [7, 4]
+                else:
+                    relevant_indices = [3, 5, 6, 8] if not only_label_data else [8, 5]
             else:
-                relevant_indices = [
+                if model.label_attribute == INTENT_RESPONSE_KEY:
+                    # In this case, 'intent1/C*' is the first key in the list of
+                    # lexicographically sorted intent response keys, ...
+                    expected_ids = (
+                        [0, 0, 2, 2, 1, 1] if not only_label_data else [0, 1, 2]
+                    )
+                    onehot_1C = [[1.0, 0.0, 0.0]]
+                    onehot_2A = [[0.0, 1.0, 0.0]]
+                    onehot_2B = [[0.0, 0.0, 1.0]]
+                    if not only_label_data:
+                        expected_mhot = (
+                            [onehot_1C] * 2 + [onehot_2B] * 2 + [onehot_2A] * 2
+                        )
+                        relevant_indices = [0, 1, 3, 4, 6, 7]
+                    else:
+                        expected_mhot = [onehot_1C, onehot_2A, onehot_2B]
+                        relevant_indices = [0, 7, 4]
+                else:
+                    # ... while in this case, 'C*' is still the last item in the
+                    # lexicographically sorted list of responses
+                    expected_ids = (
+                        [2, 2, 1, 1, 0, 0] if not only_label_data else [0, 1, 2]
+                    )
+                    onehot_1C = [[0.0, 0.0, 1.0]]
+                    onehot_2A = [[1.0, 0.0, 0.0]]
+                    onehot_2B = [[0.0, 1.0, 0.0]]
+                    if not only_label_data:
+                        expected_mhot = (
+                            [onehot_1C] * 2 + [onehot_2B] * 2 + [onehot_2A] * 2
+                        )
+                        relevant_indices = [0, 2, 3, 5, 6, 8]
+                    else:
+                        expected_mhot = [onehot_2A, onehot_2B, onehot_1C]
+                        relevant_indices = [6, 3, 0]
+            # check our test setup :)
+            if not only_label_data:
+                assert set(relevant_indices) == set(
                     idx
                     for idx, message in enumerate(all_messages)
-                    if model.label_attribute in message.data
-                ]
-                assert len(relevant_indices) == 6  # = 2 + 4
+                    if (
+                        (retrieval_intent is None)
+                        or (
+                            retrieval_intent is not None
+                            and message.data.get("intent", None) == retrieval_intent
+                        )
+                    )
+                    and model.label_attribute in message.data
+                )
         else:
             relevant_indices = list(range(len(all_messages)))
 
         # Check size and attributes
-        assert model_data.number_of_examples() == len(relevant_indices)
-        expected_keys = {TEXT}
+        assert data.number_of_examples() == len(relevant_indices)
+        expected_keys = set()
+        if not only_label_data:
+            expected_keys.add(TEXT)
         if training:
             expected_keys.add(LABEL)
-        assert set(model_data.keys()) == expected_keys
+        assert set(data.keys()) == expected_keys
 
-        # Check subkeys for TEXT
-        if model._uses_sequence_features_for_input_text():
-            expected_text_sub_keys = {MASK, SENTENCE, SEQUENCE, SEQUENCE_LENGTH}
-        else:
-            expected_text_sub_keys = {MASK, SENTENCE}
-        assert set(model_data.get(TEXT).keys()) == expected_text_sub_keys
-        text_features = model_data.get(TEXT)
-        # - subkey: mask (this is a "turn" mask)
-        mask_features = text_features.get(MASK)
-        assert len(mask_features) == 1
-        mask = np.array(mask_features[0])  # because it's a feature array
-        assert mask.shape == (len(relevant_indices), 1, 1)
-        assert np.all(mask == 1)
-        # - subkey: sequence-length
-        if model._uses_sequence_features_for_input_text():
-            length_features = text_features.get(SEQUENCE_LENGTH)
-            assert len(length_features) == 1
-            lengths = np.array(length_features[0])  # because it's a feature array
-            assert lengths.shape == (len(relevant_indices),)
-            if training:
-                assert np.all(lengths == test_case.seq_len)
+        if not only_label_data:
+            # Check subkeys for TEXT
+            if model._uses_sequence_features_for_input_text():
+                expected_text_sub_keys = {MASK, SENTENCE, SEQUENCE, SEQUENCE_LENGTH}
             else:
-                expected_lengths = [
-                    test_case.seq_len * bool(message.get(TEXT))
-                    for message in all_messages
-                ]
-                assert np.all(lengths == expected_lengths)
-        # - subkey: sentence and, if used, sequence
-        if not model._uses_sequence_features_for_input_text():
-            # Note that the comparison allow will assert that the actual features
-            # do not contain keys that are not contained in the expected features:
-            expected_outputs[TEXT].pop(FEATURE_TYPE_SEQUENCE, None)
+                expected_text_sub_keys = {MASK, SENTENCE}
+            assert set(data.get(TEXT).keys()) == expected_text_sub_keys
+            text_features = data.get(TEXT)
+            # - subkey: mask (this is a "turn" mask)
+            mask_features = text_features.get(MASK)
+            assert len(mask_features) == 1
+            mask = np.array(mask_features[0])  # because it's a feature array
+            assert mask.shape == (len(relevant_indices), 1, 1)
+            assert np.all(mask == 1)
+            # - subkey: sequence-length
+            if model._uses_sequence_features_for_input_text():
+                length_features = text_features.get(SEQUENCE_LENGTH)
+                assert len(length_features) == 1
+                lengths = np.array(length_features[0])  # because it's a feature array
+                assert lengths.shape == (len(relevant_indices),)
+                if training:
+                    assert np.all(lengths == test_case.seq_len)
+                else:
+                    expected_lengths = [
+                        test_case.seq_len * bool(message.get(TEXT))
+                        for message in all_messages
+                    ]
+                    assert np.all(lengths == expected_lengths)
+            # - subkey: sentence and, if used, sequence
+            if not model._uses_sequence_features_for_input_text():
+                # Note that the comparison allow will assert that the actual features
+                # do not contain keys that are not contained in the expected features:
+                expected_outputs[TEXT].pop(FEATURE_TYPE_SEQUENCE, None)
 
-        test_case.compare_features_of_same_type_and_sparseness(
-            actual=text_features,
-            expected=expected_outputs[TEXT],
-            indices_of_expected=relevant_indices,
-        )
+            test_case.compare_features_of_same_type_and_sparseness(
+                actual=text_features,
+                expected=expected_outputs[TEXT],
+                indices_of_expected=relevant_indices,
+            )
 
         if training:
 
@@ -1084,78 +1149,47 @@ def test_preprocess_train_data_and_create_data_for_prediction(
             other_label = (
                 INTENT_RESPONSE_KEY if model.label_attribute == RESPONSE else RESPONSE
             )
-            assert other_label not in model_data.keys()
+            assert other_label not in data.keys()
 
             # Check subkeys for LABEL
-            expected_label_subkeys = {LABEL_SUB_KEY, MASK, SENTENCE}
+            expected_label_subkeys = {LABEL_SUB_KEY, SENTENCE}
             if input_contains_features_for_label:
                 expected_label_subkeys.update({SEQUENCE, SEQUENCE_LENGTH})
-            label_features = model_data.get(LABEL_KEY)
+            if not only_label_data:
+                expected_label_subkeys.add(MASK)
+            label_features = data.get(LABEL_KEY)
             assert set(label_features.keys()) == expected_label_subkeys
             # - subkey: ids
-            # Note that the indices are sorted in the following because we
-            # enforced the lexicographical sorting above.
-            if retrieval_intent == "intent1":
-                # "just one response"
-                expected_ids = [0, 0]
-            elif retrieval_intent == "intent2":
-                # two responses
-                expected_ids = [1, 0, 1, 0]
-            else:
-                if model.label_attribute == RESPONSE:
-                    # because responses are sorted lexicographically (decreasing)
-                    expected_ids = [2, 1, 0, 2, 1, 0]
-                else:
-                    # because intent1/C... comes before all intent2/[A|B]...
-                    expected_ids = [0, 2, 1, 0, 2, 1]
             id_features = label_features.get(IDS)
             assert len(id_features) == 1
             ids = np.array(id_features[0])
             assert ids.shape == (len(relevant_indices), 1)
             assert np.all(ids.flatten() == expected_ids)
             # - subkey: mask (this is a "turn" mask)
-            mask_features = label_features.get(MASK)
-            assert len(mask_features) == 1
-            mask = np.array(mask_features[0])
-            assert mask.shape == (len(relevant_indices), 1, 1)
-            assert np.all(mask == 1)
+            if not only_label_data:
+                mask_features = label_features.get(MASK)
+                assert len(mask_features) == 1
+                mask = np.array(mask_features[0])
+                assert mask.shape == (len(relevant_indices), 1, 1)
+                assert np.all(mask == 1)
 
             if not input_contains_features_for_label:
-
-                # we create features for LABEL on the fly if and only if no
-                # features for labels are contained in the given messages
+                # - subkey: sequence-length and sequence
                 assert SEQUENCE not in label_features
+                assert SEQUENCE_LENGTH not in label_features
+                # - subkey: sentence
                 assert len(label_features.get(SENTENCE)) == 1
                 generated_label_features = np.array(label_features.get(SENTENCE)[0])
-                if retrieval_intent == "intent1":
-                    assert np.all(generated_label_features.flatten() == [1, 1])
-                elif retrieval_intent == "intent2":
-                    onehot_A = [[1.0, 0.0]]
-                    onehot_B = [[0.0, 1.0]]
-                    assert np.all(generated_label_features == [onehot_B, onehot_A] * 2)
-                else:
-                    if model.label_attribute == RESPONSE:
-                        onehot_2A = [[1.0, 0.0, 0.0]]
-                        onehot_2B = [[0.0, 1.0, 0.0]]
-                        onehot_1C = [[0.0, 0.0, 1.0]]
-                    else:
-                        onehot_2A = [[0.0, 1.0, 0.0]]
-                        onehot_2B = [[0.0, 0.0, 1.0]]
-                        onehot_1C = [[1.0, 0.0, 0.0]]
-                    assert np.all(
-                        generated_label_features
-                        == [onehot_1C, onehot_2B, onehot_2A] * 2
-                    )
+                assert np.all(generated_label_features == expected_mhot)
 
             else:
                 # - subkey: sequence-length
-                if model._uses_sequence_features_for_input_text():
-                    length_features = label_features.get(SEQUENCE_LENGTH)
-                    assert len(length_features) == 1
-                    lengths = np.array(length_features[0])
-                    assert lengths.shape == (len(relevant_indices),)
-                    assert np.all(lengths == test_case.seq_len)
-                # - subkey: sentence and sentence
+                length_features = label_features.get(SEQUENCE_LENGTH)
+                assert len(length_features) == 1
+                lengths = np.array(length_features[0])
+                assert lengths.shape == (len(relevant_indices),)
+                assert np.all(lengths == test_case.seq_len)
+                # - subkey: sentence and sequence
                 test_case.compare_features_of_same_type_and_sparseness(
                     actual=label_features,
                     expected=expected_outputs[model.label_attribute],
