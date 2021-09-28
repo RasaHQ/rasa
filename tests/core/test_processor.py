@@ -1393,15 +1393,14 @@ async def test_processor_valid_slot_setting(form_bot_agent: Agent,):
         TemplatedNaturalLanguageGenerator(form_bot_agent.domain.responses),
     )
     message = UserMessage(
-        "Only outdoor seating, yes.",
+        "that's correct",
         CollectingOutputChannel(),
         "test",
         parse_data={"intent": {"name": "affirm"}, "entities": [],},
     )
     await processor.handle_message(message)
     tracker = processor.get_tracker("test")
-    assert tracker.get_slot("outdoor_seating") is True
-    assert tracker.get_slot("preferences") is None
+    assert SlotSet("outdoor_seating", True) in tracker.events
 
 
 async def test_processor_does_not_run_action_extract_slots_if_active_loop(
