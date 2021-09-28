@@ -1915,3 +1915,115 @@ def test_extract_requested_slot_no_matched_mapping_conditions():
 
     slot_values = form.extract_requested_slot(tracker, domain, "name")
     assert slot_values == {}
+
+
+def test_extract_other_slots_with_matched_mapping_conditions():
+    form_name = "some_form"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            """
+            intent:
+            - greet
+            - inform
+            entities:
+            - email
+            - name
+            slots:
+              name:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: name
+                  conditions:
+                  - active_loop: some_form
+                    requested_slot: email
+              email:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: email
+            forms:
+             some_form:
+               required_slots:
+                 - email
+                 - name
+            """
+        )
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActiveLoop("some_form"),
+            SlotSet(REQUESTED_SLOT, "email"),
+            UserUttered(
+                "My name is Emily.",
+                intent={"name": "inform", "confidence": 1.0},
+                entities=[{"entity": "name", "value": "Emily"},],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_other_slots(tracker, domain)
+    assert slot_values == {"name": "Emily"}
+
+
+def test_extract_other_slots_fails_no_matched_conditions():
+    form_name = "some_form"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            """
+            intent:
+            - greet
+            - inform
+            entities:
+            - email
+            - name
+            slots:
+              name:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: name
+                  conditions:
+                  - active_loop: some_form
+                    requested_slot: name
+              email:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: email
+            forms:
+             some_form:
+               required_slots:
+                 - email
+                 - name
+            """
+        )
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActiveLoop("some_form"),
+            SlotSet(REQUESTED_SLOT, "email"),
+            UserUttered(
+                "My name is Emily.",
+                intent={"name": "inform", "confidence": 1.0},
+                entities=[{"entity": "name", "value": "Emily"},],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_other_slots(tracker, domain)
+    assert slot_values == {}
