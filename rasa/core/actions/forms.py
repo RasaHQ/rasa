@@ -12,6 +12,7 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
+    ACTIVE_LOOP,
 )
 from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.events import (
@@ -205,10 +206,35 @@ class FormAction(LoopAction):
 
         return value
 
+    def _matches_mapping_conditions(
+        self, mapping: Dict[Text, Any], slot_to_fill: Optional[Text]
+    ) -> bool:
+        slot_mapping_conditions = mapping.get("conditions")
+
+        # check if found mapping conditions matches form
+        if slot_mapping_conditions:
+            for i, condition in enumerate(slot_mapping_conditions):
+                active_loop = condition.get(ACTIVE_LOOP)
+
+                if active_loop == self.name():
+                    condition_requested_slot = condition.get(REQUESTED_SLOT)
+                    if (
+                        condition_requested_slot
+                        and condition_requested_slot != slot_to_fill
+                    ):
+                        return False
+                    return True
+                else:
+                    if i == len(slot_mapping_conditions) - 1:
+                        return False
+
+        return True
+
     def extract_other_slots(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Dict[Text, Any]:
-        """Extract the values of the other slots
+        """Extract the values of the other slots.
+
         if they are set by corresponding entities from the user input
         else return `None`.
         """
@@ -222,6 +248,9 @@ class FormAction(LoopAction):
                 slot_mappings = self.get_mappings_for_slot(slot, domain)
 
                 for slot_mapping in slot_mappings:
+                    if not self._matches_mapping_conditions(slot_mapping, slot_to_fill):
+                        continue
+
                     # check whether the slot should be filled by an entity in the input
                     entity_is_desired = SlotMapping.entity_is_desired(
                         slot_mapping, tracker
@@ -287,7 +316,8 @@ class FormAction(LoopAction):
         Returns:
             a dictionary with one key being the name of the slot to fill
             and its value being the slot value, or an empty dictionary
-            if no slot value was found.
+            if no slot value was found or the slot mapping condition
+            did not match the form.
         """
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
@@ -297,6 +327,11 @@ class FormAction(LoopAction):
             logger.debug(f"Got mapping '{requested_slot_mapping}'")
 
             if SlotMapping.intent_is_desired(requested_slot_mapping, tracker, domain):
+                if not self._matches_mapping_conditions(
+                    requested_slot_mapping, slot_to_fill
+                ):
+                    continue
+
                 mapping_type = requested_slot_mapping["type"]
                 if mapping_type == str(SlotMapping.FROM_ENTITY):
                     value = self.get_entity_value_for_slot(
@@ -653,6 +688,7 @@ class FormAction(LoopAction):
         domain: "Domain",
         events_so_far: List[Event],
     ) -> bool:
+        """Checks if loop can be terminated."""
         if any(isinstance(event, ActionExecutionRejected) for event in events_so_far):
             return False
 
