@@ -295,9 +295,17 @@ jobs:
       run: pip install pytest-github-actions-annotate-failures
 
     - name: Test Code 🔍
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest') && (matrix.os == 'windows-latest' && matrix.test == 'test-nlu-predictors')
       env:
         JOBS: 1
+        PYTHONIOENCODING: "utf-8"
+      run: |
+        make ${{ matrix.test }}
+
+    - name: Test Code 🔍
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest') && !(matrix.os == 'windows-latest' && matrix.test == 'test-nlu-predictors')
+      env:
+        JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
         make ${{ matrix.test }}
