@@ -88,7 +88,7 @@ jobs:
     name: Build Docs
     runs-on: ubuntu-latest
     needs: [ evaluate_release_tag ]
-    if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.check_tag == 'true'   # don't run this for main branches of forks, would fail anyways
+    if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.build_docs == 'true'   # don't run this for main branches of forks, would fail anyways
 
     steps:
     - name: Checkout git repository 🕝
