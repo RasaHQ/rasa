@@ -297,7 +297,7 @@ jobs:
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest') && (matrix.os == 'windows-latest' && matrix.test == 'test-nlu-predictors')
       env:
-        JOBS: 1
+        JOBS: 2
         PYTHONIOENCODING: "utf-8"
       run: |
         make ${{ matrix.test }}
@@ -309,10 +309,6 @@ jobs:
         PYTHONIOENCODING: "utf-8"
       run: |
         make ${{ matrix.test }}
-
-    - name: Setup tmate session
-      if: failure()
-      uses: mxschmitt/action-tmate@v3
 
     - name: Send Coverage Report 📊
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
