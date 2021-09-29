@@ -51,11 +51,17 @@ class MarkerTrackerLoader:
 
         self.strategy = MarkerTrackerLoader._STRATEGY_MAP[strategy]
 
-        if strategy != "all" and not count:
-            raise
+        if not count:
+            if strategy != "all":
+                raise  # Exception
+            else:
+                pass  # Raise warning - redundant parameter
 
-        if strategy == "sample" and seed:
-            random.seed(seed)
+        if seed:
+            if strategy == "sample":
+                random.seed(seed)
+            else:
+                pass  # Warning - redundant parameter
 
     # Not super happy with this - is it sufficient to pull out to optionals or do we unwrap
     # If we unwrap, do we need to make up the numbers
