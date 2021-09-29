@@ -94,7 +94,7 @@ def test_from_yaml(simple_marker_config_json):
     assert yaml_as_dict == simple_marker_config_json
 
 
-def test_invalid_yaml_exceptions(invalid_markers_config: Text):
+def test_invalid_yaml_exceptions(invalid_markers_config):
     """Checks that an exception is raised when an invalid config file is supplied"""
     with pytest.raises(ParserError):
         MarkerConfig.from_file(invalid_markers_config)
@@ -106,15 +106,15 @@ def test_load_invalid_path():
         MarkerConfig.load_config_from_path("not a path")
 
 
-def test_load_valid_file(simple_marker_config: Text, simple_marker_config_json):
+def test_load_valid_file(simple_markers_config, simple_marker_config_json):
     """Tests the single config loader"""
-    yaml_as_dict = MarkerConfig.load_config_from_path(simple_marker_config)
+    yaml_as_dict = MarkerConfig.load_config_from_path(simple_markers_config)
     assert yaml_as_dict == simple_marker_config_json
 
 
-def test_load_valid_path(multi_marker_config_folder, multi_marker_config_json):
+def test_load_valid_path(markers_config_folder, multi_marker_config_json):
     """Tests the config folder loading"""
-    yaml_as_dict = MarkerConfig.load_config_from_path(multi_marker_config_folder)
+    yaml_as_dict = MarkerConfig.load_config_from_path(markers_config_folder)
     # check that the two configs contain the same entries.
     for m in yaml_as_dict["markers"]:
         assert m in multi_marker_config_json["markers"]
@@ -124,6 +124,11 @@ def test_load_valid_path(multi_marker_config_folder, multi_marker_config_json):
 
 def test_valid_config(simple_marker_config_json):
     assert MarkerConfig._validate_config(simple_marker_config_json) is True
+
+
+def test_valid_config_operators(markers_config_operators):
+    config = MarkerConfig.load_config_from_path(markers_config_operators)
+    assert MarkerConfig._validate_config(config) is True
 
 
 def test_config_missing_required_top_level_markers_label():

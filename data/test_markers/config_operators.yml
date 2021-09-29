@@ -37,4 +37,4 @@ markers:
       - action_executed:
         - requested_slot_travel_departure
       - action_executed:
-       - requested_slot_travel_destination
+        - requested_slot_travel_destination
