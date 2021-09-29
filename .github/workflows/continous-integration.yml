@@ -294,7 +294,12 @@ jobs:
       # (tests will still run in other envs, they will just not create annotations)
       run: pip install pytest-github-actions-annotate-failures
 
-    - name: Test Code 🔍
+    - name: Test Code 🔍 (monothread)
+      # This is a temporary workaround for OOM on Windows caused by increased memory
+      # consumption associated with the upgrade of our tensorflow dependency
+      # see https://github.com/RasaHQ/rasa/issues/9734 for more information.
+      # Once the memory issues have been addressed, all configurations should be run on
+      # multiple threads
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest') && (matrix.os == 'windows-latest' && matrix.test == 'test-nlu-predictors')
       env:
         JOBS: 1
@@ -302,7 +307,7 @@ jobs:
       run: |
         make ${{ matrix.test }}
 
-    - name: Test Code 🔍
+    - name: Test Code 🔍 (multithread)
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest') && !(matrix.os == 'windows-latest' && matrix.test == 'test-nlu-predictors')
       env:
         JOBS: 2
