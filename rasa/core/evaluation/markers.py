@@ -7,7 +7,7 @@ from typing import (
 )
 from ruamel.yaml.parser import ParserError
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, YamlSyntaxException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -57,19 +57,17 @@ class MarkerConfig:
         """Loads the config from YAML text after validating it."""
         try:
             config = rasa.shared.utils.io.read_yaml(yaml)
-            cls._validate_config(config)
+            cls._validate_config(config, filename)
             return config
 
         except ParserError as e:
             e.filename = filename
-            rasa.shared.utils.io.raise_warning(
-                message=f"The file {filename} could not be loaded "
+            raise YamlSyntaxException(
+                f"The file {filename} could not be loaded "
                 f"as a markers config file. "
                 f"You can use https://yamlchecker.com/ to validate "
-                f"the YAML syntax of the file.",
-                category=UserWarning,
+                f"the YAML syntax of the file."
             )
-            raise e
 
     @classmethod
     def from_directory(cls, path: Text) -> Dict:
@@ -100,7 +98,7 @@ class MarkerConfig:
         from jsonschema import ValidationError
 
         try:
-            validate(config, MARKERS_SCHEMA)
+            validate(config, cls.config_format_spec())
             return True
         except ValidationError as e:
             e.message += (

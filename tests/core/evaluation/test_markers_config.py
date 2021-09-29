@@ -1,9 +1,7 @@
-from rasa.core.evaluation.markers import MarkerConfig, InvalidMarkersConfig
-
 import pytest
-from ruamel.yaml.parser import ParserError
-
 from jsonschema import ValidationError
+from rasa.core.evaluation.markers import MarkerConfig, InvalidMarkersConfig
+from rasa.shared.exceptions import YamlSyntaxException
 
 
 @pytest.fixture
@@ -95,7 +93,7 @@ def test_from_yaml(simple_marker_config_json):
 
 def test_invalid_yaml_exceptions(invalid_markers_config):
     """Checks that an exception is raised when an invalid config file is supplied"""
-    with pytest.raises(ParserError):
+    with pytest.raises(YamlSyntaxException):
         MarkerConfig.from_file(invalid_markers_config)
 
 
