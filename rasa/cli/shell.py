@@ -7,6 +7,7 @@ from typing import List
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
+from rasa.model import get_latest_model
 from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
 
@@ -58,9 +59,9 @@ def add_subparser(
 
 
 def shell_nlu(args: argparse.Namespace) -> None:
+    """Talk with an NLU only bot though the command line."""
     from rasa.cli.utils import get_validated_path
     from rasa.shared.constants import DEFAULT_MODELS_PATH
-    from rasa.model import get_model, get_model_subdirectories
     import rasa.nlu.run
 
     args.connector = "cmdline"
@@ -68,7 +69,7 @@ def shell_nlu(args: argparse.Namespace) -> None:
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     try:
-        model_path = get_model(model)
+        model = get_latest_model(model)
     except ModelNotFound:
         print_error(
             "No model found. Train a model before running the "
@@ -76,30 +77,21 @@ def shell_nlu(args: argparse.Namespace) -> None:
         )
         return
 
-    _, nlu_model = get_model_subdirectories(model_path)
-
-    if not nlu_model:
-        print_error(
-            "No NLU model found. Train a model before running the "
-            "server using `rasa train nlu`."
-        )
-        return
-
     telemetry.track_shell_started("nlu")
-    rasa.nlu.run.run_cmdline(nlu_model)
+    rasa.nlu.run.run_cmdline(model)
 
 
 def shell(args: argparse.Namespace) -> None:
+    """Talk with a bot though the command line."""
     from rasa.cli.utils import get_validated_path
     from rasa.shared.constants import DEFAULT_MODELS_PATH
-    from rasa.model import get_model, get_model_subdirectories
 
     args.connector = "cmdline"
 
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     try:
-        model_path = get_model(model)
+        model = get_latest_model(model)
     except ModelNotFound:
         print_error(
             "No model found. Train a model before running the "
@@ -107,14 +99,13 @@ def shell(args: argparse.Namespace) -> None:
         )
         return
 
-    core_model, nlu_model = get_model_subdirectories(model_path)
-
-    if not core_model:
+    # TODO: Know what type of model it is?
+    if not True:
         import rasa.nlu.run
 
         telemetry.track_shell_started("nlu")
 
-        rasa.nlu.run.run_cmdline(nlu_model)
+        rasa.nlu.run.run_cmdline(model)
     else:
         import rasa.cli.run
 

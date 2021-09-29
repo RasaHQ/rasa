@@ -31,7 +31,7 @@ SpacyNLP = rasa.nlu.utils._spacy_utils.SpacyNLP
 
 @dataclasses.dataclass
 class SpacyModel:
-    """Wraps `SpacyModelProvider` output to make it fingerprintable."""
+    """Wraps `SpacyNLPGraphComponent` output to make it fingerprintable."""
 
     model: Language
     model_name: Text
@@ -59,7 +59,7 @@ class SpacyNLPGraphComponent(GraphComponent):
     """
 
     def __init__(self, model: SpacyModel) -> None:
-        """Initializes a `SpacyModelProvider`."""
+        """Initializes a `SpacyNLPGraphComponent`."""
         self._model = model
 
     @staticmethod

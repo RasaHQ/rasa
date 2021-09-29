@@ -359,16 +359,9 @@ def test_retrieve_via_module_path():
 
 def test_retrieve_via_invalid_module_path():
     with pytest.raises(ImportError):
+        path = "rasa.core.policies.ted_policy.TEDPolicyGraphComponent1000"
         DefaultV1Recipe().schemas_for_config(
-            {
-                "policies": [
-                    {
-                        "name": "rasa.core.policies.ted_policy.TEDPolicyGraphComponent1000"
-                    }
-                ]
-            },
-            {},
-            TrainingType.CORE,
+            {"policies": [{"name": path}]}, {}, TrainingType.CORE,
         )
 
 

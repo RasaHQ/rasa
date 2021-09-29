@@ -522,7 +522,7 @@ def test_model_finetuning(
 @pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning_core(
     tmp_path: Path,
-    trained_moodbot_path: Text,
+    trained_moodbot_core_path: Text,
     use_latest_model: bool,
     tmp_path_factory: TempPathFactory,
 ):
@@ -530,7 +530,7 @@ def test_model_finetuning_core(
     output = tmp_path / "models"
 
     if use_latest_model:
-        trained_moodbot_path = str(Path(trained_moodbot_path).parent)
+        trained_moodbot_core_path = str(Path(trained_moodbot_core_path).parent)
 
     # Typically models will be fine-tuned with a smaller number of epochs than training
     # from scratch.
@@ -554,7 +554,7 @@ def test_model_finetuning_core(
         str(new_config_path),
         str(new_stories_path),
         output=str(output),
-        model_to_finetune=trained_moodbot_path,
+        model_to_finetune=trained_moodbot_core_path,
         finetuning_epoch_fraction=0.2,
     )
 
@@ -567,7 +567,7 @@ def test_model_finetuning_core(
 def test_model_finetuning_core_with_default_epochs(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    trained_moodbot_path: Text,
+    trained_moodbot_core_path: Text,
     tmp_path_factory: TempPathFactory,
 ):
     (tmp_path / "models").mkdir()
@@ -585,7 +585,7 @@ def test_model_finetuning_core_with_default_epochs(
         str(new_config_path),
         "data/test_moodbot/data/stories.yml",
         output=output,
-        model_to_finetune=trained_moodbot_path,
+        model_to_finetune=trained_moodbot_core_path,
         finetuning_epoch_fraction=2,
     )
 
@@ -955,7 +955,7 @@ def test_invalid_graph_schema(
         """
     version: "2.0"
     recipe: "default.v1"
-    
+
     pipeline:
     - name: WhitespaceTokenizer
     - name: TEDPolicy

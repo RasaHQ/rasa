@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import logging
 from typing import Any, Dict, List, Optional, Text
 
@@ -37,6 +38,7 @@ class DaskGraphRunner(GraphRunner):
                 each node.
             hooks: These are called before and after the execution of each node.
         """
+        self._graph_schema = graph_schema
         self._targets: List[Text] = self._targets_from_schema(graph_schema)
         self._instantiated_graph: Dict[Text, GraphNode] = self._instantiate_graph(
             graph_schema, model_storage, execution_context, hooks
@@ -125,3 +127,7 @@ class DaskGraphRunner(GraphRunner):
                     f"same as node names in the graph schema."
                 )
             graph[input_name] = (input_name, input_value)
+
+    def get_schema(self) -> GraphSchema:
+        """Returns the graph schema."""
+        return self._graph_schema

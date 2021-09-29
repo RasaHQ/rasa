@@ -104,3 +104,28 @@ run_RegexMessageHandlerGraphComponent:
   is_target: false
   is_input: false
   resource: null
+nlu_prediction_to_history_adder:
+  needs:
+    predictions: run_RegexMessageHandlerGraphComponent
+    original_messages: __message__
+    tracker: __tracker__
+  uses: rasa.graph_components.adders.nlu_prediction_to_history_adder.NLUPredictionToHistoryAdder
+  constructor_name: load
+  fn: add
+  config: {}
+  eager: True
+  is_target: False
+  is_input: False
+  resource: null
+output_provider:
+  needs:
+    parsed_messages: run_RegexMessageHandlerGraphComponent
+    tracker_with_added_message: nlu_prediction_to_history_adder
+  uses: rasa.graph_components.providers.prediction_output_provider.PredictionOutputProvider
+  constructor_name: create
+  fn: provide
+  config: {}
+  eager: False
+  is_target: False
+  is_input: False
+  resource: null

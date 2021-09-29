@@ -1,17 +1,17 @@
 import shutil
 import textwrap
 from pathlib import Path
-from typing import Text, Optional, Dict, Any, List, Callable, Coroutine
+from typing import Text, Optional, Dict, Any, List, Callable, Coroutine, Tuple
 import pytest
 import rasa.core.test
 import rasa.shared.utils.io
-from rasa.core.policies.ensemble import SimplePolicyEnsemble
+from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.events import UserUttered
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
-from rasa.core.agent import Agent
+from rasa.core.agent import Agent, load_agent
 from rasa.utils.tensorflow.constants import (
     QUERY_INTENT_KEY,
     NAME,
@@ -23,9 +23,8 @@ from rasa.core.constants import STORIES_WITH_WARNINGS_FILE
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.domain import Domain
-from rasa.shared.nlu.interpreter import RegexInterpreter
 
-from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.rule_policy import RulePolicy, RulePolicyGraphComponent
 from rasa.shared.core.domain import State
 from rasa.core.policies.policy import SupportedData
 from rasa.shared.utils.io import read_file, read_yaml
@@ -35,18 +34,14 @@ def _probabilities_with_action_unlikely_intent_for(
     intent_names: List[Text],
     metadata_for_intent: Optional[Dict[Text, Dict[Text, Any]]] = None,
 ) -> Callable[
-    [SimplePolicyEnsemble, DialogueStateTracker, Domain, RegexInterpreter, Any],
-    PolicyPrediction,
+    [DefaultPolicyPredictionEnsemble, DialogueStateTracker, Domain, Any],
+    Tuple[DialogueStateTracker, PolicyPrediction],
 ]:
-    _original = SimplePolicyEnsemble.probabilities_using_best_policy
+    _original = DefaultPolicyPredictionEnsemble.combine_predictions_from_kwargs
 
-    def probabilities_using_best_policy(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: RegexInterpreter,
-        **kwargs: Any,
-    ) -> PolicyPrediction:
+    def combine_predictions_from_kwargs(
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
+    ) -> Tuple[DialogueStateTracker, PolicyPrediction]:
         latest_event = tracker.events[-1]
         if (
             isinstance(latest_event, UserUttered)
@@ -63,17 +58,20 @@ def _probabilities_with_action_unlikely_intent_for(
             # here we simply trigger it by
             # predicting `action_unlikely_intent` in a specified moment
             # to make the tests deterministic.
-            return PolicyPrediction.for_action_name(
-                domain,
-                ACTION_UNLIKELY_INTENT_NAME,
-                action_metadata=metadata_for_intent.get(intent_name)
-                if metadata_for_intent
-                else None,
+            return (
+                tracker,
+                PolicyPrediction.for_action_name(
+                    domain,
+                    ACTION_UNLIKELY_INTENT_NAME,
+                    action_metadata=metadata_for_intent.get(intent_name)
+                    if metadata_for_intent
+                    else None,
+                ),
             )
 
-        return _original(self, tracker, domain, interpreter, **kwargs)
+        return _original(self, tracker, domain, **kwargs)
 
-    return probabilities_using_best_policy
+    return combine_predictions_from_kwargs
 
 
 def _custom_prediction_states_for_rules(
@@ -118,9 +116,7 @@ async def test_testing_warns_if_action_unknown(
     e2e_bot_agent: Agent,
     e2e_bot_test_stories_with_unknown_bot_utterances: Path,
 ):
-    await rasa.core.test.test(
-        e2e_bot_test_stories_with_unknown_bot_utterances, e2e_bot_agent
-    )
+    rasa.core.test.test(e2e_bot_test_stories_with_unknown_bot_utterances, e2e_bot_agent)
     output = capsys.readouterr().out
     assert "Test story" in output
     assert "contains the bot utterance" in output
@@ -135,7 +131,7 @@ async def test_testing_with_utilizing_retrieval_intents(
     if not response_selector_results.exists():
         response_selector_results.mkdir()
 
-    result = await rasa.core.test.test(
+    result = rasa.core.test.test(
         stories=response_selector_test_stories,
         agent=response_selector_agent,
         e2e=True,
@@ -174,7 +170,7 @@ async def test_testing_does_not_warn_if_intent_in_domain(
     default_agent: Agent, stories_path: Text,
 ):
     with pytest.warns(UserWarning) as record:
-        await rasa.core.test.test(Path(stories_path), default_agent)
+        rasa.core.test.test(Path(stories_path), default_agent)
 
     assert not any("Found intent" in r.message.args[0] for r in record)
     assert all(
@@ -184,7 +180,7 @@ async def test_testing_does_not_warn_if_intent_in_domain(
 
 
 async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
-    result = await rasa.core.test.test(
+    result = rasa.core.test.test(
         "data/test_yaml_stories/test_stories_entity_annotations.yml", core_agent
     )
     assert "report" in result.keys()
@@ -229,12 +225,12 @@ async def _train_rule_based_agent(
         )
 
         monkeypatch.setattr(
-            RulePolicy,
+            RulePolicyGraphComponent,
             "_prediction_states",
             _custom_prediction_states_for_rules(ignore_action_unlikely_intent),
         )
 
-        return Agent.load_local_model(model_path)
+        return await load_agent(model_path)
 
     return inner
 
@@ -245,8 +241,8 @@ async def test_action_unlikely_intent_warning(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
@@ -272,7 +268,7 @@ async def test_action_unlikely_intent_warning(
     # predicted correctly.
     agent = await _train_rule_based_agent(file_name, True)
 
-    result = await rasa.core.test.test(
+    result = rasa.core.test.test(
         str(file_name),
         agent,
         out_directory=str(tmp_path),
@@ -294,8 +290,8 @@ async def test_action_unlikely_intent_correctly_predicted(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
@@ -322,7 +318,7 @@ async def test_action_unlikely_intent_correctly_predicted(
     # predicted correctly.
     agent = await _train_rule_based_agent(file_name, False)
 
-    result = await rasa.core.test.test(
+    result = rasa.core.test.test(
         str(file_name),
         agent,
         out_directory=str(tmp_path),
@@ -339,8 +335,8 @@ async def test_wrong_action_after_action_unlikely_intent(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["greet", "mood_great"]),
     )
 
@@ -385,7 +381,7 @@ async def test_wrong_action_after_action_unlikely_intent(
     # predicted correctly.
     agent = await _train_rule_based_agent(train_file_name, True)
 
-    result = await rasa.core.test.test(
+    result = rasa.core.test.test(
         str(test_file_name),
         agent,
         out_directory=str(tmp_path),
@@ -455,7 +451,7 @@ async def test_action_unlikely_intent_not_found(
     # predicted correctly.
     agent = await _train_rule_based_agent(train_file_name, False)
 
-    result = await rasa.core.test.test(
+    result = rasa.core.test.test(
         str(test_file_name), agent, out_directory=str(tmp_path)
     )
     assert "report" in result.keys()
@@ -475,8 +471,8 @@ async def test_action_unlikely_intent_warning_and_story_error(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["greet"]),
     )
 
@@ -521,7 +517,7 @@ async def test_action_unlikely_intent_warning_and_story_error(
     # predicted correctly.
     agent = await _train_rule_based_agent(train_file_name, True)
 
-    result = await rasa.core.test.test(
+    result = rasa.core.test.test(
         str(test_file_name), agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
@@ -542,8 +538,8 @@ async def test_fail_on_prediction_errors(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
@@ -571,7 +567,7 @@ async def test_fail_on_prediction_errors(
     agent = await _train_rule_based_agent(file_name, False)
 
     with pytest.raises(rasa.core.test.WrongPredictionException):
-        await rasa.core.test.test(
+        rasa.core.test.test(
             str(file_name),
             agent,
             out_directory=str(tmp_path),
@@ -650,8 +646,8 @@ async def test_multiple_warnings_sorted_on_severity(
     story_order: List[Text],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(
             list(metadata_for_intents.keys()), metadata_for_intents
         ),
@@ -666,7 +662,7 @@ async def test_multiple_warnings_sorted_on_severity(
     # predicted correctly.
     agent = await _train_rule_based_agent(Path(test_story_path), True)
 
-    await rasa.core.test.test(
+    rasa.core.test.test(
         test_story_path,
         agent,
         out_directory=str(tmp_path),

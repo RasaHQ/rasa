@@ -18,8 +18,8 @@ from rasa.shared.exceptions import (
 )
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core import training
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer2
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer2
 from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
@@ -32,7 +32,6 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     DEFAULT_VALUE_TEXT_SLOTS,
 )
 from rasa.shared.core.training_data.structures import StoryStep, RuleStep
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME_KEY
 
 
@@ -710,13 +709,13 @@ def test_read_story_file_with_cycles(domain: Domain):
 
 
 def test_generate_training_data_with_cycles(domain: Domain):
-    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
+    featurizer = MaxHistoryTrackerFeaturizer2(SingleStateFeaturizer2(), max_history=4)
     training_trackers = training.load_data(
         "data/test_yaml_stories/stories_with_cycle.yml", domain, augmentation_factor=0,
     )
 
     _, label_ids, _ = featurizer.featurize_trackers(
-        training_trackers, domain, interpreter=RegexInterpreter()
+        training_trackers, domain, precomputations=None
     )
 
     # how many there are depends on the graph which is not created in a
@@ -783,7 +782,7 @@ def test_visualize_training_data_graph(tmp_path: Path, domain: Domain):
 
 
 def test_load_multi_file_training_data(domain: Domain):
-    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
+    featurizer = MaxHistoryTrackerFeaturizer2(SingleStateFeaturizer2(), max_history=2)
     trackers = training.load_data(
         "data/test_yaml_stories/stories.yml", domain, augmentation_factor=0
     )
@@ -796,10 +795,12 @@ def test_load_multi_file_training_data(domain: Domain):
     hashed = sorted(hashed, reverse=True)
 
     data, label_ids, _ = featurizer.featurize_trackers(
-        trackers, domain, interpreter=RegexInterpreter()
+        trackers, domain, precomputations=None
     )
 
-    featurizer_mul = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
+    featurizer_mul = MaxHistoryTrackerFeaturizer2(
+        SingleStateFeaturizer2(), max_history=2
+    )
     trackers_mul = training.load_data(
         "data/test_multifile_yaml_stories", domain, augmentation_factor=0
     )
@@ -814,7 +815,7 @@ def test_load_multi_file_training_data(domain: Domain):
     hashed_mul = sorted(hashed_mul, reverse=True)
 
     data_mul, label_ids_mul, _ = featurizer_mul.featurize_trackers(
-        trackers_mul, domain, interpreter=RegexInterpreter()
+        trackers_mul, domain, precomputations=None
     )
 
     assert hashed == hashed_mul

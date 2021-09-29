@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 from _pytest.tmpdir import TempPathFactory
 
+from rasa.core.agent import Agent
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.nlu import registry
 import rasa.nlu.train
-from rasa.nlu.model import Interpreter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.tensorflow.constants import EPOCHS
 from typing import Any, Dict, List, Tuple, Text, Union, Optional
@@ -158,13 +158,10 @@ def test_train_persist_load_parse(
 
     assert Path(persisted_path).is_file()
 
-    # TODO: Fix model loading
-    assert trained.pipeline
-
-    loaded = Interpreter.load(persisted_path, component_builder)
-
-    assert loaded.pipeline
-    assert loaded.parse("Rasa is great!") is not None
+    agent = Agent.load(persisted_path)
+    assert agent.processor
+    assert agent.is_ready()
+    assert agent.parse_message("Rasa is great!") is not None
 
 
 @pytest.mark.timeout(600, func_only=True)

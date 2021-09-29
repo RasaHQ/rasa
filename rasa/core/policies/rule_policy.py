@@ -681,7 +681,6 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
             rule_trackers: The list of the rule trackers.
             all_trackers: The list of all trackers.
             domain: The domain.
-            interpreter: Interpreter which can be used by the polices for featurization.
 
         Returns:
              Rules that are not present in the stories.

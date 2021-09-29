@@ -14,6 +14,7 @@ from rasa.shared.nlu.constants import (
     PREDICTED_CONFIDENCE_KEY,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
     ACTION_TEXT,
+    TEXT,
 )
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
@@ -425,7 +426,10 @@ class YAMLStoryReader(StoryReader):
         return (base_intent, user_intent) if response_key else (base_intent, None)
 
     def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
-        from rasa.shared.nlu.interpreter import RegexInterpreter
+        # TODO: Fix that this is from outside shared
+        from rasa.nlu.classifiers.regex_message_handler import (
+            RegexMessageHandlerGraphComponent,
+        )
 
         intent_name, full_retrieval_intent = self._user_intent_from_step(step)
         intent = {
@@ -441,7 +445,9 @@ class YAMLStoryReader(StoryReader):
 
             if plain_text.startswith(INTENT_MESSAGE_PREFIX):
                 entities = (
-                    RegexInterpreter().synchronous_parse(plain_text).get(ENTITIES, [])
+                    RegexMessageHandlerGraphComponent()
+                    ._unpack(Message({TEXT: plain_text}))
+                    .get(ENTITIES, [])
                 )
         else:
             raw_entities = step.get(KEY_ENTITIES, [])

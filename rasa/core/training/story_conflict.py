@@ -14,8 +14,6 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
 
-from rasa.nlu.model import Trainer
-from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
@@ -198,7 +196,9 @@ def _get_tokenizer_from_nlu_config(
     if not nlu_config:
         return None
 
-    pipeline: List[Component] = Trainer(nlu_config, skip_validation=True).pipeline
+    # TODO: We need to be able to access the tokenizer here
+    # pipeline: List[Component] = Trainer(nlu_config, skip_validation=True).pipeline
+    pipeline = []
     tokenizer: Optional[Tokenizer] = None
     for component in pipeline:
         if isinstance(component, Tokenizer):

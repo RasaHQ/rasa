@@ -11,7 +11,6 @@ from typing import (
     Any,
 )
 
-import rasa.core.interpreter
 import rasa.engine.validation
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe

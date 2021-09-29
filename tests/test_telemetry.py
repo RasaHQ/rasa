@@ -34,6 +34,7 @@ def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     rasa.constants.GLOBAL_USER_CONFIG_PATH = default_location
 
 
+# TODO: fixed when telemetry can get project fingerprint from model
 async def test_events_schema(
     monkeypatch: MonkeyPatch, default_agent: Agent, config_path: Text
 ):

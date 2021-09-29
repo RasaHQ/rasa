@@ -167,6 +167,7 @@ class LocalTrainingCache(TrainingCache):
         self._max_cache_size = float(
             os.environ.get(CACHE_SIZE_ENV, DEFAULT_CACHE_SIZE_MB)
         )
+
         self._cache_database_name = os.environ.get(
             CACHE_DB_NAME_ENV, DEFAULT_CACHE_NAME
         )
@@ -299,7 +300,7 @@ class LocalTrainingCache(TrainingCache):
         # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this
         # leads to errors on Windows when the context manager tries to delete an
         # already deleted temporary directory (e.g. https://bugs.python.org/issue29982)
-        with rasa.model.TempDirectoryPath(tempfile.mkdtemp()) as temp_dir:
+        with rasa.utils.common.TempDirectoryPath(tempfile.mkdtemp()) as temp_dir:
             tmp_path = Path(temp_dir)
             try:
 

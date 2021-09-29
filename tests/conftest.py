@@ -12,13 +12,13 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.python import Function
 from spacy import Language
 
-from rasa.engine.caching import LocalTrainingCache
+from rasa.engine.caching import CACHE_SIZE_ENV, LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from sanic.request import Request
 
-from typing import Iterator, Callable, Generator
+from typing import Iterator, Callable
 
 from _pytest.tmpdir import TempPathFactory, TempdirFactory
 from pathlib import Path
@@ -34,7 +34,6 @@ from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
 
-from rasa.nlu.model import Interpreter
 from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
@@ -43,10 +42,21 @@ from rasa.core.exporter import Exporter
 
 import rasa.core.run
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
-from rasa.model import get_model
 from rasa.model_training import train, train_nlu
-from rasa.utils.common import TempDirectoryPath
 from rasa.shared.exceptions import RasaException
+import rasa.utils.common
+
+# TODO: replace this with a fixture!
+os.environ[CACHE_SIZE_ENV] = "0"
+
+
+@pytest.fixture()
+def cache_size():
+    old_cache_size = os.environ.get(CACHE_SIZE_ENV)
+    os.environ[CACHE_SIZE_ENV] = "0"
+    yield
+    os.environ[CACHE_SIZE_ENV] = old_cache_size
+
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separatedly installable pytest-cli plugin.
@@ -179,14 +189,21 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-def _trained_default_agent(
-    tmp_path_factory: TempPathFactory, stories_path: Text, trained_async: Callable
+async def _trained_default_agent(
+    tmp_path_factory: TempPathFactory,
+    stories_path: Text,
+    domain_path: Text,
+    nlu_data_path: Text,
+    trained_async: Callable,
 ) -> Agent:
     project_path = tmp_path_factory.mktemp("project")
 
     config = textwrap.dedent(
         f"""
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    pipeline:
+    - name: KeywordIntentClassifier
+    - name: RegexEntityExtractor
     policies:
     - name: AugmentedMemoizationPolicy
       max_history: 3
@@ -196,15 +213,15 @@ def _trained_default_agent(
     config_path = project_path / "config.yml"
     rasa.shared.utils.io.write_text_file(config, config_path)
     model_path = train(
-        "data/test_domains/default_with_slots.yml", str(config_path), [stories_path]
+        domain_path, str(config_path), [stories_path, nlu_data_path],
     ).model
 
-    return Agent.load_local_model(model_path)
+    return await load_agent(model_path=model_path)
 
 
 @pytest.fixture()
 def empty_agent() -> Agent:
-    agent = Agent("data/test_domains/default_with_slots.yml",)
+    agent = Agent(domain=Domain.load("data/test_domains/default_with_slots.yml"))
     return agent
 
 
@@ -212,6 +229,7 @@ def reset_conversation_state(agent: Agent) -> Agent:
     # Clean tracker store after each test so tests don't affect each other
     agent.tracker_store = InMemoryTrackerStore(agent.domain)
     agent.domain.session_config = SessionConfig.default()
+    agent.initialize_processor()
     return agent
 
 
@@ -226,6 +244,24 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
         training_files="data/test_moodbot/data/",
+    )
+
+
+@pytest.fixture(scope="session")
+async def trained_moodbot_core_path(trained_async: Callable) -> Text:
+    return await trained_async(
+        domain="data/test_moodbot/domain.yml",
+        config="data/test_moodbot/config.yml",
+        training_files="data/test_moodbot/data/stories.yml",
+    )
+
+
+@pytest.fixture(scope="session")
+async def trained_moodbot_nlu_path(trained_async: Callable) -> Text:
+    return await trained_async(
+        domain="data/test_moodbot/domain.yml",
+        config="data/test_moodbot/config.yml",
+        training_files="data/test_moodbot/data/nlu.yml",
     )
 
 
@@ -248,22 +284,12 @@ def trained_nlu_moodbot_path(trained_nlu: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-def unpacked_trained_moodbot_path(trained_moodbot_path: Text,) -> TempDirectoryPath:
-    return get_model(trained_moodbot_path)
-
-
-@pytest.fixture(scope="session")
 async def trained_spacybot_path(trained_async: Callable) -> Text:
     return await trained_async(
         domain="data/test_spacybot/domain.yml",
         config="data/test_spacybot/config.yml",
         training_files="data/test_spacybot/data/",
     )
-
-
-@pytest.fixture(scope="session")
-def unpacked_trained_spacybot_path(trained_spacybot_path: Text,) -> TempDirectoryPath:
-    return get_model(trained_spacybot_path)
 
 
 @pytest.fixture(scope="session")
@@ -289,8 +315,8 @@ async def unexpected_intent_policy_agent(
 
 
 @pytest.fixture(scope="module")
-def mood_agent(trained_moodbot_path: Text) -> Agent:
-    return Agent.load_local_model(model_path=trained_moodbot_path)
+async def mood_agent(trained_moodbot_path: Text) -> Agent:
+    return await load_agent(model_path=trained_moodbot_path)
 
 
 @pytest.fixture(scope="session")
@@ -345,45 +371,20 @@ def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
 
 
 @pytest.fixture(scope="session")
-def trained_rasa_model(
+async def trained_rasa_model(
     trained_async: Callable,
     domain_path: Text,
     nlu_data_path: Text,
     stories_path: Text,
     stack_config_path: Text,
 ) -> Text:
-    trained_stack_model_path = rasa.api.train(
+    trained_stack_model_path = await trained_async(
         domain=domain_path,
         config=stack_config_path,
         training_files=[nlu_data_path, stories_path],
     )
 
-    return trained_stack_model_path.model
-
-
-@pytest.fixture(scope="session")
-async def trained_simple_rasa_model(
-    trained_async: Callable,
-    domain_path: Text,
-    nlu_data_path: Text,
-    simple_stories_path: Text,
-    stack_config_path: Text,
-) -> Text:
-    trained_stack_model_path = await trained_async(
-        domain=domain_path,
-        config=stack_config_path,
-        training_files=[nlu_data_path, simple_stories_path],
-    )
-
     return trained_stack_model_path
-
-
-@pytest.fixture(scope="session")
-def unpacked_trained_rasa_model(
-    trained_rasa_model: Text,
-) -> Generator[Text, None, None]:
-    with get_model(trained_rasa_model) as path:
-        yield path
 
 
 @pytest.fixture(scope="session")
@@ -617,18 +618,13 @@ async def e2e_bot(
 
 
 @pytest.fixture(scope="module")
-def response_selector_agent(trained_response_selector_bot: Path,) -> Agent:
-    return Agent.load_local_model(str(trained_response_selector_bot))
+async def response_selector_agent(trained_response_selector_bot: Path,) -> Agent:
+    return await load_agent(str(trained_response_selector_bot))
 
 
 @pytest.fixture(scope="module")
-def response_selector_interpreter(response_selector_agent: Agent,) -> Interpreter:
-    return response_selector_agent.interpreter.interpreter
-
-
-@pytest.fixture(scope="module")
-def e2e_bot_agent(e2e_bot: Path) -> Agent:
-    return Agent.load_local_model(str(e2e_bot))
+async def e2e_bot_agent(e2e_bot: Path) -> Agent:
+    return await load_agent(str(e2e_bot))
 
 
 def write_endpoint_config_to_yaml(
@@ -735,6 +731,7 @@ def default_execution_context() -> ExecutionContext:
     return ExecutionContext(GraphSchema({}), uuid.uuid4().hex)
 
 
+# TODO: fix this
 @pytest.fixture(autouse=True)
 def use_temp_dir_for_cache(
     monkeypatch: MonkeyPatch, tmp_path_factory: TempdirFactory

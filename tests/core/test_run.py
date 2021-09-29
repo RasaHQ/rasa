@@ -4,13 +4,13 @@ import pytest
 from typing import Text
 
 import rasa.shared.core.domain
-import rasa.shared.nlu.interpreter
 from sanic import Sanic
 from asyncio import AbstractEventLoop
 from pathlib import Path
-from rasa.core import run, interpreter, policies
+from rasa.core import run
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.utils import AvailableEndpoints
+from rasa.shared.exceptions import RasaException
 
 CREDENTIALS_FILE = "data/test_moodbot/credentials.yml"
 
@@ -61,8 +61,7 @@ async def test_load_agent_on_start_with_good_model_file(
         trained_rasa_model, AvailableEndpoints(), None, rasa_server, loop
     )
 
-    assert isinstance(agent.interpreter, interpreter.RasaNLUInterpreter)
-    assert isinstance(agent.policy_ensemble, policies.PolicyEnsemble)
+    assert agent.is_ready()
     assert isinstance(agent.domain, rasa.shared.core.domain.Domain)
 
 
@@ -73,18 +72,10 @@ async def test_load_agent_on_start_with_bad_model_file(
     fake_model.touch()
     fake_model_path = str(fake_model)
 
-    with pytest.warns(UserWarning) as warnings:
-        agent = await run.load_agent_on_start(
+    with pytest.raises(RasaException):
+        await run.load_agent_on_start(
             fake_model_path, AvailableEndpoints(), None, rasa_non_trained_server, loop
         )
-        assert any(
-            "fake_model.tar.gz' could not be loaded" in str(w.message) for w in warnings
-        )
-
-    # Fallback agent was loaded even if model was unusable
-    assert isinstance(agent.interpreter, rasa.shared.nlu.interpreter.RegexInterpreter)
-    assert agent.policy_ensemble is None
-    assert isinstance(agent.domain, rasa.shared.core.domain.Domain)
 
 
 async def test_close_resources(loop: AbstractEventLoop):

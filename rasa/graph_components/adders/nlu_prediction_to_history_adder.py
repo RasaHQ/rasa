@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from rasa.shared.core.events import UserUttered
-from typing import Dict, Text, Any, List
+from typing import Dict, Optional, Text, Any, List
 
 from rasa.core.channels.channel import UserMessage
 
@@ -33,9 +33,9 @@ class NLUPredictionToHistoryAdder(GraphComponent):
     def add(
         self,
         predictions: List[Message],
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        tracker: Optional[DialogueStateTracker],
         original_messages: List[UserMessage],
+        domain: Optional[Domain] = None,
     ) -> DialogueStateTracker:
         """Adds NLU predictions to the tracker.
 
@@ -54,6 +54,7 @@ class NLUPredictionToHistoryAdder(GraphComponent):
                 message.data.get(TEXT),
                 message.data.get(INTENT),
                 message.data.get(ENTITIES),
+                message.as_dict(only_output_properties=True),
                 input_channel=original_message.input_channel,
                 message_id=message.data.get("message_id"),
                 metadata=original_message.metadata,

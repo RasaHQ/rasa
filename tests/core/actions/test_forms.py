@@ -147,8 +147,7 @@ responses:
 
     # Driving it like rasa/core/processor
     processor = MessageProcessor(
-        empty_agent.interpreter,
-        empty_agent.policy_ensemble,
+        None,
         domain,
         InMemoryTrackerStore(domain),
         InMemoryLockStore(),

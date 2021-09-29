@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.shared.exceptions import InvalidConfigException, YamlSyntaxException
+from rasa.shared.exceptions import YamlSyntaxException
 from rasa.shared.importers import autoconfig
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
@@ -15,7 +15,6 @@ from rasa.nlu import components
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.constants import COMPONENT_INDEX
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.nlu.model import Trainer
 from tests.nlu.utilities import write_file_config
 
 
@@ -35,46 +34,6 @@ def test_invalid_config_json(tmp_path):
 
     with pytest.raises(YamlSyntaxException):
         config.load(str(f))
-
-
-def test_invalid_many_tokenizers_in_config():
-    nlu_config = {
-        "pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyTokenizer"}]
-    }
-
-    with pytest.raises(InvalidConfigException) as execinfo:
-        Trainer(config.RasaNLUModelConfig(nlu_config))
-    assert "The pipeline configuration contains more than one" in str(execinfo.value)
-
-
-@pytest.mark.parametrize(
-    "_config",
-    [
-        {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyFeaturizer"}]},
-        pytest.param(
-            {
-                "pipeline": [
-                    {"name": "WhitespaceTokenizer"},
-                    {"name": "MitieIntentClassifier"},
-                ]
-            }
-        ),
-    ],
-)
-@pytest.mark.skip_on_windows
-def test_missing_required_component(_config):
-    with pytest.raises(InvalidConfigException) as execinfo:
-        Trainer(config.RasaNLUModelConfig(_config))
-    assert "The pipeline configuration contains errors" in str(execinfo.value)
-
-
-@pytest.mark.parametrize(
-    "pipeline_config", [{"pipeline": [{"name": "CountVectorsFeaturizer"}]}]
-)
-def test_missing_property(pipeline_config):
-    with pytest.raises(InvalidConfigException) as execinfo:
-        Trainer(config.RasaNLUModelConfig(pipeline_config))
-    assert "The pipeline configuration contains errors" in str(execinfo.value)
 
 
 def test_default_config_file():
@@ -172,6 +131,7 @@ async def test_train_docker_and_docs_configs(
     assert loaded_config.language == imported_config["language"]
 
 
+# TODO: This should be tested by a validation component
 @pytest.mark.parametrize(
     "config_path, data_path, expected_warning_excerpts",
     [
@@ -225,13 +185,13 @@ def test_validate_required_components_from_data(
     config_path: Text, data_path: Text, expected_warning_excerpts: List[Text]
 ):
     loaded_config = config.load(config_path)
-    trainer = Trainer(loaded_config)
-    training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
-    with pytest.warns(UserWarning) as record:
-        components.validate_required_components_from_data(
-            trainer.pipeline, training_data
-        )
-    assert len(record) == 1
-    assert all(
-        [excerpt in record[0].message.args[0]] for excerpt in expected_warning_excerpts
-    )
+    # trainer = Trainer(loaded_config)
+    # training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
+    # with pytest.warns(UserWarning) as record:
+    #     components.validate_required_components_from_data(
+    #         trainer.pipeline, training_data
+    #     )
+    # assert len(record) == 1
+    # assert all(
+    #     [excerpt in record[0].message.args[0]] for excerpt in expected_warning_excerpts
+    # )

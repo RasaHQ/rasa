@@ -124,6 +124,7 @@ def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
     assert not validator.verify_story_structure(ignore_warnings=False)
 
 
+# TODO: Fixed when we can tokenizer in story conflicts
 def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace(
     tmp_path: Path,
 ):

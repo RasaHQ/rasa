@@ -47,3 +47,8 @@ class GraphRunner(ABC):
         Returns: A mapping of target node name to output value.
         """
         ...
+
+    @abstractmethod
+    def get_schema(self,) -> GraphSchema:
+        """Returns the graph schema."""
+        ...

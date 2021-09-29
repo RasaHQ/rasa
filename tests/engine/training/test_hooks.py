@@ -10,6 +10,7 @@ from tests.engine.graph_components_test_classes import (
 )
 
 
+# TODO: fixed when cache fixture is fixed.
 def test_training_hook_saves_to_cache(
     default_model_storage: ModelStorage,
     temp_cache: TrainingCache,

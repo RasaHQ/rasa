@@ -19,7 +19,9 @@ SpacyEntityExtractor = SpacyEntityExtractor
 
 
 @DefaultV1Recipe.register(
-    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=False
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    is_trainable=False,
+    model_from="SpacyNLPGraphComponent",
 )
 class SpacyEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """Entity extractor which uses SpaCy."""

@@ -86,6 +86,7 @@ def test_graph_trainer_returns_model_metadata(
     assert model_metadata.predict_schema == predict_schema
 
 
+# TODO: fixed when cache fixture is fixed.
 def test_graph_trainer_fingerprints_and_caches(
     temp_cache: TrainingCache,
     tmp_path: Path,
@@ -187,6 +188,7 @@ def test_graph_trainer_fingerprints_and_caches(
     }
 
 
+# TODO: fixed when cache fixture is fixed.
 def test_graph_trainer_always_reads_input(
     temp_cache: TrainingCache,
     tmp_path: Path,

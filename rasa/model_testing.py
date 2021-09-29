@@ -9,7 +9,6 @@ import rasa.shared.utils.io
 import rasa.utils.common
 from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
-from rasa.exceptions import ModelNotFound
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.importers.autoconfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -37,13 +36,11 @@ def test_core_models_in_directory(
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
-    rasa.utils.common.run_in_loop(
-        compare_models_in_dir(
-            model_directory,
-            stories,
-            output,
-            use_conversation_test_files=use_conversation_test_files,
-        )
+    compare_models_in_dir(
+        model_directory,
+        stories,
+        output,
+        use_conversation_test_files=use_conversation_test_files,
     )
 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
@@ -117,13 +114,11 @@ def test_core_models(
     """
     from rasa.core.test import compare_models
 
-    rasa.utils.common.run_in_loop(
-        compare_models(
-            models,
-            stories,
-            output,
-            use_conversation_test_files=use_conversation_test_files,
-        )
+    compare_models(
+        models,
+        stories,
+        output,
+        use_conversation_test_files=use_conversation_test_files,
     )
 
 
@@ -136,7 +131,6 @@ def test_core(
 ) -> None:
     """Tests a trained Core model against a set of test stories."""
     import rasa.model
-    from rasa.shared.nlu.interpreter import RegexInterpreter
     from rasa.core.agent import Agent
 
     if additional_arguments is None:
@@ -145,29 +139,12 @@ def test_core(
     if output:
         rasa.shared.utils.io.create_directory(output)
 
-    try:
-        unpacked_model = rasa.model.get_model(model)
-    except ModelNotFound:
+    _agent = Agent.load(model)
+
+    if not _agent.is_ready() is None:
         rasa.shared.utils.cli.print_error(
-            "Unable to test: could not find a model. Use 'rasa train' to train a "
+            "Unable to test: processor not loaded. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
-        )
-        return
-
-    _agent = Agent.load(unpacked_model)
-
-    if _agent.policy_ensemble is None:
-        rasa.shared.utils.cli.print_error(
-            "Unable to test: could not find a Core model. Use 'rasa train' to train a "
-            "Rasa model and provide it via the '--model' argument."
-        )
-
-    if isinstance(_agent.interpreter, RegexInterpreter):
-        rasa.shared.utils.cli.print_warning(
-            "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
-            "evaluation. If you added actual user messages to your test stories "
-            "this will likely lead to the tests failing. In that case, you need "
-            "to train a NLU model first, e.g. using `rasa train`."
         )
 
     from rasa.core.test import test as core_test
@@ -176,14 +153,12 @@ def test_core(
         additional_arguments, core_test, ["stories", "agent", "e2e"]
     )
 
-    rasa.utils.common.run_in_loop(
-        core_test(
-            stories,
-            _agent,
-            e2e=use_conversation_test_files,
-            out_directory=output,
-            **kwargs,
-        )
+    core_test(
+        stories,
+        _agent,
+        e2e=use_conversation_test_files,
+        out_directory=output,
+        **kwargs,
     )
 
 
@@ -195,26 +170,14 @@ def test_nlu(
 ) -> None:
     """Tests the NLU Model."""
     from rasa.nlu.test import run_evaluation
-    from rasa.model import get_model
-
-    try:
-        unpacked_model = get_model(model)
-    except ModelNotFound:
-        rasa.shared.utils.cli.print_error(
-            "Could not find any model. Use 'rasa train nlu' to train a "
-            "Rasa model and provide it via the '--model' argument."
-        )
-        return
 
     rasa.shared.utils.io.create_directory(output_directory)
 
-    nlu_model = os.path.join(unpacked_model, "nlu")
-
-    if os.path.exists(nlu_model):
+    if os.path.exists(model):
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
-        run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
+        run_evaluation(nlu_data, model, output_directory=output_directory, **kwargs)
     else:
         rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "

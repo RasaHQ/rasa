@@ -2,6 +2,7 @@ import dataclasses
 from typing import Text
 import uuid
 
+
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema, SchemaNode
 from rasa.engine.storage.resource import Resource
@@ -102,6 +103,7 @@ class FingerprintableText:
         return self.text
 
 
+# TODO: fixed when cache fixture is fixed.
 def test_fingerprint_component_hit(
     default_model_storage: ModelStorage, temp_cache: TrainingCache
 ):

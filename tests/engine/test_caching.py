@@ -26,6 +26,8 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 
+# TODO: fixed when cache fixture is fixed.
+
 
 @dataclasses.dataclass
 class TestCacheableOutput:

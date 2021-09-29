@@ -9,6 +9,7 @@ import multiprocessing
 import os
 from pathlib import Path
 import platform
+from subprocess import CalledProcessError, DEVNULL, check_output
 import sys
 import textwrap
 import typing
@@ -465,13 +466,27 @@ def with_default_context_fields(
     return {**_default_context_fields(), **context}
 
 
+def project_fingerprint() -> Optional[Text]:
+    """Create a hash for the project in the current working directory.
+
+    Returns:
+        project hash
+    """
+    try:
+        remote = check_output(  # skipcq:BAN-B607,BAN-B603
+            ["git", "remote", "get-url", "origin"], stderr=DEVNULL
+        )
+        return hashlib.sha256(remote).hexdigest()
+    except (CalledProcessError, OSError):
+        return None
+
+
 def _default_context_fields() -> Dict[Text, Any]:
     """Return a dictionary that contains the default context values.
 
     Return:
         A new context containing information about the runtime environment.
     """
-
     global TELEMETRY_CONTEXT
 
     if not TELEMETRY_CONTEXT:
@@ -480,7 +495,7 @@ def _default_context_fields() -> Dict[Text, Any]:
         TELEMETRY_CONTEXT = {
             "os": {"name": platform.system(), "version": platform.release()},
             "ci": in_continuous_integration(),
-            "project": model.project_fingerprint(),
+            "project": project_fingerprint(),
             "directory": _hash_directory_path(os.getcwd()),
             "python": sys.version.split(" ")[0],
             "rasa_open_source": rasa.__version__,
@@ -890,6 +905,7 @@ def track_server_start(
         """Get project fingerprint from an app's loaded model."""
         if _model_directory:
             try:
+                # TODO: We need to figure out what the project fingerprint is
                 with model.get_model(_model_directory) as unpacked_model:
                     fingerprint = model.fingerprint_from_path(unpacked_model)
                     return fingerprint.get(model.FINGERPRINT_PROJECT)
@@ -968,12 +984,13 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
         e2e: indicator if tests running in end to end mode
         agent: Agent of the model getting tested
     """
-    fingerprint = model.fingerprint_from_path(agent.model_directory or "")
-    project = fingerprint.get(model.FINGERPRINT_PROJECT)
-    _track(
-        TELEMETRY_TEST_CORE_EVENT,
-        {"project": project, "end_to_end": e2e, "num_story_steps": num_story_steps},
-    )
+    # TODO: We need project fingerprint for the model.
+    # fingerprint = model.fingerprint_from_path(agent.model_directory or "")
+    # project = fingerprint.get(model.FINGERPRINT_PROJECT)
+    # _track(
+    #     TELEMETRY_TEST_CORE_EVENT,
+    #     {"project": project, "end_to_end": e2e, "num_story_steps": num_story_steps},
+    # )
 
 
 @ensure_telemetry_enabled

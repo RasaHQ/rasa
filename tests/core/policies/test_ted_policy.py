@@ -22,7 +22,6 @@ from rasa.core.featurizers.single_state_featurizer import (
 )
 from rasa.core.policies.policy import PolicyGraphComponent as Policy
 from rasa.core.policies.ted_policy import TEDPolicyGraphComponent as TEDPolicy
-from rasa.engine.exceptions import GraphComponentException
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -230,9 +229,11 @@ class TestTEDPolicy(PolicyTestCollection):
 
     def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
         config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"
+        match_string = "Only values either equal to -1 or greater" \
+                       " than 0 are allowed for this parameter."
         with pytest.raises(
             InvalidConfigException,
-            match="Only values either equal to -1 or greater than 0 are allowed for this parameter.",
+            match=match_string,
         ):
             train_core(
                 domain="data/test_domains/default.yml",
