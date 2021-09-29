@@ -1,7 +1,6 @@
 from rasa.core.evaluation.markers import MarkerConfig, InvalidMarkersConfig
 
 import pytest
-from typing import Text
 from ruamel.yaml.parser import ParserError
 
 from jsonschema import ValidationError
