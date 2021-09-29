@@ -280,6 +280,25 @@ You can then access the deployment on `http://127.0.0.1:${SERVICE_PORT}`
 
 Visit [the Rasa helm chart README](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#exposing-the-rasa-deployment-to-the-public) to learn other ways to expose your deployment.
 
+## Use Rasa Ephemeral Installer to create a local Kubernetes cluster
+
+If you don't have a Kubernetes cluster, but you'd like to try out the [rasa helm chart](https://artifacthub.io/packages/helm/rasa/rasa), you can use
+Rasa Ephemeral Installer that installs all required components and creates a Kubernetes cluster via [`kind`](https://kind.sigs.k8s.io/) on your machine.
+
+1. Use the REI script to install all components. Simply run the command below.
+
+  ```text
+  curl -O https://rei.rasa.com/rei.sh && bash rei.sh -y
+  ```
+
+  After a few minutes, all components should be installed and a local Kubernetes cluster created.
+
+2. Follow [the installation steps](#installation) for the rasa helm chart.
+
+:::note
+The Rasa Ephemeral Installer doesn't support Windows.
+:::
+
 #### Next Steps
 
 - Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration
@@ -289,7 +308,7 @@ Visit [the Rasa helm chart README](https://github.com/RasaHQ/helm-charts/tree/ma
 
 ### Rasa Open Source Only Deployment
 
-It is also possible to deploy a Rasa assistant without Rasa X using Docker Compose. To do so, you can build your
+It is also possible to deploy a Rasa assistant using Docker Compose. To do so, you can build your
 Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Compose.
 
 * [Building a Rasa Assistant Locally](./playground.mdx)
