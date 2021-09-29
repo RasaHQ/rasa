@@ -168,7 +168,7 @@ def endpoints_path() -> Text:
 
 @pytest.fixture(scope="session")
 def simple_marker_config() -> Text:
-    return "data/test_markers/simple_marker_config.yml"
+    return "data/test_markers/config_simple.yml"
 
 
 @pytest.fixture(scope="session")
@@ -178,7 +178,7 @@ def multi_marker_config_folder() -> Text:
 
 @pytest.fixture(scope="session")
 def invalid_markers_config() -> Text:
-    return "data/test_markers/invalid.yml"
+    return "data/test_markers/config_invalid.yml"
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68

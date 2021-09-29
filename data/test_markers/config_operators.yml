@@ -1,0 +1,40 @@
+markers:
+  - marker: no_restart
+    condition:
+      - action_not_executed:
+        - action_restart
+
+  - marker: all_required_data_gathered
+    condition:
+      - slot_is_set:
+        - travel_flight_class
+        - travel_departure
+        - travel_destination
+
+  - marker: carbon_offset_calculated
+    operator: AND
+    condition:
+      - slot_is_set:
+        - travel_flight_class
+        - travel_departure
+        - travel_destination
+      - action_executed:
+        - provide_carbon_estimate
+
+  - marker: chitchat_or_FAQ
+    operator: OR
+    condition:
+      - action_executed:
+        - utter_explain_why_offset_travel
+      - action_executed:
+        - utter_faq
+
+  - marker: dialog_followed_expected_order
+    operator: SEQ
+    condition:
+      - action_executed:
+        - requested_slot_travel_flight_class
+      - action_executed:
+        - requested_slot_travel_departure
+      - action_executed:
+       - requested_slot_travel_destination

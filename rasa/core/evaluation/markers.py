@@ -5,7 +5,7 @@ from typing import (
     Text,
     Union,
 )
-
+from ruamel.yaml.parser import ParserError
 import rasa.shared.core.constants
 from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.constants
@@ -13,7 +13,7 @@ import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.data import is_likely_yaml_file
-from ruamel.yaml.parser import ParserError
+from rasa.shared.utils.schemas.markers import MARKERS_SCHEMA
 
 
 class InvalidMarkersConfig(RasaException):
@@ -56,11 +56,11 @@ class MarkerConfig:
     def from_yaml(cls, yaml: Text, filename: Text = "") -> Dict:
         """Loads the config from YAML text after validating it."""
         try:
-            # TODO implement and call the yaml schema validation
-            #  rasa.shared.utils.validation.validate_yaml_schema(yaml,
-            #  MAKERS_SCHEMA_FILE)
 
-            return rasa.shared.utils.io.read_yaml(yaml)
+            config = rasa.shared.utils.io.read_yaml(yaml)
+            cls._validate_config(config)
+            return config
+
         except ParserError as e:
             e.filename = filename
             rasa.shared.utils.io.raise_warning(
@@ -93,3 +93,20 @@ class MarkerConfig:
             return copy_config_a
         else:
             return config_b
+
+    @classmethod
+    def _validate_config(cls, config: Dict, filename: Text = "") -> bool:
+        from jsonschema import validate
+        from jsonschema import ValidationError
+
+        try:
+            validate(config, MARKERS_SCHEMA)
+            return True
+        except ValidationError as e:
+            e.message += f". The file {filename} is invalid according to the schema."
+            raise e
+
+    @staticmethod
+    def config_format_spec() -> Dict:
+        """Expected schema for a markers config."""
+        return MARKERS_SCHEMA
