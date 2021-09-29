@@ -122,21 +122,25 @@ def test_load_valid_path(markers_config_folder, multi_marker_config_json):
 
 
 def test_valid_config(simple_marker_config_json):
+    """Tests a valid config"""
     assert MarkerConfig._validate_config(simple_marker_config_json) is True
 
 
 def test_valid_config_operators(markers_config_operators):
+    """Tests a valid config containing all supported operators"""
     config = MarkerConfig.load_config_from_path(markers_config_operators)
     assert MarkerConfig._validate_config(config) is True
 
 
 def test_config_missing_required_top_level_markers_label():
+    """Tests an invalid config"""
     sample_json = {"marker": "no_restart"}
     with pytest.raises(ValidationError):
         MarkerConfig._validate_config(sample_json)
 
 
 def test_config_missing_required_marker_label():
+    """Tests an invalid config"""
     sample_json = {
         "markers": [{"condition": [{"action_not_executed": ["action_restart"]}]}]
     }
@@ -145,12 +149,14 @@ def test_config_missing_required_marker_label():
 
 
 def test_config_missing_required_condition_label():
+    """Tests an invalid config"""
     sample_json = {"markers": [{"marker": "no_restart"}]}
     with pytest.raises(ValidationError):
         MarkerConfig._validate_config(sample_json)
 
 
 def test_config_invalid_operator():
+    """Tests an invalid config"""
     sample_json = {
         "markers": [
             {
@@ -165,6 +171,7 @@ def test_config_invalid_operator():
 
 
 def test_config_invalid_event():
+    """Tests an invalid config"""
     sample_json = {
         "markers": [
             {

@@ -56,7 +56,6 @@ class MarkerConfig:
     def from_yaml(cls, yaml: Text, filename: Text = "") -> Dict:
         """Loads the config from YAML text after validating it."""
         try:
-
             config = rasa.shared.utils.io.read_yaml(yaml)
             cls._validate_config(config)
             return config
@@ -96,6 +95,7 @@ class MarkerConfig:
 
     @classmethod
     def _validate_config(cls, config: Dict, filename: Text = "") -> bool:
+        """Validates the markers config according to the schema."""
         from jsonschema import validate
         from jsonschema import ValidationError
 
@@ -103,10 +103,12 @@ class MarkerConfig:
             validate(config, MARKERS_SCHEMA)
             return True
         except ValidationError as e:
-            e.message += f". The file {filename} is invalid according to the schema."
+            e.message += (
+                f". The file {filename} is invalid according to the markers schema."
+            )
             raise e
 
     @staticmethod
     def config_format_spec() -> Dict:
-        """Expected schema for a markers config."""
+        """Returns expected schema for a markers config."""
         return MARKERS_SCHEMA
