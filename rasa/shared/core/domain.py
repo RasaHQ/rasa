@@ -1856,8 +1856,8 @@ class SlotMapping(Enum):
         mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain,
     ) -> bool:
         """Checks whether user intent matches slot mapping intent specifications."""
-        mapping_intents = mapping.get("intent", [])
-        mapping_not_intents = mapping.get("not_intent", [])
+        mapping_intents = SlotMapping.to_list(mapping.get("intent", []))
+        mapping_not_intents = SlotMapping.to_list(mapping.get("not_intent", []))
 
         active_loop_name = tracker.active_loop_name
         if active_loop_name:
@@ -1872,23 +1872,32 @@ class SlotMapping(Enum):
 
         return intent_not_blocked or intent in mapping_intents
 
+    # helpers
+    @staticmethod
+    def to_list(x: Optional[Any]) -> List[Any]:
+        """Convert object to a list if it isn't."""
+        if x is None:
+            x = []
+        elif not isinstance(x, list):
+            x = [x]
+
+        return x
+
     @staticmethod
     def entity_is_desired(
-        mapping: Dict[Text, Any],
-        extracted_entities: List[Dict],
-        tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
     ) -> bool:
         """Checks whether slot should be filled by an entity in the input or not.
 
         Args:
             mapping: Slot mapping.
-            extracted_entities: List of entities extracted from last user message.
             tracker: The tracker.
 
         Returns:
             True, if slot should be filled, false otherwise.
         """
         slot_fulfils_entity_mapping = False
+        extracted_entities = tracker.latest_message.entities
 
         for entity in extracted_entities:
             if (

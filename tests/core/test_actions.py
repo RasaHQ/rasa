@@ -1,6 +1,6 @@
 import textwrap
 from datetime import datetime
-from typing import List, Text
+from typing import List, Text, Any
 
 import pytest
 from aioresponses import aioresponses
@@ -20,6 +20,7 @@ from rasa.core.actions.action import (
     RemoteAction,
     ActionSessionStart,
     ActionEndToEndResponse,
+    ActionExtractSlots,
 )
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
@@ -77,6 +78,7 @@ from rasa.shared.core.constants import (
     FOLLOWUP_ACTION,
     REQUESTED_SLOT,
     SESSION_START_METADATA_SLOT,
+    ACTION_EXTRACT_SLOTS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -124,7 +126,7 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 15
+    assert len(instantiated_actions) == 16
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -137,9 +139,10 @@ def test_domain_action_instantiation():
     assert instantiated_actions[9].name() == ACTION_UNLIKELY_INTENT_NAME
     assert instantiated_actions[10].name() == ACTION_BACK_NAME
     assert instantiated_actions[11].name() == RULE_SNIPPET_ACTION_NAME
-    assert instantiated_actions[12].name() == "my_module.ActionTest"
-    assert instantiated_actions[13].name() == "utter_test"
-    assert instantiated_actions[14].name() == "utter_chitchat"
+    assert instantiated_actions[12].name() == ACTION_EXTRACT_SLOTS
+    assert instantiated_actions[13].name() == "my_module.ActionTest"
+    assert instantiated_actions[14].name() == "utter_test"
+    assert instantiated_actions[15].name() == "utter_chitchat"
 
 
 async def test_remote_action_runs(
@@ -1118,3 +1121,144 @@ async def test_run_end_to_end_utterance_action():
             {},
         )
     ]
+
+
+@pytest.mark.parametrize(
+    "user, slot_name, slot_value, new_user, updated_value",
+    [
+        (
+            UserUttered(
+                intent={"name": "inform"},
+                entities=[{"entity": "city", "value": "London"}],
+            ),
+            "location",
+            "London",
+            UserUttered(
+                intent={"name": "inform"},
+                entities=[{"entity": "city", "value": "Berlin"}],
+            ),
+            "Berlin",
+        ),
+        (
+            UserUttered(text="test@example.com", intent={"name": "inform"}),
+            "email",
+            "test@example.com",
+            UserUttered(text="updated_test@example.com", intent={"name": "inform"}),
+            "updated_test@example.com",
+        ),
+        (
+            UserUttered(intent={"name": "affirm"}),
+            "cancel_booking",
+            True,
+            UserUttered(intent={"name": "deny"}),
+            False,
+        ),
+        (
+            UserUttered(intent={"name": "deny"}),
+            "cancel_booking",
+            False,
+            UserUttered(intent={"name": "affirm"}),
+            True,
+        ),
+        (
+            UserUttered(
+                intent={"name": "inform"},
+                entities=[
+                    {"entity": "name", "value": "Bob"},
+                    {"entity": "name", "value": "Mary"},
+                ],
+            ),
+            "guest_names",
+            ["Bob", "Mary"],
+            UserUttered(
+                intent={"name": "inform"},
+                entities=[{"entity": "name", "value": "John"},],
+            ),
+            ["John"],
+        ),
+    ],
+)
+async def test_action_extract_slots_predefined_mappings(
+    user: Event, slot_name: Text, slot_value: Any, new_user: Event, updated_value: Any,
+):
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            """
+            intents:
+            - inform
+            - greet
+            - affirm
+            - deny
+            entities:
+            - city
+            slots:
+              location:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: city
+              email:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_text
+                  intent: inform
+                  not_intent: greet
+              cancel_booking:
+                type: bool
+                influence_conversation: false
+                mappings:
+                - type: from_intent
+                  intent: affirm
+                  value: true
+                - type: from_intent
+                  intent: deny
+                  value: false
+              guest_names:
+                type: list
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: name"""
+        )
+    )
+
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+    tracker = DialogueStateTracker.from_events("sender", evts=[user])
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+
+    assert events == [SlotSet(slot_name, slot_value)]
+
+    events.extend([user])
+    tracker.update_with_events(events, domain)
+
+    new_events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert not new_events
+
+    new_events.extend([BotUttered(), ActionExecuted("action_listen"), new_user])
+    tracker.update_with_events(new_events, domain)
+
+    updated_evts = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+
+    if new_user.entities:
+        # the slot gets filled with extracted entities during tracker.update
+        assert not updated_evts
+        assert tracker.get_slot(slot_name) == updated_value
+    else:
+        assert updated_evts == [SlotSet(slot_name, updated_value)]

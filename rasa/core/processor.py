@@ -24,6 +24,7 @@ from rasa.shared.core.constants import (
     SLOTS,
     FOLLOWUP_ACTION,
     SESSION_START_METADATA_SLOT,
+    ACTION_EXTRACT_SLOTS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -54,6 +55,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
 from rasa.core.policies.ensemble import PolicyEnsemble
 import rasa.core.tracker_store
+import rasa.core.actions.action
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -106,6 +108,26 @@ class MessageProcessor:
                 docs=DOCS_URL_POLICIES,
             )
             return None
+
+        if tracker.active_loop_name is None:
+            action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
+                ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
+            )
+            output_channel = (
+                message.output_channel
+                if message.output_channel
+                else CollectingOutputChannel()
+            )
+            extraction_events = await action_extract_slots.run(
+                output_channel, self.nlg, tracker, self.domain
+            )
+            tracker.update_with_events(extraction_events, self.domain)
+
+            events_as_str = "\n".join([str(e) for e in extraction_events])
+            logger.debug(
+                f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
+                f"resulting in {len(extraction_events)} events: {events_as_str}"
+            )
 
         await self._predict_and_execute_next_action(message.output_channel, tracker)
 
