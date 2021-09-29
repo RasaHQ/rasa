@@ -6,8 +6,8 @@ MARKER_ID_SCHEMA = {
 OPERATOR_SCHEMA = {
     "description": "The operator to apply to the list of conditions.",
     "type": "string",
-    "default": "AND",
     "enum": ["AND", "OR", "SEQ"],
+    "default": "AND",
 }
 
 EVENT_SCHEMA = {
@@ -33,6 +33,7 @@ CONDITION_SCHEMA = {
             "user_uttered": EVENT_SCHEMA,
             "bot_uttered": EVENT_SCHEMA,
         },
+        "minItems": 1,
     },
 }
 

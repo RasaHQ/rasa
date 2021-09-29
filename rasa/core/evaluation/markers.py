@@ -57,7 +57,7 @@ class MarkerConfig:
         """Loads the config from YAML text after validating it."""
         try:
             config = rasa.shared.utils.io.read_yaml(yaml)
-            cls._validate_config(config, filename)
+            cls.validate_config(config, filename)
             return config
 
         except ParserError as e:
@@ -92,7 +92,7 @@ class MarkerConfig:
             return config_b
 
     @classmethod
-    def _validate_config(cls, config: Dict, filename: Text = "") -> bool:
+    def validate_config(cls, config: Dict, filename: Text = "") -> bool:
         """Validates the markers config according to the schema."""
         from jsonschema import validate
         from jsonschema import ValidationError
