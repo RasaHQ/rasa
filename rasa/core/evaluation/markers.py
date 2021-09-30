@@ -62,7 +62,7 @@ class MarkerConfig:
 
         except ParserError as e:
             e.filename = filename
-            raise YamlSyntaxException(filename)
+            raise YamlSyntaxException(filename, e)
 
     @classmethod
     def from_directory(cls, path: Text) -> Dict:
