@@ -1239,6 +1239,7 @@ class Domain:
                             entity.get("entity") == mapping.get("entity")
                             for mapping in slot.mappings
                             if mapping.get("type") == "from_entity"
+                            and mapping.get("conditions") is None
                         ]
                     )
                 ]

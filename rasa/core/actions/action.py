@@ -981,7 +981,8 @@ class ActionExtractSlots(Action):
         if not custom_action:
             # find if there is any validation action in the domain
             custom_action = next(
-                filter(lambda x: x.startswith("validate_slots"), domain.user_actions,)
+                filter(lambda x: x.startswith("validate_slots"), domain.user_actions,),
+                None,
             )
 
         if custom_action:
