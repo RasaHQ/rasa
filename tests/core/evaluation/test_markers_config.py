@@ -91,7 +91,7 @@ def test_from_yaml(simple_marker_config_json):
     assert yaml_as_dict == simple_marker_config_json
 
 
-def test_invalid_yaml_exceptions(invalid_markers_config):
+def test_invalid_yaml_syntax_exception(invalid_markers_config):
     """Checks that an exception is raised when an invalid config file is supplied"""
     with pytest.raises(YamlSyntaxException):
         MarkerConfig.from_file(invalid_markers_config)
@@ -100,7 +100,7 @@ def test_invalid_yaml_exceptions(invalid_markers_config):
 def test_load_invalid_path():
     """Checks that an exception is raised when an invalid path is supplied"""
     with pytest.raises(InvalidMarkersConfig):
-        MarkerConfig.load_config_from_path("not a path")
+        MarkerConfig.load_config_from_path("not/a/real/path")
 
 
 def test_load_valid_file(simple_markers_config, simple_marker_config_json):
@@ -132,52 +132,97 @@ def test_valid_config_operators(markers_config_operators):
 
 def test_config_missing_required_top_level_markers_label():
     """Tests an invalid config"""
-    sample_json = {"marker": "no_restart"}
+    sample_yaml = """
+      - marker: no_restart
+        condition:
+          - action_not_executed:
+              - action_restart
+    """
     with pytest.raises(ValidationError):
-        MarkerConfig.validate_config(sample_json)
+        MarkerConfig.from_yaml(sample_yaml)
 
 
 def test_config_missing_required_marker_label():
     """Tests an invalid config"""
-    sample_json = {
-        "markers": [{"condition": [{"action_not_executed": ["action_restart"]}]}]
-    }
+    sample_json = """
+    markers:
+      - condition:
+          - action_not_executed:
+              - action_restart
+    """
     with pytest.raises(ValidationError):
-        MarkerConfig.validate_config(sample_json)
+        MarkerConfig.from_yaml(sample_json)
 
 
 def test_config_missing_required_condition_label():
     """Tests an invalid config"""
-    sample_json = {"markers": [{"marker": "no_restart"}]}
+    sample_yaml = """
+    markers:
+      - marker: no_restart
+    """
     with pytest.raises(ValidationError):
-        MarkerConfig.validate_config(sample_json)
+        MarkerConfig.from_yaml(sample_yaml)
 
 
 def test_config_invalid_operator():
     """Tests an invalid config"""
-    sample_json = {
-        "markers": [
-            {
-                "marker": "no_restart",
-                "operator": "XOR",
-                "condition": [{"action_not_executed": ["action_restart"]}],
-            },
-        ]
-    }
+    sample_yaml = """
+    markers:
+      - marker: no_restart
+        operator: XOR
+        condition:
+          - action_not_executed:
+              - action_restart
+    """
     with pytest.raises(ValidationError):
-        MarkerConfig.validate_config(sample_json)
+        MarkerConfig.from_yaml(sample_yaml)
 
 
 def test_config_invalid_event():
     """Tests an invalid config"""
-    sample_json = {
-        "markers": [
-            {
-                "marker": "no_restart",
-                "operator": "XOR",
-                "condition": [{"action": ["action_restart"]}],
-            },
-        ]
-    }
+    sample_yaml = """
+    markers:
+      - marker: no_restart
+        condition:
+          - some_made_up_event_name:
+              - action_restart
+    """
     with pytest.raises(ValidationError):
-        MarkerConfig.validate_config(sample_json)
+        MarkerConfig.from_yaml(sample_yaml)
+
+
+def test_config_not_enough_conditions():
+    """Tests an invalid config"""
+    sample_yaml = """
+    markers:
+      - marker: no_restart
+        condition: []
+    """
+    with pytest.raises(ValidationError):
+        MarkerConfig.from_yaml(sample_yaml)
+
+
+def test_config_non_unique_events_under_condition():
+    """Tests an invalid config"""
+    sample_yaml = """
+    markers:
+      - marker: no_restart
+        condition:
+          - action_executed:
+              - action_restart
+              - action_restart
+    """
+    with pytest.raises(ValidationError):
+        MarkerConfig.from_yaml(sample_yaml)
+
+
+def test_config_not_enough_events_under_condition():
+    """Tests an invalid config"""
+    sample_json = """
+    markers:
+      - marker: no_restart
+        condition:
+          - action_executed: []
+    """
+    with pytest.raises(ValidationError):
+        MarkerConfig.from_yaml(sample_json)

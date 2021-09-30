@@ -33,8 +33,9 @@ CONDITION_SCHEMA = {
             "user_uttered": EVENT_SCHEMA,
             "bot_uttered": EVENT_SCHEMA,
         },
-        "minItems": 1,
+        "additionalProperties": False,
     },
+    "minItems": 1,
 }
 
 MARKERS_SCHEMA = {
