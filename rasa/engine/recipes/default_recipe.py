@@ -763,7 +763,6 @@ class DefaultV1Recipe(Recipe):
             resource=Resource("domain_provider"),
         )
 
-        nlu_merge_needs = {}
         node_with_e2e_features = None
 
         if "end_to_end_features_provider" in train_nodes:
@@ -791,7 +790,6 @@ class DefaultV1Recipe(Recipe):
                 train_nodes[train_node_name],
                 **default_predict_kwargs,
                 needs={
-                    **nlu_merge_needs,
                     "domain": "domain_provider",
                     **(
                         {"precomputations": node_with_e2e_features}
