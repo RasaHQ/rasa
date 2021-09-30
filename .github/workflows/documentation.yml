@@ -17,6 +17,7 @@ env:
   DOCS_BRANCH: documentation
   TAG_NAME: ${GITHUB_REF#refs/tags/}
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
+  IS_MASTER_BRANCH: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
   evaluate_release_tag:
@@ -67,7 +68,8 @@ jobs:
         IS_LATEST_VERSION=${{ steps.rasa_get_version.outputs.is_latest_version }}
 
         # the latest major (when 3.0 is out, the latest major is 3.0)
-        if [[ "${IS_LATEST_VERSION}" == "true" ]]; then
+        # build docs on push to the main branch
+        if [[ "${IS_LATEST_VERSION}" == "true" || "${IS_MASTER_BRANCH}" == "true" ]]; then
           echo "::set-output name=build_docs::true"
           exit 0
         fi
@@ -91,7 +93,7 @@ jobs:
     name: Build Docs
     runs-on: ubuntu-latest
     needs: [ evaluate_release_tag ]
-    if: github.repository == 'RasaHQ/rasa' && (needs.evaluate_release_tag.outputs.build_docs == 'true' || github.ref == 'refs/heads/main' )  # don't run this for main branches of forks, would fail anyways
+    if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.build_docs == 'true'  # don't run this for main branches of forks, would fail anyways
 
     steps:
     - name: Checkout git repository 🕝

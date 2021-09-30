@@ -14,7 +14,7 @@ set -Eeuo pipefail
 
 TODAY=`date "+%Y%m%d"`
 # we build new versions only for minors and majors
-PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.0$"
+PATTERN_FOR_NEW_VERSION="^refs/tags/[0-9]+\\.0\\.0$"
 PATTERN_FOR_MICRO_VERSION="^refs/tags/[0-9]+\\.[0-9]+\\.[1-9][0-9]*$"
 MAIN_REF=refs/heads/main
 VARIABLES_JSON=docs/docs/variables.json
@@ -34,9 +34,11 @@ EXISTING_VERSION=
 if [[ "$GITHUB_REF" =~ $PATTERN_FOR_NEW_VERSION ]]
 then
     NEW_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.0$/\1.x/")
+    if [[ -n ${CI} ]]; then echo "New version: ${NEW_VERSION}"; fi
 elif [[ "$GITHUB_REF" =~ $PATTERN_FOR_MICRO_VERSION ]]
 then
     EXISTING_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.[0-9]+$/\1.x/")
+    if [[ -n ${CI} ]]; then echo "Existing version: ${EXISTING_VERSION}"; fi
 fi
 
 # clone the $DOCS_BRANCH in a temp directory
