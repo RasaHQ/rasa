@@ -1,6 +1,32 @@
 version: "2"
 exclude_patterns:
 - rasa/core/utils.py   # codeclimate has some encoding issues with this files because of emojis
+- .*
+- .github/
+- CHANGELOG.mdx
+- CODEOWNERS
+- CODE_OF_CONDUCT.md
+- Dockerfile
+- LICENSE.txt
+- Makefile
+- NOTICE
+- PRONCIPLES.md
+- README.md
+- bandit.yml
+- binder/
+- changelog/
+- data/         # double-check this
+- docs/         # double-check this
+- examples/     # double-check this
+- poetry.lock
+- pyproject.toml
+- pytest.ini
+- tests/
+- stubs/
+- setup.cfg
+- scripts/
+- security.txt
+- secrets.tar.enc
 checks:
   argument-count:
     config:
