@@ -18,10 +18,64 @@ your machine and continue development locally.
 
 ## Quick Installation
 
+This step is optional, but we strongly recommend isolating python projects
+using virtual environments.
+
+<Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
+  <TabItem value="ubuntu">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+
+  ```bash
+  python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bash
+  source ./venv/bin/activate
+  ```
+
+  </TabItem>
+  <TabItem value="macos">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+
+  ```bash
+  python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bash
+  source ./venv/bin/activate
+  ```
+
+  </TabItem>
+  <TabItem value="windows">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `.\\venv` directory to hold it:
+
+  ```bat
+  C:\> python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bat
+  C:\> .\venv\Scripts\activate
+  ```
+
+  </TabItem>
+</Tabs>
+
 You can install Rasa Open Source using pip (requires Python 3.6, 3.7 or 3.8).
 
 ```bash
-pip3 install -U pip
+pip3 install -U --user pip
+```
+
+```bash
 pip3 install rasa
 ```
 
