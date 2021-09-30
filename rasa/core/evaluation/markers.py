@@ -62,12 +62,7 @@ class MarkerConfig:
 
         except ParserError as e:
             e.filename = filename
-            raise YamlSyntaxException(
-                f"The file {filename} could not be loaded "
-                f"as a markers config file. "
-                f"You can use https://yamlchecker.com/ to validate "
-                f"the YAML syntax of the file."
-            )
+            raise YamlSyntaxException(filename)
 
     @classmethod
     def from_directory(cls, path: Text) -> Dict:
