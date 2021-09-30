@@ -1,3 +1,4 @@
+from rasa.shared.exceptions import RasaException
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.core.tracker_store import TrackerStore
 import pytest
@@ -7,6 +8,7 @@ import pytest
 
 
 def test_load_sample(tracker_store: TrackerStore):
+    """Test loading trackers using 'sample' strategy."""
     loader = MarkerTrackerLoader(tracker_store, "sample", 3)
     result = loader.load()
 
@@ -17,6 +19,7 @@ def test_load_sample(tracker_store: TrackerStore):
 
 
 def test_load_first_n(tracker_store: TrackerStore):
+    """Test loading trackers using 'first_n' strategy."""
     loader = MarkerTrackerLoader(tracker_store, "first_n", 3)
     result = loader.load()
 
@@ -27,6 +30,7 @@ def test_load_first_n(tracker_store: TrackerStore):
 
 
 def test_load_all(tracker_store: TrackerStore):
+    """Test loading trackers using 'all' strategy."""
     loader = MarkerTrackerLoader(tracker_store, "all")
     result = loader.load()
 
@@ -37,23 +41,31 @@ def test_load_all(tracker_store: TrackerStore):
 
 
 def test_exception_invalid_strategy(tracker_store: TrackerStore):
-    with pytest.raises(Exception):  # Make this more specific
-        loader = MarkerTrackerLoader(tracker_store, "summon")
+    """Test an exception is thrown when an invalid strategy is used."""
+    with pytest.raises(RasaException):  # Make this more specific
+        MarkerTrackerLoader(tracker_store, "summon")
 
 
 def test_exception_no_count(tracker_store: TrackerStore):
-    with pytest.raises(Exception):  # Make this more specific
-        loader = MarkerTrackerLoader(tracker_store, "sample")
+    """Test an exception is thrown when no count is given for non-'all' strategies."""
+    with pytest.raises(RasaException):  # Make this more specific
+        MarkerTrackerLoader(tracker_store, "sample")
 
 
-# TBD
 def test_warn_seed_unnecessary(tracker_store: TrackerStore):
-    loader = MarkerTrackerLoader(tracker_store, "first_n", 3, seed=5)
+    """Test a warning is thrown when 'seed' is set for non-'sample' strategies."""
+    with pytest.warns(UserWarning):
+        MarkerTrackerLoader(tracker_store, "first_n", 3, seed=5)
 
 
 def test_warn_count_all_unnecessary(tracker_store: TrackerStore):
-    loader = MarkerTrackerLoader(tracker_store, "all", 3)
+    """Test a warning is thrown when 'count' is set for strategy 'all'."""
+    with pytest.warns(UserWarning):
+        MarkerTrackerLoader(tracker_store, "all", 3)
 
 
 def test_warn_count_exceeds_store(tracker_store: TrackerStore):
-    loader = MarkerTrackerLoader(tracker_store, "sample", 6)
+    """Test a warning is thrown when 'count' is larger than the number of trackers."""
+    with pytest.warns(UserWarning):
+        loader = MarkerTrackerLoader(tracker_store, "sample", 6)
+        loader.load()
