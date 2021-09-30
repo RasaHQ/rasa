@@ -5,15 +5,15 @@ from typing import (
     Text,
     Union,
 )
-
+from ruamel.yaml.parser import ParserError
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, YamlSyntaxException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.data import is_likely_yaml_file
-from ruamel.yaml.parser import ParserError
+from rasa.shared.utils.schemas.markers import MARKERS_SCHEMA
 
 
 class InvalidMarkersConfig(RasaException):
@@ -56,21 +56,13 @@ class MarkerConfig:
     def from_yaml(cls, yaml: Text, filename: Text = "") -> Dict:
         """Loads the config from YAML text after validating it."""
         try:
-            # TODO implement and call the yaml schema validation
-            #  rasa.shared.utils.validation.validate_yaml_schema(yaml,
-            #  MAKERS_SCHEMA_FILE)
+            config = rasa.shared.utils.io.read_yaml(yaml)
+            cls.validate_config(config, filename)
+            return config
 
-            return rasa.shared.utils.io.read_yaml(yaml)
         except ParserError as e:
             e.filename = filename
-            rasa.shared.utils.io.raise_warning(
-                message=f"The file {filename} could not be loaded "
-                f"as a markers config file. "
-                f"You can use https://yamlchecker.com/ to validate "
-                f"the YAML syntax of the file.",
-                category=UserWarning,
-            )
-            raise e
+            raise YamlSyntaxException(filename, e)
 
     @classmethod
     def from_directory(cls, path: Text) -> Dict:
@@ -93,3 +85,23 @@ class MarkerConfig:
             return copy_config_a
         else:
             return config_b
+
+    @classmethod
+    def validate_config(cls, config: Dict, filename: Text = "") -> bool:
+        """Validates the markers config according to the schema."""
+        from jsonschema import validate
+        from jsonschema import ValidationError
+
+        try:
+            validate(config, cls.config_format_spec())
+            return True
+        except ValidationError as e:
+            e.message += (
+                f". The file {filename} is invalid according to the markers schema."
+            )
+            raise e
+
+    @staticmethod
+    def config_format_spec() -> Dict:
+        """Returns expected schema for a markers config."""
+        return MARKERS_SCHEMA
