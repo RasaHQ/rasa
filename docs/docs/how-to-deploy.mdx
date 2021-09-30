@@ -22,14 +22,12 @@ you can easily add them to your existing deployment set up.
 
 ## Recommended Deployment Method
 
-The recommended way to deploy an assistant is using Helm Chart option we support.
-Both deploy Rasa X and your assistant. It is the easiest way to deploy your assistant,
-allow you to connect Rasa OSS with Rasa X where you can view conversations and turn them into training data, and
-is production-ready.
+The [Rasa OSS Helm chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) is the supported method to deploy
+your assistant. It can also allows you to connect Rasa OSS with a separate Rasa X or
+Rasa Enterprise deployment and is production ready. See the [Alternative Deployment Methods](https://rasa.com/docs/rasa/how-to-deploy#alternative-deployment-methods)
+for details on building your bot locally, with Docker and deploying with docker-compose.
 
 For more details on Rasa X deployment methods see the [Rasa X Installation Guide](https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/).
-
-## Deploying a Rasa Open Source Assistant
 
 The following instructions describe how to deploy a Rasa Open Source server
 by using the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) in a scalable cluster environment using OpenShift or Kubernetes (K8S).
