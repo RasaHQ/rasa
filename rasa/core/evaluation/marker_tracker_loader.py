@@ -6,19 +6,19 @@ from rasa.core.tracker_store import TrackerStore
 import rasa.shared.utils.io
 
 
-def strategy_all(count: int, keys: List[Text]) -> Iterable[Text]:
+def strategy_all(keys: List[Text], count: int) -> Iterable[Text]:
     """Selects all keys from the set of keys."""
     return keys
 
 
-def strategy_first_n(count: int, keys: List[Text]) -> Iterable[Text]:
+def strategy_first_n(keys: List[Text], count: int) -> Iterable[Text]:
     """Takes the first N keys from the set of keys."""
     return keys[:count]
 
 
-def strategy_sample(count: int, keys: List[Text]) -> Iterable[Text]:
+def strategy_sample(keys: List[Text], count: int) -> Iterable[Text]:
     """Takes a sample of N keys from the set of keys."""
-    return random.choices(keys, k=count)
+    return random.sample(keys, k=count)
 
 
 class MarkerTrackerLoader:
@@ -37,7 +37,7 @@ class MarkerTrackerLoader:
         count: int = None,
         seed: Any = None,
     ) -> None:
-        """Create a MarkerTrackerLoader.
+        """Creates a MarkerTrackerLoader.
 
         Args:
             tracker_store: The underlying tracker store to access.
@@ -57,10 +57,20 @@ class MarkerTrackerLoader:
 
         self.strategy = MarkerTrackerLoader._STRATEGY_MAP[strategy]
 
-        if not count and strategy != "all":
-            raise RasaException(
-                "Desired tracker count must be given for strategy '{strategy}'"
-            )
+        if strategy != "all":
+            if not count:
+                raise RasaException(
+                    "Desired tracker count must be given for strategy '{strategy}'"
+                )
+
+            if count < 0:
+                # Prefer exception here because if count is ever passed less than 0
+                # something has definitely gone wrong, but if count exceeds population size
+                # that might be someone overestimating how much data they have so prefer
+                # to warn for that case and round down
+                raise RasaException(
+                    "Parameter 'count' must be greater than or equal to 0"
+                )
 
         self.count = count
 
@@ -79,7 +89,7 @@ class MarkerTrackerLoader:
                 )
 
     def load(self) -> Iterator[Optional[DialogueStateTracker]]:
-        """Load trackers according to strategy."""
+        """Loads trackers according to strategy."""
         stored_keys = list(self.tracker_store.keys())
         if self.count is not None and self.count > len(stored_keys):
             rasa.shared.utils.io.raise_warning(
@@ -87,6 +97,6 @@ class MarkerTrackerLoader:
             )
             self.count = len(stored_keys)
 
-        keys = self.strategy(self.count, stored_keys)
+        keys = self.strategy(stored_keys, self.count)
         for sender in keys:
             yield self.tracker_store.retrieve(sender)
