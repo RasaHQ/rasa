@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from enum import Enum
+from itertools import chain
 from pathlib import Path
 from typing import (
     Any,
@@ -1955,6 +1956,36 @@ def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> 
                     f"mapped in domain slots."
                 )
 
+        all_form_slots = [
+            required_slots[REQUIRED_SLOTS_KEY] for required_slots in forms.values()
+        ]
+        all_required_slots = set(chain.from_iterable(all_form_slots))
+
+        for slot, properties in domain_slots.items():
+            for mapping in properties["mappings"]:
+
+                if "conditions" in mapping:
+                    for condition in mapping["conditions"]:
+                        if (
+                            condition["active_loop"] == form_name
+                            and slot not in form_slots
+                        ):
+                            raise InvalidDomain(
+                                f"Slot '{slot}' has a mapping condition for form "
+                                f"'{form_name}', but it's not present in form "
+                                f"'{REQUIRED_SLOTS_KEY}'."
+                                f"The slot needs to be added to this key."
+                            )
+
+                if (
+                    mapping.get("type") == str(SlotMapping.FROM_TRIGGER_INTENT)
+                    and slot not in all_required_slots
+                ):
+                    raise InvalidDomain(
+                        f"Slot '{slot}' has a from_trigger_intent mapping, but it's "
+                        f"not listed in any form '{REQUIRED_SLOTS_KEY}'."
+                    )
+
 
 def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     if not isinstance(domain_slots, Dict):
@@ -1964,9 +1995,9 @@ def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
         )
 
     rasa.shared.utils.io.raise_warning(
-        "Slot auto-fill has been removed in 3.0 and replaced by a"
-        " new explicit mechanism to set slots. "
-        "Please refer to the docs to learn more.",
+        f"Slot auto-fill has been removed in 3.0 and replaced with a"
+        f" new explicit mechanism to set slots. "
+        f"Please refer to {DOCS_URL_SLOTS} to learn more.",
         UserWarning,
         DOCS_URL_SLOTS,
     )
