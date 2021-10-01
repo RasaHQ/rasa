@@ -65,9 +65,9 @@ class MarkerTrackerLoader:
 
             if count < 0:
                 # Prefer exception here because if count is ever passed less than 0
-                # something has definitely gone wrong, but if count exceeds population size
-                # that might be someone overestimating how much data they have so prefer
-                # to warn for that case and round down
+                # something has definitely gone wrong, but if count exceeds population
+                # size that might be someone overestimating how much data they have so
+                # prefer to warn for that case and round down
                 raise RasaException(
                     "Parameter 'count' must be greater than or equal to 0"
                 )

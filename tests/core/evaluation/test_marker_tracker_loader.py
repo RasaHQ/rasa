@@ -79,7 +79,7 @@ def test_exception_no_count(marker_trackerstore: TrackerStore):
 
 
 def test_exception_negative_count(marker_trackerstore: TrackerStore):
-    """Tests an exception is thrown when an invalid count is given for non-'all' strategies."""
+    """Tests an exception is thrown when an invalid count is given."""
     with pytest.raises(RasaException):  # Make this more specific
         MarkerTrackerLoader(marker_trackerstore, "sample")
 
