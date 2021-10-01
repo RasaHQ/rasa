@@ -6,12 +6,12 @@ import numpy as np
 
 from rasa.utils.tensorflow.constants import SEQUENCE, BALANCED
 from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
-from keras.utils import data_utils
+import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
 
-class RasaDataGenerator(data_utils.Sequence):
+class RasaDataGenerator(tf.keras.utils.Sequence):
     """Abstract data generator."""
 
     def __init__(

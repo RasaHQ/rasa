@@ -14,11 +14,9 @@ import numpy as np
 import tensorflow as tf
 
 from keras.callbacks import Callback, History
-from keras.engine import training, training_utils, data_adapter
-from keras.engine.training import _disallow_inside_tf_function
-from tensorflow.python.eager import context
+from keras.engine import training, training_utils, data_adapter, base_layer
 from keras.engine.data_adapter import DataHandler
-from keras.engine import base_layer
+from tensorflow.python.eager import context
 from keras.utils import tf_utils, version_utils
 from tensorflow.python.profiler import trace
 
@@ -115,7 +113,7 @@ class TmpKerasModel(tf.keras.models.Model):
         version_utils.disallow_legacy_graph("Model", "fit")
         self._assert_compile_was_called()
         self._check_call_args("fit")
-        _disallow_inside_tf_function("fit")
+        training._disallow_inside_tf_function("fit")
 
         if validation_split:
             # Create the validation data using the training data. Only supported for

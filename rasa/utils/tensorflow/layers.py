@@ -3,7 +3,7 @@ from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
 import rasa.utils.tensorflow.crf
-from keras.utils import control_flow_util
+from tensorflow.python.layers.utils import smart_cond
 from tensorflow.keras import backend as K
 from rasa.utils.tensorflow.constants import (
     SOFTMAX,
@@ -88,7 +88,7 @@ class SparseDropout(tf.keras.layers.Dropout):
             to_retain = tf.greater_equal(to_retain_prob, self.rate)
             return tf.sparse.retain(inputs, to_retain)
 
-        outputs = control_flow_util.smart_cond(
+        outputs = smart_cond(
             training, dropped_inputs, lambda: tf.identity(inputs)
         )
         # need to explicitly recreate sparse tensor, because otherwise the shape
@@ -557,7 +557,7 @@ class InputMask(tf.keras.layers.Layer):
             return tf.where(tf.tile(lm_mask_bool, (1, 1, x.shape[-1])), x_other, x)
 
         return (
-            control_flow_util.smart_cond(training, x_masked, lambda: tf.identity(x)),
+            smart_cond(training, x_masked, lambda: tf.identity(x)),
             lm_mask_bool,
         )
 

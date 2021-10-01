@@ -1,6 +1,6 @@
 from typing import Optional, Text, Tuple, Union
 import tensorflow as tf
-from keras.utils import control_flow_util
+from tensorflow.python.layers.utils import smart_cond
 from tensorflow.keras import backend as K
 import numpy as np
 from rasa.utils.tensorflow.layers import RandomlyConnectedDense
@@ -252,7 +252,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
             return logits + drop_mask * -1e9
 
-        return control_flow_util.smart_cond(
+        return smart_cond(
             training, droped_logits, lambda: tf.identity(logits)
         )
 
