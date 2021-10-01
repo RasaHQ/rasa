@@ -3,10 +3,10 @@ from typing import List, Union, Text, Optional, Any, Tuple, Dict
 import logging
 import scipy.sparse
 import numpy as np
+import tensorflow as tf
 
 from rasa.utils.tensorflow.constants import SEQUENCE, BALANCED
 from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
-import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
