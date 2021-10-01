@@ -1,22 +1,22 @@
 import random
 from rasa.shared.exceptions import RasaException
 from rasa.shared.core.trackers import DialogueStateTracker
-from typing import Any, Iterable, Iterator, Text, Optional
+from typing import Any, Iterable, Iterator, List, Text, Optional
 from rasa.core.tracker_store import TrackerStore
 import rasa.shared.utils.io
 
 
-def strategy_all(count: int, keys: Iterable[Text]) -> Iterable[Text]:
+def strategy_all(count: int, keys: List[Text]) -> Iterable[Text]:
     """Selects all keys from the set of keys."""
     return keys
 
 
-def strategy_first_n(count: int, keys: Iterable[Text]) -> Iterable[Text]:
+def strategy_first_n(count: int, keys: List[Text]) -> Iterable[Text]:
     """Takes the first N keys from the set of keys."""
     return keys[:count]
 
 
-def strategy_sample(count: int, keys: Iterable[Text]) -> Iterable[Text]:
+def strategy_sample(count: int, keys: List[Text]) -> Iterable[Text]:
     """Takes a sample of N keys from the set of keys."""
     return random.choices(keys, k=count)
 
