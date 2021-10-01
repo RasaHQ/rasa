@@ -27,7 +27,7 @@ Manages the publishing of events in a tracker store to an event broker.
 #### publish\_events
 
 ```python
- | async publish_events() -> int
+async def publish_events() -> int
 ```
 
 Publish events in a tracker store using an event broker.

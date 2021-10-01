@@ -5,7 +5,7 @@ title: rasa.core.agent
 #### load\_from\_server
 
 ```python
-async load_from_server(agent: "Agent", model_server: EndpointConfig) -> "Agent"
+async def load_from_server(agent: "Agent", model_server: EndpointConfig) -> "Agent"
 ```
 
 Load a persisted model from a server.
@@ -13,7 +13,7 @@ Load a persisted model from a server.
 #### create\_agent
 
 ```python
-create_agent(model: Text, endpoints: Text = None) -> "Agent"
+def create_agent(model: Text, endpoints: Text = None) -> "Agent"
 ```
 
 Create an agent instance based on a stored model.
@@ -26,7 +26,7 @@ Create an agent instance based on a stored model.
 #### load\_agent
 
 ```python
-async load_agent(model_path: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, interpreter: Optional[NaturalLanguageInterpreter] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None) -> Optional["Agent"]
+async def load_agent(model_path: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, interpreter: Optional[NaturalLanguageInterpreter] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None) -> Optional["Agent"]
 ```
 
 Loads agent from server, remote storage or disk.
@@ -63,8 +63,8 @@ getting the next action, and handling a channel.
 #### load
 
 ```python
- | @classmethod
- | load(cls, model_path: Union[Text, Path], interpreter: Optional[NaturalLanguageInterpreter] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, path_to_model_archive: Optional[Text] = None, new_config: Optional[Dict] = None, finetuning_epoch_fraction: float = 1.0) -> "Agent"
+@classmethod
+def load(cls, model_path: Union[Text, Path], interpreter: Optional[NaturalLanguageInterpreter] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, path_to_model_archive: Optional[Text] = None, new_config: Optional[Dict] = None, finetuning_epoch_fraction: float = 1.0) -> "Agent"
 ```
 
 Load a persisted model from the passed path.
@@ -72,7 +72,7 @@ Load a persisted model from the passed path.
 #### is\_core\_ready
 
 ```python
- | is_core_ready() -> bool
+def is_core_ready() -> bool
 ```
 
 Check if all necessary components and policies are ready to use the agent.
@@ -80,7 +80,7 @@ Check if all necessary components and policies are ready to use the agent.
 #### is\_ready
 
 ```python
- | is_ready() -> bool
+def is_ready() -> bool
 ```
 
 Check if all necessary components are instantiated to use agent.
@@ -90,7 +90,7 @@ Policies might not be available, if this is an NLU only agent.
 #### parse\_message\_using\_nlu\_interpreter
 
 ```python
- | async parse_message_using_nlu_interpreter(message_data: Text, tracker: DialogueStateTracker = None) -> Dict[Text, Any]
+async def parse_message_using_nlu_interpreter(message_data: Text, tracker: DialogueStateTracker = None) -> Dict[Text, Any]
 ```
 
 Handles message text and intent payload input messages.
@@ -124,7 +124,7 @@ The return value of this function is parsed_data.
 #### handle\_message
 
 ```python
- | async handle_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> Optional[List[Dict[Text, Any]]]
+async def handle_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> Optional[List[Dict[Text, Any]]]
 ```
 
 Handle a single message.
@@ -132,7 +132,7 @@ Handle a single message.
 #### predict\_next
 
 ```python
- | async predict_next(sender_id: Text, **kwargs: Any) -> Optional[Dict[Text, Any]]
+async def predict_next(sender_id: Text, **kwargs: Any) -> Optional[Dict[Text, Any]]
 ```
 
 Handle a single message.
@@ -140,7 +140,7 @@ Handle a single message.
 #### log\_message
 
 ```python
- | async log_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> DialogueStateTracker
+async def log_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> DialogueStateTracker
 ```
 
 Append a message to a dialogue - does not predict actions.
@@ -148,7 +148,7 @@ Append a message to a dialogue - does not predict actions.
 #### execute\_action
 
 ```python
- | async execute_action(sender_id: Text, action: Text, output_channel: OutputChannel, policy: Optional[Text], confidence: Optional[float]) -> Optional[DialogueStateTracker]
+async def execute_action(sender_id: Text, action: Text, output_channel: OutputChannel, policy: Optional[Text], confidence: Optional[float]) -> Optional[DialogueStateTracker]
 ```
 
 Handle a single message.
@@ -156,7 +156,7 @@ Handle a single message.
 #### trigger\_intent
 
 ```python
- | async trigger_intent(intent_name: Text, entities: List[Dict[Text, Any]], output_channel: OutputChannel, tracker: DialogueStateTracker) -> None
+async def trigger_intent(intent_name: Text, entities: List[Dict[Text, Any]], output_channel: OutputChannel, tracker: DialogueStateTracker) -> None
 ```
 
 Trigger a user intent, e.g. triggered by an external event.
@@ -164,7 +164,7 @@ Trigger a user intent, e.g. triggered by an external event.
 #### handle\_text
 
 ```python
- | async handle_text(text_message: Union[Text, Dict[Text, Any]], message_preprocessor: Optional[Callable[[Text], Text]] = None, output_channel: Optional[OutputChannel] = None, sender_id: Optional[Text] = DEFAULT_SENDER_ID) -> Optional[List[Dict[Text, Any]]]
+async def handle_text(text_message: Union[Text, Dict[Text, Any]], message_preprocessor: Optional[Callable[[Text], Text]] = None, output_channel: Optional[OutputChannel] = None, sender_id: Optional[Text] = DEFAULT_SENDER_ID) -> Optional[List[Dict[Text, Any]]]
 ```
 
 Handle a single message.
@@ -189,7 +189,7 @@ the bot wants to respond.
 #### load\_data
 
 ```python
- | async load_data(training_resource: Union[Text, TrainingDataImporter], remove_duplicates: bool = True, unique_last_num_states: Optional[int] = None, augmentation_factor: int = 50, tracker_limit: Optional[int] = None, use_story_concatenation: bool = True, debug_plots: bool = False, exclusion_percentage: Optional[int] = None) -> List["TrackerWithCachedStates"]
+def load_data(training_resource: Union[Text, TrainingDataImporter], remove_duplicates: bool = True, unique_last_num_states: Optional[int] = None, augmentation_factor: int = 50, tracker_limit: Optional[int] = None, use_story_concatenation: bool = True, debug_plots: bool = False, exclusion_percentage: Optional[int] = None) -> List["TrackerWithCachedStates"]
 ```
 
 Load training data from a resource.
@@ -197,7 +197,7 @@ Load training data from a resource.
 #### train
 
 ```python
- | train(training_trackers: List[DialogueStateTracker], **kwargs: Any) -> None
+def train(training_trackers: List[DialogueStateTracker], **kwargs: Any) -> None
 ```
 
 Train the policies / policy ensemble using dialogue data from file.
@@ -211,7 +211,7 @@ Train the policies / policy ensemble using dialogue data from file.
 #### persist
 
 ```python
- | persist(model_path: Text) -> None
+def persist(model_path: Text) -> None
 ```
 
 Persists this agent into a directory for later loading and usage.
@@ -219,7 +219,7 @@ Persists this agent into a directory for later loading and usage.
 #### visualize
 
 ```python
- | async visualize(resource_name: Text, output_file: Text, max_history: Optional[int] = None, nlu_training_data: Optional[TrainingData] = None, should_merge_nodes: bool = True, fontsize: int = 12) -> None
+async def visualize(resource_name: Text, output_file: Text, max_history: Optional[int] = None, nlu_training_data: Optional[TrainingData] = None, should_merge_nodes: bool = True, fontsize: int = 12) -> None
 ```
 
 Visualize the loaded training data from the resource.
@@ -227,7 +227,7 @@ Visualize the loaded training data from the resource.
 #### create\_processor
 
 ```python
- | create_processor(preprocessor: Optional[Callable[[Text], Text]] = None) -> MessageProcessor
+def create_processor(preprocessor: Optional[Callable[[Text], Text]] = None) -> MessageProcessor
 ```
 
 Instantiates a processor based on the set state of the agent.

@@ -5,7 +5,7 @@ title: rasa.nlu.utils.pattern_utils
 #### read\_lookup\_table\_file
 
 ```python
-read_lookup_table_file(lookup_table_file: Text) -> List[Text]
+def read_lookup_table_file(lookup_table_file: Text) -> List[Text]
 ```
 
 Read the lookup table file.

@@ -5,7 +5,7 @@ title: rasa.cli.test
 #### add\_subparser
 
 ```python
-add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all test parsers.
@@ -18,7 +18,7 @@ Add all test parsers.
 #### run\_core\_test
 
 ```python
-run_core_test(args: argparse.Namespace) -> None
+def run_core_test(args: argparse.Namespace) -> None
 ```
 
 Run core tests.
@@ -26,7 +26,7 @@ Run core tests.
 #### run\_nlu\_test\_async
 
 ```python
-async run_nlu_test_async(config: Optional[Union[Text, List[Text]]], data_path: Text, models_path: Text, output_dir: Text, cross_validation: bool, percentages: List[int], runs: int, no_errors: bool, all_args: Dict[Text, Any]) -> None
+async def run_nlu_test_async(config: Optional[Union[Text, List[Text]]], data_path: Text, models_path: Text, output_dir: Text, cross_validation: bool, percentages: List[int], runs: int, no_errors: bool, all_args: Dict[Text, Any]) -> None
 ```
 
 Runs NLU tests.
@@ -50,7 +50,7 @@ Runs NLU tests.
 #### run\_nlu\_test
 
 ```python
-run_nlu_test(args: argparse.Namespace) -> None
+def run_nlu_test(args: argparse.Namespace) -> None
 ```
 
 Runs NLU tests.
@@ -62,7 +62,7 @@ Runs NLU tests.
 #### test
 
 ```python
-test(args: argparse.Namespace) -> None
+def test(args: argparse.Namespace) -> None
 ```
 
 Run end-to-end tests.

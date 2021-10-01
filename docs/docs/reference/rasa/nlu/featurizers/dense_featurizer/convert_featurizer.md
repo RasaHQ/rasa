@@ -2,10 +2,10 @@
 sidebar_label: rasa.nlu.featurizers.dense_featurizer.convert_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.convert_featurizer
 ---
-## ConveRTFeaturizer Objects
+## ConveRTFeaturizerGraphComponent Objects
 
 ```python
-class ConveRTFeaturizer(DenseFeaturizer)
+class ConveRTFeaturizerGraphComponent(DenseFeaturizer2,  GraphComponent)
 ```
 
 Featurizer using ConveRT model.
@@ -14,41 +14,79 @@ Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
 model from TFHub and computes sentence and sequence level feature representations
 for dense featurizable attributes of each message object.
 
-#### required\_components
+#### get\_default\_config
 
 ```python
- | @classmethod
- | required_components(cls) -> List[Type[Component]]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
-Components that should be included in the pipeline before this component.
+The component&#x27;s default config (see parent class for full docstring).
 
 #### required\_packages
 
 ```python
- | @classmethod
- | required_packages(cls) -> List[Text]
+@staticmethod
+def required_packages() -> List[Text]
 ```
 
 Packages needed to be installed.
 
+#### supported\_languages
+
+```python
+@staticmethod
+def supported_languages() -> Optional[List[Text]]
+```
+
+Determines which languages this component can work with.
+
+Returns: A list of supported languages, or `None` to signify all are supported.
+
+#### create
+
+```python
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> ConveRTFeaturizerGraphComponent
+```
+
+Creates a new component (see parent class for full docstring).
+
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None) -> None
+def __init__(name: Text, config: Dict[Text, Any]) -> None
 ```
 
-Initializes ConveRTFeaturizer with the model and different
-encoding signatures.
+Initializes a `ConveRTFeaturizer`.
 
 **Arguments**:
 
-- `component_config` - Configuration for the component.
+- `name` - An identifier for this featurizer.
+- `config` - The configuration.
 
-#### train
+#### validate\_config
 
 ```python
- | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+@classmethod
+def validate_config(cls, config: Dict[Text, Any]) -> None
+```
+
+Validates that the component is configured properly.
+
+#### validate\_compatibility\_with\_tokenizer
+
+```python
+@classmethod
+def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]) -> None
+```
+
+Validates that the featurizer is compatible with the given tokenizer.
+
+#### process\_training\_data
+
+```python
+def process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Featurize all message attributes in the training data with the ConveRT model.
@@ -56,50 +94,28 @@ Featurize all message attributes in the training data with the ConveRT model.
 **Arguments**:
 
 - `training_data` - Training data to be featurized
-- `config` - Pipeline configuration
-- `**kwargs` - Any other arguments.
+  
+
+**Returns**:
+
+  featurized training data
 
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(messages: List[Message]) -> List[Message]
 ```
 
 Featurize an incoming message with the ConveRT model.
 
 **Arguments**:
 
-- `message` - Message to be featurized
-- `**kwargs` - Any other arguments.
-
-#### cache\_key
-
-```python
- | @classmethod
- | cache_key(cls, component_meta: Dict[Text, Any], model_metadata: Metadata) -> Optional[Text]
-```
-
-Cache the component for future use.
-
-**Arguments**:
-
-- `component_meta` - configuration for the component.
-- `model_metadata` - configuration for the whole pipeline.
-  
-- `Returns` - key of the cache for future retrievals.
-
-#### provide\_context
-
-```python
- | provide_context() -> Dict[Text, Any]
-```
-
-Store the model in pipeline context for future use.
+- `messages` - Message to be featurized
 
 #### tokenize
 
 ```python
- | tokenize(message: Message, attribute: Text) -> List[Token]
+def tokenize(message: Message, attribute: Text) -> List[Token]
 ```
 
 Tokenize the text using the ConveRT model.

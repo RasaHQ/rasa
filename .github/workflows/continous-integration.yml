@@ -8,6 +8,10 @@ on:
     - '*'
   pull_request:
 
+concurrency:
+  group: continous-integration-${{ github.ref }}  # branch or tag name
+  cancel-in-progress: true
+
 # SECRETS
 # - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
 #                           (login for account in 1pw)
@@ -212,6 +216,13 @@ jobs:
         python-version: [ 3.7, 3.8 ]
 
     steps:
+    - name: Run DataDog Agent
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      run: |
+        docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
+        docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
+        docker port dd_agent
+
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
@@ -294,36 +305,71 @@ jobs:
       # (tests will still run in other envs, they will just not create annotations)
       run: pip install pytest-github-actions-annotate-failures
 
+    - name: Install ddtrace
+      if: needs.changes.outputs.backend == 'true'
+      run: poetry run pip install -U ddtrace
+
     - name: Test Code 🔍
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      if: needs.changes.outputs.backend == 'true'
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
+        DD_ENV: ${{ matrix.test }}
+        DD_SERVICE: rasa
+        DD_ARGS: --ddtrace
       run: |
         make ${{ matrix.test }}
+        poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
 
-    - name: Send Coverage Report 📊
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os != 'windows-latest'
-      continue-on-error: true
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_SERVICE_NAME: github
-        COVERALLS_PARALLEL: true
-      run: poetry run coveralls
+    - name: Store coverage reports
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.test }}-coverage.xml
+        path: |
+          ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml
 
-  complete_coverage:
-    name: Complete coverage
+
+  upload_coverage_reports:
+    name: Upload coverage reports to codeclimate
     runs-on: ubuntu-20.04
-    needs: [ test, changes ]
-    if: needs.changes.outputs.backend == 'true'
+    needs:
+      - test
+      - changes
 
     steps:
-      - name: Tell coveralls we're finished reporting
-        uses: coverallsapp/github-action@master
-        continue-on-error: true
+      - name: Checkout git repository 🕝
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/checkout@v2
+
+      - name: Get backend coverage reports
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/download-artifact@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
+          path: ${{ github.workspace }}/tests_coverage
+
+      - name: Move all xml files to parent dir
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          subs=`ls ${{ github.workspace }}/tests_coverage`
+          download_dir="${{ github.workspace }}/tests_coverage"
+          final_dir="${{ github.workspace }}/tests_coverage/final"
+
+          # Downloaded artifacts go into folders, gotta extract them all into one folder for upload
+          mkdir "${final_dir}/"
+          for i in $subs; do
+            mv "${download_dir}/$i"/* "${final_dir}/"
+          done
+
+      - name: Upload reports to codeclimate
+        if: needs.changes.outputs.backend == 'true'
+        uses: paambaati/codeclimate-action@v2.7.5
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CODECLIMATE_REPORTER_ID }}
+        with:
+          coverageLocations: |
+            ${{ github.workspace }}/tests_coverage/final/*.xml:coverage.py
+          debug: true
 
   integration_test:
     name: Run Integration Tests
@@ -540,7 +586,7 @@ jobs:
         echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
 
         # Base builder image
-        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}
+        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
         echo "::set-output name=base_builder_image_hash::${BASE_IMAGE_BUILDER_HASH}"
 
         BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)

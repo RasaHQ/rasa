@@ -36,7 +36,7 @@ import rasa.shared.utils.io
 import rasa.cli.utils
 import rasa.shared.data
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
-from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.shared.nlu.training_data.loading import RASA, RASA_YAML
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -720,8 +720,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will append the stories)",
             default=PATHS["stories"],
             validate=io_utils.file_type_validator(
-                rasa.shared.data.MARKDOWN_FILE_EXTENSIONS
-                + rasa.shared.data.YAML_FILE_EXTENSIONS,
+                rasa.shared.data.YAML_FILE_EXTENSIONS,
                 "Please provide a valid export path for the stories, "
                 "e.g. 'stories.yml'.",
             ),
@@ -804,18 +803,12 @@ def _write_stories_to_file(
     from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
         YAMLStoryWriter,
     )
-    from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
-        MarkdownStoryWriter,
-    )
 
     sub_conversations = _split_conversation_at_restarts(events)
-
     io_utils.create_path(export_story_path)
 
     if rasa.shared.data.is_likely_yaml_file(export_story_path):
         writer = YAMLStoryWriter()
-    else:
-        writer = MarkdownStoryWriter()
 
     should_append_stories = False
     if os.path.exists(export_story_path):
@@ -884,8 +877,6 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
     nlu_format = _get_nlu_target_format(export_nlu_path)
     if nlu_format == RASA_YAML:
         stringified_training_data = nlu_data.nlu_as_yaml()
-    elif nlu_format == MARKDOWN:
-        stringified_training_data = nlu_data.nlu_as_markdown()
     else:
         stringified_training_data = nlu_data.nlu_as_json()
 
@@ -895,11 +886,9 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 def _get_nlu_target_format(export_path: Text) -> Text:
     guessed_format = loading.guess_format(export_path)
 
-    if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
+    if guessed_format not in {RASA, RASA_YAML}:
         if rasa.shared.data.is_likely_json_file(export_path):
             guessed_format = RASA
-        elif rasa.shared.data.is_likely_markdown_file(export_path):
-            guessed_format = MARKDOWN
         elif rasa.shared.data.is_likely_yaml_file(export_path):
             guessed_format = RASA_YAML
 
@@ -1490,7 +1479,7 @@ async def record_messages(
         num_messages = 0
 
         if not skip_visualization:
-            events_including_current_user_id = await _get_tracker_events_to_plot(
+            events_including_current_user_id = _get_tracker_events_to_plot(
                 domain, file_importer, conversation_id
             )
 
@@ -1555,10 +1544,10 @@ async def record_messages(
         raise
 
 
-async def _get_tracker_events_to_plot(
+def _get_tracker_events_to_plot(
     domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text
 ) -> List[Union[Text, Deque[Event]]]:
-    training_trackers = await _get_training_trackers(file_importer, domain)
+    training_trackers = _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
         rasa.shared.utils.cli.print_warning(
@@ -1576,12 +1565,12 @@ async def _get_tracker_events_to_plot(
     return training_data_events + [conversation_id]
 
 
-async def _get_training_trackers(
+def _get_training_trackers(
     file_importer: TrainingDataImporter, domain: Dict[str, Any]
 ) -> List[TrackerWithCachedStates]:
     from rasa.core import training
 
-    return await training.load_data(
+    return training.load_data(
         file_importer,
         Domain.from_dict(domain),
         augmentation_factor=0,
@@ -1711,7 +1700,7 @@ def calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int:
     Chinese, Japanese and Korean characters are often broader than ascii
     characters:
     abcdefgh (8 chars)
-    我要去北京 (5 chars, roughly same visible width)
+    æˆ‘è¦åŽ»åŒ—äº¬ (5 chars, roughly same visible width)
 
     We need to account for that otherwise the wrapping doesn't work
     appropriately for long strings and the table overflows and creates

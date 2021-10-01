@@ -16,6 +16,73 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.7] - 2021-09-20
+### Bugfixes
+- [#9678](https://github.com/rasahq/rasa/issues/9678): Explicitly set the upper limit for currently compatible TensorFlow versions.
+
+
+## [2.8.6] - 2021-09-09
+### Bugfixes
+- [#9302](https://github.com/rasahq/rasa/issues/9302): Fix rules not being applied when a featurised categorical slot has as one of its allowed
+  values `none`, `NoNe`, `None` or a similar value.
+
+
+## [2.8.5] - 2021-09-06
+### Bugfixes
+- [#9476](https://github.com/rasahq/rasa/issues/9476): AugmentedMemoizationPolicy is accelerated for large trackers
+- [#9542](https://github.com/rasahq/rasa/issues/9542): Bump tensorflow to 2.3.4 to address security vulnerabilities
+
+
+## [2.8.4] - 2021-09-02
+### Improvements
+- [#5546](https://github.com/rasahq/rasa/issues/5546): Increase speed of augmented lookup for `AugmentedMemoizationPolicy`
+
+### Bugfixes
+- [#7362](https://github.com/rasahq/rasa/issues/7362): Fix `--data` being treated as if non-optional on sub-commands of `rasa data convert`
+- [#9490](https://github.com/rasahq/rasa/issues/9490): Fixes bug where `hide_rule_turn` was defaulting to `None` when ActionExecuted was deserialised.
+
+### Miscellaneous internal changes
+- [#8682](https://github.com/rasahq/rasa/issues/8682)
+
+
+## [2.8.3] - 2021-08-19
+### Bugfixes
+- [#7695](https://github.com/rasahq/rasa/issues/7695): Ignore checking that intent is in domain for E2E story utterances when running `rasa data validate`. Previously data validation would fail on E2E stories.
+
+
+## [2.8.2] - 2021-08-04
+### Bugfixes
+- [#9203](https://github.com/rasahq/rasa/issues/9203): Fixes a bug which caused training of `UnexpecTEDIntentPolicy` to crash when end-to-end training stories were included in the training data.
+
+  Stories with end-to-end training data will now be skipped for the training of `UnexpecTEDIntentPolicy`.
+
+### Improved Documentation
+- [#8024](https://github.com/rasahq/rasa/issues/8024): Removing the experimental feature warning for the `story validation` tool from the rasa docs. 
+  The behaviour of the feature remains unchanged.
+- [#8791](https://github.com/rasahq/rasa/issues/8791): Removing the experimental feature warning for `entity roles and groups` from the rasa docs, 
+  and from the code where it previously appeared as a print statement. 
+  The behaviour of the feature remains otherwise unchanged.
+
+
+## [2.8.1] - 2021-07-22
+### Improvements
+- [#9085](https://github.com/rasahq/rasa/issues/9085): Add support for `cafile` parameter in `endpoints.yaml`.
+  This will load a custom local certificate file and use it when making requests to that endpoint.
+
+  For example:
+
+  ```yaml
+  action_endpoint:
+    url: https://localhost:5055/webhook
+    cafile: ./cert.pem
+  ```
+
+  This means that requests to the action server `localhost:5055` will use the certificate `cert.pem` located in the current working directory.
+
+### Bugfixes
+- [#9182](https://github.com/rasahq/rasa/issues/9182): Fixes wrong overriding of `epochs` parameter when `TEDPolicy` or `UnexpecTEDIntentPolicy` is not loaded in finetune mode.
+
+
 ## [2.8.0] - 2021-07-12
 ### Deprecations and Removals
 - [#9045](https://github.com/rasahq/rasa/issues/9045): The option `model_confidence=linear_norm` is deprecated and will be removed in Rasa Open Source `3.0.0`.
@@ -130,6 +197,12 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#8241](https://github.com/rasahq/rasa/issues/8241), [#8525](https://github.com/rasahq/rasa/issues/8525), [#8694](https://github.com/rasahq/rasa/issues/8694), [#8704](https://github.com/rasahq/rasa/issues/8704)
+
+
+## [2.7.2] - 2021-08-09
+### Bugfixes
+- [#7695](https://github.com/rasahq/rasa/issues/7695): Ignore checking that intent is in domain for E2E story utterances when running `rasa data validate`. Previously data validation would fail on E2E stories.
+- [#8711](https://github.com/rasahq/rasa/issues/8711): Fix for unnecessary retrain and duplication of folders in the model
 
 
 ## [2.7.1] - 2021-06-16

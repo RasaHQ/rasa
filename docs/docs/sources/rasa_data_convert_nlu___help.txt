@@ -1,18 +1,18 @@
-usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,md,yaml}]
-                             --data DATA [DATA ...] [--out OUT] [-l LANGUAGE]
+usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,yaml}]
+                             [--data DATA [DATA ...]] [--out OUT]
+                             [-l LANGUAGE]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -f {json,md,yaml}, --format {json,md,yaml}
+  -f {json,yaml}, --format {json,yaml}
                         Output format the training data should be converted
-                        into. Note: currently training data can be converted
-                        to 'yaml' format only from 'md' format (default: yaml)
+                        into. (default: yaml)
   --data DATA [DATA ...]
                         Paths to the files or directories containing Rasa NLU
                         data. (default: data)
-  --out OUT             File (for `json` and `md`) or existing path (for
-                        `yaml`) where to save training data in Rasa format.
-                        (default: converted_data)
+  --out OUT             File (for `json`) or existing path (for `yaml`) where
+                        to save training data in Rasa format. (default:
+                        converted_data)
   -l LANGUAGE, --language LANGUAGE
                         Language of data. (default: en)
 

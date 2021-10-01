@@ -2,46 +2,44 @@
 sidebar_label: rasa.nlu.tokenizers.tokenizer
 title: rasa.nlu.tokenizers.tokenizer
 ---
-## Token Objects
+## TokenizerGraphComponent Objects
 
 ```python
-class Token()
+class TokenizerGraphComponent(GraphComponent,  abc.ABC)
 ```
 
-#### get
-
-```python
- | get(prop: Text, default: Optional[Any] = None) -> Any
-```
-
-Returns token value.
-
-## Tokenizer Objects
-
-```python
-class Tokenizer(Component)
-```
+Base class for tokenizers.
 
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Dict[Text, Any] = None) -> None
+def __init__(config: Dict[Text, Any]) -> None
 ```
 
-Construct a new tokenizer using the WhitespaceTokenizer framework.
+Construct a new tokenizer.
+
+#### create
+
+```python
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+```
+
+Creates a new component (see parent class for full docstring).
 
 #### tokenize
 
 ```python
- | tokenize(message: Message, attribute: Text) -> List[Token]
+@abc.abstractmethod
+def tokenize(message: Message, attribute: Text) -> List[Token]
 ```
 
 Tokenizes the text of the provided attribute of the incoming message.
 
-#### train
+#### process\_training\_data
 
 ```python
- | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+def process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Tokenize all training data.
@@ -49,8 +47,8 @@ Tokenize all training data.
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(messages: List[Message]) -> List[Message]
 ```
 
-Tokenize the incoming message.
+Tokenize the incoming messages.
 

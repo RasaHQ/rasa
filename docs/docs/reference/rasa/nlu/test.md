@@ -13,7 +13,7 @@ Stores NLU cross-validation results.
 #### log\_evaluation\_table
 
 ```python
-log_evaluation_table(report: Text, precision: float, f1: float, accuracy: float) -> None
+def log_evaluation_table(report: Text, precision: float, f1: float, accuracy: float) -> None
 ```
 
 Log the sklearn evaluation metrics.
@@ -21,7 +21,7 @@ Log the sklearn evaluation metrics.
 #### remove\_empty\_intent\_examples
 
 ```python
-remove_empty_intent_examples(intent_results: List[IntentEvaluationResult]) -> List[IntentEvaluationResult]
+def remove_empty_intent_examples(intent_results: List[IntentEvaluationResult]) -> List[IntentEvaluationResult]
 ```
 
 Remove those examples without an intent.
@@ -35,7 +35,7 @@ Remove those examples without an intent.
 #### remove\_empty\_response\_examples
 
 ```python
-remove_empty_response_examples(response_results: List[ResponseSelectionEvaluationResult]) -> List[ResponseSelectionEvaluationResult]
+def remove_empty_response_examples(response_results: List[ResponseSelectionEvaluationResult]) -> List[ResponseSelectionEvaluationResult]
 ```
 
 Remove those examples without a response.
@@ -49,7 +49,7 @@ Remove those examples without a response.
 #### drop\_intents\_below\_freq
 
 ```python
-drop_intents_below_freq(training_data: TrainingData, cutoff: int = 5) -> TrainingData
+def drop_intents_below_freq(training_data: TrainingData, cutoff: int = 5) -> TrainingData
 ```
 
 Remove intent groups with less than cutoff instances.
@@ -64,7 +64,7 @@ Remove intent groups with less than cutoff instances.
 #### write\_intent\_successes
 
 ```python
-write_intent_successes(intent_results: List[IntentEvaluationResult], successes_filename: Text) -> None
+def write_intent_successes(intent_results: List[IntentEvaluationResult], successes_filename: Text) -> None
 ```
 
 Write successful intent predictions to a file.
@@ -77,7 +77,7 @@ Write successful intent predictions to a file.
 #### write\_response\_successes
 
 ```python
-write_response_successes(response_results: List[ResponseSelectionEvaluationResult], successes_filename: Text) -> None
+def write_response_successes(response_results: List[ResponseSelectionEvaluationResult], successes_filename: Text) -> None
 ```
 
 Write successful response selection predictions to a file.
@@ -90,7 +90,7 @@ Write successful response selection predictions to a file.
 #### plot\_attribute\_confidences
 
 ```python
-plot_attribute_confidences(results: Union[
+def plot_attribute_confidences(results: Union[
         List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]
     ], hist_filename: Optional[Text], target_key: Text, prediction_key: Text, title: Text) -> None
 ```
@@ -108,7 +108,7 @@ Create histogram of confidence distribution.
 #### plot\_entity\_confidences
 
 ```python
-plot_entity_confidences(merged_targets: List[Text], merged_predictions: List[Text], merged_confidences: List[float], hist_filename: Text, title: Text) -> None
+def plot_entity_confidences(merged_targets: List[Text], merged_predictions: List[Text], merged_confidences: List[float], hist_filename: Text, title: Text) -> None
 ```
 
 Creates histogram of confidence distribution.
@@ -124,7 +124,7 @@ Creates histogram of confidence distribution.
 #### evaluate\_response\_selections
 
 ```python
-evaluate_response_selections(response_selection_results: List[ResponseSelectionEvaluationResult], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool, report_as_dict: Optional[bool] = None) -> Dict
+def evaluate_response_selections(response_selection_results: List[ResponseSelectionEvaluationResult], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Creates summary statistics for response selection.
@@ -150,7 +150,7 @@ evaluation result.
 #### evaluate\_intents
 
 ```python
-evaluate_intents(intent_results: List[IntentEvaluationResult], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool, report_as_dict: Optional[bool] = None) -> Dict
+def evaluate_intents(intent_results: List[IntentEvaluationResult], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Creates summary statistics for intents.
@@ -175,7 +175,7 @@ Returns a dictionary of containing the evaluation result.
 #### merge\_labels
 
 ```python
-merge_labels(aligned_predictions: List[Dict], extractor: Optional[Text] = None) -> List[Text]
+def merge_labels(aligned_predictions: List[Dict], extractor: Optional[Text] = None) -> List[Text]
 ```
 
 Concatenates all labels of the aligned predictions.
@@ -193,7 +193,7 @@ and concatenates them.
 #### merge\_confidences
 
 ```python
-merge_confidences(aligned_predictions: List[Dict], extractor: Optional[Text] = None) -> List[float]
+def merge_confidences(aligned_predictions: List[Dict], extractor: Optional[Text] = None) -> List[float]
 ```
 
 Concatenates all confidences of the aligned predictions.
@@ -211,7 +211,7 @@ and concatenates them.
 #### substitute\_labels
 
 ```python
-substitute_labels(labels: List[Text], old: Text, new: Text) -> List[Text]
+def substitute_labels(labels: List[Text], old: Text, new: Text) -> List[Text]
 ```
 
 Replaces label names in a list of labels.
@@ -227,7 +227,7 @@ Replaces label names in a list of labels.
 #### collect\_incorrect\_entity\_predictions
 
 ```python
-collect_incorrect_entity_predictions(entity_results: List[EntityEvaluationResult], merged_predictions: List[Text], merged_targets: List[Text]) -> List["EntityPrediction"]
+def collect_incorrect_entity_predictions(entity_results: List[EntityEvaluationResult], merged_predictions: List[Text], merged_targets: List[Text]) -> List["EntityPrediction"]
 ```
 
 Get incorrect entity predictions.
@@ -243,7 +243,7 @@ Get incorrect entity predictions.
 #### write\_successful\_entity\_predictions
 
 ```python
-write_successful_entity_predictions(entity_results: List[EntityEvaluationResult], merged_targets: List[Text], merged_predictions: List[Text], successes_filename: Text) -> None
+def write_successful_entity_predictions(entity_results: List[EntityEvaluationResult], merged_targets: List[Text], merged_predictions: List[Text], successes_filename: Text) -> None
 ```
 
 Write correct entity predictions to a file.
@@ -258,7 +258,7 @@ Write correct entity predictions to a file.
 #### collect\_successful\_entity\_predictions
 
 ```python
-collect_successful_entity_predictions(entity_results: List[EntityEvaluationResult], merged_predictions: List[Text], merged_targets: List[Text]) -> List["EntityPrediction"]
+def collect_successful_entity_predictions(entity_results: List[EntityEvaluationResult], merged_predictions: List[Text], merged_targets: List[Text]) -> List["EntityPrediction"]
 ```
 
 Get correct entity predictions.
@@ -274,7 +274,7 @@ Get correct entity predictions.
 #### evaluate\_entities
 
 ```python
-evaluate_entities(entity_results: List[EntityEvaluationResult], extractors: Set[Text], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool, report_as_dict: Optional[bool] = None) -> Dict
+def evaluate_entities(entity_results: List[EntityEvaluationResult], extractors: Set[Text], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Creates summary statistics for each entity extractor.
@@ -299,7 +299,7 @@ Logs precision, recall, and F1 per entity type for each extractor.
 #### is\_token\_within\_entity
 
 ```python
-is_token_within_entity(token: Token, entity: Dict) -> bool
+def is_token_within_entity(token: Token, entity: Dict) -> bool
 ```
 
 Checks if a token is within the boundaries of an entity.
@@ -307,7 +307,7 @@ Checks if a token is within the boundaries of an entity.
 #### does\_token\_cross\_borders
 
 ```python
-does_token_cross_borders(token: Token, entity: Dict) -> bool
+def does_token_cross_borders(token: Token, entity: Dict) -> bool
 ```
 
 Checks if a token crosses the boundaries of an entity.
@@ -315,7 +315,7 @@ Checks if a token crosses the boundaries of an entity.
 #### determine\_intersection
 
 ```python
-determine_intersection(token: Token, entity: Dict) -> int
+def determine_intersection(token: Token, entity: Dict) -> int
 ```
 
 Calculates how many characters a given token and entity share.
@@ -323,7 +323,7 @@ Calculates how many characters a given token and entity share.
 #### do\_entities\_overlap
 
 ```python
-do_entities_overlap(entities: List[Dict]) -> bool
+def do_entities_overlap(entities: List[Dict]) -> bool
 ```
 
 Checks if entities overlap.
@@ -339,7 +339,7 @@ I.e. cross each others start and end boundaries.
 #### find\_intersecting\_entities
 
 ```python
-find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
+def find_intersecting_entities(token: Token, entities: List[Dict]) -> List[Dict]
 ```
 
 Finds the entities that intersect with a token.
@@ -354,7 +354,7 @@ Finds the entities that intersect with a token.
 #### pick\_best\_entity\_fit
 
 ```python
-pick_best_entity_fit(token: Token, candidates: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
+def pick_best_entity_fit(token: Token, candidates: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
 ```
 
 Determines the best fitting entity given intersecting entities.
@@ -373,7 +373,7 @@ Determines the best fitting entity given intersecting entities.
 #### determine\_token\_labels
 
 ```python
-determine_token_labels(token: Token, entities: List[Dict], extractors: Optional[Set[Text]] = None, attribute_key: Text = ENTITY_ATTRIBUTE_TYPE) -> Text
+def determine_token_labels(token: Token, entities: List[Dict], extractors: Optional[Set[Text]] = None, attribute_key: Text = ENTITY_ATTRIBUTE_TYPE) -> Text
 ```
 
 Determines the token label for the provided attribute key given entities that do
@@ -393,7 +393,7 @@ not overlap.
 #### determine\_entity\_for\_token
 
 ```python
-determine_entity_for_token(token: Token, entities: List[Dict[Text, Any]], extractors: Optional[Set[Text]] = None) -> Optional[Dict[Text, Any]]
+def determine_entity_for_token(token: Token, entities: List[Dict[Text, Any]], extractors: Optional[Set[Text]] = None) -> Optional[Dict[Text, Any]]
 ```
 
 Determines the best fitting entity for the given token, given entities that do
@@ -413,7 +413,7 @@ not overlap.
 #### do\_extractors\_support\_overlap
 
 ```python
-do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool
+def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool
 ```
 
 Checks if extractors support overlapping entities
@@ -421,7 +421,7 @@ Checks if extractors support overlapping entities
 #### align\_entity\_predictions
 
 ```python
-align_entity_predictions(result: EntityEvaluationResult, extractors: Set[Text]) -> Dict
+def align_entity_predictions(result: EntityEvaluationResult, extractors: Set[Text]) -> Dict
 ```
 
 Aligns entity predictions to the message tokens.
@@ -441,7 +441,7 @@ single extractor.
 #### align\_all\_entity\_predictions
 
 ```python
-align_all_entity_predictions(entity_results: List[EntityEvaluationResult], extractors: Set[Text]) -> List[Dict]
+def align_all_entity_predictions(entity_results: List[EntityEvaluationResult], extractors: Set[Text]) -> List[Dict]
 ```
 
 Aligns entity predictions to the message tokens for the whole dataset
@@ -458,7 +458,7 @@ using align_entity_predictions.
 #### get\_eval\_data
 
 ```python
-get_eval_data(interpreter: Interpreter, test_data: TrainingData) -> Tuple[
+def get_eval_data(interpreter: Interpreter, test_data: TrainingData) -> Tuple[
     List[IntentEvaluationResult],
     List[ResponseSelectionEvaluationResult],
     List[EntityEvaluationResult],
@@ -479,78 +479,10 @@ response targets and predictions) as well as entity results
   
 - `Returns` - intent, response, and entity evaluation results
 
-#### get\_entity\_extractors
-
-```python
-get_entity_extractors(interpreter: Interpreter) -> Set[Text]
-```
-
-Finds the names of entity extractors used by the interpreter.
-
-Processors are removed since they do not detect the boundaries themselves.
-
-**Arguments**:
-
-- `interpreter` - the interpreter
-  
-- `Returns` - entity extractor names
-
-#### is\_entity\_extractor\_present
-
-```python
-is_entity_extractor_present(interpreter: Interpreter) -> bool
-```
-
-Checks whether entity extractor is present.
-
-#### is\_intent\_classifier\_present
-
-```python
-is_intent_classifier_present(interpreter: Interpreter) -> bool
-```
-
-Checks whether intent classifier is present.
-
-#### is\_response\_selector\_present
-
-```python
-is_response_selector_present(interpreter: Interpreter) -> bool
-```
-
-Checks whether response selector is present.
-
-#### get\_available\_response\_selector\_types
-
-```python
-get_available_response_selector_types(interpreter: Interpreter) -> List[Optional[Text]]
-```
-
-Gets all available response selector types.
-
-#### remove\_pretrained\_extractors
-
-```python
-remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]
-```
-
-Remove pre-trained extractors from the pipeline.
-
-Remove pre-trained extractors so that entities from pre-trained extractors
-are not predicted upon parsing.
-
-**Arguments**:
-
-- `pipeline` - the pipeline
-  
-
-**Returns**:
-
-  Updated pipeline
-
 #### run\_evaluation
 
 ```python
-async run_evaluation(data_path: Text, model_path: Text, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, component_builder: Optional[ComponentBuilder] = None, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
+def run_evaluation(data_path: Text, model_path: Text, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, component_builder: Optional[ComponentBuilder] = None, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Evaluate intent classification, response selection and entity extraction.
@@ -574,7 +506,7 @@ Evaluate intent classification, response selection and entity extraction.
 #### generate\_folds
 
 ```python
-generate_folds(n: int, training_data: TrainingData) -> Iterator[Tuple[TrainingData, TrainingData]]
+def generate_folds(n: int, training_data: TrainingData) -> Iterator[Tuple[TrainingData, TrainingData]]
 ```
 
 Generates n cross validation folds for given training data.
@@ -582,7 +514,7 @@ Generates n cross validation folds for given training data.
 #### combine\_result
 
 ```python
-combine_result(intent_metrics: IntentMetrics, entity_metrics: EntityMetrics, response_selection_metrics: ResponseSelectionMetrics, interpreter: Interpreter, data: TrainingData, intent_results: Optional[List[IntentEvaluationResult]] = None, entity_results: Optional[List[EntityEvaluationResult]] = None, response_selection_results: Optional[
+def combine_result(intent_metrics: IntentMetrics, entity_metrics: EntityMetrics, response_selection_metrics: ResponseSelectionMetrics, interpreter: Interpreter, data: TrainingData, intent_results: Optional[List[IntentEvaluationResult]] = None, entity_results: Optional[List[EntityEvaluationResult]] = None, response_selection_results: Optional[
         List[ResponseSelectionEvaluationResult]
     ] = None) -> Tuple[IntentMetrics, EntityMetrics, ResponseSelectionMetrics]
 ```
@@ -609,7 +541,7 @@ as a list, prediction results are also collected.
 #### cross\_validate
 
 ```python
-cross_validate(data: TrainingData, n_folds: int, nlu_config: Union[RasaNLUModelConfig, Text, Dict], output: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]
+def cross_validate(data: TrainingData, n_folds: int, nlu_config: Union[RasaNLUModelConfig, Text, Dict], output: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]
 ```
 
 Stratified cross validation on data.
@@ -637,7 +569,7 @@ Stratified cross validation on data.
 #### compute\_metrics
 
 ```python
-compute_metrics(interpreter: Interpreter, training_data: TrainingData) -> Tuple[
+def compute_metrics(interpreter: Interpreter, training_data: TrainingData) -> Tuple[
     IntentMetrics,
     EntityMetrics,
     ResponseSelectionMetrics,
@@ -660,7 +592,7 @@ extraction.
 #### compare\_nlu
 
 ```python
-async compare_nlu(configs: List[Text], data: TrainingData, exclusion_percentages: List[int], f_score_results: Dict[Text, Any], model_names: List[Text], output: Text, runs: int) -> List[int]
+async def compare_nlu(configs: List[Text], data: TrainingData, exclusion_percentages: List[int], f_score_results: Dict[Text, Any], model_names: List[Text], output: Text, runs: int) -> List[int]
 ```
 
 Trains and compares multiple NLU models.
@@ -684,7 +616,7 @@ All results are stored in the provided output directory.
 #### log\_results
 
 ```python
-log_results(results: IntentMetrics, dataset_name: Text) -> None
+def log_results(results: IntentMetrics, dataset_name: Text) -> None
 ```
 
 Logs results of cross validation.
@@ -697,7 +629,7 @@ Logs results of cross validation.
 #### log\_entity\_results
 
 ```python
-log_entity_results(results: EntityMetrics, dataset_name: Text) -> None
+def log_entity_results(results: EntityMetrics, dataset_name: Text) -> None
 ```
 
 Logs entity results of cross validation.

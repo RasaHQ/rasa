@@ -18,7 +18,7 @@ https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentRespon
 #### normalise\_response\_json
 
 ```python
- | normalise_response_json(data: Dict[Text, Any]) -> Dict[Text, Any]
+def normalise_response_json(data: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 &quot;Transform response JSON to DialogFlow format.

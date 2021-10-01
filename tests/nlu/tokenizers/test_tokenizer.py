@@ -1,5 +1,4 @@
-from typing import Tuple, Text, List
-
+from typing import Any, Dict, Optional, Tuple, Text, List
 import pytest
 
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -14,7 +13,18 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+
+
+def create_whitespace_tokenizer(
+    config: Optional[Dict[Text, Any]] = None
+) -> WhitespaceTokenizerGraphComponent:
+    return WhitespaceTokenizerGraphComponent(
+        {
+            **WhitespaceTokenizerGraphComponent.get_default_config(),
+            **(config if config else {}),
+        }
+    )
 
 
 def test_tokens_comparison():
@@ -37,7 +47,7 @@ def test_tokens_comparison():
 def test_train_tokenizer(
     text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
 ):
-    tk = WhitespaceTokenizer()
+    tk = create_whitespace_tokenizer()
 
     message = Message.build(text=text)
     message.set(RESPONSE, text)
@@ -46,7 +56,7 @@ def test_train_tokenizer(
     training_data = TrainingData()
     training_data.training_examples = [message]
 
-    tk.train(training_data)
+    tk.process_training_data(training_data)
 
     for attribute in [RESPONSE, TEXT]:
         tokens = training_data.training_examples[0].get(TOKENS_NAMES[attribute])
@@ -68,7 +78,7 @@ def test_train_tokenizer(
 def test_train_tokenizer_e2e_actions(
     text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
 ):
-    tk = WhitespaceTokenizer()
+    tk = create_whitespace_tokenizer()
 
     message = Message.build(text=text)
     message.set(ACTION_TEXT, text)
@@ -77,7 +87,7 @@ def test_train_tokenizer_e2e_actions(
     training_data = TrainingData()
     training_data.training_examples = [message]
 
-    tk.train(training_data)
+    tk.process_training_data(training_data)
 
     for attribute in [ACTION_TEXT, TEXT]:
         tokens = training_data.training_examples[0].get(TOKENS_NAMES[attribute])
@@ -94,7 +104,7 @@ def test_train_tokenizer_e2e_actions(
 def test_train_tokenizer_action_name(
     text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
 ):
-    tk = WhitespaceTokenizer()
+    tk = create_whitespace_tokenizer()
 
     message = Message.build(text=text)
     message.set(ACTION_NAME, text)
@@ -102,7 +112,7 @@ def test_train_tokenizer_action_name(
     training_data = TrainingData()
     training_data.training_examples = [message]
 
-    tk.train(training_data)
+    tk.process_training_data(training_data)
 
     # check action_name attribute
     tokens = training_data.training_examples[0].get(TOKENS_NAMES[ACTION_NAME])
@@ -117,11 +127,11 @@ def test_train_tokenizer_action_name(
 def test_process_tokenizer(
     text: Text, expected_tokens: List[Text], expected_indices: List[Tuple[int]]
 ):
-    tk = WhitespaceTokenizer()
+    tk = create_whitespace_tokenizer()
 
     message = Message.build(text=text)
 
-    tk.process(message)
+    tk.process([message])
 
     tokens = message.get(TOKENS_NAMES[TEXT])
 
@@ -134,12 +144,12 @@ def test_process_tokenizer(
     "text, expected_tokens", [("action_listen", ["action", "listen"])]
 )
 def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
-    tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
+    tk = create_whitespace_tokenizer({"intent_tokenization_flag": True})
 
     message = Message.build(text=text)
     message.set(ACTION_NAME, text)
 
-    tk.process(message)
+    tk.process([message])
 
     tokens = message.get(TOKENS_NAMES[ACTION_NAME])
 
@@ -150,19 +160,19 @@ def test_process_tokenizer_action_name(text: Text, expected_tokens: List[Text]):
     "text, expected_tokens", [("I am hungry", ["I", "am", "hungry"])]
 )
 def test_process_tokenizer_action_test(text: Text, expected_tokens: List[Text]):
-    tk = WhitespaceTokenizer({"intent_tokenization_flag": True})
+    tk = create_whitespace_tokenizer({"intent_tokenization_flag": True})
 
     message = Message.build(text=text)
     message.set(ACTION_NAME, text)
     message.set(ACTION_TEXT, text)
 
-    tk.process(message)
+    tk.process([message])
 
     tokens = message.get(TOKENS_NAMES[ACTION_TEXT])
     assert [t.text for t in tokens] == expected_tokens
 
     message.set(ACTION_TEXT, "")
-    tk.process(message)
+    tk.process([message])
     tokens = message.get(TOKENS_NAMES[ACTION_NAME])
     assert [t.text for t in tokens] == [text]
 
@@ -177,7 +187,7 @@ def test_process_tokenizer_action_test(text: Text, expected_tokens: List[Text]):
 def test_split_intent(text: Text, expected_tokens: List[Text]):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
-    tk = WhitespaceTokenizer(component_config)
+    tk = create_whitespace_tokenizer(component_config)
 
     message = Message.build(text=text)
     message.set(INTENT, text)
@@ -195,7 +205,7 @@ def test_split_intent(text: Text, expected_tokens: List[Text]):
 def test_split_intent_response_key(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
-    tk = WhitespaceTokenizer(component_config)
+    tk = create_whitespace_tokenizer(component_config)
 
     message = Message.build(text=text)
     message.set(INTENT_RESPONSE_KEY, text)
@@ -245,7 +255,7 @@ def test_apply_token_pattern(
 ):
     component_config = {"token_pattern": token_pattern}
 
-    tokenizer = WhitespaceTokenizer(component_config)
+    tokenizer = create_whitespace_tokenizer(component_config)
     actual_tokens = tokenizer._apply_token_pattern(tokens)
 
     assert len(actual_tokens) == len(expected_tokens)
@@ -266,9 +276,23 @@ def test_apply_token_pattern(
 def test_split_action_name(text: Text, expected_tokens: List[Text]):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
-    tk = WhitespaceTokenizer(component_config)
+    tk = create_whitespace_tokenizer(component_config)
 
     message = Message.build(text=text)
     message.set(ACTION_NAME, text)
 
     assert [t.text for t in tk._split_name(message, ACTION_NAME)] == expected_tokens
+
+
+def test_token_fingerprints_are_unique():
+    """Tests that token fingerprints are consistent across runs and machines."""
+    tokens = [
+        Token("testing", 2, 9, {"x": 3}, "test"),
+        Token("testing", 3, 10, {"x": 3}, "test"),
+        Token("working", 2, 9, {"x": 3}, "work"),
+        Token("testing", 2, 9, None, "test"),
+        Token("testing", 2, 9),
+        Token("testing", 3),
+    ]
+    fingerprints = {t.fingerprint() for t in tokens}
+    assert len(fingerprints) == len(tokens)

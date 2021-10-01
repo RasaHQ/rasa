@@ -33,6 +33,13 @@ importers:
 The `name` key is used to determine which importer should be loaded. Any extra
 parameters are passed as constructor arguments to the loaded importer.
 
+:::note
+`TrainingDataImporter` and its subclasses contain no async methods since Rasa 3.0.
+In order to migrate your custom importers and make them work with Rasa 3.0, you also need to
+replace your async methods with synchronized ones.
+Please see the [migration guide](migration-guide.mdx#rasa-2x-to-30) for more information.
+:::
+
 :::tip
 You can specify multiple importers. Rasa will automatically merge their results.
 
@@ -172,18 +179,16 @@ class MyImporter(TrainingDataImporter):
 
         pass
 
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
         path_to_domain_file = self._custom_get_domain_file()
         return Domain.load(path_to_domain_file)
 
     def _custom_get_domain_file(self) -> Text:
         pass
 
-    async def get_stories(
+    def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -191,19 +196,19 @@ class MyImporter(TrainingDataImporter):
         )
 
         path_to_stories = self._custom_get_story_file()
-        return YAMLStoryReader.read_from_file(path_to_stories, await self.get_domain())
+        return YAMLStoryReader.read_from_file(path_to_stories, self.get_domain())
 
     def _custom_get_story_file(self) -> Text:
         pass
 
-    async def get_config(self) -> Dict:
+    def get_config(self) -> Dict:
         path_to_config = self._custom_get_config_file()
         return rasa.utils.io.read_config_file(path_to_config)
 
     def _custom_get_config_file(self) -> Text:
         pass
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         from rasa.shared.nlu.training_data import loading
 
         path_to_nlu_file = self._custom_get_nlu_file()

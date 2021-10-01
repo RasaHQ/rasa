@@ -13,8 +13,8 @@ Class that reads Core training data and rule data in YAML format.
 #### from\_reader
 
 ```python
- | @classmethod
- | from_reader(cls, reader: "YAMLStoryReader") -> "YAMLStoryReader"
+@classmethod
+def from_reader(cls, reader: "YAMLStoryReader") -> "YAMLStoryReader"
 ```
 
 Create a reader from another reader.
@@ -31,7 +31,7 @@ Create a reader from another reader.
 #### read\_from\_file
 
 ```python
- | read_from_file(filename: Union[Text, Path], skip_validation: bool = False) -> List[StoryStep]
+def read_from_file(filename: Union[Text, Path], skip_validation: bool = False) -> List[StoryStep]
 ```
 
 Read stories or rules from file.
@@ -50,7 +50,7 @@ Read stories or rules from file.
 #### read\_from\_string
 
 ```python
- | read_from_string(string: Text, skip_validation: bool = False) -> List[StoryStep]
+def read_from_string(string: Text, skip_validation: bool = False) -> List[StoryStep]
 ```
 
 Read stories or rules from a string.
@@ -69,7 +69,7 @@ Read stories or rules from a string.
 #### read\_from\_parsed\_yaml
 
 ```python
- | read_from_parsed_yaml(parsed_content: Dict[Text, Union[Dict, List]]) -> List[StoryStep]
+def read_from_parsed_yaml(parsed_content: Dict[Text, Union[Dict, List]]) -> List[StoryStep]
 ```
 
 Read stories from parsed YAML.
@@ -86,8 +86,8 @@ Read stories from parsed YAML.
 #### is\_stories\_file
 
 ```python
- | @classmethod
- | is_stories_file(cls, file_path: Union[Text, Path]) -> bool
+@classmethod
+def is_stories_file(cls, file_path: Union[Text, Path]) -> bool
 ```
 
 Check if file contains Core training data or rule data in YAML format.
@@ -111,8 +111,8 @@ Check if file contains Core training data or rule data in YAML format.
 #### is\_test\_stories\_file
 
 ```python
- | @classmethod
- | is_test_stories_file(cls, file_path: Union[Text, Path]) -> bool
+@classmethod
+def is_test_stories_file(cls, file_path: Union[Text, Path]) -> bool
 ```
 
 Checks if a file is a test conversations file.

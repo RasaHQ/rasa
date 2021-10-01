@@ -13,7 +13,7 @@ Holds loaded intent and entity training data.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Fingerprint the training data.
@@ -25,7 +25,7 @@ Fingerprint the training data.
 #### label\_fingerprint
 
 ```python
- | label_fingerprint() -> Text
+def label_fingerprint() -> Text
 ```
 
 Fingerprints the labels in the training data.
@@ -37,7 +37,7 @@ Fingerprints the labels in the training data.
 #### merge
 
 ```python
- | merge(*others: Optional["TrainingData"]) -> "TrainingData"
+def merge(*others: Optional["TrainingData"]) -> "TrainingData"
 ```
 
 Return merged instance of this data with other training data.
@@ -55,7 +55,7 @@ Return merged instance of this data with other training data.
 #### filter\_training\_examples
 
 ```python
- | filter_training_examples(condition: Callable[[Message], bool]) -> "TrainingData"
+def filter_training_examples(condition: Callable[[Message], bool]) -> "TrainingData"
 ```
 
 Filter training examples.
@@ -72,7 +72,7 @@ Filter training examples.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Calculate hash for the training data object.
@@ -84,8 +84,8 @@ Calculate hash for the training data object.
 #### sanitize\_examples
 
 ```python
- | @staticmethod
- | sanitize_examples(examples: List[Message]) -> List[Message]
+@staticmethod
+def sanitize_examples(examples: List[Message]) -> List[Message]
 ```
 
 Makes sure the training data is clean.
@@ -96,8 +96,8 @@ duplicate examples.
 #### nlu\_examples
 
 ```python
- | @lazy_property
- | nlu_examples() -> List[Message]
+@lazy_property
+def nlu_examples() -> List[Message]
 ```
 
 Return examples which have come from NLU training data.
@@ -111,8 +111,8 @@ E.g. If the example came from a story or domain it is not included.
 #### intent\_examples
 
 ```python
- | @lazy_property
- | intent_examples() -> List[Message]
+@lazy_property
+def intent_examples() -> List[Message]
 ```
 
 Returns the list of examples that have intent.
@@ -120,8 +120,8 @@ Returns the list of examples that have intent.
 #### response\_examples
 
 ```python
- | @lazy_property
- | response_examples() -> List[Message]
+@lazy_property
+def response_examples() -> List[Message]
 ```
 
 Returns the list of examples that have response.
@@ -129,8 +129,8 @@ Returns the list of examples that have response.
 #### entity\_examples
 
 ```python
- | @lazy_property
- | entity_examples() -> List[Message]
+@lazy_property
+def entity_examples() -> List[Message]
 ```
 
 Returns the list of examples that have entities.
@@ -138,8 +138,8 @@ Returns the list of examples that have entities.
 #### intents
 
 ```python
- | @lazy_property
- | intents() -> Set[Text]
+@lazy_property
+def intents() -> Set[Text]
 ```
 
 Returns the set of intents in the training data.
@@ -147,8 +147,8 @@ Returns the set of intents in the training data.
 #### action\_names
 
 ```python
- | @lazy_property
- | action_names() -> Set[Text]
+@lazy_property
+def action_names() -> Set[Text]
 ```
 
 Returns the set of action names in the training data.
@@ -156,8 +156,8 @@ Returns the set of action names in the training data.
 #### retrieval\_intents
 
 ```python
- | @lazy_property
- | retrieval_intents() -> Set[Text]
+@lazy_property
+def retrieval_intents() -> Set[Text]
 ```
 
 Returns the total number of response types in the training data.
@@ -165,8 +165,8 @@ Returns the total number of response types in the training data.
 #### number\_of\_examples\_per\_intent
 
 ```python
- | @lazy_property
- | number_of_examples_per_intent() -> Dict[Text, int]
+@lazy_property
+def number_of_examples_per_intent() -> Dict[Text, int]
 ```
 
 Calculates the number of examples per intent.
@@ -174,8 +174,8 @@ Calculates the number of examples per intent.
 #### number\_of\_examples\_per\_response
 
 ```python
- | @lazy_property
- | number_of_examples_per_response() -> Dict[Text, int]
+@lazy_property
+def number_of_examples_per_response() -> Dict[Text, int]
 ```
 
 Calculates the number of examples per response.
@@ -183,8 +183,8 @@ Calculates the number of examples per response.
 #### entities
 
 ```python
- | @lazy_property
- | entities() -> Set[Text]
+@lazy_property
+def entities() -> Set[Text]
 ```
 
 Returns the set of entity types in the training data.
@@ -192,8 +192,8 @@ Returns the set of entity types in the training data.
 #### entity\_roles
 
 ```python
- | @lazy_property
- | entity_roles() -> Set[Text]
+@lazy_property
+def entity_roles() -> Set[Text]
 ```
 
 Returns the set of entity roles in the training data.
@@ -201,8 +201,8 @@ Returns the set of entity roles in the training data.
 #### entity\_groups
 
 ```python
- | @lazy_property
- | entity_groups() -> Set[Text]
+@lazy_property
+def entity_groups() -> Set[Text]
 ```
 
 Returns the set of entity groups in the training data.
@@ -210,7 +210,7 @@ Returns the set of entity groups in the training data.
 #### entity\_roles\_groups\_used
 
 ```python
- | entity_roles_groups_used() -> bool
+def entity_roles_groups_used() -> bool
 ```
 
 Checks if any entity roles or groups are used in the training data.
@@ -218,8 +218,8 @@ Checks if any entity roles or groups are used in the training data.
 #### number\_of\_examples\_per\_entity
 
 ```python
- | @lazy_property
- | number_of_examples_per_entity() -> Dict[Text, int]
+@lazy_property
+def number_of_examples_per_entity() -> Dict[Text, int]
 ```
 
 Calculates the number of examples per entity.
@@ -227,7 +227,7 @@ Calculates the number of examples per entity.
 #### sort\_regex\_features
 
 ```python
- | sort_regex_features() -> None
+def sort_regex_features() -> None
 ```
 
 Sorts regex features lexicographically by name+pattern
@@ -235,24 +235,15 @@ Sorts regex features lexicographically by name+pattern
 #### nlu\_as\_json
 
 ```python
- | nlu_as_json(**kwargs: Any) -> Text
+def nlu_as_json(**kwargs: Any) -> Text
 ```
 
 Represent this set of training examples as json.
 
-#### nlg\_as\_markdown
-
-```python
- | nlg_as_markdown() -> Text
-```
-
-Generates the markdown representation of the response phrases (NLG) of
-TrainingData.
-
 #### nlg\_as\_yaml
 
 ```python
- | nlg_as_yaml() -> Text
+def nlg_as_yaml() -> Text
 ```
 
 Generates yaml representation of the response phrases (NLG) of TrainingData.
@@ -261,18 +252,47 @@ Generates yaml representation of the response phrases (NLG) of TrainingData.
 
   responses in yaml format as a string
 
-#### nlu\_as\_markdown
+#### nlu\_as\_yaml
 
 ```python
- | nlu_as_markdown() -> Text
+def nlu_as_yaml() -> Text
 ```
 
-Generates the markdown representation of the NLU part of TrainingData.
+Generates YAML representation of NLU of TrainingData.
+
+**Returns**:
+
+  data in YAML format as a string
+
+#### persist\_nlu
+
+```python
+def persist_nlu(filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None
+```
+
+Saves NLU to a file.
+
+#### persist\_nlg
+
+```python
+def persist_nlg(filename: Text) -> None
+```
+
+Saves NLG to a file.
+
+#### get\_nlg\_persist\_filename
+
+```python
+@staticmethod
+def get_nlg_persist_filename(nlu_filename: Text) -> Text
+```
+
+Returns the full filename to persist NLG data.
 
 #### persist
 
 ```python
- | persist(dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> Dict[Text, Any]
+def persist(dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> Dict[Text, Any]
 ```
 
 Persists this training data to disk and returns necessary
@@ -281,7 +301,7 @@ information to load it again.
 #### sorted\_entities
 
 ```python
- | sorted_entities() -> List[Any]
+def sorted_entities() -> List[Any]
 ```
 
 Extract all entities from examples and sorts them by entity type.
@@ -289,7 +309,7 @@ Extract all entities from examples and sorts them by entity type.
 #### validate
 
 ```python
- | validate() -> None
+def validate() -> None
 ```
 
 Ensures that the loaded training data is valid.
@@ -299,7 +319,7 @@ Checks that the data has a minimum of certain training examples.
 #### train\_test\_split
 
 ```python
- | train_test_split(train_frac: float = 0.8, random_seed: Optional[int] = None) -> Tuple["TrainingData", "TrainingData"]
+def train_test_split(train_frac: float = 0.8, random_seed: Optional[int] = None) -> Tuple["TrainingData", "TrainingData"]
 ```
 
 Split into a training and test dataset,
@@ -308,7 +328,7 @@ preserving the fraction of examples per intent.
 #### split\_nlu\_examples
 
 ```python
- | split_nlu_examples(train_frac: float, random_seed: Optional[int] = None) -> Tuple[list, list]
+def split_nlu_examples(train_frac: float, random_seed: Optional[int] = None) -> Tuple[list, list]
 ```
 
 Split the training data into a train and test set.
@@ -326,7 +346,7 @@ Split the training data into a train and test set.
 #### is\_empty
 
 ```python
- | is_empty() -> bool
+def is_empty() -> bool
 ```
 
 Checks if any training data was loaded.
@@ -334,7 +354,7 @@ Checks if any training data was loaded.
 #### contains\_no\_pure\_nlu\_data
 
 ```python
- | contains_no_pure_nlu_data() -> bool
+def contains_no_pure_nlu_data() -> bool
 ```
 
 Checks if any NLU training data was loaded.
@@ -342,7 +362,7 @@ Checks if any NLU training data was loaded.
 #### has\_e2e\_examples
 
 ```python
- | has_e2e_examples() -> bool
+def has_e2e_examples() -> bool
 ```
 
 Checks if there are any training examples from e2e stories.
@@ -350,7 +370,7 @@ Checks if there are any training examples from e2e stories.
 #### list\_to\_str
 
 ```python
-list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text
+def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text
 ```
 
 Converts list to a string.

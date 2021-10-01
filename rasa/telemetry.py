@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from datetime import datetime
 from functools import wraps
 import hashlib
@@ -13,8 +14,6 @@ import textwrap
 import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
-
-import async_generator
 import requests
 from terminaltables import SingleTable
 
@@ -567,6 +566,44 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
 
 
+def filter_errors(
+    event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    """Filter errors.
+
+    Args:
+        event: event to be logged to sentry
+        hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data or `None` if the event constitutes
+        an `ImportError` which should be discarded.
+    """
+    if hint and "exc_info" in hint:
+        exc_type, exc_value, tb = hint.get("exc_info")
+        if isinstance(exc_value, ImportError):
+            return None
+    return event
+
+
+def before_send(
+    event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    """Strips the sensitive data and filters errors before sending to sentry.
+
+    Args:
+        event: event to be logged to sentry
+        _unused_hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
+    """
+    event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
+    event = filter_errors(event, _unused_hint)
+    return event
+
+
 def strip_sensitive_data_from_sentry_event(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
 ) -> Optional[Dict[Text, Any]]:
@@ -635,7 +672,7 @@ def initialize_error_reporting() -> None:
     # and line numbers).
     sentry_sdk.init(
         f"https://{key}.ingest.sentry.io/2801673",
-        before_send=strip_sensitive_data_from_sentry_event,
+        before_send=before_send,
         integrations=[
             ExcepthookIntegration(),
             DedupeIntegration(),
@@ -677,10 +714,10 @@ def initialize_error_reporting() -> None:
             scope.set_context("Environment", default_context)
 
 
-@async_generator.asynccontextmanager
-async def track_model_training(
+@contextlib.contextmanager
+def track_model_training(
     training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False
-) -> typing.AsyncGenerator[None, None]:
+) -> typing.Generator[None, None, None]:
     """Track a model training started.
 
     WARNING: since this is a generator, it can't use the ensure telemetry
@@ -696,12 +733,12 @@ async def track_model_training(
     if not initialize_telemetry():
         # telemetry reporting is disabled. we won't do any reporting
         yield  # runs the training
-        return  # closes the async context
+        return
 
-    config = await training_data.get_config()
-    stories = await training_data.get_stories()
-    nlu_data = await training_data.get_nlu_data()
-    domain = await training_data.get_domain()
+    config = training_data.get_config()
+    stories = training_data.get_stories()
+    nlu_data = training_data.get_nlu_data()
+    domain = training_data.get_domain()
     count_conditional_responses = domain.count_conditional_response_variations()
 
     training_id = uuid.uuid4().hex

@@ -2,73 +2,82 @@
 sidebar_label: rasa.nlu.featurizers.dense_featurizer.lm_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.lm_featurizer
 ---
-## LanguageModelFeaturizer Objects
+## LanguageModelFeaturizerGraphComponent Objects
 
 ```python
-class LanguageModelFeaturizer(DenseFeaturizer)
+class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2,  GraphComponent)
 ```
 
-Featurizer using transformer-based language models.
+A featurizer that uses transformer-based language models.
 
-The transformers(https://github.com/huggingface/transformers) library
-is used to load pre-trained language models like BERT, GPT-2, etc.
-The component also tokenizes and featurizes dense featurizable attributes of
+This component loads a pre-trained language model
+from the Transformers library (https://github.com/huggingface/transformers)
+including BERT, GPT, GPT-2, xlnet, distilbert, and roberta.
+It also tokenizes and featurizes the featurizable dense attributes of
 each message.
-
-#### required\_components
-
-```python
- | @classmethod
- | required_components(cls) -> List[Type[Component]]
-```
-
-Packages needed to be installed.
 
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, skip_model_load: bool = False) -> None
+def __init__(config: Dict[Text, Any], execution_context: ExecutionContext) -> None
 ```
 
-Initializes LanguageModelFeaturizer with the specified model.
+Initializes the featurizer with the model in the config.
 
-**Arguments**:
-
-- `component_config` - Configuration for the component.
-- `skip_model_load` - Skip loading the model for pytests.
-
-#### cache\_key
+#### get\_default\_config
 
 ```python
- | @classmethod
- | cache_key(cls, component_meta: Dict[Text, Any], model_metadata: Metadata) -> Optional[Text]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
-Cache the component for future use.
+Returns LanguageModelFeaturizer&#x27;s default config.
 
-**Arguments**:
+#### validate\_config
 
-- `component_meta` - configuration for the component.
-- `model_metadata` - configuration for the whole pipeline.
-  
-- `Returns` - key of the cache for future retrievals.
+```python
+@classmethod
+def validate_config(cls, config: Dict[Text, Any]) -> None
+```
+
+Validates the configuration.
+
+#### validate\_compatibility\_with\_tokenizer
+
+```python
+@classmethod
+def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]) -> None
+```
+
+Checks that the featurizer and tokenizer are compatible.
+
+#### create
+
+```python
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> LanguageModelFeaturizerGraphComponent
+```
+
+Creates a LanguageModelFeaturizer.
+
+Loads the model specified in the config.
 
 #### required\_packages
 
 ```python
- | @classmethod
- | required_packages(cls) -> List[Text]
+@staticmethod
+def required_packages() -> List[Text]
 ```
 
-Packages needed to be installed.
+Returns the extra python dependencies required.
 
-#### train
+#### process\_training\_data
 
 ```python
- | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+def process_training_data(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> TrainingData
 ```
 
-Compute tokens and dense features for each message in training data.
+Computes tokens and dense features for each message in training data.
 
 **Arguments**:
 
@@ -78,12 +87,8 @@ Compute tokens and dense features for each message in training data.
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(messages: List[Message]) -> List[Message]
 ```
 
-Process an incoming message by computing its tokens and dense features.
-
-**Arguments**:
-
-- `message` - Incoming message object
+Processes messages by computing tokens and dense features.
 

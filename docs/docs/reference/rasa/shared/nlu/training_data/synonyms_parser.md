@@ -5,7 +5,7 @@ title: rasa.shared.nlu.training_data.synonyms_parser
 #### add\_synonyms\_from\_entities
 
 ```python
-add_synonyms_from_entities(plain_text: Text, entities: List[Dict], existing_synonyms: Dict[Text, Any]) -> None
+def add_synonyms_from_entities(plain_text: Text, entities: List[Dict], existing_synonyms: Dict[Text, Any]) -> None
 ```
 
 Adds synonyms found in intent examples.
@@ -20,7 +20,7 @@ Adds synonyms found in intent examples.
 #### add\_synonym
 
 ```python
-add_synonym(synonym_value: Text, synonym_name: Text, existing_synonyms: Dict[Text, Any]) -> None
+def add_synonym(synonym_value: Text, synonym_name: Text, existing_synonyms: Dict[Text, Any]) -> None
 ```
 
 Adds a new synonym mapping to the provided list of synonyms.

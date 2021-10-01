@@ -10,21 +10,31 @@ class EntityTagSpec(NamedTuple)
 
 Specification of an entity tag present in the training data.
 
-## EntityExtractor Objects
+## EntityExtractorMixin Objects
 
 ```python
-class EntityExtractor(Component)
+class EntityExtractorMixin(abc.ABC)
 ```
 
-Entity extractors are components which extract entities.
+Provides functionality for components that do entity extraction.
 
-They can be placed in the pipeline like other components, and can extract
-entities like a person&#x27;s name, or a location.
+Inheriting from this class will add utility functions for entity extraction.
+Entity extraction is the process of identifying and extracting entities like a
+person&#x27;s name, or a location from a message.
+
+#### name
+
+```python
+@property
+def name() -> Text
+```
+
+Returns the name of the class.
 
 #### add\_extractor\_name
 
 ```python
- | add_extractor_name(entities: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
+def add_extractor_name(entities: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
 ```
 
 Adds this extractor&#x27;s name to a list of entities.
@@ -41,7 +51,7 @@ Adds this extractor&#x27;s name to a list of entities.
 #### add\_processor\_name
 
 ```python
- | add_processor_name(entity: Dict[Text, Any]) -> Dict[Text, Any]
+def add_processor_name(entity: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Adds this extractor&#x27;s name to the list of processors for this entity.
@@ -55,25 +65,11 @@ Adds this extractor&#x27;s name to the list of processors for this entity.
 
   the modified entity.
 
-#### init\_split\_entities
-
-```python
- | init_split_entities() -> Dict[Text, bool]
-```
-
-Initialises the behaviour for splitting entities by comma (or not).
-
-**Returns**:
-
-  Defines desired behaviour for splitting specific entity types and
-  default behaviour for splitting any entity types for which no
-  behaviour is defined.
-
 #### filter\_irrelevant\_entities
 
 ```python
- | @staticmethod
- | filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list
+@staticmethod
+def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list
 ```
 
 Only return dimensions the user configured.
@@ -81,7 +77,7 @@ Only return dimensions the user configured.
 #### filter\_trainable\_entities
 
 ```python
- | filter_trainable_entities(entity_examples: List[Message]) -> List[Message]
+def filter_trainable_entities(entity_examples: List[Message]) -> List[Message]
 ```
 
 Filters out untrainable entity annotations.
@@ -93,8 +89,8 @@ self.name (e.g. &#x27;CRFEntityExtractor&#x27;) are removed.
 #### convert\_predictions\_into\_entities
 
 ```python
- | @staticmethod
- | convert_predictions_into_entities(text: Text, tokens: List[Token], tags: Dict[Text, List[Text]], split_entities_config: Dict[Text, bool] = None, confidences: Optional[Dict[Text, List[float]]] = None) -> List[Dict[Text, Any]]
+@staticmethod
+def convert_predictions_into_entities(text: Text, tokens: List[Token], tags: Dict[Text, List[Text]], split_entities_config: Dict[Text, bool] = None, confidences: Optional[Dict[Text, List[float]]] = None) -> List[Dict[Text, Any]]
 ```
 
 Convert predictions into entities.
@@ -115,8 +111,8 @@ Convert predictions into entities.
 #### get\_tag\_for
 
 ```python
- | @staticmethod
- | get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text
+@staticmethod
+def get_tag_for(tags: Dict[Text, List[Text]], tag_name: Text, idx: int) -> Text
 ```
 
 Get the value of the given tag name from the list of tags.
@@ -135,8 +131,8 @@ Get the value of the given tag name from the list of tags.
 #### check\_correct\_entity\_annotations
 
 ```python
- | @staticmethod
- | check_correct_entity_annotations(training_data: TrainingData) -> None
+@staticmethod
+def check_correct_entity_annotations(training_data: TrainingData) -> None
 ```
 
 Check if entities are correctly annotated in the training data.

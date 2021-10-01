@@ -15,7 +15,6 @@ from typing import (
     ValuesView,
     Union,
     Sequence,
-    cast,
 )
 
 import rasa.shared.utils.io
@@ -31,6 +30,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     Event,
     SessionStarted,
+    SlotSet,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaCoreException
@@ -169,22 +169,32 @@ class StoryStep:
         return f"    - {story_step_element.as_story_string()}\n"
 
     @staticmethod
-    def _or_string(story_step_element: Sequence[Event], e2e: bool) -> Text:
+    def _event_to_story_string(event: Event, e2e: bool) -> Optional[Text]:
+        if isinstance(event, UserUttered):
+            return event.as_story_string(e2e=e2e)
+        return event.as_story_string()
+
+    @staticmethod
+    def _or_string(story_step_element: Sequence[Event], e2e: bool) -> Optional[Text]:
         for event in story_step_element:
-            if not isinstance(event, UserUttered):
+            # OR statement can also contain `slot_was_set`, and
+            # we're going to ignore this events when representing
+            # the story as a string
+            if not isinstance(event, UserUttered) and not isinstance(event, SlotSet):
                 raise EventTypeError(
-                    "OR statement events must be of type `UserUttered`."
+                    "OR statement events must be of type `UserUttered` or `SlotSet`."
                 )
 
-        # FIXME: https://github.com/python/mypy/issues/7853
-        story_step_element = cast(Sequence[UserUttered], story_step_element)
-
         result = " OR ".join(
-            [element.as_story_string(e2e) for element in story_step_element]
+            [
+                StoryStep._event_to_story_string(element, e2e)
+                for element in story_step_element
+            ]
         )
         return f"* {result}\n"
 
     def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
+        """Returns a story as a string."""
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
         if flat:
@@ -214,7 +224,9 @@ class StoryStep:
                 # The story reader classes support reading stories in
                 # conversion mode.  When this mode is enabled, OR statements
                 # are represented as lists of events.
-                result += self._or_string(event, e2e)
+                or_string = self._or_string(event, e2e)
+                if or_string:
+                    result += or_string
             else:
                 raise Exception(f"Unexpected element in story step: {event}")
 
@@ -653,14 +665,6 @@ class StoryGraph:
         """Looks a story step up by its id."""
 
         return self.step_lookup.get(step_id)
-
-    def as_story_string(self) -> Text:
-        """Convert the graph into the story file format."""
-
-        story_content = ""
-        for step in self.story_steps:
-            story_content += step.as_story_string(flat=False)
-        return story_content
 
     @staticmethod
     def order_steps(

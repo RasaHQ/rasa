@@ -2,26 +2,18 @@
 sidebar_label: rasa.shared.data
 title: rasa.shared.data
 ---
-#### markdown\_file\_extension
-
-```python
-markdown_file_extension() -> Text
-```
-
-Return Markdown file extension
-
 #### yaml\_file\_extension
 
 ```python
-yaml_file_extension() -> Text
+def yaml_file_extension() -> Text
 ```
 
-Return Markdown file extension
+Return YAML file extension.
 
 #### is\_likely\_yaml\_file
 
 ```python
-is_likely_yaml_file(file_path: Union[Text, Path]) -> bool
+def is_likely_yaml_file(file_path: Union[Text, Path]) -> bool
 ```
 
 Check if a file likely contains yaml.
@@ -38,7 +30,7 @@ Check if a file likely contains yaml.
 #### is\_likely\_json\_file
 
 ```python
-is_likely_json_file(file_path: Text) -> bool
+def is_likely_json_file(file_path: Text) -> bool
 ```
 
 Check if a file likely contains json.
@@ -52,28 +44,10 @@ Check if a file likely contains json.
 
   `True` if the file likely contains data in json format, `False` otherwise.
 
-#### is\_likely\_markdown\_file
-
-```python
-is_likely_markdown_file(file_path: Text) -> bool
-```
-
-Check if a file likely contains markdown.
-
-**Arguments**:
-
-- `file_path` - path to the file
-  
-
-**Returns**:
-
-  `True` if the file likely contains data in markdown format,
-  `False` otherwise.
-
 #### get\_core\_directory
 
 ```python
-get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
+def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
 ```
 
 Recursively collects all Core training files from a list of paths.
@@ -90,7 +64,7 @@ Recursively collects all Core training files from a list of paths.
 #### get\_nlu\_directory
 
 ```python
-get_nlu_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
+def get_nlu_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
 ```
 
 Recursively collects all NLU training files from a list of paths.
@@ -107,7 +81,7 @@ Recursively collects all NLU training files from a list of paths.
 #### get\_data\_files
 
 ```python
-get_data_files(paths: Optional[Union[Text, List[Text]]], filter_predicate: Callable[[Text], bool]) -> List[Text]
+def get_data_files(paths: Optional[Union[Text, List[Text]]], filter_predicate: Callable[[Text], bool]) -> List[Text]
 ```
 
 Recursively collects all training files from a list of paths.
@@ -125,7 +99,7 @@ Recursively collects all training files from a list of paths.
 #### is\_valid\_filetype
 
 ```python
-is_valid_filetype(path: Union[Path, Text]) -> bool
+def is_valid_filetype(path: Union[Path, Text]) -> bool
 ```
 
 Checks if given file has a supported extension.
@@ -142,7 +116,7 @@ Checks if given file has a supported extension.
 #### is\_nlu\_file
 
 ```python
-is_nlu_file(file_path: Text) -> bool
+def is_nlu_file(file_path: Text) -> bool
 ```
 
 Checks if a file is a Rasa compatible nlu file.
@@ -156,44 +130,10 @@ Checks if a file is a Rasa compatible nlu file.
 
   `True` if it&#x27;s a nlu file, otherwise `False`.
 
-#### is\_story\_file
-
-```python
-is_story_file(file_path: Text) -> bool
-```
-
-Checks if a file is a Rasa story file.
-
-**Arguments**:
-
-- `file_path` - Path of the file which should be checked.
-  
-
-**Returns**:
-
-  `True` if it&#x27;s a story file, otherwise `False`.
-
-#### is\_test\_stories\_file
-
-```python
-is_test_stories_file(file_path: Text) -> bool
-```
-
-Checks if a file is a test stories file.
-
-**Arguments**:
-
-- `file_path` - Path of the file which should be checked.
-  
-
-**Returns**:
-
-  `True` if it&#x27;s a story file containing tests, otherwise `False`.
-
 #### is\_config\_file
 
 ```python
-is_config_file(file_path: Text) -> bool
+def is_config_file(file_path: Text) -> bool
 ```
 
 Checks whether the given file path is a Rasa config file.

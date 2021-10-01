@@ -5,7 +5,7 @@ title: rasa.nlu.config
 #### load
 
 ```python
-load(config: Optional[Union[Text, Dict]] = None, **kwargs: Any) -> "RasaNLUModelConfig"
+def load(config: Optional[Union[Text, Dict]] = None, **kwargs: Any) -> "RasaNLUModelConfig"
 ```
 
 Create configuration from file or dict.
@@ -24,7 +24,7 @@ Create configuration from file or dict.
 #### component\_config\_from\_pipeline
 
 ```python
-component_config_from_pipeline(index: int, pipeline: List[Dict[Text, Any]], defaults: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
+def component_config_from_pipeline(index: int, pipeline: List[Dict[Text, Any]], defaults: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
 ```
 
 Gets the configuration of the `index`th component.
@@ -52,7 +52,7 @@ A class that stores NLU model configuration parameters.
 #### \_\_init\_\_
 
 ```python
- | __init__(configuration_values: Optional[Dict[Text, Any]] = None) -> None
+def __init__(configuration_values: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Create a model configuration.
@@ -64,7 +64,7 @@ Create a model configuration.
 #### override
 
 ```python
- | override(config: Optional[Dict[Text, Any]] = None) -> None
+def override(config: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Overrides default config with given values.

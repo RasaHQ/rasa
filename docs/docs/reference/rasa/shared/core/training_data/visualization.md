@@ -11,7 +11,7 @@ class UserMessageGenerator()
 #### message\_for\_data
 
 ```python
- | message_for_data(structured_info: Dict[Text, Any]) -> Any
+def message_for_data(structured_info: Dict[Text, Any]) -> Any
 ```
 
 Find a data sample with the same intent and entities.
@@ -22,7 +22,7 @@ message in the data that has the same intent and entities.
 #### persist\_graph
 
 ```python
-persist_graph(graph: "networkx.Graph", output_file: Text) -> None
+def persist_graph(graph: "networkx.Graph", output_file: Text) -> None
 ```
 
 Plots the graph and persists it into a html file.
@@ -30,7 +30,7 @@ Plots the graph and persists it into a html file.
 #### visualize\_neighborhood
 
 ```python
-async visualize_neighborhood(current: Optional[List[Event]], event_sequences: List[List[Event]], output_file: Optional[Text] = None, max_history: int = 2, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, max_distance: int = 1, fontsize: int = 12) -> "networkx.MultiDiGraph"
+async def visualize_neighborhood(current: Optional[List[Event]], event_sequences: List[List[Event]], output_file: Optional[Text] = None, max_history: int = 2, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, max_distance: int = 1, fontsize: int = 12) -> "networkx.MultiDiGraph"
 ```
 
 Given a set of event lists, visualizing the flows.
@@ -38,7 +38,7 @@ Given a set of event lists, visualizing the flows.
 #### visualize\_stories
 
 ```python
-async visualize_stories(story_steps: List[StoryStep], domain: Domain, output_file: Optional[Text], max_history: int, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, fontsize: int = 12) -> "networkx.MultiDiGraph"
+async def visualize_stories(story_steps: List[StoryStep], domain: Domain, output_file: Optional[Text], max_history: int, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, fontsize: int = 12) -> "networkx.MultiDiGraph"
 ```
 
 Given a set of stories, generates a graph visualizing the flows in the stories.

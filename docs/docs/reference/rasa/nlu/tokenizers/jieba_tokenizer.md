@@ -2,49 +2,80 @@
 sidebar_label: rasa.nlu.tokenizers.jieba_tokenizer
 title: rasa.nlu.tokenizers.jieba_tokenizer
 ---
-## JiebaTokenizer Objects
+## JiebaTokenizerGraphComponent Objects
 
 ```python
-class JiebaTokenizer(Tokenizer)
+class JiebaTokenizerGraphComponent(TokenizerGraphComponent)
 ```
 
 This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba).
 
+#### supported\_languages
+
+```python
+@staticmethod
+def supported_languages() -> Optional[List[Text]]
+```
+
+Supported languages (see parent class for full docstring).
+
+#### get\_default\_config
+
+```python
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
+```
+
+Returns default config (see parent class for full docstring).
+
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Dict[Text, Any] = None) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource) -> None
 ```
 
-Construct a new intent classifier using the MITIE framework.
+Initialize the tokenizer.
 
-#### load\_custom\_dictionary
+#### create
 
 ```python
- | @staticmethod
- | load_custom_dictionary(path: Text) -> None
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> JiebaTokenizerGraphComponent
 ```
 
-Load all the custom dictionaries stored in the path.
+Creates a new component (see parent class for full docstring).
 
-More information about the dictionaries file format can
-be found in the documentation of jieba.
-https://github.com/fxsjy/jieba#load-dictionary
+#### required\_packages
+
+```python
+@classmethod
+def required_packages(cls) -> List[Text]
+```
+
+Any extra python dependencies required for this component to run.
+
+#### tokenize
+
+```python
+def tokenize(message: Message, attribute: Text) -> List[Token]
+```
+
+Tokenizes the text of the provided attribute of the incoming message.
 
 #### load
 
 ```python
- | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional["Metadata"] = None, cached_component: Optional[Component] = None, **kwargs: Any, ,) -> "JiebaTokenizer"
+@classmethod
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> JiebaTokenizerGraphComponent
 ```
 
-Loads trained component (see parent class for full docstring).
+Loads a custom dictionary from model storage.
 
 #### persist
 
 ```python
- | persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
+def persist() -> None
 ```
 
-Persist this model into the passed directory.
+Persist the custom dictionaries.
 

@@ -17,7 +17,7 @@ Raised when a model failed to load.
 #### \_\_init\_\_
 
 ```python
- | __init__(message: Text) -> None
+def __init__(message: Text) -> None
 ```
 
 Initialize message attribute.
@@ -37,7 +37,7 @@ Raised when a model is too old to be loaded.
 #### \_\_init\_\_
 
 ```python
- | __init__(message: Text) -> None
+def __init__(message: Text) -> None
 ```
 
 Initialize message attribute.
@@ -53,8 +53,8 @@ Captures all information about a model to load and prepare it.
 #### load
 
 ```python
- | @staticmethod
- | load(model_dir: Text) -> "Metadata"
+@staticmethod
+def load(model_dir: Text) -> "Metadata"
 ```
 
 Loads the metadata from a models directory.
@@ -70,7 +70,7 @@ Loads the metadata from a models directory.
 #### \_\_init\_\_
 
 ```python
- | __init__(metadata: Dict[Text, Any]) -> None
+def __init__(metadata: Dict[Text, Any]) -> None
 ```
 
 Set `metadata` attribute.
@@ -78,7 +78,7 @@ Set `metadata` attribute.
 #### get
 
 ```python
- | get(property_name: Text, default: Any = None) -> Any
+def get(property_name: Text, default: Any = None) -> Any
 ```
 
 Proxy function to get property on `metadata` attribute.
@@ -86,8 +86,8 @@ Proxy function to get property on `metadata` attribute.
 #### component\_classes
 
 ```python
- | @property
- | component_classes() -> List[Optional[Text]]
+@property
+def component_classes() -> List[Optional[Text]]
 ```
 
 Returns a list of component class names.
@@ -95,8 +95,8 @@ Returns a list of component class names.
 #### number\_of\_components
 
 ```python
- | @property
- | number_of_components() -> int
+@property
+def number_of_components() -> int
 ```
 
 Returns count of components.
@@ -104,7 +104,7 @@ Returns count of components.
 #### for\_component
 
 ```python
- | for_component(index: int, defaults: Any = None) -> Dict[Text, Any]
+def for_component(index: int, defaults: Any = None) -> Dict[Text, Any]
 ```
 
 Returns the configuration of the component based on index.
@@ -112,8 +112,8 @@ Returns the configuration of the component based on index.
 #### language
 
 ```python
- | @property
- | language() -> Optional[Text]
+@property
+def language() -> Optional[Text]
 ```
 
 Language of the underlying model
@@ -121,7 +121,7 @@ Language of the underlying model
 #### persist
 
 ```python
- | persist(model_dir: Text) -> None
+def persist(model_dir: Text) -> None
 ```
 
 Persists the metadata of a model to a given directory.
@@ -140,7 +140,7 @@ the training.
 #### train
 
 ```python
- | train(data: TrainingData, **kwargs: Any) -> "Interpreter"
+def train(data: TrainingData, **kwargs: Any) -> "Interpreter"
 ```
 
 Trains the underlying pipeline using the provided training data.
@@ -148,7 +148,7 @@ Trains the underlying pipeline using the provided training data.
 #### persist
 
 ```python
- | persist(path: Text, persistor: Optional[Persistor] = None, fixed_model_name: Text = None, persist_nlu_training_data: bool = False) -> Text
+def persist(path: Text, persistor: Optional[Persistor] = None, fixed_model_name: Text = None, persist_nlu_training_data: bool = False) -> Text
 ```
 
 Persist all components of the pipeline to the passed path.
@@ -166,8 +166,8 @@ Use a trained pipeline of components to parse text messages.
 #### load
 
 ```python
- | @staticmethod
- | load(model_dir: Text, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, new_config: Optional[Dict] = None, finetuning_epoch_fraction: float = 1.0) -> "Interpreter"
+@staticmethod
+def load(model_dir: Text, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, new_config: Optional[Dict] = None, finetuning_epoch_fraction: float = 1.0) -> "Interpreter"
 ```
 
 Create an interpreter based on a persisted model.
@@ -191,8 +191,8 @@ Create an interpreter based on a persisted model.
 #### create
 
 ```python
- | @staticmethod
- | create(model_dir: Text, model_metadata: Metadata, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, should_finetune: bool = False) -> "Interpreter"
+@staticmethod
+def create(model_dir: Text, model_metadata: Metadata, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, should_finetune: bool = False) -> "Interpreter"
 ```
 
 Create model and components defined by the provided metadata.
@@ -216,7 +216,7 @@ Create model and components defined by the provided metadata.
 #### parse
 
 ```python
- | parse(text: Text, time: Optional[datetime.datetime] = None, only_output_properties: bool = True) -> Dict[Text, Any]
+def parse(text: Text, time: Optional[datetime.datetime] = None, only_output_properties: bool = True) -> Dict[Text, Any]
 ```
 
 Parse the input text, classify it and return pipeline result.
@@ -226,7 +226,7 @@ The pipeline result usually contains intent and entities.
 #### featurize\_message
 
 ```python
- | featurize_message(message: Message) -> Message
+def featurize_message(message: Message) -> Message
 ```
 
 Tokenize and featurize the input message
@@ -243,7 +243,7 @@ Tokenize and featurize the input message
 #### warn\_of\_overlapping\_entities
 
 ```python
- | warn_of_overlapping_entities(message: Message) -> None
+def warn_of_overlapping_entities(message: Message) -> None
 ```
 
 Issues a warning when there are overlapping entity annotations.

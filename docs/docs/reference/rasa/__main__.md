@@ -5,7 +5,7 @@ title: rasa.__main__
 #### create\_argument\_parser
 
 ```python
-create_argument_parser() -> argparse.ArgumentParser
+def create_argument_parser() -> argparse.ArgumentParser
 ```
 
 Parse all the command line arguments for the training script.
@@ -13,7 +13,7 @@ Parse all the command line arguments for the training script.
 #### print\_version
 
 ```python
-print_version() -> None
+def print_version() -> None
 ```
 
 Prints version information of rasa tooling and python.
@@ -21,7 +21,7 @@ Prints version information of rasa tooling and python.
 #### main
 
 ```python
-main() -> None
+def main() -> None
 ```
 
 Run as standalone python application.

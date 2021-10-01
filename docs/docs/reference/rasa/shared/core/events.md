@@ -5,7 +5,7 @@ title: rasa.shared.core.events
 #### deserialise\_events
 
 ```python
-deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"]
+def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"]
 ```
 
 Convert a list of dictionaries to a list of corresponding events.
@@ -16,7 +16,7 @@ Example format:
 #### format\_message
 
 ```python
-format_message(text: Text, intent: Optional[Text], entities: Union[Text, List[Any]]) -> Text
+def format_message(text: Text, intent: Optional[Text], entities: Union[Text, List[Any]]) -> Text
 ```
 
 Uses NLU parser information to generate a message with inline entity annotations.
@@ -36,7 +36,7 @@ Uses NLU parser information to generate a message with inline entity annotations
 #### split\_events
 
 ```python
-split_events(events: Iterable["Event"], event_type_to_split_on: Type["Event"], additional_splitting_conditions: Optional[Dict[Text, Any]] = None, include_splitting_event: bool = True) -> List[List["Event"]]
+def split_events(events: Iterable["Event"], event_type_to_split_on: Type["Event"], additional_splitting_conditions: Optional[Dict[Text, Any]] = None, include_splitting_event: bool = True) -> List[List["Event"]]
 ```
 
 Splits events according to an event type and condition.
@@ -70,7 +70,7 @@ Splits events according to an event type and condition.
 #### do\_events\_begin\_with\_session\_start
 
 ```python
-do_events_begin_with_session_start(events: List["Event"]) -> bool
+def do_events_begin_with_session_start(events: List["Event"]) -> bool
 ```
 
 Determines whether `events` begins with a session start sequence.
@@ -102,8 +102,8 @@ how to update its state as the events occur.
 #### as\_story\_string
 
 ```python
- | @abc.abstractmethod
- | as_story_string() -> Optional[Text]
+@abc.abstractmethod
+def as_story_string() -> Optional[Text]
 ```
 
 Returns the event as story string.
@@ -115,7 +115,7 @@ Returns the event as story string.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Returns a unique hash for the event which is stable across python runs.
@@ -127,8 +127,8 @@ Returns a unique hash for the event which is stable across python runs.
 #### resolve\_by\_type
 
 ```python
- | @staticmethod
- | resolve_by_type(type_name: Text, default: Optional[Type["Event"]] = None) -> Optional[Type["Event"]]
+@staticmethod
+def resolve_by_type(type_name: Text, default: Optional[Type["Event"]] = None) -> Optional[Type["Event"]]
 ```
 
 Returns a slots class by its type name.
@@ -136,7 +136,7 @@ Returns a slots class by its type name.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -148,8 +148,8 @@ Applies event to current conversation state.
 #### \_\_eq\_\_
 
 ```python
- | @abc.abstractmethod
- | __eq__(other: Any) -> bool
+@abc.abstractmethod
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -157,7 +157,7 @@ Compares object with other object.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -173,7 +173,7 @@ Class to deduplicate common behavior for events without additional attributes.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -189,7 +189,7 @@ Skips the visualization of an event in Markdown stories.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> None
+def as_story_string() -> None
 ```
 
 Returns the event as story string.
@@ -211,7 +211,7 @@ As a side effect a new `Turn` will be created in the `Tracker`.
 #### \_\_init\_\_
 
 ```python
- | __init__(text: Optional[Text] = None, intent: Optional[Dict] = None, entities: Optional[List[Dict]] = None, parse_data: Optional["NLUPredictionData"] = None, timestamp: Optional[float] = None, input_channel: Optional[Text] = None, message_id: Optional[Text] = None, metadata: Optional[Dict] = None, use_text_for_featurization: Optional[bool] = None) -> None
+def __init__(text: Optional[Text] = None, intent: Optional[Dict] = None, entities: Optional[List[Dict]] = None, parse_data: Optional["NLUPredictionData"] = None, timestamp: Optional[float] = None, input_channel: Optional[Text] = None, message_id: Optional[Text] = None, metadata: Optional[Dict] = None, use_text_for_featurization: Optional[bool] = None) -> None
 ```
 
 Creates event for incoming user message.
@@ -232,7 +232,7 @@ Creates event for incoming user message.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash of object.
@@ -240,16 +240,25 @@ Returns unique hash of object.
 #### intent\_name
 
 ```python
- | @property
- | intent_name() -> Optional[Text]
+@property
+def intent_name() -> Optional[Text]
 ```
 
 Returns intent name or `None` if no intent.
 
+#### full\_retrieval\_intent\_name
+
+```python
+@property
+def full_retrieval_intent_name() -> Optional[Text]
+```
+
+Returns full retrieval intent name or `None` if no retrieval intent.
+
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -257,7 +266,7 @@ Compares object with other object.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -265,7 +274,7 @@ Returns text representation of event.
 #### as\_sub\_state
 
 ```python
- | as_sub_state() -> Dict[Text, Union[None, Text, List[Optional[Text]]]]
+def as_sub_state() -> Dict[Text, Union[None, Text, List[Optional[Text]]]]
 ```
 
 Turns a UserUttered event into features.
@@ -280,7 +289,7 @@ The substate contains information about entities, intent and text of the
 #### as\_story\_string
 
 ```python
- | as_story_string(e2e: bool = False) -> Text
+def as_story_string(e2e: bool = False) -> Text
 ```
 
 Return event as string for Markdown training format.
@@ -298,7 +307,7 @@ Return event as string for Markdown training format.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to tracker. See docstring of `Event`.
@@ -314,7 +323,7 @@ Stores information whether action was predicted based on text or intent.
 #### \_\_init\_\_
 
 ```python
- | __init__(use_text_for_featurization: bool, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(use_text_for_featurization: bool, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event.
@@ -329,7 +338,7 @@ Creates event.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -337,7 +346,7 @@ Returns text representation of event.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -345,7 +354,7 @@ Returns unique hash for event.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -353,7 +362,7 @@ Returns serialized event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -365,7 +374,7 @@ Applies event to current conversation state.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -381,7 +390,7 @@ Event that is used to add extracted entities to the tracker state.
 #### \_\_init\_\_
 
 ```python
- | __init__(entities: List[Dict[Text, Any]], timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(entities: List[Dict[Text, Any]], timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Initializes event.
@@ -396,7 +405,7 @@ Initializes event.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns the string representation of the event.
@@ -404,7 +413,7 @@ Returns the string representation of the event.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns the hash value of the event.
@@ -412,7 +421,7 @@ Returns the hash value of the event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares this event with another event.
@@ -420,7 +429,7 @@ Compares this event with another event.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Converts the event into a dict.
@@ -432,7 +441,7 @@ Converts the event into a dict.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -456,7 +465,7 @@ This class is not used in the story training as it is contained in the
 #### \_\_init\_\_
 
 ```python
- | __init__(text: Optional[Text] = None, data: Optional[Dict] = None, metadata: Optional[Dict[Text, Any]] = None, timestamp: Optional[float] = None) -> None
+def __init__(text: Optional[Text] = None, data: Optional[Dict] = None, metadata: Optional[Dict[Text, Any]] = None, timestamp: Optional[float] = None) -> None
 ```
 
 Creates event for a bot response.
@@ -471,7 +480,7 @@ Creates event for a bot response.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -479,7 +488,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -487,7 +496,7 @@ Compares object with other object.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -495,7 +504,7 @@ Returns text representation of event.
 #### \_\_repr\_\_
 
 ```python
- | __repr__() -> Text
+def __repr__() -> Text
 ```
 
 Returns text representation of event for debugging.
@@ -503,7 +512,7 @@ Returns text representation of event for debugging.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -511,7 +520,7 @@ Applies event to current conversation state.
 #### message
 
 ```python
- | message() -> Dict[Text, Any]
+def message() -> Dict[Text, Any]
 ```
 
 Return the complete message as a dictionary.
@@ -519,8 +528,8 @@ Return the complete message as a dictionary.
 #### empty
 
 ```python
- | @staticmethod
- | empty() -> "BotUttered"
+@staticmethod
+def empty() -> "BotUttered"
 ```
 
 Creates an empty bot utterance.
@@ -528,7 +537,7 @@ Creates an empty bot utterance.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -550,7 +559,7 @@ that `tracker.slots[key]=value`.
 #### \_\_init\_\_
 
 ```python
- | __init__(key: Text, value: Optional[Any] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(key: Text, value: Optional[Any] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event to set slot.
@@ -565,7 +574,7 @@ Creates event to set slot.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -573,7 +582,7 @@ Returns text representation of event.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -581,7 +590,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -589,7 +598,7 @@ Compares object with other object.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -597,7 +606,7 @@ Returns text representation of event.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -605,7 +614,7 @@ Returns serialized event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -625,7 +634,7 @@ the slots).
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -633,7 +642,7 @@ Returns unique hash for event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -641,7 +650,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Resets the tracker and triggers a followup `ActionSessionStart`.
@@ -661,7 +670,7 @@ and the bot is waiting for a new user message.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -669,7 +678,7 @@ Returns unique hash for event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -677,7 +686,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -697,7 +706,7 @@ values.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -705,7 +714,7 @@ Returns unique hash for event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -713,7 +722,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -731,7 +740,7 @@ The triggered intent can include entities if needed.
 #### \_\_init\_\_
 
 ```python
- | __init__(intent: Text, trigger_date_time: datetime, entities: Optional[List[Dict]] = None, name: Optional[Text] = None, kill_on_user_message: bool = True, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(intent: Text, trigger_date_time: datetime, entities: Optional[List[Dict]] = None, name: Optional[Text] = None, kill_on_user_message: bool = True, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates the reminder.
@@ -753,7 +762,7 @@ Creates the reminder.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -761,7 +770,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -769,7 +778,7 @@ Compares object with other object.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -777,7 +786,7 @@ Returns text representation of event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -785,7 +794,7 @@ Returns text representation of event.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -801,7 +810,7 @@ Cancel certain jobs.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Optional[Text] = None, intent: Optional[Text] = None, entities: Optional[List[Dict]] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(name: Optional[Text] = None, intent: Optional[Text] = None, entities: Optional[List[Dict]] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates a ReminderCancelled event.
@@ -823,7 +832,7 @@ reminders.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -831,7 +840,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -839,7 +848,7 @@ Compares object with other object.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -847,7 +856,7 @@ Returns text representation of event.
 #### cancels\_job\_with\_name
 
 ```python
- | cancels_job_with_name(job_name: Text, sender_id: Text) -> bool
+def cancels_job_with_name(job_name: Text, sender_id: Text) -> bool
 ```
 
 Determines if this event should cancel the job with the given name.
@@ -866,7 +875,7 @@ Determines if this event should cancel the job with the given name.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -888,7 +897,7 @@ action.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -896,7 +905,7 @@ Returns unique hash for event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -904,7 +913,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -920,7 +929,7 @@ Story should get dumped to a file.
 #### \_\_init\_\_
 
 ```python
- | __init__(path: Optional[Text] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(path: Optional[Text] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event about story exporting.
@@ -934,7 +943,7 @@ Creates event about story exporting.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -942,7 +951,7 @@ Returns unique hash for event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -950,7 +959,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -958,7 +967,7 @@ Applies event to current conversation state.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -974,7 +983,7 @@ Enqueue a followup action.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Text, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(name: Text, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates an event which forces the model to run a certain action next.
@@ -988,7 +997,7 @@ Creates an event which forces the model to run a certain action next.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -996,7 +1005,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1004,7 +1013,7 @@ Compares object with other object.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -1012,7 +1021,7 @@ Returns text representation of event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -1020,7 +1029,7 @@ Returns text representation of event.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -1028,7 +1037,7 @@ Returns serialized event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1047,7 +1056,7 @@ be set to `True`.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -1055,7 +1064,7 @@ Returns unique hash for event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -1063,7 +1072,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1082,7 +1091,7 @@ Inverse of `PauseConversation`. As a side effect the `Tracker`&#x27;s
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -1090,7 +1099,7 @@ Returns unique hash for event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -1098,7 +1107,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1117,7 +1126,7 @@ to the latest `Turn`` in `Tracker.turns`.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, action_text: Optional[Text] = None, hide_rule_turn: bool = False) -> None
+def __init__(action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, action_text: Optional[Text] = None, hide_rule_turn: bool = False) -> None
 ```
 
 Creates event for a successful event execution.
@@ -1138,7 +1147,7 @@ Creates event for a successful event execution.
 #### \_\_repr\_\_
 
 ```python
- | __repr__() -> Text
+def __repr__() -> Text
 ```
 
 Returns event as string for debugging.
@@ -1146,7 +1155,7 @@ Returns event as string for debugging.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Optional[Text]
+def __str__() -> Optional[Text]
 ```
 
 Returns event as human readable string.
@@ -1154,7 +1163,7 @@ Returns event as human readable string.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -1162,7 +1171,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1170,7 +1179,7 @@ Compares object with other object.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Optional[Text]
+def as_story_string() -> Optional[Text]
 ```
 
 Returns event in Markdown format.
@@ -1178,7 +1187,7 @@ Returns event in Markdown format.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -1186,7 +1195,7 @@ Returns serialized event.
 #### as\_sub\_state
 
 ```python
- | as_sub_state() -> Dict[Text, Text]
+def as_sub_state() -> Dict[Text, Text]
 ```
 
 Turns ActionExecuted into a dictionary containing action name or action text.
@@ -1201,7 +1210,7 @@ One action cannot have both set at the same time
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1220,7 +1229,7 @@ This class is not used in the story training as it is contained in the
 #### \_\_init\_\_
 
 ```python
- | __init__(text: Optional[Text] = None, data: Optional[Any] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(text: Optional[Text] = None, data: Optional[Any] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 See docstring of `BotUttered`.
@@ -1228,7 +1237,7 @@ See docstring of `BotUttered`.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -1236,7 +1245,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1244,7 +1253,7 @@ Compares object with other object.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -1252,7 +1261,7 @@ Returns text representation of event.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -1268,7 +1277,7 @@ If `name` is given: activates a loop with `name` else deactivates active loop.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Optional[Text], timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(name: Optional[Text], timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event for active loop.
@@ -1282,7 +1291,7 @@ Creates event for active loop.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -1290,7 +1299,7 @@ Returns text representation of event.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -1298,7 +1307,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1306,7 +1315,7 @@ Compares object with other object.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns text representation of event.
@@ -1314,7 +1323,7 @@ Returns text representation of event.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -1322,7 +1331,7 @@ Returns serialized event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1341,7 +1350,7 @@ legacy events which were stored with the old type name `form`.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -1349,7 +1358,7 @@ Returns serialized event.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Returns the hash of the event.
@@ -1367,7 +1376,7 @@ Notifies form action whether or not to validate the user input.
 #### \_\_init\_\_
 
 ```python
- | __init__(is_interrupted: bool, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(is_interrupted: bool, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Event to notify that loop was interrupted.
@@ -1385,7 +1394,7 @@ form-filling by asking FAQs.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -1393,7 +1402,7 @@ Returns text representation of event.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -1401,7 +1410,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1409,7 +1418,7 @@ Compares object with other object.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -1417,7 +1426,7 @@ Returns serialized event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1437,7 +1446,7 @@ to handle old legacy events which were stored with the old type name
 #### \_\_init\_\_
 
 ```python
- | __init__(validate: bool, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(validate: bool, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 See parent class docstring.
@@ -1445,7 +1454,7 @@ See parent class docstring.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -1453,7 +1462,7 @@ Returns serialized event.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Returns hash of the event.
@@ -1469,7 +1478,7 @@ Notify Core that the execution of the action has been rejected.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_name: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(action_name: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates event.
@@ -1485,7 +1494,7 @@ Creates event.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+def __str__() -> Text
 ```
 
 Returns text representation of event.
@@ -1493,7 +1502,7 @@ Returns text representation of event.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -1501,7 +1510,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1509,7 +1518,7 @@ Compares object with other object.
 #### as\_dict
 
 ```python
- | as_dict() -> Dict[Text, Any]
+def as_dict() -> Dict[Text, Any]
 ```
 
 Returns serialized event.
@@ -1517,7 +1526,7 @@ Returns serialized event.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1533,7 +1542,7 @@ Mark the beginning of a new conversation session.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Returns unique hash for event.
@@ -1541,7 +1550,7 @@ Returns unique hash for event.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> None
+def as_story_string() -> None
 ```
 
 Skips representing event in stories.
@@ -1549,7 +1558,7 @@ Skips representing event in stories.
 #### apply\_to
 
 ```python
- | apply_to(tracker: "DialogueStateTracker") -> None
+def apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.

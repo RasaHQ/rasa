@@ -5,7 +5,7 @@ title: rasa.cli.scaffold
 #### add\_subparser
 
 ```python
-add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all init parsers.
@@ -18,7 +18,7 @@ Add all init parsers.
 #### print\_train\_or\_instructions
 
 ```python
-print_train_or_instructions(args: argparse.Namespace, path: Text) -> None
+def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None
 ```
 
 Train a model if the user wants to.

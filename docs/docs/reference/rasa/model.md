@@ -21,7 +21,7 @@ Container for the results of a fingerprint comparison.
 #### \_\_init\_\_
 
 ```python
- | __init__(nlu: bool = True, core: bool = True, nlg: bool = True, force_training: bool = False)
+def __init__(nlu: bool = True, core: bool = True, nlg: bool = True, force_training: bool = False)
 ```
 
 Creates a `FingerprintComparisonResult` instance.
@@ -36,7 +36,7 @@ Creates a `FingerprintComparisonResult` instance.
 #### is\_training\_required
 
 ```python
- | is_training_required() -> bool
+def is_training_required() -> bool
 ```
 
 Check if anything has to be retrained.
@@ -44,7 +44,7 @@ Check if anything has to be retrained.
 #### should\_retrain\_core
 
 ```python
- | should_retrain_core() -> bool
+def should_retrain_core() -> bool
 ```
 
 Check if the Core model has to be updated.
@@ -52,7 +52,7 @@ Check if the Core model has to be updated.
 #### should\_retrain\_nlg
 
 ```python
- | should_retrain_nlg() -> bool
+def should_retrain_nlg() -> bool
 ```
 
 Check if the responses have to be updated.
@@ -60,7 +60,7 @@ Check if the responses have to be updated.
 #### should\_retrain\_nlu
 
 ```python
- | should_retrain_nlu() -> bool
+def should_retrain_nlu() -> bool
 ```
 
 Check if the NLU model has to be updated.
@@ -68,7 +68,7 @@ Check if the NLU model has to be updated.
 #### get\_local\_model
 
 ```python
-get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text
+def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text
 ```
 
 Returns verified path to local model archive.
@@ -92,7 +92,7 @@ Returns verified path to local model archive.
 #### get\_model
 
 ```python
-get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath
+def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath
 ```
 
 Gets a model and unpacks it.
@@ -115,7 +115,7 @@ Gets a model and unpacks it.
 #### get\_latest\_model
 
 ```python
-get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]
+def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]
 ```
 
 Get the latest model from a path.
@@ -132,7 +132,7 @@ Get the latest model from a path.
 #### unpack\_model
 
 ```python
-unpack_model(model_file: Text, working_directory: Optional[Union[Path, Text]] = None) -> TempDirectoryPath
+def unpack_model(model_file: Text, working_directory: Optional[Union[Path, Text]] = None) -> TempDirectoryPath
 ```
 
 Unpack a zipped Rasa model.
@@ -151,7 +151,7 @@ Unpack a zipped Rasa model.
 #### get\_model\_subdirectories
 
 ```python
-get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Optional[Text], Optional[Text]]
+def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Optional[Text], Optional[Text]]
 ```
 
 Return paths for Core and NLU model directories, if they exist.
@@ -170,7 +170,7 @@ If neither directories exist, a `ModelNotFound` exception is raised.
 #### create\_package\_rasa
 
 ```python
-create_package_rasa(training_directory: Text, output_filename: Text, fingerprint: Optional[Fingerprint] = None) -> Text
+def create_package_rasa(training_directory: Text, output_filename: Text, fingerprint: Optional[Fingerprint] = None) -> Text
 ```
 
 Create a zipped Rasa model from trained model files.
@@ -190,7 +190,7 @@ Create a zipped Rasa model from trained model files.
 #### project\_fingerprint
 
 ```python
-project_fingerprint() -> Optional[Text]
+def project_fingerprint() -> Optional[Text]
 ```
 
 Create a hash for the project in the current working directory.
@@ -202,7 +202,7 @@ Create a hash for the project in the current working directory.
 #### model\_fingerprint
 
 ```python
-async model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint
+def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint
 ```
 
 Create a model fingerprint from its used configuration and training data.
@@ -219,7 +219,7 @@ Create a model fingerprint from its used configuration and training data.
 #### fingerprint\_from\_path
 
 ```python
-fingerprint_from_path(model_path: Text) -> Fingerprint
+def fingerprint_from_path(model_path: Text) -> Fingerprint
 ```
 
 Load a persisted fingerprint.
@@ -236,7 +236,7 @@ Load a persisted fingerprint.
 #### persist\_fingerprint
 
 ```python
-persist_fingerprint(output_path: Text, fingerprint: Fingerprint) -> None
+def persist_fingerprint(output_path: Text, fingerprint: Fingerprint) -> None
 ```
 
 Persist a model fingerprint.
@@ -249,7 +249,7 @@ Persist a model fingerprint.
 #### did\_section\_fingerprint\_change
 
 ```python
-did_section_fingerprint_change(fingerprint1: Fingerprint, fingerprint2: Fingerprint, section: Section) -> bool
+def did_section_fingerprint_change(fingerprint1: Fingerprint, fingerprint2: Fingerprint, section: Section) -> bool
 ```
 
 Check whether the fingerprint of a section has changed.
@@ -257,7 +257,7 @@ Check whether the fingerprint of a section has changed.
 #### move\_model
 
 ```python
-move_model(source: Text, target: Text) -> bool
+def move_model(source: Text, target: Text) -> bool
 ```
 
 Move two model directories.
@@ -275,7 +275,7 @@ Move two model directories.
 #### should\_retrain
 
 ```python
-should_retrain(new_fingerprint: Fingerprint, old_model: Optional[Text], train_path: Text, has_e2e_examples: bool = False, force_training: bool = False) -> FingerprintComparisonResult
+def should_retrain(new_fingerprint: Fingerprint, old_model: Optional[Text], train_path: Text, has_e2e_examples: bool = False, force_training: bool = False) -> FingerprintComparisonResult
 ```
 
 Check which components of a model should be retrained.
@@ -298,7 +298,7 @@ Check which components of a model should be retrained.
 #### can\_finetune
 
 ```python
-can_finetune(last_fingerprint: Fingerprint, new_fingerprint: Fingerprint, core: bool = False, nlu: bool = False) -> bool
+def can_finetune(last_fingerprint: Fingerprint, new_fingerprint: Fingerprint, core: bool = False, nlu: bool = False) -> bool
 ```
 
 Checks if components of a model can be finetuned with incremental training.
@@ -318,7 +318,7 @@ Checks if components of a model can be finetuned with incremental training.
 #### package\_model
 
 ```python
-package_model(fingerprint: Fingerprint, output_directory: Text, train_path: Text, fixed_model_name: Optional[Text] = None, model_prefix: Text = "") -> Text
+def package_model(fingerprint: Fingerprint, output_directory: Text, train_path: Text, fixed_model_name: Optional[Text] = None, model_prefix: Text = "") -> Text
 ```
 
 Compress a trained model.
@@ -336,7 +336,7 @@ Compress a trained model.
 #### update\_model\_with\_new\_domain
 
 ```python
-async update_model_with_new_domain(importer: "TrainingDataImporter", unpacked_model_path: Union[Path, Text]) -> None
+def update_model_with_new_domain(importer: "TrainingDataImporter", unpacked_model_path: Union[Path, Text]) -> None
 ```
 
 Overwrites the domain of an unpacked model with a new domain.
@@ -349,7 +349,7 @@ Overwrites the domain of an unpacked model with a new domain.
 #### get\_model\_for\_finetuning
 
 ```python
-get_model_for_finetuning(previous_model_file: Optional[Union[Path, Text]]) -> Optional[Union[Path, Text]]
+def get_model_for_finetuning(previous_model_file: Optional[Union[Path, Text]]) -> Optional[Union[Path, Text]]
 ```
 
 Gets validated path for model to finetune.

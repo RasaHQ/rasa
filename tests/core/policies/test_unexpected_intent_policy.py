@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, List, Dict, Text
+from typing import Optional, List, Dict, Text, Type
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -8,14 +8,22 @@ from _pytest.logging import LogCaptureFixture
 import logging
 
 from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    IntentMaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer2 as TrackerFeaturizer,
 )
+from rasa.core.featurizers.tracker_featurizers import (
+    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
+)
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
-from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
+from rasa.core.policies.unexpected_intent_policy import (
+    UnexpecTEDIntentPolicyGraphComponent as UnexpecTEDIntentPolicy,
+)
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -27,7 +35,6 @@ from rasa.shared.core.events import (
     ActiveLoop,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.utils.tensorflow.constants import (
     IGNORE_INTENTS_LIST,
     LABEL,
@@ -52,10 +59,9 @@ from tests.core.policies.test_ted_policy import TestTEDPolicy
 
 
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> UnexpecTEDIntentPolicy:
-        return UnexpecTEDIntentPolicy(featurizer=featurizer, priority=priority)
+    @staticmethod
+    def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
+        return UnexpecTEDIntentPolicy
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
@@ -65,9 +71,15 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         return featurizer
 
     @staticmethod
-    def persist_and_load_policy(trained_policy: UnexpecTEDIntentPolicy, tmp_path: Path):
-        trained_policy.persist(tmp_path)
-        return UnexpecTEDIntentPolicy.load(tmp_path)
+    def persist_and_load_policy(
+        trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
+        return trained_policy.__class__.load(
+            trained_policy.config, model_storage, resource, execution_context
+        )
 
     @pytest.mark.skip
     def test_normalization(
@@ -84,12 +96,11 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_label_data_assembly(
         self, trained_policy: UnexpecTEDIntentPolicy, default_domain: Domain
     ):
-        interpreter = RegexInterpreter()
 
         # Construct input data
         state_featurizer = trained_policy.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_labels(
-            default_domain, interpreter
+            default_domain, precomputations=None
         )
         attribute_data, _ = model_data_utils.convert_to_data_format(encoded_all_labels)
 
@@ -112,13 +123,15 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             0
         ].units == len(default_domain.intents)
 
-    async def test_training_with_no_intent(
+    def test_training_with_no_intent(
         self,
         featurizer: Optional[TrackerFeaturizer],
-        priority: int,
         default_domain: Domain,
         tmp_path: Path,
         caplog: LogCaptureFixture,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ):
         stories = tmp_path / "stories.yml"
         stories.write_text(
@@ -130,28 +143,32 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
               - action: utter_greet
             """
         )
-        policy = self.create_policy(featurizer=featurizer, priority=priority)
+        policy = self.create_policy(
+            featurizer=featurizer,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+        )
         import tests.core.test_policies
 
-        training_trackers = await tests.core.test_policies.train_trackers(
+        training_trackers = tests.core.test_policies.train_trackers(
             default_domain, str(stories), augmentation_factor=20
         )
 
         with pytest.warns(UserWarning):
-            policy.train(training_trackers, default_domain, RegexInterpreter())
+            policy.train(training_trackers, default_domain, precomputations=None)
 
-    async def test_prepared_data_for_threshold_prediction(
+    def test_prepared_data_for_threshold_prediction(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         stories_path: Path,
     ):
-        training_trackers = await train_trackers(
+        training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
-        interpreter = RegexInterpreter()
         training_model_data, _ = trained_policy._prepare_for_training(
-            training_trackers, default_domain, interpreter
+            training_trackers, default_domain, precomputations=None,
         )
 
         data_for_prediction = trained_policy._prepare_data_for_prediction(
@@ -283,18 +300,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         for label_id, tolerance_thresholds in thresholds.items():
             assert expected_thresholds[label_id] == tolerance_thresholds
 
-    async def test_post_training_threshold_computation(
+    def test_post_training_threshold_computation(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         stories_path: Path,
     ):
-        training_trackers = await train_trackers(
+        training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
-        interpreter = RegexInterpreter()
         training_model_data, label_ids = trained_policy._prepare_for_training(
-            training_trackers, default_domain, interpreter
+            training_trackers, default_domain, precomputations=None,
         )
 
         trained_policy.compute_label_quantiles_post_training(
@@ -385,13 +401,18 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_unlikely_intent_check(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         predicted_similarity: float,
         threshold_value: float,
         is_unlikely: bool,
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
         # Construct dummy similarities
         similarities = np.array([[0.0] * len(default_domain.intents)])
         dummy_intent_index = 4
@@ -409,10 +430,15 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_should_check_for_intent(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
 
         intent_index = 0
         assert (
@@ -440,17 +466,22 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_no_action_unlikely_intent_prediction(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
 
         expected_probabilities = [0] * default_domain.num_actions
 
-        interpreter = RegexInterpreter()
+        precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         assert prediction.probabilities == expected_probabilities
@@ -463,7 +494,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain,
         )
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         assert prediction.probabilities == expected_probabilities
@@ -471,7 +502,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         loaded_policy.model = None
 
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         assert prediction.probabilities == expected_probabilities
@@ -483,6 +514,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_action_unlikely_intent_prediction(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         predicted_similarity,
         threshold_value,
@@ -490,7 +524,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         monkeypatch: MonkeyPatch,
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
 
         similarities = np.array([[[0.0] * len(default_domain.intents)]])
 
@@ -500,7 +536,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
 
         loaded_policy.label_thresholds[dummy_intent_index] = threshold_value
 
-        interpreter = RegexInterpreter()
+        precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
 
         tracker.update_with_events(
@@ -516,7 +552,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         )
 
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         if not is_unlikely:
@@ -584,6 +620,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_skip_predictions_to_prevent_loop(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         caplog: LogCaptureFixture,
         tracker_events: List[Event],
@@ -591,13 +630,15 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tmp_path: Path,
     ):
         caplog.set_level(logging.DEBUG)
-        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
-        interpreter = RegexInterpreter()
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
+        precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
 
         prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
+            tracker, default_domain, precomputations
         )
 
         assert (
@@ -672,13 +713,18 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_ignore_action_unlikely_intent(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         tracker_events_with_action: List[Event],
         tracker_events_without_action: List[Event],
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
-        interpreter = RegexInterpreter()
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
+        precomputations = None
         tracker_with_action = DialogueStateTracker.from_events(
             "test 1", evts=tracker_events_with_action
         )
@@ -686,10 +732,10 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             "test 2", evts=tracker_events_without_action
         )
         prediction_with_action = loaded_policy.predict_action_probabilities(
-            tracker_with_action, default_domain, interpreter
+            tracker_with_action, default_domain, precomputations
         )
         prediction_without_action = loaded_policy.predict_action_probabilities(
-            tracker_without_action, default_domain, interpreter
+            tracker_without_action, default_domain, precomputations
         )
 
         # If the weights didn't change then both trackers
@@ -735,12 +781,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_collect_action_metadata(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         tmp_path: Path,
         query_intent_index: int,
         ranking_length: int,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
 
         def test_individual_label_metadata(
             label_metadata: Dict[Text, Optional[float]],
@@ -816,3 +867,296 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             test_individual_label_metadata(
                 label_metadata, label_thresholds, similarities, label_index
             )
+
+    @pytest.mark.parametrize(
+        "tracker_events_for_training, expected_trackers_with_events",
+        [
+            # Filter because of no intent and action name
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello"),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="happy to make it work"),
+                        ActionExecuted(action_text="Great!"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+            ),
+            # Filter because of no action name
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello"),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted(action_text="Great!"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+            ),
+            # Filter because of no intent
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello"),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="happy to make it work"),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+            ),
+            # No filter needed
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+            ),
+            # Filter to return empty list of trackers
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted(action_text="Great!"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [],
+            ),
+        ],
+    )
+    def test_filter_training_trackers(
+        self,
+        tracker_events_for_training: List[List[Event]],
+        expected_trackers_with_events: List[List[Event]],
+        domain: Domain,
+    ):
+        trackers_for_training = [
+            TrackerWithCachedStates.from_events(
+                sender_id=f"{tracker_index}", evts=events, domain=domain
+            )
+            for tracker_index, events in enumerate(tracker_events_for_training)
+        ]
+
+        filtered_trackers = UnexpecTEDIntentPolicy._get_trackers_for_training(
+            trackers_for_training
+        )
+        assert len(filtered_trackers) == len(expected_trackers_with_events)
+        for collected_tracker, expected_tracker_events in zip(
+            filtered_trackers, expected_trackers_with_events
+        ):
+            collected_tracker_events = list(collected_tracker.events)
+            assert collected_tracker_events == expected_tracker_events
+
+
+@pytest.mark.parametrize(
+    "tracker_events, skip_training",
+    [
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(
+                        text="happy to make it work", intent={"name": "goodbye"}
+                    ),
+                    ActionExecuted("utter_goodbye"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="happy to make it work"),
+                    ActionExecuted(action_text="Great!"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            False,
+        ),
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="happy to make it work"),
+                    ActionExecuted(action_text="Great!"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            True,
+        ),
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="happy to make it work"),
+                    ActionExecuted("utter_goodbye"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            True,
+        ),
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(
+                        text="happy to make it work", intent={"name": "goodbye"}
+                    ),
+                    ActionExecuted(action_text="Great!"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            True,
+        ),
+    ],
+)
+def test_train_with_e2e_data(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    tracker_events: List[List[Event]],
+    skip_training: bool,
+    domain: Domain,
+):
+    policy = UnexpecTEDIntentPolicy(
+        UnexpecTEDIntentPolicy.get_default_config(),
+        default_model_storage,
+        Resource("UnexpecTEDIntentPolicy"),
+        default_execution_context,
+        featurizer=IntentMaxHistoryTrackerFeaturizer(
+            IntentTokenizerSingleStateFeaturizer()
+        ),
+    )
+    trackers_for_training = [
+        TrackerWithCachedStates.from_events(
+            sender_id=f"{tracker_index}", evts=events, domain=domain
+        )
+        for tracker_index, events in enumerate(tracker_events)
+    ]
+    if skip_training:
+        with pytest.warns(UserWarning):
+            policy.train(trackers_for_training, domain, precomputations=None)
+    else:
+        policy.train(trackers_for_training, domain, precomputations=None)

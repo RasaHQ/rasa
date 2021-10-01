@@ -13,8 +13,8 @@ Enumeration of a policy&#x27;s supported training data type.
 #### trackers\_for\_policy
 
 ```python
- | @staticmethod
- | trackers_for_policy(policy: Union["Policy", Type["Policy"]], trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
+@staticmethod
+def trackers_for_policy(policy: Union[Policy, Type[Policy]], trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
 ```
 
 Return trackers for a given policy.
@@ -29,17 +29,38 @@ Return trackers for a given policy.
 
   Trackers from ML-based training data and/or rule-based data.
 
-## Policy Objects
+#### trackers\_for\_supported\_data
 
 ```python
-class Policy()
+@staticmethod
+def trackers_for_supported_data(supported_data: SupportedData, trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
 ```
+
+Return trackers for a given policy.
+
+**Arguments**:
+
+- `supported_data` - Supported data filter for the `trackers`.
+- `trackers` - Trackers to split.
+  
+
+**Returns**:
+
+  Trackers from ML-based training data and/or rule-based data.
+
+## PolicyGraphComponent Objects
+
+```python
+class PolicyGraphComponent(GraphComponent)
+```
+
+Common parent class for all dialogue policies.
 
 #### supported\_data
 
 ```python
- | @staticmethod
- | supported_data() -> SupportedData
+@staticmethod
+def supported_data() -> SupportedData
 ```
 
 The type of data supported by this policy.
@@ -54,98 +75,88 @@ or both ML-based data and rule data, they need to override this method.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, should_finetune: bool = False, **kwargs: Any, ,) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None) -> None
 ```
 
 Constructs a new Policy object.
 
+#### create
+
+```python
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> PolicyGraphComponent
+```
+
+Creates a new untrained policy (see parent class for full docstring).
+
 #### featurizer
 
 ```python
- | @property
- | featurizer() -> TrackerFeaturizer
+@property
+def featurizer() -> TrackerFeaturizer
 ```
 
 Returns the policy&#x27;s featurizer.
 
-#### set\_shared\_policy\_states
-
-```python
- | set_shared_policy_states(**kwargs: Any) -> None
-```
-
-Sets policy&#x27;s shared states for correct featurization.
-
 #### train
 
 ```python
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
+@abc.abstractmethod
+def train(training_trackers: List[TrackerWithCachedStates], domain: Domain, **kwargs: Any, ,) -> Resource
 ```
 
-Trains the policy on given training trackers.
+Trains a policy.
 
 **Arguments**:
 
-  training_trackers:
-  the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.shared.core.domain.Domain`
-- `interpreter` - Interpreter which can be used by the polices for featurization.
+- `training_trackers` - The story and rules trackers from the training data.
+- `domain` - The model&#x27;s domain.
+- `**kwargs` - Depending on the specified `needs` section and the resulting
+  graph structure the policy can use different input to train itself.
+  
+
+**Returns**:
+
+  A policy must return its resource locator so that potential children nodes
+  can load the policy from the resource.
 
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> "PolicyPrediction"
+@abc.abstractmethod
+def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
 
 **Arguments**:
 
-- `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.shared.core.domain.Domain`
-- `interpreter` - Interpreter which may be used by the policies to create
-  additional features.
+- `tracker` - The tracker containing the conversation history up to now.
+- `domain` - The model&#x27;s domain.
+- `rule_only_data` - Slots and loops which are specific to rules and hence
+  should be ignored by this policy.
+- `**kwargs` - Depending on the specified `needs` section and the resulting
+  graph structure the policy can use different input to make predictions.
   
 
 **Returns**:
 
-  The policy&#x27;s prediction (e.g. the probabilities for the actions).
-
-#### persist
-
-```python
- | persist(path: Union[Text, Path]) -> None
-```
-
-Persists the policy to storage.
-
-**Arguments**:
-
-- `path` - Path to persist policy to.
+  The prediction.
 
 #### load
 
 ```python
- | @classmethod
- | load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy"
+@classmethod
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> "PolicyGraphComponent"
 ```
 
-Loads a policy from path.
-
-**Arguments**:
-
-- `path` - Path to load policy from.
-  
-
-**Returns**:
-
-  An instance of `Policy`.
+Loads a trained policy (see parent class for full docstring).
 
 #### format\_tracker\_states
 
 ```python
- | @staticmethod
- | format_tracker_states(states: List[Dict]) -> Text
+@staticmethod
+def format_tracker_states(states: List[Dict]) -> Text
 ```
 
 Format tracker states to human readable format on debug log.
@@ -170,7 +181,7 @@ Stores information about the prediction of a `Policy`.
 #### \_\_init\_\_
 
 ```python
- | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None, hide_rule_turn: bool = False, action_metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None, hide_rule_turn: bool = False, action_metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates a `PolicyPrediction`.
@@ -204,8 +215,8 @@ Creates a `PolicyPrediction`.
 #### for\_action\_name
 
 ```python
- | @staticmethod
- | for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> "PolicyPrediction"
+@staticmethod
+def for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> "PolicyPrediction"
 ```
 
 Create a prediction for a given action.
@@ -226,7 +237,7 @@ Create a prediction for a given action.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Checks if the two objects are equal.
@@ -243,8 +254,8 @@ Checks if the two objects are equal.
 #### max\_confidence\_index
 
 ```python
- | @property
- | max_confidence_index() -> int
+@property
+def max_confidence_index() -> int
 ```
 
 Gets the index of the action prediction with the highest confidence.
@@ -256,20 +267,20 @@ Gets the index of the action prediction with the highest confidence.
 #### max\_confidence
 
 ```python
- | @property
- | max_confidence() -> float
+@property
+def max_confidence() -> float
 ```
 
-Gets the highest predicted probability.
+Gets the highest predicted confidence.
 
 **Returns**:
 
-  The highest predicted probability.
+  The highest predicted confidence.
 
 #### confidence\_scores\_for
 
 ```python
-confidence_scores_for(action_name: Text, value: float, domain: Domain) -> List[float]
+def confidence_scores_for(action_name: Text, value: float, domain: Domain) -> List[float]
 ```
 
 Returns confidence scores if a single action is predicted.
@@ -284,4 +295,12 @@ Returns confidence scores if a single action is predicted.
 **Returns**:
 
   the list of the length of the number of actions
+
+## InvalidPolicyConfig Objects
+
+```python
+class InvalidPolicyConfig(RasaException)
+```
+
+Exception that can be raised when policy config is not valid.
 

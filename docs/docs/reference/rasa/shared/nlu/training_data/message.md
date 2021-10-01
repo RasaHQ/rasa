@@ -8,10 +8,27 @@ title: rasa.shared.nlu.training_data.message
 class Message()
 ```
 
+Container for data that can be used to describe a conversation turn.
+
+The turn is described by a set of attributes such as e.g. `TEXT`  and  `INTENT`
+when describing a user utterance or e.g. `ACTION_NAME` for describing a bot action.
+The container includes raw information (`self.data`) as well as features
+(`self.features`) for each such attribute.
+Moreover, the message has a timestamp and can keep track about information
+on a specific subset of attributes (`self.output_properties`).
+
+#### \_\_init\_\_
+
+```python
+def __init__(data: Optional[Dict[Text, Any]] = None, output_properties: Optional[Set] = None, time: Optional[int] = None, features: Optional[List["Features"]] = None, **kwargs: Any, ,) -> None
+```
+
+Creates an instance of Message.
+
 #### add\_diagnostic\_data
 
 ```python
- | add_diagnostic_data(origin: Text, data: Dict[Text, Any]) -> None
+def add_diagnostic_data(origin: Text, data: Dict[Text, Any]) -> None
 ```
 
 Adds diagnostic data from the `origin` component.
@@ -24,7 +41,7 @@ Adds diagnostic data from the `origin` component.
 #### set
 
 ```python
- | set(prop: Text, info: Any, add_to_output: bool = False) -> None
+def set(prop: Text, info: Any, add_to_output: bool = False) -> None
 ```
 
 Sets the message&#x27;s property to the given value.
@@ -38,15 +55,23 @@ Sets the message&#x27;s property to the given value.
 #### as\_dict\_nlu
 
 ```python
- | as_dict_nlu() -> dict
+def as_dict_nlu() -> dict
 ```
 
 Get dict representation of message as it would appear in training data
 
+#### as\_dict
+
+```python
+def as_dict(only_output_properties: bool = False) -> Dict
+```
+
+Gets dict representation of message.
+
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Calculate a hash for the message.
@@ -58,7 +83,7 @@ Calculate a hash for the message.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Calculate a string fingerprint for the message.
@@ -70,8 +95,8 @@ Calculate a string fingerprint for the message.
 #### build
 
 ```python
- | @classmethod
- | build(cls, text: Text, intent: Optional[Text] = None, entities: Optional[List[Dict[Text, Any]]] = None, intent_metadata: Optional[Any] = None, example_metadata: Optional[Any] = None, **kwargs: Any, ,) -> "Message"
+@classmethod
+def build(cls, text: Text, intent: Optional[Text] = None, entities: Optional[List[Dict[Text, Any]]] = None, intent_metadata: Optional[Any] = None, example_metadata: Optional[Any] = None, **kwargs: Any, ,) -> "Message"
 ```
 
 Builds a Message from `UserUttered` data.
@@ -92,7 +117,7 @@ Builds a Message from `UserUttered` data.
 #### get\_full\_intent
 
 ```python
- | get_full_intent() -> Text
+def get_full_intent() -> Text
 ```
 
 Get intent as it appears in training data
@@ -100,8 +125,8 @@ Get intent as it appears in training data
 #### separate\_intent\_response\_key
 
 ```python
- | @staticmethod
- | separate_intent_response_key(original_intent: Text) -> Tuple[Text, Optional[Text]]
+@staticmethod
+def separate_intent_response_key(original_intent: Text) -> Tuple[Text, Optional[Text]]
 ```
 
 Splits intent into main intent name and optional sub-intent name.
@@ -116,7 +141,7 @@ item is `None`, e.g. `&quot;FAQ&quot;` would be mapped to `(&quot;FAQ&quot;, Non
 #### get\_sparse\_features
 
 ```python
- | get_sparse_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional["Features"], Optional["Features"]]
+def get_sparse_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional["Features"], Optional["Features"]]
 ```
 
 Gets all sparse features for the attribute given the list of featurizers.
@@ -136,7 +161,7 @@ If no featurizers are provided, all available features will be considered.
 #### get\_sparse\_feature\_sizes
 
 ```python
- | get_sparse_feature_sizes(attribute: Text, featurizers: Optional[List[Text]] = None) -> Dict[Text, List[int]]
+def get_sparse_feature_sizes(attribute: Text, featurizers: Optional[List[Text]] = None) -> Dict[Text, List[int]]
 ```
 
 Gets sparse feature sizes for the attribute given the list of featurizers.
@@ -156,7 +181,7 @@ If no featurizers are provided, all available features will be considered.
 #### get\_dense\_features
 
 ```python
- | get_dense_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional["Features"], Optional["Features"]]
+def get_dense_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> Tuple[Optional["Features"], Optional["Features"]]
 ```
 
 Gets all dense features for the attribute given the list of featurizers.
@@ -176,7 +201,7 @@ If no featurizers are provided, all available features will be considered.
 #### get\_all\_features
 
 ```python
- | get_all_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> List["Features"]
+def get_all_features(attribute: Text, featurizers: Optional[List[Text]] = None) -> List["Features"]
 ```
 
 Gets all features for the attribute given the list of featurizers.
@@ -196,7 +221,7 @@ If no featurizers are provided, all available features will be considered.
 #### features\_present
 
 ```python
- | features_present(attribute: Text, featurizers: Optional[List[Text]] = None) -> bool
+def features_present(attribute: Text, featurizers: Optional[List[Text]] = None) -> bool
 ```
 
 Checks if there are any features present for the attribute and featurizers.
@@ -216,7 +241,7 @@ If no featurizers are provided, all available features will be considered.
 #### is\_core\_or\_domain\_message
 
 ```python
- | is_core_or_domain_message() -> bool
+def is_core_or_domain_message() -> bool
 ```
 
 Checks whether the message is a core message or from the domain.
@@ -231,7 +256,7 @@ not from the NLU data.
 #### is\_e2e\_message
 
 ```python
- | is_e2e_message() -> bool
+def is_e2e_message() -> bool
 ```
 
 Checks whether the message came from an e2e story.
@@ -243,7 +268,7 @@ Checks whether the message came from an e2e story.
 #### find\_overlapping\_entities
 
 ```python
- | find_overlapping_entities() -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]
+def find_overlapping_entities() -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]
 ```
 
 Finds any overlapping entity annotations.

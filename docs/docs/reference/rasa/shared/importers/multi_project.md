@@ -11,7 +11,7 @@ class MultiProjectImporter(TrainingDataImporter)
 #### training\_paths
 
 ```python
- | training_paths() -> Set[Text]
+def training_paths() -> Set[Text]
 ```
 
 Returns the paths which should be searched for training data.
@@ -19,7 +19,7 @@ Returns the paths which should be searched for training data.
 #### is\_imported
 
 ```python
- | is_imported(path: Text) -> bool
+def is_imported(path: Text) -> bool
 ```
 
 Checks whether a path is imported by a skill.
@@ -36,7 +36,7 @@ Checks whether a path is imported by a skill.
 #### get\_domain
 
 ```python
- | async get_domain() -> Domain
+def get_domain() -> Domain
 ```
 
 Retrieves model domain (see parent class for full docstring).
@@ -44,7 +44,7 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
- | async get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+def get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -52,7 +52,7 @@ Retrieves training stories / rules (see parent class for full docstring).
 #### get\_conversation\_tests
 
 ```python
- | async get_conversation_tests() -> StoryGraph
+def get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -60,7 +60,7 @@ Retrieves conversation test stories (see parent class for full docstring).
 #### get\_config
 
 ```python
- | async get_config() -> Dict
+def get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -68,7 +68,7 @@ Retrieves model config (see parent class for full docstring).
 #### get\_nlu\_data
 
 ```python
- | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+def get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves NLU training data (see parent class for full docstring).
