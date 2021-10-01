@@ -38,7 +38,12 @@ module.exports = {
             'tuning-your-model',
             'testing-your-assistant',
             'setting-up-ci-cd',
-            'how-to-deploy',
+            {
+              type: 'category',
+              label: 'Deploying Your Assistant',
+              collapsed: true,
+              items: ['deploy/introduction', 'deploy/deploy-rasa', 'deploy/deploy-action-server', 'deploy/deploy-rasa-x'],
+            },
           ],
         },
         "glossary",
