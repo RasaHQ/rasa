@@ -88,9 +88,7 @@ class SparseDropout(tf.keras.layers.Dropout):
             to_retain = tf.greater_equal(to_retain_prob, self.rate)
             return tf.sparse.retain(inputs, to_retain)
 
-        outputs = smart_cond(
-            training, dropped_inputs, lambda: tf.identity(inputs)
-        )
+        outputs = smart_cond(training, dropped_inputs, lambda: tf.identity(inputs))
         # need to explicitly recreate sparse tensor, because otherwise the shape
         # information will be lost after `retain`
         # noinspection PyProtectedMember
