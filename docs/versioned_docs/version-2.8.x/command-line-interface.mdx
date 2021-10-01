@@ -87,7 +87,7 @@ The following arguments can be used to configure the training process:
 
 ### Incremental training
 
-:::caution
+:::caution New in 2.2
 This feature is experimental.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
@@ -152,10 +152,14 @@ can be triggered at any conversation turn. Subsequently, the following message w
  at this point in the conversation. Check out UnexpecTEDIntentPolicy docs to learn more.
 ```
 
- As the message states, this is an indication that you have explored a conversation path
- which is unexpected according to the current set of training stories and hence adding this
- path to training stories is recommended. Like other bot actions, you can choose to confirm
- or deny running this action.
+As the message states, this is an indication that you have explored a conversation path
+which is unexpected according to the current set of training stories and hence adding this
+path to training stories is recommended. Like other bot actions, you can choose to confirm
+or deny running this action.
+
+:::info New in 2.8
+`UnexpecTEDIntentPolicy` was added.
+:::
 
 
 If you provide a trained model using the `--model` argument, training is skipped
@@ -413,6 +417,10 @@ domain files:
 
 ```text [rasa data validate --help]
 ```
+
+:::info New in 2.8
+Story validation is no longer an experimental feature as of 2.8. The feature behaviour remains unchanged.
+:::
 
 ## rasa export
 

@@ -41,10 +41,10 @@ Gets necessary information for featurization from domain.
 #### encode\_state
 
 ```python
- | encode_state(state: State, interpreter: NaturalLanguageInterpreter) -> Dict[Text, List["Features"]]
+ | encode_state(state: State, interpreter: NaturalLanguageInterpreter) -> Dict[Text, List[Features]]
 ```
 
-Encode the given state with the help of the given interpreter.
+Encodes the given state with the help of the given interpreter.
 
 **Arguments**:
 
@@ -59,10 +59,10 @@ Encode the given state with the help of the given interpreter.
 #### encode\_entities
 
 ```python
- | encode_entities(entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> Dict[Text, List["Features"]]
+ | encode_entities(entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> Dict[Text, List[Features]]
 ```
 
-Encode the given entity data with the help of the given interpreter.
+Encodes the given entity data with the help of the given interpreter.
 
 Produce numeric entity tags for tokens.
 
@@ -77,13 +77,34 @@ Produce numeric entity tags for tokens.
 
   A dictionary of entity type to list of features.
 
+#### encode\_all\_labels
+
+```python
+ | encode_all_labels(domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[Dict[Text, List[Features]]]
+```
+
+Encodes all labels from the domain using the given interpreter.
+
+**Arguments**:
+
+- `domain` - The domain that contains the labels.
+- `interpreter` - The interpreter used to encode the labels.
+  
+
+**Returns**:
+
+  A list of encoded labels.
+
 #### encode\_all\_actions
 
 ```python
- | encode_all_actions(domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[Dict[Text, List["Features"]]]
+ | encode_all_actions(domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[Dict[Text, List[Features]]]
 ```
 
-Encode all action from the domain using the given interpreter.
+Encodes all actions from the domain using the given interpreter.
+
+This method is deprecated and will be removed in Rasa Open Source 3.0.0 .
+It is recommended to use `encode_all_labels` instead.
 
 **Arguments**:
 
@@ -94,6 +115,32 @@ Encode all action from the domain using the given interpreter.
 **Returns**:
 
   A list of encoded actions.
+
+## IntentTokenizerSingleStateFeaturizer Objects
+
+```python
+class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer)
+```
+
+A SingleStateFeaturizer for use with policies that predict intent labels.
+
+#### encode\_all\_labels
+
+```python
+ | encode_all_labels(domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[Dict[Text, List[Features]]]
+```
+
+Encodes all relevant labels from the domain using the given interpreter.
+
+**Arguments**:
+
+- `domain` - The domain that contains the labels.
+- `interpreter` - The interpreter used to encode the labels.
+  
+
+**Returns**:
+
+  A list of encoded labels.
 
 ## BinarySingleStateFeaturizer Objects
 

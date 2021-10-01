@@ -37,7 +37,7 @@ This is especially useful if you don't have enough training data.
 If you are getting started with a one of [spaCy's supported languages](https://spacy.io/usage/models#languages),
 we recommend the following pipeline:
 
-```yaml-rasa (versioned_docs/version-2.8.x/sources/data/configs_for_docs/default_spacy_config.yml)
+```yaml-rasa (versioned_docs/version-2.x/sources/data/configs_for_docs/default_spacy_config.yml)
 ```
 
 It uses the [SpacyFeaturizer](./components.mdx#spacyfeaturizer), which provides 
@@ -49,7 +49,7 @@ and can train your model to be more domain specific.
 If there are no word embeddings for your language or you have very domain specific terminology,
 we recommend using the following pipeline:
 
-```yaml-rasa (versioned_docs/version-2.8.x/sources/data/configs_for_docs/default_config.yml)
+```yaml-rasa (versioned_docs/version-2.x/sources/data/configs_for_docs/default_config.yml)
 ```
 
 This pipeline uses the [CountVectorsFeaturizer](./components.mdx#countvectorsfeaturizer) to train
@@ -343,7 +343,7 @@ If you don't set the option `featurizers` all available features will be used.
 Here is an example configuration file where the `DIETClassifier` is using all available features and the
 `ResponseSelector` is just using the features from the `ConveRTFeaturizer` and the `CountVectorsFeaturizer`.
 
-```yaml-rasa (versioned_docs/version-2.8.x/sources/data/configs_for_docs/config_featurizers.yml)
+```yaml-rasa (versioned_docs/version-2.x/sources/data/configs_for_docs/config_featurizers.yml)
 ```
 
 ### Entity Extraction
@@ -383,6 +383,10 @@ pipeline:
 ```
 
 ### Accessing Diagnostic Data
+
+:::info New in 2.3
+Diagnostic data was made available.
+:::
 
 To gain a better understanding of what your models do, you can access intermediate results of the prediction process.
 To do this, you need to access the `diagnostic_data` field of the [Message](./reference/rasa/shared/nlu/training_data/message.md#message-objects)

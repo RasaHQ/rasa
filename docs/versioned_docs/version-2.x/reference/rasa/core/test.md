@@ -10,6 +10,77 @@ class WrongPredictionException(RasaException,  ValueError)
 
 Raised if a wrong prediction is encountered.
 
+## WarningPredictedAction Objects
+
+```python
+class WarningPredictedAction(ActionExecuted)
+```
+
+The model predicted the correct action with warning.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(action_name_prediction: Text, action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None)
+```
+
+Creates event `action_unlikely_intent` predicted as warning.
+
+See the docstring of the parent class for more information.
+
+#### inline\_comment
+
+```python
+ | inline_comment() -> Text
+```
+
+A comment attached to this event. Used during dumping.
+
+## WronglyPredictedAction Objects
+
+```python
+class WronglyPredictedAction(ActionExecuted)
+```
+
+The model predicted the wrong action.
+
+Mostly used to mark wrong predictions and be able to
+dump them as stories.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(action_name_target: Text, action_text_target: Text, action_name_prediction: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, predicted_action_unlikely_intent: bool = False) -> None
+```
+
+Creates event for a successful event execution.
+
+See the docstring of the parent class `ActionExecuted` for more information.
+
+#### inline\_comment
+
+```python
+ | inline_comment() -> Text
+```
+
+A comment attached to this event. Used during dumping.
+
+#### as\_story\_string
+
+```python
+ | as_story_string() -> Text
+```
+
+Returns the story equivalent representation.
+
+#### \_\_repr\_\_
+
+```python
+ | __repr__() -> Text
+```
+
+Returns event as string for debugging.
+
 ## EvaluationStore Objects
 
 ```python
@@ -50,35 +121,6 @@ Add the contents of other to self.
 
 Turn targets and predictions to lists of equal size for sklearn.
 
-## WronglyPredictedAction Objects
-
-```python
-class WronglyPredictedAction(ActionExecuted)
-```
-
-The model predicted the wrong action.
-
-Mostly used to mark wrong predictions and be able to
-dump them as stories.
-
-#### \_\_init\_\_
-
-```python
- | __init__(action_name_target: Text, action_text_target: Text, action_name_prediction: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None) -> None
-```
-
-Creates event for a successful event execution.
-
-See the docstring of the parent class `ActionExecuted` for more information.
-
-#### inline\_comment
-
-```python
- | inline_comment() -> Text
-```
-
-A comment attached to this event. Used during dumping.
-
 ## EndToEndUserUtterance Objects
 
 ```python
@@ -89,6 +131,14 @@ End-to-end user utterance.
 
 Mostly used to print the full end-to-end user message in the
 `failed_test_stories.yml` output file.
+
+#### as\_story\_string
+
+```python
+ | as_story_string(e2e: bool = True) -> Text
+```
+
+Returns the story equivalent representation.
 
 ## WronglyClassifiedUserUtterance Objects
 
@@ -152,7 +202,7 @@ test unhappy paths of the loops, we need to emulate loop rejection.
 #### test
 
 ```python
-async test(stories: Text, agent: "Agent", max_stories: Optional[int] = None, out_directory: Optional[Text] = None, fail_on_prediction_errors: bool = False, e2e: bool = False, disable_plotting: bool = False, successes: bool = False, errors: bool = True) -> Dict[Text, Any]
+async test(stories: Text, agent: "Agent", max_stories: Optional[int] = None, out_directory: Optional[Text] = None, fail_on_prediction_errors: bool = False, e2e: bool = False, disable_plotting: bool = False, successes: bool = False, errors: bool = True, warnings: bool = True) -> Dict[Text, Any]
 ```
 
 Run the evaluation of the stories, optionally plot the results.
@@ -170,6 +220,7 @@ Run the evaluation of the stories, optionally plot the results.
 - `successes` - boolean indicating whether to write down successful predictions or
   not
 - `errors` - boolean indicating whether to write down incorrect predictions or not
+- `warnings` - boolean indicating whether to write down prediction warnings or not
   
 
 **Returns**:

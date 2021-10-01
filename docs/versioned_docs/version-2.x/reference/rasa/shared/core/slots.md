@@ -198,6 +198,14 @@ Creates unfeaturized slot.
 class CategoricalSlot(Slot)
 ```
 
+#### add\_default\_value
+
+```python
+ | add_default_value() -> None
+```
+
+Adds the special default value to the list of possible values.
+
 #### persistence\_info
 
 ```python

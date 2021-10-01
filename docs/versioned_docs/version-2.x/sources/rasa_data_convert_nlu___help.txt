@@ -1,5 +1,6 @@
 usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,md,yaml}]
-                             --data DATA [DATA ...] [--out OUT] [-l LANGUAGE]
+                             [--data DATA [DATA ...]] [--out OUT]
+                             [-l LANGUAGE]
 
 optional arguments:
   -h, --help            show this help message and exit

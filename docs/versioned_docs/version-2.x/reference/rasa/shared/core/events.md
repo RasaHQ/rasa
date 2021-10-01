@@ -199,7 +199,7 @@ As a side effect a new `Turn` will be created in the `Tracker`.
 #### \_\_init\_\_
 
 ```python
- | __init__(text: Optional[Text] = None, intent: Optional[Dict] = None, entities: Optional[List[Dict]] = None, parse_data: Optional[Dict[Text, Any]] = None, timestamp: Optional[float] = None, input_channel: Optional[Text] = None, message_id: Optional[Text] = None, metadata: Optional[Dict] = None, use_text_for_featurization: Optional[bool] = None) -> None
+ | __init__(text: Optional[Text] = None, intent: Optional[Dict] = None, entities: Optional[List[Dict]] = None, parse_data: Optional["NLUPredictionData"] = None, timestamp: Optional[float] = None, input_channel: Optional[Text] = None, message_id: Optional[Text] = None, metadata: Optional[Dict] = None, use_text_for_featurization: Optional[bool] = None) -> None
 ```
 
 Creates event for incoming user message.
@@ -1153,7 +1153,7 @@ Returns unique hash for event.
  | __eq__(other: Any) -> bool
 ```
 
-Checks if object is equal to another.
+Compares object with other object.
 
 #### as\_story\_string
 

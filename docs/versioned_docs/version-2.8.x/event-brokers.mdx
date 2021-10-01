@@ -45,7 +45,7 @@ The example implementation we're going to show you here uses
 You can instruct Rasa to stream all events to your Pika event broker by adding an `event_broker` section to your
 `endpoints.yml`:
 
-```yaml-rasa (versioned_docs/version-2.8.x/sources/data/test_endpoints/event_brokers/pika_endpoint.yml)
+```yaml-rasa (versioned_docs/version-2.x/sources/data/test_endpoints/event_brokers/pika_endpoint.yml)
 ```
 
 Rasa will automatically start streaming events when you restart the Rasa server.
@@ -115,6 +115,10 @@ You will need a running Kafka server.
 
 ### Partition Key
 
+:::info New in 2.5
+The `partition_by_sender` parameter was added.
+:::
+
 Rasa Open Source's Kafka producer can optionally be configured to partition messages by conversation ID.
 This can be configured by setting `partition_by_sender` in the `endpoints.yml` file to True.
 By default, this parameter is set to `False` and the producer will randomly assign a partition to each message.  
@@ -163,22 +167,22 @@ You can instruct Rasa to stream all events to your Kafka event broker by adding 
 
 Using the `SASL_PLAINTEXT` protocol the endpoints file must have the following entries:
 
-```yaml-rasa (versioned_docs/version-2.8.x/sources/data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml)
+```yaml-rasa (versioned_docs/version-2.x/sources/data/test_endpoints/event_brokers/kafka_sasl_plaintext_endpoint.yml)
 ```
 
 Using the `PLAINTEXT` protocol the endpoints file must have the following entries:
 
-```yaml-rasa (versioned_docs/version-2.8.x/sources/data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml)
+```yaml-rasa (versioned_docs/version-2.x/sources/data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml)
 ```
 
 If using the `SSL` protocol, the endpoints file should look like:
 
-```yaml-rasa (versioned_docs/version-2.8.x/sources/data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml)
+```yaml-rasa (versioned_docs/version-2.x/sources/data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml)
 ```
 
 If using the `SASL_SSL` protocol, the endpoints file should look like:
 
-```yaml-rasa (versioned_docs/version-2.8.x/sources/data/test_endpoints/event_brokers/kafka_sasl_ssl_endpoint.yml)
+```yaml-rasa (versioned_docs/version-2.x/sources/data/test_endpoints/event_brokers/kafka_sasl_ssl_endpoint.yml)
 ```
 
 ## SQL Event Broker

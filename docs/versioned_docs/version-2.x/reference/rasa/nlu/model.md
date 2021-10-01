@@ -14,6 +14,14 @@ Raised when a model failed to load.
 
 - `message` - explanation of why the model is invalid
 
+#### \_\_init\_\_
+
+```python
+ | __init__(message: Text) -> None
+```
+
+Initialize message attribute.
+
 ## UnsupportedModelError Objects
 
 ```python
@@ -25,6 +33,14 @@ Raised when a model is too old to be loaded.
 **Attributes**:
 
 - `message` - explanation of why the model is invalid
+
+#### \_\_init\_\_
+
+```python
+ | __init__(message: Text) -> None
+```
+
+Initialize message attribute.
 
 ## Metadata Objects
 

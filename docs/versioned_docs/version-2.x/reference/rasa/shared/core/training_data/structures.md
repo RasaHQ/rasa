@@ -17,6 +17,25 @@ type.
 class Checkpoint()
 ```
 
+Represents places where trackers split.
+
+This currently happens if
+- users place manual checkpoints in their stories
+- have `or` statements for intents in their stories.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(name: Text, conditions: Optional[Dict[Text, Any]] = None) -> None
+```
+
+Creates `Checkpoint`.
+
+**Arguments**:
+
+- `name` - Name of the checkpoint.
+- `conditions` - Slot conditions for this checkpoint.
+
 #### filter\_trackers
 
 ```python
@@ -36,6 +55,24 @@ A StoryStep is a section of a story block between two checkpoints.
 NOTE: Checkpoints are not only limited to those manually written
 in the story file, but are also implicitly created at points where
 multiple intents are separated in one line by chaining them with &quot;OR&quot;s.
+
+#### is\_action\_unlikely\_intent
+
+```python
+ | @staticmethod
+ | is_action_unlikely_intent(event: Event) -> bool
+```
+
+Checks if the executed action is a `action_unlikely_intent`.
+
+#### is\_action\_session\_start
+
+```python
+ | @staticmethod
+ | is_action_session_start(event: Event) -> bool
+```
+
+Checks if the executed action is a `action_session_start`.
 
 #### explicit\_events
 

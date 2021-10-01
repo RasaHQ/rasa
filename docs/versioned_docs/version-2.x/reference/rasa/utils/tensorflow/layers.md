@@ -16,7 +16,7 @@ which helps prevent overfitting.
 
 **Arguments**:
 
-- `rate` - Float between 0 and 1; fraction of the input units to drop.
+- `rate` - Fraction of the input units to drop (between 0 and 1).
 
 #### call
 
@@ -29,7 +29,7 @@ Apply dropout to sparse inputs.
 **Arguments**:
 
 - `inputs` - Input sparse tensor (of any rank).
-- `training` - Python boolean indicating whether the layer should behave in
+- `training` - Indicates whether the layer should behave in
   training mode (adding dropout) or in inference mode (doing nothing).
   
 
@@ -68,10 +68,10 @@ it is flattened prior to the initial dot product with `kernel`.
 - `activation` - Activation function to use.
   If you don&#x27;t specify anything, no activation is applied
   (ie. &quot;linear&quot; activation: `a(x) = x`).
-- `use_bias` - Boolean, whether the layer uses a bias vector.
+- `use_bias` - Indicates whether the layer uses a bias vector.
 - `kernel_initializer` - Initializer for the `kernel` weights matrix.
 - `bias_initializer` - Initializer for the bias vector.
-- `reg_lambda` - Float, regularization factor.
+- `reg_lambda` - regularization factor
 - `bias_regularizer` - Regularizer function applied to the bias vector.
 - `activity_regularizer` - Regularizer function applied to
   the output of the layer (its &quot;activation&quot;)..
@@ -88,6 +88,65 @@ it is flattened prior to the initial dot product with `kernel`.
   N-D tensor with shape: `(batch_size, ..., units)`.
   For instance, for a 2D input with shape `(batch_size, input_dim)`,
   the output would have shape `(batch_size, units)`.
+
+#### get\_units
+
+```python
+ | get_units() -> int
+```
+
+Returns number of output units.
+
+#### get\_kernel
+
+```python
+ | get_kernel() -> tf.Tensor
+```
+
+Returns kernel tensor.
+
+#### get\_bias
+
+```python
+ | get_bias() -> Union[tf.Tensor, None]
+```
+
+Returns bias tensor.
+
+#### get\_feature\_type
+
+```python
+ | get_feature_type() -> Union[Text, None]
+```
+
+Returns a feature type of the data that&#x27;s fed to the layer.
+
+In order to correctly return a feature type, the function heavily relies
+on the name of `DenseForSparse` layer to contain the feature type.
+Acceptable values of feature types are `FEATURE_TYPE_SENTENCE`
+and `FEATURE_TYPE_SEQUENCE`.
+
+**Returns**:
+
+  feature type of dense layer.
+
+#### get\_attribute
+
+```python
+ | get_attribute() -> Union[Text, None]
+```
+
+Returns the attribute for which this layer was constructed.
+
+For example: TEXT, LABEL, etc.
+
+In order to correctly return an attribute, the function heavily relies
+on the name of `DenseForSparse` layer being in the following format:
+f&quot;sparse_to_dense.{attribute}_{feature_type}&quot;.
+
+**Returns**:
+
+  attribute of the layer.
 
 #### call
 
@@ -157,12 +216,12 @@ Declares instance variables with default values.
 
 **Arguments**:
 
-- `density` - Float between 0 and 1. Approximate fraction of trainable weights.
+- `density` - Approximate fraction of trainable weights (between 0 and 1).
 - `units` - Positive integer, dimensionality of the output space.
 - `activation` - Activation function to use.
   If you don&#x27;t specify anything, no activation is applied
   (ie. &quot;linear&quot; activation: `a(x) = x`).
-- `use_bias` - Boolean, whether the layer uses a bias vector.
+- `use_bias` - Indicates whether the layer uses a bias vector.
 - `kernel_initializer` - Initializer for the `kernel` weights matrix.
 - `bias_initializer` - Initializer for the bias vector.
 - `kernel_regularizer` - Regularizer function applied to
@@ -214,9 +273,9 @@ Feed-forward network layer.
 **Arguments**:
 
 - `layer_sizes` - List of integers with dimensionality of the layers.
-- `dropout_rate` - Float between 0 and 1; fraction of the input units to drop.
-- `reg_lambda` - Float, regularization factor.
-- `density` - Float between 0 and 1. Approximate fraction of trainable weights.
+- `dropout_rate` - Fraction of the input units to drop (between 0 and 1).
+- `reg_lambda` - regularization factor.
+- `density` - Approximate fraction of trainable weights (between 0 and 1).
 - `layer_name_suffix` - Text added to the name of the layers.
   
   Input shape:
@@ -300,7 +359,7 @@ Randomly mask input sequences.
 - `x` - Input sequence tensor of rank 3.
 - `mask` - A tensor representing sequence mask,
   contains `1` for inputs and `0` for padding.
-- `training` - Python boolean indicating whether the layer should behave in
+- `training` - Indicates whether the layer should run in
   training mode (mask inputs) or in inference mode (doing nothing).
   
 
@@ -319,7 +378,7 @@ CRF layer.
 **Arguments**:
 
 - `num_tags` - Positive integer, number of tags.
-- `reg_lambda` - Float; regularization factor.
+- `reg_lambda` - regularization factor.
 - `name` - Optional name of the layer.
 
 #### call
@@ -380,51 +439,48 @@ Calculates f1 score for train predictions
 class DotProductLoss(tf.keras.layers.Layer)
 ```
 
-Dot-product loss layer.
+Abstract dot-product loss layer class.
+
+Idea based on StarSpace paper: http://arxiv.org/abs/1709.03856
+
+Implements similarity methods
+* `sim` (computes a similarity between vectors)
+* `get_similarities_and_confidences_from_embeddings` (calls `sim` and also computes
+    confidence values)
+
+Specific loss functions (single- or multi-label) must be implemented in child
+classes.
 
 #### \_\_init\_\_
 
 ```python
- | __init__(num_neg: int, loss_type: Text, mu_pos: float, mu_neg: float, use_max_sim_neg: bool, neg_lambda: float, scale_loss: bool, similarity_type: Text, name: Optional[Text] = None, same_sampling: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX) -> None
+ | __init__(num_candidates: int, scale_loss: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX, similarity_type: Text = INNER, name: Optional[Text] = None, **kwargs: Any, ,)
 ```
 
-Declare instance variables with default values.
+Declares instance variables with default values.
 
 **Arguments**:
 
-- `num_neg` - Positive integer, the number of incorrect labels;
-  the algorithm will minimize their similarity to the input.
-- `loss_type` - The type of the loss function, either &#x27;cross_entropy&#x27; or
-  &#x27;margin&#x27;.
-- `mu_pos` - Float, indicates how similar the algorithm should
-  try to make embedding vectors for correct labels;
-  should be 0.0 &lt; ... &lt; 1.0 for &#x27;cosine&#x27; similarity type.
-- `mu_neg` - Float, maximum negative similarity for incorrect labels,
-  should be -1.0 &lt; ... &lt; 1.0 for &#x27;cosine&#x27; similarity type.
-- `use_max_sim_neg` - Boolean, if &#x27;True&#x27; the algorithm only minimizes
-  maximum similarity over incorrect intent labels,
-  used only if &#x27;loss_type&#x27; is set to &#x27;margin&#x27;.
-- `neg_lambda` - Float, the scale of how important is to minimize
-  the maximum similarity between embeddings of different labels,
-  used only if &#x27;loss_type&#x27; is set to &#x27;margin&#x27;.
-- `scale_loss` - Boolean, if &#x27;True&#x27; scale loss inverse proportionally to
+- `num_candidates` - Number of labels besides the positive one. Depending on
+  whether single- or multi-label loss is implemented (done in
+  sub-classes), these can be all negative example labels, or a mixture of
+  negative and further positive labels, respectively.
+- `scale_loss` - Boolean, if `True` scale loss inverse proportionally to
   the confidence of the correct prediction.
-- `similarity_type` - Similarity measure to use, either &#x27;cosine&#x27; or &#x27;inner&#x27;.
-- `name` - Optional name of the layer.
-- `same_sampling` - Boolean, if &#x27;True&#x27; sample same negative labels
-  for the whole batch.
-- `constrain_similarities` - Boolean, if &#x27;True&#x27; applies sigmoid on all
+- `constrain_similarities` - Boolean, if `True` applies sigmoid on all
   similarity terms and adds to the loss function to
   ensure that similarity values are approximately bounded.
   Used inside _loss_cross_entropy() only.
-- `model_confidence` - Model confidence to be returned during inference.
-  Possible values - &#x27;softmax&#x27; and &#x27;linear_norm&#x27;.
+- `model_confidence` - Normalization of confidence values during inference.
+  Possible values are `SOFTMAX` and `LINEAR_NORM`.
+- `similarity_type` - Similarity measure to use, either `cosine` or `inner`.
+- `name` - Optional name of the layer.
   
 
 **Raises**:
 
-- `LayerConfigException` - When `similarity_type` is not one of &#x27;cosine&#x27; or
-  &#x27;inner&#x27;.
+- `TFLayerConfigException` - When `similarity_type` is not one of `COSINE` or
+  `INNER`.
 
 #### sim
 
@@ -432,17 +488,34 @@ Declare instance variables with default values.
  | sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor
 ```
 
-Calculate similarity between given tensors.
+Calculates similarity between `a` and `b`.
 
-#### similarity\_confidence\_from\_embeddings
+Operates on the last dimension. When `a` and `b` are vectors, then `sim`
+computes either the dot-product, or the cosine of the angle between `a` and `b`,
+depending on `self.similarity_type`.
+Specifically, when the similarity type is `INNER`, then we compute the scalar
+product `a . b`. When the similarity type is `COSINE`, we compute
+`a . b / (|a| |b|)`, i.e. the cosine of the angle between `a` and `b`.
+
+**Arguments**:
+
+- `a` - Any float tensor
+- `b` - Any tensor of the same shape and type as `a`
+- `mask` - Mask (should contain 1s for inputs and 0s for padding). Note, that
+  `len(mask.shape) == len(a.shape) - 1` should hold.
+  
+
+**Returns**:
+
+  Similarities between vectors in `a` and `b`.
+
+#### get\_similarities\_and\_confidences\_from\_embeddings
 
 ```python
- | similarity_confidence_from_embeddings(input_embeddings: tf.Tensor, label_embeddings: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
+ | get_similarities_and_confidences_from_embeddings(input_embeddings: tf.Tensor, label_embeddings: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
-Computes similarity.
-
-Calculates similary between input and label embeddings and model&#x27;s confidence.
+Computes similary between input and label embeddings and model&#x27;s confidence.
 
 First compute the similarity from embeddings and then apply an activation
 function if needed to get the confidence.
@@ -451,13 +524,88 @@ function if needed to get the confidence.
 
 - `input_embeddings` - Embeddings of input.
 - `label_embeddings` - Embeddings of labels.
-- `mask` - Mask over input and output sequence.
+- `mask` - Mask (should contain 1s for inputs and 0s for padding). Note, that
+  `len(mask.shape) == len(a.shape) - 1` should hold.
   
 
 **Returns**:
 
   similarity between input and label embeddings and model&#x27;s prediction
   confidence for each label.
+
+#### call
+
+```python
+ | call(*args: Any, **kwargs: Any) -> Tuple[tf.Tensor, tf.Tensor]
+```
+
+Layer&#x27;s logic - to be implemented in child class.
+
+#### apply\_mask\_and\_scaling
+
+```python
+ | apply_mask_and_scaling(loss: tf.Tensor, mask: Optional[tf.Tensor]) -> tf.Tensor
+```
+
+Scales the loss and applies the mask if necessary.
+
+**Arguments**:
+
+- `loss` - The loss tensor
+- `mask` - (Optional) A mask to multiply with the loss
+  
+
+**Returns**:
+
+  The scaled loss, potentially averaged over the sequence
+  dimension.
+
+## SingleLabelDotProductLoss Objects
+
+```python
+class SingleLabelDotProductLoss(DotProductLoss)
+```
+
+Single-label dot-product loss layer.
+
+This loss layer assumes that only one output (label) is correct for any given input.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(num_candidates: int, scale_loss: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX, similarity_type: Text = INNER, name: Optional[Text] = None, loss_type: Text = CROSS_ENTROPY, mu_pos: float = 0.8, mu_neg: float = -0.2, use_max_sim_neg: bool = True, neg_lambda: float = 0.5, same_sampling: bool = False, **kwargs: Any, ,) -> None
+```
+
+Declares instance variables with default values.
+
+**Arguments**:
+
+- `num_candidates` - Positive integer, the number of incorrect labels;
+  the algorithm will minimize their similarity to the input.
+- `loss_type` - The type of the loss function, either `cross_entropy` or
+  `margin`.
+- `mu_pos` - Indicates how similar the algorithm should
+  try to make embedding vectors for correct labels;
+  should be 0.0 &lt; ... &lt; 1.0 for `cosine` similarity type.
+- `mu_neg` - Maximum negative similarity for incorrect labels,
+  should be -1.0 &lt; ... &lt; 1.0 for `cosine` similarity type.
+- `use_max_sim_neg` - If `True` the algorithm only minimizes
+  maximum similarity over incorrect intent labels,
+  used only if `loss_type` is set to `margin`.
+- `neg_lambda` - The scale of how important it is to minimize
+  the maximum similarity between embeddings of different labels,
+  used only if `loss_type` is set to `margin`.
+- `scale_loss` - If `True` scale loss inverse proportionally to
+  the confidence of the correct prediction.
+- `similarity_type` - Similarity measure to use, either `cosine` or `inner`.
+- `name` - Optional name of the layer.
+- `same_sampling` - If `True` sample same negative labels
+  for the whole batch.
+- `constrain_similarities` - If `True` and loss_type is `cross_entropy`, a
+  sigmoid loss term is added to the total loss to ensure that similarity
+  values are approximately bounded.
+- `model_confidence` - Normalization of confidence values during inference.
+  Possible values are `SOFTMAX` and `LINEAR_NORM`.
 
 #### call
 
@@ -469,17 +617,86 @@ Calculate loss and accuracy.
 
 **Arguments**:
 
-- `inputs_embed` - Embedding tensor for the batch inputs.
-- `labels_embed` - Embedding tensor for the batch labels.
-- `labels` - Tensor representing batch labels.
-- `all_labels_embed` - Embedding tensor for the all labels.
-- `all_labels` - Tensor representing all labels.
-- `mask` - Optional tensor representing sequence mask,
-  contains `1` for inputs and `0` for padding.
+- `inputs_embed` - Embedding tensor for the batch inputs;
+  shape `(batch_size, ..., num_features)`
+- `labels_embed` - Embedding tensor for the batch labels;
+  shape `(batch_size, ..., num_features)`
+- `labels` - Tensor representing batch labels; shape `(batch_size, ..., 1)`
+- `all_labels_embed` - Embedding tensor for the all labels;
+  shape `(num_labels, num_features)`
+- `all_labels` - Tensor representing all labels; shape `(num_labels, 1)`
+- `mask` - Optional mask, contains `1` for inputs and `0` for padding;
+  shape `(batch_size, 1)`
   
 
 **Returns**:
 
 - `loss` - Total loss.
 - `accuracy` - Training accuracy.
+
+## MultiLabelDotProductLoss Objects
+
+```python
+class MultiLabelDotProductLoss(DotProductLoss)
+```
+
+Multi-label dot-product loss layer.
+
+This loss layer assumes that multiple outputs (labels) can be correct for any given
+input. To accomodate for this, we use a sigmoid cross-entropy loss here.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(num_candidates: int, scale_loss: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX, similarity_type: Text = INNER, name: Optional[Text] = None, **kwargs: Any, ,) -> None
+```
+
+Declares instance variables with default values.
+
+**Arguments**:
+
+- `num_candidates` - Positive integer, the number of candidate labels.
+- `scale_loss` - If `True` scale loss inverse proportionally to
+  the confidence of the correct prediction.
+- `similarity_type` - Similarity measure to use, either `cosine` or `inner`.
+- `name` - Optional name of the layer.
+- `constrain_similarities` - Boolean, if `True` applies sigmoid on all
+  similarity terms and adds to the loss function to
+  ensure that similarity values are approximately bounded.
+  Used inside _loss_cross_entropy() only.
+- `model_confidence` - Normalization of confidence values during inference.
+  Possible values are `SOFTMAX` and `LINEAR_NORM`.
+
+#### call
+
+```python
+ | call(batch_inputs_embed: tf.Tensor, batch_labels_embed: tf.Tensor, batch_labels_ids: tf.Tensor, all_labels_embed: tf.Tensor, all_labels_ids: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
+```
+
+Calculates loss and accuracy.
+
+**Arguments**:
+
+- `batch_inputs_embed` - Embeddings of the batch inputs (e.g. featurized
+  trackers); shape `(batch_size, 1, num_features)`
+- `batch_labels_embed` - Embeddings of the batch labels (e.g. featurized intents
+  for IntentTED);
+  shape `(batch_size, max_num_labels_per_input, num_features)`
+- `batch_labels_ids` - Batch label indices (e.g. indices of the intents). We
+  assume that indices are integers that run from `0` to
+  `(number of labels) - 1`.
+  shape `(batch_size, max_num_labels_per_input, 1)`
+- `all_labels_embed` - Embeddings for all labels in the domain;
+  shape `(batch_size, num_features)`
+- `all_labels_ids` - Indices for all labels in the domain;
+  shape `(num_labels, 1)`
+- `mask` - Optional sequence mask, which contains `1` for inputs and `0` for
+  padding.
+  
+
+**Returns**:
+
+- `loss` - Total loss (based on StarSpace http://arxiv.org/abs/1709.03856);
+  scalar
+- `accuracy` - Training accuracy; scalar
 
