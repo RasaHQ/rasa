@@ -1,0 +1,275 @@
+---
+id: deploy-rasa
+sidebar_label: Deploy Rasa Assistant
+title: Deploy Rasa Assistant
+description: How to deploy your Rasa Assistant with Kubernetes/Openshift
+abstract: This page explains how to deploy Rasa Assistant by using Helm.
+---
+<!-- this file is version specific, do not use `@site/...` syntax -->
+import variables from './../variables.json';
+
+:::note
+The Rasa Helm chart is open source and available in the
+[helm-charts repository](https://github.com/rasahq/helm-charts).
+Please
+[create an issue](https://github.com/RasaHQ/helm-charts/issues/new) in this
+repository if you discover bugs or have suggestions for improvements.
+
+:::
+
+
+## Installation Requirements
+
+1. Check that you have installed the Kubernetes or OpenShift command line
+   interface (CLI). You can check this using the following command:
+
+   <Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+     <TabItem value="kubernetes">
+
+     ```bash
+     kubectl version --short --client
+
+     # The output should be similar to this
+     # Client Version: v1.19.11
+     ```
+
+     </TabItem>
+     <TabItem value="openshift">
+
+     ```bash
+     oc version --client
+
+     # The output should be similar to this
+     # Client Version: 4.7.13
+     ```
+
+     </TabItem>
+   </Tabs>
+
+   If this command resulted in an error, please install the
+   [Kubernetes CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/) or the
+   [OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html#installing-openshift-cli)
+   depending on the cluster you’re using.
+
+2. Make sure that the Kubernetes / OpenShift CLI is correctly connected to
+   your cluster. You can do so by using the following commands:
+
+   <Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+     <TabItem value="kubernetes">
+
+     ```bash
+     kubectl version --short
+
+     # The output should be similar to this
+     # Client Version: v1.19.11
+     # Server Version: v1.19.10
+     ```
+
+     </TabItem>
+     <TabItem value="openshift">
+
+     ```bash
+     oc version
+
+     # The output should be similar to this
+     # Client Version: 4.7.13
+     # Kubernetes Version: v1.20.0+df9c838
+     ```
+
+     </TabItem>
+   </Tabs>
+
+   If you get an error when executing the command, you are not connected to your
+   cluster. To get the command to connect to the cluster please consult your cluster’s
+   admin or the documentation of your cloud provider.
+
+3. Make sure you have the [Helm CLI](https://helm.sh/docs/intro/install/)
+   installed. To check this, run:
+
+   ```bash
+   helm version --short
+
+   # The output should be similar to this
+   # v3.6.0+g7f2df64
+   ```
+
+   If this command leads to an error, please install the
+   [Helm CLI](https://helm.sh/docs/intro/install/).
+
+   In case you are using a version `<3.5` of Helm, please update to Helm version
+   `>=3.5`.
+
+## Installation
+
+### 1. Create Namespace
+
+We recommend installing Rasa Open Source in a separate
+[namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
+to avoid interfering with existing cluster deployments. To create a new namespace
+run the following command:
+
+<Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+  <TabItem value="kubernetes">
+
+  ```bash
+  kubectl create namespace <your namespace>
+  ```
+
+  </TabItem>
+  <TabItem value="openshift">
+
+  ```bash
+  oc create namespace <your namespace>
+  ```
+
+  </TabItem>
+</Tabs>
+
+### 2. Create Values File
+
+Prepare an empty file called `rasa-values.yml` which will include all your custom
+configuration for the installation with Helm.
+
+All available values you can find in [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#values).
+
+:::note
+The default configuration of the Rasa chart deploys a Rasa Open Source Server, downloads a model, and serves the downloaded model.
+Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#quick-start) to check out more examples of configuration.
+
+:::
+
+### 3. Loading an initial model
+
+The first time you install Rasa, you may not have a model server available yet, or you may want an lightweight model for testing the deployment.
+For this purpose, you can choose between training or downloading an initial model. By default, the Rasa chart downloads an example model from GitHub.
+To use this option, you don't have to change anything.
+
+If you want to define an existing model to download from a URL you define instead, update your `rasa-values.yaml` with the URL according to the following configuration:
+
+  ```yaml
+  applicationSettings:
+    initialModel: "https://github.com/RasaHQ/rasa-x-demo/blob/master/models/model.tar.gz?raw=true"
+  ```
+:::note
+The URL for the initial model download has to point to a tar.gz file and must not require authentication.
+
+:::
+
+If you want to train an initial model you can do this by setting the `applicationSettings.trainInitialModel` to `true`.
+It creates a init container that trains a model based on data located in the `/app` directory. If the `/app` directory is empty it creates a new project.
+You can find an example that shows how to download data files from a git repository and train an initial model in the Rasa helm charts [examples](https://github.com/RasaHQ/helm-charts/blob/main/examples/rasa/train-model-helmfile.yaml).
+
+### 4. Deploy Rasa Open Source Assistant
+
+Run the following commands:
+
+```bash
+# Add the repository which contains the Rasa Helm chart
+helm repo add rasa https://helm.rasa.com
+
+# Deploy Rasa Open Source
+helm install \
+    --namespace <your namespace> \
+    --values rasa-values.yml \
+    <release name> \
+    rasa/rasa
+```
+
+:::note
+**OpenShift only**: If the deployment fails and `oc get events` returns
+`1001 is not an allowed group spec.containers[0].securityContext.securityContext.runAsUser`,
+re-run the installation command with the following values:
+
+```yaml
+postgresql:
+  volumePermissions:
+    securityContext:
+      runAsUser: "auto"
+  securityContext:
+    enabled: false
+  shmVolume:
+    chmod:
+      enabled: false
+nginx:
+  image:
+    name: nginxinc/nginx-unprivileged
+    port: 8080
+```
+
+Then wait until the deployment is ready. If you want to check on its status, the following command
+will block until the Rasa deployment is ready:
+
+<Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+  <TabItem value="kubernetes">
+
+  ```bash
+  kubectl --namespace <your namespace> \
+      wait \
+      --for=condition=available \
+      --timeout=20m \
+      --selector app.kubernetes.io/instance=<release name> \
+      deployment
+  ```
+
+  </TabItem>
+  <TabItem value="openshift">
+
+  ```bash
+  oc --namespace <your namespace> \
+      wait \
+      --for=condition=available \
+      --timeout=20m \
+      --selector app.kubernetes.io/instance=<release name> \
+      deployment
+  ```
+
+  </TabItem>
+</Tabs>
+
+:::
+
+
+### 5. Access Rasa Open Source Assistant
+
+By default the Rasa deployment is exposed via the `rasa` (`<release name>`) service and accessible only within a Kubernetes cluster. You can get
+the IP address using this command:
+
+<Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
+  <TabItem value="kubernetes">
+
+  ```bash
+    export SERVICE_PORT=$(kubectl get --namespace <your namespace> -o jsonpath="{.spec.ports[0].port}" services <release name>)
+    kubectl port-forward --namespace <your namespace> svc/<release name> ${SERVICE_PORT}:${SERVICE_PORT} &
+  ```
+
+  </TabItem>
+  <TabItem value="openshift">
+
+  ```bash
+    export SERVICE_PORT=$(oc get --namespace <your namespace> -o jsonpath="{.spec.ports[0].port}" services <release name>)
+    oc port-forward --namespace <your namespace> svc/<release name> ${SERVICE_PORT}:${SERVICE_PORT} &
+  ```
+
+  </TabItem>
+</Tabs>
+
+You can then access the deployment on `http://127.0.0.1:${SERVICE_PORT}`
+
+Visit [the Rasa helm chart README](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#exposing-the-rasa-deployment-to-the-public) to learn other ways to expose your deployment.
+
+## Next Steps
+
+- Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration
+- Visit [the Rasa X docs](https://rasa.com/docs/rasa-x/) and learn how to [integrate your Rasa Open Source deployment with Rasa X](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#2-connect-rasa-open-source-deployment-the-rasa-helm-chart).
+
+## Alternative Deployment Methods
+
+It is also possible to deploy a Rasa assistant using Rasa Ephemeral Installer, Docker or Docker Compose. Choose one of the alternatives methods listed below to see details.
+
+* [Building a Rasa Assistant Locally](./playground.mdx)
+
+* [Building a Rasa Assistant in Docker](./docker/building-in-docker.mdx)
+
+* [Deploying a Rasa Assistant using Rasa Ephemeral Installer (REI)](./rei/deploy.mdx)
+
+* [Deploying a Rasa Open Source Assistant in Docker Compose](./docker/deploying-in-docker-compose.mdx)

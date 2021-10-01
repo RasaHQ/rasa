@@ -7,9 +7,6 @@ description: Use Docker Compose to deploy a Rasa Open Source assistant
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from '../variables.json';
 
-If you would like to deploy your assistant without Rasa X, you can do so by deploying it in Docker Compose.
-To deploy Rasa X and your assistant together, see the [Recommended Deployment Methods](../how-to-deploy.mdx#recommended-deployment-methods).
-
 ## Installing Docker
 
 If you're not sure if you have Docker installed, you can check by running:
@@ -71,7 +68,7 @@ Each container is declared as a `service` within the `docker-compose.yml`.
 The first service is the `rasa` service, which runs your Rasa server.
 
 To add the action server, add the image of your action server code. To learn how to deploy
-an action server image, see [Building an Action Server Image](../how-to-deploy.mdx#building-an-action-server-image).
+an action server image, see [Building an Action Server Image](../deploy/deploy-action-server#building-an-action-server-image).
 
 <pre><code parentName="pre" className="language-yaml">
 {`version: '3.0'

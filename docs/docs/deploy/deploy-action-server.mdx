@@ -1,50 +1,15 @@
 ---
-id: how-to-deploy
-sidebar_label: Deploying Your Assistant
-title: Deploying Your Rasa Assistant
-description: How to deploy your Rasa Assistant with Docker Compose or Kubernetes/Openshift
-abstract: This page explains when and how to deploy an assistant built with Rasa.
-  It will allow you to make your assistant available to users and set you up with a production-ready environment.
+id: deploy-action-server
+sidebar_label: Deploy Action Server
+title: Deploy Action Server
+description: How to deploy your Rasa Action Server with Kubernetes/Openshift.
+abstract: This page explains how to build an Action Server Image and deploy Rasa Action Server by using Helm.
 ---
 <!-- this file is version specific, do not use `@site/...` syntax -->
-import variables from './variables.json';
-
-## When to Deploy Your Assistant
-
-The best time to deploy your assistant and make it available to test users is once it can handle the most
-important happy paths or is what we call a [minimum viable assistant](./glossary.mdx).
-
-The recommended deployment method described below make it easy to share your assistant
-with test users via the [share your assistant feature in
-Rasa X](https://rasa.com/docs/rasa-x/user-guide/share-assistant#share-your-bot).
-Then, when you're ready to make your assistant available via one or more [Messaging and Voice Channels](./messaging-and-voice-channels.mdx),
-you can easily add them to your existing deployment set up.
-
-## Recommended Deployment Method
-
-The [Rasa Open Source Helm chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) is the supported method to deploy
-your assistant. It can also allows you to connect Rasa OSS with a separate Rasa X or
-Rasa Enterprise deployment and is production ready. See the [Alternative Deployment Methods](#alternative-deployment-methods)
-for details on building your bot locally, with Docker, Rasa Ephemeral Installer, or deploying with docker-compose.
-
-For more details on Rasa X deployment methods see the [Rasa X Installation Guide](https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide/).
-
-The following instructions describe how to deploy a Rasa Open Source server
-by using the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) in a scalable cluster environment using OpenShift or Kubernetes (K8S).
-
-### Cluster Requirements
-
-To install the Rasa Helm chart, you need an existing
-[Kubernetes cluster](https://kubernetes.io/) or [OpenShift cluster](https://www.openshift.com/).
-Setting up a Kubernetes / OpenShift cluster can be tedious, hence we
-recommend to get a managed cluster from a cloud provider like
-[Google Cloud](https://cloud.google.com/kubernetes-engine),
-[DigitalOcean](https://www.digitalocean.com/products/kubernetes/),
-[Microsoft Azure](https://azure.microsoft.com/en-us/services/kubernetes-service/), or
-[Amazon EKS](https://aws.amazon.com/eks/).
+import variables from './../variables.json';
 
 :::note
-The Rasa Helm chart is open source and available in the
+The [Rasa Action Server chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa-action-server) is open source and available in the
 [helm-charts repository](https://github.com/rasahq/helm-charts).
 Please
 [create an issue](https://github.com/RasaHQ/helm-charts/issues/new) in this
@@ -53,7 +18,7 @@ repository if you discover bugs or have suggestions for improvements.
 :::
 
 
-### Installation Requirements
+## Installation Requirements
 
 1. Check that you have installed the Kubernetes or OpenShift command line
    interface (CLI). You can check this using the following command:
@@ -134,11 +99,11 @@ repository if you discover bugs or have suggestions for improvements.
    In case you are using a version `<3.5` of Helm, please update to Helm version
    `>=3.5`.
 
-### Installation
+## Installation
 
-#### 1. Create Namespace
+### 1. Create Namespace
 
-We recommend installing Rasa Open Source in a separate
+We recommend installing Rasa Action Server in a separate
 [namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
 to avoid interfering with existing cluster deployments. To create a new namespace
 run the following command:
@@ -160,113 +125,25 @@ run the following command:
   </TabItem>
 </Tabs>
 
-#### 2. Create Values File
-
-Prepare an empty file called `rasa-values.yml` which will include all your custom
-configuration for the installation with Helm.
-
-All available values you can find in [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#values).
-
-:::note
-The default configuration of the Rasa chart deploys a Rasa Open Source Server, downloads a model, and serves the downloaded model.
-Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#quick-start) to check out more examples of configuration.
-
-:::
-
-#### 3. Loading an initial model
-
-The first time you install Rasa, you may not have a model server available yet, or you may want an lightweight model for testing the deployment.
-For this purpose, you can choose between training or downloading an initial model. By default, the Rasa chart downloads an example model from GitHub.
-To use this option, you don't have to change anything.
-
-If you want to define an existing model to download from a URL you define instead, update your `rasa-values.yaml` with the URL according to the following configuration:
-
-  ```yaml
-  applicationSettings:
-    initialModel: "https://github.com/RasaHQ/rasa-x-demo/blob/master/models/model.tar.gz?raw=true"
-  ```
-:::note
-The URL for the initial model download has to point to a tar.gz file and must not require authentication.
-
-:::
-
-If you want to train an initial model you can do this by setting the `applicationSettings.trainInitialModel` to `true`.
-It creates a init container that trains a model based on data located in the `/app` directory. If the `/app` directory is empty it creates a new project.
-You can find an example that shows how to download data files from a git repository and train an initial model in the Rasa helm charts [examples](https://github.com/RasaHQ/helm-charts/blob/main/examples/rasa/train-model-helmfile.yaml).
-
-#### 4. Deploy Rasa Open Source Assistant
+### 2. Deploy Rasa Action Server
 
 Run the following commands:
 
 ```bash
-# Add the repository which contains the Rasa Helm chart
+# Add the repository which contains the Rasa Action Server Helm chart
 helm repo add rasa https://helm.rasa.com
 
-# Deploy Rasa Open Source
+# Deploy Rasa Action Server
 helm install \
     --namespace <your namespace> \
-    --values rasa-values.yml \
     <release name> \
-    rasa/rasa
+    rasa/rasa-action-server
 ```
 
-:::note
-**OpenShift only**: If the deployment fails and `oc get events` returns
-`1001 is not an allowed group spec.containers[0].securityContext.securityContext.runAsUser`,
-re-run the installation command with the following values:
 
-```yaml
-postgresql:
-  volumePermissions:
-    securityContext:
-      runAsUser: "auto"
-  securityContext:
-    enabled: false
-  shmVolume:
-    chmod:
-      enabled: false
-nginx:
-  image:
-    name: nginxinc/nginx-unprivileged
-    port: 8080
-```
+### 3. Access Rasa Action Server
 
-Then wait until the deployment is ready. If you want to check on its status, the following command
-will block until the Rasa deployment is ready:
-
-<Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
-  <TabItem value="kubernetes">
-
-  ```bash
-  kubectl --namespace <your namespace> \
-      wait \
-      --for=condition=available \
-      --timeout=20m \
-      --selector app.kubernetes.io/instance=<release name> \
-      deployment
-  ```
-
-  </TabItem>
-  <TabItem value="openshift">
-
-  ```bash
-  oc --namespace <your namespace> \
-      wait \
-      --for=condition=available \
-      --timeout=20m \
-      --selector app.kubernetes.io/instance=<release name> \
-      deployment
-  ```
-
-  </TabItem>
-</Tabs>
-
-:::
-
-
-#### 5. Access Rasa Open Source Assistant
-
-By default the Rasa deployment is exposed via the `rasa` (`<release name>`) service and accessible only within a Kubernetes cluster. You can get
+By default the Rasa Action Server deployment is exposed via the `rasa-action-server` (`<release name>`) service and accessible only within a Kubernetes cluster. You can get
 the IP address using this command:
 
 <Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
@@ -290,36 +167,19 @@ the IP address using this command:
 
 You can then access the deployment on `http://127.0.0.1:${SERVICE_PORT}`
 
-Visit [the Rasa helm chart README](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#exposing-the-rasa-deployment-to-the-public) to learn other ways to expose your deployment.
+:::note
+The Rasa Action Server Helm chart uses the [rasa-x-demo](https://github.com/RasaHQ/rasa-x-demo) Docker image as default. In the [Building an Action Server Image](#building-an-action-server-image)
+you can learn how to build and use your custom Action Server image.
+:::
 
-#### Next Steps
-
-- Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration
-- Visit [the Rasa X docs](https://rasa.com/docs/rasa-x/) and learn how to [integrate your Rasa Open Source deployment with Rasa X](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#2-connect-rasa-open-source-deployment-the-rasa-helm-chart).
-
-## Alternative Deployment Methods
-
-It is also possible to deploy a Rasa assistant using Rasa Ephemeral Installer, Docker or Docker Compose. Choose one of the alternatives methods listed below to see details.
-
-* [Building a Rasa Assistant Locally](./playground.mdx)
-
-* [Building a Rasa Assistant in Docker](./docker/building-in-docker.mdx)
-
-* [Deploying a Rasa Assistant using Rasa Ephemeral Installer (REI)](./rei/deploy.mdx)
-
-* [Deploying a Rasa Open Source Assistant in Docker Compose](./docker/deploying-in-docker-compose.mdx)
-
-
-## Deploying Your Action Server
-
-### Building an Action Server Image
+## Building an Action Server Image
 
 If you build an image that includes your action code and store it in a container registry, you can run it
 as part of your deployment, without having to move code between servers.
 In addition, you can add any additional dependencies of systems or Python libraries
 that are part of your action code but not included in the base `rasa/rasa-sdk` image.
 
-#### Automating your Action Server Image Builds
+### Automating your Action Server Image Builds
 
 In addition to a manually creating a new Action Server image, you can use the [Rasa Action Server GitHub Action](https://github.com/RasaHQ/action-server-gha) to automate image builds.
 If GitHub Actions are new to you, it might be helpful to get familiar with [GitHub Actions Documentation](https://docs.github.com/en/actions).
@@ -392,15 +252,15 @@ jobs:
 
     # This step shows only the example of output parameter usage
     # and it's not focused on deployment itself.
-    - name: "Upgrade a Rasa X deployment"
+    - name: "Upgrade a Rasa Action Server deployment"
       run: |
         helm upgrade --install --reuse-values \
-          --set app.name=${{ steps.action_server.outputs.docker_image_name }} \
-          --set app.tag=${{ steps.action_server.outputs.docker_image_tag }} rasa rasa-x/rasa-x
+          --set image.name=${{ steps.action_server.outputs.docker_image_name }} \
+          --set image.tag=${{ steps.action_server.outputs.docker_image_tag }} rasa-action-server rasa/rasa-action-server
 ```
 
 As you can see it's possible to use output variables from the `action_server` step. The `steps.action_server.outputs.docker_image_name` variable returns
-a docker image name and the `steps.action_server.outputs.docker_image_tag` variable returns a docker image tag.
+a Docker image name and the `steps.action_server.outputs.docker_image_tag` variable returns a Docker image tag.
 
 More examples on how to use and customize [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) you can find in the [Rasa GitHub Actions](https://github.com/RasaHQ/action-server-gha) repository.
 
@@ -452,8 +312,7 @@ and development servers. You should create a new tag any time you update your co
 
 ### Using your Custom Action Server Image
 
-If you're building this image to make it available from another server,
-for example a Rasa X or Rasa Enterprise deployment, you should push the image to a cloud repository.
+If you're building this image to make it available from another server, you should push the image to a cloud repository.
 
 This documentation assumes you are pushing your images to [DockerHub](https://hub.docker.com/).
 DockerHub will let you host multiple public repositories and
@@ -473,9 +332,49 @@ docker push <account_username>/<repository_name>:<custom_image_tag>
 To authenticate and push images to a different container registry, please refer to the documentation of
 your chosen container registry.
 
-How you reference the custom action image will depend on your deployment. Pick the relevant documentation for
-your deployment:
 
-* [Helm Chart](https://rasa.com/docs/rasa-x/installation-and-setup/customize/#adding-a-custom-action-server)
+## Setting a Custom Action Server Image
 
-* [Rasa Open Source Only](./docker/deploying-in-docker-compose.mdx#using-docker-compose-to-run-multiple-services)
+In order to use a Custom Action Server image along with the Rasa Action Server deployment, you have to
+use the following values for your deployment.
+
+```yaml
+# values.yaml
+image:
+  name: "image_name"
+  tag: "image_tag"
+```
+
+then upgrade your deployment by executing the command:
+
+```text
+helm upgrade --namespace <namespace> --reuse-values \
+  -f values.yaml <release name> rasa/rasa-action-server
+```
+
+## Connect Rasa Action Server with Rasa Open Source
+
+If you have deployed your Rasa Assistant via the Rasa Helm chart, and you have deployed your Rasa Action Server as well.
+Now it's time to connect them together. You can do this easily by following the steps:
+
+1. Create the `rasa-values.yaml` file which will include configuration for Rasa Open Source deployment.
+
+  ```yaml
+  # rasa-values.yaml
+  rasa-action-server:
+    external:
+      # -- Determine if external URL is used
+      enabled: true
+      # -- URL to Rasa Action Server
+      url: "http://rasa-action-server/webhook"
+  ```
+
+  The configuration above tells Rasa Open Source which Rasa Action Server to use. In the example the `http://rasa-action-server/webhook` URL is used,
+  the URL indicates that Rasa Action Server is deployed with release name `rasa-action-server`, and is located in the same namespace as Rasa Open Source server deployment.
+
+2. Upgrade a Rasa Open Source deployment
+
+  ```text
+  helm upgrade -n <namespace> --reuse-values -f rasa-values.yaml \
+    <release name> rasa/rasa
+  ```
