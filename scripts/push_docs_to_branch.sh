@@ -35,7 +35,7 @@ if [[ "$GITHUB_REF" =~ $PATTERN_FOR_NEW_VERSION ]]
 then
     NEW_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.0$/\1.x/")
     if [[ -n ${CI} ]]; then echo "New version: ${NEW_VERSION}"; fi
-elif [[ "$GITHUB_REF" =~ $PATTERN_FOR_MICRO_VERSION ]]
+elif [[ "$GITHUB_REF" =~ $PATTERN_FOR_EXISTING_VERSION ]]
 then
     EXISTING_VERSION=$(echo $GITHUB_REF | sed -E "s/^refs\/tags\/([0-9]+)\.([0-9]+)\.[0-9]+$/\1.x/")
     if [[ -n ${CI} ]]; then echo "Existing version: ${EXISTING_VERSION}"; fi
