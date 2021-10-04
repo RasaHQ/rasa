@@ -9,6 +9,7 @@ from rasa.constants import (
     ENV_CPU_INTER_OP_CONFIG,
     ENV_CPU_INTRA_OP_CONFIG,
 )
+from rasa.utils.tensorflow.constants import TF_DETERMINISTIC_OPS
 
 if typing.TYPE_CHECKING:
     from tensorflow import config as tf_config
@@ -143,3 +144,14 @@ def setup_tf_environment() -> None:
 
     _setup_cpu_environment()
     _setup_gpu_environment()
+
+
+def check_deterministic_ops() -> None:
+    """Check whether user has set """
+    if os.getenv(TF_DETERMINISTIC_OPS, False):
+        raise UserWarning(
+            f"You have set '{TF_DETERMINISTIC_OPS}' to 1. If you are "
+            f"using one or more GPU(s), training or testing may fail as"
+            f" there is currently no deterministic GPU implementation of "
+            f"`tf.sparse.sparse_dense_matmul`."
+        )
