@@ -347,7 +347,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         if has_general_extractors and has_regex_extractor and has_overlap:
             rasa.shared.utils.io.raise_warning(
                 f"You have an overlap between the "
-                f"{RegexEntityExtractorGraphComponent.__name__} and the "
+                f"'{RegexEntityExtractorGraphComponent.__name__}' and the "
                 f"statistical entity extractors "
                 f"{_types_to_str(present_general_extractors)} "
                 f"in your configuration. Specifically both types of extractors will "
@@ -355,7 +355,7 @@ class DefaultV1RecipeValidator(GraphComponent):
                 f"{', '.join(overlap_between_types)}. "
                 f"This can lead to multiple "
                 f"extraction of entities. Please read "
-                f"{RegexEntityExtractorGraphComponent.__name__}'s "
+                f"'{RegexEntityExtractorGraphComponent.__name__}''s "
                 f"documentation section to make sure you understand the "
                 f"implications.",
                 docs=f"{DOCS_URL_COMPONENTS}#regexentityextractor",
