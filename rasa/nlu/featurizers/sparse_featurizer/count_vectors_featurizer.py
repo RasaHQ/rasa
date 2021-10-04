@@ -2,14 +2,13 @@ from __future__ import annotations
 import logging
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set
+from typing import Any, Dict, List, Optional, Text, Tuple, Set
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
@@ -838,11 +837,4 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        pass
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
         pass
