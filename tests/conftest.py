@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import copy
 import os
 import random
@@ -12,7 +13,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.python import Function
 from spacy import Language
 
-from rasa.engine.caching import CACHE_SIZE_ENV, LocalTrainingCache
+from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
@@ -46,20 +47,9 @@ from rasa.model_training import train, train_nlu
 from rasa.shared.exceptions import RasaException
 import rasa.utils.common
 
-# TODO: replace this with a fixture!
-os.environ[CACHE_SIZE_ENV] = "0"
-
-
-@pytest.fixture()
-def cache_size():
-    old_cache_size = os.environ.get(CACHE_SIZE_ENV)
-    os.environ[CACHE_SIZE_ENV] = "0"
-    yield
-    os.environ[CACHE_SIZE_ENV] = old_cache_size
-
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
-# from a separatedly installable pytest-cli plugin.
+# from a separately installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
 
 
@@ -357,20 +347,14 @@ def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
         cache_dir: Optional[Path] = None,
         **kwargs: Any,
     ) -> Optional[Text]:
-
-        old_get_cache_location = None
-        if cache_dir:
-            # This allows insert a certain cache directory for the training
-            old_get_cache_location = LocalTrainingCache._get_cache_location
-            LocalTrainingCache._get_cache_location = Mock(return_value=cache_dir)
+        if not cache_dir:
+            cache_dir = tmp_path_factory.mktemp("cache")
 
         if output_path is None:
             output_path = str(tmp_path_factory.mktemp("models"))
 
-        result = train(*args, output=output_path, **kwargs)
-
-        if cache_dir:
-            LocalTrainingCache._get_cache_location = old_get_cache_location
+        with enable_cache(cache_dir):
+            result = train(*args, output=output_path, **kwargs)
 
         return result.model
 
@@ -449,11 +433,8 @@ def trained_e2e_model_cache(
     copied_cache = tmp_path_factory.mktemp("copy")
     rasa.utils.common.copy_directory(_trained_e2e_model_cache, copied_cache)
 
-    monkeypatch.setattr(
-        LocalTrainingCache, "_get_cache_location", Mock(return_value=copied_cache)
-    )
-
-    return copied_cache
+    with enable_cache(copied_cache):
+        yield copied_cache
 
 
 @pytest.fixture(scope="session")
@@ -742,7 +723,7 @@ def create_test_file_with_size(directory: Path, size_in_mb: float) -> None:
 
 
 @pytest.fixture()
-def default_model_storage(tmp_path: Path) -> ModelStorage:
+def default_model_storage(tmp_path: Path, monkeypatch: MonkeyPatch) -> ModelStorage:
     return LocalModelStorage.create(tmp_path)
 
 
@@ -751,18 +732,37 @@ def default_execution_context() -> ExecutionContext:
     return ExecutionContext(GraphSchema({}), uuid.uuid4().hex)
 
 
-# TODO: fix this
+@pytest.fixture(scope="session", autouse=True)
+def temp_cache_for_fixtures(tmp_path_factory: TempPathFactory) -> None:
+    # This fixture makes sure that wide fixtures which don't have `function` scope
+    # (session, package, module) don't use the global
+    # cache. If you want to use the cache in a session scoped fixture, then please
+    # consider using the `enable_cache` context manager.
+    old_get_cache_location = LocalTrainingCache._get_cache_location
+    LocalTrainingCache._get_cache_location = lambda: tmp_path_factory.mktemp(
+        f"cache-{uuid.uuid4()}"
+    )
+
+    yield
+
+    LocalTrainingCache._get_cache_location = old_get_cache_location
+
+
 @pytest.fixture(autouse=True)
 def use_temp_dir_for_cache(
     monkeypatch: MonkeyPatch, tmp_path_factory: TempdirFactory
-) -> Path:
-    # This avoids that the unit tests because they share a local cache.
-    # Instead we are creating a new cache for every test.
+) -> None:
+    # This fixture makes sure that a single test function has a constant cache
+    # cache.
     cache_dir = tmp_path_factory.mktemp(uuid.uuid4().hex)
-    monkeypatch.setattr(
-        LocalTrainingCache,
-        LocalTrainingCache._get_cache_location.__name__,
-        Mock(return_value=cache_dir),
-    )
+    monkeypatch.setattr(LocalTrainingCache, "_get_cache_location", lambda: cache_dir)
 
-    return cache_dir
+
+@contextlib.contextmanager
+def enable_cache(cache_dir: Path):
+    old_get_cache_location = LocalTrainingCache._get_cache_location
+    LocalTrainingCache._get_cache_location = Mock(return_value=cache_dir)
+
+    yield
+
+    LocalTrainingCache._get_cache_location = old_get_cache_location
