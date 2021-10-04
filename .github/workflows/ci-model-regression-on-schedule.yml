@@ -59,10 +59,9 @@ jobs:
 
       - name: Get TensorFlow version
         run: |-
-          # Read TF version, trim special characters ^~><+
-          TF_VERSION=$(grep "tensorflow =" pyproject.toml | sed 's/^[^"]*"\([^"]*\),.*/\1/' | sed 's/[\^~><=]//g')
-          # Keep the first 3 characters, e.g. we keep 2.3 if TF_VERSION is 2.3.4
-          TF_VERSION=${TF_VERSION::3}
+          # Read TF version from poetry.lock file
+          pip install toml
+          TF_VERSION=$(scripts/read_tenforflow_version.sh)
           echo "TensorFlow version: $TF_VERSION"
           echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
 
