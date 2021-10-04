@@ -13,7 +13,7 @@ if __name__ == "__main__":
       # Get the list of dict that contains all information about packages
       package_list = toml.load(poetry_path).get('package')
       # Extract tensorflow version
-      tf_version = next(filter(lambda x: x.get('name') == 'tensorflow', package_list))['version']
+      tf_version = next(filter(lambda x: x.get('name') == 'tensorflow', package_list)).get('version')
       print(tf_version)
       sys.exit(0)
 
