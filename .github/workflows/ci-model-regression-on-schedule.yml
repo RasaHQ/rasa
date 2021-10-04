@@ -255,7 +255,6 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          TF_DETERMINISTIC_OPS: 1 # Run GPUs in a deterministic mode
         run: |-
           poetry run rasa --version
 
