@@ -1,7 +1,7 @@
 ---
 id: deploy-action-server
-sidebar_label: Step 2: Deploy Action Server
-title: Step 2: Deploy Action Server
+sidebar_label: "Step 2: Deploy Action Server"
+title: "Step 2: Deploy Action Server"
 description: The second step to deploy your Rasa assistant
 abstract: This page explains how to build an Action Server Image and deploy a Rasa Action Server using Helm. The second of three steps in deploying your Rasa assistant.
 ---
@@ -99,7 +99,7 @@ repository if you discover bugs or have suggestions for improvements.
    In case you are using a version `<3.5` of Helm, please update to Helm version
    `>=3.5`.
 
-## Installation
+## a. Installation
 
 ### 1. Create Namespace
 
@@ -352,7 +352,7 @@ helm upgrade --namespace <namespace> --reuse-values \
   -f values.yaml <release name> rasa/rasa-action-server
 ```
 
-## Connect Rasa Action Server with Rasa Open Source deployment
+## b. Connect Rasa Action Server with Rasa Open Source deployment
 
 If you have deployed your Rasa Assistant via the Rasa Helm chart, and you have deployed your Rasa Action Server as well.
 Now it's time to connect them together. You can do this easily by following the steps:
