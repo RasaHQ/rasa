@@ -97,6 +97,11 @@ def config_path() -> Text:
 
 
 @pytest.fixture(scope="session")
+def default_config(config_path: Text) -> Dict[Text, Any]:
+    return rasa.shared.utils.io.read_yaml_file(config_path)
+
+
+@pytest.fixture(scope="session")
 def domain_with_categorical_slot_path() -> Text:
     return "data/test_domains/domain_with_categorical_slot.yml"
 
@@ -159,6 +164,26 @@ def e2e_story_file_trips_circuit_breaker_path() -> Text:
 @pytest.fixture(scope="session")
 def endpoints_path() -> Text:
     return "data/test_endpoints/example_endpoints.yml"
+
+
+@pytest.fixture(scope="session")
+def simple_markers_config() -> Text:
+    return "data/test_markers/config_simple.yml"
+
+
+@pytest.fixture(scope="session")
+def markers_config_folder() -> Text:
+    return "data/test_markers/config_dir"
+
+
+@pytest.fixture(scope="session")
+def invalid_markers_config() -> Text:
+    return "data/test_markers/config_invalid.yml"
+
+
+@pytest.fixture(scope="session")
+def markers_config_operators() -> Text:
+    return "data/test_markers/config_operators.yml"
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
