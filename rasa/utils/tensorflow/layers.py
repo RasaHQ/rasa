@@ -210,10 +210,6 @@ class DenseForSparse(tf.keras.layers.Dense):
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
-        if not isinstance(inputs.dtype, tf.float32):
-            raise ValueError(f"Input tensor must have dtype {tf.float32.name}. Instead,"
-                             f"it has {inputs.dtype.name}")
-
         # outputs will be 2D
         outputs = tf.sparse.sparse_dense_matmul(
             tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), self.kernel
@@ -427,6 +423,7 @@ class Ffnn(tf.keras.layers.Layer):
     def call(
         self, x: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None
     ) -> tf.Tensor:
+        """Apply feed-forward network layer."""
         for layer in self._ffn_layers:
             x = layer(x, training=training)
 
@@ -573,7 +570,6 @@ def _scale_loss(log_likelihood: tf.Tensor) -> tf.Tensor:
     Returns:
         Scaling tensor.
     """
-
     p = tf.math.exp(log_likelihood)
     # only scale loss if some examples are already learned
     return tf.cond(
