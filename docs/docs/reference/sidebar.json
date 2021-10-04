@@ -73,6 +73,14 @@
         },
         {
           "items": [
+            "reference/rasa/core/evaluation/marker_tracker_loader",
+            "reference/rasa/core/evaluation/markers"
+          ],
+          "label": "rasa.core.evaluation",
+          "type": "category"
+        },
+        {
+          "items": [
             "reference/rasa/core/featurizers/_single_state_featurizer",
             "reference/rasa/core/featurizers/_tracker_featurizers",
             "reference/rasa/core/featurizers/precomputation",
