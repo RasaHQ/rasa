@@ -2,8 +2,8 @@
 id: deploy-action-server
 sidebar_label: Deploy Action Server
 title: Deploy Action Server
-description: How to deploy your Rasa Action Server with Kubernetes/Openshift.
-abstract: This page explains how to build an Action Server Image and deploy Rasa Action Server by using Helm.
+description: The second step to deploy your Rasa assistant
+abstract: This page explains how to build an Action Server Image and deploy a Rasa Action Server using Helm. The second of three steps in deploying your Rasa assistant.
 ---
 <!-- this file is version specific, do not use `@site/...` syntax -->
 import variables from './../variables.json';
@@ -352,7 +352,7 @@ helm upgrade --namespace <namespace> --reuse-values \
   -f values.yaml <release name> rasa/rasa-action-server
 ```
 
-## Connect Rasa Action Server with Rasa Open Source
+## Connect Rasa Action Server with Rasa Open Source deployment
 
 If you have deployed your Rasa Assistant via the Rasa Helm chart, and you have deployed your Rasa Action Server as well.
 Now it's time to connect them together. You can do this easily by following the steps:
