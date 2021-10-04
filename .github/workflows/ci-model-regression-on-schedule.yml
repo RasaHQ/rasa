@@ -57,8 +57,25 @@ jobs:
           curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           chmod 755 gomplate
 
+      - name: Get TensorFlow version
+        run: |-
+          # Read TF version, trim special characters ^~><+
+          TF_VERSION=$(grep "tensorflow =" pyproject.toml | sed 's/^[^"]*"\([^"]*\),.*/\1/' | sed 's/[\^~><=]//g')
+          # Keep the first 3 characters, e.g. we keep 2.3 if TF_VERSION is 2.3.4
+          TF_VERSION=${TF_VERSION::3}
+          echo "TensorFlow version: $TF_VERSION"
+          echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
+
+       # Use compatible CUDA/cuDNN with the given TF version
+      - name: Prepare GitHub runner image tag
+        run: |-
+          GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
+          echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
+          echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
+
       - name: Render deployment template
         run: |-
+          export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
           export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
@@ -208,7 +225,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v4
+        uses: Gr1N/setup-poetry@v7
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -335,40 +352,26 @@ jobs:
             }
             return 'false'
 
-      - name: Select a member from managers team randomly
-        if: failure() && steps.issue-exists.outputs.result == 'false'
-        run: |
-          MEMBERS=$(curl \
-                      -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                      -H "Accept: application/vnd.github.v3+json" \
-                      https://api.github.com/orgs/RasaHQ/teams/research/members)
-          # Make sure we get a list of members
-          [[ -z "$MEMBERS" ]] && echo "Could not find any members from the team." || true
-
-          # Shuffle the list, then select the first member as the assignee for the issue
-          ASSIGNEE=$(echo $MEMBERS | jq -r '.[].login' | shuf | head -n1)
-          echo ASSIGNEE="$ASSIGNEE" >> $GITHUB_ENV
-
       - name: Create GitHub Issue 📬
         id: create-issue
         if: failure() && steps.issue-exists.outputs.result == 'false'
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
+          github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           script: |
             var issue = await github.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: '${{ env.GITHUB_ISSUE_TITLE }}',
               labels: ${{ env.GITHUB_ISSUE_LABELS }},
-              assignees: ['${{ env.ASSIGNEE }}'],
               body: '*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: `${{ matrix.config }}` <br> **Dataset**: `${{ matrix.dataset}}`'
             })
             return issue.data.number
 
       - name: Notify Slack of Failure 😱
         if: failure()  && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@f3635935f58910a6d6951b73efe9037c960c8c04  # v3
+        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9  # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -456,6 +459,7 @@ jobs:
 
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          OUTPUT="$(echo $OUTPUT | sed 's|`|\\`|g')"
           echo "::set-output name=report_description::${OUTPUT}"
 
           IS_DROPPED=false
@@ -499,42 +503,32 @@ jobs:
             }
             return 'false'
 
-
-      - name: Select a member from managers team randomly
-        if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        run: |
-          MEMBERS=$(curl \
-                      -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                      -H "Accept: application/vnd.github.v3+json" \
-                      https://api.github.com/orgs/RasaHQ/teams/research/members)
-          # Make sure we get a list of members
-          [[ -z "$MEMBERS" ]] && echo "Could not find any members from the team." || true
-
-          # Shuffle the list, then select the first member as the assignee for the issue
-          ASSIGNEE=$(echo $MEMBERS | jq -r '.[].login' | shuf | head -n1)
-          echo ASSIGNEE="$ASSIGNEE" >> $GITHUB_ENV
-
       - name: Create GitHub Issue 📬
         id: create-issue
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
+          github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           script: |
+            // Prepare issue body
+            let issue_body = '*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br>'
+            issue_body += `${{ steps.performance.outputs.report_description }}`
+
+            // Open issue
             var issue = await github.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: '${{ env.GITHUB_ISSUE_TITLE }}',
               labels: ${{ env.GITHUB_ISSUE_LABELS }},
-              assignees: ['${{ env.ASSIGNEE }}'],
-              body: '"*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br> ${{ steps.performance.outputs.report_description }}"'
+              body: issue_body
             })
             return issue.data.number
 
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@f3635935f58910a6d6951b73efe9037c960c8c04 #v3
+        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took

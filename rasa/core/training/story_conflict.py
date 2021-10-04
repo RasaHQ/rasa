@@ -4,7 +4,12 @@ import json
 from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    PREVIOUS_ACTION,
+    ACTION_UNLIKELY_INTENT_NAME,
+    USER,
+)
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -228,18 +233,41 @@ def _find_conflicting_states(
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
     state_action_mapping = defaultdict(list)
+
     for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash
         current_hash = hash(element.event)
-        if current_hash not in state_action_mapping[hashed_state]:
+
+        if current_hash not in state_action_mapping[
+            hashed_state
+        ] or _unlearnable_action(element.event):
             state_action_mapping[hashed_state] += [current_hash]
 
     # Keep only conflicting `state_action_mapping`s
+    # or those mappings that contain `action_unlikely_intent`
+    action_unlikely_intent_hash = hash(
+        ActionExecuted(action_name=ACTION_UNLIKELY_INTENT_NAME)
+    )
     return {
         state_hash: actions
         for (state_hash, actions) in state_action_mapping.items()
-        if len(actions) > 1
+        if len(actions) > 1 or action_unlikely_intent_hash in actions
     }
+
+
+def _unlearnable_action(event: Event) -> bool:
+    """Identifies if the action cannot be learned by policies that use story data.
+
+    Args:
+        event: An event to be checked.
+
+    Returns:
+        `True` if the event can be learned, `False` otherwise.
+    """
+    return (
+        isinstance(event, ActionExecuted)
+        and event.action_name == ACTION_UNLIKELY_INTENT_NAME
+    )
 
 
 def _build_conflicts_from_states(

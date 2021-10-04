@@ -15,51 +15,51 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 
 
-async def test_rasa_file_importer(project: Text):
+def test_rasa_file_importer(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
 
     importer = RasaFileImporter(config_path, domain_path, [default_data_path])
 
-    domain = await importer.get_domain()
+    domain = importer.get_domain()
     assert len(domain.intents) == 7 + len(DEFAULT_INTENTS)
     assert domain.slots == [AnySlot(SESSION_START_METADATA_SLOT)]
     assert domain.entities == []
-    assert len(domain.action_names_or_texts) == 17
+    assert len(domain.action_names_or_texts) == 18
     assert len(domain.responses) == 6
 
-    stories = await importer.get_stories()
+    stories = importer.get_stories()
     assert len(stories.story_steps) == 5
 
-    test_stories = await importer.get_conversation_tests()
+    test_stories = importer.get_conversation_tests()
     assert len(test_stories.story_steps) == 0
 
-    nlu_data = await importer.get_nlu_data("en")
+    nlu_data = importer.get_nlu_data("en")
     assert len(nlu_data.intents) == 7
-    assert len(nlu_data.intent_examples) == 69
+    assert len(nlu_data.intent_examples) == 68
 
 
-async def test_read_conversation_tests(project: Text):
+def test_read_conversation_tests(project: Text):
     importer = RasaFileImporter(
         training_data_paths=[str(Path(project) / DEFAULT_CONVERSATION_TEST_PATH)]
     )
 
-    test_stories = await importer.get_conversation_tests()
+    test_stories = importer.get_conversation_tests()
     assert len(test_stories.story_steps) == 7
 
 
-async def test_rasa_file_importer_with_invalid_config():
+def test_rasa_file_importer_with_invalid_config():
     importer = RasaFileImporter(config_file="invalid path")
-    actual = await importer.get_config()
+    actual = importer.get_config()
 
     assert actual == {}
 
 
-async def test_rasa_file_importer_with_invalid_domain(tmp_path: Path):
+def test_rasa_file_importer_with_invalid_domain(tmp_path: Path):
     config_file = tmp_path / "config.yml"
     config_file.write_text("")
     importer = TrainingDataImporter.load_from_dict({}, str(config_file), None, [])
 
-    actual = await importer.get_domain()
+    actual = importer.get_domain()
     assert actual.as_dict() == Domain.empty().as_dict()

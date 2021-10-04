@@ -23,6 +23,7 @@ from typing import (
 )
 
 import rasa.shared.utils.common
+import rasa.shared.utils.io
 from typing import Union
 
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
@@ -49,11 +50,51 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
+    PREDICTED_CONFIDENCE_KEY,
+    INTENT_RANKING_KEY,
+    ENTITY_ATTRIBUTE_TEXT,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_CONFIDENCE,
+    ENTITY_ATTRIBUTE_END,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
 )
 
+
 if TYPE_CHECKING:
+    from typing_extensions import TypedDict
+
     from rasa.shared.core.trackers import DialogueStateTracker
 
+    EntityPrediction = TypedDict(
+        "EntityPrediction",
+        {
+            ENTITY_ATTRIBUTE_TEXT: Text,
+            ENTITY_ATTRIBUTE_START: Optional[float],
+            ENTITY_ATTRIBUTE_END: Optional[float],
+            ENTITY_ATTRIBUTE_VALUE: Text,
+            ENTITY_ATTRIBUTE_CONFIDENCE: float,
+            ENTITY_ATTRIBUTE_TYPE: Text,
+            ENTITY_ATTRIBUTE_GROUP: Optional[Text],
+            ENTITY_ATTRIBUTE_ROLE: Optional[Text],
+            "additional_info": Any,
+        },
+        total=False,
+    )
+
+    IntentPrediction = TypedDict(
+        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float,},
+    )
+    NLUPredictionData = TypedDict(
+        "NLUPredictionData",
+        {
+            INTENT: IntentPrediction,
+            INTENT_RANKING_KEY: List[IntentPrediction],
+            ENTITIES: List[EntityPrediction],
+            "message_id": Optional[Text],
+            "metadata": Dict,
+        },
+        total=False,
+    )
 logger = logging.getLogger(__name__)
 
 
@@ -209,19 +250,7 @@ class Event(ABC):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         self.timestamp = timestamp or time.time()
-        self._metadata = metadata or {}
-
-    @property
-    def metadata(self) -> Dict[Text, Any]:
-        # Needed for compatibility with Rasa versions <1.4.0. Previous versions
-        # of Rasa serialized trackers using the pickle module. For the moment,
-        # Rasa still supports loading these serialized trackers with pickle,
-        # but will use JSON in any subsequent save operations. Versions of
-        # trackers serialized with pickle won't include the `_metadata`
-        # attribute in their events, so it is necessary to define this getter
-        # in case the attribute does not exist. For more information see
-        # CHANGELOG.rst.
-        return getattr(self, "_metadata", {})
+        self.metadata = metadata or {}
 
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
@@ -279,6 +308,16 @@ class Event(ABC):
 
         return d
 
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the event which is stable across python runs.
+
+        Returns:
+            fingerprint of the event
+        """
+        data = self.as_dict()
+        del data["timestamp"]
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
+
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> Optional["Event"]:
         """Called to convert a dictionary of parameters to a single event.
@@ -286,8 +325,8 @@ class Event(ABC):
         By default uses the same implementation as the story line
         conversation ``_from_story_string``. But the subclass might
         decide to handle parameters differently if the parsed parameters
-        don't origin from a story file."""
-
+        don't origin from a story file.
+        """
         result = cls._from_story_string(parameters)
         if len(result) > 1:
             logger.warning(
@@ -369,7 +408,7 @@ class UserUttered(Event):
         text: Optional[Text] = None,
         intent: Optional[Dict] = None,
         entities: Optional[List[Dict]] = None,
-        parse_data: Optional[Dict[Text, Any]] = None,
+        parse_data: Optional["NLUPredictionData"] = None,
         timestamp: Optional[float] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
@@ -410,7 +449,7 @@ class UserUttered(Event):
             # happens during training
             self.use_text_for_featurization = False
 
-        self.parse_data = {
+        self.parse_data: "NLUPredictionData" = {
             INTENT: self.intent,
             # Copy entities so that changes to `self.entities` don't affect
             # `self.parse_data` and hence don't get persisted
@@ -419,14 +458,13 @@ class UserUttered(Event):
             "message_id": self.message_id,
             "metadata": self.metadata,
         }
-
         if parse_data:
             self.parse_data.update(**parse_data)
 
     @staticmethod
     def _from_parse_data(
         text: Text,
-        parse_data: Dict[Text, Any],
+        parse_data: "NLUPredictionData",
         timestamp: Optional[float] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
@@ -451,6 +489,11 @@ class UserUttered(Event):
     def intent_name(self) -> Optional[Text]:
         """Returns intent name or `None` if no intent."""
         return self.intent.get(INTENT_NAME_KEY)
+
+    @property
+    def full_retrieval_intent_name(self) -> Optional[Text]:
+        """Returns full retrieval intent name or `None` if no retrieval intent."""
+        return self.intent.get(FULL_RETRIEVAL_INTENT_NAME_KEY)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -506,7 +549,7 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+    def as_sub_state(self,) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         """Turns a UserUttered event into features.
 
         The substate contains information about entities, intent and text of the
@@ -533,7 +576,7 @@ class UserUttered(Event):
             if ENTITY_ATTRIBUTE_GROUP in entity
         )
 
-        out = {}
+        out: Dict[Text, Union[None, Text, List[Optional[Text]]]] = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
         if self.text and (
@@ -921,7 +964,9 @@ class SlotSet(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["SlotSet"]]:
 
         slots = []
         for slot_key, slot_val in parameters.items():
@@ -1474,32 +1519,36 @@ class ActionExecuted(Event):
 
         super().__init__(timestamp, metadata)
 
+    def __members__(self) -> Tuple[Optional[Text], Optional[Text], Text]:
+        meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
+        return (
+            self.action_name,
+            self.action_text,
+            jsonpickle.encode(meta_no_nones),
+        )
+
     def __repr__(self) -> Text:
         """Returns event as string for debugging."""
         return "ActionExecuted(action: {}, policy: {}, confidence: {})".format(
             self.action_name, self.policy, self.confidence
         )
 
-    def __str__(self) -> Text:
+    def __str__(self) -> Optional[Text]:
         """Returns event as human readable string."""
         return self.action_name or self.action_text
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.action_name or self.action_text)
+        return hash(self.__members__())
 
     def __eq__(self, other: Any) -> bool:
-        """Checks if object is equal to another."""
+        """Compares object with other object."""
         if not isinstance(other, ActionExecuted):
             return NotImplemented
 
-        equal = self.action_name == other.action_name
-        if hasattr(self, "action_text") and hasattr(other, "action_text"):
-            equal = equal and self.action_text == other.action_text
+        return self.__members__() == other.__members__()
 
-        return equal
-
-    def as_story_string(self) -> Text:
+    def as_story_string(self) -> Optional[Text]:
         """Returns event in Markdown format."""
         if self.action_text:
             raise UnsupportedFeatureException(
@@ -1520,7 +1569,7 @@ class ActionExecuted(Event):
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
                 parameters.get("action_text"),
-                parameters.get("hide_rule_turn"),
+                parameters.get("hide_rule_turn", False),
             )
         ]
 
@@ -1700,6 +1749,15 @@ class LegacyForm(ActiveLoop):
         d["event"] = ActiveLoop.type_name
         return d
 
+    def fingerprint(self) -> Text:
+        """Returns the hash of the event."""
+        d = self.as_dict()
+        # Revert event name to legacy subclass name to avoid different event types
+        # having the same fingerprint.
+        d["event"] = self.type_name
+        del d["timestamp"]
+        return rasa.shared.utils.io.get_dictionary_fingerprint(d)
+
 
 class LoopInterrupted(SkipEventInMDStoryMixin):
     """Event added by FormPolicy and RulePolicy.
@@ -1799,6 +1857,15 @@ class LegacyFormValidation(LoopInterrupted):
         # event type.
         d["event"] = LoopInterrupted.type_name
         return d
+
+    def fingerprint(self) -> Text:
+        """Returns hash of the event."""
+        d = self.as_dict()
+        # Revert event name to legacy subclass name to avoid different event types
+        # having the same fingerprint.
+        d["event"] = self.type_name
+        del d["timestamp"]
+        return rasa.shared.utils.io.get_dictionary_fingerprint(d)
 
 
 class ActionExecutionRejected(SkipEventInMDStoryMixin):

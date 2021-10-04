@@ -4,7 +4,11 @@ from typing import Text
 from collections import OrderedDict
 import pytest
 
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
+from rasa.shared.core.constants import (
+    ACTION_SESSION_START_NAME,
+    ACTION_LISTEN_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -12,9 +16,6 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
-    MarkdownStoryReader,
-)
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
@@ -25,34 +26,21 @@ from rasa.shared.core.training_data.structures import STORY_START
 
 
 @pytest.mark.parametrize(
-    "input_md_file, input_yaml_file",
+    "input_yaml_file",
     [
-        ["data/test_stories/stories.md", "data/test_yaml_stories/stories.yml"],
-        [
-            "data/test_stories/stories_defaultdomain.md",
-            "data/test_yaml_stories/stories_defaultdomain.yml",
-        ],
+        "data/test_yaml_stories/stories.yml",
+        "data/test_yaml_stories/stories_defaultdomain.yml",
     ],
 )
-async def test_simple_story(
-    tmpdir: Path, domain: Domain, input_md_file: Text, input_yaml_file: Text
-):
-
-    original_md_reader = MarkdownStoryReader(
-        domain, None, False, input_md_file, is_used_for_training=False
-    )
-    original_md_story_steps = original_md_reader.read_from_file(input_md_file)
-
-    assert not YAMLStoryWriter.stories_contain_loops(original_md_story_steps)
-
-    original_yaml_reader = YAMLStoryReader(domain, None, False)
+async def test_simple_story(tmpdir: Path, domain: Domain, input_yaml_file: Text):
+    original_yaml_reader = YAMLStoryReader(domain, None)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
     target_story_filename = tmpdir / "test.yml"
     writer = YAMLStoryWriter()
-    writer.dump(target_story_filename, original_md_story_steps)
+    writer.dump(target_story_filename, original_yaml_story_steps)
 
-    processed_yaml_reader = YAMLStoryReader(domain, None, False)
+    processed_yaml_reader = YAMLStoryReader(domain, None)
     processed_yaml_story_steps = processed_yaml_reader.read_from_file(
         target_story_filename
     )
@@ -65,32 +53,28 @@ async def test_simple_story(
 
 
 async def test_story_start_checkpoint_is_skipped(domain: Domain):
-    input_md_file = "data/test_stories/stories.md"
+    input_yaml_file = "data/test_yaml_stories/stories.yml"
 
-    original_md_reader = MarkdownStoryReader(
-        domain, None, False, input_md_file, is_used_for_training=False
-    )
-    original_md_story_steps = original_md_reader.read_from_file(input_md_file)
+    original_yaml_reader = YAMLStoryReader(domain, None)
+    original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
-    yaml_text = YAMLStoryWriter().dumps(original_md_story_steps)
+    yaml_text = YAMLStoryWriter().dumps(original_yaml_story_steps)
 
     assert STORY_START not in yaml_text
 
 
 async def test_forms_are_converted(domain: Domain):
-    original_md_reader = MarkdownStoryReader(
-        domain, None, False, is_used_for_training=False
-    )
-    original_md_story_steps = original_md_reader.read_from_file(
-        "data/test_stories/stories_form.md"
+    original_yaml_reader = YAMLStoryReader(domain, None)
+    original_yaml_story_steps = original_yaml_reader.read_from_file(
+        "data/test_yaml_stories/stories_form.yml"
     )
 
-    assert YAMLStoryWriter.stories_contain_loops(original_md_story_steps)
+    assert YAMLStoryWriter.stories_contain_loops(original_yaml_story_steps)
 
     writer = YAMLStoryWriter()
 
     with pytest.warns(None) as record:
-        writer.dumps(original_md_story_steps)
+        writer.dumps(original_yaml_story_steps)
 
     assert len(record) == 0
 
@@ -114,6 +98,35 @@ def test_yaml_writer_dumps_user_messages():
           - action: utter_greet
 
     """
+        ).strip()
+    )
+
+
+def test_yaml_writer_doesnt_dump_action_unlikely_intent():
+    events = [
+        UserUttered("Hello", {"name": "greet"}),
+        ActionExecuted("utter_hello"),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME, metadata={"key1": "value1"}),
+        ActionExecuted("utter_bye"),
+    ]
+    tracker = DialogueStateTracker.from_events("default", events)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps, is_test_story=True)
+
+    assert (
+        dump.strip()
+        == textwrap.dedent(
+            """
+    version: "2.0"
+    stories:
+    - story: default
+      steps:
+      - intent: greet
+        user: |-
+          Hello
+      - action: utter_hello
+      - action: utter_bye
+
+"""
         ).strip()
     )
 
@@ -143,7 +156,7 @@ def test_yaml_writer_avoids_dumping_not_existing_user_messages():
     "input_yaml_file", ["data/test_yaml_stories/rules_with_stories_sorted.yaml"]
 )
 def test_yaml_writer_dumps_rules(input_yaml_file: Text, tmpdir: Path, domain: Domain):
-    original_yaml_reader = YAMLStoryReader(domain, None, False)
+    original_yaml_reader = YAMLStoryReader(domain, None)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
     dump = YAMLStoryWriter().dumps(original_yaml_story_steps)
@@ -169,7 +182,7 @@ async def test_action_start_action_listen_are_not_dumped():
 
 
 def test_yaml_writer_stories_to_yaml(domain: Domain):
-    reader = YAMLStoryReader(domain, None, False)
+    reader = YAMLStoryReader(domain, None)
     writer = YAMLStoryWriter()
     steps = reader.read_from_file(
         "data/test_yaml_stories/simple_story_with_only_end.yml"

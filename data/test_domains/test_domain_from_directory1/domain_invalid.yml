@@ -1,0 +1,4 @@
+# invalid yml file should create warning
+# contains duplicate key
+version: "2.0"
+version: "2.0"

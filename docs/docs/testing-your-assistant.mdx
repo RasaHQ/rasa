@@ -377,6 +377,26 @@ The test script will also save a confusion matrix to a file called
 matrix shows how often the action was correctly predicted and how often an
 incorrect action was predicted instead.
 
+### Interpreting the generated warnings
+
+The test script will also generate a warnings file called `results/stories_with_warnings.yml`.
+This file contains all test stories for which [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
+was predicted at any conversation turn but all actions from the original story were predicted correctly.
+However, if a test story originally included an `action_unlikely_intent`, for example to ensure [a rule is designed to
+trigger the conversation path after an `action_unlikely_intent`](./default-actions.mdx#customization-1) but the ensemble of
+policies failed to do so, then the corresponding story will end up in `results/failed_test_stories.yml` as
+a failed story.
+
+The stories are sorted by the severity of `action_unlikely_intent`'s prediction.
+This severity is calculated by [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy) itself at prediction time.
+The higher the severity, the more unlikely is the intent and hence reviewing that particular
+conversation path becomes more critical.
+
+Note, that `action_unlikely_intent` is predicted by
+`UnexpecTEDIntentPolicy` which employs a machine learning based model
+under the hood and hence can result in false warnings as well. You can choose to ignore such warnings
+if the conversation paths in these stories are already present in the training stories.
+
 ### Comparing Policy Configurations
 
 To choose a configuration for your dialogue model, or to choose hyperparameters for a

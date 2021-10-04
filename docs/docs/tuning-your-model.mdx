@@ -143,10 +143,9 @@ final context dictionary is used to persist the model's metadata.
 
 ### Doing Multi-Intent Classification
 
-You can use Rasa Open Source components to split intents into multiple labels. For example, you can predict
-multiple intents (`thank+goodbye`) or model hierarchical intent structure (`feedback+positive` being more similar
-to `feedback+negative` than `chitchat`).
-To do this, you need to use the [DIETClassifier](./components.mdx#dietclassifier) in your pipeline.
+You can use multi-intent classification to predict multiple intents (e.g. `check_balances+transfer_money`), or to model hierarchical intent structure (e.g. `feedback+positive` being more similar to `feedback+negative` than `chitchat`).
+
+To do multi-intent classification, you need to use the [DIETClassifier](./components.mdx#dietclassifier) in your pipeline.
 You'll also need to define these flags in whichever tokenizer you are using:
 
 * `intent_tokenization_flag`: Set it to `True`, so that intent labels are tokenized.
@@ -161,14 +160,85 @@ language: "en"
 pipeline:
 - name: "WhitespaceTokenizer"
   intent_tokenization_flag: True
-  intent_split_symbol: "_"
+  intent_split_symbol: "+"
 - name: "CountVectorsFeaturizer"
 - name: "DIETClassifier"
 ```
 
-:::tip tutorial
-Read more about how to use multiple intents in Rasa in this [tutorial](https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/).
+
+#### When to Use Multi-Intents
+
+Let's say you have a financial services bot and you have examples for intents `check_balances` and `transfer_money`:
+
+```yaml-rasa
+nlu:
+- intent: check_balances
+  examples: |
+    - How much money do I have?
+    - what's my account balance?
+
+- intent: transfer_money
+  examples: |
+    - I want to transfer money to my savings account
+    - transfer money
+```
+
+However, your bot receives incoming messages like this one, which combine both intents:
+
+<Chat caption="User wants to know balance in order to transfer money">
+<ChatUserText>How much money do I have? I want to transfer some to savings.</ChatUserText>
+</Chat>
+
+If you see enough of these examples, you can create a new intent multi-intent `check_balances+transfer_money` and add the incoming examples to it, for example:
+
+```yaml-rasa
+nlu:
+- intent: check_balances+transfer_money
+  examples: |
+    - How much money do I have? I want to transfer some to savings.
+    - What's the balance on my account? I need to transfer some so I want to know how much I have
+```
+
+
+:::note
+The model will not predict any combination of intents for which examples are not explicitly given in training data. As accounting for every possible intent combination would result in combinatorial explosion of the number of intents, you should only add those combinations of intents for which you see enough examples coming in from real users.
+
 :::
+
+
+#### How to Use Multi-Intents for Dialogue Management
+
+Multi-intent classification is intended to help with the downstream task of action prediction *after* a multi-intent. There are two complementary ways to use multi intents in dialogue training data:
+
+1) Add regular stories or rules for the multi-intent. For example, given the following two rules for each individual intent: 
+
+```yaml-rasa
+rules:
+- rule: check account balance
+  steps:
+  - intent: check_balances
+  - action: action_check_balances
+- rule: transfer money
+  steps:
+  - intent: transfer_money
+  - action: action_transfer_money
+```
+
+You could add another rule for the multi-intent that specifies a sequence of actions to address both intents:
+
+```
+rules:
+- rule: check balances and transfer money
+  steps:
+  - intent: check_balances+transfer_money
+  - action: action_check_balances
+  - action: action_transfer_money
+```
+
+2) Allow a machine-learning policy to generalize to the multi-intent scenario from single-intent stories.
+
+When using a multi-intent, the intent is featurized for machine learning policies using multi-hot encoding. That means the featurization of `check_balances+transfer_money` will overlap with the featurization of each individual intent. Machine learning policies (like [TEDPolicy](./policies.mdx#ted-policy)) can then make a prediction based on the multi-intent even if it does not explicitly appear in any stories. It will typically act as if only one of the individual intents was present, however, so it is always a good idea to write a specific story or rule that deals with the multi-intent case.
+
 
 ### Comparing Pipelines
 
@@ -230,7 +300,7 @@ for both is highly likely to be the same. This is also useful if you don't have 
 
 An alternative to [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which uses pre-trained language
 models such as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
-[HFTransformersNLP](./components.mdx#hftransformersnlp) for a full list of supported language models.
+[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) for a full list of supported language models.
 
 If your training data is not in English you can also use a different variant of a language model which
 is pre-trained in the language specific to your training data.

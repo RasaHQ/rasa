@@ -149,8 +149,20 @@ class Slot:
             "influence_conversation": self.influence_conversation,
         }
 
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the slot which is stable across python runs.
+
+        Returns:
+            fingerprint of the slot
+        """
+        data = {"slot_name": self.name, "slot_value": self.value}
+        data.update(self.persistence_info())
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
+
 
 class FloatSlot(Slot):
+    """A slot storing a float value."""
+
     type_name = "float"
 
     def __init__(
@@ -163,6 +175,12 @@ class FloatSlot(Slot):
         min_value: float = 0.0,
         influence_conversation: bool = True,
     ) -> None:
+        """Creates a FloatSlot.
+
+        Raises:
+            InvalidSlotConfigError, if the min-max range is invalid.
+            UserWarning, if initial_value is outside the min-max range.
+        """
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
@@ -276,59 +294,9 @@ class ListSlot(Slot):
         super(ListSlot, self.__class__).value.fset(self, value)
 
 
-class UnfeaturizedSlot(Slot):
-    """Deprecated slot type to represent slots which don't influence conversations."""
-
-    type_name = "unfeaturized"
-
-    def __init__(
-        self,
-        name: Text,
-        initial_value: Any = None,
-        value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
-        influence_conversation: bool = False,
-    ) -> None:
-        """Creates unfeaturized slot.
-
-        Args:
-            name: The name of the slot.
-            initial_value: Its initial value.
-            value_reset_delay: After how many turns the slot should be reset to the
-                initial_value. This is behavior is currently not implemented.
-            auto_fill: `True` if it should be auto-filled by entities with the same
-                name.
-            influence_conversation: `True` if it should be featurized. Only `False`
-                is allowed. Any other value will lead to a `InvalidSlotConfigError`.
-        """
-        if influence_conversation:
-            raise InvalidSlotConfigError(
-                f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
-                f"Please use a different slot type for slot '{name}' instead. See the "
-                f"documentation for more information: {DOCS_URL_SLOTS}"
-            )
-
-        rasa.shared.utils.io.raise_warning(
-            f"{UnfeaturizedSlot.__name__} is deprecated "
-            f"and will be removed in Rasa Open Source "
-            f"3.0. Please change the type and configure the 'influence_conversation' "
-            f"flag for slot '{name}' instead.",
-            docs=DOCS_URL_SLOTS,
-            category=FutureWarning,
-        )
-
-        super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
-        )
-
-    def _as_feature(self) -> List[float]:
-        return []
-
-    def _feature_dimensionality(self) -> int:
-        return 0
-
-
 class CategoricalSlot(Slot):
+    """Slot type which can be used to branch conversations based on its value."""
+
     type_name = "categorical"
 
     def __init__(
@@ -340,12 +308,28 @@ class CategoricalSlot(Slot):
         auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
+        """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
-        self.values = [str(v).lower() for v in values] if values else []
+        if values and None in values:
+            rasa.shared.utils.io.raise_warning(
+                f"Categorical slot '{self.name}' has `null` listed as a possible value"
+                f" in the domain file, which translates to `None` in Python. This value"
+                f" is reserved for when the slot is not set, and should not be listed"
+                f" as a value in the slot's definition."
+                f" Rasa will ignore `null` as a possible value for the '{self.name}'"
+                f" slot. Consider changing this value in your domain file to, for"
+                f" example, `unset`, or provide the value explicitly as a string by"
+                f' using quotation marks: "null".',
+                category=UserWarning,
+            )
+        self.values = (
+            [str(v).lower() for v in values if v is not None] if values else []
+        )
 
     def add_default_value(self) -> None:
+        """Adds the special default value to the list of possible values."""
         values = set(self.values)
         if rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE not in values:
             self.values.append(
@@ -367,31 +351,36 @@ class CategoricalSlot(Slot):
     def _as_feature(self) -> List[float]:
         r = [0.0] * self.feature_dimensionality()
 
+        # Return the zero-filled array if the slot is unset (i.e. set to None).
+        # Conceptually, this is similar to the case when the featurisation process
+        # fails, hence the returned features here are the same as for that case.
+        if self.value is None:
+            return r
+
         try:
             for i, v in enumerate(self.values):
                 if v == str(self.value).lower():
                     r[i] = 1.0
                     break
             else:
-                if self.value is not None:
-                    if (
+                if (
+                    rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
+                    in self.values
+                ):
+                    i = self.values.index(
                         rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
-                        in self.values
-                    ):
-                        i = self.values.index(
-                            rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
-                        )
-                        r[i] = 1.0
-                    else:
-                        rasa.shared.utils.io.raise_warning(
-                            f"Categorical slot '{self.name}' is set to a value "
-                            f"('{self.value}') "
-                            "that is not specified in the domain. "
-                            "Value will be ignored and the slot will "
-                            "behave as if no value is set. "
-                            "Make sure to add all values a categorical "
-                            "slot should store to the domain."
-                        )
+                    )
+                    r[i] = 1.0
+                else:
+                    rasa.shared.utils.io.raise_warning(
+                        f"Categorical slot '{self.name}' is set to a value "
+                        f"('{self.value}') "
+                        "that is not specified in the domain. "
+                        "Value will be ignored and the slot will "
+                        "behave as if no value is set. "
+                        "Make sure to add all values a categorical "
+                        "slot should store to the domain."
+                    )
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r

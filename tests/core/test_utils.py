@@ -11,6 +11,8 @@ import rasa.utils.io
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
 
@@ -189,3 +191,19 @@ def test_read_endpoints_from_wrong_path():
             available_endpoints.nlu,
         )
     )
+
+
+def assert_predicted_action(
+    prediction: PolicyPrediction,
+    domain: Domain,
+    expected_action_name: Text,
+    confidence: float = 1.0,
+    is_end_to_end_prediction: bool = False,
+    is_no_user_prediction: bool = False,
+) -> None:
+    assert prediction.max_confidence == confidence
+    index_of_predicted_action = prediction.max_confidence_index
+    prediction_action_name = domain.action_names_or_texts[index_of_predicted_action]
+    assert prediction_action_name == expected_action_name
+    assert prediction.is_end_to_end_prediction == is_end_to_end_prediction
+    assert prediction.is_no_user_prediction == is_no_user_prediction

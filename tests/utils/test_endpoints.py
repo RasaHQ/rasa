@@ -1,10 +1,12 @@
 import logging
+from pathlib import Path
 from typing import Text, Optional, Union
 from unittest.mock import Mock
 
 import pytest
 from aioresponses import aioresponses
 
+from rasa.shared.exceptions import FileNotFoundException
 from tests.utilities import latest_request, json_of_latest_request
 import rasa.utils.endpoints as endpoint_utils
 
@@ -92,6 +94,38 @@ async def test_endpoint_config():
             assert s._default_auth.password == "pass"
 
 
+async def test_endpoint_config_with_cafile(tmp_path: Path):
+    cafile = "data/test_endpoints/cert.pem"
+
+    with aioresponses() as mocked:
+        endpoint = endpoint_utils.EndpointConfig(
+            "https://example.com/", cafile=str(cafile),
+        )
+
+        mocked.post(
+            "https://example.com/", status=200,
+        )
+
+        await endpoint.request("post",)
+
+        request = latest_request(mocked, "post", "https://example.com/")[-1]
+
+        ssl_context = request.kwargs["ssl"]
+        certs = ssl_context.get_ca_certs()
+        assert certs[0]["subject"][4][0] == ("organizationalUnitName", "rasa")
+
+
+async def test_endpoint_config_with_non_existent_cafile(tmp_path: Path):
+    cafile = "data/test_endpoints/no_file.pem"
+
+    endpoint = endpoint_utils.EndpointConfig(
+        "https://example.com/", cafile=str(cafile),
+    )
+
+    with pytest.raises(FileNotFoundException):
+        await endpoint.request("post",)
+
+
 def test_endpoint_config_default_token_name():
     test_data = {"url": "http://test", "token": "token"}
 
@@ -131,6 +165,17 @@ async def test_request_non_json_response():
 def test_read_endpoint_config(filename: Text, endpoint_type: Text):
     conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)
     assert isinstance(conf, endpoint_utils.EndpointConfig)
+
+
+@pytest.mark.parametrize(
+    "endpoint_type, cafile",
+    [("action_endpoint", "./some_test_file"), ("tracker_store", None)],
+)
+def test_read_endpoint_config_with_cafile(endpoint_type: Text, cafile: Optional[Text]):
+    conf = endpoint_utils.read_endpoint_config(
+        "data/test_endpoints/example_endpoints.yml", endpoint_type
+    )
+    assert conf.cafile == cafile
 
 
 @pytest.mark.parametrize(
