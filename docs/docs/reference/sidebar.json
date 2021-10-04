@@ -215,6 +215,7 @@
         },
         {
           "items": [
+            "reference/rasa/graph_components/validators/default_recipe_validator",
             "reference/rasa/graph_components/validators/finetuning_validator"
           ],
           "label": "rasa.graph_components.validators",

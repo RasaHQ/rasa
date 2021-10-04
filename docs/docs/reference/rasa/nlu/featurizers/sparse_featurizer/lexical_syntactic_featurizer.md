@@ -60,15 +60,6 @@ def validate_config(cls, config: Dict[Text, Any]) -> None
 
 Validates that the component is configured properly.
 
-#### validate\_compatibility\_with\_tokenizer
-
-```python
-@classmethod
-def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]) -> None
-```
-
-Validate a configuration for this component in the context of a recipe.
-
 #### train
 
 ```python
@@ -85,6 +76,14 @@ Trains the featurizer.
 **Returns**:
 
   the resource from which this trained component can be loaded
+
+#### warn\_if\_pos\_features\_cannot\_be\_computed
+
+```python
+def warn_if_pos_features_cannot_be_computed(training_data: TrainingData) -> None
+```
+
+Warn if part-of-speech features are needed but not given.
 
 #### process
 

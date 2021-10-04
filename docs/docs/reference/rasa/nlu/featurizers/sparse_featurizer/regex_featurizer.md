@@ -92,12 +92,3 @@ def validate_config(cls, config: Dict[Text, Any]) -> None
 
 Validates that the component is configured properly.
 
-#### validate\_compatibility\_with\_tokenizer
-
-```python
-@classmethod
-def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]) -> None
-```
-
-Validates that the featurizer is compatible with the given tokenizer.
-

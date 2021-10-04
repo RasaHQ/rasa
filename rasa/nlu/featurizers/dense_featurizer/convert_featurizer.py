@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import os
-from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
+from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple
 
 from tensorflow.python.eager.wrap_function import WrappedFunction
 from tqdm import tqdm
@@ -13,7 +13,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
 import rasa.core.utils
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -123,13 +123,6 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
         cls._validate_model_url(config)
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
-        pass
 
     @staticmethod
     def _validate_model_files_exist(model_directory: Text) -> None:

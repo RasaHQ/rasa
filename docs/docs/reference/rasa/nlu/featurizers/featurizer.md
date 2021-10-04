@@ -43,16 +43,6 @@ def validate_config(cls, config: Dict[Text, Any]) -> None
 
 Validates that the component is configured properly.
 
-#### validate\_compatibility\_with\_tokenizer
-
-```python
-@classmethod
-@abstractmethod
-def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]) -> None
-```
-
-Validates that the featurizer is compatible with the given tokenizer.
-
 #### add\_features\_to\_message
 
 ```python
@@ -68,11 +58,11 @@ Adds sequence and sentence features for the attribute to the given message.
 - `attribute` - the attribute which both features describe
 - `message` - the message to which we want to add those features
 
-#### validate\_configs\_compatible
+#### raise\_if\_featurizer\_configs\_are\_not\_compatible
 
 ```python
 @staticmethod
-def validate_configs_compatible(featurizer_configs: Iterable[Dict[Text, Any]]) -> None
+def raise_if_featurizer_configs_are_not_compatible(featurizer_configs: Iterable[Dict[Text, Any]]) -> None
 ```
 
 Validates that the given configurations of featurizers can be used together.

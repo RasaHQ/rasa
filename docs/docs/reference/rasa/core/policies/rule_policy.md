@@ -48,6 +48,24 @@ def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Res
 
 Initializes the policy.
 
+#### raise\_if\_incompatible\_with\_domain
+
+```python
+@classmethod
+def raise_if_incompatible_with_domain(cls, config: Dict[Text, Any], domain: Domain) -> None
+```
+
+Checks whether the domains action names match the configured fallback.
+
+**Arguments**:
+
+- `config` - configuration of a `RulePolicy`
+- `domain` - a domain
+
+**Raises**:
+
+  `InvalidDomain` if this policy is incompatible with the domain
+
 #### train
 
 ```python

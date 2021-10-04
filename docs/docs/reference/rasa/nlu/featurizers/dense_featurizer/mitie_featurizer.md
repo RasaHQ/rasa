@@ -54,15 +54,6 @@ def validate_config(cls, config: Dict[Text, Any]) -> None
 
 Validates that the component is configured properly.
 
-#### validate\_compatibility\_with\_tokenizer
-
-```python
-@classmethod
-def validate_compatibility_with_tokenizer(cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]) -> None
-```
-
-Validate a configuration for this component in the context of a recipe.
-
 #### ndim
 
 ```python

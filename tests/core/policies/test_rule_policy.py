@@ -3044,3 +3044,9 @@ def test_invalid_fallback_action_name(policy_with_config: Callable[..., RulePoli
 
     with pytest.raises(InvalidDomain):
         policy.train([], Domain.empty())
+
+
+def test_raise_if_incompatible_with_domain():
+    config = {"core_fallback_action_name": "bla bla"}
+    with pytest.raises(InvalidDomain):
+        RulePolicy.raise_if_incompatible_with_domain(config, Domain.empty())

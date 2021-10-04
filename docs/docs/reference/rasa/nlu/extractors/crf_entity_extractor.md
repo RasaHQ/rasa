@@ -2,6 +2,14 @@
 sidebar_label: rasa.nlu.extractors.crf_entity_extractor
 title: rasa.nlu.extractors.crf_entity_extractor
 ---
+## CRFEntityExtractorOptions Objects
+
+```python
+class CRFEntityExtractorOptions(str,  Enum)
+```
+
+Features that can be used for the &#x27;CRFEntityExtractor&#x27;.
+
 ## CRFEntityExtractorGraphComponent Objects
 
 ```python
