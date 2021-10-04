@@ -27,7 +27,9 @@ logger = logging.getLogger(__name__)
 
 
 @DefaultV1Recipe.register(
-    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+    is_trainable=True,
+    model_from="MitieNLPGraphComponent",
 )
 class MitieIntentClassifierGraphComponent(GraphComponent):
     """Intent classifier which uses the `mitie` library."""
