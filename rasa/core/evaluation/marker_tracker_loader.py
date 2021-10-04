@@ -17,7 +17,7 @@ def strategy_first_n(keys: List[Text], count: int) -> Iterable[Text]:
 
 
 def strategy_sample(keys: List[Text], count: int) -> Iterable[Text]:
-    """Takes a sample of N keys from the set of keys."""
+    """Samples N unique keys from the set of keys."""
     return random.sample(keys, k=count)
 
 
@@ -52,7 +52,7 @@ class MarkerTrackerLoader:
         if strategy not in MarkerTrackerLoader._STRATEGY_MAP:
             raise RasaException(
                 "Invalid strategy for loading markers - '{strategy}' was given, \
-                options 'all', 'sample', or 'first_n' exist"
+                options 'all', 'sample', or 'first_n' exist."
             )
 
         self.strategy = MarkerTrackerLoader._STRATEGY_MAP[strategy]
@@ -60,18 +60,18 @@ class MarkerTrackerLoader:
         if strategy != "all":
             if not count:
                 raise RasaException(
-                    "Desired tracker count must be given for strategy '{strategy}'"
+                    "Desired tracker count must be given for strategy '{strategy}'."
                 )
 
             if count < 1:
                 # If count is ever < 1, user has an error, so issue exception
-                raise RasaException("Parameter 'count' must be set to at least 1")
+                raise RasaException("Parameter 'count' must be greater than 0.")
 
         self.count = count
 
         if count and strategy == "all":
             rasa.shared.utils.io.raise_warning(
-                "Parameter 'count' is ignored by strategy 'all'"
+                "Parameter 'count' is ignored by strategy 'all'."
             )
             self.count = None
 
@@ -80,7 +80,7 @@ class MarkerTrackerLoader:
                 random.seed(seed)
             else:
                 rasa.shared.utils.io.raise_warning(
-                    "Parameter 'seed' is ignored by strategy '{strategy}'"
+                    "Parameter 'seed' is ignored by strategy '{strategy}'."
                 )
 
     def load(self) -> Iterator[Optional[DialogueStateTracker]]:
@@ -89,7 +89,7 @@ class MarkerTrackerLoader:
         if self.count is not None and self.count > len(stored_keys):
             # Warn here as user may have overestimated size of data set
             rasa.shared.utils.io.raise_warning(
-                "'count' exceeds number of trackers in the store"
+                "'count' exceeds number of trackers in the store."
             )
             self.count = len(stored_keys)
 
