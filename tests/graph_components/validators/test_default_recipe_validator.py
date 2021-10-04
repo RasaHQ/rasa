@@ -542,7 +542,7 @@ def test_nlu_warn_of_competition_with_regex_extractor(
             UserWarning,
             match=(
                 f"You have an overlap between the "
-                f"{RegexEntityExtractorGraphComponent.__name__} and the statistical"
+                f"'{RegexEntityExtractorGraphComponent.__name__}' and the statistical"
             ),
         ):
             validator.validate(importer)
