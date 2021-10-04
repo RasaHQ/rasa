@@ -147,7 +147,7 @@ def setup_tf_environment() -> None:
 
 
 def check_deterministic_ops() -> None:
-    """Check whether user has set """
+    """Warn user if they have set TF_DETERMINISTIC_OPS."""
     if os.getenv(TF_DETERMINISTIC_OPS, False):
         raise UserWarning(
             f"You have set '{TF_DETERMINISTIC_OPS}' to 1. If you are "
