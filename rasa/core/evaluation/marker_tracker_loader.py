@@ -89,7 +89,8 @@ class MarkerTrackerLoader:
         if self.count is not None and self.count > len(stored_keys):
             # Warn here as user may have overestimated size of data set
             rasa.shared.utils.io.raise_warning(
-                "'count' exceeds number of trackers in the store."
+                "'count' exceeds number of trackers in the store -\
+                    all trackers will be processed."
             )
             self.count = len(stored_keys)
 
