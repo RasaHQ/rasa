@@ -27,8 +27,11 @@ def test_load_sample(marker_trackerstore: TrackerStore):
 
     assert len(result) == 3
 
+    senders = set()
     for item in result:
         assert marker_trackerstore.exists(item.sender_id)
+        assert item.sender_id not in senders
+        senders.add(item.sender_id)
 
 
 def test_load_sample_with_seed(marker_trackerstore: TrackerStore):
@@ -68,20 +71,26 @@ def test_load_all(marker_trackerstore: TrackerStore):
 
 def test_exception_invalid_strategy(marker_trackerstore: TrackerStore):
     """Tests an exception is thrown when an invalid strategy is used."""
-    with pytest.raises(RasaException):  # Make this more specific
+    with pytest.raises(RasaException):
         MarkerTrackerLoader(marker_trackerstore, "summon")
 
 
 def test_exception_no_count(marker_trackerstore: TrackerStore):
     """Tests an exception is thrown when no count is given for non-'all' strategies."""
-    with pytest.raises(RasaException):  # Make this more specific
+    with pytest.raises(RasaException):
         MarkerTrackerLoader(marker_trackerstore, "sample")
+
+
+def test_exception_zero_count(marker_trackerstore: TrackerStore):
+    """Tests an exception is thrown when an invalid count is given."""
+    with pytest.raises(RasaException):
+        MarkerTrackerLoader(marker_trackerstore, "sample", 0)
 
 
 def test_exception_negative_count(marker_trackerstore: TrackerStore):
     """Tests an exception is thrown when an invalid count is given."""
-    with pytest.raises(RasaException):  # Make this more specific
-        MarkerTrackerLoader(marker_trackerstore, "sample")
+    with pytest.raises(RasaException):
+        MarkerTrackerLoader(marker_trackerstore, "sample", -1)
 
 
 def test_warn_seed_unnecessary(marker_trackerstore: TrackerStore):

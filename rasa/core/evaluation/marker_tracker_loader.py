@@ -63,14 +63,9 @@ class MarkerTrackerLoader:
                     "Desired tracker count must be given for strategy '{strategy}'"
                 )
 
-            if count < 0:
-                # Prefer exception here because if count is ever passed less than 0
-                # something has definitely gone wrong, but if count exceeds population
-                # size that might be someone overestimating how much data they have so
-                # prefer to warn for that case and round down
-                raise RasaException(
-                    "Parameter 'count' must be greater than or equal to 0"
-                )
+            if count < 1:
+                # If count is ever < 1, user has an error, so issue exception
+                raise RasaException("Parameter 'count' must be set to at least 1")
 
         self.count = count
 
@@ -92,6 +87,7 @@ class MarkerTrackerLoader:
         """Loads trackers according to strategy."""
         stored_keys = list(self.tracker_store.keys())
         if self.count is not None and self.count > len(stored_keys):
+            # Warn here as user may have overestimated size of data set
             rasa.shared.utils.io.raise_warning(
                 "'count' exceeds number of trackers in the store"
             )
