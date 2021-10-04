@@ -985,34 +985,37 @@ class ActionExtractSlots(Action):
                 None,
             )
 
-        if custom_action:
-            remote_action = RemoteAction(custom_action, self.action_endpoint)
-            disallowed_types = set()
+        if not custom_action:
+            return []
 
-            try:
-                custom_events = await remote_action.run(
-                    output_channel, nlg, tracker, domain
-                )
-                for event in custom_events:
-                    if isinstance(event, (SlotSet, BotUttered)):
-                        slot_events.append(event)
-                    else:
-                        disallowed_types.add(event.type_name)
-            except (RasaException, ClientResponseError) as e:
-                rasa.shared.utils.io.raise_warning(
-                    f"Failed to execute custom action '{custom_action}' "
-                    f"as a result of error '{str(e)}'. The default action"
-                    f"extract slots failed to fill slots with custom "
-                    f"mappings."
-                )
+        remote_action = RemoteAction(custom_action, self.action_endpoint)
+        disallowed_types = set()
 
-            for type_name in disallowed_types:
-                logger.info(
-                    f"Running custom action '{custom_action} has resulted"
-                    f" in an event of type '{type_name}'. This is "
-                    f"disallowed and the tracker will not be"
-                    f" updated with this event."
-                )
+        try:
+            custom_events = await remote_action.run(
+                output_channel, nlg, tracker, domain
+            )
+            for event in custom_events:
+                if isinstance(event, (SlotSet, BotUttered)):
+                    slot_events.append(event)
+                else:
+                    disallowed_types.add(event.type_name)
+        except (RasaException, ClientResponseError) as e:
+            rasa.shared.utils.io.raise_warning(
+                f"Failed to execute custom action '{custom_action}' "
+                f"as a result of error '{str(e)}'. The default action"
+                f"extract slots failed to fill slots with custom "
+                f"mappings."
+            )
+
+        for type_name in disallowed_types:
+            logger.info(
+                f"Running custom action '{custom_action} has resulted"
+                f" in an event of type '{type_name}'. This is "
+                f"disallowed and the tracker will not be"
+                f" updated with this event."
+            )
+
         return slot_events
 
     async def run(
