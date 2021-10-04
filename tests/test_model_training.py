@@ -974,3 +974,62 @@ def test_invalid_graph_schema(
             [stories_path, nlu_data_path],
             output=str(tmp_path),
         )
+
+
+def test_fingerprint_changes_if_module_changes(
+    tmp_path: Path, domain_path: Text, stories_path: Text, monkeypatch: MonkeyPatch
+):
+    my_module = textwrap.dedent(
+        """
+    from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+    from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+
+    @DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+    )
+    class MyModuleGraphComponent(RulePolicyGraphComponent):
+        pass
+    """
+    )
+    module_name = "my_module"
+    Path(tmp_path, f"{module_name}.py").write_text(my_module)
+
+    config = textwrap.dedent(
+        """
+    version: "2.0"
+    recipe: "default.v1"
+
+    policies:
+    - name: my_module.MyModule
+    """
+    )
+    monkeypatch.syspath_prepend(tmp_path)
+
+    new_config_path = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(
+        rasa.shared.utils.io.read_yaml(config), new_config_path
+    )
+
+    rasa.train(
+        domain_path, str(new_config_path), [stories_path], output=str(tmp_path),
+    )
+
+    my_module = textwrap.dedent(
+        f"""
+    {my_module}
+    def say_hi():
+        print("this changes everything")
+    """
+    )
+    Path(tmp_path, f"{module_name}.py").write_text(my_module)
+
+    result = rasa.train(
+        domain_path,
+        str(new_config_path),
+        [stories_path],
+        output=str(tmp_path),
+        dry_run=True,
+    )
+
+    assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
+    assert not result.dry_run_results["train_my_module.MyModule0"].is_hit
