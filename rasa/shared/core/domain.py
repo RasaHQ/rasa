@@ -43,6 +43,7 @@ from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
+from rasa.shared.core.constants import SLOT_MAPPINGS, MAPPING_CONDITIONS, ACTIVE_LOOP
 
 
 if TYPE_CHECKING:
@@ -1227,8 +1228,6 @@ class Domain:
         Returns:
             A list of `SlotSet` events.
         """
-        # TODO: revisit/remove method after this is fixed:
-        #  https://github.com/RasaHQ/rasa/issues/9364
         if self.store_entities_as_slots:
             slot_events = []
             for slot in self.slots:
@@ -1239,8 +1238,8 @@ class Domain:
                         [
                             entity.get("entity") == mapping.get("entity")
                             for mapping in slot.mappings
-                            if mapping.get("type") == "from_entity"
-                            and mapping.get("conditions") is None
+                            if mapping.get("type") == str(SlotMapping.FROM_ENTITY)
+                            and mapping.get(MAPPING_CONDITIONS) is None
                         ]
                     )
                 ]
@@ -1962,20 +1961,15 @@ def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> 
         all_required_slots = set(chain.from_iterable(all_form_slots))
 
         for slot, properties in domain_slots.items():
-            for mapping in properties["mappings"]:
-
-                if "conditions" in mapping:
-                    for condition in mapping["conditions"]:
-                        if (
-                            condition["active_loop"] == form_name
-                            and slot not in form_slots
-                        ):
-                            raise InvalidDomain(
-                                f"Slot '{slot}' has a mapping condition for form "
-                                f"'{form_name}', but it's not present in form "
-                                f"'{REQUIRED_SLOTS_KEY}'."
-                                f"The slot needs to be added to this key."
-                            )
+            for mapping in properties[SLOT_MAPPINGS]:
+                for condition in mapping.get(MAPPING_CONDITIONS, []):
+                    if condition[ACTIVE_LOOP] == form_name and slot not in form_slots:
+                        raise InvalidDomain(
+                            f"Slot '{slot}' has a mapping condition for form "
+                            f"'{form_name}', but it's not present in '{form_name}'"
+                            f" form's '{REQUIRED_SLOTS_KEY}'."
+                            f"The slot needs to be added to this key."
+                        )
 
                 if (
                     mapping.get("type") == str(SlotMapping.FROM_TRIGGER_INTENT)
@@ -1999,7 +1993,6 @@ def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
         f" new explicit mechanism to set slots. "
         f"Please refer to {DOCS_URL_SLOTS} to learn more.",
         UserWarning,
-        DOCS_URL_SLOTS,
     )
 
     for slot_name, properties in domain_slots.items():

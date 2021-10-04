@@ -1799,8 +1799,11 @@ def test_domain_slots_for_entities_sets_valid_slot():
 
 
 def test_invalid_domain_from_trigger_intent_mapping_slot_not_in_forms():
-
-    with pytest.raises(InvalidDomain) as e:
+    message = (
+        "Slot 'started_booking_form' has a from_trigger_intent mapping, "
+        "but it's not listed in any form 'required_slots'."
+    )
+    with pytest.raises(InvalidDomain, match=message):
         Domain.from_yaml(
             textwrap.dedent(
                 """
@@ -1832,14 +1835,13 @@ def test_invalid_domain_from_trigger_intent_mapping_slot_not_in_forms():
             )
         )
 
-    assert (
-        "Slot 'started_booking_form' has a from_trigger_intent mapping, "
-        "but it's not listed in any form 'required_slots'." in str(e)
-    )
-
 
 def test_invalid_domain_slot_with_mapping_conditions_not_in_form():
-    with pytest.raises(InvalidDomain) as e:
+    message = (
+        "Slot 'location' has a mapping condition for form 'booking_form', "
+        "but it's not present in 'booking_form' form's 'required_slots'."
+    )
+    with pytest.raises(InvalidDomain, match=message):
         Domain.from_yaml(
             textwrap.dedent(
                 """
@@ -1870,7 +1872,3 @@ def test_invalid_domain_slot_with_mapping_conditions_not_in_form():
             """
             )
         )
-    assert (
-        "Slot 'location' has a mapping condition for form 'booking_form', "
-        "but it's not present in form 'required_slots'." in str(e)
-    )
