@@ -55,7 +55,7 @@ class DummyImporter(TrainingDataImporter):
         training_data: Optional[TrainingData] = None,
         config: Optional[Dict[Text, Any]] = None,
         domain: Optional[Domain] = None,
-    ):
+    ) -> None:
         self.training_data = training_data or TrainingData([])
         self.config = config or {}
         self.domain = domain or Domain.empty()

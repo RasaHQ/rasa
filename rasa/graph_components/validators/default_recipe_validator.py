@@ -74,13 +74,7 @@ def _types_to_str(types: Iterable[Type]) -> Text:
 
 
 class DefaultV1RecipeValidator(GraphComponent):
-    """Validates the current graph schema against the training data and domain.
-
-    This validator is just a replacement for the configuration checks done in Rasa 2.x
-    and should only be used for "default v1" configurations.
-    E.g. it just checks whether a tokenizer exists somewhere in the given graph schema,
-    but it does not check whether the tokenizer appears on the right paths.
-    """
+    """Validates a "DefaultV1" configuration against the training data and domain."""
 
     @classmethod
     def create(
@@ -112,6 +106,8 @@ class DefaultV1RecipeValidator(GraphComponent):
 
         Args:
             importer: the training data importer which can also load the domain
+        Raises:
+            `InvalidConfigException` or `InvalidDomain` in case there is some mismatch
         """
         nlu_data = importer.get_nlu_data()
         self._validate_nlu(nlu_data)
