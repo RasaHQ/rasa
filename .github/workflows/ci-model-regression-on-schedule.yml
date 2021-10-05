@@ -165,6 +165,12 @@ jobs:
               && echo "::set-output name=is_config_exists::false" && exit 0)
           fi
 
+          # Skip job if dataset is Hermit and config is BERT + DIET(seq) + ResponseSelector(t2t) or Sparse + BERT + DIET(seq) + ResponseSelector(t2t)
+          if [[ "${{ matrix.dataset }}" == "Hermit" && "${{ matrix.config }}" =~ "BERT + DIET(seq) + ResponseSelector(t2t)" ]]; then
+            echo "::warning::This ${{ matrix.dataset }} dataset / ${{ matrix.config }} config is currently being skipped due to OOM associated with the upgrade to TF 2.6." \
+              && echo "::set-output name=is_config_exists::false" && exit 0
+          fi
+
           # Skip job if a given type is not available for a given dataset
           if [[ -z "${DOMAIN_FILE}" && "${{ matrix.type }}" == "core" ]]; then
             echo "::warning::The ${{ matrix.dataset }} dataset doesn't include core type. Skipping the job." \
