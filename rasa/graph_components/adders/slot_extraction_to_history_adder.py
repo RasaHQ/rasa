@@ -4,7 +4,11 @@ import logging
 import rasa.core.actions.action
 from typing import Dict, Text, Any, Optional
 
-from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
+from rasa.core.channels.channel import (
+    OutputChannel,
+    CollectingOutputChannel,
+    UserMessage,
+)
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -39,14 +43,13 @@ class SlotExtractionToHistoryAdder(GraphComponent):
         domain: Domain,
         nlg: NaturalLanguageGenerator,
         message: UserMessage,
+        output_channel: OutputChannel = CollectingOutputChannel(),
     ) -> DialogueStateTracker:
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, domain, endpoint_config,
         )
         output_channel = (
-            message.output_channel
-            if message.output_channel
-            else CollectingOutputChannel()
+            message.output_channel if message.output_channel else output_channel
         )
         extraction_events = await action_extract_slots.run(
             output_channel, nlg, tracker, domain
