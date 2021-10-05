@@ -7,7 +7,6 @@ from typing import Dict, Text, Any, Optional
 from rasa.core.channels.channel import (
     OutputChannel,
     CollectingOutputChannel,
-    UserMessage,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -36,20 +35,28 @@ class SlotExtractionToHistoryAdder(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         return cls()
 
-    def add(
+    async def add(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
         nlg: NaturalLanguageGenerator,
-        message: UserMessage,
         endpoint_config: Optional[EndpointConfig] = None,
         output_channel: Optional[OutputChannel] = CollectingOutputChannel(),
     ) -> DialogueStateTracker:
+        """Adds slot extraction to the tracker.
+
+        Args:
+            tracker: The tracker the predictions should be attached to
+            domain: The domain of the model.
+            nlg: Indicates which natural language generator will be used.
+            endpoint_config: The endpoint configuration.
+            output_channel: The output channel which can be used to send messages.
+
+        Returns:
+            The original tracker updated with events created from the slot extractions.
+        """
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, domain, endpoint_config,
-        )
-        output_channel = (
-            message.output_channel if message.output_channel else output_channel
         )
         extraction_events = await action_extract_slots.run(
             output_channel, nlg, tracker, domain

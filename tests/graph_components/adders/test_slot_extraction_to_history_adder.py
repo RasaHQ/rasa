@@ -1,48 +1,18 @@
-from rasa.shared.core.events import UserUttered
-from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT
-from rasa.core.channels.channel import UserMessage
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-import pytest
-import freezegun
-from typing import Text, List
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.training_data.message import Message
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.domain import Domain
 from rasa.graph_components.adders.slot_extraction_to_history_adder import (
-    SlotExtractionToHistoryAdder
+    SlotExtractionToHistoryAdder,
 )
 
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import SlotSet
+from rasa.shared.core.trackers import DialogueStateTracker
 
-@pytest.mark.parametrize(
-    "messages,expected,input_channel",
-    [
-        ([], [], "slack"),
-        (
-                [
-                    Message(
-                        {TEXT: "message 1", INTENT: {}, ENTITIES: [{}], "message_id": "1",}
-                    ),
-                ],
-                [
-                    UserUttered(
-                        "message 1", {}, [{}], None, None, "slack", "1", {"meta": "meta"}
-                    ),
-                ],
-                "slack",
-        ),
-    ],
-)
-@freezegun.freeze_time("2018-01-01")
-def test_prediction_adder_add_message(
-        default_model_storage: ModelStorage,
-        default_execution_context: ExecutionContext,
-        moodbot_domain: Domain,
-        messages: List[Message],
-        expected: List[UserUttered],
-        input_channel: Text,
+
+async def test_prediction_adder_add_message(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
 ):
     component = SlotExtractionToHistoryAdder.create(
         {**SlotExtractionToHistoryAdder.get_default_config()},
@@ -51,20 +21,19 @@ def test_prediction_adder_add_message(
         default_execution_context,
     )
 
+    domain = Domain.from_dict(
+        {
+            "slots": {
+                "some_slot": {
+                    "type": "any",
+                    "mappings": [{"type": "from_intent", "value": "test"}],
+                }
+            }
+        }
+    )
+
     tracker = DialogueStateTracker("test", None)
     nlg = TemplatedNaturalLanguageGenerator(domain.responses)
-    original_message = UserMessage(
-        text="hello", input_channel=input_channel, metadata={"meta": "meta"}
-    )
-    tracker = component.add(tracker, domain, nlg, original_message)
+    tracker = await component.add(tracker, domain, nlg)
 
-    assert len(tracker.events) == len(messages)
-    for i, _ in enumerate(messages):
-        assert isinstance(tracker.events[i], UserUttered)
-        assert tracker.events[i].text == expected[i].text
-        assert tracker.events[i].intent == expected[i].intent
-        assert tracker.events[i].entities == expected[i].entities
-        assert tracker.events[i].input_channel == expected[i].input_channel
-        assert tracker.events[i].message_id == expected[i].message_id
-        assert tracker.events[i].metadata == expected[i].metadata
-        assert tracker.events[i] == expected[i]
+    assert SlotSet("some_slot", "test") in tracker.events
