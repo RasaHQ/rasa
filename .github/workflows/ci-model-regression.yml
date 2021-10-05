@@ -244,6 +244,11 @@ jobs:
           echo "::set-output name=is_config_exists::true"
           echo "::set-output name=is_external::${IS_EXTERNAL}"
 
+          # Warn about job if dataset is Hermit and config is BERT + DIET(seq) + ResponseSelector(t2t) or Sparse + BERT + DIET(seq) + ResponseSelector(t2t)
+          if [[ "${{ matrix.dataset }}" == "Hermit" && "${{ matrix.config }}" =~ "BERT + DIET(seq) + ResponseSelector(t2t)" ]]; then
+            echo "::warning::This ${{ matrix.dataset }} dataset / ${{ matrix.config }} config is currently being skipped on scheduled tests due to OOM associated with the upgrade to TF 2.6. You may see OOM here."
+          fi
+
           if [[ "${IS_EXTERNAL}" == "true" ]]; then
             echo "DATASET_DIR=dataset_external" >> $GITHUB_ENV
           else
