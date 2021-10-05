@@ -38,12 +38,12 @@ class SlotExtractionToHistoryAdder(GraphComponent):
 
     def add(
         self,
-        endpoint_config: Optional[EndpointConfig],
         tracker: DialogueStateTracker,
         domain: Domain,
         nlg: NaturalLanguageGenerator,
         message: UserMessage,
-        output_channel: OutputChannel = CollectingOutputChannel(),
+        endpoint_config: Optional[EndpointConfig] = None,
+        output_channel: Optional[OutputChannel] = CollectingOutputChannel(),
     ) -> DialogueStateTracker:
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, domain, endpoint_config,
