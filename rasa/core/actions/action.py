@@ -47,6 +47,7 @@ from rasa.shared.core.events import (
     Restarted,
     SessionStarted,
 )
+from rasa.shared.core.slots import ListSlot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
@@ -1032,6 +1033,12 @@ class ActionExtractSlots(Action):
             slot for slot in domain.slots if slot.name not in DEFAULT_SLOT_NAMES
         ]
 
+        predefined_mappings = {
+            str(SlotMapping.FROM_ENTITY),
+            str(SlotMapping.FROM_INTENT),
+            str(SlotMapping.FROM_TEXT),
+        }
+
         for slot in user_slots:
             for mapping in slot.mappings:
                 # skip to the next mapping because a mapping with conditions
@@ -1039,62 +1046,64 @@ class ActionExtractSlots(Action):
                 if mapping.get("conditions"):
                     continue
 
+                if mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT):
+                    # skip, applicable only when activating form
+                    continue
+
                 intent_is_desired = SlotMapping.intent_is_desired(
                     mapping, tracker, domain
                 )
 
-                should_fill_trigger_slot = (
-                    mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
-                    and intent_is_desired
-                )
-
-                if should_fill_trigger_slot:
-                    # skip, only applicable in an active loop
+                if not intent_is_desired:
                     continue
 
-                should_fill_custom_slot = (
-                    mapping["type"] == str(SlotMapping.CUSTOM) and intent_is_desired
-                )
-
-                should_fill_entity_slot = (
-                    mapping["type"] == str(SlotMapping.FROM_ENTITY)
-                    and intent_is_desired
-                    and SlotMapping.entity_is_desired(mapping, tracker,)
-                )
-
-                should_fill_intent_slot = (
-                    mapping["type"] == str(SlotMapping.FROM_INTENT)
-                    and intent_is_desired
-                )
-
-                should_fill_text_slot = (
-                    mapping["type"] == str(SlotMapping.FROM_TEXT) and intent_is_desired
-                )
-
-                value: List[Any] = []
-                if should_fill_entity_slot:
-                    value = list(
-                        tracker.get_latest_entity_values(
-                            mapping.get(ENTITY_ATTRIBUTE_TYPE),
-                            mapping.get(ENTITY_ATTRIBUTE_ROLE),
-                            mapping.get(ENTITY_ATTRIBUTE_GROUP),
-                        )
-                    )
-                elif should_fill_intent_slot:
-                    value = [mapping.get("value")]
-                elif should_fill_text_slot:
-                    value = [tracker.latest_message.text]
-                elif should_fill_custom_slot:
-                    custom_evts = await self._execute_custom_action(
-                        mapping, output_channel, nlg, tracker, domain
-                    )
-                    slot_events.extend(custom_evts)
+                if mapping["type"] in predefined_mappings:
+                    value = extract_slot_value_from_predefined_mapping(mapping, tracker)
+                else:
+                    value = None
 
                 if value:
-                    if slot.type_name != "list":
+                    if not isinstance(slot, ListSlot):
                         value = value[-1]
 
                     if tracker.get_slot(slot.name) != value:
                         slot_events.append(SlotSet(slot.name, value))
 
+                should_fill_custom_slot = mapping["type"] == str(SlotMapping.CUSTOM)
+
+                if should_fill_custom_slot:
+                    custom_evts = await self._execute_custom_action(
+                        mapping, output_channel, nlg, tracker, domain
+                    )
+                    slot_events.extend(custom_evts)
+
         return slot_events
+
+
+def extract_slot_value_from_predefined_mapping(
+    mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+) -> Any:
+    """Extracts slot value if slot has an applicable predefined mapping."""
+    should_fill_entity_slot = mapping["type"] == str(
+        SlotMapping.FROM_ENTITY
+    ) and SlotMapping.entity_is_desired(mapping, tracker,)
+
+    should_fill_intent_slot = mapping["type"] == str(SlotMapping.FROM_INTENT)
+
+    should_fill_text_slot = mapping["type"] == str(SlotMapping.FROM_TEXT)
+
+    value: List[Any] = []
+    if should_fill_entity_slot:
+        value = list(
+            tracker.get_latest_entity_values(
+                mapping.get(ENTITY_ATTRIBUTE_TYPE),
+                mapping.get(ENTITY_ATTRIBUTE_ROLE),
+                mapping.get(ENTITY_ATTRIBUTE_GROUP),
+            )
+        )
+    elif should_fill_intent_slot:
+        value = [mapping.get("value")]
+    elif should_fill_text_slot:
+        value = [tracker.latest_message.text]
+
+    return value
