@@ -111,6 +111,14 @@ validate_request_body(request: Request, error_message: Text) -> None
 
 Check if `request` has a body.
 
+#### validate\_events\_in\_request\_body
+
+```python
+validate_events_in_request_body(request: Request) -> None
+```
+
+Validates events format in request body.
+
 #### authenticate
 
 ```python

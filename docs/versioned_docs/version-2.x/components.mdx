@@ -260,6 +260,26 @@ now implements its behavior.
 
     Creates a token for every whitespace separated character sequence.
 
+    Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
+    splitting on whitespace if the character fulfills any of the following conditions:
+    - the character follows a whitespace: `" !word"` &#8594; `"word"`
+    - the character precedes a whitespace: `"word! "` &#8594; `"word"`
+    - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
+    - the character is at the end of the string: `"word!"` &#8594; `"word"`
+
+    Note that:
+    - `"wo!rd"` &#8594; `"wo!rd"`
+
+    In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
+    substituted with whitespace before splitting on whitespace if the character is not
+    between numbers:
+    - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
+    - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
+
+    Note that:
+    - `"name@example.com"` &#8594; `"name@example.com"`
+    - `"10,000.1"` &#8594; `"10,000.1"`
+    - `"1 - 2"` &#8594; `"1"`,`"2"`
 
 
   * **Configuration**
@@ -466,11 +486,6 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
       "model_url": None
     ```
 
-  :::note
-  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
-  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
-
-  :::
 
 
   ### LanguageModelTokenizer
@@ -695,8 +710,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```yaml-rasa
   pipeline:
   - name: "ConveRTFeaturizer"
+  # Remote URL/Local directory of model files(Required)
+  "model_url": None
   ```
 
+  :::caution
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
 
 ### LanguageModelFeaturizer
 
@@ -1690,7 +1712,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 * **Short**
 
   Classifies a message with the intent `nlu_fallback` if the NLU intent classification
-  scores are ambiguous. The confidence is set to `1 - top intent confidence`.
+  scores are ambiguous. The confidence is set to be the same as the `fallback threshold`.
 
 * **Outputs**
 
@@ -1765,6 +1787,10 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
       the difference of the confidence scores for the two highest ranked intents is
       smaller than the `ambiguity_threshold`.
 
+
+:::caution Changed in 2.8
+`FallbackClassifier` used to set the confidence to 1.0 but now follows the fallback `threshold` config value.
+:::
 
 ## Entity Extractors
 
@@ -2924,6 +2950,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | evaluate_on_number_of_examples  | 0                 | How many examples to use for hold out validation set.        |
 |                                 |                   | Large values may hurt performance, e.g. model accuracy.      |
+|                                 |                   | Set to 0 for no validation.                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | use_masked_language_model       | False             | If 'True' random tokens of the input message will be masked  |
 |                                 |                   | and the model should predict those tokens.                   |
@@ -2942,7 +2969,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"           | Define when training metrics for tensorboard should be       |
 |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
-|                                 |                   | training step ("batch").                                 |
+|                                 |                   | training step ("batch").                                     |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | featurizers                     | []                | List of featurizer names (alias names). Only features        |
 |                                 |                   | coming from the listed names are used. If list is empty      |

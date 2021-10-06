@@ -100,7 +100,8 @@
             "reference/rasa/core/policies/rule_policy",
             "reference/rasa/core/policies/sklearn_policy",
             "reference/rasa/core/policies/ted_policy",
-            "reference/rasa/core/policies/two_stage_fallback"
+            "reference/rasa/core/policies/two_stage_fallback",
+            "reference/rasa/core/policies/unexpected_intent_policy"
           ],
           "label": "rasa.core.policies",
           "type": "category"
@@ -385,6 +386,7 @@
             "reference/rasa/utils/tensorflow/environment",
             "reference/rasa/utils/tensorflow/exceptions",
             "reference/rasa/utils/tensorflow/layers",
+            "reference/rasa/utils/tensorflow/layers_utils",
             "reference/rasa/utils/tensorflow/model_data",
             "reference/rasa/utils/tensorflow/model_data_utils",
             "reference/rasa/utils/tensorflow/models",

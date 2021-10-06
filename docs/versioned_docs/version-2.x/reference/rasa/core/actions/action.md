@@ -492,6 +492,40 @@ path. This is deprecated and can be removed once the
 
 Runs action. Please see parent class for the full docstring.
 
+## ActionUnlikelyIntent Objects
+
+```python
+class ActionUnlikelyIntent(Action)
+```
+
+An action that indicates that the intent predicted by NLU is unexpected.
+
+This action can be predicted by `UnexpecTEDIntentPolicy`.
+
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns the name of the action.
+
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
+
+#### has\_user\_affirmed
+
+```python
+has_user_affirmed(tracker: "DialogueStateTracker") -> bool
+```
+
+Indicates if the last executed action is `action_default_ask_affirmation`.
+
 ## ActionDefaultAskAffirmation Objects
 
 ```python

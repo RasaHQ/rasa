@@ -22,7 +22,7 @@ similarities with negative samples.
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, finetune_mode: bool = False) -> None
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, finetune_mode: bool = False, sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None) -> None
 ```
 
 Declare instance variables with default values.

@@ -132,7 +132,7 @@ Predicts the output for the given batch.
 #### run\_inference
 
 ```python
- | run_inference(model_data: RasaModelData, batch_size: Union[int, List[int]] = 1) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
+ | run_inference(model_data: RasaModelData, batch_size: Union[int, List[int]] = 1, output_keys_expected: Optional[List[Text]] = None) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
 ```
 
 Implements bulk inferencing through the model.
@@ -141,6 +141,9 @@ Implements bulk inferencing through the model.
 
 - `model_data` - Input data to be fed to the model.
 - `batch_size` - Size of batches that the generator should create.
+- `output_keys_expected` - Keys which are expected in the output.
+  The output should be filtered to have only these keys before
+  merging it with the output across all batches.
   
 
 **Returns**:
@@ -226,6 +229,43 @@ Calls the model on new inputs.
 ```python
 class TransformerRasaModel(RasaModel)
 ```
+
+#### adjust\_for\_incremental\_training
+
+```python
+ | adjust_for_incremental_training(data_example: Dict[Text, Dict[Text, List[FeatureArray]]], new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]], old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]) -> None
+```
+
+Adjusts the model for incremental training.
+
+First we should check if any of the sparse feature sizes has decreased
+and raise an exception if this happens.
+If none of them have decreased and any of them has increased, then the
+function updates `DenseForSparse` layers, compiles the model, fits a sample
+data on it to activate adjusted layer(s) and updates the data signatures.
+
+New and old sparse feature sizes could look like this:
+{TEXT: {FEATURE_TYPE_SEQUENCE: [4, 24, 128], FEATURE_TYPE_SENTENCE: [4, 128]}}
+
+**Arguments**:
+
+- `data_example` - a data example that is stored with the ML component.
+- `new_sparse_feature_sizes` - sizes of current sparse features.
+- `old_sparse_feature_sizes` - sizes of sparse features the model was
+  previously trained on.
+
+#### dot\_product\_loss\_layer
+
+```python
+ | @property
+ | dot_product_loss_layer() -> tf.keras.layers.Layer
+```
+
+Returns the dot-product loss layer to use.
+
+**Returns**:
+
+  The loss layer that is used by `_prepare_dot_product_loss`.
 
 #### batch\_loss
 

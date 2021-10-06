@@ -11,7 +11,7 @@ class RegexFeaturizer(SparseFeaturizer)
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, known_patterns: Optional[List[Dict[Text, Text]]] = None, pattern_vocabulary_stats: Optional[Dict[Text, int]] = None, finetune_mode: bool = False) -> None
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, known_patterns: Optional[List[Dict[Text, Text]]] = None, finetune_mode: bool = False) -> None
 ```
 
 Constructs new features for regexes and lookup table using regex expressions.
@@ -20,22 +20,7 @@ Constructs new features for regexes and lookup table using regex expressions.
 
 - `component_config` - Configuration for the component
 - `known_patterns` - Regex Patterns the component should pre-load itself with.
-- `pattern_vocabulary_stats` - Statistics about number of pattern slots filled
-  and total number available.
 - `finetune_mode` - Load component in finetune mode.
-
-#### vocabulary\_stats
-
-```python
- | @lazy_property
- | vocabulary_stats() -> Dict[Text, int]
-```
-
-Computes total vocabulary size and how much of it is consumed.
-
-**Returns**:
-
-  Computed vocabulary size and number of filled vocabulary slots.
 
 #### train
 

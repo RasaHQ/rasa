@@ -10,6 +10,78 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.7 to 2.8
+
+:::caution
+This release **breaks backward compatibility of machine learning models**.
+It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
+your assistant before using this version.
+
+:::
+
+### Deprecations
+
+#### Tracker Featurizers
+
+`training_states_actions_and_entities` method of `TrackerFeaturizer`, `FullDialogueTrackerFeaturizer` and
+`MaxHistoryTrackerFeaturizer` classes is deprecated and will be removed in Rasa Open Source 3.0 .
+If you had a custom tracker featurizer which relied on this method from any of the above classes, please use
+`training_states_labels_and_entities` instead.
+
+`training_states_actions` method of `TrackerFeaturizer`, `FullDialogueTrackerFeaturizer` and
+`MaxHistoryTrackerFeaturizer` classes is deprecated and will be removed in Rasa Open Source 3.0 .
+If you had a custom tracker featurizer which relied on this method from any of the above classes, please use
+`training_states_labels` instead.
+
+#### State Featurizer
+
+`encode_all_actions` method of `SingleStateFeaturizer` class is deprecated and will be removed in Rasa Open Source 3.0 .
+It is recommended to use the method `encode_all_labels` instead.
+
+
+### Incremental Training
+
+Users don't need to specify an additional buffer size for sparse featurizers anymore during incremental training.
+
+Space for new sparse features are created dynamically inside the downstream machine learning
+models - `DIETClassifier`, `ResponseSelector`. In other words, no extra buffer is created in
+advance for additional vocabulary items and space will be dynamically allocated for them inside the model.
+
+This means there's no need to specify `additional_vocabulary_size` for
+[`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) or
+`number_additional_patterns` for [`RegexFeaturizer`](./components.mdx#regexfeaturizer).
+These parameters are now deprecated.
+
+**Before**
+```yaml
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "RegexFeaturizer"
+    number_additional_patterns: 100
+  - name: "CountVectorsFeaturizer"
+    additional_vocabulary_size: {text: 100, response: 20}
+```
+
+**Now**
+```yaml
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "RegexFeaturizer"
+  - name: "CountVectorsFeaturizer"
+```
+
+### Machine Learning Components
+
+The option `model_confidence=linear_norm` is deprecated and will be removed in Rasa Open Source `3.0.0`.
+
+Rasa Open Source `2.3.0` introduced `linear_norm` as a possible value for `model_confidence`
+parameter in machine learning components such as `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
+Based on user feedback, we have identified multiple problems with this option.
+Therefore, `model_confidence=linear_norm` is now deprecated and
+will be removed in Rasa Open Source `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
+we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
+we also recommend to [re-tune the thresholds for fallback components](./fallback-handoff.mdx#fallbacks).
+
 ## Rasa 2.5 to 2.6
 
 ### Forms
@@ -83,13 +155,13 @@ To avoid deprecation issues, you should set `connection_density` to
 #### SpaCy 3.0
 
 Rasa now supports spaCy 3.0. This means that we can support more features for more
-languages, but this also introduced a breaking change. SpaCy 3.0 deprecated the
-`spacy link <language model>` command. From now on you need to use the
+languages but this also introduced a breaking change. SpaCy 3.0 deprecated the
+`spacy link <language model>` command. So from now on you need to use the
 [the full model name](https://spacy.io/models) in the `config.yml` file.
 
 **Before**
 
-Before, you could run `spacy link en en_core_web_md` and we would be able
+Before you could run `spacy link en en_core_web_md` and then we would be able
 to pick up the correct model from the `language` parameter.
 
 ```yaml
@@ -1023,12 +1095,15 @@ model before trying to use it with this improved version.
     entity_recognition: False
     use_masked_language_model: False
     BILOU_flag: False
+    scale_loss: True
+    use_sparse_input_dropout: False
+    use_dense_input_dropout: False
     # ... any other parameters
   ```
 
   See [DIETClassifier](./components.mdx#dietclassifier) for more information about the new component.
-  Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, the
-  behavior is unchanged from previous versions.
+  Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, and results in
+  the same behaviour within the same Rasa version. 
 
 * `CRFEntityExtractor` is now deprecated and will be replaced by `DIETClassifier` in the future. If you want to
   get the same model behavior as the current `CRFEntityExtractor`, you can use the following configuration:

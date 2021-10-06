@@ -328,13 +328,13 @@ class ActionDefaultFallback(Action):
         return [ConversationPaused(), UserUtteranceReverted()]
 ```
 
-  :::caution Events Returned By A Custom Ultimate Fallback Action
-    You should include `UserUtteranceReverted()` as one of the events returned by your custom
-    `action_default_fallback`. Not including this event will cause the tracker to include all events that happened
-    during the Two-Stage Fallback process which could interfere with subsequent action predictions from the bot's policy
-    pipeline. It is better to treat events that occurred during the Two-Stage Fallback process as if they did not happen
-    so that your bot can apply its rules or memorized stories to correctly predict the next action.
-  :::
+:::caution Events Returned By A Custom Ultimate Fallback Action
+  You should include `UserUtteranceReverted()` as one of the events returned by your custom
+  `action_default_fallback`. Not including this event will cause the tracker to include all events that happened
+  during the Two-Stage Fallback process which could interfere with subsequent action predictions from the bot's policy
+  pipeline. It is better to treat events that occurred during the Two-Stage Fallback process as if they did not happen
+  so that your bot can apply its rules or memorized stories to correctly predict the next action.
+:::
 
 
 ## Human Handoff
