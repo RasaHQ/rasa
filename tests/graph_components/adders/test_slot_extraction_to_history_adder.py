@@ -8,7 +8,7 @@ from rasa.graph_components.adders.slot_extraction_to_history_adder import (
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -27,13 +27,22 @@ def test_prediction_adder_add_message(
             "slots": {
                 "some_slot": {
                     "type": "any",
-                    "mappings": [{"type": "from_intent", "value": "test"}],
+                    "mappings": [
+                        {"type": "from_intent", "intent": "greet", "value": "test"}
+                    ],
                 }
             }
         }
     )
 
-    tracker = DialogueStateTracker("test", None)
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            UserUttered("Hello", intent={"name": "greet", "confidence": 1.0}),
+            ActionExecuted("utter_greet"),
+        ],
+    )
+
     nlg = TemplatedNaturalLanguageGenerator(domain.responses)
     tracker = component.add(
         tracker, domain, nlg, EndpointConfig("https://example.com/webhooks/actions")
