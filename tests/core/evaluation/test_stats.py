@@ -1,7 +1,6 @@
 import os
 import math
 import numpy as np
-import json
 from rasa.core.evaluation.stats import (
     load_extracted_markers_json_file,
     compute_multi_tracker_stats,
