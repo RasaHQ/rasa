@@ -61,6 +61,14 @@
           "type": "integer",
           "description": "Number of conditional response variations defined in the domain."
         },
+        "num_slot_mappings": {
+          "type": "integer",
+          "description": "Number of slot mappings defined in the domain."
+        },
+        "num_custom_slot_mappings": {
+          "type": "integer",
+          "description": "Number of slot mappings with a custom action defined in the domain."
+        },
         "num_slots": {
           "type": "integer",
           "description": "Number of slots defined in the domain."
