@@ -285,6 +285,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             schema_node.uses
             for schema_node in self._graph_schema.nodes.values()
             if issubclass(schema_node.uses, TokenizerGraphComponent)
+            and schema_node.fn != "train"
         ]
 
         is_end_to_end = any(
