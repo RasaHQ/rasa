@@ -1779,7 +1779,7 @@ class Domain:
         for slot in self.slots:
             for mapping in slot.mappings:
                 total_mappings += 1
-                if mapping.get("type") == SlotMapping.CUSTOM:
+                if mapping.get("type") == str(SlotMapping.CUSTOM):
                     custom_mappings += 1
 
         return (total_mappings, custom_mappings)

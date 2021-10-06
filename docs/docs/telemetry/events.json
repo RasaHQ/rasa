@@ -63,11 +63,11 @@
         },
         "num_slot_mappings": {
           "type": "integer",
-          "description": "Number of slot mappings defined in the domain."
+          "description": "Number of total slot mappings defined in the domain."
         },
         "num_custom_slot_mappings": {
           "type": "integer",
-          "description": "Number of slot mappings with a custom action defined in the domain."
+          "description": "Number of custom slot mappings defined in the domain."
         },
         "num_slots": {
           "type": "integer",
