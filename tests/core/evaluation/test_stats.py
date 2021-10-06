@@ -2,6 +2,7 @@ import pytest
 import os
 import math
 import numpy as np
+from typing import Text
 from rasa.core.evaluation.stats import (
     load_extracted_markers_json_file,
     compute_multi_tracker_stats,
@@ -177,7 +178,9 @@ def test_compute_summary_stats_empty():
     }
 
 
-def test_compute_single_tracker_stats(extracted_markers_json, multi_tracker_stats):
+def test_compute_single_tracker_stats(
+    extracted_markers_json: Text, multi_tracker_stats: dict
+):
     """Tests compute summary stats for a single tracker."""
     expected_output = multi_tracker_stats["dialogue_1"]
     extracted_markers = load_extracted_markers_json_file(extracted_markers_json)
@@ -186,7 +189,7 @@ def test_compute_single_tracker_stats(extracted_markers_json, multi_tracker_stat
 
 
 def test_compute_single_tracker_stats_some_empty(
-    extracted_markers_json, multi_tracker_stats
+    extracted_markers_json: Text, multi_tracker_stats: dict
 ):
     """Tests compute summary stats for a single tracker with empty values."""
     expected_output = multi_tracker_stats["dialogue_2"]
@@ -196,7 +199,7 @@ def test_compute_single_tracker_stats_some_empty(
 
 
 def test_compute_multi_tracker_stats(
-    extracted_markers_json, overall_stats, multi_tracker_stats
+    extracted_markers_json: Text, overall_stats: dict, multi_tracker_stats: dict
 ):
     """Tests compute summary stats on multiple trackers."""
     extracted_markers = load_extracted_markers_json_file(extracted_markers_json)
@@ -205,7 +208,7 @@ def test_compute_multi_tracker_stats(
     assert per_tracker_stats == multi_tracker_stats
 
 
-def test_write_stats(extracted_markers_json, marker_stats_output_json):
+def test_write_stats(extracted_markers_json: Text, marker_stats_output_json: Text):
     """Tests write summary stats."""
     extracted_markers = load_extracted_markers_json_file(extracted_markers_json)
     stats, per_tracker_stats = compute_multi_tracker_stats(extracted_markers)
