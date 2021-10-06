@@ -205,7 +205,7 @@ class HangoutsInput(InputChannel):
         self.project_id = project_id
         self.hangouts_user_added_intent_name = hangouts_user_added_intent_name
         self.hangouts_room_added_intent_name = hangouts_room_added_intent_name
-        self.hangouts_user_added_intent_name = hangouts_removed_intent_name
+        self.hangouts_removed_intent_name = hangouts_removed_intent_name
 
     @classmethod
     def name(cls) -> Text:
