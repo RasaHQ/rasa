@@ -113,6 +113,14 @@ def test_data_validate_help(run: Callable[..., RunResult]):
         assert line in printed_help
 
 
+def test_data_migrate_help(run: Callable[..., RunResult]):
+    output = run("data", "migrate", "--help")
+    printed_help = set(output.outlines)
+
+    help_text = "usage: rasa data migrate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [--out OUT]"  # noqa: E501
+    assert help_text in printed_help
+
+
 def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(help="Rasa commands")
