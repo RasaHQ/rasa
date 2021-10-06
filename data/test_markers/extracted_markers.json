@@ -1,6 +1,6 @@
 [
   {
-    "tracker_ID": "8b32209b-2015-4c00-97e2-2757836cf8e9",
+    "tracker_ID": "dialogue_1",
     "bot-version": "<version-number>",
     "markers": [
       {
@@ -57,7 +57,7 @@
     ]
   },
   {
-    "tracker_ID": "8b32209b-2015-4c00-97e2-275546548e9",
+    "tracker_ID": "dialogue_2",
     "bot-version": "<version-number>",
     "markers": [
       {
@@ -106,7 +106,7 @@
     ]
   },
   {
-    "tracker_ID": "8b32209b-2015-4c00-97e2-2756588e9",
+    "tracker_ID": "dialogue_3",
     "bot-version": "<version-number>",
     "markers": [
       {
