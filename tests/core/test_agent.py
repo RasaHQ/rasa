@@ -286,12 +286,12 @@ async def test_agent_update_model(trained_core_model: Text, trained_nlu_model: T
     agent2 = await load_agent(model_path=trained_core_model)
 
     assert (
-        agent1.processor.graph_runner.get_schema()
-        == agent2.processor.graph_runner.get_schema()
+        agent1.processor.model_metadata.predict_schema
+        == agent2.processor.model_metadata.predict_schema
     )
 
     agent2.load_model(trained_nlu_model)
     assert not (
-        agent1.processor.graph_runner.get_schema()
-        == agent2.processor.graph_runner.get_schema()
+        agent1.processor.model_metadata.predict_schema
+        == agent2.processor.model_metadata.predict_schema
     )

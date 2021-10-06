@@ -127,7 +127,3 @@ class DaskGraphRunner(GraphRunner):
                     f"same as node names in the graph schema."
                 )
             graph[input_name] = (input_name, input_value)
-
-    def get_schema(self) -> GraphSchema:
-        """Returns the graph schema."""
-        return self._graph_schema

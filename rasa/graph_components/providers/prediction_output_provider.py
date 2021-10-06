@@ -10,8 +10,6 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.core.trackers import DialogueStateTracker
 
-logger = logging.getLogger(__name__)
-
 
 class PredictionOutputProvider(GraphComponent):
     """Provides the a unified output for model predictions."""

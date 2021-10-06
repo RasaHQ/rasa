@@ -129,7 +129,6 @@ async def test_train_docker_and_docs_configs(
     assert loaded_config.language == imported_config["language"]
 
 
-# TODO: This should be tested by a validation component
 @pytest.mark.parametrize(
     "config_path, data_path, expected_warning_excerpts",
     [

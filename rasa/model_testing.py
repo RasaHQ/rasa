@@ -157,11 +157,12 @@ def test_core(
     _agent = Agent()
     _agent.load_model(model)
 
-    if not _agent.is_ready() is None:
+    if not _agent.is_ready():
         rasa.shared.utils.cli.print_error(
             "Unable to test: processor not loaded. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
+        return
 
     from rasa.core.test import test as core_test
 

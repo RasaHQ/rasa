@@ -564,7 +564,7 @@ class MessageProcessor:
     def parse_message(
         self, message: UserMessage, only_output_properties: bool = True
     ) -> Dict[Text, Any]:
-        """Interpret the passed message.
+        """Interprets the passed message.
 
         Arguments:
             message: Message to handle
@@ -892,7 +892,7 @@ class MessageProcessor:
 
     def _predict_next_with_tracker(
         self, tracker: DialogueStateTracker, message: Optional[UserMessage] = None
-    ) -> Tuple[DialogueStateTracker, PolicyPrediction]:
+    ) -> Tuple[DialogueStateTracker, Optional[PolicyPrediction]]:
         """Collect predictions from ensemble and return action and predictions."""
         followup_action = tracker.followup_action
         if followup_action:
@@ -916,7 +916,7 @@ class MessageProcessor:
             },
             targets=["output_provider"],
         )
-        parsed_message, tracker_with_added_message, policy_prediction = results.get(
+        parsed_message, tracker_with_added_message, policy_prediction = results[
             "output_provider"
-        )
+        ]
         return tracker_with_added_message, policy_prediction

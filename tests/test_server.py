@@ -289,7 +289,7 @@ def training_request(
 # https://github.com/RasaHQ/rasa/issues/6302
 @pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
 @pytest.mark.skip_on_windows
-def xtest_train_status_is_not_blocked_by_training(
+def test_train_status_is_not_blocked_by_training(
     background_server: Process, shared_statuses: DictProxy, training_request: Process
 ):
     background_server.start()

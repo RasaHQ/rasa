@@ -72,9 +72,12 @@ async def test_load_agent_on_start_with_bad_model_file(
     fake_model.touch()
     fake_model_path = str(fake_model)
 
-    with pytest.raises(RasaException):
+    with pytest.warns(UserWarning) as warnings:
         await run.load_agent_on_start(
             fake_model_path, AvailableEndpoints(), None, rasa_non_trained_server, loop
+        )
+        assert any(
+            "fake_model.tar.gz' could not be loaded" in str(w.message) for w in warnings
         )
 
 
