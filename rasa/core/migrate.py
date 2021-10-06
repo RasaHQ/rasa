@@ -2,7 +2,17 @@ from pathlib import Path
 from typing import Union
 
 import rasa.shared.utils.io
-from rasa.shared.constants import REQUIRED_SLOTS_KEY
+from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
+from rasa.shared.core.domain import (
+    KEY_INTENTS,
+    KEY_ENTITIES,
+    KEY_SLOTS,
+    KEY_FORMS,
+    KEY_RESPONSES,
+    KEY_ACTIONS,
+    KEY_E2E_ACTIONS,
+    SESSION_CONFIG_KEY,
+)
 
 
 def migrate_domain_format(domain_file: Union[list, Path], out_file: Path) -> None:
@@ -12,21 +22,22 @@ def migrate_domain_format(domain_file: Union[list, Path], out_file: Path) -> Non
 
     original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
 
-    intents = original_content.get("intents", [])
-    entities = original_content.get("entities", [])
-    slots = original_content.get("slots", {})
-    forms = original_content.get("forms", {})
-    responses = original_content.get("responses", {})
-    actions = original_content.get("actions", [])
-    e2e_actions = original_content.get("e2e_actions", [])
-    session_config = original_content.get("session_config", {})
+    intents = original_content.get(KEY_INTENTS, [])
+    entities = original_content.get(KEY_ENTITIES, [])
+    slots = original_content.get(KEY_SLOTS, {})
+    forms = original_content.get(KEY_FORMS, {})
+    responses = original_content.get(KEY_RESPONSES, {})
+    actions = original_content.get(KEY_ACTIONS, [])
+    e2e_actions = original_content.get(KEY_E2E_ACTIONS, [])
+    session_config = original_content.get(SESSION_CONFIG_KEY, {})
 
     new_slots = {}
     new_forms = {}
 
     for form_name, form_data in forms.items():
-        if form_data is not None and REQUIRED_SLOTS_KEY not in form_data:
-            forms[form_name] = {REQUIRED_SLOTS_KEY: form_data}
+        ignored_intents = form_data.get(IGNORED_INTENTS, [])
+        if REQUIRED_SLOTS_KEY in form_data:
+            form_data = form_data.get(REQUIRED_SLOTS_KEY, {})
 
         required_slots = []
         for slot_name, mappings in form_data.items():
@@ -34,7 +45,10 @@ def migrate_domain_format(domain_file: Union[list, Path], out_file: Path) -> Non
             slot_properties.update({"mappings": mappings})
             slots[slot_name] = slot_properties
             required_slots.append(slot_name)
-        new_forms[form_name] = {REQUIRED_SLOTS_KEY: required_slots}
+        new_forms[form_name] = {
+            IGNORED_INTENTS: ignored_intents,
+            REQUIRED_SLOTS_KEY: required_slots,
+        }
 
     for slot_name, properties in slots.items():
         if slot_name in entities:
@@ -54,14 +68,14 @@ def migrate_domain_format(domain_file: Union[list, Path], out_file: Path) -> Non
 
     new_domain = {
         "version": "3.0",
-        "intents": intents,
-        "entities": entities,
-        "slots": new_slots,
-        "responses": responses,
-        "actions": actions,
-        "e2e_actions": e2e_actions,
-        "forms": new_forms,
-        "session_config": session_config,
+        KEY_INTENTS: intents,
+        KEY_ENTITIES: entities,
+        KEY_SLOTS: new_slots,
+        KEY_RESPONSES: responses,
+        KEY_ACTIONS: actions,
+        KEY_E2E_ACTIONS: e2e_actions,
+        KEY_FORMS: new_forms,
+        SESSION_CONFIG_KEY: session_config,
     }
 
     rasa.shared.utils.io.write_yaml(new_domain, out_file, True)

@@ -28,10 +28,13 @@ def test_migrate_domain_format(tmp_path: Path):
             influence_conversation: false
         forms:
            booking_form:
-               location:
+               ignored_intents:
+               - greet
+               required_slots:
+                 location:
                  - type: from_entity
                    entity: city
-               email:
+                 email:
                  - type: from_text
                    intent: inform
         """
