@@ -6,6 +6,8 @@ import numpy as np
 
 
 class Stats(TypedDict):
+    """A TypedDict for stats."""
+
     n: int
     mean: float
     median: float
@@ -34,21 +36,22 @@ def compute_summary_stats(data_points: Union[List, np.ndarray]) -> Stats:
     Args:
         data_points: can be a numpy array or a list of numbers.
     """
-    summary_stats = Stats()
-    summary_stats["n"] = np.size(data_points)
-
     if np.size(data_points) > 0:
-        summary_stats["mean"] = float(np.mean(data_points))
-        summary_stats["median"] = float(np.median(data_points))
-        summary_stats["min"] = np.min(data_points)
-        summary_stats["max"] = np.max(data_points)
+        return {
+            "n": int(np.size(data_points)),
+            "mean": float(np.mean(data_points)),
+            "median": float(np.median(data_points)),
+            "min": int(np.min(data_points)),
+            "max": int(np.max(data_points)),
+        }
     else:
-        summary_stats["mean"] = np.nan
-        summary_stats["median"] = np.nan
-        summary_stats["min"] = np.nan
-        summary_stats["max"] = np.nan
-
-    return summary_stats
+        return {
+            "n": 0,
+            "mean": np.nan,
+            "median": np.nan,
+            "min": np.nan,
+            "max": np.nan,
+        }
 
 
 def compute_single_tracker_stats(
@@ -63,11 +66,8 @@ def compute_single_tracker_stats(
     return tracker_stats
 
 
-def compute_multi_tracker_stats(
-    multi_tracker_markers: list,
-) -> Tuple[Dict[str, Stats], dict]:
+def compute_multi_tracker_stats(multi_tracker_markers: list,) -> Tuple[Dict, Dict]:
     """Computes summary statistics for multiple trackers."""
-
     overall_stats = {"num_trackers": len(multi_tracker_markers)}
     per_tracker_stats = {}
     per_marker_values = {}
@@ -101,7 +101,8 @@ def write_stats(path: Union[Text, Path], stats: dict, per_tracker_stats: dict) -
 def np_encoder(obj: Any) -> Any:
     """Encodes numpy array values to make them JSON serializable.
 
-    adapted from: https://bit.ly/3ajjTwp"""
+    adapted from: https://bit.ly/3ajjTwp
+    """
     if isinstance(obj, np.generic):
         return obj.item()
     return obj
