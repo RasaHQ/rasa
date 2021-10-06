@@ -66,7 +66,9 @@ def compute_single_tracker_stats(
     return tracker_stats
 
 
-def compute_multi_tracker_stats(multi_tracker_markers: list,) -> Tuple[Dict, Dict]:
+def compute_multi_tracker_stats(
+    multi_tracker_markers: list,
+) -> Tuple[Dict, Dict[Any, Dict[str, Stats]]]:
     """Computes summary statistics for multiple trackers."""
     overall_stats = {"num_trackers": len(multi_tracker_markers)}
     per_tracker_stats = {}
