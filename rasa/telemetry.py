@@ -740,7 +740,11 @@ def track_model_training(
     nlu_data = training_data.get_nlu_data()
     domain = training_data.get_domain()
     count_conditional_responses = domain.count_conditional_response_variations()
-    count_total_mappings, count_custom_mappings = domain.count_slot_mapping_statistics()
+    (
+        count_total_mappings,
+        count_custom_mappings,
+        count_conditional_mappings,
+    ) = domain.count_slot_mapping_statistics()
 
     training_id = uuid.uuid4().hex
 
@@ -763,6 +767,7 @@ def track_model_training(
             "num_conditional_response_variations": count_conditional_responses,
             "num_slot_mappings": count_total_mappings,
             "num_custom_slot_mappings": count_custom_mappings,
+            "num_conditional_slot_mappings": count_conditional_mappings,
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),
