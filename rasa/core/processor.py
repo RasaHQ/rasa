@@ -1,10 +1,17 @@
 import logging
 import os
+from pathlib import Path
+import tempfile
 import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
+from rasa.engine import loader
 from rasa.engine.constants import PLACEHOLDER_MESSAGE, PLACEHOLDER_TRACKER
+from rasa.engine.runner.dask import DaskGraphRunner
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.storage import ModelMetadata
+from rasa.model import get_latest_model
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -17,7 +24,7 @@ from rasa.core.channels.channel import (
 import rasa.core.utils
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.runner.interface import GraphRunner
-from rasa.exceptions import ActionLimitReached
+from rasa.exceptions import ActionLimitReached, ModelNotFound
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -65,8 +72,7 @@ class MessageProcessor:
 
     def __init__(
         self,
-        graph_runner: GraphRunner,
-        domain: Domain,
+        model_path: Union[Text, Path],
         tracker_store: rasa.core.tracker_store.TrackerStore,
         lock_store: LockStore,
         generator: NaturalLanguageGenerator,
@@ -75,14 +81,30 @@ class MessageProcessor:
         on_circuit_break: Optional[LambdaType] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
-        self.graph_runner = graph_runner
         self.nlg = generator
-        self.domain = domain
         self.tracker_store = tracker_store
         self.lock_store = lock_store
         self.max_number_of_predictions = max_number_of_predictions
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
+        self.model_path = Path(model_path)
+        self.model_metadata, self.graph_runner = self.load_model(model_path)
+        self.domain = self.model_metadata.domain
+
+    @staticmethod
+    def load_model(model_path: Union[Text, Path]) -> Tuple[ModelMetadata, GraphRunner]:
+        """Unpacks a model from a given path using the graph model loader."""
+        model_tar = get_latest_model(model_path)
+        if not model_tar:
+            raise ModelNotFound(f"No model found at path {model_path}.")
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            return loader.load_predict_graph_runner(
+                Path(temporary_directory),
+                Path(model_tar),
+                LocalModelStorage,
+                DaskGraphRunner,
+            )
 
     async def handle_message(
         self, message: UserMessage

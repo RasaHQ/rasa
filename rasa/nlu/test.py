@@ -23,7 +23,7 @@ from typing import (
 )
 
 from rasa import telemetry
-from rasa.core.agent import Agent
+from rasa.core.agent import Agent, load_agent
 from rasa.core.channels import UserMessage
 from rasa.core.processor import MessageProcessor
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -1347,7 +1347,7 @@ def _remove_entities_of_extractors(
 
 def run_evaluation(
     data_path: Text,
-    model_path: Text,
+    processor: MessageProcessor,
     output_directory: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,
@@ -1358,7 +1358,7 @@ def run_evaluation(
 
     Args:
         data_path: path to the test data
-        model_path: path to the model
+        processor: the processor used to process and predict
         output_directory: path to folder where all output will be stored
         successes: if true successful predictions are written to a file
         errors: if true incorrect predictions are written to a file
@@ -1372,9 +1372,6 @@ def run_evaluation(
     """
     import rasa.shared.nlu.training_data.loading
     from rasa.shared.constants import DEFAULT_DOMAIN_PATH
-
-    # get the metadata config from the package data
-    processor = Agent.load(model_path).processor
 
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
@@ -1823,8 +1820,9 @@ async def compare_nlu(
                     continue
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
+                processor = (await load_agent(model_path=model_path)).processor
                 result = run_evaluation(
-                    test_path, model_path, output_directory=output_path, errors=True
+                    test_path, processor, output_directory=output_path, errors=True
                 )
 
                 f1 = result["intent_evaluation"]["f1_score"]

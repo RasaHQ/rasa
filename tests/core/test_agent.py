@@ -290,7 +290,7 @@ async def test_agent_update_model(trained_core_model: Text, trained_nlu_model: T
         == agent2.processor.graph_runner.get_schema()
     )
 
-    agent2.update_model(trained_nlu_model)
+    agent2.load_model(trained_nlu_model)
     assert not (
         agent1.processor.graph_runner.get_schema()
         == agent2.processor.graph_runner.get_schema()

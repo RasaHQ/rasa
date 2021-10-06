@@ -3,6 +3,7 @@ import os
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
+from rasa.core.agent import load_agent
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
@@ -178,7 +179,7 @@ def test_core(
     )
 
 
-def test_nlu(
+async def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
@@ -198,13 +199,13 @@ def test_nlu(
         )
         return
 
-    metadata = LocalModelStorage.metadata_from_archive(model)
-
-    if os.path.exists(model) and metadata.training_type != TrainingType.CORE:
+    agent = await load_agent(model_path=model)
+    processor = agent.processor
+    if processor and processor.model_metadata.training_type != TrainingType.CORE:
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
-        run_evaluation(nlu_data, model, output_directory=output_directory, **kwargs)
+        run_evaluation(nlu_data, processor, output_directory=output_directory, **kwargs)
     else:
         rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "

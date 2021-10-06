@@ -1,3 +1,4 @@
+from __future__ import annotations
 from asyncio import AbstractEventLoop, CancelledError
 import logging
 import os
@@ -10,7 +11,6 @@ from typing import (
     List,
     Optional,
     Text,
-    Tuple,
     Union,
 )
 import uuid
@@ -18,14 +18,9 @@ import uuid
 import aiohttp
 from aiohttp import ClientError
 
-from rasa.engine.runner.interface import GraphRunner
-from rasa.engine.storage.storage import ModelMetadata
 from rasa.core import jobs
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.engine import loader
-from rasa.engine.runner.dask import DaskGraphRunner
-from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -39,7 +34,6 @@ from rasa.core.tracker_store import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.exceptions import ModelNotFound
-from rasa.model import get_latest_model
 from rasa.nlu.utils import is_url
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -82,7 +76,7 @@ def _load_and_set_updated_model(
         fingerprint: Fingerprint of the supplied model at `model_directory`.
     """
     logger.debug(f"Found new model with fingerprint {fingerprint}. Loading...")
-    agent.update_model(model_directory, fingerprint)
+    agent.load_model(model_directory, fingerprint)
 
     logger.debug("Finished updating agent to new model.")
 
@@ -95,28 +89,22 @@ async def _update_model_from_server(
     if not is_url(model_server.url):
         raise aiohttp.InvalidURL(model_server.url)
 
-    model_directory = tempfile.mkdtemp()
-    remove_dir = True
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        try:
+            new_fingerprint = await _pull_model_and_fingerprint(
+                model_server, agent.fingerprint, temporary_directory
+            )
 
-    try:
-        new_fingerprint = await _pull_model_and_fingerprint(
-            model_server, agent.fingerprint, model_directory
-        )
-
-        if new_fingerprint:
-            _load_and_set_updated_model(agent, model_directory, new_fingerprint)
-            remove_dir = False
-        else:
-            logger.debug(f"No new model found at URL {model_server.url}")
-    except Exception:  # skipcq: PYL-W0703
-        # TODO: Make this exception more specific, possibly print different log
-        # for each one.
-        logger.exception(
-            "Failed to update model. The previous model will stay loaded instead."
-        )
-    finally:
-        if remove_dir:
-            shutil.rmtree(model_directory)
+            if new_fingerprint:
+                _load_and_set_updated_model(agent, temporary_directory, new_fingerprint)
+            else:
+                logger.debug(f"No new model found at URL {model_server.url}")
+        except Exception:  # skipcq: PYL-W0703
+            # TODO: Make this exception more specific, possibly print different log
+            # for each one.
+            logger.exception(
+                "Failed to update model. The previous model will stay loaded instead."
+            )
 
 
 async def _pull_model_and_fingerprint(
@@ -172,7 +160,9 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
-                model_path = Path(model_directory) / resp.headers.get("filename")
+                model_path = Path(model_directory) / resp.headers.get(
+                    "filename", "model.tar.gz"
+                )
                 with open(model_path, "wb") as file:
                     file.write(await resp.read())
 
@@ -223,7 +213,7 @@ async def load_agent(
     remote_storage: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
     loop: Optional[AbstractEventLoop] = None,
-) -> Optional["Agent"]:
+) -> Agent:
     """Loads agent from server, remote storage or disk.
 
     Args:
@@ -255,47 +245,35 @@ async def load_agent(
         action_endpoint = endpoints.action
         model_server = endpoints.model if endpoints.model else model_server
 
+    agent = Agent(
+        generator=generator,
+        tracker_store=tracker_store,
+        lock_store=lock_store,
+        action_endpoint=action_endpoint,
+        model_server=model_server,
+        remote_storage=remote_storage,
+    )
+
     try:
         if model_server is not None:
-            return await load_from_server(
-                Agent(
-                    generator=generator,
-                    tracker_store=tracker_store,
-                    lock_store=lock_store,
-                    action_endpoint=action_endpoint,
-                    model_server=model_server,
-                    remote_storage=remote_storage,
-                ),
-                model_server,
-            )
+            return await load_from_server(agent, model_server)
 
         elif remote_storage is not None:
-            return Agent.load_from_remote_storage(
-                remote_storage,
-                model_path,
-                generator=generator,
-                tracker_store=tracker_store,
-                lock_store=lock_store,
-                action_endpoint=action_endpoint,
-                model_server=model_server,
-            )
+            agent.load_model_from_remote_storage(model_path)
 
         elif model_path is not None and os.path.exists(model_path):
-            return Agent.load(
-                model_path,
-                generator=generator,
-                tracker_store=tracker_store,
-                lock_store=lock_store,
-                action_endpoint=action_endpoint,
-                model_server=model_server,
-                remote_storage=remote_storage,
-            )
-
+            try:
+                agent.load_model(model_path)
+            except ModelNotFound:
+                rasa.shared.utils.io.raise_warning(
+                    f"No valid model found at {model_path}!"
+                )
         else:
             rasa.shared.utils.io.raise_warning(
-                "No valid configuration given to load agent."
+                "No valid configuration given to load agent. "
+                "Agent loaded with no model!"
             )
-            return None
+        return agent
 
     except Exception as e:
         logger.error(f"Could not load model due to {e}.")
@@ -311,7 +289,7 @@ class Agent:
 
     def __init__(
         self,
-        domain: Union[Text, Domain, None] = None,
+        domain: Optional[Union[Text, Domain]] = None,
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
         lock_store: Optional[LockStore] = None,
@@ -319,13 +297,11 @@ class Agent:
         fingerprint: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
-        graph_runner: Optional[GraphRunner] = None,
-        model_path: Optional[Text] = None,
-        model_id: Optional[Text] = None,
     ):
         """Initializes an `Agent`."""
-        self.processor = None
         self.domain = domain
+        self.processor: Optional[MessageProcessor] = None
+
         if self.domain:
             self.domain.check_missing_responses()
 
@@ -333,23 +309,23 @@ class Agent:
         self.tracker_store = self._create_tracker_store(tracker_store, self.domain)
         self.lock_store = self._create_lock_store(lock_store)
         self.action_endpoint = action_endpoint
-        self.graph_runner = graph_runner
-        self.model_path = model_path
-        self.model_id = model_id
 
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
         self.remote_storage = remote_storage
 
-    def update_model(
+    def load_model(
         self, model_path: Union[Text, Path], fingerprint: Optional[Text] = None,
     ) -> None:
         """Update the agent's model and processor given a new model path."""
-        model_metadata, graph_runner = self.unpack_model(model_path)
-        self.domain = model_metadata.domain
-        self.graph_runner = graph_runner
-        self.model_path = model_path
-        self.model_id = model_metadata.model_id
+        self.processor = MessageProcessor(
+            model_path=model_path,
+            tracker_store=self.tracker_store,
+            lock_store=self.lock_store,
+            action_endpoint=self.action_endpoint,
+            generator=self.nlg,
+        )
+        self.domain = self.processor.domain
 
         self._set_fingerprint(fingerprint)
 
@@ -358,51 +334,13 @@ class Agent:
         if hasattr(self.nlg, "responses"):
             self.nlg.responses = self.domain.responses if self.domain else {}
 
-        self.initialize_processor()
+    @property
+    def model_id(self) -> Optional[Text]:
+        return self.processor.model_metadata.model_id if self.processor else None
 
-    @classmethod
-    def load(
-        cls,
-        model_path: Union[Text, Path],
-        generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
-        tracker_store: Optional[TrackerStore] = None,
-        lock_store: Optional[LockStore] = None,
-        action_endpoint: Optional[EndpointConfig] = None,
-        model_server: Optional[EndpointConfig] = None,
-        remote_storage: Optional[Text] = None,
-    ) -> "Agent":
-        """Load a persisted model from the passed path."""
-        model_metadata, graph_runner = cls.unpack_model(model_path)
-
-        agent = cls(
-            domain=model_metadata.domain,
-            generator=generator,
-            tracker_store=tracker_store,
-            lock_store=lock_store,
-            action_endpoint=action_endpoint,
-            model_server=model_server,
-            remote_storage=remote_storage,
-            graph_runner=graph_runner,
-            model_path=model_path,
-            model_id=model_metadata.model_id,
-        )
-
-        agent.initialize_processor()
-        return agent
-
-    @staticmethod
-    def unpack_model(
-        model_path: Union[Text, Path]
-    ) -> Tuple[ModelMetadata, GraphRunner]:
-        """Unpacks a model from a given path using the graph model loader."""
-        model_tar = get_latest_model(model_path)
-        if not model_tar:
-            raise ModelNotFound(f"No model found at path {model_path}.")
-
-        tmp_model_path = tempfile.mkdtemp()
-        return loader.load_predict_graph_runner(
-            Path(tmp_model_path), Path(model_tar), LocalModelStorage, DaskGraphRunner,
-        )
+    @property
+    def model_name(self) -> Optional[Text]:
+        return self.processor.model_path.name if self.processor else None
 
     def is_ready(self) -> bool:
         """Check if all necessary components are instantiated to use agent."""
@@ -585,45 +523,18 @@ class Agent:
 
         return InMemoryLockStore()
 
-    @staticmethod
-    def load_from_remote_storage(
-        remote_storage: Text,
-        model_name: Text,
-        generator: Union[EndpointConfig, NaturalLanguageGenerator] = None,
-        tracker_store: Optional[TrackerStore] = None,
-        lock_store: Optional[LockStore] = None,
-        action_endpoint: Optional[EndpointConfig] = None,
-        model_server: Optional[EndpointConfig] = None,
-    ) -> Optional["Agent"]:
+    def load_model_from_remote_storage(self, model_name: Text) -> None:
         """Loads an Agent from remote storage."""
         from rasa.nlu.persistor import get_persistor
 
-        persistor = get_persistor(remote_storage)
+        persistor = get_persistor(self.remote_storage)
 
         if persistor is not None:
-            target_path = tempfile.mkdtemp()
-            persistor.retrieve(model_name, target_path)
+            with tempfile.TemporaryDirectory() as temporary_directory:
+                persistor.retrieve(model_name, temporary_directory)
+                self.load_model(temporary_directory)
 
-            return Agent.load(
-                target_path,
-                generator=generator,
-                tracker_store=tracker_store,
-                lock_store=lock_store,
-                action_endpoint=action_endpoint,
-                model_server=model_server,
-                remote_storage=remote_storage,
+        else:
+            raise ValueError(
+                f"Persistor not found for remote storage: '{self.remote_storage}'"
             )
-
-        return None
-
-    def initialize_processor(self) -> None:
-        """Initializes the agent's message processor."""
-        processor = MessageProcessor(
-            graph_runner=self.graph_runner,
-            domain=self.domain,
-            tracker_store=self.tracker_store,
-            lock_store=self.lock_store,
-            action_endpoint=self.action_endpoint,
-            generator=self.nlg,
-        )
-        self.processor = processor

@@ -484,7 +484,7 @@ async def _load_agent(
             f"An unexpected error occurred. Error: {e}",
         )
 
-    if not loaded_agent:
+    if not loaded_agent.is_ready():
         raise ErrorResponse(
             HTTPStatus.BAD_REQUEST,
             "BadRequest",
@@ -698,8 +698,8 @@ def create_app(
 
         return response.json(
             {
-                "model_file": app.agent.model_path,
-                "fingerprint": app.agent.model_id,  # TODO: is this correct?
+                "model_file": app.agent.model_name,
+                "fingerprint": app.agent.model_id,
                 "num_active_training_jobs": app.active_training_processes.value,
             }
         )
@@ -1182,13 +1182,13 @@ def create_app(
 
         data_path = os.path.abspath(test_data_file)
 
-        if not eval_agent.model_path or not os.path.exists(eval_agent.model_path):
+        if not eval_agent.is_ready():
             raise ErrorResponse(
                 HTTPStatus.CONFLICT, "Conflict", "Loaded model file not found."
             )
 
         return rasa.nlu.test.run_evaluation(
-            data_path, eval_agent.model_path, disable_plotting=True, report_as_dict=True
+            data_path, eval_agent.processor, disable_plotting=True, report_as_dict=True
         )
 
     async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:

@@ -196,11 +196,6 @@ def serve_application(
     )
     app.register_listener(close_resources, "after_server_stop")
 
-    # noinspection PyUnresolvedReferences
-    async def clear_model_files(_app: Sanic, _loop: Text) -> None:
-        if app.agent.model_path:
-            shutil.rmtree(_app.agent.model_path)
-
     number_of_workers = rasa.core.utils.number_of_sanic_workers(
         endpoints.lock_store if endpoints else None
     )
@@ -208,8 +203,6 @@ def serve_application(
     telemetry.track_server_start(
         input_channels, endpoints, model_path, number_of_workers, enable_api
     )
-
-    app.register_listener(clear_model_files, "after_server_stop")
 
     rasa.utils.common.update_sanic_log_level(log_file)
     app.run(
@@ -241,20 +234,11 @@ async def load_agent_on_start(
             endpoints=endpoints,
             loop=loop,
         )
+        logger.info("Rasa server is up and running.")
+        return app.agent
     except Exception as e:
-        rasa.shared.utils.io.raise_warning(
-            f"The model at '{model_path}' could not be loaded. "
-            f"Error: {type(e)}: {e}"
-        )
-        app.agent = None
-
-    if not app.agent:
-        raise RasaException(
-            "Agent could not be loaded with the provided configuration. "
-            "Load default agent without any model."
-        )
-    logger.info("Rasa server is up and running.")
-    return app.agent
+        rasa.shared.utils.io.raise_warning(f"Error: {type(e)}: {e}")
+        raise
 
 
 async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
