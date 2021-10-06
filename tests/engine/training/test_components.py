@@ -103,7 +103,6 @@ class FingerprintableText:
         return self.text
 
 
-# TODO: fixed when cache fixture is fixed.
 def test_fingerprint_component_hit(
     default_model_storage: ModelStorage, temp_cache: TrainingCache
 ):

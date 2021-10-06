@@ -27,7 +27,9 @@ logger = logging.getLogger(__name__)
 
 
 @DefaultV1Recipe.register(
-    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+    is_trainable=True,
+    model_from="MitieNLPGraphComponent",
 )
 class MitieIntentClassifierGraphComponent(GraphComponent):
     """Intent classifier which uses the `mitie` library."""
@@ -81,7 +83,7 @@ class MitieIntentClassifierGraphComponent(GraphComponent):
 
         return self._resource
 
-    def process(self, messages: List[Message], model: MitieModel) -> None:
+    def process(self, messages: List[Message], model: MitieModel) -> List[Message]:
         """Make intent predictions using `mitie`.
 
         Args:
@@ -101,6 +103,8 @@ class MitieIntentClassifierGraphComponent(GraphComponent):
             message.set(
                 "intent", {"name": intent, "confidence": confidence}, add_to_output=True
             )
+
+        return messages
 
     @staticmethod
     def _tokens_of_message(message: Message) -> List[Text]:

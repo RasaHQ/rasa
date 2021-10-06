@@ -67,6 +67,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
             "en",
             as_pipeline(
                 {"name": "SpacyNLP", "model": "en_core_web_md"},
+                "SpacyPreprocessor",
                 "SpacyTokenizer",
                 "SpacyFeaturizer",
                 "SpacyEntityExtractor",
@@ -95,6 +96,7 @@ def pipelines_for_non_windows_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]
             "en",
             as_pipeline(
                 {"name": "SpacyNLP", "model": "en_core_web_md"},
+                "SpacyPreprocessor",
                 "SpacyTokenizer",
                 "SpacyFeaturizer",
                 "DIETClassifier",

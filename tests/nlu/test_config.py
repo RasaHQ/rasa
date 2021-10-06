@@ -10,8 +10,6 @@ from rasa.shared.importers import autoconfig
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu import config
-import rasa.shared.nlu.training_data.loading
-from rasa.nlu import components
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.constants import COMPONENT_INDEX
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
