@@ -186,6 +186,11 @@ def markers_config_operators() -> Text:
     return "data/test_markers/config_operators.yml"
 
 
+@pytest.fixture(scope="session")
+def marker_output_json() -> Text:
+    return "data/test_markers/marker_file.json"
+
+
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
