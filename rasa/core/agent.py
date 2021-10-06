@@ -302,9 +302,6 @@ class Agent:
         self.domain = domain
         self.processor: Optional[MessageProcessor] = None
 
-        if self.domain:
-            self.domain.check_missing_responses()
-
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self._create_tracker_store(tracker_store, self.domain)
         self.lock_store = self._create_lock_store(lock_store)
@@ -414,7 +411,7 @@ class Agent:
         policy: Optional[Text],
         confidence: Optional[float],
     ) -> Optional[DialogueStateTracker]:
-        """Execute an action."""
+        """Executes an action."""
         prediction = PolicyPrediction.for_action_name(
             self.domain, action, policy, confidence or 0.0
         )

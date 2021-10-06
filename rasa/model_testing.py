@@ -3,7 +3,7 @@ import os
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
-from rasa.core.agent import load_agent
+from rasa.core.agent import Agent, load_agent
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
@@ -132,8 +132,6 @@ def test_core(
     use_conversation_test_files: bool = False,
 ) -> None:
     """Tests a trained Core model against a set of test stories."""
-    from rasa.core.agent import Agent
-
     try:
         model = rasa.model.get_local_model(model)
     except ModelNotFound:
@@ -156,7 +154,8 @@ def test_core(
     if output:
         rasa.shared.utils.io.create_directory(output)
 
-    _agent = Agent.load(model)
+    _agent = Agent()
+    _agent.load_model(model)
 
     if not _agent.is_ready() is None:
         rasa.shared.utils.cli.print_error(
@@ -179,7 +178,7 @@ def test_core(
     )
 
 
-async def test_nlu(
+def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
@@ -199,13 +198,17 @@ async def test_nlu(
         )
         return
 
-    agent = await load_agent(model_path=model)
-    processor = agent.processor
-    if processor and processor.model_metadata.training_type != TrainingType.CORE:
+    metadata = LocalModelStorage.metadata_from_archive(model)
+
+    if os.path.exists(model) and metadata.training_type != TrainingType.CORE:
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
-        run_evaluation(nlu_data, processor, output_directory=output_directory, **kwargs)
+        _agent = Agent()
+        _agent.load_model(model)
+        run_evaluation(
+            nlu_data, _agent.processor, output_directory=output_directory, **kwargs
+        )
     else:
         rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "

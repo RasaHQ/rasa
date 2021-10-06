@@ -125,7 +125,7 @@ output_provider:
   constructor_name: create
   fn: provide
   config: {}
-  eager: False
+  eager: True
   is_target: False
   is_input: False
   resource: null

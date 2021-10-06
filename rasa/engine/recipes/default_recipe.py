@@ -623,6 +623,7 @@ class DefaultV1Recipe(Recipe):
             constructor_name="create",
             fn="provide",
             config={},
+            eager=True,
         )
 
         return predict_nodes
