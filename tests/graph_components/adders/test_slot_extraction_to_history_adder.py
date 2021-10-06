@@ -5,13 +5,14 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.adders.slot_extraction_to_history_adder import (
     SlotExtractionToHistoryAdder,
 )
+from rasa.utils.endpoints import EndpointConfig
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
-async def test_prediction_adder_add_message(
+def test_prediction_adder_add_message(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
 ):
     component = SlotExtractionToHistoryAdder.create(
@@ -34,6 +35,8 @@ async def test_prediction_adder_add_message(
 
     tracker = DialogueStateTracker("test", None)
     nlg = TemplatedNaturalLanguageGenerator(domain.responses)
-    tracker = await component.add(tracker, domain, nlg)
+    tracker = component.add(
+        tracker, domain, nlg, EndpointConfig("https://example.com/webhooks/actions")
+    )
 
     assert SlotSet("some_slot", "test") in tracker.events

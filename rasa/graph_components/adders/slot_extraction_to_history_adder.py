@@ -1,8 +1,9 @@
 from __future__ import annotations
 import logging
 
+import rasa.utils.common
 import rasa.core.actions.action
-from typing import Dict, Text, Any, Optional
+from typing import Dict, Text, Any
 
 from rasa.core.channels.channel import (
     OutputChannel,
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class SlotExtractionToHistoryAdder(GraphComponent):
-    """Adds slot extractions to DialogStateTracker."""
+    """Adds `SlotSet` events to DialogueStateTracker."""
 
     @classmethod
     def create(
@@ -35,18 +36,18 @@ class SlotExtractionToHistoryAdder(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         return cls()
 
-    async def add(
+    def add(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
         nlg: NaturalLanguageGenerator,
-        endpoint_config: Optional[EndpointConfig] = None,
-        output_channel: Optional[OutputChannel] = CollectingOutputChannel(),
+        endpoint_config: EndpointConfig,
+        output_channel: OutputChannel = CollectingOutputChannel(),
     ) -> DialogueStateTracker:
         """Adds slot extraction to the tracker.
 
         Args:
-            tracker: The tracker the predictions should be attached to
+            tracker: The tracker to which slot extractions should be added to
             domain: The domain of the model.
             nlg: Indicates which natural language generator will be used.
             endpoint_config: The endpoint configuration.
@@ -58,8 +59,8 @@ class SlotExtractionToHistoryAdder(GraphComponent):
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, domain, endpoint_config,
         )
-        extraction_events = await action_extract_slots.run(
-            output_channel, nlg, tracker, domain
+        extraction_events = rasa.utils.common.run_in_loop(
+            action_extract_slots.run(output_channel, nlg, tracker, domain)
         )
         tracker.update_with_events(extraction_events, domain)
 
