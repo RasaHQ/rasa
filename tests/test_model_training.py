@@ -562,6 +562,7 @@ def test_model_finetuning_core(
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(result))
 
     assert metadata.train_schema.nodes["train_TEDPolicy0"].config[EPOCHS] == 2
+    assert metadata.training_type == autoconfig.TrainingType.CORE
 
 
 def test_model_finetuning_core_with_default_epochs(
@@ -681,6 +682,7 @@ def test_model_finetuning_nlu(
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(model_name))
 
     assert metadata.train_schema.nodes["train_DIETClassifier5"].config[EPOCHS] == 2
+    assert metadata.training_type == autoconfig.TrainingType.NLU
 
 
 def test_model_finetuning_nlu_new_label(

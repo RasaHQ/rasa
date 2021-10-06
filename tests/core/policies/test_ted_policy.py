@@ -229,11 +229,12 @@ class TestTEDPolicy(PolicyTestCollection):
 
     def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
         config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"
-        match_string = "Only values either equal to -1 or greater" \
-                       " than 0 are allowed for this parameter."
+        match_string = (
+            "Only values either equal to -1 or greater"
+            " than 0 are allowed for this parameter."
+        )
         with pytest.raises(
-            InvalidConfigException,
-            match=match_string,
+            InvalidConfigException, match=match_string,
         ):
             train_core(
                 domain="data/test_domains/default.yml",

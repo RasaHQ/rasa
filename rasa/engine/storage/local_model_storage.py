@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Text, ContextManager, Tuple, Union
 
+from rasa.shared.importers.autoconfig import TrainingType
 import rasa.utils.common
 import rasa.shared.utils.io
 from rasa.engine.storage.storage import ModelMetadata, ModelStorage
@@ -67,6 +68,19 @@ class LocalModelStorage(ModelStorage):
                 cls(storage_path),
                 metadata,
             )
+
+    @classmethod
+    def metadata_from_archive(
+        cls, model_archive_path: Union[Text, Path]
+    ) -> ModelMetadata:
+        """Retrieve metadata from archive (see parent class for full docstring)."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_directory = Path(temporary_directory)
+
+            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
+            metadata = cls._load_metadata(temporary_directory)
+
+            return metadata
 
     @staticmethod
     def _extract_archive_to_directory(
@@ -132,6 +146,7 @@ class LocalModelStorage(ModelStorage):
         train_schema: GraphSchema,
         predict_schema: GraphSchema,
         domain: Domain,
+        training_type: TrainingType = TrainingType.BOTH,
     ) -> ModelMetadata:
         """Creates model package (see parent class for full docstring)."""
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
@@ -144,7 +159,7 @@ class LocalModelStorage(ModelStorage):
             )
 
             model_metadata = self._create_model_metadata(
-                domain, predict_schema, train_schema
+                domain, predict_schema, train_schema, training_type
             )
             self._persist_metadata(model_metadata, temporary_directory)
 
@@ -167,7 +182,10 @@ class LocalModelStorage(ModelStorage):
 
     @staticmethod
     def _create_model_metadata(
-        domain: Domain, predict_schema: GraphSchema, train_schema: GraphSchema
+        domain: Domain,
+        predict_schema: GraphSchema,
+        train_schema: GraphSchema,
+        training_type: TrainingType = TrainingType.BOTH,
     ) -> ModelMetadata:
         return ModelMetadata(
             trained_at=datetime.utcnow(),
@@ -176,4 +194,5 @@ class LocalModelStorage(ModelStorage):
             domain=domain,
             train_schema=train_schema,
             predict_schema=predict_schema,
+            training_type=training_type,
         )

@@ -7,7 +7,9 @@ from typing import List
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.model import get_latest_model
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
 
@@ -77,6 +79,14 @@ def shell_nlu(args: argparse.Namespace) -> None:
         )
         return
 
+    metadata = LocalModelStorage.metadata_from_archive(model)
+    if metadata.training_type == TrainingType.CORE:
+        print_error(
+            "No NLU model found. Train a model before running the "
+            "server using `rasa train nlu`."
+        )
+        return
+
     telemetry.track_shell_started("nlu")
     rasa.nlu.run.run_cmdline(model)
 
@@ -99,8 +109,9 @@ def shell(args: argparse.Namespace) -> None:
         )
         return
 
-    # TODO: Know what type of model it is?
-    if not True:
+    metadata = LocalModelStorage.metadata_from_archive(model)
+
+    if metadata.training_type == TrainingType.NLU:
         import rasa.nlu.run
 
         telemetry.track_shell_started("nlu")

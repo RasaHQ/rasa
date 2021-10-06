@@ -14,6 +14,7 @@ from rasa.engine.training.components import (
     FingerprintStatus,
 )
 from rasa.engine.training.hooks import TrainingHook
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,7 @@ class GraphTrainer:
         output_filename: Path,
         force_retraining: bool = False,
         is_finetuning: bool = False,
+        training_type: TrainingType = TrainingType.BOTH,
     ) -> ModelMetadata:
         """Trains and packages a model and returns the prediction graph runner.
 
@@ -58,6 +60,7 @@ class GraphTrainer:
             output_filename: The location to save the packaged model.
             force_retraining: If `True` then the cache is skipped and all components
                 are retrained.
+            training_type: NLU, CORE or BOTH depending on what is trained.
 
         Returns:
             The metadata describing the trained model.
@@ -97,7 +100,11 @@ class GraphTrainer:
         graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
         return self._model_storage.create_model_package(
-            output_filename, train_schema, predict_schema, domain
+            output_filename,
+            train_schema,
+            predict_schema,
+            domain,
+            training_type=training_type,
         )
 
     def fingerprint(
