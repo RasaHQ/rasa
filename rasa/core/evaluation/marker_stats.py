@@ -1,5 +1,11 @@
 import os
-from typing import Dict, Text, Union, Any, List, Tuple, TypedDict
+import sys
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
+from typing import Dict, Text, Union, Any, List, Tuple
 from pathlib import Path
 import json
 import numpy as np
@@ -70,7 +76,7 @@ def compute_single_tracker_stats(
 
 def compute_multi_tracker_stats(
     multi_tracker_markers: list,
-) -> Tuple[Dict[str, int], Dict[Any, Dict[str, MarkerStats]]]:
+) -> Tuple[Dict, Dict[Any, Dict[str, MarkerStats]]]:
     """Computes summary statistics for multiple trackers."""
     overall_stats = {"num_trackers": len(multi_tracker_markers)}
     per_tracker_stats = {}
