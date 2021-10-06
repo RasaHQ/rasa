@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: rename this whole module.
 
+
 def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
     """Returns verified path to local model archive.
 

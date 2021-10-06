@@ -10,6 +10,7 @@ from typing import Tuple, Union, Text, ContextManager, Dict, Any
 
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
+from rasa.shared.importers.autoconfig import TrainingType
 
 if typing.TYPE_CHECKING:
     from rasa.engine.graph import GraphSchema
@@ -44,6 +45,20 @@ class ModelStorage(abc.ABC):
 
         Returns:
             Initialized model storage, and metadata about the model.
+        """
+        ...
+
+    @classmethod
+    def metadata_from_archive(
+        cls, model_archive_path: Union[Text, Path]
+    ) -> ModelMetadata:
+        """Retrieve metadata from archive.
+
+        Args:
+            model_archive_path: The path to the model archive.
+
+        Returns:
+            Metadata about the model.
         """
         ...
 
@@ -85,6 +100,7 @@ class ModelStorage(abc.ABC):
         train_schema: GraphSchema,
         predict_schema: GraphSchema,
         domain: Domain,
+        training_type: TrainingType = TrainingType.BOTH,
     ) -> ModelMetadata:
         """Creates a model archive containing all data to load and run the model.
 
@@ -93,6 +109,7 @@ class ModelStorage(abc.ABC):
             train_schema: The schema which was used to train the graph model.
             predict_schema: The schema for running predictions with the trained model.
             domain: The `Domain` which was used to train the model.
+            training_type: NLU, CORE or BOTH depending on what is trained.
 
         Returns:
             The model metadata.
@@ -110,6 +127,7 @@ class ModelMetadata:
     domain: Domain
     train_schema: GraphSchema
     predict_schema: GraphSchema
+    training_type: TrainingType = TrainingType.BOTH
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serializable version of the `ModelMetadata`."""
@@ -120,6 +138,7 @@ class ModelMetadata:
             "rasa_open_source_version": self.rasa_open_source_version,
             "train_schema": self.train_schema.as_dict(),
             "predict_schema": self.predict_schema.as_dict(),
+            "training_type": self.training_type.value,
         }
 
     @classmethod
@@ -141,4 +160,5 @@ class ModelMetadata:
             domain=Domain.from_dict(serialized["domain"]),
             train_schema=GraphSchema.from_dict(serialized["train_schema"]),
             predict_schema=GraphSchema.from_dict(serialized["predict_schema"]),
+            training_type=TrainingType(serialized["training_type"]),
         )

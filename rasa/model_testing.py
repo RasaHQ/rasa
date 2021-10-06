@@ -3,6 +3,7 @@ import os
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -10,7 +11,7 @@ import rasa.utils.common
 from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 import rasa.shared.nlu.training_data.loading
-import rasa.shared.importers.autoconfig
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
@@ -133,6 +134,13 @@ def test_core(
     import rasa.model
     from rasa.core.agent import Agent
 
+    metadata = LocalModelStorage.metadata_from_archive(model)
+    if metadata.training_type == TrainingType.NLU:
+        rasa.shared.utils.cli.print_error(
+            "Unable to test: no core model found. Use 'rasa train' to train a "
+            "Rasa model and provide it via the '--model' argument."
+        )
+
     if additional_arguments is None:
         additional_arguments = {}
 
@@ -173,7 +181,9 @@ def test_nlu(
 
     rasa.shared.utils.io.create_directory(output_directory)
 
-    if os.path.exists(model):
+    metadata = LocalModelStorage.metadata_from_archive(model)
+
+    if os.path.exists(model) and metadata.training_type != TrainingType.CORE:
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )

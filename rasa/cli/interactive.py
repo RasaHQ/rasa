@@ -8,7 +8,9 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import interactive as arguments
 import rasa.cli.train as train
 import rasa.cli.utils
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.cli
 import rasa.utils.common
@@ -110,18 +112,17 @@ def perform_interactive_learning(
 
     args.model = zipped_model
 
-    with model.unpack_model(zipped_model) as model_path:
-        args.core, args.nlu = model.get_model_subdirectories(model_path)
-        if args.core is None:
-            rasa.shared.utils.cli.print_error_and_exit(
-                "Can not run interactive learning on an NLU-only model."
-            )
-
-        args.endpoints = rasa.cli.utils.get_validated_path(
-            args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+    metadata = LocalModelStorage.metadata_from_archive(zipped_model)
+    if metadata.training_type == TrainingType.NLU:
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Can not run interactive learning on an NLU-only model."
         )
 
-        do_interactive_learning(args, file_importer)
+    args.endpoints = rasa.cli.utils.get_validated_path(
+        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+    )
+
+    do_interactive_learning(args, file_importer)
 
 
 def get_provided_model(arg_model: Text) -> Optional[Text]:
