@@ -1,5 +1,7 @@
+import inspect
 import logging
 import secrets
+import shutil
 import tempfile
 import os
 import textwrap
@@ -14,6 +16,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 
 import rasa
+from rasa.core.policies.rule_policy import RulePolicyGraphComponent
 
 from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
 import rasa.model
@@ -979,28 +982,25 @@ def test_invalid_graph_schema(
 def test_fingerprint_changes_if_module_changes(
     tmp_path: Path, domain_path: Text, stories_path: Text, monkeypatch: MonkeyPatch
 ):
-    my_module = textwrap.dedent(
-        """
-    from rasa.core.policies.rule_policy import RulePolicyGraphComponent
-    from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+    rule_policy_path = inspect.getfile(RulePolicyGraphComponent)
+    module_name = "custom_rule_policy"
+    new_class_name = "CustomRulePolicyGraphComponent"
 
-    @DefaultV1Recipe.register(
-    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
-    )
-    class MyModuleGraphComponent(RulePolicyGraphComponent):
-        pass
-    """
-    )
-    module_name = "my_module"
-    Path(tmp_path, f"{module_name}.py").write_text(my_module)
+    custom_module_path = Path(tmp_path, f"{module_name}.py")
+    shutil.copy2(rule_policy_path, custom_module_path)
+
+    # Rename class as the class name has to be unique
+    source_code = custom_module_path.read_text()
+    source_code = source_code.replace("RulePolicyGraphComponent", new_class_name)
+    custom_module_path.write_text(source_code)
 
     config = textwrap.dedent(
-        """
+        f"""
     version: "2.0"
     recipe: "default.v1"
 
     policies:
-    - name: my_module.MyModule
+    - name: {module_name}.{new_class_name}
     """
     )
     monkeypatch.syspath_prepend(tmp_path)
@@ -1010,18 +1010,26 @@ def test_fingerprint_changes_if_module_changes(
         rasa.shared.utils.io.read_yaml(config), new_config_path
     )
 
+    # Train to initialize cache
     rasa.train(
         domain_path, str(new_config_path), [stories_path], output=str(tmp_path),
     )
 
-    my_module = textwrap.dedent(
-        f"""
-    {my_module}
-    def say_hi():
-        print("this changes everything")
-    """
+    # Make sure that the caching works as expected the code didn't change
+    result = rasa.train(
+        domain_path,
+        str(new_config_path),
+        [stories_path],
+        output=str(tmp_path),
+        dry_run=True,
     )
-    Path(tmp_path, f"{module_name}.py").write_text(my_module)
+
+    assert result.code == 0
+
+    # Make a change to the code so a new training is necessary
+    source_code = custom_module_path.read_text()
+    source_code = source_code.replace("Dict[Text, Any]", "Dict")
+    custom_module_path.write_text(source_code)
 
     result = rasa.train(
         domain_path,
@@ -1032,4 +1040,4 @@ def test_fingerprint_changes_if_module_changes(
     )
 
     assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
-    assert not result.dry_run_results["train_my_module.MyModule0"].is_hit
+    assert not result.dry_run_results[f"train_{module_name}.{new_class_name}0"].is_hit
