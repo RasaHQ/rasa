@@ -5,8 +5,9 @@ import json
 import numpy as np
 
 
-class Stats(TypedDict):
-    """A TypedDict for stats."""
+class MarkerStats(TypedDict):
+    """A TypedDict for statistics computed over extracted markers."""
+
     n: int
     mean: float
     median: float
@@ -26,7 +27,7 @@ def load_extracted_markers_json_file(path: Union[Text, Path]) -> List:
         return extracted_markers
 
 
-def compute_summary_stats(data_points: Union[List, np.ndarray]) -> Stats:
+def compute_summary_stats(data_points: Union[List, np.ndarray]) -> MarkerStats:
     """Computes summary statistics for a given array.
 
     Computes size, mean, median, min, and max.
@@ -36,7 +37,7 @@ def compute_summary_stats(data_points: Union[List, np.ndarray]) -> Stats:
         data_points: can be a numpy array or a list of numbers.
     """
     if np.size(data_points) > 0:
-        stats: Stats = {
+        stats: MarkerStats = {
             "n": int(np.size(data_points)),
             "mean": float(np.mean(data_points)),
             "median": float(np.median(data_points)),
@@ -45,7 +46,7 @@ def compute_summary_stats(data_points: Union[List, np.ndarray]) -> Stats:
         }
         return stats
     else:
-        empty_stats: Stats = {
+        empty_stats: MarkerStats = {
             "n": 0,
             "mean": np.nan,
             "median": np.nan,
@@ -57,7 +58,7 @@ def compute_summary_stats(data_points: Union[List, np.ndarray]) -> Stats:
 
 def compute_single_tracker_stats(
     single_tracker_markers: Dict[str, Any]
-) -> Dict[str, Stats]:
+) -> Dict[str, MarkerStats]:
     """Computes summary statistics for a single tracker."""
     tracker_stats = {}
     for marker in single_tracker_markers["markers"]:
@@ -69,7 +70,7 @@ def compute_single_tracker_stats(
 
 def compute_multi_tracker_stats(
     multi_tracker_markers: list,
-) -> Tuple[Dict, Dict[Any, Dict[str, Stats]]]:
+) -> Tuple[Dict[str, int], Dict[Any, Dict[str, MarkerStats]]]:
     """Computes summary statistics for multiple trackers."""
     overall_stats = {"num_trackers": len(multi_tracker_markers)}
     per_tracker_stats = {}

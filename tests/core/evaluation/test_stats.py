@@ -3,7 +3,7 @@ import os
 import math
 import numpy as np
 from typing import Text
-from rasa.core.evaluation.stats import (
+from rasa.core.evaluation.marker_stats import (
     load_extracted_markers_json_file,
     compute_multi_tracker_stats,
     compute_summary_stats,
