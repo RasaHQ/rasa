@@ -1,5 +1,4 @@
 import copy
-
 from typing import Dict, Text, List, Any, Callable
 
 import pytest
@@ -18,7 +17,10 @@ from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyPreprocessorGraphCompone
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import TEXT, ENTITIES
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractorGraphComponent
+from rasa.nlu.extractors.crf_entity_extractor import (
+    CRFEntityExtractorGraphComponent,
+    CRFEntityExtractorOptions,
+)
 
 
 @pytest.fixture()
@@ -34,6 +36,12 @@ def crf_entity_extractor(
         )
 
     return inner
+
+
+def test_all_features_defined():
+    assert set(CRFEntityExtractorOptions) == set(
+        CRFEntityExtractorGraphComponent.function_dict.keys()
+    )
 
 
 async def test_train_persist_load_with_composite_entities(

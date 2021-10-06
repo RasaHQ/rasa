@@ -70,11 +70,13 @@ def test_calculate_cls_vector(pooling, features, only_non_zero_vectors, expected
         ),
     ],
 )
-def test_validate_configs_compatible(
+def test_raise_if_featurizer_configs_are_not_compatible(
     featurizer_configs: List[Dict[Text, Any]], passes: bool
 ):
     if passes:
-        Featurizer2.validate_configs_compatible(featurizer_configs)
+        Featurizer2.raise_if_featurizer_configs_are_not_compatible(featurizer_configs)
     else:
         with pytest.raises(InvalidConfigException):
-            Featurizer2.validate_configs_compatible(featurizer_configs)
+            Featurizer2.raise_if_featurizer_configs_are_not_compatible(
+                featurizer_configs
+            )

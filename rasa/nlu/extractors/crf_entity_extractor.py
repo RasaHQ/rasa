@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum
 import logging
 import typing
 
@@ -63,35 +64,58 @@ class CRFToken:
         self.entity_group_tag = entity_group_tag
 
 
+class CRFEntityExtractorOptions(str, Enum):
+    """Features that can be used for the 'CRFEntityExtractor'."""
+
+    PATTERN = "pattern"
+    LOW = "low"
+    TITLE = "title"
+    PREFIX5 = "prefix5"
+    PREFIX2 = "prefix2"
+    SUFFIX5 = "suffix5"
+    SUFFIX3 = "suffix3"
+    SUFFIX2 = "suffix2"
+    SUFFIX1 = "suffix1"
+    BIAS = "bias"
+    POS = "pos"
+    POS2 = "pos2"
+    UPPER = "upper"
+    DIGIT = "digit"
+    TEXT_DENSE_FEATURES = "text_dense_features"
+    ENTITY = "entity"
+
+
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
 class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """Implements conditional random fields (CRF) to do named entity recognition."""
 
+    CONFIG_FEATURES = "features"
+
     function_dict: Dict[Text, Callable[[CRFToken], Any]] = {
-        "low": lambda crf_token: crf_token.text.lower(),
-        "title": lambda crf_token: crf_token.text.istitle(),
-        "prefix5": lambda crf_token: crf_token.text[:5],
-        "prefix2": lambda crf_token: crf_token.text[:2],
-        "suffix5": lambda crf_token: crf_token.text[-5:],
-        "suffix3": lambda crf_token: crf_token.text[-3:],
-        "suffix2": lambda crf_token: crf_token.text[-2:],
-        "suffix1": lambda crf_token: crf_token.text[-1:],
-        "bias": lambda crf_token: "bias",
-        "pos": lambda crf_token: crf_token.pos_tag,
-        "pos2": lambda crf_token: crf_token.pos_tag[:2]
+        CRFEntityExtractorOptions.LOW: lambda crf_token: crf_token.text.lower(),
+        CRFEntityExtractorOptions.TITLE: lambda crf_token: crf_token.text.istitle(),
+        CRFEntityExtractorOptions.PREFIX5: lambda crf_token: crf_token.text[:5],
+        CRFEntityExtractorOptions.PREFIX2: lambda crf_token: crf_token.text[:2],
+        CRFEntityExtractorOptions.SUFFIX5: lambda crf_token: crf_token.text[-5:],
+        CRFEntityExtractorOptions.SUFFIX3: lambda crf_token: crf_token.text[-3:],
+        CRFEntityExtractorOptions.SUFFIX2: lambda crf_token: crf_token.text[-2:],
+        CRFEntityExtractorOptions.SUFFIX1: lambda crf_token: crf_token.text[-1:],
+        CRFEntityExtractorOptions.BIAS: lambda _: "bias",
+        CRFEntityExtractorOptions.POS: lambda crf_token: crf_token.pos_tag,
+        CRFEntityExtractorOptions.POS2: lambda crf_token: crf_token.pos_tag[:2]
         if crf_token.pos_tag is not None
         else None,
-        "upper": lambda crf_token: crf_token.text.isupper(),
-        "digit": lambda crf_token: crf_token.text.isdigit(),
-        "pattern": lambda crf_token: crf_token.pattern,
-        "text_dense_features": (
+        CRFEntityExtractorOptions.UPPER: lambda crf_token: crf_token.text.isupper(),
+        CRFEntityExtractorOptions.DIGIT: lambda crf_token: crf_token.text.isdigit(),
+        CRFEntityExtractorOptions.PATTERN: lambda crf_token: crf_token.pattern,
+        CRFEntityExtractorOptions.TEXT_DENSE_FEATURES: (
             lambda crf_token: CRFEntityExtractorGraphComponent._convert_dense_features_for_crfsuite(  # noqa: E501
                 crf_token
             )
         ),
-        "entity": lambda crf_token: crf_token.entity_tag,
+        CRFEntityExtractorOptions.ENTITY: lambda crf_token: crf_token.entity_tag,
     }
 
     @staticmethod
@@ -111,22 +135,30 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             # "is the preceding token in title case?"
             # POS features require SpacyTokenizer
             # pattern feature require RegexFeaturizer
-            "features": [
-                ["low", "title", "upper"],
+            CRFEntityExtractorGraphComponent.CONFIG_FEATURES: [
                 [
-                    "low",
-                    "bias",
-                    "prefix5",
-                    "prefix2",
-                    "suffix5",
-                    "suffix3",
-                    "suffix2",
-                    "upper",
-                    "title",
-                    "digit",
-                    "pattern",
+                    CRFEntityExtractorOptions.LOW,
+                    CRFEntityExtractorOptions.TITLE,
+                    CRFEntityExtractorOptions.UPPER,
                 ],
-                ["low", "title", "upper"],
+                [
+                    CRFEntityExtractorOptions.LOW,
+                    CRFEntityExtractorOptions.BIAS,
+                    CRFEntityExtractorOptions.PREFIX5,
+                    CRFEntityExtractorOptions.PREFIX2,
+                    CRFEntityExtractorOptions.SUFFIX5,
+                    CRFEntityExtractorOptions.SUFFIX3,
+                    CRFEntityExtractorOptions.SUFFIX2,
+                    CRFEntityExtractorOptions.UPPER,
+                    CRFEntityExtractorOptions.TITLE,
+                    CRFEntityExtractorOptions.DIGIT,
+                    CRFEntityExtractorOptions.PATTERN,
+                ],
+                [
+                    CRFEntityExtractorOptions.LOW,
+                    CRFEntityExtractorOptions.TITLE,
+                    CRFEntityExtractorOptions.UPPER,
+                ],
             ],
             # The maximum number of iterations for optimization algorithms.
             "max_iterations": 50,
@@ -166,7 +198,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         )
 
     def _validate_configuration(self) -> None:
-        if len(self.component_config.get("features", [])) % 2 != 1:
+        if len(self.component_config.get(self.CONFIG_FEATURES, [])) % 2 != 1:
             raise ValueError(
                 "Need an odd number of crf feature lists to have a center word."
             )
@@ -387,7 +419,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         self, crf_tokens: List[CRFToken], include_tag_features: bool = False
     ) -> List[Dict[Text, Any]]:
         """Convert the list of tokens into discrete features."""
-        configured_features = self.component_config["features"]
+        configured_features = self.component_config[self.CONFIG_FEATURES]
         sentence_features = []
 
         for token_idx in range(len(crf_tokens)):
@@ -418,10 +450,8 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         window_range: range,
         include_tag_features: bool,
     ) -> Dict[Text, Any]:
-        """Convert a token into discrete features including word before and word
-        after."""
-
-        configured_features = self.component_config["features"]
+        """Convert a token into discrete features including words before and after."""
+        configured_features = self.component_config[self.CONFIG_FEATURES]
         prefixes = [str(i) for i in window_range]
 
         token_features = {}
@@ -452,10 +482,10 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 # over and over again, making training very slow)
                 additional_features = []
                 if include_tag_features:
-                    additional_features.append("entity")
+                    additional_features.append(CRFEntityExtractorOptions.ENTITY)
 
                 for feature in features + additional_features:
-                    if feature == "pattern":
+                    if feature == CRFEntityExtractorOptions.PATTERN:
                         # add all regexes extracted from the 'RegexFeaturizer' as a
                         # feature: 'pattern_name' is the name of the pattern the user
                         # set in the training data, 'matched' is either 'True' or
@@ -499,7 +529,9 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             The pattern dict.
         """
         if message.get(TOKENS_NAMES[TEXT]) is not None:
-            return message.get(TOKENS_NAMES[TEXT])[idx].get("pattern", {})
+            return message.get(TOKENS_NAMES[TEXT])[idx].get(
+                CRFEntityExtractorOptions.PATTERN, {}
+            )
         return {}
 
     def _get_dense_features(self, message: Message) -> Optional[np.ndarray]:
@@ -515,7 +547,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         if len(tokens) != len(features.features):
             rasa.shared.utils.io.raise_warning(
                 f"Number of dense features ({len(features.features)}) for attribute "
-                f"'TEXT' does not match number of tokens ({len(tokens)}).",
+                f"'{TEXT}' does not match number of tokens ({len(tokens)}).",
                 docs=DOCS_URL_COMPONENTS + "#crfentityextractor",
             )
             return None
