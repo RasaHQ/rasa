@@ -37,21 +37,23 @@ def compute_summary_stats(data_points: Union[List, np.ndarray]) -> Stats:
         data_points: can be a numpy array or a list of numbers.
     """
     if np.size(data_points) > 0:
-        return {
+        stats: Stats = {
             "n": int(np.size(data_points)),
             "mean": float(np.mean(data_points)),
             "median": float(np.median(data_points)),
             "min": int(np.min(data_points)),
             "max": int(np.max(data_points)),
         }
+        return stats
     else:
-        return {
+        empty_stats: Stats = {
             "n": 0,
             "mean": np.nan,
             "median": np.nan,
             "min": np.nan,
             "max": np.nan,
         }
+        return empty_stats
 
 
 def compute_single_tracker_stats(
