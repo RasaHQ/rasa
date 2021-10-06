@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Iterable, List, Dict, Text, Any, Set, Type
 
+from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
@@ -48,7 +49,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 
-# TODO: replace these once the Recipe is merged
+# TODO: Can we replace this with the registered types from the regitry?
 TRAINABLE_EXTRACTORS = [
     MitieEntityExtractorGraphComponent,
     CRFEntityExtractorGraphComponent,
@@ -123,6 +124,8 @@ class DefaultV1RecipeValidator(GraphComponent):
         Args:
            training_data: The training data for the NLU components.
         """
+        training_data.validate()
+
         self._raise_if_more_than_one_tokenizer()
         self._raise_if_featurizers_are_not_compatible()
         self._warn_of_competing_extractors()
@@ -284,7 +287,13 @@ class DefaultV1RecipeValidator(GraphComponent):
             if issubclass(schema_node.uses, TokenizerGraphComponent)
         ]
 
-        if len(types_of_tokenizer_schema_nodes) > 1:
+        is_end_to_end = any(
+            issubclass(schema_node.uses, CoreFeaturizationInputConverter)
+            for schema_node in self._graph_schema.nodes.values()
+        )
+
+        allowed_number_of_tokenizers = 2 if is_end_to_end else 1
+        if len(types_of_tokenizer_schema_nodes) > allowed_number_of_tokenizers:
             raise InvalidConfigException(
                 f"The configuration configuration contains more than one tokenizer, "
                 f"which is not possible at this time. You can only use one tokenizer. "
@@ -298,9 +307,6 @@ class DefaultV1RecipeValidator(GraphComponent):
         Competing extractors are e.g. `CRFEntityExtractor` and `DIETClassifier`.
         Both of these look for the same entities based on the same training data
         leading to ambiguity in the results.
-
-        Args:
-           node_names: names of all components
         """
         extractors_in_configuration: Set[
             Type[GraphComponent]

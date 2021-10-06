@@ -1,3 +1,4 @@
+from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperGraphComponent
 from typing import Dict, List, Optional, Set, Text, Any, Tuple, Type
 import re
@@ -43,6 +44,9 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_TYPE,
     INTENT_RESPONSE_KEY,
+    TEXT,
+    INTENT,
+    RESPONSE,
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -114,8 +118,25 @@ def _test_validation_warnings_with_default_configs(
 def test_nlu_warn_if_training_examples_with_intent_response_key_are_unused(
     component_type: Type[GraphComponent], warns: bool,
 ):
-    message_data = {INTENT_RESPONSE_KEY: "dummy"}
-    training_data = TrainingData(training_examples=[Message(message_data)])
+    messages = [
+        Message(
+            {
+                INTENT: "faq",
+                INTENT_RESPONSE_KEY: "faq/dummy",
+                TEXT: "hi",
+                RESPONSE: "utter_greet",
+            }
+        ),
+        Message(
+            {
+                INTENT: "faq",
+                INTENT_RESPONSE_KEY: "faq/dummy",
+                TEXT: "hi hi",
+                RESPONSE: "utter_greet",
+            }
+        ),
+    ]
+    training_data = TrainingData(training_examples=messages)
     warnings = (
         (
             [
@@ -142,8 +163,19 @@ def test_nlu_warn_if_training_examples_with_intent_response_key_are_unused(
 def test_nlu_warn_if_training_examples_with_entities_are_unused(
     component_type: Type[GraphComponent], warns: bool,
 ):
-    message_data = {ENTITIES: [{ENTITY_ATTRIBUTE_TYPE: "dummy"}]}
-    training_data = TrainingData(training_examples=[Message(message_data)])
+    messages = [
+        Message(
+            {ENTITIES: [{ENTITY_ATTRIBUTE_TYPE: "dummy"}], INTENT: "dummy", TEXT: "hi"}
+        ),
+        Message(
+            {
+                ENTITIES: [{ENTITY_ATTRIBUTE_TYPE: "dummy"}],
+                INTENT: "dummy",
+                TEXT: "hi hi",
+            }
+        ),
+    ]
+    training_data = TrainingData(training_examples=messages)
     warnings = (
         (
             [
@@ -178,19 +210,26 @@ def test_nlu_warn_if_training_examples_with_entities_are_unused(
 def test_nlu_warn_if_training_examples_with_entity_roles_are_unused(
     component_type: Type[GraphComponent], role_instead_of_group: bool, warns: bool,
 ):
-    message_data = {
-        ENTITIES: [
+    messages = [
+        Message(
             {
-                ENTITY_ATTRIBUTE_TYPE: "dummy",
-                (
-                    ENTITY_ATTRIBUTE_ROLE
-                    if role_instead_of_group
-                    else ENTITY_ATTRIBUTE_GROUP
-                ): "dummy-2",
+                ENTITIES: [
+                    {
+                        ENTITY_ATTRIBUTE_TYPE: "dummy",
+                        (
+                            ENTITY_ATTRIBUTE_ROLE
+                            if role_instead_of_group
+                            else ENTITY_ATTRIBUTE_GROUP
+                        ): "dummy-2",
+                    }
+                ],
+                TEXT: f"hi{i}",
+                INTENT: "dummy",
             }
-        ]
-    }
-    training_data = TrainingData(training_examples=[Message(message_data)])
+        )
+        for i in range(2)
+    ]
+    training_data = TrainingData(training_examples=messages)
     warnings = (
         [
             "You have defined training data with entities that have roles/groups, "
@@ -219,7 +258,7 @@ def test_nlu_warn_if_regex_features_are_not_used(
     component_type: Type[GraphComponent], warns: bool
 ):
     training_data = TrainingData(
-        training_examples=[Message({})],
+        training_examples=[Message({TEXT: "hi"}), Message({TEXT: "hi hi"})],
         regex_features=[{"name": "dummy", "pattern": "dummy"}],
     )
     component_types = [WhitespaceTokenizerGraphComponent]
@@ -260,7 +299,7 @@ def test_nlu_warn_if_lookup_table_is_not_used(
     warns_consumer: bool,
 ):
     training_data = TrainingData(
-        training_examples=[Message({})],
+        training_examples=[Message({TEXT: "hi"}), Message({TEXT: "hi hi"})],
         lookup_tables=[{"elements": "this-is-no-file-and-that-does-not-matter"}],
     )
     assert training_data.lookup_tables is not None
@@ -347,7 +386,7 @@ def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch(
     nodes: List[SchemaNode], warns: bool
 ):
     training_data = TrainingData(
-        training_examples=[Message({})],
+        training_examples=[Message({TEXT: "hi"}), Message({TEXT: "hi hi"})],
         lookup_tables=[{"elements": "this-is-no-file-and-that-does-not-matter"}],
     )
     assert training_data.lookup_tables is not None
@@ -390,7 +429,8 @@ def test_nlu_warn_if_entity_synonyms_unused(
     components: List[GraphComponent], warns: bool
 ):
     training_data = TrainingData(
-        training_examples=[Message({})], entity_synonyms={"cat": "dog"},
+        training_examples=[Message({TEXT: "hi"}), Message({TEXT: "hi hi"})],
+        entity_synonyms={"cat": "dog"},
     )
     assert training_data.entity_synonyms is not None
     importer = DummyImporter(training_data=training_data)
@@ -418,17 +458,44 @@ def test_nlu_warn_if_entity_synonyms_unused(
             assert len(records) == 0
 
 
-def test_nlu_raise_if_more_than_one_tokenizer():
+@pytest.mark.parametrize(
+    "nodes",
+    [
+        {
+            # With end-to-end the tokenizer appears twice due to the Core featurization
+            "end_to_end": SchemaNode({}, CoreFeaturizationInputConverter, "", "", {}),
+            "a": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+            "b": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+            "c": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+        },
+        {
+            "a": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+            "b": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+        },
+    ],
+)
+def test_nlu_raise_if_more_than_one_tokenizer(nodes: Dict[Text, SchemaNode]):
+    graph_schema = GraphSchema(nodes)
+    importer = DummyImporter()
+    validator = DefaultV1RecipeValidator(graph_schema)
+    with pytest.raises(InvalidConfigException, match=".* more than one tokenizer"):
+        validator.validate(importer)
+
+
+def test_nlu_raise_if_two_tokenizers_with_end_to_end():
     graph_schema = GraphSchema(
         {
+            # With end-to-end the tokenizer appears twice due to the Core featurization
+            "end_to_end": SchemaNode({}, CoreFeaturizationInputConverter, "", "", {}),
             "a": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
             "b": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
         }
     )
     importer = DummyImporter()
     validator = DefaultV1RecipeValidator(graph_schema)
-    with pytest.raises(InvalidConfigException, match=".* more than one tokenizer"):
-        validator.validate(importer)
+
+    # Does not raise
+    validator.validate(importer)
 
 
 @pytest.mark.parametrize(
@@ -897,3 +964,13 @@ def test_core_warn_if_rule_data_unused(
         ),
     ):
         validator.validate(importer)
+
+
+def test_nlu_training_data_validation():
+    importer = DummyImporter(
+        training_data=TrainingData([Message({TEXT: "some text", INTENT: ""})])
+    )
+    nlu_validator = DefaultV1RecipeValidator(GraphSchema({}))
+
+    with pytest.warns(UserWarning, match="Found empty intent"):
+        nlu_validator.validate(importer)

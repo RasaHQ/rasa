@@ -19,7 +19,6 @@ from rasa.engine.graph import (
     GraphSchema,
     GraphComponent,
     SchemaNode,
-    ExecutionContext,
 )
 from rasa.engine.constants import (
     PLACEHOLDER_IMPORTER,
@@ -28,7 +27,6 @@ from rasa.engine.constants import (
 )
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.adders.nlu_prediction_to_history_adder import (
     NLUPredictionToHistoryAdder,
 )
@@ -45,35 +43,13 @@ from rasa.graph_components.providers.story_graph_provider import StoryGraphProvi
 from rasa.graph_components.providers.training_tracker_provider import (
     TrainingTrackerProvider,
 )
-from rasa.graph_components.validators.finetuning_validator import FinetuningValidator
-
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.importers.autoconfig import TrainingType
 
-from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.utils.tensorflow.constants import EPOCHS
 import rasa.shared.utils.common
 
 logger = logging.getLogger(__name__)
-
-
-class SchemaValidator(GraphComponent):
-    """Temporary placeholder."""
-
-    @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> GraphComponent:
-        """Creates component."""
-        pass
-
-    def validate(self, importer: TrainingDataImporter) -> TrainingDataImporter:
-        """Validates component."""
-        return importer
 
 
 default_predict_kwargs = dict(constructor_name="load", eager=True, is_target=False,)
@@ -226,12 +202,19 @@ class DefaultV1Recipe(Recipe):
     def _create_train_nodes(
         self, config: Dict[Text, Any], cli_parameters: Dict[Text, Any]
     ) -> Tuple[Dict[Text, SchemaNode], List[Text]]:
+        from rasa.graph_components.validators.default_recipe_validator import (
+            DefaultV1RecipeValidator,
+        )
+        from rasa.graph_components.validators.finetuning_validator import (
+            FinetuningValidator,
+        )
+
         train_config = copy.deepcopy(config)
 
         train_nodes = {
             "schema_validator": SchemaNode(
                 needs={"importer": PLACEHOLDER_IMPORTER},
-                uses=SchemaValidator,
+                uses=DefaultV1RecipeValidator,
                 constructor_name="create",
                 fn="validate",
                 config={},
