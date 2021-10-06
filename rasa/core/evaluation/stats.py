@@ -91,3 +91,4 @@ def np_encoder(obj: Any) -> Any:
     """Encodes numpy array values to make them JSON serializable."""
     if isinstance(obj, np.generic):
         return obj.item()
+    return obj
