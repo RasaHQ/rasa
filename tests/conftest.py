@@ -193,7 +193,7 @@ def extracted_markers_json() -> Text:
 
 @pytest.fixture(scope="session")
 def marker_stats_output_json() -> Text:
-    return "data/test_markers/stats_output.json"
+    return "stats_output.json"
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
