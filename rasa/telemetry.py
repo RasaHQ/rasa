@@ -9,11 +9,10 @@ import multiprocessing
 import os
 from pathlib import Path
 import platform
-from subprocess import CalledProcessError, DEVNULL, check_output
 import sys
 import textwrap
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text, Union
+from typing import Any, Callable, Dict, List, Optional, Text
 import uuid
 import requests
 from terminaltables import SingleTable
@@ -26,6 +25,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
@@ -466,21 +466,6 @@ def with_default_context_fields(
     return {**_default_context_fields(), **context}
 
 
-def project_fingerprint() -> Optional[Text]:
-    """Create a hash for the project in the current working directory.
-
-    Returns:
-        project hash
-    """
-    try:
-        remote = check_output(  # skipcq:BAN-B607,BAN-B603
-            ["git", "remote", "get-url", "origin"], stderr=DEVNULL
-        )
-        return hashlib.sha256(remote).hexdigest()
-    except (CalledProcessError, OSError):
-        return None
-
-
 def _default_context_fields() -> Dict[Text, Any]:
     """Return a dictionary that contains the default context values.
 
@@ -495,7 +480,7 @@ def _default_context_fields() -> Dict[Text, Any]:
         TELEMETRY_CONTEXT = {
             "os": {"name": platform.system(), "version": platform.release()},
             "ci": in_continuous_integration(),
-            "project": project_fingerprint(),
+            "project": model.project_fingerprint(),
             "directory": _hash_directory_path(os.getcwd()),
             "python": sys.version.split(" ")[0],
             "rasa_open_source": rasa.__version__,
@@ -888,7 +873,7 @@ def track_server_start(
     number_of_workers: int,
     is_api_enabled: bool,
 ) -> None:
-    """Track when a user starts a rasa server.
+    """Tracks when a user starts a rasa server.
 
     Args:
         input_channels: Used input channels
@@ -901,17 +886,18 @@ def track_server_start(
 
     def project_fingerprint_from_model(
         _model_directory: Optional[Text],
-    ) -> Optional[Union[Text, List[Text], int, float]]:
-        """Get project fingerprint from an app's loaded model."""
-        if _model_directory:
-            try:
-                # TODO: We need to figure out what the project fingerprint is
-                with model.get_model(_model_directory) as unpacked_model:
-                    fingerprint = model.fingerprint_from_path(unpacked_model)
-                    return fingerprint.get(model.FINGERPRINT_PROJECT)
-            except Exception:
-                return None
-        return None
+    ) -> Optional[Text]:
+        """Gets project fingerprint from an app's loaded model."""
+        if not model_directory:
+            return None
+
+        try:
+            model_archive = model.get_local_model(_model_directory)
+            metadata = LocalModelStorage.metadata_from_archive(model_archive)
+
+            return metadata.project_fingerprint
+        except Exception:
+            return None
 
     if not endpoints:
         endpoints = AvailableEndpoints()
@@ -984,13 +970,14 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
         e2e: indicator if tests running in end to end mode
         agent: Agent of the model getting tested
     """
-    # TODO: We need project fingerprint for the model.
-    # fingerprint = model.fingerprint_from_path(agent.model_directory or "")
-    # project = fingerprint.get(model.FINGERPRINT_PROJECT)
-    # _track(
-    #     TELEMETRY_TEST_CORE_EVENT,
-    #     {"project": project, "end_to_end": e2e, "num_story_steps": num_story_steps},
-    # )
+    _track(
+        TELEMETRY_TEST_CORE_EVENT,
+        {
+            "project": agent.processor.model_metadata.project_fingerprint,
+            "end_to_end": e2e,
+            "num_story_steps": num_story_steps,
+        },
+    )
 
 
 @ensure_telemetry_enabled

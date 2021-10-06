@@ -16,8 +16,8 @@ import rasa.shared.utils.io
 from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-
 from rasa.engine.graph import GraphSchema
+import rasa.model
 
 logger = logging.getLogger(__name__)
 
@@ -195,4 +195,5 @@ class LocalModelStorage(ModelStorage):
             train_schema=train_schema,
             predict_schema=predict_schema,
             training_type=training_type,
+            project_fingerprint=rasa.model.project_fingerprint(),
         )
