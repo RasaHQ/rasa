@@ -743,9 +743,8 @@ def temp_cache_for_fixtures(tmp_path_factory: TempPathFactory) -> None:
         f"cache-{uuid.uuid4()}"
     )
 
-    yield
-
-    LocalTrainingCache._get_cache_location = old_get_cache_location
+    # We can omit reverting the monkeypatch as this fixture is torn down after all the
+    # tests ran
 
 
 @pytest.fixture(autouse=True)
