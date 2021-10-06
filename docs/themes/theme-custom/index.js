@@ -11,6 +11,10 @@ module.exports = function() {
       return path.resolve(__dirname, './theme');
     },
 
+    getClientModules() {
+      return [require.resolve('./theme.css')];
+    },
+
     configureWebpack() {
       return {
         resolve: {

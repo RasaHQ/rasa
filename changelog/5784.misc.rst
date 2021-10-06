@@ -1,3 +1,0 @@
-Add testing of Rasa Open Source installations on Windows.
-
-Update tests to support Windows.

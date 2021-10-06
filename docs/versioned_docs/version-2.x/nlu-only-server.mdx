@@ -1,0 +1,36 @@
+---
+id: nlu-only-server
+sidebar_label: NLU-Only Server
+title: NLU-Only Server
+description: Read about connecting to a Rasa NLU-only server using the HTTP API.
+abstract: You can run an NLU-only server and use the HTTP API to connect to it.
+---
+
+
+## Connecting to an NLU server
+
+You can connect a [Rasa NLU-only server](./nlu-only.mdx#running-an-nlu-server) to a separately running Rasa dialogue management only server
+by adding the connection details to the dialogue management server's endpoint configuration file:
+
+```yaml title="endpoints.yml"
+nlu:
+    url: "http://<your nlu host>:<your nlu port>"
+    token: <token>  # [optional]
+    token_name: <name of the token> # [optional] (default: token)
+```
+
+The `token` and `token_name` refer to optional [authentication parameters](./http-api.mdx#token-based-auth).
+
+The dialogue management server should serve a model that does not include an NLU model.
+To obtain a dialogue management only model, train a model with `rasa train core` or use 
+`rasa train` but exclude all NLU data.
+
+When the dialogue management server receives a message, it will [send a request](https://rasa.com/docs/rasa/pages/http-api#operation/parseModelMessage) to 
+`http://<your nlu host>:<your nlu port>/model/parse` and use the parsing information returned.
+
+:::note endpoint configuration
+The endpoint configuration for the dialogue management server will include an `nlu` endpoint that refers to your NLU only server. Therefore you should **use a separate endpoint configuration file** for the NLU server, excluding the `nlu` endpoint.
+:::
+
+If you are implementing a custom NLU server (i.e. not Rasa NLU), your server should provide a `/model/parse` endpoint that responds to requests in the same 
+format as a Rasa NLU server does.

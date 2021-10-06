@@ -1,2 +1,0 @@
-If two entities are separated by a single space and uses BILOU tagging,
-extract them as two separate entities based on their BILOU tags.
