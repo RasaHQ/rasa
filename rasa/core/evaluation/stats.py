@@ -7,7 +7,6 @@ import numpy as np
 
 class Stats(TypedDict):
     """A TypedDict for stats."""
-
     n: int
     mean: float
     median: float
