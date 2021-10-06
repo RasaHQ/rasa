@@ -9,11 +9,12 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.common
 from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
+from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 import rasa.shared.nlu.training_data.loading
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
-
+import rasa.model
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,6 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     Returns: The adjusted model_directory that should be used in
         `test_core_models_in_directory`.
     """
-    import rasa.model
 
     p = Path(model_directory)
     if p.is_file():
@@ -131,8 +131,16 @@ def test_core(
     use_conversation_test_files: bool = False,
 ) -> None:
     """Tests a trained Core model against a set of test stories."""
-    import rasa.model
     from rasa.core.agent import Agent
+
+    try:
+        model = rasa.model.get_local_model(model)
+    except ModelNotFound:
+        rasa.shared.utils.cli.print_error(
+            "Unable to test: could not find a model. Use 'rasa train' to train a "
+            "Rasa model and provide it via the '--model' argument."
+        )
+        return
 
     metadata = LocalModelStorage.metadata_from_archive(model)
     if metadata.training_type == TrainingType.NLU:
@@ -180,6 +188,15 @@ def test_nlu(
     from rasa.nlu.test import run_evaluation
 
     rasa.shared.utils.io.create_directory(output_directory)
+
+    try:
+        model = rasa.model.get_local_model(model)
+    except ModelNotFound:
+        rasa.shared.utils.cli.print_error(
+            "Could not find any model. Use 'rasa train nlu' to train a "
+            "Rasa model and provide it via the '--model' argument."
+        )
+        return
 
     metadata = LocalModelStorage.metadata_from_archive(model)
 
