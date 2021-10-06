@@ -213,7 +213,7 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
-@pytest.mark.timeout(210, func_only=True)
+@pytest.mark.timeout(240, func_only=True)
 async def test_train_persist_load_with_different_settings_non_windows(
     component_builder: ComponentBuilder, tmp_path: Path
 ):
