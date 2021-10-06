@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import logging
 
-from typing import Any, Text, List, Type, Dict, Tuple
+from typing import Any, Text, List, Dict, Tuple
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe

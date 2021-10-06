@@ -83,7 +83,7 @@ class MitieIntentClassifierGraphComponent(GraphComponent):
 
         return self._resource
 
-    def process(self, messages: List[Message], model: MitieModel) -> None:
+    def process(self, messages: List[Message], model: MitieModel) -> List[Message]:
         """Make intent predictions using `mitie`.
 
         Args:
@@ -103,6 +103,8 @@ class MitieIntentClassifierGraphComponent(GraphComponent):
             message.set(
                 "intent", {"name": intent, "confidence": confidence}, add_to_output=True
             )
+
+        return messages
 
     @staticmethod
     def _tokens_of_message(message: Message) -> List[Text]:
