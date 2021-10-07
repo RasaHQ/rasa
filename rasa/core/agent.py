@@ -277,7 +277,7 @@ async def load_agent(
 
     except Exception as e:
         logger.error(f"Could not load model due to {e}.")
-        raise
+        return agent
 
 
 class Agent:
