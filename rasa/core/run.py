@@ -226,18 +226,14 @@ async def load_agent_on_start(
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments).
     """
-    try:
-        app.agent = await agent.load_agent(
-            model_path=model_path,
-            remote_storage=remote_storage,
-            endpoints=endpoints,
-            loop=loop,
-        )
-        logger.info("Rasa server is up and running.")
-        return app.agent
-    except Exception as e:
-        rasa.shared.utils.io.raise_warning(f"Error: {type(e)}: {e}")
-        raise
+    app.agent = await agent.load_agent(
+        model_path=model_path,
+        remote_storage=remote_storage,
+        endpoints=endpoints,
+        loop=loop,
+    )
+    logger.info("Rasa server is up and running.")
+    return app.agent
 
 
 async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
