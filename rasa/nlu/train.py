@@ -58,7 +58,11 @@ async def load_data_from_endpoint(
 
         return training_data
     except Exception as e:
-        logger.warning(f"Could not retrieve training data from URL:\n{e}")
+        logger.warning(
+            f"Could not retrieve training data from URL. Using empty "
+            f"training data instead. Error details:\n{e}"
+        )
+        return TrainingData()
 
 
 def create_persistor(persistor: Optional[Text]) -> Optional["Persistor"]:
@@ -102,7 +106,7 @@ async def train(
             training_data_endpoint, nlu_config.language
         )
     elif isinstance(data, TrainingDataImporter):
-        training_data = await data.get_nlu_data(nlu_config.language)
+        training_data = data.get_nlu_data(nlu_config.language)
     else:
         training_data = load_data(data, nlu_config.language)
 

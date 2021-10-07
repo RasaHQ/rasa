@@ -1,5 +1,8 @@
 import asyncio
 import datetime
+import textwrap
+from pathlib import Path
+
 import freezegun
 import pytest
 import time
@@ -8,17 +11,17 @@ import json
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable, Type, Any, Tuple
+from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch, Mock
 
-from rasa.core.policies.rule_policy import RulePolicy
+import rasa.shared.utils.io
+from rasa.core.policies.rule_policy import RulePolicyGraphComponent
 from rasa.core.actions.action import (
     ActionBotResponse,
     ActionListen,
     ActionExecutionRejection,
     ActionUnlikelyIntent,
 )
-import rasa.core.policies.policy
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 import tests.utilities
@@ -30,6 +33,12 @@ from rasa.core.channels.channel import (
     UserMessage,
     OutputChannel,
 )
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import ActionLimitReached
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -49,14 +58,13 @@ from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
@@ -67,7 +75,6 @@ from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
     SESSION_START_METADATA_SLOT,
-    RULE_SNIPPET_ACTION_NAME,
 )
 
 import logging
@@ -926,50 +933,22 @@ async def test_action_unlikely_intent_metadata(default_processor: MessageProcess
     assert applied_events[1].metadata == metadata
 
 
-@pytest.mark.parametrize(
-    "predict_function",
-    [
-        lambda tracker, domain, _: PolicyPrediction([1, 0, 2, 3], "some-policy"),
-        lambda tracker, domain, _=True: PolicyPrediction([1, 0], "some-policy"),
-    ],
-)
-def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
-    predict_function: Callable,
-):
-    policy = TEDPolicy()
-
-    policy.predict_action_probabilities = predict_function
-
-    ensemble = SimplePolicyEnsemble(policies=[policy])
-    interpreter = Mock()
-    domain = Domain.empty()
-
-    processor = MessageProcessor(
-        interpreter,
-        ensemble,
-        domain,
-        InMemoryTrackerStore(domain),
-        InMemoryLockStore(),
-        Mock(),
-    )
-
-    with pytest.warns(DeprecationWarning):
-        processor._get_next_action_probabilities(
-            DialogueStateTracker.from_events(
-                "lala", [ActionExecuted(ACTION_LISTEN_NAME)]
-            )
-        )
-
-
 async def test_restart_triggers_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
 ):
     # The rule policy is trained and used so as to allow the default action
     # ActionRestart to be predicted
-    rule_policy = RulePolicy()
-    rule_policy.train([], default_processor.domain, RegexInterpreter())
+    rule_policy = RulePolicyGraphComponent.create(
+        RulePolicyGraphComponent.get_default_config(),
+        default_model_storage,
+        Resource("rule_policy"),
+        default_execution_context,
+    )
+    rule_policy.train([], default_processor.domain)
     monkeypatch.setattr(
         default_processor.policy_ensemble,
         "policies",
@@ -1047,39 +1026,6 @@ async def test_handle_message_if_action_manually_rejects(
 
     assert ActionExecuted("utter_greet") not in logged_events
     assert all(event in logged_events for event in rejection_events)
-
-
-def test_predict_next_action_with_deprecated_ensemble(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
-):
-    expected_confidence = 2.0
-    expected_action = "utter_greet"
-    expected_probabilities = rasa.core.policies.policy.confidence_scores_for(
-        expected_action, expected_confidence, default_processor.domain
-    )
-    expected_policy_name = "deprecated ensemble"
-
-    class DeprecatedEnsemble(PolicyEnsemble):
-        def probabilities_using_best_policy(
-            self,
-            tracker: DialogueStateTracker,
-            domain: Domain,
-            interpreter: NaturalLanguageInterpreter,
-            **kwargs: Any,
-        ) -> Tuple[List[float], Optional[Text]]:
-            return expected_probabilities, expected_policy_name
-
-    monkeypatch.setattr(default_processor, "policy_ensemble", DeprecatedEnsemble([]))
-
-    tracker = DialogueStateTracker.from_events(
-        "some sender", [ActionExecuted(ACTION_LISTEN_NAME)]
-    )
-
-    with pytest.warns(FutureWarning):
-        action, prediction = default_processor.predict_next_action(tracker)
-
-    assert action.name() == expected_action
-    assert prediction == PolicyPrediction(expected_probabilities, expected_policy_name)
 
 
 async def test_policy_events_are_applied_to_tracker(
@@ -1265,14 +1211,16 @@ async def test_logging_of_end_to_end_action():
         assert event == expected
 
 
-def test_predict_next_action_with_hidden_rules():
+async def test_predict_next_action_with_hidden_rules(
+    trained_async: Callable, tmp_path: Path
+):
     rule_intent = "rule_intent"
     rule_action = "rule_action"
     story_intent = "story_intent"
     story_action = "story_action"
     rule_slot = "rule_slot"
     story_slot = "story_slot"
-    domain = Domain.from_yaml(
+    domain_content = textwrap.dedent(
         f"""
         version: "2.0"
         intents:
@@ -1288,47 +1236,50 @@ def test_predict_next_action_with_hidden_rules():
             type: text
         """
     )
+    domain = Domain.from_yaml(domain_content)
+    domain_path = tmp_path / "domain.yml"
+    rasa.shared.utils.io.write_text_file(domain_content, domain_path)
 
-    rule = TrackerWithCachedStates.from_events(
-        "rule",
-        domain=domain,
-        slots=domain.slots,
-        evts=[
-            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": rule_intent}),
-            ActionExecuted(rule_action),
-            SlotSet(rule_slot, rule_slot),
-            ActionExecuted(ACTION_LISTEN_NAME),
-        ],
-        is_rule_tracker=True,
-    )
-    story = TrackerWithCachedStates.from_events(
-        "story",
-        domain=domain,
-        slots=domain.slots,
-        evts=[
-            ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": story_intent}),
-            ActionExecuted(story_action),
-            SlotSet(story_slot, story_slot),
-            ActionExecuted(ACTION_LISTEN_NAME),
-        ],
-    )
-    interpreter = RegexInterpreter()
-    ensemble = SimplePolicyEnsemble(policies=[RulePolicy(), MemoizationPolicy()])
-    ensemble.train([rule, story], domain, interpreter)
+    training_data = textwrap.dedent(
+        f"""
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
-    tracker_store = InMemoryTrackerStore(domain)
-    lock_store = InMemoryLockStore()
-    processor = MessageProcessor(
-        interpreter,
-        ensemble,
-        domain,
-        tracker_store,
-        lock_store,
-        TemplatedNaturalLanguageGenerator(domain.templates),
+    rules:
+    - rule: rule
+      steps:
+      - intent: {rule_intent}
+      - action: {rule_action}
+      - slot_was_set:
+          - {rule_slot}: {rule_slot}
+
+    stories:
+    - story: story
+      steps:
+      - intent: {story_intent}
+      - action: {story_action}
+      - slot_was_set:
+          - {story_slot}: {story_slot}
+    """
     )
+    training_data_path = tmp_path / "data.yml"
+    rasa.shared.utils.io.write_text_file(training_data, training_data_path)
+
+    config = textwrap.dedent(
+        f"""
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    policies:
+    - name: RulePolicy
+    - name: MemoizationPolicy
+
+    """
+    )
+    config_path = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_text_file(config, config_path)
+    model_path = await trained_async(
+        str(domain_path), str(config_path), [str(training_data_path)]
+    )
+    agent = Agent.load_local_model(model_path)
+    processor = agent.create_processor()
 
     tracker = DialogueStateTracker.from_events(
         "casd",
@@ -1366,3 +1317,57 @@ def test_predict_next_action_with_hidden_rules():
     action, prediction = processor.predict_next_action(tracker)
     assert isinstance(action, ActionListen)
     assert not prediction.hide_rule_turn
+
+
+def test_predict_next_action_raises_limit_reached_exception(domain: Domain):
+    interpreter = RegexInterpreter()
+    ensemble = SimplePolicyEnsemble(policies=[])
+    tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
+
+    processor = MessageProcessor(
+        interpreter,
+        ensemble,
+        domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        max_number_of_predictions=1,
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("Hi!"),
+            ActionExecuted("test_action"),
+        ],
+    )
+    tracker.set_latest_action({"action_name": "test_action"})
+
+    with pytest.raises(ActionLimitReached):
+        processor.predict_next_action(tracker)
+
+
+async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
+    text = "Hello there"
+    tokenizer = WhitespaceTokenizer()
+    tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
+    indices = [(t.start, t.end) for t in tokens]
+
+    message = UserMessage(text)
+    tracker_store = InMemoryTrackerStore(mood_agent.domain)
+    lock_store = InMemoryLockStore()
+    processor = MessageProcessor(
+        mood_agent.interpreter,
+        mood_agent.policy_ensemble,
+        mood_agent.domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(mood_agent.domain.responses),
+    )
+    tracker = await processor.log_message(message)
+    event = tracker.get_last_event_for(event_type=UserUttered)
+    event_tokens = event.as_dict().get("parse_data").get("text_tokens")
+
+    assert event_tokens == indices

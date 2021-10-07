@@ -57,14 +57,17 @@ from rasa.core.tracker_store import (
 )
 from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from tests.core.conftest import MockedMongoTrackerStore
-from tests.conftest import (
-    EXAMPLE_DOMAINS,
+from tests.dialogues import (
     TEST_DIALOGUES,
+    TEST_MOODBOT_DIALOGUE,
+    TEST_DOMAINS_FOR_DIALOGUES,
 )
 from tests.core.utilities import (
-    tracker_from_dialogue_file,
-    read_dialogue_file,
+    tracker_from_dialogue,
     user_uttered,
     get_tracker,
 )
@@ -99,13 +102,14 @@ def stores_to_be_tested_ids():
     return ["redis-tracker", "in-memory-tracker", "SQL-tracker", "mongo-tracker"]
 
 
-def test_tracker_duplicate():
-    filename = "data/test_dialogues/moodbot.json"
-    dialogue = read_dialogue_file(filename)
-    tracker = DialogueStateTracker(dialogue.name, test_domain.slots)
-    tracker.recreate_from_dialogue(dialogue)
+def test_tracker_duplicate(moodbot_domain: Domain):
+    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
     num_actions = len(
-        [event for event in dialogue.events if isinstance(event, ActionExecuted)]
+        [
+            event
+            for event in TEST_MOODBOT_DIALOGUE.events
+            if isinstance(event, ActionExecuted)
+        ]
     )
 
     # There is always one duplicated tracker more than we have actions,
@@ -142,23 +146,21 @@ def test_tracker_store_storage_and_retrieval(store: TrackerStore):
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-@pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, EXAMPLE_DOMAINS))
+@pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, TEST_DOMAINS_FOR_DIALOGUES))
 def test_tracker_store(store, pair):
-    filename, domainpath = pair
+    dialogue, domainpath = pair
     domain = Domain.load(domainpath)
-    tracker = tracker_from_dialogue_file(filename, domain)
+    tracker = tracker_from_dialogue(dialogue, domain)
     store.save(tracker)
     restored = store.retrieve(tracker.sender_id)
     assert restored == tracker
 
 
-async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
-    tracker = tracker_from_dialogue_file(
-        "data/test_dialogues/moodbot.json", moodbot_domain
-    )
+def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
+    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
     p = tmp_path / "export.yml"
     tracker.export_stories_to_file(str(p))
-    trackers = await training.load_data(
+    trackers = training.load_data(
         str(p),
         moodbot_domain,
         use_story_concatenation=False,
@@ -219,7 +221,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
     assert [e.as_story_string() for e in tracker.events] == expected
 
 
-async def test_bot_utterance_comes_after_action_event(default_agent):
+async def test_bot_utterance_comes_after_action_event(default_agent: Agent):
     sender_id = "test_bot_utterance_comes_after_action_event"
 
     await default_agent.handle_text("/greet", sender_id=sender_id)
@@ -514,10 +516,10 @@ def _load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueState
     )
 
 
-async def test_dump_and_restore_as_json(
+def test_dump_and_restore_as_json(
     default_agent: Agent, tmp_path: Path, stories_path: Text
 ):
-    trackers = await default_agent.load_data(stories_path)
+    trackers = default_agent.load_data(stories_path)
 
     for tracker in trackers:
         out_path = tmp_path / "dumped_tracker.json"
@@ -1198,15 +1200,6 @@ def test_writing_trackers_with_legacy_form_events():
         assert event["event"] == ActiveLoop.type_name
 
 
-def test_change_form_to_deprecation_warning():
-    tracker = DialogueStateTracker.from_events("conversation", evts=[])
-    new_form = "new form"
-    with pytest.warns(DeprecationWarning):
-        tracker.change_form_to(new_form)
-
-    assert tracker.active_loop_name == new_form
-
-
 def test_reading_of_trackers_with_legacy_form_validation_events():
     tracker = DialogueStateTracker.from_dict(
         "sender",
@@ -1237,16 +1230,6 @@ def test_writing_trackers_with_legacy_for_validation_events():
 
     assert not events_as_dict[0][LOOP_INTERRUPTED]
     assert events_as_dict[1][LOOP_INTERRUPTED]
-
-
-@pytest.mark.parametrize("validate", [True, False])
-def test_set_form_validation_deprecation_warning(validate: bool):
-    tracker = DialogueStateTracker.from_events("conversation", evts=[])
-
-    with pytest.warns(DeprecationWarning):
-        tracker.set_form_validation(validate)
-
-    assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)
 
 
 @pytest.mark.parametrize(
@@ -1449,3 +1432,83 @@ def test_autofill_slots_for_policy_entities():
 
     for actual, expected in zip(tracker.events, expected_events):
         assert actual == expected
+
+
+def test_tracker_fingerprinting_consistency():
+    slot = TextSlot(name="name", influence_conversation=True)
+    slot.value = "example"
+    tr1 = DialogueStateTracker("test_sender_id", slots=[slot])
+    tr2 = DialogueStateTracker("test_sender_id", slots=[slot])
+    f1 = tr1.fingerprint()
+    f2 = tr2.fingerprint()
+    assert f1 == f2
+
+
+def test_tracker_unique_fingerprint(domain: Domain):
+    slot = TextSlot(name="name", influence_conversation=True)
+    slot.value = "example"
+    tr = DialogueStateTracker("test_sender_id", slots=[slot])
+    f1 = tr.fingerprint()
+
+    event1 = UserUttered(
+        text="hello",
+        parse_data={
+            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+            "entities": [
+                {"entity": "city", "value": "London"},
+                {"entity": "count", "value": 1},
+            ],
+            "text": "hi",
+            "message_id": "3f4c04602a4947098c574b107d3ccc59",
+            "metadata": {},
+            "intent_ranking": [
+                {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748},
+                {"id": 0, "name": "deny", "confidence": 0.011255578137934208},
+            ],
+        },
+    )
+    tr.update(event1)
+    f2 = tr.fingerprint()
+    assert f1 != f2
+
+    event2 = ActionExecuted(action_name="action_listen")
+    tr.update(event2)
+    f3 = tr.fingerprint()
+    assert f2 != f3
+
+
+def test_tracker_fingerprint_story_reading(domain: Domain):
+    def build_tracker(domain: Domain) -> DialogueStateTracker:
+        story_yaml = """
+            stories:
+            - story: test story
+              steps:
+              - intent: greet
+              - action: utter_greet
+            """
+        reader = YAMLStoryReader(domain)
+        story_steps = reader.read_from_string(story_yaml)
+        events = []
+        for step in story_steps:
+            evts = step.events
+            if isinstance(evts, list):
+                events += evts
+            else:
+                events.append(evts)
+
+        slot = TextSlot(name="name", influence_conversation=True)
+        slot.value = "example"
+
+        tracker = DialogueStateTracker.from_events("sender_id", events, [slot])
+        return tracker
+
+    tracker1 = build_tracker(domain)
+    f1 = tracker1.fingerprint()
+
+    time.sleep(0.1)
+
+    tracker2 = build_tracker(domain)
+    f2 = tracker2.fingerprint()
+
+    assert f1 == f2

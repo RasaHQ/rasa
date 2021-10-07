@@ -102,7 +102,17 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             )
 
             if suitable_responses:
-                return np.random.choice(suitable_responses)
+                selected_response = np.random.choice(suitable_responses)
+                condition = selected_response.get(RESPONSE_CONDITION)
+                if condition:
+                    formatted_response_conditions = self._format_response_conditions(
+                        condition
+                    )
+                    logger.debug(
+                        "Selecting response variation with conditions:"
+                        f"{formatted_response_conditions}"
+                    )
+                return selected_response
             else:
                 return None
         else:
@@ -177,3 +187,18 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         response_vars = filled_slots.copy()
         response_vars.update(kwargs)
         return response_vars
+
+    @staticmethod
+    def _format_response_conditions(response_conditions: List[Dict[Text, Any]]) -> Text:
+        formatted_response_conditions = [""]
+        for index, condition in enumerate(response_conditions):
+            constraints = []
+            constraints.append(f"type: {str(condition['type'])}")
+            constraints.append(f"name: {str(condition['name'])}")
+            constraints.append(f"value: {str(condition['value'])}")
+
+            condition_message = " | ".join(constraints)
+            formatted_condition = f"[condition {str(index + 1)}] {condition_message}"
+            formatted_response_conditions.append(formatted_condition)
+
+        return "\n".join(formatted_response_conditions)

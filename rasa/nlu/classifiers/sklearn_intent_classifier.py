@@ -1,23 +1,26 @@
+from __future__ import annotations
 import logging
-import os
 import typing
 import warnings
-from typing import Any, Dict, List, Optional, Text, Tuple, Type
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer
-from rasa.nlu.components import Component
-from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
-from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+
+from rasa.nlu.classifiers._sklearn_intent_classifier import SklearnIntentClassifier
+
+# This is a workaround around until we have all components migrated to `GraphComponent`.
+SklearnIntentClassifier = SklearnIntentClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -25,39 +28,43 @@ if typing.TYPE_CHECKING:
     import sklearn
 
 
-class SklearnIntentClassifier(IntentClassifier):
-    """Intent classifier using the sklearn framework"""
+class SklearnIntentClassifierGraphComponent(GraphComponent):
+    """Intent classifier using the sklearn framework."""
 
-    @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [DenseFeaturizer]
-
-    defaults = {
-        # C parameter of the svm - cross validation will select the best value
-        "C": [1, 2, 5, 10, 20, 100],
-        # gamma parameter of the svm
-        "gamma": [0.1],
-        # the kernels to use for the svm training - cross validation will
-        # decide which one of them performs best
-        "kernels": ["linear"],
-        # We try to find a good number of cross folds to use during
-        # intent training, this specifies the max number of folds
-        "max_cross_validation_folds": 5,
-        # Scoring function used for evaluating the hyper parameters
-        # This can be a name or a function (cfr GridSearchCV doc for more info)
-        "scoring_function": "f1_weighted",
-    }
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """The component's default config (see parent class for full docstring)."""
+        return {
+            # C parameter of the svm - cross validation will select the best value
+            "C": [1, 2, 5, 10, 20, 100],
+            # gamma parameter of the svm
+            "gamma": [0.1],
+            # the kernels to use for the svm training - cross validation will
+            # decide which one of them performs best
+            "kernels": ["linear"],
+            # We try to find a good number of cross folds to use during
+            # intent training, this specifies the max number of folds
+            "max_cross_validation_folds": 5,
+            # Scoring function used for evaluating the hyper parameters
+            # This can be a name or a function (cfr GridSearchCV doc for more info)
+            "scoring_function": "f1_weighted",
+            "num_threads": 1,
+        }
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
         clf: "sklearn.model_selection.GridSearchCV" = None,
         le: Optional["sklearn.preprocessing.LabelEncoder"] = None,
     ) -> None:
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
 
-        super().__init__(component_config)
+        self.component_config = config
+        self._model_storage = model_storage
+        self._resource = resource
 
         if le is not None:
             self.le = le
@@ -66,14 +73,26 @@ class SklearnIntentClassifier(IntentClassifier):
         self.clf = clf
 
     @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> SklearnIntentClassifierGraphComponent:
+        """Creates a new untrained component (see parent class for full docstring)."""
+        return cls(config, model_storage, resource)
+
+    @classmethod
     def required_packages(cls) -> List[Text]:
+        """Any extra python dependencies required for this component to run."""
         return ["sklearn"]
 
     def transform_labels_str2num(self, labels: List[Text]) -> np.ndarray:
         """Transforms a list of strings into numeric label representation.
 
-        :param labels: List of labels to convert to numeric representation"""
-
+        :param labels: List of labels to convert to numeric representation
+        """
         return self.le.fit_transform(labels)
 
     def transform_labels_num2str(self, y: np.ndarray) -> np.ndarray:
@@ -83,15 +102,9 @@ class SklearnIntentClassifier(IntentClassifier):
 
         return self.le.inverse_transform(y)
 
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
+    def train(self, training_data: TrainingData) -> Resource:
         """Train the intent classifier on a data set."""
-
-        num_threads = kwargs.get("num_threads", 1)
+        num_threads = self.component_config["num_threads"]
 
         labels = [e.get("intent") for e in training_data.intent_examples]
 
@@ -102,7 +115,7 @@ class SklearnIntentClassifier(IntentClassifier):
                 "Skipping training of intent classifier.",
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
-            return
+            return self._resource
 
         y = self.transform_labels_str2num(labels)
         X = np.stack(
@@ -122,6 +135,9 @@ class SklearnIntentClassifier(IntentClassifier):
             # if there are few intent examples, this is needed to prevent it
             warnings.simplefilter("ignore")
             self.clf.fit(X, y)
+
+        self.persist()
+        return self._resource
 
     @staticmethod
     def _get_sentence_features(message: Message) -> np.ndarray:
@@ -165,40 +181,42 @@ class SklearnIntentClassifier(IntentClassifier):
             verbose=1,
         )
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, messages: List[Message]) -> List[Message]:
         """Return the most likely intent and its probability for a message."""
-
-        if not self.clf:
-            # component is either not trained or didn't
-            # receive enough training data
-            intent = None
-            intent_ranking = []
-        else:
-            X = self._get_sentence_features(message).reshape(1, -1)
-
-            intent_ids, probabilities = self.predict(X)
-            intents = self.transform_labels_num2str(np.ravel(intent_ids))
-            # `predict` returns a matrix as it is supposed
-            # to work for multiple examples as well, hence we need to flatten
-            probabilities = probabilities.flatten()
-
-            if intents.size > 0 and probabilities.size > 0:
-                ranking = list(zip(list(intents), list(probabilities)))[
-                    :LABEL_RANKING_LENGTH
-                ]
-
-                intent = {"name": intents[0], "confidence": probabilities[0]}
-
-                intent_ranking = [
-                    {"name": intent_name, "confidence": score}
-                    for intent_name, score in ranking
-                ]
-            else:
-                intent = {"name": None, "confidence": 0.0}
+        for message in messages:
+            if not self.clf:
+                # component is either not trained or didn't
+                # receive enough training data
+                intent = None
                 intent_ranking = []
+            else:
+                X = self._get_sentence_features(message).reshape(1, -1)
 
-        message.set("intent", intent, add_to_output=True)
-        message.set("intent_ranking", intent_ranking, add_to_output=True)
+                intent_ids, probabilities = self.predict(X)
+                intents = self.transform_labels_num2str(np.ravel(intent_ids))
+                # `predict` returns a matrix as it is supposed
+                # to work for multiple examples as well, hence we need to flatten
+                probabilities = probabilities.flatten()
+
+                if intents.size > 0 and probabilities.size > 0:
+                    ranking = list(zip(list(intents), list(probabilities)))[
+                        :LABEL_RANKING_LENGTH
+                    ]
+
+                    intent = {"name": intents[0], "confidence": probabilities[0]}
+
+                    intent_ranking = [
+                        {"name": intent_name, "confidence": score}
+                        for intent_name, score in ranking
+                    ]
+                else:
+                    intent = {"name": None, "confidence": 0.0}
+                    intent_ranking = []
+
+            message.set("intent", intent, add_to_output=True)
+            message.set("intent_ranking", intent_ranking, add_to_output=True)
+
+        return messages
 
     def predict_prob(self, X: np.ndarray) -> np.ndarray:
         """Given a bow vector of an input text, predict the intent label.
@@ -206,8 +224,8 @@ class SklearnIntentClassifier(IntentClassifier):
         Return probabilities for all labels.
 
         :param X: bow of input text
-        :return: vector of probabilities containing one entry for each label"""
-
+        :return: vector of probabilities containing one entry for each label.
+        """
         return self.clf.predict_proba(X)
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -217,48 +235,54 @@ class SklearnIntentClassifier(IntentClassifier):
 
         :param X: bow of input text
         :return: tuple of first, the most probable label and second,
-                 its probability."""
-
+                 its probability.
+        """
         pred_result = self.predict_prob(X)
         # sort the probabilities retrieving the indices of
         # the elements in sorted order
         sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
         return sorted_indices, pred_result[:, sorted_indices]
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self) -> None:
         """Persist this model into the passed directory."""
+        with self._model_storage.write_to(self._resource) as model_dir:
+            file_name = self.__class__.__name__
+            classifier_file_name = model_dir / f"{file_name}_classifier.pkl"
+            encoder_file_name = model_dir / f"{file_name}_encoder.pkl"
 
-        classifier_file_name = file_name + "_classifier.pkl"
-        encoder_file_name = file_name + "_encoder.pkl"
-        if self.clf and self.le:
-            io_utils.json_pickle(
-                os.path.join(model_dir, encoder_file_name), self.le.classes_
-            )
-            io_utils.json_pickle(
-                os.path.join(model_dir, classifier_file_name), self.clf.best_estimator_
-            )
-        return {"classifier": classifier_file_name, "encoder": encoder_file_name}
+            if self.clf and self.le:
+                io_utils.json_pickle(encoder_file_name, self.le.classes_)
+                io_utils.json_pickle(classifier_file_name, self.clf.best_estimator_)
 
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Text,
-        model_metadata: Optional[Metadata] = None,
-        cached_component: Optional["SklearnIntentClassifier"] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "SklearnIntentClassifier":
+    ) -> SklearnIntentClassifierGraphComponent:
         """Loads trained component (see parent class for full docstring)."""
         from sklearn.preprocessing import LabelEncoder
 
-        classifier_file = os.path.join(model_dir, meta.get("classifier"))
-        encoder_file = os.path.join(model_dir, meta.get("encoder"))
+        try:
+            with model_storage.read_from(resource) as model_dir:
+                file_name = cls.__name__
+                classifier_file = model_dir / f"{file_name}_classifier.pkl"
 
-        if os.path.exists(classifier_file):
-            classifier = io_utils.json_unpickle(classifier_file)
-            classes = io_utils.json_unpickle(encoder_file)
-            encoder = LabelEncoder()
-            encoder.classes_ = classes
-            return cls(meta, classifier, encoder)
-        else:
-            return cls(meta)
+                if classifier_file.exists():
+                    classifier = io_utils.json_unpickle(classifier_file)
+
+                    encoder_file = model_dir / f"{file_name}_encoder.pkl"
+                    classes = io_utils.json_unpickle(encoder_file)
+                    encoder = LabelEncoder()
+                    encoder.classes_ = classes
+
+                    return cls(config, model_storage, resource, classifier, encoder,)
+        except ValueError:
+            logger.warning(
+                f"Failed to load '{cls.__name__}' from model storage. Resource "
+                f"'{resource.name}' doesn't exist."
+            )
+        return cls(config, model_storage, resource)

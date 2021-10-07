@@ -7,7 +7,7 @@ from rasa.nlu import registry
 import rasa.nlu.train
 import rasa.nlu.components
 import rasa.shared.nlu.training_data.loading
-from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
+from rasa.nlu.components import Component, ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.nlu.model import Interpreter, Metadata, Trainer
@@ -43,13 +43,6 @@ def test_all_required_components_can_be_satisfied(component_class: Type[Componen
         f"There is no required components {missing_components} "
         f"for '{component_class.name}'."
     )
-
-
-def test_find_unavailable_packages():
-    unavailable = find_unavailable_packages(
-        ["my_made_up_package_name", "io", "foo_bar", "foo_bar"]
-    )
-    assert unavailable == {"my_made_up_package_name", "foo_bar"}
 
 
 def test_builder_create_by_module_path(
