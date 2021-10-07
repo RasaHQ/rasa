@@ -33,7 +33,12 @@ from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
+from rasa.core.constants import (
+    DIALOGUE,
+    POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
+    UNLIKELY_INTENT_POLICY_PRIORITY,
+)
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
@@ -289,6 +294,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             BILOU_FLAG: False,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
+            # Determines the importance of policies, higher values take precedence
+            POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
         }
 
     def __init__(
