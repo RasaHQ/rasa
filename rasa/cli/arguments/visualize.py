@@ -12,7 +12,6 @@ from rasa.cli.arguments.default_arguments import (
 def set_visualize_stories_arguments(parser: argparse.ArgumentParser) -> None:
     add_domain_param(parser)
     add_stories_param(parser)
-    add_config_param(parser)
 
     add_out_param(
         parser,

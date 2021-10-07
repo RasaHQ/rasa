@@ -38,5 +38,5 @@ def visualize_stories(args: argparse.Namespace) -> None:
         args.nlu = rasa.shared.data.get_nlu_directory(DEFAULT_DATA_PATH)
 
     rasa.core.visualize.visualize(
-        args.config, args.domain, args.stories, args.nlu, args.out, args.max_history
+        args.domain, args.stories, args.nlu, args.out, args.max_history
     )

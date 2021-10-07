@@ -499,31 +499,6 @@ class Agent:
         else:
             self.fingerprint = uuid.uuid4().hex
 
-    def visualize(
-        self,
-        resource_name: Text,
-        output_file: Text,
-        max_history: int = 2,
-        nlu_training_data: Optional[TrainingData] = None,
-        should_merge_nodes: bool = True,
-        fontsize: int = 12,
-    ) -> None:
-        """Visualizes the loaded training data from the resource."""
-        from rasa.shared.core.training_data.visualization import visualize_stories
-        from rasa.shared.core.training_data import loading
-
-        story_steps = loading.load_data_from_resource(resource_name, self.domain)
-        visualize_stories(
-            story_steps,
-            self.domain,
-            output_file,
-            max_history,
-            self.processor,
-            nlu_training_data,
-            should_merge_nodes,
-            fontsize,
-        )
-
     @staticmethod
     def _create_tracker_store(
         store: Optional[TrackerStore], domain: Domain

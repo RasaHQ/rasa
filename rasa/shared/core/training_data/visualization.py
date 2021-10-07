@@ -274,7 +274,9 @@ def _replace_edge_labels_with_nodes(
     processor: MessageProcessor,
     nlu_training_data: "TrainingData",
 ) -> None:
-    """User messages are created as edge labels. This removes the labels and
+    """Replaces edge labels with nodes.
+
+    User messages are created as edge labels. This removes the labels and
     creates nodes instead.
 
     The algorithms (e.g. merging) are simpler if the user messages are labels
