@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import re
-from typing import Text, Dict, Any, Callable, List, Optional, Type, Union
+from typing import Text, Dict, Any, Callable, List, Optional, Union
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
@@ -11,8 +11,7 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     TOKENS_NAMES,
 )
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY, SpacyTokenizer
+from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizerGraphComponent,
     FEATURES,
@@ -21,7 +20,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import FEATURE_TYPE_SEQUENCE, TEXT
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token
 
 
 @pytest.fixture
@@ -37,7 +36,10 @@ def create_lexical_syntactic_featurizer(
 ) -> Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent]:
     def inner(config: Dict[Text, Any]):
         return LexicalSyntacticFeaturizerGraphComponent.create(
-            config=config,
+            config={
+                **LexicalSyntacticFeaturizerGraphComponent.get_default_config(),
+                **config,
+            },
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=resource_lexical_syntactic_featurizer,
@@ -290,23 +292,41 @@ def test_validate_config(config: Dict[Text, Any], raises: bool):
 
 
 @pytest.mark.parametrize(
-    "config,tokenizer_type,warns",
-    [
-        ({FEATURES: [["pos"],]}, SpacyTokenizer, False),
-        ({FEATURES: [["pos"],]}, WhitespaceTokenizer, True),
-        ({FEATURES: [["suffix2"],]}, WhitespaceTokenizer, False),
-    ],
+    "sentence, feature_config, expected_features",
+    [("The sun is shining", [["pos", "pos2"]], np.ones(shape=(4, 2)),),],
 )
-def test_validate_compatibility_with_tokenizer(
-    config: Dict[Text, Any], tokenizer_type: Type[Tokenizer], warns: bool
+def test_warn_if_part_of_speech_features_cannot_be_computed(
+    create_lexical_syntactic_featurizer: Callable[
+        [Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent
+    ],
+    sentence: Text,
+    feature_config: Dict[Text, Any],
+    expected_features: np.ndarray,
 ):
-    lsf_cls = LexicalSyntacticFeaturizerGraphComponent
-    if warns:
-        with pytest.warns(UserWarning):
-            lsf_cls.validate_compatibility_with_tokenizer(
-                config=config, tokenizer_type=tokenizer_type
-            )
-    else:
-        lsf_cls.validate_compatibility_with_tokenizer(
-            config=config, tokenizer_type=tokenizer_type
-        )
+
+    featurizer = create_lexical_syntactic_featurizer(
+        {"alias": "lsf", "features": feature_config}
+    )
+
+    # build the message - with tokens but *no* part-of-speech tags
+    tokens = [
+        Token(text=match[0], start=match.start())
+        for match in re.finditer(r"\w+", sentence)
+    ]
+    message = Message(data={TOKENS_NAMES[TEXT]: tokens})
+
+    # train
+    with pytest.warns(
+        UserWarning,
+        match="Expected training data to include tokens with part-of-speech tags",
+    ):
+        featurizer.train(TrainingData([message]))
+    assert not message.features
+
+    # process
+    with pytest.warns(None) as records:
+        featurizer.process([message])
+    assert len(records) == 0
+    assert len(message.features) == 1
+    feature = message.features[0]
+    assert np.all(feature.features.todense() == expected_features)

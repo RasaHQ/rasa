@@ -38,7 +38,11 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
+from rasa.core.policies.policy import (
+    PolicyPrediction,
+    PolicyGraphComponent,
+    SupportedData,
+)
 from rasa.core.constants import (
     DIALOGUE,
     POLICY_MAX_HISTORY,
@@ -322,10 +326,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             ENTITY_RECOGNITION: True,
             # if 'True' applies sigmoid on all similarity terms and adds
             # it to the loss function to ensure that similarity values are
-            # approximately bounded. Used inside softmax loss only.
+            # approximately bounded. Used inside cross-entropy loss only.
             CONSTRAIN_SIMILARITIES: False,
-            # Model confidence to be returned during inference. Possible values -
-            # 'softmax' and 'linear_norm'.
+            # Model confidence to be returned during inference. Currently, the only
+            # possible value is `softmax`.
             MODEL_CONFIDENCE: SOFTMAX,
             # 'BILOU_flag' determines whether to use BILOU tagging or not.
             # If set to 'True' labelling is more rigorous, however more
@@ -355,7 +359,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
     ) -> None:
         """Declares instance variables with default values."""
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer=featurizer
+            config, model_storage, resource, execution_context, featurizer=featurizer,
         )
 
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
@@ -402,12 +406,8 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         """Takes care of deprecations and compatibility of parameters."""
         self.config = rasa.utils.train_utils.update_confidence_type(self.config)
         rasa.utils.train_utils.validate_configuration_settings(self.config)
-        self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
-        self.config = rasa.utils.train_utils.update_deprecated_sparsity_to_density(
-            self.config
-        )
 
     def _create_label_data(
         self,
@@ -696,6 +696,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             )
             return self._resource
 
+        training_trackers = SupportedData.trackers_for_supported_data(
+            self.supported_data(), training_trackers
+        )
+
         model_data, label_ids = self._prepare_for_training(
             training_trackers, domain, precomputations,
         )
@@ -720,7 +724,8 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> List[List[Dict[Text, List[Features]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
@@ -732,6 +737,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             domain,
             precomputations=precomputations,
             use_text_for_last_user_input=self.only_e2e,
+            rule_only_data=rule_only_data,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -744,6 +750,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
                 domain,
                 precomputations=precomputations,
                 use_text_for_last_user_input=True,
+                rule_only_data=rule_only_data,
             )
         return tracker_state_features
 
@@ -794,6 +801,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         tracker: DialogueStateTracker,
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""
@@ -802,7 +810,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
 
         # create model data from tracker
         tracker_state_features = self._featurize_tracker(
-            tracker, domain, precomputations
+            tracker, domain, precomputations, rule_only_data=rule_only_data
         )
         model_data = self._create_model_data(tracker_state_features)
         outputs: Dict[Text, np.ndarray] = self.model.run_inference(model_data)
@@ -1000,14 +1008,14 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         try:
             with model_storage.read_from(resource) as model_path:
                 return cls._load(
-                    model_path, config, model_storage, resource, execution_context
+                    model_path, config, model_storage, resource, execution_context,
                 )
         except ValueError:
             logger.warning(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-            return cls(config, model_storage, resource, execution_context)
+            return cls(config, model_storage, resource, execution_context,)
 
     @classmethod
     def _load(
@@ -1130,7 +1138,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
         meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
-        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
 
         return meta
 

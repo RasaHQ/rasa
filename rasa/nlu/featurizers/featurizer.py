@@ -1,13 +1,11 @@
 from __future__ import annotations
 from abc import abstractmethod, ABC
 from collections import Counter
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from typing import Generic, Iterable, List, Text, Optional, Dict, Any, TypeVar, Type
+from typing import Generic, Iterable, Text, Optional, Dict, Any, TypeVar
 
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 
@@ -43,7 +41,7 @@ class Featurizer2(Generic[FeatureType], ABC):
         """
         super().__init__()
         self.validate_config(config)
-        self._config = {**self.get_default_config(), **config}
+        self._config = config
         self._identifier = self._config[FEATURIZER_CLASS_ALIAS] or name
 
     @classmethod
@@ -51,39 +49,6 @@ class Featurizer2(Generic[FeatureType], ABC):
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
         ...
-
-    @classmethod
-    @abstractmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
-        # TODO: add (something like) this to recipe validation
-        # TODO: replace tokenizer by config of tokenizer to enable static check
-        ...
-
-    @abstractmethod
-    def process(self, messages: List[Message]) -> List[Message]:
-        """Featurizes all given messages in-place.
-
-        Args:
-          messages: messages to be featurized
-        Returns:
-          the same list with the same messages after featurization
-        """
-        ...
-
-    def process_training_data(self, training_data: TrainingData) -> TrainingData:
-        """Processes the training examples in the given training data in-place.
-
-        Args:
-          training_data: the training data
-
-        Returns:
-          same training data after processing
-        """
-        self.process(training_data.training_examples)
-        return training_data
 
     def add_features_to_message(
         self,
@@ -109,7 +74,7 @@ class Featurizer2(Generic[FeatureType], ABC):
                 message.add_features(wrapped_feature)
 
     @staticmethod
-    def validate_configs_compatible(
+    def raise_if_featurizer_configs_are_not_compatible(
         featurizer_configs: Iterable[Dict[Text, Any]]
     ) -> None:
         """Validates that the given configurations of featurizers can be used together.

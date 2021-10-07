@@ -81,6 +81,7 @@ class SupportedData(Enum):
     # policy supports both ML-based and rule-based data ("stories" as well as "rules")
     ML_AND_RULE_DATA = 3
 
+    # TODO: Dump after the finished migration
     @staticmethod
     def trackers_for_policy(
         policy: Union[Policy, Type[Policy]],
@@ -97,6 +98,22 @@ class SupportedData(Enum):
         """
         supported_data = policy.supported_data()
 
+        return SupportedData.trackers_for_supported_data(supported_data, trackers)
+
+    @staticmethod
+    def trackers_for_supported_data(
+        supported_data: SupportedData,
+        trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
+    ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
+        """Return trackers for a given policy.
+
+        Args:
+            supported_data: Supported data filter for the `trackers`.
+            trackers: Trackers to split.
+
+        Returns:
+            Trackers from ML-based training data and/or rule-based data.
+        """
         if supported_data == SupportedData.RULE_DATA:
             return [tracker for tracker in trackers if tracker.is_rule_tracker]
 
@@ -139,8 +156,6 @@ class PolicyGraphComponent(GraphComponent):
         self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
         self.finetune_mode = execution_context.is_finetuning
 
-        self._rule_only_data = {}
-
         self._model_storage = model_storage
         self._resource = resource
 
@@ -152,7 +167,7 @@ class PolicyGraphComponent(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> GraphComponent:
+    ) -> PolicyGraphComponent:
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -203,10 +218,6 @@ class PolicyGraphComponent(GraphComponent):
     def featurizer(self) -> TrackerFeaturizer:
         """Returns the policy's featurizer."""
         return self.__featurizer
-
-    def set_shared_policy_states(self, **kwargs: Any) -> None:
-        """Sets policy's shared states for correct featurization."""
-        self._rule_only_data = kwargs.get("rule_only_data", {})
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
@@ -287,6 +298,7 @@ class PolicyGraphComponent(GraphComponent):
         tracker: DialogueStateTracker,
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
         """Transforms tracker to states for prediction.
 
@@ -295,6 +307,8 @@ class PolicyGraphComponent(GraphComponent):
             domain: The Domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             A list of states.
@@ -304,7 +318,7 @@ class PolicyGraphComponent(GraphComponent):
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_data=self._rule_only_data,
+            rule_only_data=rule_only_data,
             ignore_action_unlikely_intent=self.supported_data()
             == SupportedData.ML_DATA,
         )[0]
@@ -314,6 +328,7 @@ class PolicyGraphComponent(GraphComponent):
         tracker: DialogueStateTracker,
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization],
+        rule_only_data: Optional[Dict[Text, Any]],
         use_text_for_last_user_input: bool = False,
     ) -> List[List[Dict[Text, List[Features]]]]:
         """Transforms training tracker into a vector representation.
@@ -327,6 +342,8 @@ class PolicyGraphComponent(GraphComponent):
             precomputations: Contains precomputed features and attributes.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
 
         Returns:
             A list (corresponds to the list of trackers)
@@ -341,7 +358,7 @@ class PolicyGraphComponent(GraphComponent):
             precomputations=precomputations,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_data=self._rule_only_data,
+            rule_only_data=rule_only_data,
             ignore_action_unlikely_intent=self.supported_data()
             == SupportedData.ML_DATA,
         )
@@ -372,7 +389,7 @@ class PolicyGraphComponent(GraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -380,7 +397,8 @@ class PolicyGraphComponent(GraphComponent):
         Args:
             tracker: The tracker containing the conversation history up to now.
             domain: The model's domain.
-            precomputations: Contains precomputed features and attributes.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be ignored by this policy.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 
@@ -562,7 +580,7 @@ class PolicyPrediction:
         policy_name: Optional[Text] = None,
         confidence: float = 1.0,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyPrediction:
+    ) -> "PolicyPrediction":
         """Create a prediction for a given action.
 
         Args:
@@ -598,7 +616,7 @@ class PolicyPrediction:
             and self.policy_name == other.policy_name
             and self.policy_priority == other.policy_priority
             and self.events == other.events
-            and self.optional_events == other.events
+            and self.optional_events == other.optional_events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
             and self.hide_rule_turn == other.hide_rule_turn
@@ -618,10 +636,10 @@ class PolicyPrediction:
 
     @property
     def max_confidence(self) -> float:
-        """Gets the highest predicted probability.
+        """Gets the highest predicted confidence.
 
         Returns:
-            The highest predicted probability.
+            The highest predicted confidence.
         """
         return max(self.probabilities, default=0.0)
 

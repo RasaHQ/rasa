@@ -4,15 +4,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 from unittest.mock import Mock
-from typing import Callable, List, Optional, Text, Dict, Any
+from typing import Callable, List, Optional, Text, Dict, Any, Tuple
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.engine.graph import ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu import registry
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import (
@@ -38,11 +36,17 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
-    LINEAR_NORM,
 )
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.classifiers.diet_classifier import (
-    DIETClassifierGraphComponent as DIETClassifier,
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    CountVectorsFeaturizerGraphComponent,
+)
+from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
+    LexicalSyntacticFeaturizerGraphComponent,
+)
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
+    RegexFeaturizerGraphComponent,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -62,18 +66,18 @@ def create_diet(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     default_diet_resource: Resource,
-) -> Callable[..., DIETClassifier]:
+) -> Callable[..., DIETClassifierGraphComponent]:
     def inner(
         config: Dict[Text, Any], load: bool = False, finetune: bool = False
-    ) -> DIETClassifier:
+    ) -> DIETClassifierGraphComponent:
         if load:
-            constructor = DIETClassifier.load
+            constructor = DIETClassifierGraphComponent.load
         else:
-            constructor = DIETClassifier.create
+            constructor = DIETClassifierGraphComponent.create
 
         default_execution_context.is_finetuning = finetune
         return constructor(
-            config={**DIETClassifier.get_default_config(), **config},
+            config={**DIETClassifierGraphComponent.get_default_config(), **config},
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=default_diet_resource,
@@ -85,7 +89,7 @@ def create_diet(
 @pytest.fixture()
 def create_train_load_and_process_diet(
     nlu_data_path: Text,
-    create_diet: Callable[..., DIETClassifier],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
     train_load_and_process_diet: Callable[..., Message],
 ) -> Callable[..., Message]:
     def inner(
@@ -109,10 +113,14 @@ def create_train_load_and_process_diet(
 
 @pytest.fixture()
 def train_load_and_process_diet(
-    nlu_data_path: Text, create_diet: Callable[..., DIETClassifier],
+    nlu_data_path: Text,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
+    default_model_storage: ModelStorage,
 ) -> Callable[..., Message]:
     def inner(
-        diet: DIETClassifier,
+        diet: DIETClassifierGraphComponent,
         pipeline: Optional[List[Dict[Text, Any]]] = None,
         training_data: str = nlu_data_path,
         message_text: Text = "Rasa is great!",
@@ -121,26 +129,16 @@ def train_load_and_process_diet(
 
         if not pipeline:
             pipeline = [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {"component": WhitespaceTokenizerGraphComponent},
+                {"component": CountVectorsFeaturizerGraphComponent},
             ]
 
-        loaded_pipeline = [
-            registry.get_component_class(component.pop("name"))(component)
-            for component in copy.deepcopy(pipeline)
-        ]
-
-        importer = RasaFileImporter(training_data_paths=[training_data])
-        training_data = importer.get_nlu_data()
-
-        for component in loaded_pipeline:
-            component.train(training_data)
+        training_data, loaded_pipeline = train_and_preprocess(pipeline, training_data)
 
         diet.train(training_data=training_data)
 
         message = Message(data={TEXT: message_text})
-        for component in loaded_pipeline:
-            component.process(message)
+        message = process_message(loaded_pipeline, message)
 
         message2 = copy.deepcopy(message)
 
@@ -167,7 +165,9 @@ def test_compute_default_label_features():
         Message(data={TEXT: "test d"}),
     ]
 
-    output = DIETClassifier._compute_default_label_features(label_features)
+    output = DIETClassifierGraphComponent._compute_default_label_features(
+        label_features
+    )
 
     output = output[0]
 
@@ -225,7 +225,9 @@ def test_compute_default_label_features():
     ],
 )
 def test_check_labels_features_exist(
-    messages: List[Message], expected: bool, create_diet: Callable[..., DIETClassifier],
+    messages: List[Message],
+    expected: bool,
+    create_diet: Callable[..., DIETClassifierGraphComponent],
 ):
     attribute = TEXT
     classifier = create_diet({})
@@ -270,14 +272,16 @@ def test_check_labels_features_exist(
 def test_model_data_signature_with_entities(
     messages: List[Message],
     entity_expected: bool,
-    create_diet: Callable[..., DIETClassifier],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
 ):
     classifier = create_diet({"BILOU_flag": False})
     training_data = TrainingData(messages)
 
     # create tokens for entity parsing inside DIET
-    tokenizer = WhitespaceTokenizer()
-    tokenizer.train(training_data)
+    tokenizer = WhitespaceTokenizerGraphComponent(
+        WhitespaceTokenizerGraphComponent.get_default_config()
+    )
+    tokenizer.process_training_data(training_data)
 
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()
@@ -288,15 +292,15 @@ def test_model_data_signature_with_entities(
 @pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_different_settings_non_windows(
     create_train_load_and_process_diet: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifier],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
 ):
     pipeline = [
         {
-            "name": "WhitespaceTokenizer",
+            "component": WhitespaceTokenizerGraphComponent,
             "intent_tokenization_flag": True,
             "intent_split_symbol": "+",
         },
-        {"name": "CountVectorsFeaturizer"},
+        {"component": CountVectorsFeaturizerGraphComponent},
     ]
     config = {MASKED_LM: True, EPOCHS: 1}
     create_train_load_and_process_diet(config, pipeline)
@@ -306,7 +310,7 @@ async def test_train_persist_load_with_different_settings_non_windows(
 @pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_different_settings(
     create_train_load_and_process_diet: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifier],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
 ):
     config = {LOSS_TYPE: "margin", EPOCHS: 1}
     create_train_load_and_process_diet(config)
@@ -316,7 +320,7 @@ async def test_train_persist_load_with_different_settings(
 @pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_only_entity_recognition(
     create_train_load_and_process_diet: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifier],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
 ):
     config = {ENTITY_RECOGNITION: True, INTENT_CLASSIFICATION: False, EPOCHS: 1}
     create_train_load_and_process_diet(
@@ -330,7 +334,7 @@ async def test_train_persist_load_with_only_entity_recognition(
 @pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_only_intent_classification(
     create_train_load_and_process_diet: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifier],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
 ):
     create_train_load_and_process_diet(
         {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1,},
@@ -399,36 +403,6 @@ async def test_softmax_normalization(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
-async def test_inner_linear_normalization(
-    monkeypatch: MonkeyPatch, create_train_load_and_process_diet: Callable[..., Message]
-):
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
-    parsed_message = create_train_load_and_process_diet(
-        {
-            RANDOM_SEED: 42,
-            EPOCHS: 1,
-            MODEL_CONFIDENCE: LINEAR_NORM,
-            RANKING_LENGTH: -1,
-        },
-    )
-    parse_data = parsed_message.data
-    intent_ranking = parse_data.get("intent_ranking")
-
-    # check whether normalization had the expected effect
-    output_sums_to_1 = sum(
-        [intent.get("confidence") for intent in intent_ranking]
-    ) == pytest.approx(1)
-    assert output_sums_to_1
-
-    # check whether the normalization of rankings is reflected in intent prediction
-    assert parse_data.get("intent") == intent_ranking[0]
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
-
-
 async def test_margin_loss_is_not_normalized(
     monkeypatch: MonkeyPatch, create_train_load_and_process_diet: Callable[..., Message]
 ):
@@ -486,9 +460,9 @@ async def test_train_tensorboard_logging(
     assert not tensorboard_log_dir.exists()
 
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
+        {"component": WhitespaceTokenizerGraphComponent},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizerGraphComponent,
             "analyzer": "char_wb",
             "min_ngram": 3,
             "max_ngram": 17,
@@ -502,7 +476,7 @@ async def test_train_tensorboard_logging(
             EPOCHS: 1,
             TENSORBOARD_LOG_LEVEL: log_level,
             TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
-            MODEL_CONFIDENCE: "linear_norm",
+            MODEL_CONFIDENCE: "softmax",
             CONSTRAIN_SIMILARITIES: True,
             EVAL_NUM_EXAMPLES: 15,
             EVAL_NUM_EPOCHS: 1,
@@ -556,7 +530,7 @@ async def test_train_model_not_checkpointing(
 
 
 async def test_train_fails_with_zero_eval_num_epochs(
-    create_diet: Callable[..., DIETClassifier]
+    create_diet: Callable[..., DIETClassifierGraphComponent]
 ):
     with pytest.raises(InvalidConfigException):
         with pytest.warns(UserWarning) as warning:
@@ -577,7 +551,7 @@ async def test_train_fails_with_zero_eval_num_epochs(
 
 
 async def test_doesnt_checkpoint_with_zero_eval_num_examples(
-    create_diet: Callable[..., DIETClassifier],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
     default_model_storage: ModelStorage,
     default_diet_resource: Resource,
     train_load_and_process_diet: Callable[..., Message],
@@ -633,15 +607,15 @@ async def test_process_gives_diagnostic_data(
     should_add_diagnostic_data: bool,
 ):
     default_execution_context.should_add_diagnostic_data = should_add_diagnostic_data
-    default_execution_context.node_name = "DIETClassifier_node_name"
+    default_execution_context.node_name = "DIETClassifierGraphComponent_node_name"
     processed_message = create_train_load_and_process_diet({EPOCHS: 1})
 
     if should_add_diagnostic_data:
         # Tests if processing a message returns attention weights as numpy array.
         diagnostic_data = processed_message.get(DIAGNOSTIC_DATA)
 
-        # DIETClassifier should add attention weights
-        name = "DIETClassifier_node_name"
+        # DIETClassifierGraphComponent should add attention weights
+        name = "DIETClassifierGraphComponent_node_name"
         assert isinstance(diagnostic_data, dict)
         assert name in diagnostic_data
         assert "attention_weights" in diagnostic_data[name]
@@ -676,7 +650,7 @@ def test_removing_label_sparse_feature_sizes(
     label_attribute: Text,
 ):
     """Tests if label attribute is removed from sparse feature sizes collection."""
-    feature_sizes = DIETClassifier._remove_label_sparse_feature_sizes(
+    feature_sizes = DIETClassifierGraphComponent._remove_label_sparse_feature_sizes(
         sparse_feature_sizes=initial_sparse_feature_sizes,
         label_attribute=label_attribute,
     )
@@ -685,7 +659,7 @@ def test_removing_label_sparse_feature_sizes(
 
 @pytest.mark.timeout(120)
 async def test_adjusting_layers_incremental_training(
-    create_diet: Callable[..., DIETClassifier],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
     train_load_and_process_diet: Callable[..., Message],
 ):
     """Tests adjusting sparse layers of `DIETClassifier` to increased sparse
@@ -699,12 +673,12 @@ async def test_adjusting_layers_incremental_training(
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": LexicalSyntacticFeaturizerGraphComponent},
+        {"component": RegexFeaturizerGraphComponent},
+        {"component": CountVectorsFeaturizerGraphComponent},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizerGraphComponent,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
@@ -840,16 +814,16 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     iter1_path: Text,
     iter2_path: Text,
     should_raise_exception: bool,
-    create_diet: Callable[..., DIETClassifier],
+    create_diet: Callable[..., DIETClassifierGraphComponent],
     train_load_and_process_diet: Callable[..., Message],
 ):
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": LexicalSyntacticFeaturizerGraphComponent},
+        {"component": RegexFeaturizerGraphComponent},
+        {"component": CountVectorsFeaturizerGraphComponent},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizerGraphComponent,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
