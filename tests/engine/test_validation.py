@@ -611,6 +611,53 @@ def test_cycle(is_train_graph: bool):
         validation.validate(schema, language=None, is_train_graph=is_train_graph)
 
 
+def _create_run_function(num_args) -> Callable[..., TrainingData]:
+    # Note: setting __annotations__ is not sufficient for the validation and
+    # creating a function via types.FunctionType is cumbersome, so we just
+    # explicitly create the function we need:
+    if num_args == 0:
+
+        def run() -> TrainingData:
+            return TrainingData()
+
+    elif num_args == 1:
+
+        def run(param0: TrainingData) -> TrainingData:
+            return TrainingData()
+
+    elif num_args == 2:
+
+        def run(param0: TrainingData, param1: TrainingData) -> TrainingData:
+            return TrainingData()
+
+    elif num_args == 3:
+
+        def run(
+            param0: TrainingData, param1: TrainingData, param2: TrainingData
+        ) -> TrainingData:
+            return TrainingData()
+
+    else:
+        assert False, f"This test doesn't work with num_args={num_args} ."
+    return run
+
+
+def _create_component_type_and_subtype(
+    component_type_name: Text, needs: List[int]
+) -> Tuple[Type[GraphComponent], Type[GraphComponent]]:
+    main_type = type(
+        component_type_name,
+        (TestComponentWithoutRun,),
+        {
+            "run": _create_run_function(num_args=len(needs)),
+            "create": lambda *args, **kwargs: None,
+            "__init__": lambda: None,
+        },
+    )
+    sub_type = type(f"subclass_of_{component_type_name}", (main_type,), {})
+    return main_type, sub_type
+
+
 @pytest.mark.parametrize(
     "node_needs_requires, targets, num_unmet, is_train_graph, test_subclasses",
     [
@@ -663,54 +710,10 @@ def test_required_components(
     is_train_graph: bool,
     test_subclasses: bool,
 ):
-    # create component types
-    def create_run(num_args) -> Callable[..., TrainingData]:
-        # Note: setting __annotations__ is not sufficient for the validation and
-        # creating a function via types.FunctionType is cumbersome, so we just
-        # explicitly create the function we need:
-        if num_args == 0:
-
-            def run() -> TrainingData:
-                return TrainingData()
-
-        elif num_args == 1:
-
-            def run(param0: TrainingData) -> TrainingData:
-                return TrainingData()
-
-        elif num_args == 2:
-
-            def run(param0: TrainingData, param1: TrainingData) -> TrainingData:
-                return TrainingData()
-
-        elif num_args == 3:
-
-            def run(
-                param0: TrainingData, param1: TrainingData, param2: TrainingData
-            ) -> TrainingData:
-                return TrainingData()
-
-        else:
-            assert False, f"This test doesn't work with num_args={num_args} ."
-        return run
-
-    def create_component_type_and_subtype(
-        node: int, needs: List[int]
-    ) -> Tuple[Type[GraphComponent], Type[GraphComponent]]:
-        main_type = type(
-            f"class_{node}",
-            (TestComponentWithoutRun,),
-            {
-                "run": create_run(num_args=len(needs)),
-                "create": lambda *args, **kwargs: None,
-                "__init__": lambda: None,
-            },
-        )
-        sub_type = type(f"subclass_of_class_{node}", (main_type,), {})
-        return main_type, sub_type
-
     component_types = {
-        node: create_component_type_and_subtype(node=node, needs=needs)
+        node: _create_component_type_and_subtype(
+            component_type_name=f"class_{node}", needs=needs
+        )
         for node, needs, _ in node_needs_requires
     }
 
