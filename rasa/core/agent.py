@@ -499,31 +499,26 @@ class Agent:
         else:
             self.fingerprint = uuid.uuid4().hex
 
-    async def visualize(
+    def visualize(
         self,
         resource_name: Text,
         output_file: Text,
-        max_history: Optional[int] = None,
+        max_history: int = 2,
         nlu_training_data: Optional[TrainingData] = None,
         should_merge_nodes: bool = True,
         fontsize: int = 12,
     ) -> None:
-        """Visualize the loaded training data from the resource."""
-        # TODO: This needs to be fixed to not use the interpreter
+        """Visualizes the loaded training data from the resource."""
         from rasa.shared.core.training_data.visualization import visualize_stories
         from rasa.shared.core.training_data import loading
 
-        # if the user doesn't provide a max history, we will use the
-        # largest value from any policy
-        max_history = max_history or self._max_history()
-
         story_steps = loading.load_data_from_resource(resource_name, self.domain)
-        await visualize_stories(
+        visualize_stories(
             story_steps,
             self.domain,
             output_file,
             max_history,
-            self.interpreter,
+            self.processor,
             nlu_training_data,
             should_merge_nodes,
             fontsize,

@@ -10,7 +10,6 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import Domain
 from rasa.core.policies.ted_policy import TEDPolicy
 
-from rasa.shared.core.training_data.visualization import visualize_stories
 import rasa.model_training
 import rasa.shared.utils.io
 
@@ -20,40 +19,6 @@ def test_load_training_data_reader_not_found_throws(tmp_path: Path, domain: Doma
 
     with pytest.raises(Exception):
         training.load_data(str(tmp_path), domain)
-
-
-async def test_story_visualization(domain: Domain, tmp_path: Path):
-    import rasa.shared.core.training_data.loading as core_loading
-
-    story_steps = core_loading.load_data_from_resource(
-        "data/test_yaml_stories/stories.yml", domain
-    )
-    out_file = str(tmp_path / "graph.html")
-    generated_graph = await visualize_stories(
-        story_steps,
-        domain,
-        output_file=out_file,
-        max_history=3,
-        should_merge_nodes=False,
-    )
-
-    assert len(generated_graph.nodes()) == 51
-
-    assert len(generated_graph.edges()) == 56
-
-
-async def test_story_visualization_with_merging(domain: Domain):
-    import rasa.shared.core.training_data.loading as core_loading
-
-    story_steps = core_loading.load_data_from_resource(
-        "data/test_yaml_stories/stories.yml", domain
-    )
-    generated_graph = await visualize_stories(
-        story_steps, domain, output_file=None, max_history=3, should_merge_nodes=True,
-    )
-    assert 15 < len(generated_graph.nodes()) < 33
-
-    assert 20 < len(generated_graph.edges()) < 33
 
 
 def test_training_script_with_restart_stories(tmp_path: Path, domain_path: Text):

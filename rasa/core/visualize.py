@@ -10,7 +10,7 @@ from rasa.shared.core.domain import InvalidDomain
 logger = logging.getLogger(__name__)
 
 
-async def visualize(
+def visualize(
     config_path: Text,
     domain_path: Text,
     stories_path: Text,
@@ -53,7 +53,7 @@ async def visualize(
 
     logger.info("Starting to visualize stories...")
     telemetry.track_visualization()
-    await agent.visualize(
+    agent.visualize(
         stories_path, output_path, max_history, nlu_training_data=nlu_training_data
     )
 

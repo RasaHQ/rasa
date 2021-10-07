@@ -4,6 +4,9 @@ import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
 import rasa.shared.utils.io
+from rasa.core.channels import UserMessage
+from rasa.core.processor import MessageProcessor
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, Event
@@ -265,10 +268,10 @@ def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) ->
                         graph.remove_node(j)
 
 
-async def _replace_edge_labels_with_nodes(
+def _replace_edge_labels_with_nodes(
     graph: "networkx.MultiDiGraph",
     next_id: int,
-    interpreter,
+    processor: MessageProcessor,
     nlu_training_data: "TrainingData",
 ) -> None:
     """User messages are created as edge labels. This removes the labels and
@@ -287,11 +290,16 @@ async def _replace_edge_labels_with_nodes(
     edges = list(graph.edges(keys=True, data=True))
     for s, e, k, d in edges:
         if k != EDGE_NONE_LABEL:
-            if message_generator and d.get("label", k) is not None:
-                parsed_info = await interpreter.parse(d.get("label", k))
+            label = d.get("label", k)
+
+            if message_generator:
+                parsed_info = {TEXT: label}
+                if processor:
+                    parsed_info = processor.parse_message(UserMessage(label))
+                elif label.startswith(INTENT_MESSAGE_PREFIX):
+                    parsed_info[INTENT] = {INTENT_NAME_KEY: label[1:]}
+
                 label = message_generator.message_for_data(parsed_info)
-            else:
-                label = d.get("label", k)
             next_id += 1
             graph.remove_edge(s, e, k)
             graph.add_node(
@@ -411,12 +419,12 @@ def _add_message_edge(
     )
 
 
-async def visualize_neighborhood(
+def visualize_neighborhood(
     current: Optional[List[Event]],
     event_sequences: List[List[Event]],
     output_file: Optional[Text] = None,
     max_history: int = 2,
-    interpreter=None,
+    processor: Optional[MessageProcessor] = None,
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     max_distance: int = 1,
@@ -446,10 +454,11 @@ async def visualize_neighborhood(
                 idx -= 1
                 break
             if isinstance(el, UserUttered):
-                if not el.intent:
-                    message = await interpreter.parse(el.text)
+                if not el.intent and processor:
+                    message = processor.parse_message(UserMessage(el.text))
                 else:
                     message = el.parse_data
+                    message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"
             elif (
                 isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
@@ -507,9 +516,7 @@ async def visualize_neighborhood(
 
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
-    await _replace_edge_labels_with_nodes(
-        graph, next_node_idx, interpreter, nlu_training_data
-    )
+    _replace_edge_labels_with_nodes(graph, next_node_idx, processor, nlu_training_data)
 
     _remove_auxiliary_nodes(graph, special_node_idx)
 
@@ -538,12 +545,12 @@ def _remove_auxiliary_nodes(
                 ps.add(pred)
 
 
-async def visualize_stories(
+def visualize_stories(
     story_steps: List[StoryStep],
     domain: Domain,
     output_file: Optional[Text],
     max_history: int,
-    interpreter=None,  # TODO: Fix this to use processor:
+    processor: Optional[MessageProcessor] = None,
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     fontsize: int = 12,
@@ -587,12 +594,12 @@ async def visualize_stories(
     completed_trackers = g.generate()
     event_sequences = [t.events for t in completed_trackers]
 
-    graph = await visualize_neighborhood(
+    graph = visualize_neighborhood(
         None,
         event_sequences,
         output_file,
         max_history,
-        interpreter,
+        processor,
         nlu_training_data,
         should_merge_nodes,
         max_distance=1,
