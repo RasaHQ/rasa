@@ -5,6 +5,8 @@ from unittest.mock import Mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.shared.utils.io
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.shared.exceptions import YamlSyntaxException
 from rasa.shared.importers import autoconfig
 from rasa.shared.importers.rasa import RasaFileImporter
@@ -127,68 +129,3 @@ async def test_train_docker_and_docs_configs(
 
     assert len(loaded_config.component_names) > 1
     assert loaded_config.language == imported_config["language"]
-
-
-@pytest.mark.parametrize(
-    "config_path, data_path, expected_warning_excerpts",
-    [
-        (
-            "data/test_config/config_supervised_embeddings.yml",
-            "data/examples/rasa",
-            ["add a 'ResponseSelector'"],
-        ),
-        (
-            "data/test_config/config_spacy_entity_extractor.yml",
-            "data/test/duplicate_intents_yaml/demo-rasa-intents-2.yml",
-            [f"add one of {TRAINABLE_EXTRACTORS}"],
-        ),
-        (
-            "data/test_config/config_crf_no_regex.yml",
-            "data/test/duplicate_intents_yaml/demo-rasa-intents-2.yml",
-            ["training data with regexes", "include a 'RegexFeaturizer'"],
-        ),
-        (
-            "data/test_config/config_crf_no_regex.yml",
-            "data/test/lookup_tables/lookup_table.json",
-            ["training data consisting of lookup tables", "add a 'RegexFeaturizer'"],
-        ),
-        (
-            "data/test_config/config_spacy_entity_extractor.yml",
-            "data/test/lookup_tables/lookup_table.json",
-            [
-                "add a 'DIETClassifier' or a 'CRFEntityExtractor' "
-                "with the 'pattern' feature"
-            ],
-        ),
-        (
-            "data/test_config/config_crf_no_pattern_feature.yml",
-            "data/test/lookup_tables/lookup_table.yml",
-            "your NLU pipeline's 'CRFEntityExtractor' does not include "
-            "the 'pattern' feature",
-        ),
-        (
-            "data/test_config/config_crf_no_synonyms.yml",
-            "data/test/synonyms_only.yml",
-            ["add an 'EntitySynonymMapper'"],
-        ),
-        (
-            "data/test_config/config_embedding_intent_response_selector.yml",
-            "data/test/demo-rasa-composite-entities.yml",
-            ["include either 'DIETClassifier' or 'CRFEntityExtractor'"],
-        ),
-    ],
-)
-def test_validate_required_components_from_data(
-    config_path: Text, data_path: Text, expected_warning_excerpts: List[Text]
-):
-    loaded_config = config.load(config_path)
-    # trainer = Trainer(loaded_config)
-    # training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
-    # with pytest.warns(UserWarning) as record:
-    #     components.validate_required_components_from_data(
-    #         trainer.pipeline, training_data
-    #     )
-    # assert len(record) == 1
-    # assert all(
-    #     [excerpt in record[0].message.args[0]] for excerpt in expected_warning_excerpts
-    # )

@@ -8,9 +8,6 @@ from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
-from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore
-from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
