@@ -322,7 +322,7 @@ class Agent:
         fingerprint: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
-    ):
+    ) -> Agent:
         """Constructs a new agent and loads the processer and model."""
         agent = Agent(
             domain=domain,
@@ -335,6 +335,7 @@ class Agent:
             remote_storage=remote_storage,
         )
         agent.load_model(model_path=model_path, fingerprint=fingerprint)
+        return agent
 
     def load_model(
         self, model_path: Union[Text, Path], fingerprint: Optional[Text] = None,
