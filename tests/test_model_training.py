@@ -1001,6 +1001,7 @@ def test_fingerprint_changes_if_module_changes(
     recipe: "default.v1"
 
     policies:
+    - name: RulePolicy
     - name: {module_name}.{new_class_name}
     """
     )
@@ -1041,4 +1042,4 @@ def test_fingerprint_changes_if_module_changes(
     )
 
     assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
-    assert not result.dry_run_results[f"train_{module_name}.{new_class_name}0"].is_hit
+    assert not result.dry_run_results[f"train_{module_name}.{new_class_name}1"].is_hit
