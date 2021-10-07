@@ -86,7 +86,7 @@ def compute_single_tracker_stats(
 
 def compute_multi_tracker_stats(
     multi_tracker_markers: List[Dict[str, Any]],
-) -> Tuple[Dict, Dict[Any, Dict[str, MarkerStats]]]:
+) -> Tuple[Dict[str, Union[int, MarkerStats]], Dict[Any, Dict[str, MarkerStats]]]:
     """Computes summary statistics for multiple trackers.
 
     Args:
@@ -99,7 +99,9 @@ def compute_multi_tracker_stats(
          A dictionary containing summary statistics computed
          per tracker.
     """
-    per_marker_stats = {"num_trackers": len(multi_tracker_markers)}
+    per_marker_stats: Dict[str, Union[int, MarkerStats]] = {
+        "num_trackers": len(multi_tracker_markers)
+    }
     per_tracker_stats = {}
     per_marker_values = {}
 
