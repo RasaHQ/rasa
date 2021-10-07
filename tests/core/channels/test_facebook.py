@@ -1,4 +1,5 @@
-import logging, pytest
+import logging
+import pytest
 from rasa.core.channels.facebook import MessengerBot
 from fbmessenger import MessengerClient
 
