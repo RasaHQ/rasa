@@ -284,7 +284,6 @@ class MessengerBot(OutputChannel):
         """Sends custom json data to the output."""
         if isinstance(json_message, dict) and "sender" in json_message.keys():
             recipient_id = json_message.pop("sender", {}).pop("id", recipient_id)
-
         elif isinstance(json_message, list):
             for message in json_message:
                 if "sender" in message.keys():
