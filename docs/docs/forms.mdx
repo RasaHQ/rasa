@@ -63,6 +63,18 @@ forms:
             entity: number
 ```
 
+:::caution Deprecated in 2.6
+The `required_slots` keyword was introduced. The following syntax is deprecated and will be removed in 3.0.0:
+```yaml-rasa title="domain.yml"
+forms:
+  restaurant_form:
+    # this format is deprecated
+    cuisine:
+      - type: from_entity
+        entity: cuisine
+```
+:::
+
 Once the form action gets called for the first time, the form gets activated and will
 prompt the user for the next required slot value. It does this by
 looking for a [response](./responses.mdx) called
@@ -326,6 +338,11 @@ Forms are fully customizable using [Custom Actions](./actions.mdx#custom-actions
 After extracting a slot value from user input, you can validate the extracted slots.
 By default Rasa Open Source only validates if any slot was filled after requesting
 a slot.
+
+:::caution Changed in 2.1
+Forms no longer raise `ActionExecutionRejection` if nothing is extracted from the user’s
+utterance for any of the required slots.
+:::
 
 You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>`
 to validate any extracted slots. Make sure to add this action to the `actions`
