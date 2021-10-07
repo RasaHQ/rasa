@@ -699,6 +699,7 @@ class MessageProcessor:
                     action, tracker, output_channel, self.nlg, prediction
                 )
             else:
+                # If the model is NLU only, then we will have no action to run.
                 break
 
         return tracker
