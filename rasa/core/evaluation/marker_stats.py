@@ -36,12 +36,13 @@ def load_extracted_markers_json_file(path: Union[Text, Path]) -> List:
 def compute_summary_stats(data_points: Union[List[float], np.ndarray]) -> MarkerStats:
     """Computes summary statistics for a given array.
 
-    Computes size, mean, median, min, and max.
-    If the given array of data points is empty, it returns 0 for size, and
-    `np.nan` for every statistic.
-
     Args:
         data_points: can be a numpy array or a list of numbers.
+
+    Returns:
+        A MarkerStats object containing size, mean, median, min, and max.
+        If the given array of data points is empty, it returns 0 for size, and
+        `np.nan` for every statistic.
     """
     if np.size(data_points) > 0:
         stats: MarkerStats = {
@@ -66,7 +67,15 @@ def compute_summary_stats(data_points: Union[List[float], np.ndarray]) -> Marker
 def compute_single_tracker_stats(
     single_tracker_markers: Dict[str, Any]
 ) -> Dict[str, MarkerStats]:
-    """Computes summary statistics for a single tracker."""
+    """Computes summary statistics for a single tracker.
+
+    Args:
+        single_tracker_markers: a dictionary containing the extracted
+        markers for one tracker.
+
+    Returns:
+        A dictionary containing statistics computed for each marker.
+    """
     tracker_stats = {}
     for marker in single_tracker_markers["markers"]:
         tracker_stats[marker["marker"]] = compute_summary_stats(
@@ -85,10 +94,11 @@ def compute_multi_tracker_stats(
         extracted markers for one tracker.
 
     Returns:
-         per_marker_stats: a dictionary containing summary statistics computed per
+         A dictionary containing summary statistics computed per
          marker over all trackers.
-         per_tracker_stats: a dictionary containing summary statistics computed
-         per tracker."""
+         A dictionary containing summary statistics computed
+         per tracker.
+    """
     per_marker_stats = {"num_trackers": len(multi_tracker_markers)}
     per_tracker_stats = {}
     per_marker_values = {}
