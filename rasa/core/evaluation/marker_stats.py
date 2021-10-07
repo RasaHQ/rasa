@@ -114,7 +114,7 @@ def compute_multi_tracker_stats(
             )
 
     for marker_name in per_marker_values.keys():
-        # compute statistics over each marker
+        # compute statistics per marker over all trackers
         per_marker_stats[marker_name] = compute_summary_stats(
             per_marker_values[marker_name]
         )
