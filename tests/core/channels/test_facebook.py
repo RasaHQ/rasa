@@ -3,13 +3,6 @@ import pytest
 from rasa.core.channels.facebook import MessengerBot
 from fbmessenger import MessengerClient
 
-import rasa.core.run
-from rasa.core import utils
-
-
-# this is needed so that the tests included as code examples look better
-from tests.utilities import json_of_latest_request, latest_request
-
 logger = logging.getLogger(__name__)
 
 
