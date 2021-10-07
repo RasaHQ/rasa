@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import copy
+import logging
 import os
 import random
 import textwrap
@@ -199,14 +200,14 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-async def _trained_default_agent(
+def _trained_default_agent_model(
     tmp_path_factory: TempPathFactory,
     stories_path: Text,
     domain_path: Text,
     nlu_data_path: Text,
     trained_async: Callable,
-) -> Agent:
-    project_path = tmp_path_factory.mktemp("project")
+) -> Text:
+    project_path = tmp_path_factory.mktemp(uuid.uuid4().hex)
 
     config = textwrap.dedent(
         f"""
@@ -226,7 +227,7 @@ async def _trained_default_agent(
         domain_path, str(config_path), [stories_path, nlu_data_path],
     ).model
 
-    return await load_agent(model_path=model_path)
+    return model_path
 
 
 @pytest.fixture()
@@ -244,8 +245,8 @@ def reset_conversation_state(agent: Agent) -> Agent:
 
 
 @pytest.fixture
-def default_agent(_trained_default_agent: Agent) -> Agent:
-    return reset_conversation_state(_trained_default_agent)
+def default_agent(_trained_default_agent_model: Text) -> Agent:
+    return Agent.load(_trained_default_agent_model)
 
 
 @pytest.fixture(scope="session")
