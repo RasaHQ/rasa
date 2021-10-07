@@ -437,11 +437,6 @@ class YAMLStoryReader(StoryReader):
         return (base_intent, user_intent) if response_key else (base_intent, None)
 
     def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
-        # TODO: Fix that this is from outside shared
-        from rasa.nlu.classifiers.regex_message_handler import (
-            RegexMessageHandlerGraphComponent,
-        )
-
         intent_name, full_retrieval_intent = self._user_intent_from_step(step)
         intent = {
             INTENT_NAME_KEY: intent_name,
@@ -455,10 +450,8 @@ class YAMLStoryReader(StoryReader):
             plain_text = entities_parser.replace_entities(user_message)
 
             if plain_text.startswith(INTENT_MESSAGE_PREFIX):
-                entities = (
-                    RegexMessageHandlerGraphComponent()
-                    ._unpack(Message({TEXT: plain_text}))
-                    .get(ENTITIES, [])
+                entities = self.unpack_regex_message(Message({TEXT: plain_text})).get(
+                    ENTITIES, []
                 )
         else:
             raw_entities = step.get(KEY_ENTITIES, [])

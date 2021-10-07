@@ -1,32 +1,15 @@
 from __future__ import annotations
-import json
-from json.decoder import JSONDecodeError
 import logging
-import re
-from typing import Any, Dict, Match, Optional, Pattern, Text, List
+from typing import Any, Dict, Optional, Text, List
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
-from rasa.shared.constants import DOCS_URL_STORIES, INTENT_MESSAGE_PREFIX
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
-from rasa.shared.nlu.constants import (
-    ENTITIES,
-    ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_VALUE,
-    INTENT,
-    INTENT_NAME_KEY,
-    INTENT_RANKING_KEY,
-    PREDICTED_CONFIDENCE_KEY,
-    TEXT,
-)
-import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
