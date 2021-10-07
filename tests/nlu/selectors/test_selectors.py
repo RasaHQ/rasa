@@ -29,6 +29,7 @@ from rasa.utils.tensorflow.constants import (
     EPOCHS,
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
+    RENORMALIZE_CONFIDENCES,
     TRANSFORMER_SIZE,
     CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
@@ -467,22 +468,27 @@ async def test_margin_loss_is_not_normalized(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, output_length",
+    "classifier_params, output_length, sums_up_to_1",
     [
-        ({RANDOM_SEED: 42, EPOCHS: 1}, 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1}, 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, 2),
+        ({}, 9, True),
+        ({EPOCHS: 1}, 9, True),
+        ({RANKING_LENGTH: 2}, 2, False),
+        ({RANKING_LENGTH: 2, RENORMALIZE_CONFIDENCES: True}, 2, True),
     ],
 )
 async def test_softmax_ranking(
     classifier_params: Dict[Text, int],
     output_length: int,
+    sums_up_to_1: bool,
     create_response_selector: Callable[
         [Dict[Text, Any]], ResponseSelectorGraphComponent
     ],
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
 ):
+    classifier_params[RANDOM_SEED] = 42
+    classifier_params[EPOCHS] = 1
+
     pipeline = [
         {"component": WhitespaceTokenizerGraphComponent},
         {"component": CountVectorsFeaturizerGraphComponent},
@@ -504,6 +510,10 @@ async def test_softmax_ranking(
     )
     # check that the output was correctly truncated after normalization
     assert len(response_ranking) == output_length
+    output_sums_to_1 = sum(
+        [intent.get("confidence") for intent in response_ranking]
+    ) == pytest.approx(1)
+    assert output_sums_to_1 == sums_up_to_1
 
 
 @pytest.mark.parametrize(

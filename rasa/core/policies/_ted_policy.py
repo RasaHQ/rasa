@@ -806,8 +806,8 @@ class TEDPolicy(Policy):
         if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
             # TODO: This should be removed in 3.0 when softmax as
             #  model confidence and normalization is completely deprecated.
-            confidence = rasa.utils.train_utils.normalize(
-                confidence, self.config[RANKING_LENGTH]
+            _, confidence = rasa.utils.train_utils.rank_and_mask(
+                confidence, self.config[RANKING_LENGTH], renormalize=True
             )
 
         optional_events = self._create_optional_event_for_entities(

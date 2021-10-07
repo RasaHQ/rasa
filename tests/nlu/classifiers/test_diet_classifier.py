@@ -26,6 +26,7 @@ from rasa.utils.tensorflow.constants import (
     RANKING_LENGTH,
     EPOCHS,
     MASKED_LM,
+    RENORMALIZE_CONFIDENCES,
     TENSORBOARD_LOG_LEVEL,
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
@@ -346,35 +347,47 @@ async def test_train_persist_load_with_only_intent_classification(
     "classifier_params, data_path, output_length, output_should_sum_to_1",
     [
         (
-            {RANDOM_SEED: 42, EPOCHS: 1},
-            "data/test/many_intents.yml",
-            10,
-            True,
-        ),  # default config
-        (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1},
+            {},
             "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
             False,
-        ),  # no normalization
+        ),  # (num_intents > default ranking_length)
         (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 3, EPOCHS: 1},
-            "data/test/many_intents.yml",
-            3,
-            True,
-        ),  # lower than default ranking_length
-        (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 12, EPOCHS: 1},
+            {RENORMALIZE_CONFIDENCES: True},
             "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
-            False,
-        ),  # higher than default ranking_length
+            True,
+        ),  # (num_intents > default ranking_length) + renormalize
         (
-            {RANDOM_SEED: 42, EPOCHS: 1},
+            {RANKING_LENGTH: 0},
+            "data/test/many_intents.yml",
+            16,
+            True,
+        ),  # (ranking_length := num_intents)
+        (
+            {RANKING_LENGTH: 0, RENORMALIZE_CONFIDENCES: True},
+            "data/test/many_intents.yml",
+            16,
+            True,
+        ),  # (ranking_length := num_intents) + (unnecessary) renormalize
+        (
+            {RANKING_LENGTH: LABEL_RANKING_LENGTH + 1},
+            "data/test/many_intents.yml",
+            LABEL_RANKING_LENGTH + 1,
+            False,
+        ),  # (num_intents > specified ranking_length)
+        (
+            {RANKING_LENGTH: LABEL_RANKING_LENGTH + 1, RENORMALIZE_CONFIDENCES: True},
+            "data/test/many_intents.yml",
+            LABEL_RANKING_LENGTH + 1,
+            True,
+        ),  # (num_intents > specified ranking_length) + renormalize
+        (
+            {},
             "data/test_moodbot/data/nlu.yml",
             7,
             True,
-        ),  # less intents than default ranking_length
+        ),  # (num_intents < default ranking_length)
     ],
 )
 async def test_softmax_normalization(
@@ -384,6 +397,8 @@ async def test_softmax_normalization(
     output_should_sum_to_1,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
+    classifier_params[RANDOM_SEED] = 42
+    classifier_params[EPOCHS] = 1
 
     parsed_message = create_train_load_and_process_diet(
         classifier_params, training_data=data_path

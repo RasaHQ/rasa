@@ -39,6 +39,7 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     LEARNING_RATE,
     RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     LOSS_TYPE,
     SIMILARITY_TYPE,
     NUM_NEG,
@@ -186,10 +187,16 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
             SIMILARITY_TYPE: AUTO,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
-            # Number of top actions to normalize scores for. Applicable with
-            # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-            # to turn off normalization.
+            # Number of top actions for which confidences should be predicted.
+            # The remaining actions will be ignored and treated as if they were
+            # predicted with confidence 0.
             RANKING_LENGTH: 10,
+            # Determines wether the confidences of the chosen top actions should be
+            # renormalized so that they sum up to 1. By default, we do not renormalize
+            # and return the confidences for the top actions as is.
+            # Note that renormalization only makes sense if confidences are generated
+            # via `softmax`.
+            RENORMALIZE_CONFIDENCES: False,
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
             # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.

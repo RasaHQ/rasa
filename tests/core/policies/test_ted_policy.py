@@ -281,10 +281,14 @@ class TestTEDPolicy(PolicyTestCollection):
         )
         assert not prediction.is_end_to_end_prediction
         # count number of non-zero confidences
-        assert (
-            sum([confidence > 0 for confidence in prediction.probabilities])
-            == trained_policy.config[RANKING_LENGTH]
-        )
+        if trained_policy.config[RANKING_LENGTH] > 0:
+            assert (
+                sum([confidence > 0 for confidence in prediction.probabilities])
+                <= trained_policy.config[RANKING_LENGTH]
+            )
+            assert sum(
+                [confidence for confidence in prediction.probabilities]
+            ) == pytest.approx(1)
         # check that the norm is still 1
         assert sum(prediction.probabilities) == pytest.approx(1)
 

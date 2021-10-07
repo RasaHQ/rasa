@@ -48,6 +48,7 @@ from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
     HIDDEN_LAYERS_SIZES,
+    RENORMALIZE_CONFIDENCES,
     SHARE_HIDDEN_LAYERS,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
@@ -184,10 +185,8 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             SIMILARITY_TYPE: AUTO,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
-            # Number of top intents to normalize scores for. Applicable with
-            # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-            # to turn off normalization.
-            RANKING_LENGTH: 10,
+            # Number of top intents for which confidences should be reported.
+            RANKING_LENGTH: LABEL_RANKING_LENGTH,
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
             # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -261,6 +260,12 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             # Model confidence to be returned during inference. Currently, the only
             # possible value is `softmax`.
             MODEL_CONFIDENCE: SOFTMAX,
+            # Determines wether the confidences of the chosen top intents should be
+            # renormalized so that they sum up to 1. By default, we do not renormalize
+            # and return the confidences for the top intents as is.
+            # Note that renormalization only makes sense if confidences are generated
+            # via `softmax`.
+            RENORMALIZE_CONFIDENCES: False,
         }
 
     def __init__(
@@ -925,49 +930,39 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             return label, label_ranking
 
         message_sim = predict_out["i_scores"]
-
         message_sim = message_sim.flatten()  # sim is a matrix
 
-        label_ids = message_sim.argsort()[::-1]
-
-        if (
-            self.component_config[RANKING_LENGTH] > 0
-            and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
-        ):
-            # TODO: This should be removed in 3.0 when softmax as
-            #  model confidence and normalization is completely deprecated.
-            message_sim = train_utils.normalize(
-                message_sim, self.component_config[RANKING_LENGTH]
-            )
-        message_sim[::-1].sort()
-        message_sim = message_sim.tolist()
-
         # if X contains all zeros do not predict some label
-        if label_ids.size > 0:
-            label = {
-                "id": hash(self.index_label_id_mapping[label_ids[0]]),
-                "name": self.index_label_id_mapping[label_ids[0]],
-                "confidence": message_sim[0],
+        if message_sim.size == 0:
+            return label, label_ranking
+
+        # rank the confidences
+        ranking_length = self.component_config[RANKING_LENGTH]
+        renormalize = (
+            self.component_config[RENORMALIZE_CONFIDENCES]
+            and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
+        )
+        ranked_label_indices, message_sim = train_utils.rank_and_mask(
+            message_sim, ranking_length=ranking_length, renormalize=renormalize
+        )
+
+        # construct the label and ranking
+        top_label_idx = ranked_label_indices[0]
+        label = {
+            "id": hash(self.index_label_id_mapping[top_label_idx]),
+            "name": self.index_label_id_mapping[top_label_idx],
+            "confidence": message_sim[top_label_idx],
+        }
+
+        ranking = [(idx, message_sim[idx]) for idx in ranked_label_indices]
+        label_ranking = [
+            {
+                "id": hash(self.index_label_id_mapping[label_idx]),
+                "name": self.index_label_id_mapping[label_idx],
+                "confidence": score,
             }
-
-            if (
-                self.component_config[RANKING_LENGTH]
-                and 0 < self.component_config[RANKING_LENGTH] < LABEL_RANKING_LENGTH
-            ):
-                output_length = self.component_config[RANKING_LENGTH]
-            else:
-                output_length = LABEL_RANKING_LENGTH
-
-            ranking = list(zip(list(label_ids), message_sim))
-            ranking = ranking[:output_length]
-            label_ranking = [
-                {
-                    "id": hash(self.index_label_id_mapping[label_idx]),
-                    "name": self.index_label_id_mapping[label_idx],
-                    "confidence": score,
-                }
-                for label_idx, score in ranking
-            ]
+            for label_idx, score in ranking
+        ]
 
         return label, label_ranking
 
