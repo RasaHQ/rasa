@@ -147,6 +147,13 @@ def test_core(
             "Unable to test: no core model found. Use 'rasa train' to train a "
             "Rasa model and provide it via the '--model' argument."
         )
+    elif metadata.training_type == TrainingType.CORE and use_conversation_test_files:
+        rasa.shared.utils.cli.print_warning(
+            "No NLU model found. Using default 'RegexMessageHandler' for end-to-end "
+            "evaluation. If you added actual user messages to your test stories "
+            "this will likely lead to the tests failing. In that case, you need "
+            "to train a NLU model first, e.g. using `rasa train`."
+        )
 
     if additional_arguments is None:
         additional_arguments = {}

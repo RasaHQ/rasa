@@ -157,12 +157,9 @@ def test_e2e_warning_if_no_nlu_model(
         sys.modules["rasa.core.test"], "test", asyncio.coroutine(lambda *_, **__: True)
     )
 
-    test_core(trained_core_model, additional_arguments={"e2e": True})
+    test_core(trained_core_model, use_conversation_test_files=True)
 
-    assert (
-        "Unable to test: processor not loaded. Use 'rasa train' to train a Rasa model"
-        in capsys.readouterr().out
-    )
+    assert "No NLU model found. Using default" in capsys.readouterr().out
 
 
 def test_write_classification_errors():
