@@ -73,7 +73,7 @@ class LocalModelStorage(ModelStorage):
     def metadata_from_archive(
         cls, model_archive_path: Union[Text, Path]
     ) -> ModelMetadata:
-        """Retrieve metadata from archive (see parent class for full docstring)."""
+        """Retrieves metadata from archive (see parent class for full docstring)."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             temporary_directory = Path(temporary_directory)
 

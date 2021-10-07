@@ -34,6 +34,7 @@ from rasa.core.tracker_store import (
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.exceptions import ModelNotFound
 from rasa.nlu.utils import is_url
+from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
@@ -340,7 +341,7 @@ class Agent:
     def load_model(
         self, model_path: Union[Text, Path], fingerprint: Optional[Text] = None,
     ) -> None:
-        """Update the agent's model and processor given a new model path."""
+        """Loads the agent's model and processor given a new model path."""
         self.processor = MessageProcessor(
             model_path=model_path,
             tracker_store=self.tracker_store,
@@ -359,10 +360,12 @@ class Agent:
 
     @property
     def model_id(self) -> Optional[Text]:
+        """Returns the model_id from processor's model_metadata."""
         return self.processor.model_metadata.model_id if self.processor else None
 
     @property
     def model_name(self) -> Optional[Text]:
+        """Returns the model name from processor's model_path."""
         return self.processor.model_path.name if self.processor else None
 
     def is_ready(self) -> bool:
@@ -422,7 +425,7 @@ class Agent:
         tracker: DialogueStateTracker,
         verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART,
     ) -> Optional[Dict[Text, Any]]:
-        """Predict the next action."""
+        """Predicts the next action."""
         return self.processor.predict_next_with_tracker(tracker, verbosity)
 
     async def log_message(self, message: UserMessage,) -> DialogueStateTracker:
@@ -558,6 +561,6 @@ class Agent:
                 self.load_model(temporary_directory)
 
         else:
-            raise ValueError(
-                f"Persistor not found for remote storage: '{self.remote_storage}'"
+            raise RasaException(
+                f"Persistor not found for remote storage: '{self.remote_storage}'."
             )

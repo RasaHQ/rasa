@@ -52,7 +52,7 @@ class ModelStorage(abc.ABC):
     def metadata_from_archive(
         cls, model_archive_path: Union[Text, Path]
     ) -> ModelMetadata:
-        """Retrieve metadata from archive.
+        """Retrieves metadata from archive.
 
         Args:
             model_archive_path: The path to the model archive.
