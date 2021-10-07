@@ -17,8 +17,8 @@ class MarkerStats(TypedDict):
     n: int
     mean: float
     median: float
-    min: int
-    max: int
+    min: float
+    max: float
 
 
 def load_extracted_markers_json_file(path: Union[Text, Path]) -> List:
@@ -33,11 +33,12 @@ def load_extracted_markers_json_file(path: Union[Text, Path]) -> List:
         return extracted_markers
 
 
-def compute_summary_stats(data_points: Union[List, np.ndarray]) -> MarkerStats:
+def compute_summary_stats(data_points: Union[List[float], np.ndarray]) -> MarkerStats:
     """Computes summary statistics for a given array.
 
     Computes size, mean, median, min, and max.
-    If size is == 0 returns np.nan for mean, median.
+    If the given array of data points is empty, it returns 0 for size, and
+    `np.nan` for every statistic.
 
     Args:
         data_points: can be a numpy array or a list of numbers.
@@ -75,15 +76,27 @@ def compute_single_tracker_stats(
 
 
 def compute_multi_tracker_stats(
-    multi_tracker_markers: list,
+    multi_tracker_markers: List[Dict[str, Any]],
 ) -> Tuple[Dict, Dict[Any, Dict[str, MarkerStats]]]:
-    """Computes summary statistics for multiple trackers."""
-    overall_stats = {"num_trackers": len(multi_tracker_markers)}
+    """Computes summary statistics for multiple trackers.
+
+    Args:
+        multi_tracker_markers: a list of dictionaries each containing the
+        extracted markers for one tracker.
+
+    Returns:
+         per_marker_stats: a dictionary containing summary statistics computed per
+         marker over all trackers.
+         per_tracker_stats: a dictionary containing summary statistics computed
+         per tracker."""
+    per_marker_stats = {"num_trackers": len(multi_tracker_markers)}
     per_tracker_stats = {}
     per_marker_values = {}
 
     for tracker in multi_tracker_markers:
+        # compute statistics per tracker
         per_tracker_stats[tracker["tracker_ID"]] = compute_single_tracker_stats(tracker)
+
         for marker in tracker["markers"]:
             # append raw values
             per_marker_values.setdefault(marker["marker"], []).extend(
@@ -91,12 +104,12 @@ def compute_multi_tracker_stats(
             )
 
     for marker_name in per_marker_values.keys():
-        # compute overall statistics
-        overall_stats[marker_name] = compute_summary_stats(
+        # compute statistics over each marker
+        per_marker_stats[marker_name] = compute_summary_stats(
             per_marker_values[marker_name]
         )
 
-    return overall_stats, per_tracker_stats
+    return per_marker_stats, per_tracker_stats
 
 
 def write_stats(path: Union[Text, Path], stats: dict, per_tracker_stats: dict) -> None:
