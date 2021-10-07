@@ -1,7 +1,7 @@
 import typing
 from typing import Dict, Text, List, Any, Optional, Type
 
-from rasa.nlu.utils.spacy_utils import SpacyModelProvider
+from rasa.nlu.utils.spacy_utils import SpacyModelProvider, SpacyPreprocessor
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.nlu.tokenizers._spacy_tokenizer import SpacyTokenizer
@@ -22,7 +22,7 @@ class SpacyTokenizerGraphComponent(TokenizerGraphComponent):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [SpacyModelProvider]
+        return [SpacyPreprocessor]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

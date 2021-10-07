@@ -8,7 +8,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.nlu.featurizers.dense_featurizer._mitie_featurizer import MitieFeaturizer
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
@@ -75,13 +75,6 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        pass
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validate a configuration for this component in the context of a recipe."""
         pass
 
     def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:

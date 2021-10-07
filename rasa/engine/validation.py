@@ -410,7 +410,7 @@ def _validate_required_components(schema: GraphSchema,) -> None:
             node_name=target_name, schema=schema,
         )
     if any(problems for problems in unmet_requirements.values()):
-        errors = "".join(
+        errors = "\n".join(
             [
                 f"Some components ({', '.join(sorted(required_by))}) "
                 f"require a {type.__name__} to be placed before it in the graph "
@@ -438,29 +438,41 @@ def _recursively_check_required_components(
     node_name: Text, schema: GraphSchema,
 ) -> Tuple[Dict[Type, Set[Text]], Set[Type]]:
     schema_node = schema.nodes.get(node_name, None)
-    if not schema_node:
-        raise RuntimeError("This cannot happen.")
 
-    unmet_requirements = dict()
-    used_subtypes = set()
+    # unmet requirements = a mapping from component types to names of nodes that
+    # are contained in the subtree rooted at `schema_node` that require that component
+    # type but can't find it in their respective subtrees
+    unmet_requirements: Dict[Type, Set[Text]] = dict()
+
+    # ancestor types = all component types of nodes that are ancestors of the
+    # `schema_node` (or of the`schema_node`)
+    component_types = set()
+
+    # collect all component types used by ancestors and their unmet requirements
     for parent_node_name in schema_node.needs.values():
         (
-            part_of_unmet_requirements,
-            part_of_used_types,
+            unmet_requirements_of_ancestors,
+            ancestor_types,
         ) = _recursively_check_required_components(
             node_name=parent_node_name, schema=schema
         )
-        for type, nodes in part_of_unmet_requirements.items():
+        for type, nodes in unmet_requirements_of_ancestors.items():
             unmet_requirements.setdefault(type, set()).update(nodes)
-        used_subtypes.update(part_of_used_types)
+        component_types.update(ancestor_types)
 
+    # check which requirements of the `schema_node` are not fulfilled by
+    # comparing its requirements with the types found so far among the ancestor nodes
     unmet_requirements_of_current_node = set(
         required
         for required in schema_node.uses.required_components
-        if not any(issubclass(used_subtype, required) for used_subtype in used_subtypes)
+        if not any(
+            issubclass(used_subtype, required) for used_subtype in component_types
+        )
     )
-    for type in unmet_requirements_of_current_node:
-        unmet_requirements.setdefault(type, set()).add(node_name)
-    used_subtypes.add(schema_node.uses)
 
-    return unmet_requirements, used_subtypes
+    # add the unmet requirements and the type of the `schema_node`
+    for component_type in unmet_requirements_of_current_node:
+        unmet_requirements.setdefault(component_type, set()).add(node_name)
+    component_types.add(schema_node.uses)
+
+    return unmet_requirements, component_types
