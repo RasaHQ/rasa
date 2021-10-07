@@ -2,8 +2,6 @@ import logging, pytest
 from rasa.core.channels.facebook import MessengerBot
 from fbmessenger import MessengerClient
 
-from _pytest.monkeypatch import MonkeyPatch
-
 import rasa.core.run
 from rasa.core import utils
 
