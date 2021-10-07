@@ -137,7 +137,7 @@ class DefaultV1Recipe(Recipe):
     @classmethod
     def _from_registry(cls, name: Text) -> RegisteredComponent:
         # Importing all the default Rasa components will automatically register them
-        import rasa.engine.recipes.default_components
+        from rasa.engine.recipes.default_components import DEFAULT_COMPONENTS  # noqa
 
         # TODO: Hack until we've deleted the old components
         if not name.endswith("GraphComponent"):

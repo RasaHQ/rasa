@@ -228,7 +228,6 @@ async def load_agent(
     """
     from rasa.core.tracker_store import TrackerStore
     from rasa.core.brokers.broker import EventBroker
-    import rasa.utils.common
 
     tracker_store = None
     lock_store = None
