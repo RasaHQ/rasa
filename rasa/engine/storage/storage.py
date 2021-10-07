@@ -127,6 +127,7 @@ class ModelMetadata:
     domain: Domain
     train_schema: GraphSchema
     predict_schema: GraphSchema
+    project_fingerprint: Text
     training_type: TrainingType = TrainingType.BOTH
 
     def as_dict(self) -> Dict[Text, Any]:
@@ -139,6 +140,7 @@ class ModelMetadata:
             "train_schema": self.train_schema.as_dict(),
             "predict_schema": self.predict_schema.as_dict(),
             "training_type": self.training_type.value,
+            "project_fingerprint": self.project_fingerprint,
         }
 
     @classmethod
@@ -161,4 +163,5 @@ class ModelMetadata:
             train_schema=GraphSchema.from_dict(serialized["train_schema"]),
             predict_schema=GraphSchema.from_dict(serialized["predict_schema"]),
             training_type=TrainingType(serialized["training_type"]),
+            project_fingerprint=serialized["project_fingerprint"],
         )

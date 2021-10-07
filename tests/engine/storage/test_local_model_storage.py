@@ -125,6 +125,7 @@ def test_create_model_package(
     assert packaged_metadata.rasa_open_source_version == rasa.__version__
     assert packaged_metadata.trained_at == trained_at
     assert packaged_metadata.model_id
+    assert packaged_metadata.project_fingerprint
 
     persisted_resources = load_model_storage_dir.glob("*")
     assert list(persisted_resources) == [Path(load_model_storage_dir, "resource1")]
