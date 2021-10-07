@@ -1,7 +1,6 @@
 import asyncio
 import contextlib
 import copy
-import logging
 import os
 import random
 import textwrap
