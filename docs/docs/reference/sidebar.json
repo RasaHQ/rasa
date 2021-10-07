@@ -73,6 +73,7 @@
         },
         {
           "items": [
+            "reference/rasa/core/evaluation/marker_stats",
             "reference/rasa/core/evaluation/marker_tracker_loader",
             "reference/rasa/core/evaluation/markers"
           ],

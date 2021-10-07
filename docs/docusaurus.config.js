@@ -20,7 +20,7 @@ try { existingVersions = require('./versions.json'); } catch (e) { console.info(
 const routeBasePath = '/';
 
 const versionLabels = {
-  current: 'Main/Unreleased'
+  current: 'Master/Unreleased'
 };
 
 module.exports = {
