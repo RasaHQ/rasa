@@ -126,6 +126,7 @@ def perform_interactive_learning(
 
 
 def get_provided_model(arg_model: Text) -> Optional[Text]:
+    """Checks model path input and selects model from it."""
     model_path = rasa.cli.utils.get_validated_path(
         arg_model, "model", DEFAULT_MODELS_PATH
     )

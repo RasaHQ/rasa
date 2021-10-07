@@ -21,7 +21,7 @@ def train_comparison_models(
     runs: int = 1,
     additional_arguments: Optional[Dict] = None,
 ) -> None:
-    """Train multiple models for comparison of policies"""
+    """Trains multiple models for comparison of policies."""
     import rasa.model_training
 
     exclusion_percentages = exclusion_percentages or []
