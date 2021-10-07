@@ -13,25 +13,6 @@ from tests.utilities import json_of_latest_request, latest_request
 logger = logging.getLogger(__name__)
 
 
-def test_facebook_channel():
-    from rasa.core.channels.facebook import FacebookInput
-
-    input_channel = FacebookInput(
-        fb_verify="YOUR_FB_VERIFY",
-        # you need tell facebook this token, to confirm your URL
-        fb_secret="YOUR_FB_SECRET",  # your app secret
-        fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"
-        # token for the page you subscribed to
-    )
-
-    s = rasa.core.run.configure_app([input_channel], port=5004)
-
-    routes_list = utils.list_routes(s)
-
-    assert routes_list["fb_webhook.health"].startswith("/webhooks/facebook")
-    assert routes_list["fb_webhook.webhook"].startswith("/webhooks/facebook/webhook")
-
-
 @pytest.mark.parametrize(
     "test_input, expected",
     [
