@@ -52,7 +52,8 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
         domain,
         train_schema,
         predict_schema,
-        TrainingType.NLU,
+        project_fingerprint="some_fingerprint",
+        training_type=TrainingType.NLU,
     )
 
     serialized = metadata.as_dict()
@@ -70,4 +71,5 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
     assert loaded_metadata.trained_at == trained_at
     assert loaded_metadata.train_schema == train_schema
     assert loaded_metadata.predict_schema == predict_schema
+    assert loaded_metadata.project_fingerprint == "some_fingerprint"
     assert loaded_metadata.training_type == TrainingType.NLU

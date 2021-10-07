@@ -100,7 +100,7 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
-async def test_switch_forms_with_same_slot(empty_agent: Agent):
+async def test_switch_forms_with_same_slot(default_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
     Tests the fix for issue 7710"""
@@ -146,13 +146,8 @@ responses:
     domain = Domain.from_yaml(domain)
 
     # Driving it like rasa/core/processor
-    processor = MessageProcessor(
-        None,
-        domain,
-        InMemoryTrackerStore(domain),
-        InMemoryLockStore(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-    )
+    processor = default_agent.processor
+    processor.domain = domain
 
     # activate the first form
     tracker = DialogueStateTracker.from_events(

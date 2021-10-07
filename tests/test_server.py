@@ -173,8 +173,7 @@ async def test_status(rasa_app: SanicASGITestClient, trained_rasa_model: Text):
     model_file = response.json()["model_file"]
     assert response.status == HTTPStatus.OK
     assert "fingerprint" in response.json()
-    assert os.path.isfile(model_file)
-    assert model_file == trained_rasa_model
+    assert model_file == Path(trained_rasa_model).name
 
 
 async def test_status_nlu_only(
@@ -185,7 +184,7 @@ async def test_status_nlu_only(
     assert response.status == HTTPStatus.OK
     assert "fingerprint" in response.json()
     assert "model_file" in response.json()
-    assert model_file == trained_nlu_model
+    assert model_file == Path(trained_nlu_model).name
 
 
 async def test_status_secured(rasa_secured_app: SanicASGITestClient):

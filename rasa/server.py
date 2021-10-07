@@ -1338,7 +1338,7 @@ def create_app(
     @app.delete("/model")
     @requires_auth(app, auth_token)
     async def unload_model(request: Request) -> HTTPResponse:
-        model_file = app.agent.model_path
+        model_file = app.agent.model_name
 
         app.agent = Agent(lock_store=app.agent.lock_store)
 

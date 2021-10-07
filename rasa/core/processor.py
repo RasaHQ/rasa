@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+import tarfile
 import tempfile
 import time
 from types import LambdaType
@@ -86,8 +87,8 @@ class MessageProcessor:
         self.max_number_of_predictions = max_number_of_predictions
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
-        self.model_path = Path(model_path)
         self.model_metadata, self.graph_runner = self.load_model(model_path)
+        self.model_path = Path(model_path)
         self.domain = self.model_metadata.domain
 
     @staticmethod
@@ -98,12 +99,15 @@ class MessageProcessor:
             raise ModelNotFound(f"No model found at path {model_path}.")
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            return loader.load_predict_graph_runner(
-                Path(temporary_directory),
-                Path(model_tar),
-                LocalModelStorage,
-                DaskGraphRunner,
-            )
+            try:
+                return loader.load_predict_graph_runner(
+                    Path(temporary_directory),
+                    Path(model_tar),
+                    LocalModelStorage,
+                    DaskGraphRunner,
+                )
+            except tarfile.ReadError:
+                raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
     async def handle_message(
         self, message: UserMessage

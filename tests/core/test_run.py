@@ -75,9 +75,7 @@ async def test_load_agent_on_start_with_bad_model_file(
         await run.load_agent_on_start(
             fake_model_path, AvailableEndpoints(), None, rasa_non_trained_server, loop
         )
-        assert any(
-            "fake_model.tar.gz' could not be loaded" in str(w.message) for w in warnings
-        )
+        assert any("No valid model found at" in str(w.message) for w in warnings)
 
 
 async def test_close_resources(loop: AbstractEventLoop):
