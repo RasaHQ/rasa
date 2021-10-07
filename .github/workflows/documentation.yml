@@ -4,8 +4,17 @@ on:
   push:
     branches:
     - 'main'
-    tags:
-    - '**'
+
+    # IMPORTANT: we're disabling the docs workflow on 2.7.x tags. We've updated
+    # the docs workflow on 2.8.x and main, and are now splitting docs versions
+    # for new majors only. We cannot backport this to all branches, so we're disabling
+    # this workflow.
+    # More context here:
+    # - https://github.com/RasaHQ/rasa/pull/9271
+    # - https://www.notion.so/rasa/Doc-versions-for-Majors-only-caaf78eadff34d7d8b49eb2284ccc8f9#5872ac3d14434dd3bfb1e7495bcc145c
+
+    # tags:
+    # - '**'
 
 # SECRETS
 # - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)
