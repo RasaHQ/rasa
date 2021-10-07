@@ -61,11 +61,16 @@ class Token:
             other.lemma,
         )
 
+    def __repr__(self) -> Text:
+        return f"<Token object value='{self.text}' start={self.start} end={self.end} \
+        at {hex(id(self))}>"
+
 
 class Tokenizer(Component):
+    """Base class for tokenizers."""
+
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
-
         super().__init__(component_config)
 
         # flag to check whether to split intents
