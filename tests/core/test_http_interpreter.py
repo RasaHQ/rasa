@@ -1,7 +1,7 @@
 import pytest
 from aioresponses import aioresponses
 
-from rasa.core.interpreter import RasaNLUHttpInterpreter
+from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request, json_of_latest_request
 

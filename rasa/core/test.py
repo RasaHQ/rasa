@@ -1,5 +1,7 @@
 import logging
 import os
+from pathlib import Path
+import tempfile
 import warnings as pywarnings
 import typing
 from collections import defaultdict, namedtuple
@@ -16,12 +18,12 @@ from rasa.core.constants import (
 from rasa.core.channels import UserMessage
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.core.constants import (
     POLICIES_THAT_EXTRACT_ENTITIES,
     ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
@@ -416,20 +418,11 @@ def _create_data_generator(
     use_conversation_test_files: bool = False,
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
-    from rasa.shared.constants import DEFAULT_DOMAIN_PATH
-    from rasa.model import get_model_subdirectories
 
-    core_model = None
-    if agent.model_directory:
-        core_model, _ = get_model_subdirectories(agent.model_directory)
-
-    if core_model and os.path.exists(os.path.join(core_model, DEFAULT_DOMAIN_PATH)):
-        domain_path = os.path.join(core_model, DEFAULT_DOMAIN_PATH)
-    else:
-        domain_path = None
-
+    tmp_domain_path = Path(tempfile.mkdtemp()) / "domain.yaml"
+    agent.domain.persist(tmp_domain_path)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[resource_name], domain_path=domain_path
+        training_data_paths=[resource_name], domain_path=str(tmp_domain_path)
     )
     if use_conversation_test_files:
         story_graph = test_data_importer.get_conversation_tests()
@@ -604,11 +597,12 @@ def _get_e2e_entity_evaluation_result(
         entity_targets = previous_event.entities
         if entity_targets or entities_predicted_by_policies:
             text = previous_event.text
-            parsed_message = processor.interpreter.featurize_message(
-                Message(data={TEXT: text})
-            )
+            parsed_message = processor.parse_message(UserMessage(text=text))
             if parsed_message:
-                tokens = parsed_message.get(TOKENS_NAMES[TEXT])
+                tokens = [
+                    Token(text[start:end], start, end)
+                    for start, end in parsed_message.get(TOKENS_NAMES[TEXT], [])
+                ]
                 return EntityEvaluationResult(
                     entity_targets, entities_predicted_by_policies, tokens, text
                 )
@@ -649,7 +643,9 @@ def _run_action_prediction(
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
 ) -> Tuple[Text, PolicyPrediction, Optional[EntityEvaluationResult]]:
-    action, prediction = processor.predict_next_action(partial_tracker)
+    tracker, action, prediction = processor.predict_next_with_tracker_if_should(
+        partial_tracker
+    )
     predicted_action = _get_predicted_action_name(
         action, partial_tracker, expected_action
     )
@@ -668,7 +664,9 @@ def _run_action_prediction(
         # but it might be Ok if form action is rejected.
         emulate_loop_rejection(partial_tracker)
         # try again
-        action, prediction = processor.predict_next_action(partial_tracker)
+        tracker, action, prediction = processor.predict_next_with_tracker_if_should(
+            partial_tracker
+        )
         # Even if the prediction is also wrong, we don't have to undo the emulation
         # of the action rejection as we know that the user explicitly specified
         # that something else than the form was supposed to run.
@@ -787,7 +785,7 @@ def _form_might_have_been_rejected(
     )
 
 
-async def _predict_tracker_actions(
+def _predict_tracker_actions(
     tracker: DialogueStateTracker,
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
@@ -799,7 +797,7 @@ async def _predict_tracker_actions(
     List[EntityEvaluationResult],
 ]:
 
-    processor = agent.create_processor()
+    processor = agent.processor
     tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
@@ -845,7 +843,7 @@ async def _predict_tracker_actions(
             # in YAML format containing a user message, or in Markdown format.
             # Leaving that as it is because Markdown is in legacy mode.
             else:
-                predicted = await processor.parse_message(UserMessage(event.text))
+                predicted = processor.parse_message(UserMessage(event.text))
 
             user_uttered_result = _collect_user_uttered_predictions(
                 event, predicted, partial_tracker, fail_on_prediction_errors
@@ -909,7 +907,7 @@ def _sort_trackers_with_severity_of_warning(
     return [tracker for (_, tracker) in sorted_trackers_with_severity]
 
 
-async def _collect_story_predictions(
+def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
@@ -937,9 +935,7 @@ async def _collect_story_predictions(
             predicted_tracker,
             tracker_actions,
             tracker_entity_results,
-        ) = await _predict_tracker_actions(
-            tracker, agent, fail_on_prediction_errors, use_e2e
-        )
+        ) = _predict_tracker_actions(tracker, agent, fail_on_prediction_errors, use_e2e)
 
         entity_results.extend(tracker_entity_results)
 
@@ -1024,7 +1020,7 @@ def _log_stories(
             f.write(YAMLStoryWriter().dumps(steps))
 
 
-async def test(
+def test(
     stories: Text,
     agent: "Agent",
     max_stories: Optional[int] = None,
@@ -1060,7 +1056,7 @@ async def test(
     generator = _create_data_generator(stories, agent, max_stories, e2e)
     completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, _, entity_results = await _collect_story_predictions(
+    story_evaluation, _, entity_results = _collect_story_predictions(
         completed_trackers, agent, fail_on_prediction_errors, use_e2e=e2e
     )
 
@@ -1208,7 +1204,7 @@ def _plot_story_evaluation(
     )
 
 
-async def compare_models_in_dir(
+def compare_models_in_dir(
     model_dir: Text,
     stories_file: Text,
     output: Text,
@@ -1235,7 +1231,7 @@ async def compare_models_in_dir(
             # The model files are named like <config-name>PERCENTAGE_KEY<number>.tar.gz
             # Remove the percentage key and number from the name to get the config name
             config_name = os.path.basename(model).split(PERCENTAGE_KEY)[0]
-            number_of_correct_stories = await _evaluate_core_model(
+            number_of_correct_stories = _evaluate_core_model(
                 model,
                 stories_file,
                 use_conversation_test_files=use_conversation_test_files,
@@ -1250,7 +1246,7 @@ async def compare_models_in_dir(
     )
 
 
-async def compare_models(
+def compare_models(
     models: List[Text],
     stories_file: Text,
     output: Text,
@@ -1268,7 +1264,7 @@ async def compare_models(
     number_correct = defaultdict(list)
 
     for model in models:
-        number_of_correct_stories = await _evaluate_core_model(
+        number_of_correct_stories = _evaluate_core_model(
             model, stories_file, use_conversation_test_files=use_conversation_test_files
         )
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
@@ -1278,7 +1274,7 @@ async def compare_models(
     )
 
 
-async def _evaluate_core_model(
+def _evaluate_core_model(
     model: Text, stories_file: Text, use_conversation_test_files: bool = False
 ) -> int:
     from rasa.core.agent import Agent
@@ -1292,7 +1288,7 @@ async def _evaluate_core_model(
     completed_trackers = generator.generate_story_trackers()
 
     # Entities are ignored here as we only compare number of correct stories.
-    story_eval_store, number_of_stories, _ = await _collect_story_predictions(
+    story_eval_store, number_of_stories, _ = _collect_story_predictions(
         completed_trackers, agent
     )
     failed_stories = story_eval_store.failed_stories

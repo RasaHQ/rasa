@@ -212,7 +212,7 @@ async def run_nlu_test_async(
                     f"Ignoring file '{file}' as it is not a valid config file."
                 )
                 continue
-        await compare_nlu_models(
+        compare_nlu_models(
             configs=config_files,
             test_data=nlu_data,
             output=output,

@@ -1,5 +1,7 @@
+import inspect
 import logging
 import secrets
+import shutil
 import tempfile
 import os
 import textwrap
@@ -14,6 +16,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 
 import rasa
+from rasa.core.policies.rule_policy import RulePolicyGraphComponent
 
 from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
 import rasa.model
@@ -521,7 +524,7 @@ def test_model_finetuning(
 @pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning_core(
     tmp_path: Path,
-    trained_moodbot_path: Text,
+    trained_moodbot_core_path: Text,
     use_latest_model: bool,
     tmp_path_factory: TempPathFactory,
 ):
@@ -529,7 +532,7 @@ def test_model_finetuning_core(
     output = tmp_path / "models"
 
     if use_latest_model:
-        trained_moodbot_path = str(Path(trained_moodbot_path).parent)
+        trained_moodbot_core_path = str(Path(trained_moodbot_core_path).parent)
 
     # Typically models will be fine-tuned with a smaller number of epochs than training
     # from scratch.
@@ -553,7 +556,7 @@ def test_model_finetuning_core(
         str(new_config_path),
         str(new_stories_path),
         output=str(output),
-        model_to_finetune=trained_moodbot_path,
+        model_to_finetune=trained_moodbot_core_path,
         finetuning_epoch_fraction=0.2,
     )
 
@@ -561,12 +564,13 @@ def test_model_finetuning_core(
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(result))
 
     assert metadata.train_schema.nodes["train_TEDPolicy0"].config[EPOCHS] == 2
+    assert metadata.training_type == autoconfig.TrainingType.CORE
 
 
 def test_model_finetuning_core_with_default_epochs(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    trained_moodbot_path: Text,
+    trained_moodbot_core_path: Text,
     tmp_path_factory: TempPathFactory,
 ):
     (tmp_path / "models").mkdir()
@@ -584,7 +588,7 @@ def test_model_finetuning_core_with_default_epochs(
         str(new_config_path),
         "data/test_moodbot/data/stories.yml",
         output=output,
-        model_to_finetune=trained_moodbot_path,
+        model_to_finetune=trained_moodbot_core_path,
         finetuning_epoch_fraction=2,
     )
 
@@ -680,6 +684,7 @@ def test_model_finetuning_nlu(
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(model_name))
 
     assert metadata.train_schema.nodes["train_DIETClassifier5"].config[EPOCHS] == 2
+    assert metadata.training_type == autoconfig.TrainingType.NLU
 
 
 def test_model_finetuning_nlu_new_label(
@@ -954,7 +959,7 @@ def test_invalid_graph_schema(
         """
     version: "2.0"
     recipe: "default.v1"
-    
+
     pipeline:
     - name: WhitespaceTokenizer
     - name: TEDPolicy
@@ -973,3 +978,68 @@ def test_invalid_graph_schema(
             [stories_path, nlu_data_path],
             output=str(tmp_path),
         )
+
+
+def test_fingerprint_changes_if_module_changes(
+    tmp_path: Path, domain_path: Text, stories_path: Text, monkeypatch: MonkeyPatch
+):
+    rule_policy_path = inspect.getfile(RulePolicyGraphComponent)
+    module_name = "custom_rule_policy"
+    new_class_name = "CustomRulePolicyGraphComponent"
+
+    custom_module_path = Path(tmp_path, f"{module_name}.py")
+    shutil.copy2(rule_policy_path, custom_module_path)
+
+    # Rename class as the class name has to be unique
+    source_code = custom_module_path.read_text()
+    source_code = source_code.replace("RulePolicyGraphComponent", new_class_name)
+    custom_module_path.write_text(source_code)
+
+    config = textwrap.dedent(
+        f"""
+    version: "2.0"
+    recipe: "default.v1"
+
+    policies:
+    - name: RulePolicy
+    - name: {module_name}.{new_class_name}
+    """
+    )
+    monkeypatch.syspath_prepend(tmp_path)
+
+    new_config_path = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(
+        rasa.shared.utils.io.read_yaml(config), new_config_path
+    )
+
+    # Train to initialize cache
+    rasa.train(
+        domain_path, str(new_config_path), [stories_path], output=str(tmp_path),
+    )
+
+    # Make sure that the caching works as expected the code didn't change
+    result = rasa.train(
+        domain_path,
+        str(new_config_path),
+        [stories_path],
+        output=str(tmp_path),
+        dry_run=True,
+    )
+
+    assert result.code == 0
+
+    # Make a change to the code so a new training is necessary
+    source_code = custom_module_path.read_text()
+    source_code = source_code.replace("Dict[Text, Any]", "Dict")
+    custom_module_path.write_text(source_code)
+
+    result = rasa.train(
+        domain_path,
+        str(new_config_path),
+        [stories_path],
+        output=str(tmp_path),
+        dry_run=True,
+    )
+
+    assert result.code == rasa.model_training.CODE_NEEDS_TO_BE_RETRAINED
+    assert not result.dry_run_results[f"train_{module_name}.{new_class_name}1"].is_hit

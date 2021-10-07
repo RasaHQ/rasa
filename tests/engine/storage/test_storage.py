@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
+from rasa.shared.importers.autoconfig import TrainingType
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelMetadata
@@ -45,7 +46,14 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
     rasa_version = "3.0.0"
     model_id = "some unique model id"
     metadata = ModelMetadata(
-        trained_at, rasa_version, model_id, domain, train_schema, predict_schema
+        trained_at,
+        rasa_version,
+        model_id,
+        domain,
+        train_schema,
+        predict_schema,
+        project_fingerprint="some_fingerprint",
+        training_type=TrainingType.NLU,
     )
 
     serialized = metadata.as_dict()
@@ -63,3 +71,5 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
     assert loaded_metadata.trained_at == trained_at
     assert loaded_metadata.train_schema == train_schema
     assert loaded_metadata.predict_schema == predict_schema
+    assert loaded_metadata.project_fingerprint == "some_fingerprint"
+    assert loaded_metadata.training_type == TrainingType.NLU

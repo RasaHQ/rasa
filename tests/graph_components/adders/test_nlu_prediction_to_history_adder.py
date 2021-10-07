@@ -54,7 +54,7 @@ def test_prediction_adder_add_message(
     original_message = UserMessage(
         text="hello", input_channel=input_channel, metadata={"meta": "meta"}
     )
-    tracker = component.add(messages, tracker, moodbot_domain, [original_message])
+    tracker = component.add(messages, tracker, [original_message], moodbot_domain)
 
     assert len(tracker.events) == len(messages)
     for i, _ in enumerate(messages):

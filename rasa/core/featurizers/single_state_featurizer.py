@@ -397,7 +397,7 @@ class IntentTokenizerSingleStateFeaturizer2(SingleStateFeaturizer2):
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> List[Dict[Text, List[Features]]]:
-        """Encodes all relevant labels from the domain using the given interpreter.
+        """Encodes all relevant labels from the domain using the given precomputations.
 
         Args:
             domain: The domain that contains the labels.

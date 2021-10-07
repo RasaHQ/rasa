@@ -10,7 +10,7 @@ from rasa.engine.graph import (
     GraphSchema,
     SchemaNode,
 )
-from rasa.engine.constants import PLACEHOLDER_IMPORTER, RESERVED_PLACEHOLDERS
+from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
@@ -616,37 +616,6 @@ def test_cycle(is_train_graph: bool):
 
     with pytest.raises(GraphSchemaValidationException, match="Cycles"):
         validation.validate(schema, language=None, is_train_graph=is_train_graph)
-
-
-def test_validation_with_placeholders():
-    class MyTestComponent(TestComponentWithoutRun):
-        def run(self, training_data: TrainingDataImporter) -> TrainingDataImporter:
-            pass
-
-    schema = GraphSchema(
-        {
-            "A": SchemaNode(
-                needs={"training_data": "B"},
-                uses=MyTestComponent,
-                eager=True,
-                constructor_name="create",
-                fn="run",
-                is_target=True,
-                config={},
-            ),
-            "B": SchemaNode(
-                needs={"training_data": PLACEHOLDER_IMPORTER},
-                uses=MyTestComponent,
-                eager=True,
-                constructor_name="create",
-                fn="run",
-                config={},
-            ),
-        }
-    )
-
-    # Does not raise
-    validation.validate(schema, language=None, is_train_graph=True)
 
 
 def test_validation_with_placeholders():

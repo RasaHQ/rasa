@@ -275,3 +275,32 @@ def test_process_does_not_do_anything(
     parsed_messages = regex_message_handler.process([message], domain)
 
     assert parsed_messages[0] == message
+
+
+async def test_correct_entity_start_and_end(
+    regex_message_handler: RegexMessageHandlerGraphComponent,
+):
+
+    entity = "name"
+    slot_1 = {entity: "Core"}
+    text = f"/greet{json.dumps(slot_1)}"
+
+    message = Message(data={TEXT: text},)
+
+    domain = Domain(
+        intents=["greet"],
+        entities=[entity],
+        slots=[],
+        responses={},
+        action_names=[],
+        forms={},
+    )
+
+    message = regex_message_handler.process([message], domain)[0]
+
+    assert message.data == {
+        "text": '/greet{"name": "Core"}',
+        "intent": {"name": "greet", "confidence": 1.0},
+        "intent_ranking": [{"name": "greet", "confidence": 1.0}],
+        "entities": [{"entity": "name", "value": "Core", "start": 6, "end": 22}],
+    }

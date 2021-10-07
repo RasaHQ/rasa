@@ -5,6 +5,7 @@ from typing import Text
 import pytest
 
 from rasa.core import training
+from rasa.core.agent import Agent
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import Domain
 from rasa.core.policies.ted_policy import TEDPolicy
@@ -96,10 +97,9 @@ async def test_random_seed(
         additional_arguments={},
     )
 
-    # TODO: Adapt rest of the test laster
-    processor_1 = agent_1.create_processor()
-    processor_2 = agent_2.create_processor()
-    #
-    # probs_1 = await processor_1.predict_next("1")
-    # probs_2 = await processor_2.predict_next("2")
-    # assert probs_1["confidence"] == probs_2["confidence"]
+    processor_1 = Agent.load(model_file_1).processor
+    processor_2 = Agent.load(model_file_2).processor
+
+    probs_1 = await processor_1.predict_next_for_sender_id("1")
+    probs_2 = await processor_2.predict_next_for_sender_id("2")
+    assert probs_1["confidence"] == probs_2["confidence"]

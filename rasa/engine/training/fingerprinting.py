@@ -1,3 +1,4 @@
+import inspect
 import logging
 from typing import Any, Dict, Text, Type
 from typing_extensions import Protocol, runtime_checkable
@@ -34,6 +35,7 @@ def calculate_fingerprint_key(
     """
     fingerprint_data = {
         "node_name": rasa.utils.common.module_path_from_class(graph_component_class),
+        "component_implementation": inspect.getsource(graph_component_class),
         "config": config,
         "inputs": inputs,
     }
@@ -41,7 +43,8 @@ def calculate_fingerprint_key(
     fingerprint_key = rasa.shared.utils.io.deep_container_fingerprint(fingerprint_data)
 
     logger.debug(
-        f"Calculated fingerprint_key '{fingerprint_key}' for data '{fingerprint_data}'."
+        f"Calculated fingerprint_key '{fingerprint_key}' for class "
+        f"'{graph_component_class}' with config '{config}' and inputs '{inputs}'."
     )
 
     return fingerprint_key

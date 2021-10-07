@@ -146,15 +146,6 @@ def test_get_label_set(targets, exclude_label, expected):
     assert set(expected) == set(actual)
 
 
-async def test_interpreter_passed_to_agent(
-    monkeypatch: MonkeyPatch, trained_rasa_model: Text
-):
-    from rasa.core.interpreter import RasaNLUInterpreter
-
-    agent = Agent.load(trained_rasa_model)
-    assert isinstance(agent.interpreter, RasaNLUInterpreter)
-
-
 def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
@@ -168,7 +159,10 @@ def test_e2e_warning_if_no_nlu_model(
 
     test_core(trained_core_model, additional_arguments={"e2e": True})
 
-    assert "No NLU model found. Using default" in capsys.readouterr().out
+    assert (
+        "Unable to test: processor not loaded. Use 'rasa train' to train a Rasa model"
+        in capsys.readouterr().out
+    )
 
 
 def test_write_classification_errors():

@@ -1,4 +1,8 @@
+from pathlib import Path
+
+import rasa.shared.utils.io
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperGraphComponent
 from typing import Dict, List, Optional, Set, Text, Any, Tuple, Type
 import re
@@ -38,6 +42,7 @@ from rasa.core.policies.policy import PolicyGraphComponent
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ENTITY_ATTRIBUTE_GROUP,
@@ -51,6 +56,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.importers.importer import TrainingDataImporter
+import rasa.utils.common
 
 
 class DummyImporter(TrainingDataImporter):
@@ -482,17 +488,29 @@ def test_nlu_raise_if_more_than_one_tokenizer(nodes: Dict[Text, SchemaNode]):
         validator.validate(importer)
 
 
-def test_nlu_raise_if_two_tokenizers_with_end_to_end():
-    graph_schema = GraphSchema(
-        {
-            # With end-to-end the tokenizer appears twice due to the Core featurization
-            "end_to_end": SchemaNode({}, CoreFeaturizationInputConverter, "", "", {}),
-            "a": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-            "b": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-        }
+def test_nlu_do_not_raise_if_two_tokenizers_with_end_to_end():
+    config = rasa.shared.utils.io.read_yaml_file(
+        "rasa/shared/importers/default_config.yml"
     )
+    train_schema, _, _ = DefaultV1Recipe().schemas_for_config(
+        config, cli_parameters={}, training_type=TrainingType.END_TO_END
+    )
+
     importer = DummyImporter()
-    validator = DefaultV1RecipeValidator(graph_schema)
+    validator = DefaultV1RecipeValidator(train_schema)
+
+    # Does not raise
+    validator.validate(importer)
+
+
+def test_nlu_do_not_raise_if_trainable_tokenizer():
+    config = rasa.shared.utils.io.read_yaml_file(
+        "data/test_config/config_pretrained_embeddings_mitie_zh.yml"
+    )
+    train_schema, _, _ = DefaultV1Recipe().schemas_for_config(config, cli_parameters={})
+
+    importer = DummyImporter()
+    validator = DefaultV1RecipeValidator(train_schema)
 
     # Does not raise
     validator.validate(importer)
@@ -974,3 +992,22 @@ def test_nlu_training_data_validation():
 
     with pytest.warns(UserWarning, match="Found empty intent"):
         nlu_validator.validate(importer)
+
+
+def test_no_warnings_with_default_project(tmp_path: Path):
+    rasa.utils.common.copy_directory(Path("rasa/cli/initial_project"), tmp_path)
+
+    importer = TrainingDataImporter.load_from_config(
+        config_path=str(tmp_path / "config.yml"),
+        domain_path=str(tmp_path / "domain.yml"),
+        training_data_paths=[str(tmp_path / "data")],
+    )
+
+    train_schema, _, _ = DefaultV1Recipe().schemas_for_config(
+        importer.get_config(), cli_parameters={}, training_type=TrainingType.END_TO_END
+    )
+    validator = DefaultV1RecipeValidator(train_schema)
+
+    with pytest.warns(None) as records:
+        validator.validate(importer)
+    assert len(records) == 0

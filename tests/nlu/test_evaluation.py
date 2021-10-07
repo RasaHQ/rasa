@@ -1,11 +1,12 @@
-import datetime
 import json
 import os
 import sys
 
 from pathlib import Path
-from typing import Text, List, Dict, Any, Set, Optional
-from tests.conftest import AsyncMock
+from typing import Text, List, Dict, Any, Set
+
+from rasa.core.agent import Agent
+from rasa.core.channels import UserMessage
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -17,11 +18,6 @@ import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.model
 
-from rasa.nlu.classifiers.fallback_classifier import FallbackClassifierGraphComponent
-from rasa.nlu.components import ComponentBuilder
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Interpreter
-from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.test import (
     is_token_within_entity,
     do_entities_overlap,
@@ -350,10 +346,10 @@ def test_drop_intents_below_freq():
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout
-def test_run_evaluation(unpacked_trained_moodbot_path: Text, nlu_as_json_path: Text):
+async def test_run_evaluation(mood_agent: Agent, nlu_as_json_path: Text):
     result = run_evaluation(
         nlu_as_json_path,
-        os.path.join(unpacked_trained_moodbot_path, "nlu"),
+        mood_agent.processor,
         errors=False,
         successes=False,
         disable_plotting=True,
@@ -363,10 +359,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path: Text, nlu_as_json_path: T
 
 
 def test_eval_data(
-    component_builder: ComponentBuilder,
-    tmp_path: Path,
-    project: Text,
-    unpacked_trained_rasa_model: Text,
+    tmp_path: Path, project: Text, trained_rasa_model: Text,
 ):
     config_path = os.path.join(project, "config.yml")
     data_importer = TrainingDataImporter.load_nlu_importer_from_config(
@@ -377,14 +370,11 @@ def test_eval_data(
         ],
     )
 
-    _, nlu_model_directory = rasa.model.get_model_subdirectories(
-        unpacked_trained_rasa_model
-    )
-    interpreter = Interpreter.load(nlu_model_directory, component_builder)
+    processor = Agent.load(trained_rasa_model).processor
 
     data = data_importer.get_nlu_data()
     (intent_results, response_selection_results, entity_results) = get_eval_data(
-        interpreter, data
+        processor, data
     )
 
     assert len(intent_results) == 46
@@ -400,16 +390,14 @@ def test_run_cv_evaluation():
         "data/test/demo-rasa-more-ents-and-multiplied.yml"
     )
 
-    nlu_config = RasaNLUModelConfig(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 2},
-            ],
-        }
-    )
+    nlu_config = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {"name": "DIETClassifier", EPOCHS: 2},
+        ],
+    }
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
@@ -446,16 +434,14 @@ def test_run_cv_evaluation_no_entities():
         "data/test/demo-rasa-no-ents.yml"
     )
 
-    nlu_config = RasaNLUModelConfig(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 25},
-            ],
-        }
-    )
+    nlu_config = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {"name": "DIETClassifier", EPOCHS: 25},
+        ],
+    }
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
@@ -498,17 +484,15 @@ def test_run_cv_evaluation_with_response_selector():
     )
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
 
-    nlu_config = RasaNLUModelConfig(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 25},
-                {"name": "ResponseSelector", EPOCHS: 2},
-            ],
-        }
-    )
+    nlu_config = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {"name": "DIETClassifier", EPOCHS: 25},
+            {"name": "ResponseSelector", EPOCHS: 2},
+        ],
+    }
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
@@ -549,13 +533,14 @@ def test_run_cv_evaluation_with_response_selector():
         for intent_report in response_selection_results.evaluation["report"].values()
     )
 
-    assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
-    assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
-    assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
+    diet_name = "DIETClassifierGraphComponent"
+    assert len(entity_results.train[diet_name]["Accuracy"]) == n_folds
+    assert len(entity_results.train[diet_name]["Precision"]) == n_folds
+    assert len(entity_results.train[diet_name]["F1-score"]) == n_folds
 
-    assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
+    assert len(entity_results.test[diet_name]["Accuracy"]) == n_folds
+    assert len(entity_results.test[diet_name]["Precision"]) == n_folds
+    assert len(entity_results.test[diet_name]["F1-score"]) == n_folds
     for extractor_evaluation in entity_results.evaluation.values():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
@@ -916,7 +901,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-async def test_nlu_comparison(
+def test_nlu_comparison(
     tmp_path: Path, monkeypatch: MonkeyPatch, nlu_as_json_path: Text
 ):
     config = {
@@ -930,10 +915,6 @@ async def test_nlu_comparison(
     # the configs need to be at a different path, otherwise the results are
     # combined on the same dictionary key and cannot be plotted properly
     configs = [write_file_config(config).name, write_file_config(config).name]
-
-    # mock training
-    monkeypatch.setattr(Interpreter, "load", Mock(spec=RasaNLUInterpreter))
-    monkeypatch.setattr(sys.modules["rasa.nlu"], "train", AsyncMock())
 
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],
@@ -951,7 +932,7 @@ async def test_nlu_comparison(
         training_data_paths=[nlu_as_json_path]
     )
     test_data = test_data_importer.get_nlu_data()
-    await compare_nlu_models(
+    compare_nlu_models(
         configs, test_data, output, runs=2, exclusion_percentages=[50, 80]
     )
 
@@ -1137,17 +1118,12 @@ def test_collect_entity_predictions(
     assert errors == actual
 
 
-class ConstantInterpreter(Interpreter):
+class ConstantProcessor:
     def __init__(self, prediction_to_return: Dict[Text, Any]) -> None:
-        # add intent classifier to make sure intents are evaluated
-        super().__init__([FallbackClassifierGraphComponent({})], None)
         self.prediction = prediction_to_return
 
-    def parse(
-        self,
-        text: Text,
-        time: Optional[datetime.datetime] = None,
-        only_output_properties: bool = True,
+    def parse_message(
+        self, message: UserMessage, only_output_properties: bool = True,
     ) -> Dict[Text, Any]:
         return self.prediction
 
@@ -1173,12 +1149,12 @@ def test_replacing_fallback_intent():
         ],
     }
 
-    interpreter = ConstantInterpreter(fallback_prediction)
+    processor = ConstantProcessor(fallback_prediction)
     training_data = TrainingData(
         [Message.build("hi", "greet"), Message.build("bye", "bye")]
     )
 
-    intent_evaluations, _, _ = get_eval_data(interpreter, training_data)
+    intent_evaluations, _, _ = get_eval_data(processor, training_data)
 
     assert all(
         prediction.intent_prediction == expected_intent

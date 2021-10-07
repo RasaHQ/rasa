@@ -11,9 +11,10 @@ from rasa.engine import loader
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.domain import Domain
+from rasa.shared.importers.importer import TrainingDataImporter
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 
@@ -67,18 +68,21 @@ def test_loader_loads_graph_runner(
 
     output_filename = tmp_path / "model.tar.gz"
 
+    importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[], domain_path=str(domain_path),
+    )
+
     trained_at = datetime.utcnow()
     with freezegun.freeze_time(trained_at):
-        predict_graph_runner = graph_trainer.train(
+        model_metadata = graph_trainer.train(
             train_schema=train_schema,
             predict_schema=predict_schema,
-            domain_path=domain_path,
+            importer=importer,
             output_filename=output_filename,
         )
 
-    assert isinstance(predict_graph_runner, DaskGraphRunner)
+    assert isinstance(model_metadata, ModelMetadata)
     assert output_filename.is_file()
-    assert predict_graph_runner.run() == {"load": test_value}
 
     loaded_model_storage_path = tmp_path_factory.mktemp("loaded model storage")
 

@@ -100,7 +100,7 @@ class RegexMessageHandlerGraphComponent(GraphComponent):
         """
         return [self._unpack(message, domain) for message in messages]
 
-    def _unpack(self, message: Message, domain: Domain) -> Message:
+    def _unpack(self, message: Message, domain: Optional[Domain] = None) -> Message:
         """Unpacks the messsage if `TEXT` contains an encoding of attributes.
 
         Args:
@@ -162,7 +162,7 @@ class RegexMessageHandlerGraphComponent(GraphComponent):
     @staticmethod
     def _parse_intent_name(match: Match, domain: Domain) -> Optional[Text]:
         intent_name = match.group(INTENT_NAME_KEY).strip()
-        if intent_name not in domain.intents:
+        if domain and intent_name not in domain.intents:
             rasa.shared.utils.io.raise_warning(
                 f"Failed to parse arguments in line '{match.string}'. "
                 f"Expected the intent to be one of [{domain.intents}] "
@@ -209,21 +209,22 @@ class RegexMessageHandlerGraphComponent(GraphComponent):
             parsed_entities = dict()
 
         # validate the given entity types
-        entity_types = set(parsed_entities.keys())
-        unknown_entity_types = entity_types.difference(domain.entities)
-        if unknown_entity_types:
-            rasa.shared.utils.io.raise_warning(
-                f"Failed to parse arguments in line '{match.string}'. "
-                f"Expected entities from {domain.entities} "
-                f"but found {unknown_entity_types}. "
-                f"Continuing without unknown entity types. ",
-                docs=DOCS_URL_STORIES,
-            )
-            parsed_entities = {
-                key: value
-                for key, value in parsed_entities.items()
-                if key not in unknown_entity_types
-            }
+        if domain:
+            entity_types = set(parsed_entities.keys())
+            unknown_entity_types = entity_types.difference(domain.entities)
+            if unknown_entity_types:
+                rasa.shared.utils.io.raise_warning(
+                    f"Failed to parse arguments in line '{match.string}'. "
+                    f"Expected entities from {domain.entities} "
+                    f"but found {unknown_entity_types}. "
+                    f"Continuing without unknown entity types. ",
+                    docs=DOCS_URL_STORIES,
+                )
+                parsed_entities = {
+                    key: value
+                    for key, value in parsed_entities.items()
+                    if key not in unknown_entity_types
+                }
 
         # convert them into the list of dictionaries that we expect
         entities: List[Dict[Text, Any]] = []
@@ -235,8 +236,8 @@ class RegexMessageHandlerGraphComponent(GraphComponent):
                     {
                         ENTITY_ATTRIBUTE_TYPE: entity_type,
                         ENTITY_ATTRIBUTE_VALUE: entity_value,
-                        ENTITY_ATTRIBUTE_START: match.start(),
-                        ENTITY_ATTRIBUTE_END: match.end(),
+                        ENTITY_ATTRIBUTE_START: match.start(ENTITIES),
+                        ENTITY_ATTRIBUTE_END: match.end(ENTITIES),
                     }
                 )
         return entities

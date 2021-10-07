@@ -8,7 +8,6 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu import utils
 from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @DefaultV1Recipe.register(
-    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
 class KeywordIntentClassifierGraphComponent(GraphComponent):
     """Intent classifier using simple keyword matching.
@@ -155,7 +154,9 @@ class KeywordIntentClassifierGraphComponent(GraphComponent):
         with self._model_storage.write_to(self._resource) as model_dir:
             file_name = f"{self.__class__.__name__}.json"
             keyword_file = model_dir / file_name
-            utils.write_json_to_file(keyword_file.name, self.intent_keyword_map)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                keyword_file, self.intent_keyword_map
+            )
 
     @classmethod
     def load(
@@ -169,20 +170,8 @@ class KeywordIntentClassifierGraphComponent(GraphComponent):
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_dir:
-                keyword_file = list(model_dir.glob("**/*.json"))
-
-                if keyword_file:
-                    assert len(keyword_file) == 1
-                    intent_keyword_map = rasa.shared.utils.io.read_json_file(
-                        keyword_file[0]
-                    )
-                else:
-                    rasa.shared.utils.io.raise_warning(
-                        f"Failed to load key word file for "
-                        f"`KeywordIntentClassifierGraphComponent`, "
-                        f"maybe {keyword_file} does not exist?"
-                    )
-                    intent_keyword_map = None
+                keyword_file = model_dir / f"{cls.__name__}.json"
+                intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
         except ValueError:
             logger.warning(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "

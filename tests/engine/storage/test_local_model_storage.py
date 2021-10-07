@@ -110,9 +110,13 @@ def test_create_model_package(
     # Unpack and inspect packaged model
     load_model_storage_dir = tmp_path_factory.mktemp("load model storage")
 
+    just_packaged_metadata = LocalModelStorage.metadata_from_archive(archive_path)
+
     (load_model_storage, packaged_metadata,) = LocalModelStorage.from_model_archive(
         load_model_storage_dir, archive_path
     )
+
+    assert just_packaged_metadata.trained_at == packaged_metadata.trained_at
 
     assert packaged_metadata.train_schema == train_schema
     assert packaged_metadata.predict_schema == predict_schema
@@ -121,6 +125,7 @@ def test_create_model_package(
     assert packaged_metadata.rasa_open_source_version == rasa.__version__
     assert packaged_metadata.trained_at == trained_at
     assert packaged_metadata.model_id
+    assert packaged_metadata.project_fingerprint
 
     persisted_resources = load_model_storage_dir.glob("*")
     assert list(persisted_resources) == [Path(load_model_storage_dir, "resource1")]

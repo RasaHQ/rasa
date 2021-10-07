@@ -7,7 +7,6 @@ import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, Event
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.nlu.constants import (
@@ -269,7 +268,7 @@ def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) ->
 async def _replace_edge_labels_with_nodes(
     graph: "networkx.MultiDiGraph",
     next_id: int,
-    interpreter: NaturalLanguageInterpreter,
+    interpreter,
     nlu_training_data: "TrainingData",
 ) -> None:
     """User messages are created as edge labels. This removes the labels and
@@ -417,7 +416,7 @@ async def visualize_neighborhood(
     event_sequences: List[List[Event]],
     output_file: Optional[Text] = None,
     max_history: int = 2,
-    interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+    interpreter=None,
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     max_distance: int = 1,
@@ -544,7 +543,7 @@ async def visualize_stories(
     domain: Domain,
     output_file: Optional[Text],
     max_history: int,
-    interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+    interpreter=None,  # TODO: Fix this to use processor:
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     fontsize: int = 12,

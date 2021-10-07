@@ -3,6 +3,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.converters.nlu_message_converter import NLUMessageConverter
+from rasa.shared.nlu.constants import TEXT, TEXT_TOKENS
 from rasa.shared.nlu.training_data.message import Message
 
 
@@ -23,6 +24,7 @@ def test_nlu_message_converter_converts_message(
 
     assert nlu_message[0].get("text") == "Hello"
     assert nlu_message[0].get("metadata") is None
+    assert nlu_message[0].output_properties == {TEXT_TOKENS, TEXT}
 
 
 def test_nlu_message_converter_converts_message_with_metadata(

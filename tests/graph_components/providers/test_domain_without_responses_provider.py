@@ -31,10 +31,10 @@ def test_provide(
     )
 
     original_domain = Domain.from_file(path=domain_yml)
-    original_dict = original_domain.as_dict()
-
     modified_domain = component.provide(domain=original_domain)
+
     modified_dict = modified_domain.as_dict()
+    original_dict = original_domain.as_dict()
 
     # all configurations not impacted by responses stay intact
     assert sorted(original_dict.keys()) == sorted(modified_dict.keys())
@@ -57,11 +57,13 @@ def test_provide(
         original_domain.responses
     ), reminder
 
-    # The responses are empty
-    for _, responses_for_action in modified_domain.responses.items():
-        assert not responses_for_action
+    # Assert that the recreated copy does not contain any response information
+    assert modified_domain.responses.keys()
+    assert not any(modified_domain.responses.values())
 
-    # We still have all the same labels
-    assert (
-        original_domain.action_names_or_texts == modified_domain.action_names_or_texts
-    )
+    assert original_domain.responses.keys()
+    assert all(original_domain.responses.values())
+
+    del modified_dict[KEY_RESPONSES]
+    del original_dict[KEY_RESPONSES]
+    assert modified_dict == original_dict

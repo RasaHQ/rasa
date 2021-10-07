@@ -26,7 +26,7 @@ from rasa.core.constants import (
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
 from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
-from rasa.core.agent import Agent
+from rasa.core.agent import Agent, load_agent
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.exceptions import RasaException
 
@@ -51,7 +51,7 @@ async def trained_restaurantbot(trained_async: Callable) -> Path:
 
 @pytest.fixture(scope="module")
 async def restaurantbot_agent(trained_restaurantbot: Path) -> Agent:
-    return Agent.load_local_model(str(trained_restaurantbot))
+    return await load_agent(str(trained_restaurantbot))
 
 
 async def test_evaluation_file_creation(
@@ -63,7 +63,7 @@ async def test_evaluation_file_creation(
     report_path = str(tmpdir / REPORT_STORIES_FILE)
     confusion_matrix_path = str(tmpdir / CONFUSION_MATRIX_STORIES_FILE)
 
-    await evaluate_stories(
+    evaluate_stories(
         stories=stories_path,
         agent=default_agent,
         out_directory=str(tmpdir),
@@ -81,7 +81,7 @@ async def test_evaluation_file_creation(
     assert os.path.isfile(confusion_matrix_path)
 
 
-async def test_end_to_end_evaluation_script(
+def test_end_to_end_evaluation_script(
     default_agent: Agent, end_to_end_story_path: Text
 ):
     generator = _create_data_generator(
@@ -89,7 +89,7 @@ async def test_end_to_end_evaluation_script(
     )
     completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, num_stories, _ = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = _collect_story_predictions(
         completed_trackers, default_agent, use_e2e=True
     )
 
@@ -121,7 +121,7 @@ async def test_end_to_end_evaluation_script(
     assert num_stories == 3
 
 
-async def test_end_to_end_evaluation_script_unknown_entity(
+def test_end_to_end_evaluation_script_unknown_entity(
     default_agent: Agent, e2e_story_file_unknown_entity_path: Text
 ):
     generator = _create_data_generator(
@@ -131,7 +131,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
     )
     completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, num_stories, _ = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = _collect_story_predictions(
         completed_trackers, default_agent
     )
 
@@ -141,7 +141,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
 
 
 @pytest.mark.timeout(300, func_only=True)
-async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
+def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = _create_data_generator(
         "data/test_evaluations/test_form_end_to_end_stories.yml",
         form_bot_agent,
@@ -149,7 +149,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     )
     test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories, _ = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = _collect_story_predictions(
         test_stories, form_bot_agent
     )
 
@@ -161,7 +161,7 @@ async def test_source_in_failed_stories(
 ):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
-    await evaluate_stories(
+    evaluate_stories(
         stories=e2e_story_file_unknown_entity_path,
         agent=default_agent,
         out_directory=str(tmpdir),
@@ -201,7 +201,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
         e2e_story_file_trips_circuit_breaker_path,
     )
 
-    agent = Agent.load_local_model(model_path)
+    agent = await load_agent(model_path)
     generator = _create_data_generator(
         e2e_story_file_trips_circuit_breaker_path,
         agent,
@@ -209,9 +209,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
     )
     test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories, _ = await _collect_story_predictions(
-        test_stories, agent
-    )
+    story_evaluation, num_stories, _ = _collect_story_predictions(test_stories, agent)
 
     circuit_trip_predicted = [
         "utter_greet",
@@ -309,13 +307,13 @@ def test_event_has_proper_implementation(
         ("data/test_yaml_stories/test_base_retrieval_intent_story.yml"),
     ],
 )
-async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
+def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
     generator = _create_data_generator(
         test_file, response_selector_agent, use_conversation_test_files=True,
     )
     test_stories = generator.generate_story_trackers()
 
-    story_evaluation, num_stories, _ = await _collect_story_predictions(
+    story_evaluation, num_stories, _ = _collect_story_predictions(
         test_stories, response_selector_agent
     )
     # check that test story can either specify base intent or full retrieval intent
@@ -329,12 +327,12 @@ async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text)
         ("data/test_yaml_stories/test_base_retrieval_intent_wrong_prediction.yml"),
     ],
 )
-async def test_retrieval_intent_wrong_prediction(
+def test_retrieval_intent_wrong_prediction(
     tmpdir: Path, response_selector_agent: Agent, test_file: Text
 ):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
-    await evaluate_stories(
+    evaluate_stories(
         stories=test_file,
         agent=response_selector_agent,
         out_directory=str(tmpdir),
@@ -349,10 +347,10 @@ async def test_retrieval_intent_wrong_prediction(
 
 
 @pytest.mark.timeout(240, func_only=True)
-async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
+def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
     test_file = "data/test_e2ebot/tests/test_stories.yml"
 
-    await evaluate_stories(
+    evaluate_stories(
         stories=test_file,
         agent=e2e_bot_agent,
         out_directory=str(tmp_path),
@@ -454,7 +452,7 @@ stories:
         ],
     ],
 )
-async def test_story_report(
+def test_story_report(
     tmpdir: Path,
     core_agent: Agent,
     stories_yaml: Text,
@@ -467,7 +465,7 @@ async def test_story_report(
     out_directory = tmpdir / "results"
     out_directory.mkdir()
 
-    await evaluate_stories(stories_path, core_agent, out_directory=out_directory)
+    evaluate_stories(stories_path, core_agent, out_directory=out_directory)
     story_report_path = out_directory / "story_report.json"
     assert story_report_path.exists()
 
@@ -475,15 +473,13 @@ async def test_story_report(
     assert actual_results == expected_results
 
 
-async def test_story_report_with_empty_stories(
-    tmpdir: Path, core_agent: Agent,
-) -> None:
+def test_story_report_with_empty_stories(tmpdir: Path, core_agent: Agent,) -> None:
     stories_path = tmpdir / "stories.yml"
     stories_path.write_text("", "utf8")
     out_directory = tmpdir / "results"
     out_directory.mkdir()
 
-    await evaluate_stories(stories_path, core_agent, out_directory=out_directory)
+    evaluate_stories(stories_path, core_agent, out_directory=out_directory)
     story_report_path = out_directory / "story_report.json"
     assert story_report_path.exists()
 
@@ -567,7 +563,7 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
         ],
     ],
 )
-async def test_wrong_predictions_with_intent_and_entities(
+def test_wrong_predictions_with_intent_and_entities(
     tmpdir: Path,
     restaurantbot_agent: Agent,
     test_file: Text,
@@ -576,7 +572,7 @@ async def test_wrong_predictions_with_intent_and_entities(
 ):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
-    await evaluate_stories(
+    evaluate_stories(
         stories=test_file,
         agent=restaurantbot_agent,
         out_directory=str(tmpdir),
@@ -617,13 +613,13 @@ async def test_wrong_predictions_with_intent_and_entities(
         assert failed_stories.count("\n") == 9
 
 
-async def test_failed_entity_extraction_comment(
+def test_failed_entity_extraction_comment(
     tmpdir: Path, restaurantbot_agent: Agent,
 ):
     test_file = "data/test_yaml_stories/test_failed_entity_extraction_comment.yml"
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
-    await evaluate_stories(
+    evaluate_stories(
         stories=test_file,
         agent=restaurantbot_agent,
         out_directory=str(tmpdir),

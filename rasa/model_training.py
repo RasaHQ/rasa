@@ -11,7 +11,6 @@ from typing import (
     Any,
 )
 
-import rasa.core.interpreter
 import rasa.engine.validation
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
@@ -239,6 +238,7 @@ def _train_graph(
                 full_model_path,
                 force_retraining=force_full_training,
                 is_finetuning=is_finetuning,
+                training_type=training_type,
             )
             rasa.shared.utils.cli.print_success(
                 f"Your Rasa model is trained and saved at '{full_model_path}'."

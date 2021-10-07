@@ -38,6 +38,9 @@ from rasa.graph_components.providers.domain_without_response_provider import (
 from rasa.graph_components.providers.nlu_training_data_provider import (
     NLUTrainingDataProvider,
 )
+from rasa.graph_components.providers.prediction_output_provider import (
+    PredictionOutputProvider,
+)
 from rasa.graph_components.providers.rule_only_provider import RuleOnlyDataProvider
 from rasa.graph_components.providers.story_graph_provider import StoryGraphProvider
 from rasa.graph_components.providers.training_tracker_provider import (
@@ -81,7 +84,6 @@ class DefaultV1Recipe(Recipe):
 
     def __init__(self) -> None:
         """Creates recipe."""
-
         self._use_core = True
         self._use_nlu = True
         self._use_end_to_end = True
@@ -559,30 +561,10 @@ class DefaultV1Recipe(Recipe):
         predict_config = copy.deepcopy(config)
         predict_nodes = {}
 
-        nlu_output_node = None
+        from rasa.nlu.classifiers.regex_message_handler import (
+            RegexMessageHandlerGraphComponent,
+        )
 
-        if self._use_nlu:
-            nlu_output_node = self._add_nlu_predict_nodes(
-                predict_config, predict_nodes, train_nodes
-            )
-
-        if self._use_core:
-            self._add_core_predict_nodes(
-                predict_config,
-                predict_nodes,
-                nlu_output_node,
-                train_nodes,
-                preprocessors,
-            )
-
-        return predict_nodes
-
-    def _add_nlu_predict_nodes(
-        self,
-        predict_config: Dict[Text, Any],
-        predict_nodes: Dict[Text, SchemaNode],
-        train_nodes: Dict[Text, SchemaNode],
-    ) -> Text:
         predict_nodes["nlu_message_converter"] = SchemaNode(
             **default_predict_kwargs,
             needs={"messages": PLACEHOLDER_MESSAGE},
@@ -591,8 +573,68 @@ class DefaultV1Recipe(Recipe):
             config={},
         )
 
-        last_run_node = "nlu_message_converter"
+        last_run_nlu_node = "nlu_message_converter"
 
+        if self._use_nlu:
+            last_run_nlu_node = self._add_nlu_predict_nodes(
+                last_run_nlu_node, predict_config, predict_nodes, train_nodes
+            )
+
+        domain_needs = {}
+        if self._use_core:
+            domain_needs["domain"] = "domain_provider"
+
+        regex_handler_node_name = f"run_{RegexMessageHandlerGraphComponent.__name__}"
+        predict_nodes[regex_handler_node_name] = SchemaNode(
+            **default_predict_kwargs,
+            needs={"messages": last_run_nlu_node, **domain_needs},
+            uses=RegexMessageHandlerGraphComponent,
+            fn="process",
+            config={},
+        )
+
+        predict_nodes["nlu_prediction_to_history_adder"] = SchemaNode(
+            **default_predict_kwargs,
+            needs={
+                "predictions": regex_handler_node_name,
+                "original_messages": PLACEHOLDER_MESSAGE,
+                "tracker": PLACEHOLDER_TRACKER,
+                **domain_needs,
+            },
+            uses=NLUPredictionToHistoryAdder,
+            fn="add",
+            config={},
+        )
+
+        output_provider_needs = {
+            "parsed_messages": regex_handler_node_name,
+            "tracker_with_added_message": "nlu_prediction_to_history_adder",
+        }
+
+        if self._use_core:
+            self._add_core_predict_nodes(
+                predict_config, predict_nodes, train_nodes, preprocessors,
+            )
+            output_provider_needs["ensemble_output"] = "select_prediction"
+
+        predict_nodes["output_provider"] = SchemaNode(
+            needs=output_provider_needs,
+            uses=PredictionOutputProvider,
+            constructor_name="create",
+            fn="provide",
+            config={},
+            eager=True,
+        )
+
+        return predict_nodes
+
+    def _add_nlu_predict_nodes(
+        self,
+        last_run_node: Text,
+        predict_config: Dict[Text, Any],
+        predict_nodes: Dict[Text, SchemaNode],
+        train_nodes: Dict[Text, SchemaNode],
+    ) -> Text:
         for idx, item in enumerate(predict_config["pipeline"]):
             component_name = item.pop("name")
             component = self._from_registry(component_name)
@@ -643,24 +685,7 @@ class DefaultV1Recipe(Recipe):
                         predict_nodes, new_node, component_name, last_run_node
                     )
 
-        from rasa.nlu.classifiers.regex_message_handler import (
-            RegexMessageHandlerGraphComponent,
-        )
-
-        node_name = f"run_{RegexMessageHandlerGraphComponent.__name__}"
-
-        domain_needs = {}
-        if self._use_core:
-            domain_needs["domain"] = "domain_provider"
-        predict_nodes[node_name] = SchemaNode(
-            **default_predict_kwargs,
-            needs={"messages": last_run_node, **domain_needs},
-            uses=RegexMessageHandlerGraphComponent,
-            fn="process",
-            config={},
-        )
-
-        return node_name
+        return last_run_node
 
     def _add_nlu_predict_node_from_train(
         self,
@@ -694,6 +719,7 @@ class DefaultV1Recipe(Recipe):
         last_run_node: Text,
     ) -> Text:
         node_name = f"run_{component_name}"
+
         model_provider_needs = self._get_model_provider_needs(predict_nodes, node.uses,)
 
         predict_nodes[node_name] = dataclasses.replace(
@@ -709,23 +735,9 @@ class DefaultV1Recipe(Recipe):
         self,
         predict_config: Dict[Text, Any],
         predict_nodes: Dict[Text, SchemaNode],
-        nlu_output_node: Optional[Text],
         train_nodes: Dict[Text, SchemaNode],
         preprocessors: List[Text],
     ) -> None:
-        if nlu_output_node:
-            predict_nodes["nlu_prediction_to_history_adder"] = SchemaNode(
-                **default_predict_kwargs,
-                needs={
-                    "predictions": nlu_output_node,
-                    "domain": "domain_provider",
-                    "original_messages": PLACEHOLDER_MESSAGE,
-                    "tracker": PLACEHOLDER_TRACKER,
-                },
-                uses=NLUPredictionToHistoryAdder,
-                fn="add",
-                config={},
-            )
         predict_nodes["domain_provider"] = SchemaNode(
             **default_predict_kwargs,
             needs={},
@@ -770,9 +782,7 @@ class DefaultV1Recipe(Recipe):
                         and node_with_e2e_features
                         else {}
                     ),
-                    "tracker": "nlu_prediction_to_history_adder"
-                    if self._use_nlu
-                    else PLACEHOLDER_TRACKER,
+                    "tracker": "nlu_prediction_to_history_adder",
                     "rule_only_data": rule_only_data_provider_name,
                 },
                 fn="predict_action_probabilities",
@@ -794,9 +804,7 @@ class DefaultV1Recipe(Recipe):
             needs={
                 **{f"policy{idx}": name for idx, name in enumerate(policies)},
                 "domain": "domain_provider",
-                "tracker": "nlu_prediction_to_history_adder"
-                if self._use_nlu
-                else PLACEHOLDER_TRACKER,
+                "tracker": "nlu_prediction_to_history_adder",
             },
             uses=DefaultPolicyPredictionEnsemble,
             fn="combine_predictions_from_kwargs",

@@ -23,6 +23,10 @@ from typing import (
 )
 
 from rasa import telemetry
+from rasa.core.agent import Agent
+from rasa.core.channels import UserMessage
+from rasa.core.processor import MessageProcessor
+from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
@@ -54,9 +58,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Interpreter, TrainingData
 from rasa.nlu.classifiers import fallback_classifier
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -1225,7 +1227,7 @@ def align_all_entity_predictions(
 
 
 def get_eval_data(
-    interpreter: Interpreter, test_data: TrainingData
+    processor: MessageProcessor, test_data: TrainingData
 ) -> Tuple[
     List[IntentEvaluationResult],
     List[ResponseSelectionEvaluationResult],
@@ -1239,7 +1241,7 @@ def get_eval_data(
     (entity_targets, entity_predictions, and tokens).
 
     Args:
-        interpreter: the interpreter
+        processor: the processor
         test_data: test data
 
     Returns: intent, response, and entity evaluation results
@@ -1259,7 +1261,9 @@ def get_eval_data(
     should_eval_entities = len(test_data.entity_examples) > 0
 
     for example in tqdm(test_data.nlu_examples):
-        result = interpreter.parse(example.get(TEXT), only_output_properties=False)
+        result = processor.parse_message(
+            UserMessage(text=example.get(TEXT)), only_output_properties=False
+        )
         _remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)
         if should_eval_intents:
             if fallback_classifier.is_fallback_classifier_prediction(result):
@@ -1343,11 +1347,10 @@ def _remove_entities_of_extractors(
 
 def run_evaluation(
     data_path: Text,
-    model_path: Text,
+    processor: MessageProcessor,
     output_directory: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,
-    component_builder: Optional[ComponentBuilder] = None,
     disable_plotting: bool = False,
     report_as_dict: Optional[bool] = None,
 ) -> Dict:  # pragma: no cover
@@ -1355,11 +1358,10 @@ def run_evaluation(
 
     Args:
         data_path: path to the test data
-        model_path: path to the model
+        processor: the processor used to process and predict
         output_directory: path to folder where all output will be stored
         successes: if true successful predictions are written to a file
         errors: if true incorrect predictions are written to a file
-        component_builder: component builder
         disable_plotting: if true confusion matrix and histogram will not be rendered
         report_as_dict: `True` if the evaluation report should be returned as `dict`.
             If `False` the report is returned in a human-readable text format. If `None`
@@ -1370,9 +1372,6 @@ def run_evaluation(
     """
     import rasa.shared.nlu.training_data.loading
     from rasa.shared.constants import DEFAULT_DOMAIN_PATH
-
-    # get the metadata config from the package data
-    interpreter = Interpreter.load(model_path, component_builder)
 
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
@@ -1389,7 +1388,7 @@ def run_evaluation(
         rasa.shared.utils.io.create_directory(output_directory)
 
     (intent_results, response_selection_results, entity_results) = get_eval_data(
-        interpreter, test_data
+        processor, test_data
     )
 
     if intent_results:
@@ -1469,7 +1468,7 @@ def combine_result(
     intent_metrics: IntentMetrics,
     entity_metrics: EntityMetrics,
     response_selection_metrics: ResponseSelectionMetrics,
-    interpreter: Interpreter,
+    processor: MessageProcessor,
     data: TrainingData,
     intent_results: Optional[List[IntentEvaluationResult]] = None,
     entity_results: Optional[List[EntityEvaluationResult]] = None,
@@ -1487,7 +1486,7 @@ def combine_result(
         intent_metrics: intent metrics
         entity_metrics: entity metrics
         response_selection_metrics: response selection metrics
-        interpreter: the interpreter
+        processor: the processor
         data: training data
         intent_results: intent evaluation results
         entity_results: entity evaluation results
@@ -1502,7 +1501,7 @@ def combine_result(
         current_intent_results,
         current_entity_results,
         current_response_selection_results,
-    ) = compute_metrics(interpreter, data)
+    ) = compute_metrics(processor, data)
 
     if intent_results is not None:
         intent_results += current_intent_results
@@ -1596,15 +1595,14 @@ def cross_validate(
                 nlu_config, str(training_data_file), str(tmp_path)
             )
 
-            # TODO: Load trained model
-            interpreter = None
+            processor = Agent.load(model_file).processor
 
             # calculate train accuracy
             combine_result(
                 intent_train_metrics,
                 entity_train_metrics,
                 response_selection_train_metrics,
-                interpreter,
+                processor,
                 train,
             )
             # calculate test accuracy
@@ -1612,7 +1610,7 @@ def cross_validate(
                 intent_test_metrics,
                 entity_test_metrics,
                 response_selection_test_metrics,
-                interpreter,
+                processor,
                 test,
                 intent_test_results,
                 entity_test_results,
@@ -1682,7 +1680,7 @@ def _targets_predictions_from(
 
 
 def compute_metrics(
-    interpreter: Interpreter, training_data: TrainingData
+    processor: MessageProcessor, training_data: TrainingData
 ) -> Tuple[
     IntentMetrics,
     EntityMetrics,
@@ -1695,13 +1693,13 @@ def compute_metrics(
     extraction.
 
     Args:
-        interpreter: the interpreter
+        processor: the processor
         training_data: training data
 
     Returns: intent, response selection and entity metrics, and prediction results.
     """
     intent_results, response_selection_results, entity_results = get_eval_data(
-        interpreter, training_data
+        processor, training_data
     )
 
     intent_results = remove_empty_intent_examples(intent_results)
@@ -1738,7 +1736,7 @@ def compute_metrics(
     )
 
 
-async def compare_nlu(
+def compare_nlu(
     configs: List[Text],
     data: TrainingData,
     exclusion_percentages: List[int],
@@ -1822,8 +1820,9 @@ async def compare_nlu(
                     continue
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
+                processor = Agent.load(model_path=model_path).processor
                 result = run_evaluation(
-                    test_path, model_path, output_directory=output_path, errors=True
+                    test_path, processor, output_directory=output_path, errors=True
                 )
 
                 f1 = result["intent_evaluation"]["f1_score"]
