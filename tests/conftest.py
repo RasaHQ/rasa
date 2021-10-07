@@ -239,7 +239,8 @@ def reset_conversation_state(agent: Agent) -> Agent:
     # Clean tracker store after each test so tests don't affect each other
     agent.tracker_store = InMemoryTrackerStore(agent.domain)
     agent.domain.session_config = SessionConfig.default()
-
+    agent.processor.tracker_store = agent.tracker_store
+    agent.processor.domain = agent.domain
     return agent
 
 

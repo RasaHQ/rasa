@@ -73,7 +73,7 @@ async def test_agent_train(default_agent: Agent):
     ]
 
     assert default_agent.processor
-    assert default_agent.graph_runner
+    assert default_agent.processor.graph_runner
 
 
 @pytest.mark.parametrize(
@@ -141,7 +141,7 @@ async def test_agent_with_model_server_in_thread(
 
     assert agent.fingerprint == "somehash"
     assert agent.domain.as_dict() == domain.as_dict()
-    assert agent.graph_runner
+    assert agent.processor.graph_runner
 
     assert model_server.app.number_of_model_requests == 1
     jobs.kill_scheduler()
@@ -169,13 +169,14 @@ async def test_load_agent(trained_rasa_model: Text):
     assert agent.tracker_store is not None
     assert agent.lock_store is not None
     assert agent.processor is not None
-    assert agent.graph_runner is not None
+    assert agent.processor.graph_runner is not None
 
 
 async def test_load_agent_on_not_existing_path():
     agent = await load_agent(model_path="some-random-path")
 
-    assert agent is None
+    assert agent
+    assert agent.processor is None
 
 
 async def test_load_from_remote_storage(trained_nlu_model: Text):
