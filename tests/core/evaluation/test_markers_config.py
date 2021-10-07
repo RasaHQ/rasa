@@ -1,6 +1,6 @@
 import pytest
 from jsonschema import ValidationError
-from rasa.core.evaluation.markers import MarkerConfig, InvalidMarkersConfig
+from rasa.core.evaluation.markers_config import MarkerConfig, InvalidMarkersConfig
 from rasa.shared.exceptions import YamlSyntaxException
 
 
