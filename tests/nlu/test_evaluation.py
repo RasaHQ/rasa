@@ -901,7 +901,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-async def test_nlu_comparison(
+def test_nlu_comparison(
     tmp_path: Path, monkeypatch: MonkeyPatch, nlu_as_json_path: Text
 ):
     config = {
@@ -932,7 +932,7 @@ async def test_nlu_comparison(
         training_data_paths=[nlu_as_json_path]
     )
     test_data = test_data_importer.get_nlu_data()
-    await compare_nlu_models(
+    compare_nlu_models(
         configs, test_data, output, runs=2, exclusion_percentages=[50, 80]
     )
 

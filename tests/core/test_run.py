@@ -10,7 +10,6 @@ from pathlib import Path
 from rasa.core import run
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.utils import AvailableEndpoints
-from rasa.shared.exceptions import RasaException
 
 CREDENTIALS_FILE = "data/test_moodbot/credentials.yml"
 

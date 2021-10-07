@@ -23,7 +23,7 @@ from typing import (
 )
 
 from rasa import telemetry
-from rasa.core.agent import Agent, load_agent
+from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.processor import MessageProcessor
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -1736,7 +1736,7 @@ def compute_metrics(
     )
 
 
-async def compare_nlu(
+def compare_nlu(
     configs: List[Text],
     data: TrainingData,
     exclusion_percentages: List[int],
@@ -1820,7 +1820,7 @@ async def compare_nlu(
                     continue
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
-                processor = (await load_agent(model_path=model_path)).processor
+                processor = Agent.load(model_path=model_path).processor
                 result = run_evaluation(
                     test_path, processor, output_directory=output_path, errors=True
                 )

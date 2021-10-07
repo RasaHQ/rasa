@@ -2,7 +2,6 @@ from __future__ import annotations
 from asyncio import AbstractEventLoop, CancelledError
 import logging
 import os
-import shutil
 import tempfile
 from pathlib import Path
 from typing import (
@@ -310,6 +309,32 @@ class Agent:
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
         self.remote_storage = remote_storage
+
+    @classmethod
+    def load(
+        cls,
+        model_path: Union[Text, Path],
+        domain: Optional[Union[Text, Domain]] = None,
+        generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
+        tracker_store: Optional[TrackerStore] = None,
+        lock_store: Optional[LockStore] = None,
+        action_endpoint: Optional[EndpointConfig] = None,
+        fingerprint: Optional[Text] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
+    ):
+        """Constructs a new agent and loads the processer and model."""
+        agent = Agent(
+            domain=domain,
+            generator=generator,
+            tracker_store=tracker_store,
+            lock_store=lock_store,
+            action_endpoint=action_endpoint,
+            fingerprint=fingerprint,
+            model_server=model_server,
+            remote_storage=remote_storage,
+        )
+        agent.load_model(model_path=model_path, fingerprint=fingerprint)
 
     def load_model(
         self, model_path: Union[Text, Path], fingerprint: Optional[Text] = None,

@@ -738,7 +738,6 @@ def temp_cache_for_fixtures(tmp_path_factory: TempPathFactory) -> None:
     # (session, package, module) don't use the global
     # cache. If you want to use the cache in a session scoped fixture, then please
     # consider using the `enable_cache` context manager.
-    old_get_cache_location = LocalTrainingCache._get_cache_location
     LocalTrainingCache._get_cache_location = lambda: tmp_path_factory.mktemp(
         f"cache-{uuid.uuid4()}"
     )

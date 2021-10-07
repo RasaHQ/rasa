@@ -1304,8 +1304,8 @@ async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
     assert event_tokens == indices
 
 
-async def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
-    processor = (await load_agent(model_path=trained_moodbot_nlu_path)).processor
+def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
+    processor = Agent.load(model_path=trained_moodbot_nlu_path).processor
     message = UserMessage("/greet")
     result = processor.parse_message(message)
     assert result == {
@@ -1320,8 +1320,8 @@ async def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
     assert result["intent"]["name"]
 
 
-async def test_parse_message_core_only(trained_core_model: Text):
-    processor = (await load_agent(model_path=trained_core_model)).processor
+def test_parse_message_core_only(trained_core_model: Text):
+    processor = Agent.load(model_path=trained_core_model).processor
     message = UserMessage("/greet")
     result = processor.parse_message(message)
     assert result == {
@@ -1336,8 +1336,8 @@ async def test_parse_message_core_only(trained_core_model: Text):
     assert not result["intent"]["name"]
 
 
-async def test_parse_message_full_model(trained_moodbot_path: Text):
-    processor = (await load_agent(model_path=trained_moodbot_path)).processor
+def test_parse_message_full_model(trained_moodbot_path: Text):
+    processor = Agent.load(model_path=trained_moodbot_path).processor
     message = UserMessage("/greet")
     result = processor.parse_message(message)
     assert result == {
@@ -1352,24 +1352,24 @@ async def test_parse_message_full_model(trained_moodbot_path: Text):
     assert result["intent"]["name"]
 
 
-async def test_predict_next_with_tracker_nlu_only(trained_nlu_model: Text):
-    processor = (await load_agent(model_path=trained_nlu_model)).processor
+def test_predict_next_with_tracker_nlu_only(trained_nlu_model: Text):
+    processor = Agent.load(model_path=trained_nlu_model).processor
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
     result = processor.predict_next_with_tracker(tracker)
     assert result is None
 
 
-async def test_predict_next_with_tracker_core_only(trained_core_model: Text):
-    processor = (await load_agent(model_path=trained_core_model)).processor
+def test_predict_next_with_tracker_core_only(trained_core_model: Text):
+    processor = Agent.load(model_path=trained_core_model).processor
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
     result = processor.predict_next_with_tracker(tracker)
     assert result["policy"] == "MemoizationPolicyGraphComponent"
 
 
-async def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
-    processor = (await load_agent(model_path=trained_rasa_model)).processor
+def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
+    processor = Agent.load(model_path=trained_rasa_model).processor
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
     result = processor.predict_next_with_tracker(tracker)

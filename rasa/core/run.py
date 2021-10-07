@@ -2,7 +2,6 @@ import asyncio
 import logging
 import uuid
 import os
-import shutil
 from functools import partial
 from typing import Any, List, Optional, Text, Union, Dict
 

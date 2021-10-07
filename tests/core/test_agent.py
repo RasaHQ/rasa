@@ -116,7 +116,7 @@ async def test_default_agent_handle_message(default_agent: Agent):
     ]
 
 
-def test_agent_wrong_use_of_load():
+async def test_agent_wrong_use_of_load():
     training_data_file = "data/test_moodbot/data/stories.yml"
 
     with pytest.raises(ModelNotFound):

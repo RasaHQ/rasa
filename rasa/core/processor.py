@@ -32,7 +32,6 @@ from rasa.shared.core.constants import (
     FOLLOWUP_ACTION,
     SESSION_START_METADATA_SLOT,
 )
-from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecutionRejected,
     BotUttered,

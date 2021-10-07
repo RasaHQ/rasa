@@ -1,5 +1,4 @@
 from __future__ import annotations
-import logging
 
 from rasa.core.policies.policy import PolicyPrediction
 from typing import Dict, Optional, Text, Any, List, Tuple

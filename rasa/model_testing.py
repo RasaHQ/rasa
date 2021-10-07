@@ -3,7 +3,7 @@ import os
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
-from rasa.core.agent import Agent, load_agent
+from rasa.core.agent import Agent
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
@@ -154,8 +154,7 @@ def test_core(
     if output:
         rasa.shared.utils.io.create_directory(output)
 
-    _agent = Agent()
-    _agent.load_model(model)
+    _agent = Agent.load(model_path=model)
 
     if not _agent.is_ready():
         rasa.shared.utils.cli.print_error(
@@ -205,8 +204,7 @@ def test_nlu(
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
-        _agent = Agent()
-        _agent.load_model(model)
+        _agent = Agent.load(model_path=model)
         run_evaluation(
             nlu_data, _agent.processor, output_directory=output_directory, **kwargs
         )
@@ -217,7 +215,7 @@ def test_nlu(
         )
 
 
-async def compare_nlu_models(
+def compare_nlu_models(
     configs: List[Text],
     test_data: TrainingData,
     output: Text,
@@ -242,7 +240,7 @@ async def compare_nlu_models(
         model_name: [[] for _ in range(runs)] for model_name in model_names
     }
 
-    training_examples_per_run = await compare_nlu(
+    training_examples_per_run = compare_nlu(
         configs,
         test_data,
         exclusion_percentages,
