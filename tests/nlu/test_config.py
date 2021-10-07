@@ -1,12 +1,10 @@
 import os
-from typing import Text, List
+from typing import Text
 from unittest.mock import Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-import rasa.shared.utils.io
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.shared.exceptions import YamlSyntaxException
 from rasa.shared.importers import autoconfig
 from rasa.shared.importers.rasa import RasaFileImporter
@@ -14,7 +12,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.constants import COMPONENT_INDEX
-from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from tests.nlu.utilities import write_file_config
 
 
