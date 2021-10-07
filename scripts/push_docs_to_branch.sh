@@ -24,7 +24,7 @@ CHANGELOG=docs/docs/changelog.mdx
 TELEMETRY_REFERENCE=docs/docs/telemetry/reference.mdx
 
 [[ ! $GITHUB_REF =~ $PATTERN_FOR_NEW_VERSION ]] \
-&& [[ ! $GITHUB_REF =~ $PATTERN_FOR_MICRO_VERSION ]] \
+&& [[ ! $GITHUB_REF =~ $PATTERN_FOR_EXISTING_VERSION ]] \
 && [[ $GITHUB_REF != $MAIN_REF ]] \
 && echo "Not on main or tagged version, skipping." \
 && exit 0
