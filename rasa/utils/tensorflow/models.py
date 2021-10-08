@@ -49,7 +49,7 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
 )
-from tensorflow.python.keras.utils import tf_utils
+from keras.utils import tf_utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
 
@@ -261,7 +261,9 @@ class RasaModel(TmpKerasModel):
             self.prepared_for_prediction = True
 
         if self._run_eagerly:
-            outputs = tf_utils.to_numpy_or_python_type(self.predict_step(batch_in))
+            # Once we take advantage of TF's distributed training, this is where
+            # scheduled functions will be forced to execute and return actual values.
+            outputs = tf_utils.sync_to_numpy_or_python_type(self.predict_step(batch_in))
             if DIAGNOSTIC_DATA in outputs:
                 outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
                     outputs[DIAGNOSTIC_DATA]
@@ -273,7 +275,9 @@ class RasaModel(TmpKerasModel):
                 self.predict_step, input_signature=self._dynamic_signature(batch_in)
             )
 
-        outputs = tf_utils.to_numpy_or_python_type(self._tf_predict_step(batch_in))
+        # Once we take advantage of TF's distributed training, this is where
+        # scheduled functions will be forced to execute and return actual values.
+        outputs = tf_utils.sync_to_numpy_or_python_type(self.predict_step(batch_in))
         if DIAGNOSTIC_DATA in outputs:
             outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
                 outputs[DIAGNOSTIC_DATA]
