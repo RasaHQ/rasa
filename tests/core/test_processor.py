@@ -1128,7 +1128,8 @@ async def test_logging_of_end_to_end_action(
         **kwargs: Any,
     ) -> PolicyPrediction:
         nonlocal number_of_calls
-        if number_of_calls == 0:
+        # TODO: revert back to "== 0" once we have split recipe targets.
+        if number_of_calls < 2:
             prediction = PolicyPrediction.for_action_name(
                 new_domain, end_to_end_action, "some policy"
             )
@@ -1238,7 +1239,7 @@ async def test_predict_next_action_with_hidden_rules(
         ],
         slots=domain.slots,
     )
-    tracker, action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
     assert action._name == rule_action
     assert prediction.hide_rule_turn
 
@@ -1246,7 +1247,7 @@ async def test_predict_next_action_with_hidden_rules(
         tracker, action, [SlotSet(rule_slot, rule_slot)], prediction
     )
 
-    tracker, action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
     assert isinstance(action, ActionListen)
     assert prediction.hide_rule_turn
 
@@ -1255,7 +1256,7 @@ async def test_predict_next_action_with_hidden_rules(
     tracker.events.append(UserUttered(intent={"name": story_intent}))
 
     # rules are hidden correctly if memo policy predicts next actions correctly
-    tracker, action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
     assert action._name == story_action
     assert not prediction.hide_rule_turn
 
@@ -1263,7 +1264,7 @@ async def test_predict_next_action_with_hidden_rules(
         tracker, action, [SlotSet(story_slot, story_slot)], prediction
     )
 
-    tracker, action, prediction = processor.predict_next_with_tracker_if_should(tracker)
+    action, prediction = processor.predict_next_with_tracker_if_should(tracker)
     assert isinstance(action, ActionListen)
     assert not prediction.hide_rule_turn
 
@@ -1283,7 +1284,7 @@ def test_predict_next_action_raises_limit_reached_exception(
 
     default_processor.max_number_of_predictions = 1
     with pytest.raises(ActionLimitReached):
-        default_processor.predict_next_with_tracker_if_should(tracker, None)
+        default_processor.predict_next_with_tracker_if_should(tracker)
 
 
 async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
