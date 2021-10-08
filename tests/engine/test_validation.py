@@ -659,9 +659,16 @@ def _create_component_type_and_subtype(
 
 
 @pytest.mark.parametrize(
-    "node_needs_requires, targets, num_unmet, is_train_graph, test_subclasses",
+    "node_needs_requires, targets, num_unmet, is_train_graph, test_subclasses, method",
     [
-        (node_needs_requires, targets, num_unmet, is_train_graph, test_subclasses,)
+        (
+            node_needs_requires,
+            targets,
+            num_unmet,
+            is_train_graph,
+            test_subclasses,
+            method,
+        )
         for node_needs_requires, targets, num_unmet in [
             ([(1, [2], [2]), (2, [], [])], [1], 0,),
             (
@@ -701,6 +708,7 @@ def _create_component_type_and_subtype(
         ]
         for is_train_graph in [True, False]
         for test_subclasses in [True, False]
+        for method in [0, 1, 2]
     ],
 )
 def test_required_components(
@@ -709,6 +717,7 @@ def test_required_components(
     num_unmet: int,
     is_train_graph: bool,
     test_subclasses: bool,
+    method: int,
 ):
     component_types = {
         node: _create_component_type_and_subtype(
@@ -744,14 +753,30 @@ def test_required_components(
         }
     )
 
+    # exclude this case
+    if len(targets) > 1 and method == 2:
+        return
+
     # validate!
-    if num_unmet == 0:
-        validation.validate(
-            schema=graph_schema, language=None, is_train_graph=is_train_graph
-        )
+    if method in [0, 1]:
+        # check that public validate and _validate_required_components raise
+        def _validate(method: int, targets: List[int]) -> None:
+            if method == 0:
+                validation.validate(
+                    schema=graph_schema, language=None, is_train_graph=is_train_graph
+                )
+            elif method == 1:
+                validation._validate_required_components(schema=graph_schema)
+
+        if num_unmet == 0:
+            _validate(method=method, targets=targets)
+        else:
+            message = f"{num_unmet} nodes are missing"
+            with pytest.raises(GraphSchemaValidationException, match=message):
+                _validate(method=method, targets=targets)
     else:
-        message = f"{num_unmet} nodes are missing"
-        with pytest.raises(GraphSchemaValidationException, match=message):
-            validation.validate(
-                schema=graph_schema, language=None, is_train_graph=is_train_graph
-            )
+        # check that helper function returns the right number of unmet requirements
+        unmet_requirements, _ = validation._recursively_check_required_components(
+            node_name=f"node-{targets[0]}", schema=graph_schema
+        )
+        assert len(unmet_requirements) == num_unmet
