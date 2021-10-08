@@ -1,7 +1,6 @@
 import argparse
 
 from rasa.cli.arguments.default_arguments import (
-    add_config_param,
     add_domain_param,
     add_stories_param,
     add_out_param,
