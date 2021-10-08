@@ -35,7 +35,12 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   `tf.errors.UnimplementedError` will be thrown by TensorFlow (read more
   [here](https://github.com/tensorflow/tensorflow/releases/tag/v2.6.0)).
 
+  :::caution
+  This **breaks backward compatibility of previously trained models**.
+  It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
+  your assistant before trying to use this version.
 
+  :::
 ## [2.8.8] - 2021-10-06
                        
 
