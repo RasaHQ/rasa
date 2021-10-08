@@ -11,7 +11,7 @@ import json
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable, Tuple, Type, Any
+from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch
 
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
@@ -1000,13 +1000,13 @@ async def test_policy_events_are_applied_to_tracker(
         tracker: DialogueStateTracker,
         domain: Domain,
         **kwargs: Any,
-    ) -> Tuple[DialogueStateTracker, PolicyPrediction]:
+    ) -> PolicyPrediction:
         prediction = PolicyPrediction.for_action_name(
             default_processor.domain, expected_action, "some policy"
         )
         prediction.events = policy_events
 
-        return tracker, prediction
+        return prediction
 
     monkeypatch.setattr(
         DefaultPolicyPredictionEnsemble, "combine_predictions", combine_predictions
@@ -1066,13 +1066,13 @@ async def test_policy_events_not_applied_if_rejected(
         tracker: DialogueStateTracker,
         domain: Domain,
         **kwargs: Any,
-    ) -> Tuple[DialogueStateTracker, PolicyPrediction]:
+    ) -> PolicyPrediction:
         prediction = PolicyPrediction.for_action_name(
             default_processor.domain, expected_action, "some policy"
         )
         prediction.events = expected_events
 
-        return tracker, prediction
+        return prediction
 
     monkeypatch.setattr(
         DefaultPolicyPredictionEnsemble, "combine_predictions", combine_predictions
@@ -1126,7 +1126,7 @@ async def test_logging_of_end_to_end_action(
         tracker: DialogueStateTracker,
         domain: Domain,
         **kwargs: Any,
-    ) -> Tuple[DialogueStateTracker, PolicyPrediction]:
+    ) -> PolicyPrediction:
         nonlocal number_of_calls
         if number_of_calls == 0:
             prediction = PolicyPrediction.for_action_name(
@@ -1134,12 +1134,9 @@ async def test_logging_of_end_to_end_action(
             )
             prediction.is_end_to_end_prediction = True
             number_of_calls += 1
-            return tracker, prediction
+            return prediction
         else:
-            return (
-                tracker,
-                PolicyPrediction.for_action_name(new_domain, ACTION_LISTEN_NAME),
-            )
+            return PolicyPrediction.for_action_name(new_domain, ACTION_LISTEN_NAME)
 
     monkeypatch.setattr(
         DefaultPolicyPredictionEnsemble, "combine_predictions", combine_predictions

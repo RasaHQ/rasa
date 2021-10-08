@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import abstractmethod, ABC
-from typing import Optional, Text, List, Dict, Any, Tuple
+from typing import Optional, Text, List, Dict, Any
 import logging
 
 from rasa.engine.graph import GraphComponent
@@ -89,7 +89,7 @@ class PolicyPredictionEnsemble(ABC):
 
     def combine_predictions_from_kwargs(
         self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any
-    ) -> Tuple[DialogueStateTracker, PolicyPrediction]:
+    ) -> PolicyPrediction:
         """Derives a single prediction from predictions given as kwargs.
 
         Args:
@@ -115,7 +115,7 @@ class PolicyPredictionEnsemble(ABC):
         predictions: List[PolicyPrediction],
         tracker: DialogueStateTracker,
         domain: Domain,
-    ) -> Tuple[DialogueStateTracker, PolicyPrediction]:
+    ) -> PolicyPrediction:
         """Derives a single prediction from the given list of predictions.
 
         Args:
@@ -288,7 +288,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         predictions: List[PolicyPrediction],
         tracker: DialogueStateTracker,
         domain: Domain,
-    ) -> Tuple[DialogueStateTracker, PolicyPrediction]:
+    ) -> PolicyPrediction:
         """Derives a single prediction from the given list of predictions.
 
         Note that you might get unexpected results if the priorities are non-unique.
@@ -332,4 +332,4 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
                 )
 
         logger.debug(f"Predicted next action using {winning_prediction.policy_name}.")
-        return tracker, winning_prediction
+        return winning_prediction
