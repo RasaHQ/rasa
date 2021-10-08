@@ -75,6 +75,9 @@ class Token:
             [self.text, self.start, self.end, self.lemma, self.data]
         )
 
+    def __repr__(self) -> Text:
+        return f"<Token object value='{self.text}' start={self.start} end={self.end} \
+        at {hex(id(self))}>"
 
 class Tokenizer(Component):
     """Base class for tokenizers."""
