@@ -775,7 +775,7 @@ def test_required_components(
             with pytest.raises(GraphSchemaValidationException, match=message):
                 validation._validate_required_components(schema=graph_schema)
 
-    else:  # test collection of unmet requirements
+    elif method == 2 and len(targets) > 1:  # test collection of unmet requirements
 
         unmet_requirements, _ = validation._recursively_check_required_components(
             node_name=f"node-{targets[0]}", schema=graph_schema
