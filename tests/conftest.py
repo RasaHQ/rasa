@@ -199,7 +199,7 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-def _trained_default_agent_model(
+async def _trained_default_agent_model(
     tmp_path_factory: TempPathFactory,
     stories_path: Text,
     domain_path: Text,
@@ -222,9 +222,9 @@ def _trained_default_agent_model(
     )
     config_path = project_path / "config.yml"
     rasa.shared.utils.io.write_text_file(config, config_path)
-    model_path = train(
+    model_path = await trained_async(
         domain_path, str(config_path), [stories_path, nlu_data_path],
-    ).model
+    )
 
     return model_path
 
