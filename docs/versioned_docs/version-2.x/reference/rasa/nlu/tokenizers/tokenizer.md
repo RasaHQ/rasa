@@ -22,6 +22,8 @@ Returns token value.
 class Tokenizer(Component)
 ```
 
+Base class for tokenizers.
+
 #### \_\_init\_\_
 
 ```python

@@ -10,3 +10,11 @@ setup_tf_environment() -> None
 
 Setup CPU and GPU related environment settings for TensorFlow.
 
+#### check\_deterministic\_ops
+
+```python
+check_deterministic_ops() -> None
+```
+
+Warn user if they have set TF_DETERMINISTIC_OPS.
+

@@ -13,7 +13,6 @@ Temporary solution. Keras model that uses a custom data adapter inside fit.
 #### fit
 
 ```python
- | @training.enable_multi_worker
  | fit(x: Optional[
  |             Union[np.ndarray, tf.Tensor, tf.data.Dataset, tf.keras.utils.Sequence]
  |         ] = None, y: Optional[

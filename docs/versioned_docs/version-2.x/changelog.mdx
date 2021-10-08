@@ -16,11 +16,36 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
-## [2.8.8] - 2021-10-06
+## [2.8.9] - 2021-10-08
+### Improvements
+- [#7619](https://github.com/rasahq/rasa/issues/7619): Bump TensorFlow version to 2.6.
 
+  This update brings some security benefits (see TensorFlow 
+  [release notes](https://github.com/tensorflow/tensorflow/releases/tag/v2.6.0)
+  for details). However, internal experiments suggest that it is also associated with
+  increased train and inference time, as well as increased memory usage.
+
+  You can read more about why we decided to update TensorFlow, and what the expected 
+  impact is [here](https://rasa.com/blog/let-s-talk-about-tensorflow-2-6/).
+
+  If you experience a significant increase in train time, inference time, and/or memory 
+  usage, please let us know in the [forum](https://forum.rasa.com/t/feedback-upgrading-to-tensorflow-2-6/48331).
+
+  Users can no longer set `TF_DETERMINISTIC_OPS=1` if they are using GPU(s) because a 
+  `tf.errors.UnimplementedError` will be thrown by TensorFlow (read more
+  [here](https://github.com/tensorflow/tensorflow/releases/tag/v2.6.0)).
+
+  :::caution
+  This **breaks backward compatibility of previously trained models**.
+  It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
+  your assistant before trying to use this version.
+
+  :::
+## [2.8.8] - 2021-10-06
+                       
 
 ### Improvements
-- [#7250](https://github.com/rasahq/rasa/issues/7250): Added a function to display the actual text of a Token when inspecting
+- [#7250](https://github.com/rasahq/rasa/issues/7250): Added a function to display the actual text of a Token when inspecting 
   a Message in a pipeline, making it easier to debug.
 
 ### Improved Documentation

@@ -288,6 +288,14 @@ Feed-forward network layer.
   For instance, for a 2D input with shape `(batch_size, input_dim)`,
   the output would have shape `(batch_size, layer_sizes[-1])`.
 
+#### call
+
+```python
+ | call(x: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None) -> tf.Tensor
+```
+
+Apply feed-forward network layer.
+
 ## Embed Objects
 
 ```python
