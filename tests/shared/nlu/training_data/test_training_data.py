@@ -110,15 +110,13 @@ def test_composite_entities_data():
     td = load_data("data/test/demo-rasa-composite-entities.yml")
     assert not td.is_empty()
     assert len(td.entity_examples) == 11
-    assert len(td.intent_examples) == 45
-    assert len(td.training_examples) == 45
+    assert len(td.intent_examples) == 29
+    assert len(td.training_examples) == 29
     assert td.entity_synonyms == {"SF": "San Fransisco"}
     assert td.intents == {
         "order_pizza",
         "book_flight",
         "chitchat",
-        "greet",
-        "goodbye",
         "affirm",
     }
     assert td.entities == {"location", "topping", "size"}
