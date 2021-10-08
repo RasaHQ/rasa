@@ -1,15 +1,12 @@
 import numpy as np
 import typing
 import logging
-from typing import Any, Text, Dict, List, Type
+from typing import Any, Text, Dict, List
 
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -122,13 +119,3 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
         pass
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
-        if tokenizer_type != SpacyTokenizer:
-            rasa.shared.utils.io.raise_warning(
-                f"Expected '{SpacyTokenizer.__name__}' to be present."
-            )

@@ -1,22 +1,26 @@
 import copy
-
 from typing import Dict, Text, List, Any, Callable
 
 import pytest
+from spacy import Language
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu import registry
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
+    SpacyFeaturizerGraphComponent,
+)
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
 from rasa.nlu.constants import SPACY_DOCS
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyPreprocessor
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import TEXT, ENTITIES
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractorGraphComponent
+from rasa.nlu.extractors.crf_entity_extractor import (
+    CRFEntityExtractorGraphComponent,
+    CRFEntityExtractorOptions,
+)
 
 
 @pytest.fixture()
@@ -34,25 +38,31 @@ def crf_entity_extractor(
     return inner
 
 
+def test_all_features_defined():
+    assert set(CRFEntityExtractorOptions) == set(
+        CRFEntityExtractorGraphComponent.function_dict.keys()
+    )
+
+
 async def test_train_persist_load_with_composite_entities(
     crf_entity_extractor: Callable[[Dict[Text, Any]], CRFEntityExtractorGraphComponent],
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
     importer = RasaFileImporter(
         training_data_paths=["data/test/demo-rasa-composite-entities.yml"]
     )
     training_data = importer.get_nlu_data()
 
-    tokenizer = WhitespaceTokenizer()
-    tokenizer.train(training_data)
+    whitespace_tokenizer.process_training_data(training_data)
 
     crf_extractor = crf_entity_extractor({})
     crf_extractor.train(training_data)
 
     message = Message(data={TEXT: "I am looking for an italian restaurant"})
 
-    tokenizer.process(message)
+    whitespace_tokenizer.process([message])
     message2 = copy.deepcopy(message)
 
     processed_message = crf_extractor.process([message])[0]
@@ -117,33 +127,26 @@ async def test_train_persist_with_different_configurations(
     config_params: Dict[Text, Any],
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
+    spacy_tokenizer: SpacyTokenizerGraphComponent,
+    spacy_nlp: Language,
 ):
-    pipeline = [
-        {"name": "SpacyNLP", "model": "en_core_web_md"},
-        {"name": "SpacyTokenizer"},
-    ]
-
-    loaded_pipeline = [
-        registry.get_component_class(component.pop("name")).create(
-            component, RasaNLUModelConfig()
-        )
-        for component in copy.deepcopy(pipeline)
-    ]
 
     crf_extractor = crf_entity_extractor(config_params)
 
     importer = RasaFileImporter(training_data_paths=["data/examples/rasa"])
     training_data = importer.get_nlu_data()
 
-    for component in loaded_pipeline:
-        component.train(training_data)
+    spacy_model = SpacyModel(model=spacy_nlp, model_name="en_core_web_md")
+    training_data = SpacyPreprocessor({}).process_training_data(
+        training_data, spacy_model
+    )
+    training_data = spacy_tokenizer.process_training_data(training_data)
 
     crf_extractor.train(training_data)
 
     message = Message(data={TEXT: "I am looking for an italian restaurant"})
-
-    for component in loaded_pipeline:
-        component.process(message)
+    messages = SpacyPreprocessor({}).process([message], spacy_model)
+    message = spacy_tokenizer.process(messages)[0]
 
     message2 = copy.deepcopy(message)
 
@@ -170,6 +173,8 @@ async def test_train_persist_with_different_configurations(
 def test_crf_use_dense_features(
     crf_entity_extractor: Callable[[Dict[Text, Any]], CRFEntityExtractorGraphComponent],
     spacy_nlp: Any,
+    spacy_featurizer: SpacyFeaturizerGraphComponent,
+    spacy_tokenizer: SpacyTokenizerGraphComponent,
 ):
     component_config = {
         "features": [
@@ -190,15 +195,12 @@ def test_crf_use_dense_features(
     }
     crf_extractor = crf_entity_extractor(component_config)
 
-    spacy_featurizer = SpacyFeaturizer()
-    spacy_tokenizer = SpacyTokenizer()
-
     text = "Rasa is a company in Berlin"
     message = Message(data={TEXT: text})
     message.set(SPACY_DOCS[TEXT], spacy_nlp(text))
 
-    spacy_tokenizer.process(message)
-    spacy_featurizer.process(message)
+    spacy_tokenizer.process([message])
+    spacy_featurizer.process([message])
 
     text_data = crf_extractor._convert_to_crf_tokens(message)
     features = crf_extractor._crf_tokens_to_features(text_data)

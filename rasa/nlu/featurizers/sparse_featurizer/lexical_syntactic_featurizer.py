@@ -14,15 +14,16 @@ from typing import (
     Set,
     Optional,
     Union,
-    Type,
 )
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY, SpacyTokenizer
+from rasa.nlu.tokenizers.spacy_tokenizer import (
+    POS_TAG_KEY,
+    SpacyTokenizerGraphComponent,
+)
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -180,33 +181,6 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         if configured_feature_names.difference(cls.SUPPORTED_FEATURES):
             raise InvalidConfigException(message)
 
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validate a configuration for this component in the context of a recipe."""
-        # TODO: add (something like) this to recipe validation
-        # TODO: replace tokenizer by config of tokenizer to enable static check
-        configured_feature_names = set(
-            feature_name
-            for pos_config in config.get(FEATURES, [])
-            for feature_name in pos_config
-        )
-        if (
-            any(
-                feature_name in configured_feature_names
-                for feature_name in ["pos", "pos2"]
-            )
-            and tokenizer_type != SpacyTokenizer
-        ):
-            rasa.shared.utils.io.raise_warning(
-                f"Expected tokenizer to be {SpacyTokenizer.__name__} "
-                f"because the given configuration includes part-of-speech features "
-                f"`pos` and/or `pos2` which can only be extracted from tokens "
-                f"produced by this tokenizer. "
-                f"Continuing without the part-of-speech-features."
-            )
-
     def _set_feature_to_idx_dict(
         self,
         feature_to_idx_dict: Dict[Tuple[int, Text], Dict[Text, int]],
@@ -246,7 +220,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                     f" (position in window, feature_name): {not_in_config}. "
                     f" These are not specified in the given config "
                     f" {self._feature_config}. "
-                    f" Will continue without these features."
+                    f"Continuing with constant values for these features. "
                 )
 
     def train(self, training_data: TrainingData) -> Resource:
@@ -258,6 +232,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         Returns:
            the resource from which this trained component can be loaded
         """
+        self.warn_if_pos_features_cannot_be_computed(training_data)
         feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self._set_feature_to_idx_dict(feature_to_idx_dict=feature_to_idx_dict)
         if not self._feature_to_idx_dict:
@@ -268,6 +243,38 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
             )
         self.persist()
         return self._resource
+
+    def warn_if_pos_features_cannot_be_computed(
+        self, training_data: TrainingData
+    ) -> None:
+        """Warn if part-of-speech features are needed but not given."""
+        training_example = next(
+            (
+                message
+                for message in training_data.training_examples
+                if message.get(TOKENS_NAMES[TEXT], [])
+            ),
+            Message(),
+        )
+        tokens_example = training_example.get(TOKENS_NAMES[TEXT], [])
+
+        configured_feature_names = set(
+            feature_name
+            for pos_config in self._feature_config
+            for feature_name in pos_config
+        )
+        if {"pos", "pos2"}.intersection(
+            configured_feature_names
+        ) and not tokens_example[0].data.get(POS_TAG_KEY, []):
+            rasa.shared.utils.io.raise_warning(
+                f"Expected training data to include tokens with part-of-speech tags"
+                f"because the given configuration includes part-of-speech features "
+                f"`pos` and/or `pos2`. "
+                f"Please add a {SpacyTokenizerGraphComponent.__name__} to your "
+                f"configuration if you want to use the part-of-speech-features in the"
+                f"{self.__class__.__name__}. "
+                f"Continuing without the part-of-speech-features."
+            )
 
     def _create_feature_to_idx_dict(
         self, training_data: TrainingData

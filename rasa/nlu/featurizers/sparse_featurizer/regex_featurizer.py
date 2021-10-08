@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import re
-from typing import Any, Dict, List, Optional, Text, Tuple, Type
+from typing import Any, Dict, List, Optional, Text, Tuple
 import numpy as np
 import scipy.sparse
 
@@ -13,7 +13,6 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.constants import (
     TEXT,
     RESPONSE,
@@ -45,9 +44,6 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
             "use_regexes": True,
             # use match word boundaries for lookup table
             "use_word_boundaries": True,
-            # Additional number of patterns to consider
-            # for incremental training
-            "number_additional_patterns": None,
         }
 
     def __init__(
@@ -77,14 +73,6 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         self.known_patterns = known_patterns if known_patterns else []
         self.case_sensitive = config["case_sensitive"]
         self.finetune_mode = execution_context.is_finetuning
-
-        if config["number_additional_patterns"]:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "The parameter `number_additional_patterns` has been deprecated "
-                "since the pipeline does not create an extra buffer for new vocabulary "
-                "anymore. Any value assigned to this parameter will be ignored. "
-                "You can omit specifying `number_additional_patterns` in future runs."
-            )
 
     @classmethod
     def create(
@@ -277,11 +265,4 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        pass
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
         pass
