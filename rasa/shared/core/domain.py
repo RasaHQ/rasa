@@ -1780,8 +1780,8 @@ class Domain:
         conditional_mappings = 0
 
         for slot in self.slots:
+            total_mappings += len(slot.mappings)
             for mapping in slot.mappings:
-                total_mappings += 1
                 if mapping.get("type") == str(SlotMapping.CUSTOM):
                     custom_mappings += 1
 
