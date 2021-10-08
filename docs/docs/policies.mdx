@@ -980,7 +980,7 @@ The `augmentation_factor` determines how many augmented stories are
 subsampled during training. The augmented stories are subsampled before training
 since their number can quickly become very large, and you want to limit it.
 The number of sampled stories is `augmentation_factor` x10.
-By default augmentation is set to 50, resulting in a maximum of 200 augmented stories.
+By default augmentation is set to 50, resulting in a maximum of 500 augmented stories.
 
 `--augmentation 0` disables all augmentation behavior. `TEDPolicy` is the **only** policy
 affected by augmentation. Other policies like `MemoizationPolicy` or `RulePolicy`
