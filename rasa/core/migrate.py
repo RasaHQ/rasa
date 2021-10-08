@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Union
 
 import rasa.shared.utils.io
 from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
@@ -15,12 +14,22 @@ from rasa.shared.core.domain import (
 )
 
 
-def migrate_domain_format(domain_file: Union[list, Path], out_file: Path) -> None:
+def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
     """Converts 2.0 domain to 3.0 format."""
-    if isinstance(domain_file, list):
-        domain_file = domain_file[0]
+    current_dir = domain_file.parent
 
-    original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+    if domain_file.is_dir():
+        original_content = {}
+        backup = current_dir / "original_domain"
+        backup.mkdir()
+        for file in domain_file.iterdir():
+            file_content = rasa.shared.utils.io.read_yaml_file(file)
+            original_content.update(file_content)
+            rasa.shared.utils.io.write_yaml(file_content, backup / file.name, True)
+    else:
+        original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+        backup = current_dir / "original_domain.yml"
+        rasa.shared.utils.io.write_yaml(original_content, backup, True)
 
     intents = original_content.get(KEY_INTENTS, [])
     entities = original_content.get(KEY_ENTITIES, [])
@@ -35,7 +44,7 @@ def migrate_domain_format(domain_file: Union[list, Path], out_file: Path) -> Non
     new_forms = {}
 
     for form_name, form_data in forms.items():
-        ignored_intents = form_data.get(IGNORED_INTENTS, [])
+        ignored_intents = form_data.pop(IGNORED_INTENTS, [])
         if REQUIRED_SLOTS_KEY in form_data:
             form_data = form_data.get(REQUIRED_SLOTS_KEY, {})
 
@@ -67,7 +76,7 @@ def migrate_domain_format(domain_file: Union[list, Path], out_file: Path) -> Non
         new_slots[slot_name] = properties
 
     new_domain = {
-        "version": "3.0",
+        "version": "2.0",
         KEY_INTENTS: intents,
         KEY_ENTITIES: entities,
         KEY_SLOTS: new_slots,
