@@ -152,8 +152,8 @@ def check_deterministic_ops() -> None:
         shared_io_utils.raise_warning(
             f"You have set '{TF_DETERMINISTIC_OPS}' to 1. If you are "
             f"using one or more GPU(s) and use any of 'SparseFeaturizer', "
-            f"'TEDPolicy', 'DIETClassifier', or 'ResponseSelector' training and "
-            f"will fail as there are no deterministic GPU implementations of "
-            f"some underlying TF ops.",
+            f"'TEDPolicy', 'DIETClassifier', 'UnexpecTEDIntentPolicy', or "
+            f"'ResponseSelector' training and will fail as there are no deterministic "
+            f"GPU implementations of some underlying TF ops.",
             category=UserWarning,
         )
