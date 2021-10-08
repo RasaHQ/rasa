@@ -17,6 +17,7 @@ from typing import (
 
 import dataclasses
 
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.training.fingerprinting import Fingerprintable
 import rasa.utils.common
 import typing_utils
@@ -32,6 +33,7 @@ from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.training_data.message import Message
 
 TypeAnnotation = Union[TypeVar, Text, Type]
 
@@ -74,6 +76,8 @@ def validate(
         GraphSchemaValidationException: If the validation failed.
     """
     _validate_cycle(schema)
+    if not is_train_graph:
+        _validate_prediction_targets(schema)
 
     for node_name, node in schema.nodes.items():
         _validate_interface_usage(node_name, node)
@@ -94,6 +98,49 @@ def validate(
 
         _validate_needs(
             node_name, node, schema, create_fn_params, run_fn_params,
+        )
+
+
+def _validate_prediction_targets(schema: GraphSchema) -> None:
+    if not schema.nlu_target:
+        raise GraphSchemaValidationException(
+            "Graph schema specifies no target for the 'nlu_target'. It is required "
+            "for a prediction graph to specify this. Please choose a valid node "
+            "name for this."
+        )
+
+    _validate_target(schema.nlu_target, "NLU", List[Message], schema)
+
+    if schema.core_target:
+        _validate_target(schema.core_target, "Core", PolicyPrediction, schema)
+
+
+def _validate_target(
+    target_name: Text, target_type: Text, expected_type: Type, schema: GraphSchema,
+) -> None:
+    if target_name not in schema.nodes:
+        raise GraphSchemaValidationException(
+            f"Graph schema specifies invalid {target_type} target '{target_name}'."
+            f"Please make sure specify a valid node name as target."
+        )
+
+    if any(target_name in node.needs.values() for node in schema.nodes.values()):
+        raise GraphSchemaValidationException(
+            f"One graph node uses the {target_type} target '{target_name}' as input. "
+            f"This is not allowed as NLU prediction and Core prediction are run "
+            f"separately."
+        )
+
+    target_node = schema.nodes[target_name]
+    _, target_return_type = _get_parameter_information(
+        target_name, target_node.uses, target_node.fn
+    )
+
+    if not typing_utils.issubtype(target_return_type, expected_type):
+        raise GraphSchemaValidationException(
+            f"The {target_type} target '{target_name}' returns an invalid return "
+            f"type '{target_return_type}'. This is not allowed. The {target_type} "
+            f"target is expected to have a return type of '{expected_type}'."
         )
 
 

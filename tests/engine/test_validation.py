@@ -1,6 +1,7 @@
 from typing import Any, Dict, Text, Type, Optional, List
 
 import pytest
+from rasa.core.policies.policy import PolicyPrediction
 
 from rasa.engine import validation
 from rasa.engine.exceptions import GraphSchemaValidationException
@@ -15,6 +16,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
@@ -35,6 +37,16 @@ class TestComponentWithRun(TestComponentWithoutRun):
         pass
 
 
+class TestNLUTarget(TestComponentWithoutRun):
+    def run(self) -> List[Message]:
+        pass
+
+
+class TestCoreTarget(TestComponentWithoutRun):
+    def run(self,) -> PolicyPrediction:
+        pass
+
+
 def create_test_schema(
     uses: Type,  # The unspecified type is on purpose to enable testing of invalid cases
     constructor_name: Text = "create",
@@ -43,6 +55,7 @@ def create_test_schema(
     eager: bool = True,
     parent: Optional[Type[GraphComponent]] = None,
 ) -> GraphSchema:
+
     parent_node = {}
     if parent:
         parent_node = {
@@ -50,6 +63,7 @@ def create_test_schema(
                 needs={}, uses=parent, constructor_name="create", fn="run", config={}
             )
         }
+
     # noinspection PyTypeChecker
     return GraphSchema(
         {
@@ -61,8 +75,17 @@ def create_test_schema(
                 fn=run_fn,
                 config={},
             ),
+            "nlu_target": SchemaNode(
+                needs={},
+                uses=TestNLUTarget,
+                eager=eager,
+                constructor_name=constructor_name,
+                fn=run_fn,
+                config={},
+            ),
             **parent_node,
-        }
+        },
+        nlu_target="nlu_target",
     )
 
 
@@ -647,3 +670,159 @@ def test_validation_with_placeholders():
 
     # Does not raise
     validation.validate(schema, language=None, is_train_graph=True)
+
+
+def test_validation_with_missing_nlu_target():
+    schema = GraphSchema(
+        {
+            "A": SchemaNode(
+                needs={"training_data": PLACEHOLDER_IMPORTER},
+                uses=TestNLUTarget,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+        }
+    )
+
+    with pytest.raises(
+        GraphSchemaValidationException, match="no target for the " "'nlu_target'"
+    ):
+        validation.validate(schema, language=None, is_train_graph=False)
+
+
+def test_validation_with_nlu_target_used_by_other_node():
+    class NLUTargetConsumer(TestComponentWithoutRun):
+        def run(self, nlu_target_output: List[Message]) -> List[Message]:
+            pass
+
+    schema = GraphSchema(
+        {
+            "A": SchemaNode(
+                needs={"training_data": PLACEHOLDER_IMPORTER},
+                uses=TestNLUTarget,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+            "B": SchemaNode(
+                needs={"nlu_target_output": "A"},
+                uses=NLUTargetConsumer,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+        },
+        nlu_target="A",
+    )
+
+    with pytest.raises(
+        GraphSchemaValidationException, match="uses the NLU target 'A' as input"
+    ):
+        validation.validate(schema, language=None, is_train_graph=False)
+
+
+def test_validation_with_nlu_target_wrong_type():
+    schema = GraphSchema(
+        {
+            "A": SchemaNode(
+                needs={},
+                uses=TestCoreTarget,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+        },
+        nlu_target="A",
+    )
+
+    with pytest.raises(GraphSchemaValidationException, match="invalid return type"):
+        validation.validate(schema, language=None, is_train_graph=False)
+
+
+def test_validation_with_missing_core_target():
+    schema = GraphSchema(
+        {
+            "A": SchemaNode(
+                needs={},
+                uses=TestNLUTarget,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+        },
+        nlu_target="A",
+        core_target="B",
+    )
+
+    with pytest.raises(GraphSchemaValidationException, match="invalid Core target"):
+        validation.validate(schema, language=None, is_train_graph=False)
+
+
+def test_validation_with_core_target_wrong_type():
+    schema = GraphSchema(
+        {
+            "A": SchemaNode(
+                needs={},
+                uses=TestNLUTarget,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+        },
+        nlu_target="A",
+        core_target="A",
+    )
+
+    with pytest.raises(
+        GraphSchemaValidationException, match="Core target .* invalid return type",
+    ):
+        validation.validate(schema, language=None, is_train_graph=False)
+
+
+def test_validation_with_core_target_used_by_other_node():
+    class CoreTargetConsumer(TestComponentWithoutRun):
+        def run(self, core_target_output: PolicyPrediction) -> PolicyPrediction:
+            pass
+
+    schema = GraphSchema(
+        {
+            "A": SchemaNode(
+                needs={},
+                uses=TestNLUTarget,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+            "B": SchemaNode(
+                needs={},
+                uses=TestCoreTarget,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+            "C": SchemaNode(
+                needs={"core_target_output": "B"},
+                uses=CoreTargetConsumer,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+        },
+        nlu_target="A",
+        core_target="B",
+    )
+
+    with pytest.raises(
+        GraphSchemaValidationException, match="uses the Core target 'B' as input"
+    ):
+        validation.validate(schema, language=None, is_train_graph=False)
