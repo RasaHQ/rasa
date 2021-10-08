@@ -1767,6 +1767,29 @@ class Domain:
 
         return []
 
+    def count_slot_mapping_statistics(self) -> Tuple[int, int, int]:
+        """Counts the total number of slot mappings and custom slot mappings.
+
+        Returns:
+            A triple of integers where the first entry is the total number of mappings,
+            the second entry is the total number of custom mappings, and the third entry
+            is the total number of mappings which have conditions attached.
+        """
+        total_mappings = 0
+        custom_mappings = 0
+        conditional_mappings = 0
+
+        for slot in self.slots:
+            total_mappings += len(slot.mappings)
+            for mapping in slot.mappings:
+                if mapping.get("type") == str(SlotMapping.CUSTOM):
+                    custom_mappings += 1
+
+                if "conditions" in mapping:
+                    conditional_mappings += 1
+
+        return (total_mappings, custom_mappings, conditional_mappings)
+
 
 class SlotMapping(Enum):
     """Defines the available slot mappings."""
