@@ -431,9 +431,12 @@ All configuration options are specified using environment variables as shown in 
 ### Deterministic Operations
 
 If you are using GPUs and have one or more sparse featurizer(s) in
-your pipeline, training and testing will fail if you set the environment variable
-`TF_DETERMINISTIC_OPS=1`, because there is no deterministic GPU implementation of
-`tf.sparse.sparse_dense_matmul`.
+your pipeline, and/or use any of `TEDPolicy`, `DIETClassifier`, or `ResponseSelector`,
+training and testing will fail if you set the environment variable
+`TF_DETERMINISTIC_OPS=1`, because there are no deterministic GPU implementations of:
+underlying tensorflow ops `tf.sparse.sparse_dense_matmul`,
+`tf.nn.sparse_softmax_cross_entropy_with_logits`,
+and `tf.math.unsorted_segment` ops. For more information see [here](https://github.com/tensorflow/community/blob/master/rfcs/20210119-determinism.md)
 
 You can see which featurizers are sparse [here](./components.mdx#featurizers),
 by checking the "Type" of a featurizer.

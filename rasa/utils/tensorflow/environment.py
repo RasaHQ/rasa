@@ -9,7 +9,6 @@ from rasa.constants import (
     ENV_CPU_INTER_OP_CONFIG,
     ENV_CPU_INTRA_OP_CONFIG,
 )
-from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.utils.tensorflow.constants import TF_DETERMINISTIC_OPS
 from rasa.shared.utils import io as shared_io_utils
 
@@ -152,9 +151,9 @@ def check_deterministic_ops() -> None:
     if os.getenv(TF_DETERMINISTIC_OPS, False):
         shared_io_utils.raise_warning(
             f"You have set '{TF_DETERMINISTIC_OPS}' to 1. If you are "
-            f"using one or more GPU(s) and have a '{SparseFeaturizer.name}' in your "
-            f"pipeline training or testing will fail as there is currently no "
-            f"deterministic GPU implementation of "
-            f"`tf.sparse.sparse_dense_matmul`.",
+            f"using one or more GPU(s) and use any of 'SparseFeaturizer', "
+            f"'TEDPolicy', 'DIETClassifier', or 'ResponseSelector' training and "
+            f"will fail as there are no deterministic GPU implementations of "
+            f"some underlying TF ops.",
             category=UserWarning,
         )
