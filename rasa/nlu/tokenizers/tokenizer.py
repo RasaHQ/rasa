@@ -25,10 +25,6 @@ logger = logging.getLogger(__name__)
 Tokenizer = Tokenizer
 Token = Token
 
-    def __repr__(self) -> Text:
-        return f"<Token object value='{self.text}' start={self.start} end={self.end} \
-        at {hex(id(self))}>"
-
 
 class TokenizerGraphComponent(GraphComponent, abc.ABC):
     """Base class for tokenizers."""
