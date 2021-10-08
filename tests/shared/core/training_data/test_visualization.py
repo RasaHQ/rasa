@@ -148,30 +148,6 @@ def test_story_visualization(domain: Domain, tmp_path: Path):
     assert len(generated_graph.edges()) == 56
 
 
-def test_story_visualization_with_processor(
-    domain: Domain, tmp_path: Path, default_agent: Agent
-):
-    import rasa.shared.core.training_data.loading as core_loading
-
-    story_steps = core_loading.load_data_from_resource(
-        "data/test_yaml_stories/stories.yml", domain
-    )
-    out_file = tmp_path / "graph.html"
-    generated_graph = visualization.visualize_stories(
-        story_steps,
-        domain,
-        processor=default_agent.processor,
-        output_file=str(out_file),
-        max_history=3,
-        should_merge_nodes=False,
-    )
-
-    assert str(None) not in out_file.read_text()
-    assert "/affirm" in out_file.read_text()
-    assert len(generated_graph.nodes()) == 51
-    assert len(generated_graph.edges()) == 56
-
-
 def test_story_visualization_with_training_data(
     domain: Domain, tmp_path: Path, nlu_data_path: Text
 ):

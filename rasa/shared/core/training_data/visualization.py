@@ -61,25 +61,15 @@ class UserMessageGenerator:
         ) != e.get(ENTITY_ATTRIBUTE_VALUE)
 
     def message_for_data(self, structured_info: Dict[Text, Any]) -> Any:
-        """Find a data sample with the same intent and entities.
-
-        Given the parsed data from a message (intent and entities) finds a
-        message in the data that has the same intent and entities."""
-
+        """Find a data sample with the same intent."""
         if structured_info.get(INTENT) is not None:
             intent_name = structured_info.get(INTENT, {}).get(INTENT_NAME_KEY)
             usable_examples = self.mapping.get(intent_name, [])[:]
             random.shuffle(usable_examples)
-            for example in usable_examples:
-                entities = {
-                    e.get(ENTITY_ATTRIBUTE_TYPE): e.get(ENTITY_ATTRIBUTE_VALUE)
-                    for e in example.get(ENTITIES, [])
-                }
-                for e in structured_info.get(ENTITIES, []):
-                    if self._contains_same_entity(entities, e):
-                        break
-                else:
-                    return example.get(TEXT)
+
+            if usable_examples:
+                return usable_examples[0].get(TEXT)
+
         return structured_info.get(TEXT)
 
 
@@ -269,10 +259,7 @@ def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) ->
 
 
 def _replace_edge_labels_with_nodes(
-    graph: "networkx.MultiDiGraph",
-    next_id: int,
-    processor: MessageProcessor,
-    nlu_training_data: "TrainingData",
+    graph: "networkx.MultiDiGraph", next_id: int, nlu_training_data: "TrainingData",
 ) -> None:
     """Replaces edge labels with nodes.
 
@@ -296,9 +283,7 @@ def _replace_edge_labels_with_nodes(
 
             if message_generator:
                 parsed_info = {TEXT: label}
-                if processor:
-                    parsed_info = processor.parse_message(UserMessage(label))
-                elif label.startswith(INTENT_MESSAGE_PREFIX):
+                if label.startswith(INTENT_MESSAGE_PREFIX):
                     parsed_info[INTENT] = {INTENT_NAME_KEY: label[1:]}
 
                 label = message_generator.message_for_data(parsed_info)
@@ -426,7 +411,6 @@ def visualize_neighborhood(
     event_sequences: List[List[Event]],
     output_file: Optional[Text] = None,
     max_history: int = 2,
-    processor: Optional[MessageProcessor] = None,
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     max_distance: int = 1,
@@ -456,11 +440,8 @@ def visualize_neighborhood(
                 idx -= 1
                 break
             if isinstance(el, UserUttered):
-                if not el.intent and processor:
-                    message = processor.parse_message(UserMessage(el.text))
-                else:
-                    message = el.parse_data
-                    message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"
+                message = el.parse_data
+                message[TEXT] = f"{INTENT_MESSAGE_PREFIX}{el.intent_name}"
             elif (
                 isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
@@ -518,7 +499,7 @@ def visualize_neighborhood(
 
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
-    _replace_edge_labels_with_nodes(graph, next_node_idx, processor, nlu_training_data)
+    _replace_edge_labels_with_nodes(graph, next_node_idx, nlu_training_data)
 
     _remove_auxiliary_nodes(graph, special_node_idx)
 
@@ -552,7 +533,6 @@ def visualize_stories(
     domain: Domain,
     output_file: Optional[Text],
     max_history: int,
-    processor: Optional[MessageProcessor] = None,
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     fontsize: int = 12,
@@ -601,7 +581,6 @@ def visualize_stories(
         event_sequences,
         output_file,
         max_history,
-        processor,
         nlu_training_data,
         should_merge_nodes,
         max_distance=1,
