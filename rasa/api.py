@@ -74,7 +74,6 @@ def train(
     persist_nlu_training_data: bool = False,
     core_additional_arguments: "Optional[Dict]" = None,
     nlu_additional_arguments: "Optional[Dict]" = None,
-    loop: "Optional[asyncio.AbstractEventLoop]" = None,
     model_to_finetune: "Optional[Text]" = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> "TrainingResult":
@@ -94,7 +93,6 @@ def train(
         core_additional_arguments: Additional training parameters for core training.
         nlu_additional_arguments: Additional training parameters forwarded to training
             method of each NLU component.
-        loop: Optional EventLoop for running coroutines.
         model_to_finetune: Optional path to a model which should be finetuned or
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
@@ -120,9 +118,6 @@ def train(
             model_to_finetune=model_to_finetune,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         ),
-        # TODO: asyncio.run doesn't let you set a custom loop,
-        # do we want to keep this parameter?
-        # loop,
     )
 
 
