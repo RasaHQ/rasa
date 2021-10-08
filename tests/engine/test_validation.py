@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Text, Tuple, Type, Optional, List, TypedDict
+from typing import Any, Callable, Dict, Text, Tuple, Type, Optional, List
+from collections import namedtuple
 import itertools
 
 import pytest
@@ -699,7 +700,7 @@ def _create_graph_schema_from_requirements(
     return graph_schema
 
 
-RequiredComponentsTestCase = TypedDict(
+RequiredComponentsTestCase = namedtuple(
     "RequiredComponentsTestCase",
     {
         "node_needs_requires_tuples": List[Tuple[int, List[int], List[int]]],
@@ -708,23 +709,23 @@ RequiredComponentsTestCase = TypedDict(
     },
 )
 REQUIRED_COMPONENT_TEST_CASES: List[RequiredComponentsTestCase] = [
-    {
-        "node_needs_requires_tuples": [(1, [2], [2]), (2, [], [])],
-        "targets": [1],
-        "num_unmet_requirements": 0,
-    },
-    {
-        "node_needs_requires_tuples": [
+    RequiredComponentsTestCase(
+        node_needs_requires_tuples=[(1, [2], [2]), (2, [], [])],
+        targets=[1],
+        num_unmet_requirements=0,
+    ),
+    RequiredComponentsTestCase(
+        node_needs_requires_tuples=[
             (1, [2, 3, 4], [2, 3, 4]),
             (2, [], []),
             (3, [], []),
             (4, [], []),
         ],
-        "targets": [1],
-        "num_unmet_requirements": 0,
-    },
-    {
-        "node_needs_requires_tuples": [
+        targets=[1],
+        num_unmet_requirements=0,
+    ),
+    RequiredComponentsTestCase(
+        node_needs_requires_tuples=[
             (1, [3], [4]),
             (2, [3], [4]),
             (3, [4, 5], []),
@@ -732,35 +733,35 @@ REQUIRED_COMPONENT_TEST_CASES: List[RequiredComponentsTestCase] = [
             (5, [6], []),
             (6, [], []),
         ],
-        "targets": [1, 3],
-        "num_unmet_requirements": 0,
-    },
-    {
-        "node_needs_requires_tuples": [(1, [], [2]), (2, [], [])],
-        "targets": [1],
-        "num_unmet_requirements": 1,
-    },  # 2 is not reachable from 1
-    {
-        "node_needs_requires_tuples": [
+        targets=[1, 3],
+        num_unmet_requirements=0,
+    ),
+    RequiredComponentsTestCase(
+        node_needs_requires_tuples=[(1, [], [2]), (2, [], [])],
+        targets=[1],
+        num_unmet_requirements=1,
+    ),  # 2 is not reachable from 1
+    RequiredComponentsTestCase(
+        node_needs_requires_tuples=[
             (1, [3], [4]),
             (2, [3], [4]),
             (3, [4], [5]),
             (4, [], []),
             (5, [], []),
         ],
-        "targets": [1],
-        "num_unmet_requirements": 1,  # 5 is not reachable from 3
-    },
-    {
-        "node_needs_requires_tuples": [
+        targets=[1],
+        num_unmet_requirements=1,  # 5 is not reachable from 3
+    ),
+    RequiredComponentsTestCase(
+        node_needs_requires_tuples=[
             (1, [2], [3]),
             (2, [], [4]),
             (3, [], []),
             (4, [], []),
         ],
-        "targets": [1],
-        "num_unmet_requirements": 2,
-    },  # 3 and 4 are not reachable from 1 and 2
+        targets=[1],
+        num_unmet_requirements=2,
+    ),  # 3 and 4 are not reachable from 1 and 2
 ]
 
 
@@ -774,11 +775,11 @@ def test_validate_validates_required_components(
     test_subclass: bool,
 ):
     graph_schema = _create_graph_schema_from_requirements(
-        node_needs_requires=test_case["node_needs_requires_tuples"],
-        targets=test_case["targets"],
+        node_needs_requires=test_case.node_needs_requires_tuples,
+        targets=test_case.targets,
         use_subclass=test_subclass,
     )
-    num_unmet = test_case["num_unmet_requirements"]
+    num_unmet = test_case.num_unmet_requirements
     if num_unmet == 0:
         validation.validate(
             schema=graph_schema, language=None, is_train_graph=is_train_graph
@@ -799,12 +800,11 @@ def test_validate_required_components(
     test_case: List[RequiredComponentsTestCase], test_subclass: bool,
 ):
     graph_schema = _create_graph_schema_from_requirements(
-        node_needs_requires=test_case["node_needs_requires_tuples"],
-        targets=test_case["targets"],
+        node_needs_requires=test_case.node_needs_requires_tuples,
+        targets=test_case.targets,
         use_subclass=test_subclass,
     )
-    num_unmet = test_case["num_unmet_requirements"]
-
+    num_unmet = test_case.num_unmet_requirements
     if num_unmet == 0:
         validation._validate_required_components(schema=graph_schema,)
     else:
@@ -819,7 +819,7 @@ def test_validate_required_components(
         [
             test_case
             for test_case in REQUIRED_COMPONENT_TEST_CASES
-            if len(test_case["targets"]) == 1
+            if len(test_case.targets) == 1
         ],
         [True, False],
     ),
@@ -828,13 +828,13 @@ def test_recursively_validate_required_components(
     test_case: List[RequiredComponentsTestCase], test_subclass: bool,
 ):
     graph_schema = _create_graph_schema_from_requirements(
-        node_needs_requires=test_case["node_needs_requires_tuples"],
-        targets=test_case["targets"],
+        node_needs_requires=test_case.node_needs_requires_tuples,
+        targets=test_case.targets,
         use_subclass=test_subclass,
     )
-    num_unmet = test_case["num_unmet_requirements"]
+    num_unmet = test_case.num_unmet_requirements
 
     unmet_requirements, _ = validation._recursively_check_required_components(
-        node_name=f"node-{test_case['targets'][0]}", schema=graph_schema
+        node_name=f"node-{test_case.targets[0]}", schema=graph_schema
     )
     assert len(unmet_requirements) == num_unmet
