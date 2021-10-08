@@ -13,7 +13,6 @@ from rasa.shared.nlu.constants import (
     METADATA_INTENT,
     METADATA_EXAMPLE,
 )
-from rasa.shared.nlu.training_data.formats import NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
@@ -469,27 +468,6 @@ def test_read_mixed_training_data_file():
     with pytest.warns(None) as record:
         reader.read(training_data_file)
         assert not len(record)
-
-
-def test_responses_are_converted_from_markdown():
-    responses_md = textwrap.dedent(
-        """
-      ## ask name
-      * chitchat/ask_name
-        - my name is Sara, Rasa's documentation bot!
-    """
-    )
-
-    result = NLGMarkdownReader().reads(responses_md)
-    dumped = RasaYAMLWriter().dumps(result)
-
-    validation_reader = RasaYAMLReader()
-    dumped_result = validation_reader.reads(dumped)
-
-    assert dumped_result.responses == result.responses
-
-    # dumping again should also not change the format
-    assert dumped == RasaYAMLWriter().dumps(dumped_result)
 
 
 def test_responses_text_multiline_is_preserved():

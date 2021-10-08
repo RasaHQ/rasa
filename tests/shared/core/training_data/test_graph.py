@@ -49,20 +49,18 @@ def test_is_empty():
     assert StoryGraph([]).is_empty()
 
 
-async def test_consistent_fingerprints():
+def test_consistent_fingerprints():
     stories_path = "data/test_yaml_stories/stories.yml"
     domain_path = "data/test_domains/default_with_slots.yml"
     domain = Domain.load(domain_path)
-    story_steps = await rasa.shared.core.training_data.loading.load_data_from_resource(
+    story_steps = rasa.shared.core.training_data.loading.load_data_from_resource(
         stories_path, domain
     )
     story_graph = StoryGraph(story_steps)
 
     # read again
-    story_steps_2 = await (
-        rasa.shared.core.training_data.loading.load_data_from_resource(
-            stories_path, domain
-        )
+    story_steps_2 = rasa.shared.core.training_data.loading.load_data_from_resource(
+        stories_path, domain
     )
     story_graph_2 = StoryGraph(story_steps_2)
 
@@ -72,11 +70,11 @@ async def test_consistent_fingerprints():
     assert fingerprint == fingerprint_2
 
 
-async def test_unique_checkpoint_names():
+def test_unique_checkpoint_names():
     stories_path = "data/test_yaml_stories/story_with_two_equal_or_statements.yml"
     domain_path = "data/test_domains/default_with_slots.yml"
     domain = Domain.load(domain_path)
-    story_steps = await rasa.shared.core.training_data.loading.load_data_from_resource(
+    story_steps = rasa.shared.core.training_data.loading.load_data_from_resource(
         stories_path, domain
     )
     start_checkpoint_names = {

@@ -84,7 +84,7 @@ async def test_activate_with_prefilled_slot():
             - type: from_text
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -261,7 +261,7 @@ async def test_activate_and_immediate_deactivate():
               entity: {slot_name}
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -340,7 +340,7 @@ async def test_action_rejection():
               entity: some_entity
     slots:
       {slot_to_fill}:
-        type: unfeaturized
+        type: any
     """
     domain = Domain.from_yaml(domain)
 
@@ -630,7 +630,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
     domain = f"""
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
@@ -703,7 +703,7 @@ def test_temporary_tracker():
         version: "2.0"
         slots:
           {extra_slot}:
-            type: unfeaturized
+            type: any
         """
     )
 

@@ -48,6 +48,9 @@ title = "gitleaks config"
     # we make it required, as it will allows for fake tokens for tests
     regex = '''xox[baprs]-[0-9a-zA-Z]{10,48}'''
     tags = ["key", "Slack"]
+    [rules.allowlist]
+	description = "ignore fake tokens"
+	regexes = ['''(test|xxx|XXX|286425452756)''']
 [[rules]]
     description = "Asymmetric Private Key"
     regex = '''-----BEGIN ((EC|PGP|DSA|RSA|OPENSSH) )?PRIVATE KEY( BLOCK)?-----'''
@@ -57,8 +60,8 @@ title = "gitleaks config"
     regex = '''(?i)(api_key|apikey|secret)(.{0,20})?['|"][0-9a-zA-Z]{16,45}['|"]'''
     tags = ["key", "API", "generic"]
     [rules.allowlist]
-        paths = ['''^examples\/.*''']
-        description = "ignore examples"
+	regexes = ['''(3e34709d01ea89032asdebfe5a74518|12345670)''']
+	description = "ignore example API"
 [[rules]]
     description = "Google API key"
     regex = '''AIza[0-9A-Za-z\\-_]{35}'''

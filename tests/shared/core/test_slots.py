@@ -12,7 +12,6 @@ from rasa.shared.core.slots import (
     BooleanSlot,
     FloatSlot,
     ListSlot,
-    UnfeaturizedSlot,
     CategoricalSlot,
     bool_from_any,
     AnySlot,
@@ -109,6 +108,22 @@ class SlotTestCollection:
         assert slot.has_been_set
         slot.reset()
         assert not slot.has_been_set
+
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_fingerprint_consistency(self, influence_conversation: bool):
+        slot1 = self.create_slot(influence_conversation)
+        slot2 = self.create_slot(influence_conversation)
+        f1 = slot1.fingerprint()
+        f2 = slot2.fingerprint()
+        assert f1 == f2
+
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_fingerprint_uniqueness(self, influence_conversation: bool):
+        slot = self.create_slot(influence_conversation)
+        f1 = slot.fingerprint()
+        slot.value = "changed"
+        f2 = slot.fingerprint()
+        assert f1 != f2
 
 
 class TestTextSlot(SlotTestCollection):
@@ -214,27 +229,6 @@ class TestListSlot(SlotTestCollection):
         assert tracker.slots[slot.name].value == ["cat"]
 
 
-class TestUnfeaturizedSlot(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool) -> Slot:
-        return UnfeaturizedSlot("test", influence_conversation=False)
-
-    @pytest.fixture(params=["there is nothing invalid, but we need to pass something"])
-    def invalid_value(self, request: SubRequest) -> Any:
-        return request.param
-
-    @pytest.fixture(params=[(None, []), ([23], []), (1, []), ("asd", [])])
-    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
-        return request.param
-
-    def test_exception_if_featurized(self):
-        with pytest.raises(InvalidSlotConfigError):
-            UnfeaturizedSlot("⛔️", influence_conversation=True)
-
-    def test_deprecation_warning(self):
-        with pytest.warns(FutureWarning):
-            self.create_slot(False)
-
-
 class TestCategoricalSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
         return CategoricalSlot(
@@ -325,7 +319,7 @@ class TestAnySlot(SlotTestCollection):
 
     def test_exception_if_featurized(self):
         with pytest.raises(InvalidSlotConfigError):
-            UnfeaturizedSlot("⛔️", influence_conversation=True)
+            AnySlot("⛔️", influence_conversation=True)
 
 
 def test_raises_on_invalid_slot_type():

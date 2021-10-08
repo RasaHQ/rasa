@@ -1,4 +1,3 @@
-import asyncio
 import os
 import tempfile
 from contextlib import ExitStack
@@ -51,10 +50,6 @@ class TrainingResult(NamedTuple):
     code: int = 0
 
 
-# backwards compatibility
-train = rasa.train
-
-
 async def train_async(
     domain: Union[Domain, Text],
     config: Text,
@@ -97,7 +92,7 @@ async def train_async(
         config, domain, training_files
     )
     with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
-        domain = await file_importer.get_domain()
+        domain = file_importer.get_domain()
 
         if domain.is_empty():
             nlu_model = await handle_domain_if_not_exists(
@@ -211,11 +206,10 @@ async def _train_async_internal(
     Returns:
         An instance of `TrainingResult`.
     """
-    stories, nlu_data = await asyncio.gather(
-        file_importer.get_stories(), file_importer.get_nlu_data()
-    )
+    stories = file_importer.get_stories()
+    nlu_data = file_importer.get_nlu_data()
 
-    new_fingerprint = await model.model_fingerprint(file_importer)
+    new_fingerprint = model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
 
     if dry_run:
@@ -257,7 +251,7 @@ async def _train_async_internal(
         rasa.shared.utils.cli.print_warning(
             "No NLU data present. Just a Rasa Core model will be trained."
         )
-        trained_model = await _train_core_with_validated_data(
+        trained_model = _train_core_with_validated_data(
             file_importer,
             output=output_path,
             fixed_model_name=fixed_model_name,
@@ -268,7 +262,7 @@ async def _train_async_internal(
 
         return TrainingResult(model=trained_model)
 
-    new_fingerprint = await model.model_fingerprint(file_importer)
+    new_fingerprint = model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
 
     if not force_training:
@@ -282,7 +276,7 @@ async def _train_async_internal(
         fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if not old_model or fingerprint_comparison.is_training_required():
-        async with telemetry.track_model_training(
+        with telemetry.track_model_training(
             file_importer, model_type="rasa",
         ):
             await _do_training(
@@ -349,7 +343,7 @@ async def _do_training(
         )
 
     if fingerprint_comparison_result.should_retrain_core():
-        await _train_core_with_validated_data(
+        _train_core_with_validated_data(
             file_importer,
             output=output_path,
             train_path=train_path,
@@ -367,7 +361,7 @@ async def _do_training(
             "the updated responses will be created.",
             color=rasa.shared.utils.io.bcolors.OKBLUE,
         )
-        await model.update_model_with_new_domain(file_importer, train_path)
+        model.update_model_with_new_domain(file_importer, train_path)
     else:
         rasa.shared.utils.cli.print_color(
             "Core stories/configuration did not change. No need to retrain Core model.",
@@ -406,32 +400,6 @@ def train_core(
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
 ) -> Optional[Text]:
-    return rasa.utils.common.run_in_loop(
-        train_core_async(
-            domain=domain,
-            config=config,
-            stories=stories,
-            output=output,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            additional_arguments=additional_arguments,
-            model_to_finetune=model_to_finetune,
-            finetuning_epoch_fraction=finetuning_epoch_fraction,
-        )
-    )
-
-
-async def train_core_async(
-    domain: Union[Domain, Text],
-    config: Text,
-    stories: Text,
-    output: Text,
-    train_path: Optional[Text] = None,
-    fixed_model_name: Optional[Text] = None,
-    additional_arguments: Optional[Dict] = None,
-    model_to_finetune: Optional[Text] = None,
-    finetuning_epoch_fraction: float = 1.0,
-) -> Optional[Text]:
     """Trains a Core model.
 
     Args:
@@ -456,11 +424,9 @@ async def train_core_async(
     file_importer = TrainingDataImporter.load_core_importer_from_config(
         config, domain, [stories]
     )
-    stories, nlu_data, domain = await asyncio.gather(
-        file_importer.get_stories(),
-        file_importer.get_nlu_data(),
-        file_importer.get_domain(),
-    )
+    stories = file_importer.get_stories()
+    nlu_data = file_importer.get_nlu_data()
+    domain = file_importer.get_domain()
 
     if nlu_data.has_e2e_examples():
         rasa.shared.utils.cli.print_error(
@@ -482,9 +448,9 @@ async def train_core_async(
             "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."
         )
-        return
+        return None
 
-    return await _train_core_with_validated_data(
+    return _train_core_with_validated_data(
         file_importer,
         output=output,
         train_path=train_path,
@@ -495,7 +461,7 @@ async def train_core_async(
     )
 
 
-async def _train_core_with_validated_data(
+def _train_core_with_validated_data(
     file_importer: TrainingDataImporter,
     output: Text,
     train_path: Optional[Text] = None,
@@ -520,15 +486,14 @@ async def _train_core_with_validated_data(
         rasa.shared.utils.cli.print_color(
             "Training Core model...", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
-        domain, config = await asyncio.gather(
-            file_importer.get_domain(), file_importer.get_config()
-        )
+        domain = file_importer.get_domain()
+        config = file_importer.get_config()
 
         if model_to_finetune:
             rasa.shared.utils.common.mark_as_experimental_feature(
                 "Incremental Training feature"
             )
-            model_to_finetune = await _core_model_for_finetuning(
+            model_to_finetune = _core_model_for_finetuning(
                 model_to_finetune,
                 file_importer=file_importer,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
@@ -541,12 +506,12 @@ async def _train_core_with_validated_data(
                     f"model within the directory '{output}'."
                 )
 
-        async with telemetry.track_model_training(
+        with telemetry.track_model_training(
             file_importer,
             model_type="core",
             is_finetuning=model_to_finetune is not None,
         ):
-            await rasa.core.train.train(
+            rasa.core.train.train(
                 domain_file=domain,
                 training_resource=file_importer,
                 output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
@@ -561,7 +526,7 @@ async def _train_core_with_validated_data(
 
         if train_path is None:
             # Only Core was trained.
-            new_fingerprint = await model.model_fingerprint(file_importer)
+            new_fingerprint = model.model_fingerprint(file_importer)
             return model.package_model(
                 fingerprint=new_fingerprint,
                 output_directory=output,
@@ -570,10 +535,10 @@ async def _train_core_with_validated_data(
                 model_prefix="core-",
             )
 
-        return _train_path
+    return _train_path
 
 
-async def _core_model_for_finetuning(
+def _core_model_for_finetuning(
     model_to_finetune: Text,
     file_importer: TrainingDataImporter,
     finetuning_epoch_fraction: float = 1.0,
@@ -587,14 +552,14 @@ async def _core_model_for_finetuning(
     )
 
     with model.unpack_model(path_to_archive) as unpacked:
-        new_fingerprint = await model.model_fingerprint(file_importer)
+        new_fingerprint = model.model_fingerprint(file_importer)
         old_fingerprint = model.fingerprint_from_path(unpacked)
         if not model.can_finetune(old_fingerprint, new_fingerprint, core=True):
             rasa.shared.utils.cli.print_error_and_exit(
                 "Core model can not be finetuned."
             )
 
-        config = await file_importer.get_config()
+        config = file_importer.get_config()
         agent = Agent.load(
             unpacked,
             new_config=config,
@@ -677,21 +642,21 @@ async def train_nlu_async(
             "No NLU data given. Please provide NLU data in order to train "
             "a Rasa NLU model using the '--nlu' argument."
         )
-        return
+        return None
 
     # training NLU only hence the training files still have to be selected
     file_importer = TrainingDataImporter.load_nlu_importer_from_config(
         config, domain, training_data_paths=[nlu_data]
     )
 
-    training_data = await file_importer.get_nlu_data()
+    training_data = file_importer.get_nlu_data()
     if training_data.contains_no_pure_nlu_data():
         rasa.shared.utils.cli.print_error(
             f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
             f"Please verify the data format. "
             f"The NLU model training will be skipped now."
         )
-        return
+        return None
 
     return await _train_nlu_with_validated_data(
         file_importer,
@@ -728,7 +693,7 @@ async def _train_nlu_with_validated_data(
         else:
             # Otherwise, create a temp train path and clean it up on exit.
             _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
-        config = await file_importer.get_config()
+        config = file_importer.get_config()
         rasa.shared.utils.cli.print_color(
             "Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
@@ -737,7 +702,7 @@ async def _train_nlu_with_validated_data(
             rasa.shared.utils.common.mark_as_experimental_feature(
                 "Incremental Training feature"
             )
-            model_to_finetune = await _nlu_model_for_finetuning(
+            model_to_finetune = _nlu_model_for_finetuning(
                 model_to_finetune,
                 file_importer,
                 finetuning_epoch_fraction,
@@ -750,7 +715,7 @@ async def _train_nlu_with_validated_data(
                     f"model within the directory '{output}'."
                 )
 
-        async with telemetry.track_model_training(
+        with telemetry.track_model_training(
             file_importer,
             model_type="nlu",
             is_finetuning=model_to_finetune is not None,
@@ -770,7 +735,7 @@ async def _train_nlu_with_validated_data(
 
         if train_path is None:
             # Only NLU was trained
-            new_fingerprint = await model.model_fingerprint(file_importer)
+            new_fingerprint = model.model_fingerprint(file_importer)
 
             return model.package_model(
                 fingerprint=new_fingerprint,
@@ -780,10 +745,10 @@ async def _train_nlu_with_validated_data(
                 model_prefix="nlu-",
             )
 
-        return _train_path
+    return _train_path
 
 
-async def _nlu_model_for_finetuning(
+def _nlu_model_for_finetuning(
     model_to_finetune: Text,
     file_importer: TrainingDataImporter,
     finetuning_epoch_fraction: float = 1.0,
@@ -799,7 +764,7 @@ async def _nlu_model_for_finetuning(
     )
     with model.unpack_model(path_to_archive) as unpacked:
         _, old_nlu = model.get_model_subdirectories(unpacked)
-        new_fingerprint = await model.model_fingerprint(file_importer)
+        new_fingerprint = model.model_fingerprint(file_importer)
         old_fingerprint = model.fingerprint_from_path(unpacked)
         if not model.can_finetune(
             old_fingerprint,
@@ -811,12 +776,12 @@ async def _nlu_model_for_finetuning(
                 "NLU model can not be finetuned."
             )
 
-        config = await file_importer.get_config()
-        model_to_finetune = Interpreter.load(
+        config = file_importer.get_config()
+        loaded_model_to_finetune = Interpreter.load(
             old_nlu,
             new_config=config,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
-        if not model_to_finetune:
+        if not loaded_model_to_finetune:
             return None
-    return model_to_finetune
+    return loaded_model_to_finetune

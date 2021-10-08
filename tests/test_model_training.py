@@ -11,19 +11,21 @@ from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa
+
 from rasa.core.policies.ted_policy import TEDPolicy
 import rasa.model
+import rasa.model_training
 import rasa.core
 import rasa.core.train
 import rasa.nlu
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.shared.importers.autoconfig as autoconfig
 import rasa.shared.utils.io
 from rasa.core.agent import Agent
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
-
-from rasa.model_training import train_core, train_nlu, train, dry_run_result
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.conftest import AsyncMock
 from tests.test_model import _fingerprint
@@ -93,7 +95,7 @@ def test_train_temp_files(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
     output = str(tmp_path / "models")
 
-    train(
+    rasa.train(
         domain_path,
         stack_config_path,
         [stories_path, nlu_data_path],
@@ -106,7 +108,7 @@ def test_train_temp_files(
     # After training the model, try to do it again. This shouldn't try to train
     # a new model because nothing has been changed. It also shouldn't create
     # any temp files.
-    train(
+    rasa.train(
         domain_path, stack_config_path, [stories_path, nlu_data_path], output=output,
     )
 
@@ -125,7 +127,7 @@ def test_train_core_temp_files(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_core(
+    rasa.model_training.train_core(
         domain_path, stack_config_path, stories_path, output=str(tmp_path / "models"),
     )
 
@@ -143,7 +145,9 @@ def test_train_nlu_temp_files(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(stack_config_path, nlu_data_path, output=str(tmp_path / "models"))
+    rasa.model_training.train_nlu(
+        stack_config_path, nlu_data_path, output=str(tmp_path / "models")
+    )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
@@ -160,7 +164,7 @@ def test_train_nlu_wrong_format_error_message(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(
+    rasa.model_training.train_nlu(
         stack_config_path, incorrect_nlu_data_path, output=str(tmp_path / "models")
     )
 
@@ -172,7 +176,7 @@ def test_train_nlu_with_responses_no_domain_warns(tmp_path: Path):
     data_path = "data/test_nlu_no_responses/nlu_no_responses.yml"
 
     with pytest.warns(UserWarning) as records:
-        train_nlu(
+        rasa.model_training.train_nlu(
             "data/test_config/config_response_selector_minimal.yml",
             data_path,
             output=str(tmp_path / "models"),
@@ -190,7 +194,7 @@ def test_train_nlu_with_responses_and_domain_no_warns(tmp_path: Path):
     domain_path = "data/test_nlu_no_responses/domain_with_only_responses.yml"
 
     with pytest.warns(None) as records:
-        train_nlu(
+        rasa.model_training.train_nlu(
             "data/test_config/config_response_selector_minimal.yml",
             data_path,
             output=str(tmp_path / "models"),
@@ -215,7 +219,9 @@ def test_train_nlu_no_nlu_file_error_message(
 
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
-    train_nlu(stack_config_path, "", output=str(tmp_path / "models"))
+    rasa.model_training.train_nlu(
+        stack_config_path, "", output=str(tmp_path / "models")
+    )
 
     captured = capsys.readouterr()
     assert "No NLU data given" in captured.out
@@ -242,7 +248,7 @@ def test_trained_interpreter_passed_to_core_training(
     # Mock the actual Core training
     _train_core = mock_core_training(monkeypatch)
 
-    train(
+    rasa.train(
         domain_path, config_path, [stories_path, nlu_data_path], str(tmp_path),
     )
 
@@ -275,7 +281,7 @@ def test_interpreter_of_old_model_passed_to_core_training(
     # Mock the actual Core training
     _train_core = mock_core_training(monkeypatch)
 
-    train(
+    rasa.train(
         domain_path, config_path, [stories_path, nlu_data_path], str(tmp_path),
     )
 
@@ -315,7 +321,7 @@ def test_train_core_autoconfig(
     )
 
     # do training
-    train_core(
+    rasa.model_training.train_core(
         domain_path,
         stack_config_path,
         stories_path,
@@ -344,7 +350,7 @@ def test_train_nlu_autoconfig(
     )
 
     # do training
-    train_nlu(
+    rasa.model_training.train_nlu(
         stack_config_path, nlu_data_path, output="test_train_nlu_temp_files_models",
     )
 
@@ -364,7 +370,9 @@ def mock_async(monkeypatch: MonkeyPatch, target: Any, name: Text) -> Mock:
 
 
 def mock_core_training(monkeypatch: MonkeyPatch) -> Mock:
-    return mock_async(monkeypatch, rasa.core.train, rasa.core.train.train.__name__)
+    mock = Mock()
+    monkeypatch.setattr(rasa.core.train, rasa.core.train.train.__name__, mock)
+    return mock
 
 
 def mock_nlu_training(monkeypatch: MonkeyPatch) -> Mock:
@@ -390,7 +398,7 @@ class TestE2e:
         mock_core_training(monkeypatch)
 
         with caplog.at_level(logging.WARNING):
-            train(
+            rasa.train(
                 domain_path,
                 stack_config_path,
                 [e2e_stories_path, nlu_data_path],
@@ -416,7 +424,7 @@ class TestE2e:
         mocked_nlu_training = mock_nlu_training(monkeypatch)
         mocked_core_training = mock_core_training(monkeypatch)
 
-        train(
+        rasa.train(
             domain_path,
             stack_config_path,
             [e2e_stories_path, nlu_data_path],
@@ -445,7 +453,7 @@ class TestE2e:
         mocked_nlu_training = mock_nlu_training(monkeypatch)
         mocked_core_training = mock_core_training(monkeypatch)
 
-        new_model_path = train(
+        new_model_path = rasa.train(
             domain_path,
             stack_config_path,
             [new_stories_file, nlu_data_path],
@@ -475,7 +483,7 @@ class TestE2e:
         mocked_nlu_training = mock_nlu_training(monkeypatch)
         mocked_core_training = mock_core_training(monkeypatch)
 
-        new_model_path = train(
+        new_model_path = rasa.train(
             domain_path,
             stack_config_path,
             [new_stories_file, nlu_data_path],
@@ -498,7 +506,7 @@ class TestE2e:
         mocked_core_training = mock_core_training(monkeypatch)
 
         output = self.make_tmp_model_dir(tmp_path)
-        train(
+        rasa.train(
             domain_path, stack_config_path, [e2e_stories_path], output=output,
         )
 
@@ -530,7 +538,7 @@ class TestE2e:
         mocked_nlu_training = mock_nlu_training(monkeypatch)
         mocked_core_training = mock_core_training(monkeypatch)
 
-        new_model_path = train(
+        new_model_path = rasa.train(
             domain_path,
             stack_config_path,
             [e2e_stories_path, new_nlu_file],
@@ -560,7 +568,7 @@ class TestE2e:
         mocked_nlu_training = mock_nlu_training(monkeypatch)
         mocked_core_training = mock_core_training(monkeypatch)
 
-        new_model_path = train(
+        new_model_path = rasa.train(
             domain_path,
             stack_config_path,
             [simple_stories_path, new_nlu_file],
@@ -585,7 +593,7 @@ class TestE2e:
         mocked_core_training = mock_core_training(monkeypatch)
 
         output = self.make_tmp_model_dir(tmp_path)
-        train_core(
+        rasa.model_training.train_core(
             domain_path, stack_config_path, e2e_stories_path, output=output,
         )
 
@@ -620,7 +628,7 @@ def test_model_finetuning(
     if use_latest_model:
         trained_rasa_model = str(Path(trained_rasa_model).parent)
 
-    train(
+    rasa.train(
         domain_path,
         stack_config_path,
         [stories_path, nlu_data_path],
@@ -674,7 +682,7 @@ def test_model_finetuning_core(
     new_stories_path = tmp_path / "new_stories.yml"
     rasa.shared.utils.io.write_yaml(old_stories, new_stories_path)
 
-    train_core(
+    rasa.model_training.train_core(
         "data/test_moodbot/domain.yml",
         str(new_config_path),
         str(new_stories_path),
@@ -707,7 +715,7 @@ def test_model_finetuning_core_with_default_epochs(
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
-    train_core(
+    rasa.model_training.train_core(
         "data/test_moodbot/domain.yml",
         str(new_config_path),
         "data/test_moodbot/data/stories.yml",
@@ -739,7 +747,7 @@ def test_model_finetuning_core_new_domain_label(
     rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
 
     with pytest.raises(SystemExit):
-        train_core(
+        rasa.model_training.train_core(
             domain=str(new_domain_path),
             config="data/test_moodbot/config.yml",
             stories="data/test_moodbot/data/stories.yml",
@@ -765,7 +773,7 @@ def test_model_finetuning_new_domain_label_stops_all_training(
     rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
 
     with pytest.raises(SystemExit):
-        train(
+        rasa.train(
             domain=str(new_domain_path),
             config="data/test_moodbot/config.yml",
             training_files=[
@@ -815,7 +823,7 @@ def test_model_finetuning_nlu(
     new_nlu_path = tmp_path / "new_nlu.yml"
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
-    train_nlu(
+    rasa.model_training.train_nlu(
         str(new_config_path),
         str(new_nlu_path),
         domain="data/test_moodbot/domain.yml",
@@ -853,7 +861,7 @@ def test_model_finetuning_nlu_new_label(
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(SystemExit):
-        train_nlu(
+        rasa.model_training.train_nlu(
             "data/test_moodbot/config.yml",
             str(new_nlu_path),
             domain="data/test_moodbot/domain.yml",
@@ -878,7 +886,7 @@ def test_model_finetuning_nlu_new_entity(
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(SystemExit):
-        train_nlu(
+        rasa.model_training.train_nlu(
             "data/test_moodbot/config.yml",
             str(new_nlu_path),
             domain="data/test_moodbot/domain.yml",
@@ -909,7 +917,7 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
     rasa.shared.utils.io.write_yaml(old_nlu, new_nlu_path)
 
     with pytest.raises(SystemExit):
-        train_nlu(
+        rasa.model_training.train_nlu(
             config_path,
             str(new_nlu_path),
             domain=domain_path,
@@ -933,7 +941,7 @@ def test_model_finetuning_nlu_new_label_to_domain_only(
     new_domain_path = tmp_path / "new_domain.yml"
     rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
 
-    train_nlu(
+    rasa.model_training.train_nlu(
         "data/test_moodbot/config.yml",
         "data/test_moodbot/data/nlu.yml",
         domain=str(new_domain_path),
@@ -960,7 +968,7 @@ def test_model_finetuning_nlu_with_default_epochs(
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
 
-    train_nlu(
+    rasa.model_training.train_nlu(
         str(new_config_path),
         "data/test_moodbot/data/nlu.yml",
         output=output,
@@ -994,7 +1002,7 @@ def test_model_finetuning_with_invalid_model(
     output = str(tmp_path / "models")
 
     with pytest.raises(SystemExit):
-        train(
+        rasa.train(
             domain_path,
             stack_config_path,
             [stories_path, nlu_data_path],
@@ -1025,7 +1033,7 @@ def test_model_finetuning_with_invalid_model_core(
     output = str(tmp_path / "models")
 
     with pytest.raises(SystemExit):
-        train_core(
+        rasa.model_training.train_core(
             domain_path,
             stack_config_path,
             stories_path,
@@ -1055,7 +1063,7 @@ def test_model_finetuning_with_invalid_model_nlu(
     output = str(tmp_path / "models")
 
     with pytest.raises(SystemExit):
-        train_nlu(
+        rasa.model_training.train_nlu(
             stack_config_path,
             nlu_data_path,
             domain=domain_path,
@@ -1112,6 +1120,6 @@ def test_model_finetuning_with_invalid_model_nlu(
 def test_dry_run_result(
     result: rasa.model.FingerprintComparisonResult, code: int, texts_count: int,
 ):
-    result_code, texts = dry_run_result(result)
+    result_code, texts = rasa.model_training.dry_run_result(result)
     assert result_code == code
     assert len(texts) == texts_count
