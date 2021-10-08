@@ -831,11 +831,11 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         )
 
         # rank and mask the confidence (if we need to)
-        ranking_length = self.component_config[RANKING_LENGTH]
+        ranking_length = self.config[RANKING_LENGTH]
         if 0 < ranking_length < len(confidence):
             renormalize = (
-                self.component_config[RENORMALIZE_CONFIDENCES]
-                and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
+                self.config[RENORMALIZE_CONFIDENCES]
+                and self.config[MODEL_CONFIDENCE] == SOFTMAX
             )
             _, confidence = train_utils.rank_and_mask(
                 confidence, ranking_length=ranking_length, renormalize=renormalize

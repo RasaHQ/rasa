@@ -56,7 +56,10 @@ def test_align_token_features():
 
 
 @pytest.mark.parametrize(
-    "input_values, ranking_length, renormalize, possible_output_values, resulting_ranking_length",
+    (
+        "input_values, ranking_length, renormalize, possible_output_values, "
+        " resulting_ranking_length"
+    ),
     [
         # keep the top 2
         ([0.1, 0.4, 0.01], 2, False, [[0.1, 0.4, 0.0]], 2),
