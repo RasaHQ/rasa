@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Text, Tuple, Type, Optional, List
+from typing import Any, Callable, Dict, Text, Tuple, Type, Optional, List, TypedDict
+import itertools
 
 import pytest
 
@@ -642,7 +643,7 @@ def _create_run_function(num_args) -> Callable[..., TrainingData]:
     return run
 
 
-def _create_component_type_and_subtype(
+def _create_component_type_and_subtype_with_run_function(
     component_type_name: Text, needs: List[int]
 ) -> Tuple[Type[GraphComponent], Type[GraphComponent]]:
     main_type = type(
@@ -658,83 +659,26 @@ def _create_component_type_and_subtype(
     return main_type, sub_type
 
 
-@pytest.mark.parametrize(
-    "node_needs_requires, targets, num_unmet, is_train_graph, test_subclasses, method",
-    [
-        (
-            node_needs_requires,
-            targets,
-            num_unmet,
-            is_train_graph,
-            test_subclasses,
-            method,
-        )
-        for node_needs_requires, targets, num_unmet in [
-            ([(1, [2], [2]), (2, [], [])], [1], 0,),
-            (
-                [(1, [2, 3, 4], [2, 3, 4]), (2, [], []), (3, [], []), (4, [], [])],
-                [1],
-                0,
-            ),
-            (
-                [
-                    (1, [3], [4]),
-                    (2, [3], [4]),
-                    (3, [4, 5], []),
-                    (4, [], []),
-                    (5, [6], []),
-                    (6, [], []),
-                ],
-                [1, 3],
-                0,
-            ),
-            ([(1, [], [2]), (2, [], [])], [1], 1,),  # 2 is not reachable from 1
-            (
-                [
-                    (1, [3], [4]),
-                    (2, [3], [4]),
-                    (3, [4], [5]),
-                    (4, [], []),
-                    (5, [], []),
-                ],
-                [1],
-                1,  # 5 is not reachable from 3
-            ),
-            (
-                [(1, [2], [3]), (2, [], [4]), (3, [], []), (4, [], [])],
-                [1],
-                2,
-            ),  # 3 and 4 are not reachable from 1 and 2
-        ]
-        for is_train_graph in [True, False]
-        for test_subclasses in [True, False]
-        for method in [0, 1, 2]
-    ],
-)
-def test_required_components(
+def _create_graph_schema_from_requirements(
     node_needs_requires: List[Tuple[int, List[int], List[int]]],
     targets: List[int],
-    num_unmet: int,
-    is_train_graph: bool,
-    test_subclasses: bool,
-    method: int,
-):
+    use_subclass: bool,
+) -> GraphSchema:
+    # create some component types
     component_types = {
-        node: _create_component_type_and_subtype(
+        node: _create_component_type_and_subtype_with_run_function(
             component_type_name=f"class_{node}", needs=needs
         )
         for node, needs, _ in node_needs_requires
     }
 
-    # add required components functions
-    def create_required_components(required_components):
-        return [component_types[required][0] for required in required_components]
-
+    # add required components
     for node, _, required_components in node_needs_requires:
         for component_type in component_types[node]:
-            component_type.required_components = create_required_components(
-                required_components
-            )
+            component_type.required_components = [
+                component_types[required][0] for required in required_components
+            ]
+
     # create graph schema
     graph_schema = GraphSchema(
         {
@@ -743,7 +687,7 @@ def test_required_components(
                     f"param{param}": f"node-{needed_node}"
                     for param, needed_node in enumerate(needs)
                 },
-                uses=component_types[node][test_subclasses],  # use subclass if required
+                uses=component_types[node][use_subclass],  # use subclass if required
                 fn="run",
                 constructor_name="create",
                 config={},
@@ -752,32 +696,145 @@ def test_required_components(
             for node, needs, _ in node_needs_requires
         }
     )
+    return graph_schema
 
-    # validate!
-    if method == 0:  # test general validation function
 
-        if num_unmet == 0:
+RequiredComponentsTestCase = TypedDict(
+    "RequiredComponentsTestCase",
+    {
+        "node_needs_requires_tuples": List[Tuple[int, List[int], List[int]]],
+        "targets": List[int],
+        "num_unmet_requirements": int,
+    },
+)
+REQUIRED_COMPONENT_TEST_CASES: List[RequiredComponentsTestCase] = [
+    {
+        "node_needs_requires_tuples": [(1, [2], [2]), (2, [], [])],
+        "targets": [1],
+        "num_unmet_requirements": 0,
+    },
+    {
+        "node_needs_requires_tuples": [
+            (1, [2, 3, 4], [2, 3, 4]),
+            (2, [], []),
+            (3, [], []),
+            (4, [], []),
+        ],
+        "targets": [1],
+        "num_unmet_requirements": 0,
+    },
+    {
+        "node_needs_requires_tuples": [
+            (1, [3], [4]),
+            (2, [3], [4]),
+            (3, [4, 5], []),
+            (4, [], []),
+            (5, [6], []),
+            (6, [], []),
+        ],
+        "targets": [1, 3],
+        "num_unmet_requirements": 0,
+    },
+    {
+        "node_needs_requires_tuples": [(1, [], [2]), (2, [], [])],
+        "targets": [1],
+        "num_unmet_requirements": 1,
+    },  # 2 is not reachable from 1
+    {
+        "node_needs_requires_tuples": [
+            (1, [3], [4]),
+            (2, [3], [4]),
+            (3, [4], [5]),
+            (4, [], []),
+            (5, [], []),
+        ],
+        "targets": [1],
+        "num_unmet_requirements": 1,  # 5 is not reachable from 3
+    },
+    {
+        "node_needs_requires_tuples": [
+            (1, [2], [3]),
+            (2, [], [4]),
+            (3, [], []),
+            (4, [], []),
+        ],
+        "targets": [1],
+        "num_unmet_requirements": 2,
+    },  # 3 and 4 are not reachable from 1 and 2
+]
+
+
+@pytest.mark.parametrize(
+    "test_case, is_train_graph, test_subclass",
+    itertools.product(REQUIRED_COMPONENT_TEST_CASES, [True, False], [True, False]),
+)
+def test_validate_validates_required_components(
+    test_case: List[RequiredComponentsTestCase],
+    is_train_graph: bool,
+    test_subclass: bool,
+):
+    graph_schema = _create_graph_schema_from_requirements(
+        node_needs_requires=test_case["node_needs_requires_tuples"],
+        targets=test_case["targets"],
+        use_subclass=test_subclass,
+    )
+    num_unmet = test_case["num_unmet_requirements"]
+    if num_unmet == 0:
+        validation.validate(
+            schema=graph_schema, language=None, is_train_graph=is_train_graph
+        )
+    else:
+        message = f"{num_unmet} nodes are missing"
+        with pytest.raises(GraphSchemaValidationException, match=message):
             validation.validate(
                 schema=graph_schema, language=None, is_train_graph=is_train_graph
             )
-        else:
-            message = f"{num_unmet} nodes are missing"
-            with pytest.raises(GraphSchemaValidationException, match=message):
-                validation.validate(
-                    schema=graph_schema, language=None, is_train_graph=is_train_graph
-                )
-    elif method == 1:  # test requirements validation
 
-        if num_unmet == 0:
-            validation._validate_required_components(schema=graph_schema,)
-        else:
-            message = f"{num_unmet} nodes are missing"
-            with pytest.raises(GraphSchemaValidationException, match=message):
-                validation._validate_required_components(schema=graph_schema)
 
-    elif method == 2 and len(targets) > 1:  # test collection of unmet requirements
+@pytest.mark.parametrize(
+    "test_case, test_subclass",
+    itertools.product(REQUIRED_COMPONENT_TEST_CASES, [True, False]),
+)
+def test_validate_required_components(
+    test_case: List[RequiredComponentsTestCase], test_subclass: bool,
+):
+    graph_schema = _create_graph_schema_from_requirements(
+        node_needs_requires=test_case["node_needs_requires_tuples"],
+        targets=test_case["targets"],
+        use_subclass=test_subclass,
+    )
+    num_unmet = test_case["num_unmet_requirements"]
 
-        unmet_requirements, _ = validation._recursively_check_required_components(
-            node_name=f"node-{targets[0]}", schema=graph_schema
-        )
-        assert len(unmet_requirements) == num_unmet
+    if num_unmet == 0:
+        validation._validate_required_components(schema=graph_schema,)
+    else:
+        message = f"{num_unmet} nodes are missing"
+        with pytest.raises(GraphSchemaValidationException, match=message):
+            validation._validate_required_components(schema=graph_schema)
+
+
+@pytest.mark.parametrize(
+    "test_case, test_subclass",
+    itertools.product(
+        [
+            test_case
+            for test_case in REQUIRED_COMPONENT_TEST_CASES
+            if len(test_case["targets"]) == 1
+        ],
+        [True, False],
+    ),
+)
+def test_recursively_validate_required_components(
+    test_case: List[RequiredComponentsTestCase], test_subclass: bool,
+):
+    graph_schema = _create_graph_schema_from_requirements(
+        node_needs_requires=test_case["node_needs_requires_tuples"],
+        targets=test_case["targets"],
+        use_subclass=test_subclass,
+    )
+    num_unmet = test_case["num_unmet_requirements"]
+
+    unmet_requirements, _ = validation._recursively_check_required_components(
+        node_name=f"node-{test_case['targets'][0]}", schema=graph_schema
+    )
+    assert len(unmet_requirements) == num_unmet
