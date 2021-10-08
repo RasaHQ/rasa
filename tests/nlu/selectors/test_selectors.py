@@ -3,9 +3,6 @@ import copy
 import pytest
 import numpy as np
 from typing import List, Dict, Text, Any, Optional, Tuple, Union, Callable
-from unittest.mock import Mock
-
-from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -42,7 +39,6 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
 )
-from rasa.utils import train_utils
 from rasa.shared.nlu.constants import (
     TEXT,
     FEATURE_TYPE_SENTENCE,
@@ -429,7 +425,6 @@ async def test_process_gives_diagnostic_data(
     "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
 )
 async def test_margin_loss_is_not_normalized(
-    monkeypatch: MonkeyPatch,
     classifier_params: Dict[Text, int],
     create_response_selector: Callable[
         [Dict[Text, Any]], ResponseSelectorGraphComponent
@@ -451,17 +446,14 @@ async def test_margin_loss_is_not_normalized(
     message = Message(data={TEXT: "hello"})
     message = process_message(loaded_pipeline, message)
 
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
     classified_message = response_selector.process([message])[0]
 
     response_ranking = (
         classified_message.get("response_selector").get("default").get("ranking")
     )
 
-    # check that the output was not normalized
-    mock.normalize.assert_not_called()
+    # check that output was not normalized
+    assert [item["confidence"] for item in response_ranking] != pytest.approx(1)
 
     # check that the output was correctly truncated
     assert len(response_ranking) == 9

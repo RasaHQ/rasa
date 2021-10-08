@@ -3,9 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from unittest.mock import Mock
 from typing import Callable, List, Optional, Text, Dict, Any, Tuple
-from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
@@ -51,7 +49,6 @@ from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
@@ -399,6 +396,7 @@ async def test_softmax_normalization(
 ):
     classifier_params[RANDOM_SEED] = 42
     classifier_params[EPOCHS] = 1
+    classifier_params[EVAL_NUM_EPOCHS] = 1
 
     parsed_message = create_train_load_and_process_diet(
         classifier_params, training_data=data_path
@@ -419,23 +417,21 @@ async def test_softmax_normalization(
 
 
 async def test_margin_loss_is_not_normalized(
-    monkeypatch: MonkeyPatch, create_train_load_and_process_diet: Callable[..., Message]
+    create_train_load_and_process_diet: Callable[..., Message]
 ):
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
 
     parsed_message = create_train_load_and_process_diet(
-        {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1},
+        {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, EVAL_NUM_EPOCHS: 1},
         training_data="data/test/many_intents.yml",
     )
     parse_data = parsed_message.data
     intent_ranking = parse_data.get("intent_ranking")
 
-    # check that the output was not normalized
-    mock.normalize.assert_not_called()
-
     # check that the output was correctly truncated
     assert len(intent_ranking) == LABEL_RANKING_LENGTH
+
+    # check that output was not normalized
+    assert [item["confidence"] for item in intent_ranking] != pytest.approx(1)
 
     # make sure top ranking is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
