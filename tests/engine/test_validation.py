@@ -753,29 +753,30 @@ def test_required_components(
         }
     )
 
-    # exclude this case
-    if len(targets) > 1 and method == 2:
-        return
-
     # validate!
-    if method in [0, 1]:
-        # check that public validate and _validate_required_components raise
-        def _validate(method: int, targets: List[int]) -> None:
-            if method == 0:
-                validation.validate(
-                    schema=graph_schema, language=None, is_train_graph=is_train_graph
-                )
-            elif method == 1:
-                validation._validate_required_components(schema=graph_schema)
+    if method == 0:  # test general validation function
 
         if num_unmet == 0:
-            _validate(method=method, targets=targets)
+            validation.validate(
+                schema=graph_schema, language=None, is_train_graph=is_train_graph
+            )
         else:
             message = f"{num_unmet} nodes are missing"
             with pytest.raises(GraphSchemaValidationException, match=message):
-                _validate(method=method, targets=targets)
-    else:
-        # check that helper function returns the right number of unmet requirements
+                validation.validate(
+                    schema=graph_schema, language=None, is_train_graph=is_train_graph
+                )
+    elif method == 1:  # test requirements validation
+
+        if num_unmet == 0:
+            validation._validate_required_components(schema=graph_schema,)
+        else:
+            message = f"{num_unmet} nodes are missing"
+            with pytest.raises(GraphSchemaValidationException, match=message):
+                validation._validate_required_components(schema=graph_schema)
+
+    else:  # test collection of unmet requirements
+
         unmet_requirements, _ = validation._recursively_check_required_components(
             node_name=f"node-{targets[0]}", schema=graph_schema
         )
