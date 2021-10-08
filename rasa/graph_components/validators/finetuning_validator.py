@@ -227,7 +227,7 @@ class FinetuningValidator(GraphComponent):
             fingerprint
         """
         schema_as_dict = self._execution_context.graph_schema.as_dict()
-        for node_dict in schema_as_dict.values():
+        for node_dict in schema_as_dict["nodes"].values():
             config_copy = copy.deepcopy(node_dict["config"])
             config_copy.pop(EPOCHS, None)
             node_dict["config"] = config_copy

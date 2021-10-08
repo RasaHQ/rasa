@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Text
+from typing import Dict, Text, Optional
 
 import pytest
 
@@ -12,7 +12,12 @@ from rasa.engine.graph import SchemaNode, GraphSchema
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 
-def test_serialize_graph_schema(tmp_path: Path):
+@pytest.mark.parametrize(
+    "core_target, nlu_target", [("train", "load"), (None, None), (None, "load")]
+)
+def test_serialize_graph_schema(
+    tmp_path: Path, core_target: Optional[Text], nlu_target: Optional[Text]
+):
     graph_schema = GraphSchema(
         {
             "train": SchemaNode(
@@ -31,7 +36,9 @@ def test_serialize_graph_schema(tmp_path: Path):
                 is_target=True,
                 resource=Resource("test resource"),
             ),
-        }
+        },
+        core_target=core_target,
+        nlu_target=nlu_target,
     )
 
     serialized = graph_schema.as_dict()
@@ -62,7 +69,7 @@ def test_invalid_module_error_when_deserializing_schemas(tmp_path: Path):
     serialized = graph_schema.as_dict()
 
     # Pretend module is for some reason invalid
-    serialized["train"]["uses"] = "invalid.class"
+    serialized["nodes"]["train"]["uses"] = "invalid.class"
 
     # Dump it to make sure it's actually serializable
     file_path = tmp_path / "my_graph.yml"

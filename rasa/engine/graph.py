@@ -39,6 +39,8 @@ class GraphSchema:
     """Represents a graph for training a model or making predictions."""
 
     nodes: Dict[Text, SchemaNode]
+    core_target: Optional[Text] = None
+    nlu_target: Optional[Text] = None
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns graph schema in a serializable format.
@@ -46,14 +48,18 @@ class GraphSchema:
         Returns:
             The graph schema in a format which can be dumped as JSON or other formats.
         """
-        serializable_graph_schema = {}
+        serializable_graph_schema = {"nodes": {}}
+        if self.core_target or self.nlu_target:
+            serializable_graph_schema["core_target"] = self.core_target
+            serializable_graph_schema["nlu_target"] = self.nlu_target
+
         for node_name, node in self.nodes.items():
             serializable = dataclasses.asdict(node)
 
             # Classes are not JSON serializable (surprise)
             serializable["uses"] = f"{node.uses.__module__}.{node.uses.__name__}"
 
-            serializable_graph_schema[node_name] = serializable
+            serializable_graph_schema["nodes"][node_name] = serializable
 
         return serializable_graph_schema
 
@@ -72,7 +78,7 @@ class GraphSchema:
                 found.
         """
         nodes = {}
-        for node_name, serialized_node in serialized_graph_schema.items():
+        for node_name, serialized_node in serialized_graph_schema["nodes"].items():
             try:
                 serialized_node[
                     "uses"
@@ -93,7 +99,11 @@ class GraphSchema:
 
             nodes[node_name] = SchemaNode(**serialized_node)
 
-        return GraphSchema(nodes)
+        return GraphSchema(
+            nodes,
+            core_target=serialized_graph_schema.get("core_target"),
+            nlu_target=serialized_graph_schema.get("nlu_target"),
+        )
 
     @property
     def target_names(self) -> List[Text]:
