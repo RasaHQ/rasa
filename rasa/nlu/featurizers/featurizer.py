@@ -1,10 +1,9 @@
 from __future__ import annotations
 from abc import abstractmethod, ABC
 from collections import Counter
-from typing import Generic, Iterable, List, Text, Optional, Dict, Any, TypeVar, Type
+from typing import Generic, Iterable, Text, Optional, Dict, Any, TypeVar
 
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
-from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import InvalidConfigException

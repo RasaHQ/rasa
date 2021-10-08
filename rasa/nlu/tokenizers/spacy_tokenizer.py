@@ -1,7 +1,7 @@
 import typing
 from typing import Dict, Text, List, Any, Optional, Type
 
-from rasa.nlu.utils.spacy_utils import SpacyModelProvider, SpacyPreprocessor
+from rasa.nlu.utils.spacy_utils import SpacyPreprocessor
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.nlu.tokenizers._spacy_tokenizer import SpacyTokenizer
