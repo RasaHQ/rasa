@@ -1,5 +1,6 @@
 import logging
 import pytest
+from rasa.core import utils, run
 from rasa.core.channels.facebook import MessengerBot
 from fbmessenger import MessengerClient
 
@@ -19,7 +20,7 @@ def test_facebook_channel():
         # token for the page you subscribed to
     )
 
-    s = rasa.core.run.configure_app([input_channel], port=5004)
+    s = run.configure_app([input_channel], port=5004)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
