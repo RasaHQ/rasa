@@ -492,12 +492,12 @@ def test_nlu_do_not_raise_if_two_tokenizers_with_end_to_end():
     config = rasa.shared.utils.io.read_yaml_file(
         "rasa/shared/importers/default_config.yml"
     )
-    train_schema, _, _ = DefaultV1Recipe().schemas_for_config(
+    graph_config = DefaultV1Recipe().graph_config_for_recipe(
         config, cli_parameters={}, training_type=TrainingType.END_TO_END
     )
 
     importer = DummyImporter()
-    validator = DefaultV1RecipeValidator(train_schema)
+    validator = DefaultV1RecipeValidator(graph_config.train_schema)
 
     # Does not raise
     validator.validate(importer)
@@ -507,10 +507,10 @@ def test_nlu_do_not_raise_if_trainable_tokenizer():
     config = rasa.shared.utils.io.read_yaml_file(
         "data/test_config/config_pretrained_embeddings_mitie_zh.yml"
     )
-    train_schema, _, _ = DefaultV1Recipe().schemas_for_config(config, cli_parameters={})
+    graph_config = DefaultV1Recipe().graph_config_for_recipe(config, cli_parameters={})
 
     importer = DummyImporter()
-    validator = DefaultV1RecipeValidator(train_schema)
+    validator = DefaultV1RecipeValidator(graph_config.train_schema)
 
     # Does not raise
     validator.validate(importer)
@@ -1003,10 +1003,10 @@ def test_no_warnings_with_default_project(tmp_path: Path):
         training_data_paths=[str(tmp_path / "data")],
     )
 
-    train_schema, _, _ = DefaultV1Recipe().schemas_for_config(
+    graph_config = DefaultV1Recipe().graph_config_for_recipe(
         importer.get_config(), cli_parameters={}, training_type=TrainingType.END_TO_END
     )
-    validator = DefaultV1RecipeValidator(train_schema)
+    validator = DefaultV1RecipeValidator(graph_config.train_schema)
 
     with pytest.warns(None) as records:
         validator.validate(importer)

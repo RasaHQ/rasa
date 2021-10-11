@@ -139,7 +139,7 @@ def test_generate_graphs(
     config = rasa.shared.utils.io.read_yaml_file(config_path)
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
-    model_config = recipe.schemas_for_config(
+    model_config = recipe.graph_config_for_recipe(
         config, {}, training_type=training_type, is_finetuning=is_finetuning
     )
 
@@ -170,7 +170,7 @@ def test_language_returning():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    model_config = recipe.schemas_for_config(config, {},)
+    model_config = recipe.graph_config_for_recipe(config, {},)
 
     assert model_config.language == "xy"
 
@@ -189,7 +189,7 @@ def test_tracker_generator_parameter_interpolation():
     debug_plots = True
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    model_config = recipe.schemas_for_config(
+    model_config = recipe.graph_config_for_recipe(
         config, {"augmentation": augmentation, "debug_plots": debug_plots},
     )
 
@@ -212,7 +212,7 @@ def test_nlu_training_data_persistence():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    model_config = recipe.schemas_for_config(
+    model_config = recipe.graph_config_for_recipe(
         config, {"persist_nlu_training_data": True},
     )
 
@@ -249,7 +249,7 @@ def test_num_threads_interpolation():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    model_config = recipe.schemas_for_config(config, {"num_threads": 20})
+    model_config = recipe.graph_config_for_recipe(config, {"num_threads": 20})
 
     train_schema = model_config.train_schema
     for node_name, node in expected_train_schema.nodes.items():
@@ -275,7 +275,7 @@ def test_epoch_fraction_cli_param():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    model_config = recipe.schemas_for_config(
+    model_config = recipe.graph_config_for_recipe(
         config, {"finetuning_epoch_fraction": 0.5}, is_finetuning=True
     )
 
@@ -334,7 +334,7 @@ def test_retrieve_not_registered_class():
 
 
 def test_retrieve_via_module_path():
-    model_config = DefaultV1Recipe().schemas_for_config(
+    model_config = DefaultV1Recipe().graph_config_for_recipe(
         {
             "policies": [
                 {"name": "rasa.core.policies.ted_policy.TEDPolicyGraphComponent"}
@@ -357,20 +357,20 @@ def test_retrieve_via_module_path():
 def test_retrieve_via_invalid_module_path():
     with pytest.raises(ImportError):
         path = "rasa.core.policies.ted_policy.TEDPolicyGraphComponent1000"
-        DefaultV1Recipe().schemas_for_config(
+        DefaultV1Recipe().graph_config_for_recipe(
             {"policies": [{"name": path}]}, {}, TrainingType.CORE,
         )
 
 
 def test_train_nlu_without_nlu_pipeline():
     with pytest.raises(InvalidConfigException):
-        DefaultV1Recipe().schemas_for_config(
+        DefaultV1Recipe().graph_config_for_recipe(
             {"pipeline": []}, {}, TrainingType.NLU,
         )
 
 
 def test_train_core_without_nlu_pipeline():
     with pytest.raises(InvalidConfigException):
-        DefaultV1Recipe().schemas_for_config(
+        DefaultV1Recipe().graph_config_for_recipe(
             {"policies": []}, {}, TrainingType.CORE,
         )

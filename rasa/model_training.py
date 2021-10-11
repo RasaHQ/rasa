@@ -207,7 +207,7 @@ def _train_graph(
 
     config = file_importer.get_config()
     recipe = Recipe.recipe_for_name(config.get("recipe"))
-    model_configuration = recipe.schemas_for_config(
+    model_configuration = recipe.graph_config_for_recipe(
         config, kwargs, training_type=training_type, is_finetuning=is_finetuning
     )
 

@@ -50,14 +50,14 @@ class Recipe(abc.ABC):
         )
 
     @abc.abstractmethod
-    def schemas_for_config(
+    def graph_config_for_recipe(
         self,
         config: Dict,
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
         is_finetuning: bool = False,
     ) -> GraphModelConfiguration:
-        """Converts a config to graph schemas for training and prediction.
+        """Converts a config to a graph compatible model configuration.
 
         Args:
             config: The config which the `Recipe` is supposed to convert.

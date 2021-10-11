@@ -152,7 +152,7 @@ class DefaultV1Recipe(Recipe):
             f"'@DefaultV1Recipe.register' decorator."
         )
 
-    def schemas_for_config(
+    def graph_config_for_recipe(
         self,
         config: Dict,
         cli_parameters: Dict[Text, Any],
