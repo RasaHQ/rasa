@@ -34,6 +34,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     ACTION_EXTRACT_SLOTS,
     DEFAULT_SLOT_NAMES,
+    MAPPING_CONDITIONS,
 )
 from rasa.shared.core.domain import Domain, SlotMapping
 from rasa.shared.core.events import (
@@ -982,7 +983,9 @@ class ActionExtractSlots(Action):
         if not custom_action:
             # find if there is any validation action in the domain
             custom_action = next(
-                filter(lambda x: x.startswith("validate_slots"), domain.user_actions,),
+                filter(
+                    lambda x: x == "validate_global_slot_mappings", domain.user_actions,
+                ),
                 None,
             )
 
@@ -1043,7 +1046,7 @@ class ActionExtractSlots(Action):
             for mapping in slot.mappings:
                 # skip to the next mapping because a mapping with conditions
                 # is applicable only within the context of an active loop
-                if mapping.get("conditions"):
+                if mapping.get(MAPPING_CONDITIONS):
                     continue
 
                 if mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT):
