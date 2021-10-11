@@ -317,6 +317,7 @@ class TestShapeValuesTrainAndProcess:
             assert intent_sequence_vec is None
             assert intent_sentence_vec is None
 
+    @pytest.mark.timeout(75, func_only=True)
     def test_lm_featurizer_shape_values_train(
         self,
         model_name: Text,
@@ -516,6 +517,7 @@ class TestSubTokensTrainAndProcess:
         messages = train_texts(texts, model_name, model_weights)
         self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
 
+    @pytest.mark.timeout(75, func_only=True)
     def test_lm_featurizer_number_of_sub_tokens_process(
         self,
         model_name: Text,
