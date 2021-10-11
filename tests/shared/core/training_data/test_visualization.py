@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Text
 
 import rasa.shared.utils.io
-from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.training_data import visualization

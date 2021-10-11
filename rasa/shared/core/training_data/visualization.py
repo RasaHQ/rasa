@@ -4,8 +4,6 @@ import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
 import rasa.shared.utils.io
-from rasa.core.channels import UserMessage
-from rasa.core.processor import MessageProcessor
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
@@ -17,7 +15,6 @@ from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
     ENTITY_ATTRIBUTE_TYPE,
-    ENTITIES,
     INTENT_NAME_KEY,
 )
 
