@@ -1966,8 +1966,8 @@ def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> 
                     if condition[ACTIVE_LOOP] == form_name and slot not in form_slots:
                         raise InvalidDomain(
                             f"Slot '{slot}' has a mapping condition for form "
-                            f"'{form_name}', but it's not present in '{form_name}'"
-                            f" form's '{REQUIRED_SLOTS_KEY}'."
+                            f"'{form_name}', but it's not present in '{form_name}' "
+                            f"form's '{REQUIRED_SLOTS_KEY}'. "
                             f"The slot needs to be added to this key."
                         )
 
@@ -1989,8 +1989,8 @@ def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
         )
 
     rasa.shared.utils.io.raise_warning(
-        f"Slot auto-fill has been removed in 3.0 and replaced with a"
-        f" new explicit mechanism to set slots. "
+        f"Slot auto-fill has been removed in 3.0 and replaced with a "
+        f"new explicit mechanism to set slots. "
         f"Please refer to {DOCS_URL_SLOTS} to learn more.",
         UserWarning,
     )

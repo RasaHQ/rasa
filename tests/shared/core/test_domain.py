@@ -1720,6 +1720,7 @@ def test_slot_mapping_intent_is_desired(domain: Domain):
 def test_slot_mappings_ignored_intents_during_active_loop():
     domain = Domain.from_yaml(
         """
+    version: "2.0"
     intents:
     - greet
     - chitchat
@@ -1756,6 +1757,7 @@ def test_domain_slots_for_entities_with_mapping_conditions_no_slot_set():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
+            version: "2.0"
             entities:
             - city
             slots:
@@ -1782,6 +1784,7 @@ def test_domain_slots_for_entities_sets_valid_slot():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
+            version: "2.0"
             entities:
             - city
             slots:
@@ -1807,6 +1810,7 @@ def test_invalid_domain_from_trigger_intent_mapping_slot_not_in_forms():
         Domain.from_yaml(
             textwrap.dedent(
                 """
+            version: "2.0"
             intents:
             - activate_booking
             entities:
@@ -1845,6 +1849,7 @@ def test_invalid_domain_slot_with_mapping_conditions_not_in_form():
         Domain.from_yaml(
             textwrap.dedent(
                 """
+            version: "2.0"
             intents:
             - activate_booking
             entities:

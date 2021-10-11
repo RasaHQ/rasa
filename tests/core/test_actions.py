@@ -1184,6 +1184,7 @@ async def test_action_extract_slots_predefined_mappings(
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
+            version: "2.0"
             intents:
             - inform
             - greet

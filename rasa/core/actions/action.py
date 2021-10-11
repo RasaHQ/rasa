@@ -1007,17 +1007,17 @@ class ActionExtractSlots(Action):
         except (RasaException, ClientResponseError) as e:
             rasa.shared.utils.io.raise_warning(
                 f"Failed to execute custom action '{custom_action}' "
-                f"as a result of error '{str(e)}'. The default action"
+                f"as a result of error '{str(e)}'. The default action "
                 f"extract slots failed to fill slots with custom "
                 f"mappings."
             )
 
         for type_name in disallowed_types:
             logger.info(
-                f"Running custom action '{custom_action} has resulted"
-                f" in an event of type '{type_name}'. This is "
-                f"disallowed and the tracker will not be"
-                f" updated with this event."
+                f"Running custom action '{custom_action} has resulted "
+                f"in an event of type '{type_name}'. This is "
+                f"disallowed and the tracker will not be "
+                f"updated with this event."
             )
 
         return slot_events
@@ -1085,7 +1085,7 @@ class ActionExtractSlots(Action):
 
 def extract_slot_value_from_predefined_mapping(
     mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
-) -> Any:
+) -> List[Any]:
     """Extracts slot value if slot has an applicable predefined mapping."""
     should_fill_entity_slot = mapping["type"] == str(
         SlotMapping.FROM_ENTITY
