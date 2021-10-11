@@ -12,3 +12,6 @@ RESERVED_PLACEHOLDERS = {
     PLACEHOLDER_MESSAGE: List[UserMessage],
     PLACEHOLDER_TRACKER: DialogueStateTracker,
 }
+
+TARGET_NAME_CORE = "core_target"
+TARGET_NAME_NLU = "nlu_target"

@@ -105,5 +105,6 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-core_target: null
-nlu_target: run_RegexMessageHandlerGraphComponent
+targets:
+  core_target: null
+  nlu_target: run_RegexMessageHandlerGraphComponent

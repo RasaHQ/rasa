@@ -47,3 +47,4 @@ nodes:
     is_target: True
     is_input: False
     resource: null
+targets: {}

@@ -11,7 +11,11 @@ from rasa.engine.graph import (
     GraphSchema,
     SchemaNode,
 )
-from rasa.engine.constants import PLACEHOLDER_IMPORTER
+from rasa.engine.constants import (
+    PLACEHOLDER_IMPORTER,
+    TARGET_NAME_NLU,
+    TARGET_NAME_CORE,
+)
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
@@ -85,7 +89,7 @@ def create_test_schema(
             ),
             **parent_node,
         },
-        nlu_target="nlu_target",
+        targets={TARGET_NAME_NLU: "nlu_target"},
     )
 
 
@@ -716,7 +720,7 @@ def test_validation_with_nlu_target_used_by_other_node():
                 config={},
             ),
         },
-        nlu_target="A",
+        targets={TARGET_NAME_NLU: "A"},
     )
 
     with pytest.raises(
@@ -737,7 +741,7 @@ def test_validation_with_nlu_target_wrong_type():
                 config={},
             ),
         },
-        nlu_target="A",
+        targets={TARGET_NAME_NLU: "A"},
     )
 
     with pytest.raises(GraphSchemaValidationException, match="invalid return type"):
@@ -756,8 +760,7 @@ def test_validation_with_missing_core_target():
                 config={},
             ),
         },
-        nlu_target="A",
-        core_target="B",
+        targets={TARGET_NAME_NLU: "A", TARGET_NAME_CORE: "B"},
     )
 
     with pytest.raises(GraphSchemaValidationException, match="invalid Core target"):
@@ -776,8 +779,7 @@ def test_validation_with_core_target_wrong_type():
                 config={},
             ),
         },
-        nlu_target="A",
-        core_target="A",
+        targets={TARGET_NAME_NLU: "A", TARGET_NAME_CORE: "A"},
     )
 
     with pytest.raises(
@@ -818,8 +820,7 @@ def test_validation_with_core_target_used_by_other_node():
                 config={},
             ),
         },
-        nlu_target="A",
-        core_target="B",
+        targets={TARGET_NAME_NLU: "A", TARGET_NAME_CORE: "B"},
     )
 
     with pytest.raises(

@@ -39,8 +39,7 @@ class GraphSchema:
     """Represents a graph for training a model or making predictions."""
 
     nodes: Dict[Text, SchemaNode]
-    core_target: Optional[Text] = None
-    nlu_target: Optional[Text] = None
+    targets: Dict[Text, Text] = field(default_factory=dict)
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns graph schema in a serializable format.
@@ -48,11 +47,7 @@ class GraphSchema:
         Returns:
             The graph schema in a format which can be dumped as JSON or other formats.
         """
-        serializable_graph_schema = {"nodes": {}}
-        if self.core_target or self.nlu_target:
-            serializable_graph_schema["core_target"] = self.core_target
-            serializable_graph_schema["nlu_target"] = self.nlu_target
-
+        serializable_graph_schema = {"nodes": {}, "targets": self.targets or {}}
         for node_name, node in self.nodes.items():
             serializable = dataclasses.asdict(node)
 
@@ -99,11 +94,7 @@ class GraphSchema:
 
             nodes[node_name] = SchemaNode(**serialized_node)
 
-        return GraphSchema(
-            nodes,
-            core_target=serialized_graph_schema.get("core_target"),
-            nlu_target=serialized_graph_schema.get("nlu_target"),
-        )
+        return GraphSchema(nodes, targets=serialized_graph_schema.get("targets", {}),)
 
     @property
     def target_names(self) -> List[Text]:

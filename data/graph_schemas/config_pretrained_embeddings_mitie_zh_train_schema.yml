@@ -139,3 +139,4 @@ nodes:
     is_target: true
     is_input: false
     resource: null
+targets: {}

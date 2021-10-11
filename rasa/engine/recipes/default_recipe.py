@@ -24,6 +24,8 @@ from rasa.engine.constants import (
     PLACEHOLDER_IMPORTER,
     PLACEHOLDER_MESSAGE,
     PLACEHOLDER_TRACKER,
+    TARGET_NAME_CORE,
+    TARGET_NAME_NLU,
 )
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
@@ -199,8 +201,11 @@ class DefaultV1Recipe(Recipe):
             GraphSchema(train_nodes),
             GraphSchema(
                 predict_nodes,
-                core_target=core_target,
-                nlu_target=f"run_{RegexMessageHandlerGraphComponent.__name__}",
+                targets={
+                    TARGET_NAME_CORE: core_target,
+                    TARGET_NAME_NLU: f"run_"
+                    f"{RegexMessageHandlerGraphComponent.__name__}",
+                },
             ),
             config.get("language"),
         )

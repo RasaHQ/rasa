@@ -29,7 +29,11 @@ from rasa.engine.graph import (
     SchemaNode,
     ExecutionContext,
 )
-from rasa.engine.constants import RESERVED_PLACEHOLDERS
+from rasa.engine.constants import (
+    RESERVED_PLACEHOLDERS,
+    TARGET_NAME_NLU,
+    TARGET_NAME_CORE,
+)
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import RasaException
@@ -102,17 +106,19 @@ def validate(
 
 
 def _validate_prediction_targets(schema: GraphSchema) -> None:
-    if not schema.nlu_target:
+    if not schema.targets.get(TARGET_NAME_NLU):
         raise GraphSchemaValidationException(
             "Graph schema specifies no target for the 'nlu_target'. It is required "
             "for a prediction graph to specify this. Please choose a valid node "
             "name for this."
         )
 
-    _validate_target(schema.nlu_target, "NLU", List[Message], schema)
+    _validate_target(schema.targets[TARGET_NAME_NLU], "NLU", List[Message], schema)
 
-    if schema.core_target:
-        _validate_target(schema.core_target, "Core", PolicyPrediction, schema)
+    if schema.targets.get(TARGET_NAME_CORE):
+        _validate_target(
+            schema.targets[TARGET_NAME_CORE], "Core", PolicyPrediction, schema
+        )
 
 
 def _validate_target(

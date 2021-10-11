@@ -121,5 +121,6 @@ nodes:
     is_target: False
     is_input: False
     resource: null
-core_target: select_prediction
-nlu_target: run_RegexMessageHandlerGraphComponent
+targets:
+  core_target: select_prediction
+  nlu_target: run_RegexMessageHandlerGraphComponent
