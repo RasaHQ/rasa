@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Type
 import logging
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -26,6 +26,11 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
     """Maps entities to their synonyms if they appear in the training data."""
 
     SYNONYM_FILENAME = "synonyms.json"
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [EntityExtractorMixin]
 
     def __init__(
         self,

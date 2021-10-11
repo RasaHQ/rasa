@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import os
-from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple
+from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 
 from tensorflow.python.eager.wrap_function import WrappedFunction
 from tqdm import tqdm
@@ -13,7 +13,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
 import rasa.core.utils
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -57,6 +57,11 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     model from TFHub and computes sentence and sequence level feature representations
     for dense featurizable attributes of each message object.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

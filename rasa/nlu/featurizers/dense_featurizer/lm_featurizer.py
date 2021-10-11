@@ -2,14 +2,14 @@ from __future__ import annotations
 import numpy as np
 import logging
 
-from typing import Any, Optional, Text, List, Dict, Tuple
+from typing import Any, Optional, Text, List, Dict, Tuple, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -51,6 +51,11 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     It also tokenizes and featurizes the featurizable dense attributes of
     each message.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     def __init__(
         self, config: Dict[Text, Any], execution_context: ExecutionContext,
