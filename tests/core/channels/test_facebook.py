@@ -7,9 +7,7 @@ from fbmessenger import MessengerClient
 logger = logging.getLogger(__name__)
 
 
-# USED FOR DOCS - don't rename without changing in the docs
 def test_facebook_channel():
-    # START DOC INCLUDE
     from rasa.core.channels.facebook import FacebookInput
 
     input_channel = FacebookInput(
@@ -21,9 +19,6 @@ def test_facebook_channel():
     )
 
     s = run.configure_app([input_channel], port=5004)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
     routes_list = utils.list_routes(s)
 
     assert routes_list["fb_webhook.health"].startswith("/webhooks/facebook")
