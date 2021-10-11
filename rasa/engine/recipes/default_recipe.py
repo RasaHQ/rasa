@@ -19,6 +19,7 @@ from rasa.engine.graph import (
     GraphSchema,
     GraphComponent,
     SchemaNode,
+    GraphModelConfiguration,
 )
 from rasa.engine.constants import (
     PLACEHOLDER_IMPORTER,
@@ -27,7 +28,6 @@ from rasa.engine.constants import (
 )
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import GraphModelConfiguration
 from rasa.graph_components.converters.nlu_message_converter import NLUMessageConverter
 from rasa.graph_components.providers.domain_provider import DomainProvider
 from rasa.graph_components.providers.domain_without_response_provider import (

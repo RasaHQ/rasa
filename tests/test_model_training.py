@@ -26,7 +26,7 @@ import rasa.core.train
 import rasa.nlu
 from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.engine.storage.storage import GraphModelConfiguration
+from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.training.graph_trainer import GraphTrainer
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent

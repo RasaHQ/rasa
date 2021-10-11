@@ -13,8 +13,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.importers.autoconfig import TrainingType
 
 if typing.TYPE_CHECKING:
-    from rasa.engine.graph import GraphSchema
-
+    from rasa.engine.graph import GraphSchema, GraphModelConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -111,18 +110,6 @@ class ModelStorage(abc.ABC):
             The model metadata.
         """
         ...
-
-
-@dataclass()
-class GraphModelConfiguration:
-    """The model configuration to run as a graph during training and prediction."""
-
-    train_schema: GraphSchema
-    predict_schema: GraphSchema
-    training_type: TrainingType
-    language: Optional[Text]
-    core_target: Optional[Text]
-    nlu_target: Optional[Text]
 
 
 @dataclass()

@@ -15,6 +15,7 @@ from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.autoconfig import TrainingType
 
 logger = logging.getLogger(__name__)
 
@@ -499,3 +500,15 @@ class GraphNode:
             resource=schema_node.resource,
             hooks=hooks,
         )
+
+
+@dataclass()
+class GraphModelConfiguration:
+    """The model configuration to run as a graph during training and prediction."""
+
+    train_schema: GraphSchema
+    predict_schema: GraphSchema
+    training_type: TrainingType
+    language: Optional[Text]
+    core_target: Optional[Text]
+    nlu_target: Optional[Text]

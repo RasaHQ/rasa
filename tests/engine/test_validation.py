@@ -10,10 +10,11 @@ from rasa.engine.graph import (
     ExecutionContext,
     GraphSchema,
     SchemaNode,
+    GraphModelConfiguration,
 )
 from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage, GraphModelConfiguration
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter

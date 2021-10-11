@@ -15,8 +15,8 @@ import rasa.shared.utils.io
 from rasa.engine.storage.storage import (
     ModelMetadata,
     ModelStorage,
-    GraphModelConfiguration,
 )
+from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
 import rasa.model
