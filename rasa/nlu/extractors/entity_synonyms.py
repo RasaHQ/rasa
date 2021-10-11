@@ -31,11 +31,6 @@ class EntitySynonymMapperGraphComponent(GraphComponent, EntityExtractorMixin):
 
     SYNONYM_FILENAME = "synonyms.json"
 
-    @classmethod
-    def required_components(cls) -> List[Type]:
-        """Components that should be included in the pipeline before this component."""
-        return [EntityExtractorMixin]
-
     def __init__(
         self,
         config: Optional[Dict[Text, Any]],
