@@ -1,9 +1,10 @@
 from __future__ import annotations
 import logging
 import re
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 import scipy.sparse
+from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -34,6 +35,11 @@ RegexFeaturizer = RegexFeaturizer
 )
 class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Adds message features based on regex expressions."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

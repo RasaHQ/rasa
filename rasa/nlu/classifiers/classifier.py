@@ -1,5 +1,11 @@
-from rasa.nlu.components import Component
+from rasa.nlu.classifiers._classifier import IntentClassifier
+
+# TODO: remove once everything has been migrated
+IntentClassifier = IntentClassifier
 
 
-class IntentClassifier(Component):
+class IntentClassifier2:
+    """An intent classifier."""
+
+    # TODO: move "add intent / rankings to message" functions here
     pass

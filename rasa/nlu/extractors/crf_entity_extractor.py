@@ -4,7 +4,7 @@ import logging
 import typing
 
 import numpy as np
-from typing import Any, Dict, List, Optional, Text, Tuple, Callable
+from typing import Any, Dict, List, Optional, Text, Tuple, Callable, Type
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.shared.utils.io
@@ -16,7 +16,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES
@@ -117,6 +117,11 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         ),
         CRFEntityExtractorOptions.ENTITY: lambda crf_token: crf_token.entity_tag,
     }
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

@@ -1,8 +1,9 @@
 from __future__ import annotations
 import logging
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 import typing
 import warnings
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
 import numpy as np
 
@@ -15,6 +16,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import TEXT
+from rasa.nlu.classifiers.classifier import IntentClassifier2
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 
@@ -32,8 +34,13 @@ if typing.TYPE_CHECKING:
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
-class SklearnIntentClassifierGraphComponent(GraphComponent):
+class SklearnIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
     """Intent classifier using the sklearn framework."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [DenseFeaturizer2]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

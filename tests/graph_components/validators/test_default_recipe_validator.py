@@ -643,12 +643,16 @@ def test_nlu_warn_of_competition_with_regex_extractor(
         (
             [
                 (
+                    "1",
                     LexicalSyntacticFeaturizerGraphComponent,
                     {FEATURIZER_CLASS_ALIAS: "different-class-same-name"},
+                    "process_training_data",
                 ),
                 (
+                    "2",
                     RegexFeaturizerGraphComponent,
                     {FEATURIZER_CLASS_ALIAS: "different-class-same-name"},
+                    "process_training_data",
                 ),
             ],
             True,
@@ -656,30 +660,73 @@ def test_nlu_warn_of_competition_with_regex_extractor(
         (
             [
                 (
+                    "1",
                     RegexFeaturizerGraphComponent,
                     {FEATURIZER_CLASS_ALIAS: "same-class-other-name"},
+                    "process_training_data",
                 ),
                 (
+                    "2",
                     RegexFeaturizerGraphComponent,
                     {FEATURIZER_CLASS_ALIAS: "same-class-different-name"},
+                    "process_training_data",
                 ),
             ],
             False,
         ),
         (
-            [(RegexFeaturizerGraphComponent, {}), (RegexFeaturizerGraphComponent, {})],
+            [
+                (
+                    "1",
+                    RegexFeaturizerGraphComponent,
+                    {FEATURIZER_CLASS_ALIAS: "same-class-same-name"},
+                    "process_training_data",
+                ),
+                (
+                    "2",
+                    RegexFeaturizerGraphComponent,
+                    {FEATURIZER_CLASS_ALIAS: "same-class-same-name"},
+                    "train",
+                ),
+            ],
+            False,
+        ),
+        (
+            [
+                (
+                    "1",
+                    RegexFeaturizerGraphComponent,
+                    {FEATURIZER_CLASS_ALIAS: "same-class-same-name"},
+                    "process_training_data",
+                ),
+                (
+                    "e2e_1",
+                    RegexFeaturizerGraphComponent,
+                    {FEATURIZER_CLASS_ALIAS: "same-class-same-name"},
+                    "process_training_data",
+                ),
+            ],
+            False,
+        ),
+        (
+            [
+                ("1", RegexFeaturizerGraphComponent, {}, "process_training_data"),
+                ("2", RegexFeaturizerGraphComponent, {}, "process_training_data"),
+            ],
             False,
         ),
     ],
 )
 def test_nlu_raise_if_featurizers_are_not_compatible(
-    component_types_and_configs: List[Tuple[Type[GraphComponent], Dict[Text, Any]]],
+    component_types_and_configs: List[
+        Tuple[Type[GraphComponent], Dict[Text, Any], Text]
+    ],
     should_raise: bool,
 ):
     graph_schema = GraphSchema(
         {
-            f"{idx}": SchemaNode({}, component_type, "", "", config)
-            for idx, (component_type, config) in enumerate(component_types_and_configs)
+            f"{node_name}": SchemaNode({}, component_type, "", fn, config)
+            for (node_name, component_type, config, fn) in component_types_and_configs
         }
     )
     importer = DummyImporter()

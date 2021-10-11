@@ -3,6 +3,7 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
+from rasa.nlu.featurizers.featurizer import Featurizer2
 
 import numpy as np
 import scipy.sparse
@@ -15,6 +16,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.classifiers.classifier import IntentClassifier2
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
@@ -120,7 +122,9 @@ POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
-class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
+class DIETClassifierGraphComponent(
+    GraphComponent, IntentClassifier2, EntityExtractorMixin
+):
     """A multi-task model for intent classification and entity extraction.
 
     DIET is Dual Intent and Entity Transformer.
@@ -132,6 +136,11 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
     dot-product loss to maximize the similarity with the target label and minimize
     similarities with negative samples.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Featurizer2]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
