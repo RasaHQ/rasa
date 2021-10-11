@@ -5,10 +5,19 @@ title: rasa.nlu.classifiers.fallback_classifier
 ## FallbackClassifierGraphComponent Objects
 
 ```python
-class FallbackClassifierGraphComponent(GraphComponent)
+class FallbackClassifierGraphComponent(GraphComponent,  IntentClassifier2)
 ```
 
 Handles incoming messages with low NLU confidence.
+
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
 
 #### get\_default\_config
 

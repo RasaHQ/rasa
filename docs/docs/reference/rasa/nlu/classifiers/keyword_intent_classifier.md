@@ -5,7 +5,7 @@ title: rasa.nlu.classifiers.keyword_intent_classifier
 ## KeywordIntentClassifierGraphComponent Objects
 
 ```python
-class KeywordIntentClassifierGraphComponent(GraphComponent)
+class KeywordIntentClassifierGraphComponent(GraphComponent,  IntentClassifier2)
 ```
 
 Intent classifier using simple keyword matching.

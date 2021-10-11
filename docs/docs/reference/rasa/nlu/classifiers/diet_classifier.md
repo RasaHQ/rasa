@@ -5,7 +5,8 @@ title: rasa.nlu.classifiers.diet_classifier
 ## DIETClassifierGraphComponent Objects
 
 ```python
-class DIETClassifierGraphComponent(GraphComponent,  EntityExtractorMixin)
+class DIETClassifierGraphComponent(
+    GraphComponent,  IntentClassifier2,  EntityExtractorMixin)
 ```
 
 A multi-task model for intent classification and entity extraction.
@@ -18,6 +19,15 @@ input sequence of tokens. The transformer output for the ``__CLS__`` token and
 intent labels are embedded into a single semantic vector space. We use the
 dot-product loss to maximize the similarity with the target label and minimize
 similarities with negative samples.
+
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
 
 #### get\_default\_config
 

@@ -16,6 +16,15 @@ including BERT, GPT, GPT-2, xlnet, distilbert, and roberta.
 It also tokenizes and featurizes the featurizable dense attributes of
 each message.
 
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
+
 #### \_\_init\_\_
 
 ```python

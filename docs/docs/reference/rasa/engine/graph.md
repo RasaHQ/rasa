@@ -81,6 +81,15 @@ class GraphComponent(ABC)
 
 Interface for any component which will run in a graph.
 
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
+
 #### create
 
 ```python

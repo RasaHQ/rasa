@@ -25,6 +25,15 @@ Based on the starspace idea from: https://arxiv.org/abs/1709.03856.
 However, in this implementation the `mu` parameter is treated differently
 and additional hidden layers are added together with dropout.
 
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
+
 #### get\_default\_config
 
 ```python

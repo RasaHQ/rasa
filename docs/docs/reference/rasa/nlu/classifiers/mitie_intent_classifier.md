@@ -5,10 +5,19 @@ title: rasa.nlu.classifiers.mitie_intent_classifier
 ## MitieIntentClassifierGraphComponent Objects
 
 ```python
-class MitieIntentClassifierGraphComponent(GraphComponent)
+class MitieIntentClassifierGraphComponent(GraphComponent,  IntentClassifier2)
 ```
 
 Intent classifier which uses the `mitie` library.
+
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
 
 #### get\_default\_config
 

@@ -34,6 +34,15 @@ It will then combine all these features into one feature for position `t`.
   where the token at position `t-1` is lower case and the first two characters
   of the token at position `t+1`.
 
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
+
 #### get\_default\_config
 
 ```python

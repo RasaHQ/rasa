@@ -18,6 +18,15 @@ class CRFEntityExtractorGraphComponent(GraphComponent,  EntityExtractorMixin)
 
 Implements conditional random fields (CRF) to do named entity recognition.
 
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
+
 #### get\_default\_config
 
 ```python

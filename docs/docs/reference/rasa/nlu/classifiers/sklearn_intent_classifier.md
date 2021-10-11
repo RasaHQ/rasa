@@ -5,10 +5,19 @@ title: rasa.nlu.classifiers.sklearn_intent_classifier
 ## SklearnIntentClassifierGraphComponent Objects
 
 ```python
-class SklearnIntentClassifierGraphComponent(GraphComponent)
+class SklearnIntentClassifierGraphComponent(GraphComponent,  IntentClassifier2)
 ```
 
 Intent classifier using the sklearn framework.
+
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
 
 #### get\_default\_config
 

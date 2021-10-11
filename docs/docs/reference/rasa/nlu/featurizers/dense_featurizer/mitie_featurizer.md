@@ -10,6 +10,15 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2,  GraphComponent)
 
 A class that featurizes using Mitie.
 
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
+
 #### get\_default\_config
 
 ```python

@@ -17,6 +17,15 @@ Set `analyzer` to &#x27;char_wb&#x27;
 to use the idea of Subword Semantic Hashing
 from https://arxiv.org/abs/1810.07150.
 
+#### required\_components
+
+```python
+@classmethod
+def required_components(cls) -> List[Type]
+```
+
+Components that should be included in the pipeline before this component.
+
 #### get\_default\_config
 
 ```python
