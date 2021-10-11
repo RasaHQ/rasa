@@ -8,7 +8,6 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu import utils
 from rasa.nlu.classifiers.classifier import IntentClassifier2
 from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io

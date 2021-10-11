@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os
-from typing import Any, Dict, List, Optional, Text, Type
+from typing import Any, Dict, List, Optional, Text
 import logging
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
