@@ -373,9 +373,15 @@ class DefaultV1RecipeValidator(GraphComponent):
         """
         featurizers: List[SchemaNode] = [
             node
-            for node in self._graph_schema.nodes.values()
+            for node_name, node in self._graph_schema.nodes.items()
             if issubclass(node.uses, Featurizer2)
+            # Featurizers are split in `train` and `process_training_data` -
+            # we only need to look at the nodes which _add_ features.
+            and node.fn == "process_training_data"
+            # Tokenizers are re-used in the Core part of the graph when using End-to-End
+            and not node_name.startswith("e2e")
         ]
+
         Featurizer2.raise_if_featurizer_configs_are_not_compatible(
             [schema_node.config for schema_node in featurizers]
         )

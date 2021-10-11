@@ -12,6 +12,9 @@ from rasa.engine.recipes.default_recipe import (
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.graph_components.validators.default_recipe_validator import (
+    DefaultV1RecipeValidator,
+)
 from rasa.nlu.classifiers.mitie_intent_classifier import (
     MitieIntentClassifierGraphComponent,
 )
@@ -24,6 +27,7 @@ from rasa.nlu.extractors.mitie_entity_extractor import (
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.autoconfig import TrainingType
 import rasa.engine.validation
+from rasa.shared.importers.rasa import RasaFileImporter
 
 
 def test_recipe_for_name():
@@ -151,6 +155,11 @@ def test_generate_graphs(
     rasa.engine.validation.validate(
         train_schema, config.get("language"), is_train_graph=True
     )
+
+    default_v1_validator = DefaultV1RecipeValidator(train_schema)
+    importer = RasaFileImporter()
+    # does not raise
+    default_v1_validator.validate(importer)
 
     for node_name, node in expected_predict_schema.nodes.items():
         assert predict_schema.nodes[node_name] == node
