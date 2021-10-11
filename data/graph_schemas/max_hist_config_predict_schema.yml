@@ -103,6 +103,3 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-targets:
-  core_target: select_prediction
-  nlu_target: run_RegexMessageHandlerGraphComponent

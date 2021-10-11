@@ -26,6 +26,7 @@ import rasa.core.train
 import rasa.nlu
 from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.storage import GraphModelConfiguration
 from rasa.engine.training.graph_trainer import GraphTrainer
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
@@ -386,8 +387,11 @@ class TestE2e:
         )
 
         args, _ = train_mock.call_args
-
-        for schema in args[:2]:
+        model_configuration: GraphModelConfiguration = args[0]
+        for schema in [
+            model_configuration.train_schema,
+            model_configuration.predict_schema,
+        ]:
             assert any(
                 issubclass(node.uses, DIETClassifierGraphComponent)
                 for node in schema.nodes.values()

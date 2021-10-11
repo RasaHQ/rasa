@@ -29,13 +29,9 @@ from rasa.engine.graph import (
     SchemaNode,
     ExecutionContext,
 )
-from rasa.engine.constants import (
-    RESERVED_PLACEHOLDERS,
-    TARGET_NAME_NLU,
-    TARGET_NAME_CORE,
-)
+from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.storage import ModelStorage, GraphModelConfiguration
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 
@@ -60,9 +56,7 @@ KEYWORDS_EXPECTED_TYPES: Dict[Text, TypeAnnotation] = {
 }
 
 
-def validate(
-    schema: GraphSchema, language: Optional[Text], is_train_graph: bool
-) -> None:
+def validate(model_configuration: GraphModelConfiguration) -> None:
     """Validates a graph schema.
 
     This tries to validate that the graph structure is correct (e.g. all nodes pass the
@@ -70,18 +64,25 @@ def validate(
     components.
 
     Args:
-        schema: The schema which needs validating.
-        language: Used to validate if all components support the language the assistant
-            is used in. If the language is `None`, all components are assumed to be
-            compatible.
-        is_train_graph: Whether the graph is used for training.
+        model_configuration: The model configuration (schemas, language, etc.)
 
     Raises:
         GraphSchemaValidationException: If the validation failed.
     """
+    _validate(model_configuration.train_schema, True, model_configuration.language)
+    _validate(model_configuration.predict_schema, False, model_configuration.language)
+
+    _validate_prediction_targets(
+        model_configuration.predict_schema,
+        core_target=model_configuration.core_target,
+        nlu_target=model_configuration.nlu_target,
+    )
+
+
+def _validate(
+    schema: GraphSchema, is_train_graph: bool, language: Optional[Text]
+) -> None:
     _validate_cycle(schema)
-    if not is_train_graph:
-        _validate_prediction_targets(schema)
 
     for node_name, node in schema.nodes.items():
         _validate_interface_usage(node_name, node)
@@ -105,20 +106,20 @@ def validate(
         )
 
 
-def _validate_prediction_targets(schema: GraphSchema) -> None:
-    if not schema.targets.get(TARGET_NAME_NLU):
+def _validate_prediction_targets(
+    schema: GraphSchema, core_target: Optional[Text], nlu_target: Text
+) -> None:
+    if not nlu_target:
         raise GraphSchemaValidationException(
             "Graph schema specifies no target for the 'nlu_target'. It is required "
             "for a prediction graph to specify this. Please choose a valid node "
             "name for this."
         )
 
-    _validate_target(schema.targets[TARGET_NAME_NLU], "NLU", List[Message], schema)
+    _validate_target(nlu_target, "NLU", List[Message], schema)
 
-    if schema.targets.get(TARGET_NAME_CORE):
-        _validate_target(
-            schema.targets[TARGET_NAME_CORE], "Core", PolicyPrediction, schema
-        )
+    if core_target:
+        _validate_target(core_target, "Core", PolicyPrediction, schema)
 
 
 def _validate_target(
@@ -126,7 +127,7 @@ def _validate_target(
 ) -> None:
     if target_name not in schema.nodes:
         raise GraphSchemaValidationException(
-            f"Graph schema specifies invalid {target_type} target '{target_name}'."
+            f"Graph schema specifies invalid {target_type} target '{target_name}'. "
             f"Please make sure specify a valid node name as target."
         )
 

@@ -139,27 +139,23 @@ def test_generate_graphs(
     config = rasa.shared.utils.io.read_yaml_file(config_path)
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
-    train_schema, predict_schema, _ = recipe.schemas_for_config(
+    model_config = recipe.schemas_for_config(
         config, {}, training_type=training_type, is_finetuning=is_finetuning
     )
 
+    train_schema = model_config.train_schema
     for node_name, node in expected_train_schema.nodes.items():
         assert train_schema.nodes[node_name] == node
 
     assert train_schema == expected_train_schema
 
-    rasa.engine.validation.validate(
-        train_schema, config.get("language"), is_train_graph=True
-    )
-
+    predict_schema = model_config.predict_schema
     for node_name, node in expected_predict_schema.nodes.items():
         assert predict_schema.nodes[node_name] == node
 
     assert predict_schema == expected_predict_schema
 
-    rasa.engine.validation.validate(
-        predict_schema, config.get("language"), is_train_graph=False
-    )
+    rasa.engine.validation.validate(model_config)
 
 
 def test_language_returning():
@@ -174,9 +170,9 @@ def test_language_returning():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    _, _, language = recipe.schemas_for_config(config, {},)
+    model_config = recipe.schemas_for_config(config, {},)
 
-    assert language == "xy"
+    assert model_config.language == "xy"
 
 
 def test_tracker_generator_parameter_interpolation():
@@ -193,11 +189,11 @@ def test_tracker_generator_parameter_interpolation():
     debug_plots = True
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, _, _ = recipe.schemas_for_config(
+    model_config = recipe.schemas_for_config(
         config, {"augmentation": augmentation, "debug_plots": debug_plots},
     )
 
-    node = train_schema.nodes["training_tracker_provider"]
+    node = model_config.train_schema.nodes["training_tracker_provider"]
 
     assert node.config == {
         "augmentation_factor": augmentation,
@@ -216,11 +212,11 @@ def test_nlu_training_data_persistence():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, _, _ = recipe.schemas_for_config(
+    model_config = recipe.schemas_for_config(
         config, {"persist_nlu_training_data": True},
     )
 
-    node = train_schema.nodes["nlu_training_data_provider"]
+    node = model_config.train_schema.nodes["nlu_training_data_provider"]
 
     assert node.config == {"language": None, "persist": True}
     assert node.is_target
@@ -253,15 +249,15 @@ def test_num_threads_interpolation():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, predict_schema, _ = recipe.schemas_for_config(
-        config, {"num_threads": 20}
-    )
+    model_config = recipe.schemas_for_config(config, {"num_threads": 20})
 
+    train_schema = model_config.train_schema
     for node_name, node in expected_train_schema.nodes.items():
         assert train_schema.nodes[node_name] == node
 
     assert train_schema == expected_train_schema
 
+    predict_schema = model_config.predict_schema
     for node_name, node in expected_predict_schema.nodes.items():
         assert predict_schema.nodes[node_name] == node
 
@@ -279,10 +275,11 @@ def test_epoch_fraction_cli_param():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    train_schema, predict_schema, _ = recipe.schemas_for_config(
+    model_config = recipe.schemas_for_config(
         config, {"finetuning_epoch_fraction": 0.5}, is_finetuning=True
     )
 
+    train_schema = model_config.train_schema
     for node_name, node in expected_train_schema.nodes.items():
         assert train_schema.nodes[node_name] == node
 
@@ -337,7 +334,7 @@ def test_retrieve_not_registered_class():
 
 
 def test_retrieve_via_module_path():
-    train_schema, predict_schema, _ = DefaultV1Recipe().schemas_for_config(
+    model_config = DefaultV1Recipe().schemas_for_config(
         {
             "policies": [
                 {"name": "rasa.core.policies.ted_policy.TEDPolicyGraphComponent"}
@@ -349,11 +346,11 @@ def test_retrieve_via_module_path():
 
     assert any(
         issubclass(node.uses, TEDPolicyGraphComponent)
-        for node in train_schema.nodes.values()
+        for node in model_config.train_schema.nodes.values()
     )
     assert any(
         issubclass(node.uses, TEDPolicyGraphComponent)
-        for node in predict_schema.nodes.values()
+        for node in model_config.predict_schema.nodes.values()
     )
 
 

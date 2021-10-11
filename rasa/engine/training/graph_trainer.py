@@ -7,14 +7,17 @@ from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.runner.interface import GraphRunner
-from rasa.engine.storage.storage import ModelStorage, ModelMetadata
+from rasa.engine.storage.storage import (
+    ModelStorage,
+    ModelMetadata,
+    GraphModelConfiguration,
+)
 from rasa.engine.training.components import (
     PrecomputedValueProvider,
     FingerprintComponent,
     FingerprintStatus,
 )
 from rasa.engine.training.hooks import TrainingHook
-from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
@@ -43,24 +46,20 @@ class GraphTrainer:
 
     def train(
         self,
-        train_schema: GraphSchema,
-        predict_schema: GraphSchema,
+        model_configuration: GraphModelConfiguration,
         importer: TrainingDataImporter,
         output_filename: Path,
         force_retraining: bool = False,
         is_finetuning: bool = False,
-        training_type: TrainingType = TrainingType.BOTH,
     ) -> ModelMetadata:
         """Trains and packages a model and returns the prediction graph runner.
 
         Args:
-            train_schema: The train graph schema.
-            predict_schema: The predict graph schema.
+            model_configuration: The model configuration (schemas, language, etc.)
             importer: The importer which provides the training data for the training.
             output_filename: The location to save the packaged model.
             force_retraining: If `True` then the cache is skipped and all components
                 are retrained.
-            training_type: NLU, CORE or BOTH depending on what is trained.
 
         Returns:
             The metadata describing the trained model.
@@ -75,13 +74,15 @@ class GraphTrainer:
             logger.debug(
                 "Skip fingerprint run as a full training of the model was enforced."
             )
-            pruned_training_schema = train_schema
+            pruned_training_schema = model_configuration.train_schema
         else:
             fingerprint_run_outputs = self.fingerprint(
-                train_schema, importer=importer, is_finetuning=is_finetuning
+                model_configuration.train_schema,
+                importer=importer,
+                is_finetuning=is_finetuning,
             )
             pruned_training_schema = self._prune_schema(
-                train_schema, fingerprint_run_outputs
+                model_configuration.train_schema, fingerprint_run_outputs
             )
 
         hooks = [TrainingHook(cache=self._cache, model_storage=self._model_storage)]
@@ -90,7 +91,8 @@ class GraphTrainer:
             graph_schema=pruned_training_schema,
             model_storage=self._model_storage,
             execution_context=ExecutionContext(
-                graph_schema=train_schema, is_finetuning=is_finetuning
+                graph_schema=model_configuration.train_schema,
+                is_finetuning=is_finetuning,
             ),
             hooks=hooks,
         )
@@ -100,11 +102,7 @@ class GraphTrainer:
         graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
         return self._model_storage.create_model_package(
-            output_filename,
-            train_schema,
-            predict_schema,
-            domain,
-            training_type=training_type,
+            output_filename, model_configuration, domain,
         )
 
     def fingerprint(

@@ -11,14 +11,11 @@ from rasa.engine.graph import (
     GraphSchema,
     SchemaNode,
 )
-from rasa.engine.constants import (
-    PLACEHOLDER_IMPORTER,
-    TARGET_NAME_NLU,
-    TARGET_NAME_CORE,
-)
+from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.storage import ModelStorage, GraphModelConfiguration
 from rasa.shared.core.domain import Domain
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -51,6 +48,20 @@ class TestCoreTarget(TestComponentWithoutRun):
         pass
 
 
+DEFAULT_PREDICT_SCHEMA = GraphSchema(
+    {
+        "nlu_target": SchemaNode(
+            needs={},
+            uses=TestNLUTarget,
+            eager=True,
+            constructor_name="load",
+            fn="run",
+            config={},
+        )
+    }
+)
+
+
 def create_test_schema(
     uses: Type,  # The unspecified type is on purpose to enable testing of invalid cases
     constructor_name: Text = "create",
@@ -58,7 +69,9 @@ def create_test_schema(
     needs: Optional[Dict[Text, Text]] = None,
     eager: bool = True,
     parent: Optional[Type[GraphComponent]] = None,
-) -> GraphSchema:
+    language: Optional[Text] = None,
+    is_train_graph: bool = True,
+) -> GraphModelConfiguration:
 
     parent_node = {}
     if parent:
@@ -68,8 +81,10 @@ def create_test_schema(
             )
         }
 
+    train_schema = GraphSchema({})
+    predict_schema = DEFAULT_PREDICT_SCHEMA
     # noinspection PyTypeChecker
-    return GraphSchema(
+    schema = GraphSchema(
         {
             "my_node": SchemaNode(
                 needs=needs or {},
@@ -79,17 +94,23 @@ def create_test_schema(
                 fn=run_fn,
                 config={},
             ),
-            "nlu_target": SchemaNode(
-                needs={},
-                uses=TestNLUTarget,
-                eager=eager,
-                constructor_name=constructor_name,
-                fn=run_fn,
-                config={},
-            ),
+            **DEFAULT_PREDICT_SCHEMA.nodes,
             **parent_node,
         },
-        targets={TARGET_NAME_NLU: "nlu_target"},
+    )
+
+    if is_train_graph:
+        train_schema = schema
+    else:
+        predict_schema = schema
+
+    return GraphModelConfiguration(
+        train_schema=train_schema,
+        predict_schema=predict_schema,
+        training_type=TrainingType.BOTH,
+        core_target=None,
+        nlu_target="nlu_target",
+        language=language,
     )
 
 
@@ -101,7 +122,7 @@ def test_graph_component_is_no_graph_component():
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="implement .+ interface"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema)
 
 
 def test_graph_component_fn_does_not_exist():
@@ -110,7 +131,7 @@ def test_graph_component_fn_does_not_exist():
     with pytest.raises(
         GraphSchemaValidationException, match="specified method 'some_fn'"
     ):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_graph_output_is_not_fingerprintable_int():
@@ -121,7 +142,7 @@ def test_graph_output_is_not_fingerprintable_int():
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="fingerprintable"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_predict_graph_output_is_not_fingerprintable():
@@ -129,9 +150,9 @@ def test_predict_graph_output_is_not_fingerprintable():
         def run(self) -> int:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    schema = create_test_schema(uses=MyComponent, is_train_graph=False)
 
-    validation.validate(schema, language=None, is_train_graph=False)
+    validation.validate(schema)
 
 
 def test_graph_output_is_not_fingerprintable_any():
@@ -142,7 +163,7 @@ def test_graph_output_is_not_fingerprintable_any():
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="fingerprintable"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_graph_output_is_not_fingerprintable_None():
@@ -153,7 +174,7 @@ def test_graph_output_is_not_fingerprintable_None():
     schema = create_test_schema(uses=MyComponent,)
 
     with pytest.raises(GraphSchemaValidationException, match="fingerprintable"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_graph_with_forward_referenced_output_type():
@@ -166,7 +187,7 @@ def test_graph_with_forward_referenced_output_type():
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="forward reference"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_graph_output_missing_type_annotation():
@@ -179,7 +200,7 @@ def test_graph_output_missing_type_annotation():
     with pytest.raises(
         GraphSchemaValidationException, match="does not have a type annotation"
     ):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_graph_with_fingerprintable_output():
@@ -189,7 +210,7 @@ def test_graph_with_fingerprintable_output():
 
     schema = create_test_schema(uses=MyComponent)
 
-    validation.validate(schema, language=None, is_train_graph=True)
+    validation.validate(schema)
 
 
 class MyTrainingData(TrainingData):
@@ -203,7 +224,7 @@ def test_graph_with_fingerprintable_output_subclass():
 
     schema = create_test_schema(uses=MyComponent)
 
-    validation.validate(schema, language=None, is_train_graph=True)
+    validation.validate(schema,)
 
 
 def test_graph_constructor_missing():
@@ -216,7 +237,7 @@ def test_graph_constructor_missing():
     with pytest.raises(
         GraphSchemaValidationException, match="specified method 'invalid'"
     ):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_graph_constructor_config_wrong_type():
@@ -234,7 +255,7 @@ def test_graph_constructor_config_wrong_type():
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="incompatible type"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_graph_constructor_resource_wrong_type():
@@ -252,7 +273,7 @@ def test_graph_constructor_resource_wrong_type():
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="incompatible type"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_graph_constructor_model_storage_wrong_type():
@@ -270,7 +291,7 @@ def test_graph_constructor_model_storage_wrong_type():
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="incompatible type"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_graph_constructor_execution_context_wrong_type():
@@ -288,7 +309,7 @@ def test_graph_constructor_execution_context_wrong_type():
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="incompatible type"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 @pytest.mark.parametrize(
@@ -303,12 +324,12 @@ def test_graph_constructor_execution_not_supported_language(
         def supported_languages() -> Optional[List[Text]]:
             return supported_languages
 
-    schema = create_test_schema(uses=MyComponent)
+    schema = create_test_schema(uses=MyComponent, language=current_language)
 
     with pytest.raises(
         GraphSchemaValidationException, match="does not support .* language"
     ):
-        validation.validate(schema, language=current_language, is_train_graph=False)
+        validation.validate(schema)
 
 
 @pytest.mark.parametrize(
@@ -323,9 +344,9 @@ def test_graph_constructor_execution_supported_language(
         def supported_languages() -> Optional[List[Text]]:
             return supported_languages
 
-    schema = create_test_schema(uses=MyComponent)
+    schema = create_test_schema(uses=MyComponent, language=current_language)
 
-    validation.validate(schema, language=current_language, is_train_graph=False)
+    validation.validate(schema)
 
 
 @pytest.mark.parametrize(
@@ -339,12 +360,14 @@ def test_graph_constructor_execution_exclusive_list_not_supported_language(
         def not_supported_languages() -> Optional[List[Text]]:
             return not_supported_languages
 
-    schema = create_test_schema(uses=MyComponent)
+    schema = create_test_schema(
+        uses=MyComponent, language=current_language, is_train_graph=False
+    )
 
     with pytest.raises(
         GraphSchemaValidationException, match="does not support .* language"
     ):
-        validation.validate(schema, language=current_language, is_train_graph=False)
+        validation.validate(schema)
 
 
 @pytest.mark.parametrize(
@@ -359,9 +382,11 @@ def test_graph_constructor_execution_exclusive_list_supported_language(
         def not_supported_languages() -> Optional[List[Text]]:
             return not_supported_languages
 
-    schema = create_test_schema(uses=MyComponent)
+    schema = create_test_schema(
+        uses=MyComponent, language=current_language, is_train_graph=False
+    )
 
-    validation.validate(schema, language=current_language, is_train_graph=False)
+    validation.validate(schema)
 
 
 @pytest.mark.parametrize(
@@ -377,7 +402,7 @@ def test_graph_missing_package_requirements(required_packages: List[Text]):
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="not installed"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 @pytest.mark.parametrize("required_packages", [["tensorflow"], ["tensorflow", "numpy"]])
@@ -390,7 +415,7 @@ def test_graph_satisfied_package_requirements(required_packages: List[Text]):
 
     schema = create_test_schema(uses=MyComponent)
 
-    validation.validate(schema, language=None, is_train_graph=True)
+    validation.validate(schema,)
 
 
 def test_run_param_not_satisfied():
@@ -401,7 +426,7 @@ def test_run_param_not_satisfied():
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="needs the param"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_run_param_satifisfied_due_to_default():
@@ -411,7 +436,7 @@ def test_run_param_satifisfied_due_to_default():
 
     schema = create_test_schema(uses=MyComponent)
 
-    validation.validate(schema, language=None, is_train_graph=True)
+    validation.validate(schema,)
 
 
 def test_too_many_supplied_params():
@@ -422,9 +447,7 @@ def test_too_many_supplied_params():
     with pytest.raises(
         GraphSchemaValidationException, match="does not accept a parameter"
     ):
-        validation.validate(
-            schema, language=None, is_train_graph=True,
-        )
+        validation.validate(schema)
 
 
 def test_too_many_supplied_params_but_kwargs():
@@ -436,7 +459,7 @@ def test_too_many_supplied_params_but_kwargs():
         uses=MyComponent, needs={"some_param": "parent"}, parent=TestComponentWithRun
     )
 
-    validation.validate(schema, language=None, is_train_graph=True)
+    validation.validate(schema,)
 
 
 def test_run_fn_with_variable_length_positional_param():
@@ -448,7 +471,7 @@ def test_run_fn_with_variable_length_positional_param():
         uses=MyComponent, needs={"some_param": "parent"}, parent=TestComponentWithRun
     )
 
-    validation.validate(schema, language=None, is_train_graph=True)
+    validation.validate(schema,)
 
 
 def test_matching_params_due_to_constructor():
@@ -472,9 +495,7 @@ def test_matching_params_due_to_constructor():
         parent=TestComponentWithRun,
     )
 
-    validation.validate(
-        schema, language=None, is_train_graph=True,
-    )
+    validation.validate(schema)
 
 
 def test_matching_params_due_to_constructor_but_eager():
@@ -498,9 +519,7 @@ def test_matching_params_due_to_constructor_but_eager():
     )
 
     with pytest.raises(GraphSchemaValidationException, match="lazy mode"):
-        validation.validate(
-            schema, language=None, is_train_graph=True,
-        )
+        validation.validate(schema)
 
 
 @pytest.mark.parametrize(
@@ -522,9 +541,7 @@ def test_unsatisfied_constructor(eager: bool, error_message: Text):
     schema = create_test_schema(uses=MyComponent, eager=eager, constructor_name="load",)
 
     with pytest.raises(GraphSchemaValidationException, match=error_message):
-        validation.validate(
-            schema, language=None, is_train_graph=True,
-        )
+        validation.validate(schema)
 
 
 def test_parent_supplying_wrong_type():
@@ -541,7 +558,7 @@ def test_parent_supplying_wrong_type():
     )
 
     with pytest.raises(GraphSchemaValidationException, match="type .* expected"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_parent_supplying_wrong_type_to_constructor():
@@ -570,7 +587,7 @@ def test_parent_supplying_wrong_type_to_constructor():
     )
 
     with pytest.raises(GraphSchemaValidationException, match="type .* expected"):
-        validation.validate(schema, language=None, is_train_graph=True)
+        validation.validate(schema,)
 
 
 def test_parent_supplying_subtype():
@@ -586,7 +603,7 @@ def test_parent_supplying_subtype():
         uses=MyComponent, parent=Parent, needs={"training_data": "parent"},
     )
 
-    validation.validate(schema, language=None, is_train_graph=True)
+    validation.validate(schema,)
 
 
 def test_child_accepting_any_type_from_parent():
@@ -602,7 +619,7 @@ def test_child_accepting_any_type_from_parent():
         uses=MyComponent, parent=Parent, needs={"training_data": "parent"},
     )
 
-    validation.validate(schema, language=None, is_train_graph=True)
+    validation.validate(schema,)
 
 
 @pytest.mark.parametrize("is_train_graph", [True, False])
@@ -610,6 +627,9 @@ def test_cycle(is_train_graph: bool):
     class MyTestComponent(TestComponentWithoutRun):
         def run(self, training_data: TrainingData) -> TrainingData:
             pass
+
+    train_schema = GraphSchema({})
+    predict_schema = DEFAULT_PREDICT_SCHEMA
 
     schema = GraphSchema(
         {
@@ -641,8 +661,22 @@ def test_cycle(is_train_graph: bool):
         }
     )
 
+    if is_train_graph:
+        train_schema = schema
+    else:
+        predict_schema = schema
+
     with pytest.raises(GraphSchemaValidationException, match="Cycles"):
-        validation.validate(schema, language=None, is_train_graph=is_train_graph)
+        validation.validate(
+            GraphModelConfiguration(
+                train_schema=train_schema,
+                predict_schema=predict_schema,
+                training_type=TrainingType.BOTH,
+                language=None,
+                core_target=None,
+                nlu_target="nlu_target",
+            )
+        )
 
 
 def test_validation_with_placeholders():
@@ -673,14 +707,23 @@ def test_validation_with_placeholders():
     )
 
     # Does not raise
-    validation.validate(schema, language=None, is_train_graph=True)
+    validation.validate(
+        GraphModelConfiguration(
+            train_schema=schema,
+            predict_schema=DEFAULT_PREDICT_SCHEMA,
+            training_type=TrainingType.BOTH,
+            language=None,
+            core_target=None,
+            nlu_target="nlu_target",
+        )
+    )
 
 
 def test_validation_with_missing_nlu_target():
     schema = GraphSchema(
         {
             "A": SchemaNode(
-                needs={"training_data": PLACEHOLDER_IMPORTER},
+                needs={},
                 uses=TestNLUTarget,
                 eager=True,
                 constructor_name="create",
@@ -691,9 +734,18 @@ def test_validation_with_missing_nlu_target():
     )
 
     with pytest.raises(
-        GraphSchemaValidationException, match="no target for the " "'nlu_target'"
+        GraphSchemaValidationException, match="no target for the 'nlu_target'"
     ):
-        validation.validate(schema, language=None, is_train_graph=False)
+        validation.validate(
+            GraphModelConfiguration(
+                train_schema=GraphSchema({}),
+                predict_schema=schema,
+                training_type=TrainingType.BOTH,
+                language=None,
+                core_target=None,
+                nlu_target=None,
+            )
+        )
 
 
 def test_validation_with_nlu_target_used_by_other_node():
@@ -704,7 +756,7 @@ def test_validation_with_nlu_target_used_by_other_node():
     schema = GraphSchema(
         {
             "A": SchemaNode(
-                needs={"training_data": PLACEHOLDER_IMPORTER},
+                needs={},
                 uses=TestNLUTarget,
                 eager=True,
                 constructor_name="create",
@@ -720,13 +772,21 @@ def test_validation_with_nlu_target_used_by_other_node():
                 config={},
             ),
         },
-        targets={TARGET_NAME_NLU: "A"},
     )
 
     with pytest.raises(
         GraphSchemaValidationException, match="uses the NLU target 'A' as input"
     ):
-        validation.validate(schema, language=None, is_train_graph=False)
+        validation.validate(
+            GraphModelConfiguration(
+                train_schema=GraphSchema({}),
+                predict_schema=schema,
+                training_type=TrainingType.BOTH,
+                language=None,
+                core_target=None,
+                nlu_target="A",
+            )
+        )
 
 
 def test_validation_with_nlu_target_wrong_type():
@@ -741,11 +801,19 @@ def test_validation_with_nlu_target_wrong_type():
                 config={},
             ),
         },
-        targets={TARGET_NAME_NLU: "A"},
     )
 
     with pytest.raises(GraphSchemaValidationException, match="invalid return type"):
-        validation.validate(schema, language=None, is_train_graph=False)
+        validation.validate(
+            GraphModelConfiguration(
+                train_schema=GraphSchema({}),
+                predict_schema=schema,
+                training_type=TrainingType.BOTH,
+                language=None,
+                core_target=None,
+                nlu_target="A",
+            )
+        )
 
 
 def test_validation_with_missing_core_target():
@@ -760,11 +828,19 @@ def test_validation_with_missing_core_target():
                 config={},
             ),
         },
-        targets={TARGET_NAME_NLU: "A", TARGET_NAME_CORE: "B"},
     )
 
     with pytest.raises(GraphSchemaValidationException, match="invalid Core target"):
-        validation.validate(schema, language=None, is_train_graph=False)
+        validation.validate(
+            GraphModelConfiguration(
+                train_schema=GraphSchema({}),
+                predict_schema=schema,
+                training_type=TrainingType.BOTH,
+                language=None,
+                core_target="B",
+                nlu_target="A",
+            )
+        )
 
 
 def test_validation_with_core_target_wrong_type():
@@ -779,13 +855,21 @@ def test_validation_with_core_target_wrong_type():
                 config={},
             ),
         },
-        targets={TARGET_NAME_NLU: "A", TARGET_NAME_CORE: "A"},
     )
 
     with pytest.raises(
         GraphSchemaValidationException, match="Core target .* invalid return type",
     ):
-        validation.validate(schema, language=None, is_train_graph=False)
+        validation.validate(
+            GraphModelConfiguration(
+                train_schema=GraphSchema({}),
+                predict_schema=schema,
+                training_type=TrainingType.BOTH,
+                language=None,
+                core_target="A",
+                nlu_target="A",
+            )
+        )
 
 
 def test_validation_with_core_target_used_by_other_node():
@@ -820,10 +904,18 @@ def test_validation_with_core_target_used_by_other_node():
                 config={},
             ),
         },
-        targets={TARGET_NAME_NLU: "A", TARGET_NAME_CORE: "B"},
     )
 
     with pytest.raises(
         GraphSchemaValidationException, match="uses the Core target 'B' as input"
     ):
-        validation.validate(schema, language=None, is_train_graph=False)
+        validation.validate(
+            GraphModelConfiguration(
+                train_schema=GraphSchema({}),
+                predict_schema=schema,
+                training_type=TrainingType.BOTH,
+                language=None,
+                core_target="B",
+                nlu_target="A",
+            )
+        )

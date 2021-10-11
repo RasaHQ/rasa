@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Tuple, Union, Text, ContextManager, Dict, Any
+from typing import Tuple, Union, Text, ContextManager, Dict, Any, Optional
 
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
@@ -97,24 +97,32 @@ class ModelStorage(abc.ABC):
     def create_model_package(
         self,
         model_archive_path: Union[Text, Path],
-        train_schema: GraphSchema,
-        predict_schema: GraphSchema,
+        model_configuration: GraphModelConfiguration,
         domain: Domain,
-        training_type: TrainingType = TrainingType.BOTH,
     ) -> ModelMetadata:
         """Creates a model archive containing all data to load and run the model.
 
         Args:
             model_archive_path: The path to the archive which should be created.
-            train_schema: The schema which was used to train the graph model.
-            predict_schema: The schema for running predictions with the trained model.
+            model_configuration: The model configuration (schemas, language, etc.)
             domain: The `Domain` which was used to train the model.
-            training_type: NLU, CORE or BOTH depending on what is trained.
 
         Returns:
             The model metadata.
         """
         ...
+
+
+@dataclass()
+class GraphModelConfiguration:
+    """The model configuration to run as a graph during training and prediction."""
+
+    train_schema: GraphSchema
+    predict_schema: GraphSchema
+    training_type: TrainingType
+    language: Optional[Text]
+    core_target: Optional[Text]
+    nlu_target: Optional[Text]
 
 
 @dataclass()
@@ -128,6 +136,9 @@ class ModelMetadata:
     train_schema: GraphSchema
     predict_schema: GraphSchema
     project_fingerprint: Text
+    core_target: Optional[Text]
+    nlu_target: Text
+    language: Optional[Text]
     training_type: TrainingType = TrainingType.BOTH
 
     def as_dict(self) -> Dict[Text, Any]:
@@ -141,6 +152,9 @@ class ModelMetadata:
             "predict_schema": self.predict_schema.as_dict(),
             "training_type": self.training_type.value,
             "project_fingerprint": self.project_fingerprint,
+            "core_target": self.core_target,
+            "nlu_target": self.nlu_target,
+            "language": self.language,
         }
 
     @classmethod
@@ -164,4 +178,7 @@ class ModelMetadata:
             predict_schema=GraphSchema.from_dict(serialized["predict_schema"]),
             training_type=TrainingType(serialized["training_type"]),
             project_fingerprint=serialized["project_fingerprint"],
+            core_target=serialized["core_target"],
+            nlu_target=serialized["nlu_target"],
+            language=serialized["language"],
         )

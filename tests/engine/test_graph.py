@@ -12,12 +12,7 @@ from rasa.engine.graph import SchemaNode, GraphSchema
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 
-@pytest.mark.parametrize(
-    "core_target, nlu_target", [("train", "load"), (None, None), (None, "load")]
-)
-def test_serialize_graph_schema(
-    tmp_path: Path, core_target: Optional[Text], nlu_target: Optional[Text]
-):
+def test_serialize_graph_schema(tmp_path: Path):
     graph_schema = GraphSchema(
         {
             "train": SchemaNode(
@@ -37,8 +32,6 @@ def test_serialize_graph_schema(
                 resource=Resource("test resource"),
             ),
         },
-        core_target=core_target,
-        nlu_target=nlu_target,
     )
 
     serialized = graph_schema.as_dict()

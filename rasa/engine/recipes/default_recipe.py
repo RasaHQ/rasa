@@ -24,11 +24,10 @@ from rasa.engine.constants import (
     PLACEHOLDER_IMPORTER,
     PLACEHOLDER_MESSAGE,
     PLACEHOLDER_TRACKER,
-    TARGET_NAME_CORE,
-    TARGET_NAME_NLU,
 )
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import GraphModelConfiguration
 from rasa.graph_components.converters.nlu_message_converter import NLUMessageConverter
 from rasa.graph_components.providers.domain_provider import DomainProvider
 from rasa.graph_components.providers.domain_without_response_provider import (
@@ -159,7 +158,7 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
         is_finetuning: bool = False,
-    ) -> Tuple[GraphSchema, GraphSchema, Optional[Text]]:
+    ) -> GraphModelConfiguration:
         """Converts the default config to graphs (see interface for full docstring)."""
         self._use_core = (
             bool(config.get("policies")) and not training_type == TrainingType.NLU
@@ -197,17 +196,13 @@ class DefaultV1Recipe(Recipe):
             RegexMessageHandlerGraphComponent,
         )
 
-        return (
-            GraphSchema(train_nodes),
-            GraphSchema(
-                predict_nodes,
-                targets={
-                    TARGET_NAME_CORE: core_target,
-                    TARGET_NAME_NLU: f"run_"
-                    f"{RegexMessageHandlerGraphComponent.__name__}",
-                },
-            ),
-            config.get("language"),
+        return GraphModelConfiguration(
+            train_schema=GraphSchema(train_nodes),
+            predict_schema=GraphSchema(predict_nodes),
+            training_type=training_type,
+            language=config.get("language"),
+            core_target=core_target,
+            nlu_target=f"run_{RegexMessageHandlerGraphComponent.__name__}",
         )
 
     def _create_train_nodes(
