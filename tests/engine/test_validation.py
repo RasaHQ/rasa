@@ -120,19 +120,19 @@ def test_graph_component_is_no_graph_component():
         def other(self) -> TrainingData:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="implement .+ interface"):
-        validation.validate(schema)
+        validation.validate(graph_config)
 
 
 def test_graph_component_fn_does_not_exist():
-    schema = create_test_schema(uses=TestComponentWithRun, run_fn="some_fn")
+    graph_config = create_test_schema(uses=TestComponentWithRun, run_fn="some_fn")
 
     with pytest.raises(
         GraphSchemaValidationException, match="specified method 'some_fn'"
     ):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_graph_output_is_not_fingerprintable_int():
@@ -140,10 +140,10 @@ def test_graph_output_is_not_fingerprintable_int():
         def run(self) -> int:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="fingerprintable"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_predict_graph_output_is_not_fingerprintable():
@@ -151,9 +151,9 @@ def test_predict_graph_output_is_not_fingerprintable():
         def run(self) -> int:
             pass
 
-    schema = create_test_schema(uses=MyComponent, is_train_graph=False)
+    graph_config = create_test_schema(uses=MyComponent, is_train_graph=False)
 
-    validation.validate(schema)
+    validation.validate(graph_config)
 
 
 def test_graph_output_is_not_fingerprintable_any():
@@ -161,10 +161,10 @@ def test_graph_output_is_not_fingerprintable_any():
         def run(self) -> Any:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="fingerprintable"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_graph_output_is_not_fingerprintable_None():
@@ -172,10 +172,10 @@ def test_graph_output_is_not_fingerprintable_None():
         def run(self) -> None:
             pass
 
-    schema = create_test_schema(uses=MyComponent,)
+    graph_config = create_test_schema(uses=MyComponent,)
 
     with pytest.raises(GraphSchemaValidationException, match="fingerprintable"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_graph_with_forward_referenced_output_type():
@@ -185,10 +185,10 @@ def test_graph_with_forward_referenced_output_type():
         def run(self) -> "UserUttered":  # noqa: F821
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="forward reference"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_graph_output_missing_type_annotation():
@@ -196,12 +196,12 @@ def test_graph_output_missing_type_annotation():
         def run(self):
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(
         GraphSchemaValidationException, match="does not have a type annotation"
     ):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_graph_with_fingerprintable_output():
@@ -209,9 +209,9 @@ def test_graph_with_fingerprintable_output():
         def run(self) -> TrainingData:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
-    validation.validate(schema)
+    validation.validate(graph_config)
 
 
 class MyTrainingData(TrainingData):
@@ -223,9 +223,9 @@ def test_graph_with_fingerprintable_output_subclass():
         def run(self) -> MyTrainingData:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
-    validation.validate(schema,)
+    validation.validate(graph_config,)
 
 
 def test_graph_constructor_missing():
@@ -233,12 +233,12 @@ def test_graph_constructor_missing():
         def run(self) -> TrainingData:
             pass
 
-    schema = create_test_schema(uses=MyComponent, constructor_name="invalid")
+    graph_config = create_test_schema(uses=MyComponent, constructor_name="invalid")
 
     with pytest.raises(
         GraphSchemaValidationException, match="specified method 'invalid'"
     ):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_graph_constructor_config_wrong_type():
@@ -253,10 +253,10 @@ def test_graph_constructor_config_wrong_type():
         ) -> GraphComponent:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="incompatible type"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_graph_constructor_resource_wrong_type():
@@ -271,10 +271,10 @@ def test_graph_constructor_resource_wrong_type():
         ) -> GraphComponent:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="incompatible type"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_graph_constructor_model_storage_wrong_type():
@@ -289,10 +289,10 @@ def test_graph_constructor_model_storage_wrong_type():
         ) -> GraphComponent:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="incompatible type"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_graph_constructor_execution_context_wrong_type():
@@ -307,10 +307,10 @@ def test_graph_constructor_execution_context_wrong_type():
         ) -> GraphComponent:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="incompatible type"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 @pytest.mark.parametrize(
@@ -325,12 +325,12 @@ def test_graph_constructor_execution_not_supported_language(
         def supported_languages() -> Optional[List[Text]]:
             return supported_languages
 
-    schema = create_test_schema(uses=MyComponent, language=current_language)
+    graph_config = create_test_schema(uses=MyComponent, language=current_language)
 
     with pytest.raises(
         GraphSchemaValidationException, match="does not support .* language"
     ):
-        validation.validate(schema)
+        validation.validate(graph_config)
 
 
 @pytest.mark.parametrize(
@@ -345,9 +345,9 @@ def test_graph_constructor_execution_supported_language(
         def supported_languages() -> Optional[List[Text]]:
             return supported_languages
 
-    schema = create_test_schema(uses=MyComponent, language=current_language)
+    graph_config = create_test_schema(uses=MyComponent, language=current_language)
 
-    validation.validate(schema)
+    validation.validate(graph_config)
 
 
 @pytest.mark.parametrize(
@@ -361,14 +361,14 @@ def test_graph_constructor_execution_exclusive_list_not_supported_language(
         def not_supported_languages() -> Optional[List[Text]]:
             return not_supported_languages
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent, language=current_language, is_train_graph=False
     )
 
     with pytest.raises(
         GraphSchemaValidationException, match="does not support .* language"
     ):
-        validation.validate(schema)
+        validation.validate(graph_config)
 
 
 @pytest.mark.parametrize(
@@ -383,11 +383,11 @@ def test_graph_constructor_execution_exclusive_list_supported_language(
         def not_supported_languages() -> Optional[List[Text]]:
             return not_supported_languages
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent, language=current_language, is_train_graph=False
     )
 
-    validation.validate(schema)
+    validation.validate(graph_config)
 
 
 @pytest.mark.parametrize(
@@ -400,10 +400,10 @@ def test_graph_missing_package_requirements(required_packages: List[Text]):
             """Any extra python dependencies required for this component to run."""
             return required_packages
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="not installed"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 @pytest.mark.parametrize("required_packages", [["tensorflow"], ["tensorflow", "numpy"]])
@@ -414,9 +414,9 @@ def test_graph_satisfied_package_requirements(required_packages: List[Text]):
             """Any extra python dependencies required for this component to run."""
             return required_packages
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
-    validation.validate(schema,)
+    validation.validate(graph_config,)
 
 
 def test_run_param_not_satisfied():
@@ -424,10 +424,10 @@ def test_run_param_not_satisfied():
         def run(self, some_param: TrainingData) -> TrainingData:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
     with pytest.raises(GraphSchemaValidationException, match="needs the param"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_run_param_satifisfied_due_to_default():
@@ -435,20 +435,20 @@ def test_run_param_satifisfied_due_to_default():
         def run(self, some_param: TrainingData = TrainingData()) -> TrainingData:
             pass
 
-    schema = create_test_schema(uses=MyComponent)
+    graph_config = create_test_schema(uses=MyComponent)
 
-    validation.validate(schema,)
+    validation.validate(graph_config,)
 
 
 def test_too_many_supplied_params():
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=TestComponentWithRun, needs={"some_param": "parent"}
     )
 
     with pytest.raises(
         GraphSchemaValidationException, match="does not accept a parameter"
     ):
-        validation.validate(schema)
+        validation.validate(graph_config)
 
 
 def test_too_many_supplied_params_but_kwargs():
@@ -456,11 +456,11 @@ def test_too_many_supplied_params_but_kwargs():
         def run(self, **kwargs: Any) -> TrainingData:
             pass
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent, needs={"some_param": "parent"}, parent=TestComponentWithRun
     )
 
-    validation.validate(schema,)
+    validation.validate(graph_config,)
 
 
 def test_run_fn_with_variable_length_positional_param():
@@ -468,11 +468,11 @@ def test_run_fn_with_variable_length_positional_param():
         def run(self, *args: Any, some_param: TrainingData) -> TrainingData:
             pass
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent, needs={"some_param": "parent"}, parent=TestComponentWithRun
     )
 
-    validation.validate(schema,)
+    validation.validate(graph_config,)
 
 
 def test_matching_params_due_to_constructor():
@@ -488,7 +488,7 @@ def test_matching_params_due_to_constructor():
         ) -> GraphComponent:
             pass
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent,
         needs={"some_param": "parent"},
         eager=False,
@@ -496,7 +496,7 @@ def test_matching_params_due_to_constructor():
         parent=TestComponentWithRun,
     )
 
-    validation.validate(schema)
+    validation.validate(graph_config)
 
 
 def test_matching_params_due_to_constructor_but_eager():
@@ -512,7 +512,7 @@ def test_matching_params_due_to_constructor_but_eager():
         ) -> GraphComponent:
             pass
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent,
         needs={"some_param": "parent"},
         eager=True,
@@ -520,7 +520,7 @@ def test_matching_params_due_to_constructor_but_eager():
     )
 
     with pytest.raises(GraphSchemaValidationException, match="lazy mode"):
-        validation.validate(schema)
+        validation.validate(graph_config)
 
 
 @pytest.mark.parametrize(
@@ -539,10 +539,12 @@ def test_unsatisfied_constructor(eager: bool, error_message: Text):
         ) -> GraphComponent:
             pass
 
-    schema = create_test_schema(uses=MyComponent, eager=eager, constructor_name="load",)
+    graph_config = create_test_schema(
+        uses=MyComponent, eager=eager, constructor_name="load",
+    )
 
     with pytest.raises(GraphSchemaValidationException, match=error_message):
-        validation.validate(schema)
+        validation.validate(graph_config)
 
 
 def test_parent_supplying_wrong_type():
@@ -554,12 +556,12 @@ def test_parent_supplying_wrong_type():
         def run(self, training_data: TrainingData) -> TrainingData:
             pass
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent, parent=MyUnreliableParent, needs={"training_data": "parent"},
     )
 
     with pytest.raises(GraphSchemaValidationException, match="type .* expected"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_parent_supplying_wrong_type_to_constructor():
@@ -579,7 +581,7 @@ def test_parent_supplying_wrong_type_to_constructor():
         ) -> GraphComponent:
             pass
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent,
         eager=False,
         constructor_name="load",
@@ -588,7 +590,7 @@ def test_parent_supplying_wrong_type_to_constructor():
     )
 
     with pytest.raises(GraphSchemaValidationException, match="type .* expected"):
-        validation.validate(schema,)
+        validation.validate(graph_config,)
 
 
 def test_parent_supplying_subtype():
@@ -600,11 +602,11 @@ def test_parent_supplying_subtype():
         def run(self, training_data: TrainingData) -> TrainingData:
             pass
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent, parent=Parent, needs={"training_data": "parent"},
     )
 
-    validation.validate(schema,)
+    validation.validate(graph_config,)
 
 
 def test_child_accepting_any_type_from_parent():
@@ -616,11 +618,11 @@ def test_child_accepting_any_type_from_parent():
         def run(self, training_data: Any) -> TrainingData:
             pass
 
-    schema = create_test_schema(
+    graph_config = create_test_schema(
         uses=MyComponent, parent=Parent, needs={"training_data": "parent"},
     )
 
-    validation.validate(schema,)
+    validation.validate(graph_config,)
 
 
 @pytest.mark.parametrize("is_train_graph", [True, False])
@@ -685,7 +687,7 @@ def test_validation_with_placeholders():
         def run(self, training_data: TrainingDataImporter) -> TrainingDataImporter:
             pass
 
-    schema = GraphSchema(
+    graph_config = GraphSchema(
         {
             "A": SchemaNode(
                 needs={"training_data": "B"},
@@ -710,7 +712,7 @@ def test_validation_with_placeholders():
     # Does not raise
     validation.validate(
         GraphModelConfiguration(
-            train_schema=schema,
+            train_schema=graph_config,
             predict_schema=DEFAULT_PREDICT_SCHEMA,
             training_type=TrainingType.BOTH,
             language=None,
@@ -721,7 +723,7 @@ def test_validation_with_placeholders():
 
 
 def test_validation_with_missing_nlu_target():
-    schema = GraphSchema(
+    graph_config = GraphSchema(
         {
             "A": SchemaNode(
                 needs={},
@@ -740,7 +742,7 @@ def test_validation_with_missing_nlu_target():
         validation.validate(
             GraphModelConfiguration(
                 train_schema=GraphSchema({}),
-                predict_schema=schema,
+                predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
                 language=None,
                 core_target=None,
@@ -754,7 +756,7 @@ def test_validation_with_nlu_target_used_by_other_node():
         def run(self, nlu_target_output: List[Message]) -> List[Message]:
             pass
 
-    schema = GraphSchema(
+    graph_config = GraphSchema(
         {
             "A": SchemaNode(
                 needs={},
@@ -781,7 +783,7 @@ def test_validation_with_nlu_target_used_by_other_node():
         validation.validate(
             GraphModelConfiguration(
                 train_schema=GraphSchema({}),
-                predict_schema=schema,
+                predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
                 language=None,
                 core_target=None,
@@ -791,7 +793,7 @@ def test_validation_with_nlu_target_used_by_other_node():
 
 
 def test_validation_with_nlu_target_wrong_type():
-    schema = GraphSchema(
+    graph_config = GraphSchema(
         {
             "A": SchemaNode(
                 needs={},
@@ -808,7 +810,7 @@ def test_validation_with_nlu_target_wrong_type():
         validation.validate(
             GraphModelConfiguration(
                 train_schema=GraphSchema({}),
-                predict_schema=schema,
+                predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
                 language=None,
                 core_target=None,
@@ -818,7 +820,7 @@ def test_validation_with_nlu_target_wrong_type():
 
 
 def test_validation_with_missing_core_target():
-    schema = GraphSchema(
+    graph_config = GraphSchema(
         {
             "A": SchemaNode(
                 needs={},
@@ -835,7 +837,7 @@ def test_validation_with_missing_core_target():
         validation.validate(
             GraphModelConfiguration(
                 train_schema=GraphSchema({}),
-                predict_schema=schema,
+                predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
                 language=None,
                 core_target="B",
@@ -845,7 +847,7 @@ def test_validation_with_missing_core_target():
 
 
 def test_validation_with_core_target_wrong_type():
-    schema = GraphSchema(
+    graph_config = GraphSchema(
         {
             "A": SchemaNode(
                 needs={},
@@ -864,7 +866,7 @@ def test_validation_with_core_target_wrong_type():
         validation.validate(
             GraphModelConfiguration(
                 train_schema=GraphSchema({}),
-                predict_schema=schema,
+                predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
                 language=None,
                 core_target="A",
@@ -878,7 +880,7 @@ def test_validation_with_core_target_used_by_other_node():
         def run(self, core_target_output: PolicyPrediction) -> PolicyPrediction:
             pass
 
-    schema = GraphSchema(
+    graph_config = GraphSchema(
         {
             "A": SchemaNode(
                 needs={},
@@ -913,7 +915,7 @@ def test_validation_with_core_target_used_by_other_node():
         validation.validate(
             GraphModelConfiguration(
                 train_schema=GraphSchema({}),
-                predict_schema=schema,
+                predict_schema=graph_config,
                 training_type=TrainingType.BOTH,
                 language=None,
                 core_target="B",
