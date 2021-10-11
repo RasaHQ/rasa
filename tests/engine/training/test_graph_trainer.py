@@ -8,13 +8,19 @@ import pytest
 
 from rasa.engine.caching import TrainingCache
 from rasa.engine.exceptions import GraphComponentException
-from rasa.engine.graph import GraphComponent, GraphSchema, SchemaNode
+from rasa.engine.graph import (
+    GraphComponent,
+    GraphSchema,
+    SchemaNode,
+    GraphModelConfiguration,
+)
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.domain import Domain
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from tests.engine.graph_components_test_classes import (
     AddInputs,
@@ -75,8 +81,14 @@ def test_graph_trainer_returns_model_metadata(
 
     output_filename = tmp_path / "model.tar.gz"
     model_metadata = graph_trainer.train(
-        train_schema=train_schema,
-        predict_schema=predict_schema,
+        GraphModelConfiguration(
+            train_schema=train_schema,
+            predict_schema=predict_schema,
+            language=None,
+            core_target=None,
+            nlu_target="nlu",
+            training_type=TrainingType.BOTH,
+        ),
         importer=TrainingDataImporter.load_from_dict(domain_path=str(domain_path)),
         output_filename=output_filename,
     )
@@ -334,8 +346,14 @@ def train_with_schema(
 
         output_filename = path / "model.tar.gz"
         graph_trainer.train(
-            train_schema=train_schema,
-            predict_schema=GraphSchema({}),
+            GraphModelConfiguration(
+                train_schema=train_schema,
+                predict_schema=GraphSchema({}),
+                language=None,
+                core_target=None,
+                nlu_target="nlu",
+                training_type=TrainingType.BOTH,
+            ),
             importer=TrainingDataImporter.load_from_dict(domain_path=str(domain_path)),
             output_filename=output_filename,
             force_retraining=force_retraining,

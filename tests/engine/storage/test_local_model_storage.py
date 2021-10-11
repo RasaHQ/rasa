@@ -6,11 +6,12 @@ import pytest
 from _pytest.tmpdir import TempPathFactory
 
 import rasa.shared.utils.io
-from rasa.engine.graph import SchemaNode, GraphSchema
+from rasa.engine.graph import SchemaNode, GraphSchema, GraphModelConfiguration
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
+from rasa.shared.importers.autoconfig import TrainingType
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 
@@ -104,7 +105,11 @@ def test_create_model_package(
     trained_at = datetime.utcnow()
     with freezegun.freeze_time(trained_at):
         train_model_storage.create_model_package(
-            archive_path, train_schema, predict_schema, domain
+            archive_path,
+            GraphModelConfiguration(
+                train_schema, predict_schema, TrainingType.BOTH, None, None, "nlu"
+            ),
+            domain,
         )
 
     # Unpack and inspect packaged model
@@ -136,7 +141,11 @@ def test_create_package_with_non_existing_parent(tmp_path: Path):
     model_file = tmp_path / "new" / "sub" / "dir" / "file.tar.gz"
 
     storage.create_model_package(
-        model_file, GraphSchema({}), GraphSchema({}), Domain.empty()
+        model_file,
+        GraphModelConfiguration(
+            GraphSchema({}), GraphSchema({}), TrainingType.BOTH, None, None, "nlu"
+        ),
+        Domain.empty(),
     )
 
     assert model_file.is_file()
@@ -156,7 +165,11 @@ def test_create_model_package_with_non_existing_dir(
 ):
     path = tmp_path / "some_dir" / "another" / "model.tar.gz"
     default_model_storage.create_model_package(
-        path, GraphSchema({}), GraphSchema({}), Domain.empty()
+        path,
+        GraphModelConfiguration(
+            GraphSchema({}), GraphSchema({}), TrainingType.BOTH, None, None, "nlu"
+        ),
+        Domain.empty(),
     )
 
     assert path.exists()
