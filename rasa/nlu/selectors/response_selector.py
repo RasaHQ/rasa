@@ -1,6 +1,7 @@
 from __future__ import annotations
 import copy
 import logging
+from rasa.nlu.featurizers.featurizer import Featurizer2
 
 import numpy as np
 import tensorflow as tf
@@ -133,6 +134,11 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
 
     # The `transformer_size` to use as a default when the transformer is enabled.
     default_transformer_size_when_enabled = 256
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Featurizer2]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

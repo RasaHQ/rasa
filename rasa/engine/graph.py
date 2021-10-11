@@ -127,6 +127,11 @@ class GraphComponent(ABC):
     """Interface for any component which will run in a graph."""
 
     @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return []
+
+    @classmethod
     @abstractmethod
     def create(
         cls,

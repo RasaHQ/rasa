@@ -96,6 +96,8 @@ def validate(
             node_name, node, schema, create_fn_params, run_fn_params,
         )
 
+    _validate_required_components(schema)
+
 
 def _validate_cycle(schema: GraphSchema) -> None:
     for target_name in schema.target_names:
@@ -413,3 +415,85 @@ def _validate_parent_return_type(
             f"'{parent_return_type}' but type '{required_type}' "
             f"was expected by component '{node.uses.__name__}'."
         )
+
+
+def _validate_required_components(schema: GraphSchema,) -> None:
+    unmet_requirements: Dict[Type, Set[Text]] = dict()
+    for target_name in schema.target_names:
+        unmet_requirements_for_target, _ = _recursively_check_required_components(
+            node_name=target_name, schema=schema,
+        )
+        for component_type, node_names in unmet_requirements_for_target.items():
+            unmet_requirements.setdefault(component_type, set()).update(node_names)
+    if unmet_requirements:
+        errors = "\n".join(
+            [
+                f"The following components require a {component_type.__name__}: "
+                f"{', '.join(sorted(required_by))}. "
+                for component_type, required_by in unmet_requirements.items()
+            ]
+        )
+        num_nodes = len(
+            set(
+                node_name
+                for required_by in unmet_requirements.values()
+                for node_name in required_by
+            )
+        )
+        raise GraphSchemaValidationException(
+            f"{num_nodes} nodes are missing required components:\n"
+            f"{errors}"
+            f"Please add the required components to the graph."
+        )
+
+
+def _recursively_check_required_components(
+    node_name: Text, schema: GraphSchema,
+) -> Tuple[Dict[Type, Set[Text]], Set[Type]]:
+    """Collects unmet requirements and types used in the subtree rooted at `node_name`.
+
+    Args:
+        schema: the graph schema
+        node_name: the name of the root of the subtree
+    Returns:
+       unmet requirements, i.e. a mapping from component types to names of nodes that
+       are contained in the subtree rooted at `schema_node` that require that component
+       type but can't find it in their respective subtrees and
+       a set containing all component types of nodes that are ancestors of the
+       `schema_node` (or of the`schema_node` itself)
+    """
+    schema_node = schema.nodes[node_name]
+
+    unmet_requirements: Dict[Type, Set[Text]] = dict()
+    component_types = set()
+
+    # collect all component types used by ancestors and their unmet requirements
+    for parent_node_name in schema_node.needs.values():
+        if _is_placeholder_input(parent_node_name):
+            continue
+        (
+            unmet_requirements_of_ancestors,
+            ancestor_types,
+        ) = _recursively_check_required_components(
+            node_name=parent_node_name, schema=schema
+        )
+        for type, nodes in unmet_requirements_of_ancestors.items():
+            unmet_requirements.setdefault(type, set()).update(nodes)
+        component_types.update(ancestor_types)
+
+    # check which requirements of the `schema_node` are not fulfilled by
+    # comparing its requirements with the types found so far among the ancestor nodes
+    unmet_requirements_of_current_node = set(
+        required
+        for required in schema_node.uses.required_components()
+        if not any(
+            issubclass(used_subtype, required) for used_subtype in component_types
+        )
+    )
+
+    # add the unmet requirements and the type of the `schema_node`
+    for component_type in unmet_requirements_of_current_node:
+        unmet_requirements.setdefault(component_type, set()).add(node_name)
+    component_types.add(schema_node.uses)
+
+    return unmet_requirements, component_types
