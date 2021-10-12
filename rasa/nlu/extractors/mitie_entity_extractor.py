@@ -281,7 +281,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 return cls(config, model_storage, resource, ner=ner)
 
         except (FileNotFoundError, ValueError) as e:
-            rasa.shared.utils.io.raise_warning(
+            logger.debug(
                 f"Failed to load {cls.__name__} from model storage. "
                 f"This can happen if the model could not be trained because regexes "
                 f"could not be extracted from the given training data - and hence "

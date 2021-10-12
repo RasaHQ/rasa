@@ -1023,7 +1023,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
                     model_path, config, model_storage, resource, execution_context,
                 )
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )

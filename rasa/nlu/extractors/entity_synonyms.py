@@ -135,7 +135,7 @@ class EntitySynonymMapperGraphComponent(GraphComponent, EntityExtractorMixin):
                         docs=DOCS_URL_TRAINING_DATA + "#synonyms",
                     )
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )

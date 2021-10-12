@@ -683,7 +683,7 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
                 model.all_retrieval_intents = all_retrieval_intents
                 return model
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )

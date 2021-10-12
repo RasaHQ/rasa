@@ -522,7 +522,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                     feature_to_idx_dict=feature_to_idx_dict,
                 )
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load `{cls.__class__.__name__}` from model storage. "
                 f"Resource '{resource.name}' doesn't exist."
             )
