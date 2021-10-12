@@ -58,14 +58,12 @@ def _probabilities_with_action_unlikely_intent_for(
             # here we simply trigger it by
             # predicting `action_unlikely_intent` in a specified moment
             # to make the tests deterministic.
-            return (
-                PolicyPrediction.for_action_name(
-                    domain,
-                    ACTION_UNLIKELY_INTENT_NAME,
-                    action_metadata=metadata_for_intent.get(intent_name)
-                    if metadata_for_intent
-                    else None,
-                ),
+            return PolicyPrediction.for_action_name(
+                domain,
+                ACTION_UNLIKELY_INTENT_NAME,
+                action_metadata=metadata_for_intent.get(intent_name)
+                if metadata_for_intent
+                else None,
             )
 
         return _original(self, tracker, domain, **kwargs)

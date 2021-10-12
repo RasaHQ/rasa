@@ -6,7 +6,7 @@ import freezegun
 
 import rasa
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import GraphSchema, SchemaNode
+from rasa.engine.graph import GraphModelConfiguration, GraphSchema, SchemaNode
 from rasa.engine import loader
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -14,6 +14,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.domain import Domain
+from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
@@ -75,8 +76,14 @@ def test_loader_loads_graph_runner(
     trained_at = datetime.utcnow()
     with freezegun.freeze_time(trained_at):
         model_metadata = graph_trainer.train(
-            train_schema=train_schema,
-            predict_schema=predict_schema,
+            GraphModelConfiguration(
+                train_schema=train_schema,
+                predict_schema=predict_schema,
+                training_type=TrainingType.BOTH,
+                language=None,
+                core_target=None,
+                nlu_target=None,
+            ),
             importer=importer,
             output_filename=output_filename,
         )

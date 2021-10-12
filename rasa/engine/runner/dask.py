@@ -90,7 +90,6 @@ class DaskGraphRunner(GraphRunner):
         targets: Optional[List[Text]] = None,
     ) -> Dict[Text, Any]:
         """Runs the graph (see parent class for full docstring)."""
-
         run_targets = targets if targets else self._graph_schema.target_names
         minimal_schema = self._graph_schema.minimal_graph_schema(run_targets)
         run_graph = self._build_dask_graph(minimal_schema)
