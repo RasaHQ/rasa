@@ -1,3 +1,4 @@
+import pytest
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
@@ -11,9 +12,7 @@ from tests.engine.graph_components_test_classes import (
 
 
 def test_training_hook_saves_to_cache(
-    default_model_storage: ModelStorage,
-    temp_cache: TrainingCache,
-    default_training_hook: TrainingHook,
+    default_model_storage: ModelStorage, temp_cache: TrainingCache,
 ):
     # We need an execution context so the hook can determine the class of the graph
     # component
@@ -42,7 +41,13 @@ def test_training_hook_saves_to_cache(
         model_storage=default_model_storage,
         resource=None,
         execution_context=execution_context,
-        hooks=[default_training_hook],
+        hooks=[
+            TrainingHook(
+                cache=temp_cache,
+                model_storage=default_model_storage,
+                pruned_schema=execution_context.graph_schema,
+            )
+        ],
     )
 
     node(("input_node", "Joe"))
@@ -67,9 +72,7 @@ def test_training_hook_saves_to_cache(
 
 
 def test_training_hook_does_not_cache_cached_component(
-    default_model_storage: ModelStorage,
-    temp_cache: TrainingCache,
-    default_training_hook: TrainingHook,
+    default_model_storage: ModelStorage, temp_cache: TrainingCache,
 ):
     # We need an execution context so the hook can determine the class of the graph
     # component
@@ -98,7 +101,13 @@ def test_training_hook_does_not_cache_cached_component(
         model_storage=default_model_storage,
         resource=None,
         execution_context=execution_context,
-        hooks=[default_training_hook],
+        hooks=[
+            TrainingHook(
+                cache=temp_cache,
+                model_storage=default_model_storage,
+                pruned_schema=execution_context.graph_schema,
+            )
+        ],
     )
 
     node(("input_node", "Joe"))

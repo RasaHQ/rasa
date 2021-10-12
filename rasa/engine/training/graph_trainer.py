@@ -84,7 +84,13 @@ class GraphTrainer:
                 model_configuration.train_schema, fingerprint_run_outputs
             )
 
-        hooks = [TrainingHook(cache=self._cache, model_storage=self._model_storage)]
+        hooks = [
+            TrainingHook(
+                cache=self._cache,
+                model_storage=self._model_storage,
+                pruned_schema=pruned_training_schema,
+            ),
+        ]
 
         graph_runner = self._graph_runner_class.create(
             graph_schema=pruned_training_schema,

@@ -21,10 +21,3 @@ def local_cache_creator(monkeypatch: MonkeyPatch) -> Callable[..., LocalTraining
         return LocalTrainingCache()
 
     return create_local_cache
-
-
-@pytest.fixture()
-def default_training_hook(
-    temp_cache: TrainingCache, default_model_storage: ModelStorage
-) -> TrainingHook:
-    return TrainingHook(cache=temp_cache, model_storage=default_model_storage)

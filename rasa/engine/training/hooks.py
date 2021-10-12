@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Text, Type
 
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import ExecutionContext, GraphNodeHook
+from rasa.engine.graph import ExecutionContext, GraphNodeHook, GraphSchema
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import PrecomputedValueProvider
 import rasa.shared.utils.io
@@ -14,15 +14,22 @@ logger = logging.getLogger(__name__)
 class TrainingHook(GraphNodeHook):
     """Caches fingerprints and outputs of nodes during model training."""
 
-    def __init__(self, cache: TrainingCache, model_storage: ModelStorage):
+    def __init__(
+        self,
+        cache: TrainingCache,
+        model_storage: ModelStorage,
+        pruned_schema: GraphSchema,
+    ) -> None:
         """Initializes a `TrainingHook`.
 
         Args:
             cache: Cache used to store fingerprints and outputs.
             model_storage: Used to cache `Resource`s.
+            pruned_schema: The pruned training schema.
         """
         self._cache = cache
         self._model_storage = model_storage
+        self._pruned_schema = pruned_schema
 
     def on_before_node(
         self,
@@ -53,9 +60,8 @@ class TrainingHook(GraphNodeHook):
     ) -> None:
         """Stores the fingerprints and caches the output of the node."""
         # We should not re-cache the output of a PrecomputedValueProvider.
-        graph_component_class = self._get_graph_component_class(
-            execution_context, node_name
-        )
+        graph_component_class = self._pruned_schema.nodes[node_name].uses
+
         if graph_component_class == PrecomputedValueProvider:
             return None
 
