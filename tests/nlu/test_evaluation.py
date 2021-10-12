@@ -832,7 +832,7 @@ def test_empty_response_removal():
     assert response_results[0].message == "What's your name?"
 
     assert response_results[1].intent_response_key_target == "chitchat/ask_name"
-    assert response_results[1].intent_response_key_prediction == "chitchat/ask_name"
+    assert response_results[1].intent_response_key_prediction == ""
     assert response_results[1].confidence == 0.0
     assert response_results[1].message == "What's your name?"
 
