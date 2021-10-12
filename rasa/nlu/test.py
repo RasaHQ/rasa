@@ -163,6 +163,11 @@ def remove_empty_response_examples(
         if r.intent_response_key_prediction is None:
             r = r._replace(intent_response_key_prediction="")
 
+        if r.confidence is None:
+            # This might happen if response selector training data is present but
+            # no response selector is part of the model
+            r = r._replace(confidence=0.0)
+
         if r.intent_response_key_target:
             filtered.append(r)
 
@@ -1289,7 +1294,10 @@ def get_eval_data(
             response_selector_retrieval_intents = selector_properties.get(
                 RESPONSE_SELECTOR_RETRIEVAL_INTENTS, set()
             )
-            if intent_target in response_selector_retrieval_intents:
+            if (
+                intent_target in response_selector_retrieval_intents
+                and intent_target in selector_properties
+            ):
                 response_prediction_key = intent_target
             else:
                 response_prediction_key = RESPONSE_SELECTOR_DEFAULT_INTENT
