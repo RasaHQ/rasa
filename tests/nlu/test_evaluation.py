@@ -820,7 +820,7 @@ def test_empty_response_removal():
         # This happens if response selection test data is present but no response
         # selector is part of the model
         ResponseSelectionEvaluationResult(
-            "chitchat/ask_name", "chitchat/ask_name", "What's your name?", None
+            "chitchat/ask_name", None, "What's your name?", None
         ),
     ]
     response_results = remove_empty_response_examples(response_results)
