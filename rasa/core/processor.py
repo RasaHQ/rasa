@@ -13,6 +13,7 @@ from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
+from rasa.shared.importers.autoconfig import TrainingType
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -46,6 +47,7 @@ from rasa.shared.core.events import (
 from rasa.shared.constants import (
     DOCS_URL_DOMAINS,
     DEFAULT_SENDER_ID,
+    DOCS_URL_POLICIES,
     UTTER_PREFIX,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -113,13 +115,18 @@ class MessageProcessor:
         self, message: UserMessage
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
-        tracker = await self.fetch_tracker_and_update_session(
-            message.sender_id, message.output_channel, message.metadata
-        )
+        # preprocess message if necessary
+        tracker = await self.log_message(message, should_save_tracker=False)
 
-        tracker = await self._run_prediction_loop(
-            message.output_channel, tracker, message
-        )
+        if self.model_metadata.training_type == TrainingType.NLU:
+            self._save_tracker(tracker)
+            rasa.shared.utils.io.raise_warning(
+                "No core model. Skipping action prediction and execution.",
+                docs=DOCS_URL_POLICIES,
+            )
+            return None
+
+        await self._run_prediction_loop(message.output_channel, tracker)
 
         self._save_tracker(tracker)
 
@@ -161,10 +168,14 @@ class MessageProcessor:
         Returns:
             The prediction for the next action. `None` if no domain or policies loaded.
         """
-        tracker, prediction = self._predict_next_with_tracker(tracker, None)
-
-        if not prediction:
+        if self.model_metadata.training_type == TrainingType.NLU:
+            rasa.shared.utils.io.raise_warning(
+                "No core model. Skipping action prediction and execution.",
+                docs=DOCS_URL_POLICIES,
+            )
             return None
+
+        prediction = self._predict_next_with_tracker(tracker)
 
         scores = [
             {"action": a, "score": p}
@@ -373,8 +384,8 @@ class MessageProcessor:
         return tracker
 
     def predict_next_with_tracker_if_should(
-        self, tracker: DialogueStateTracker, message: Optional[UserMessage] = None
-    ) -> Tuple[DialogueStateTracker, rasa.core.actions.action.Action, PolicyPrediction]:
+        self, tracker: DialogueStateTracker
+    ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
@@ -395,20 +406,18 @@ class MessageProcessor:
                 "The limit of actions to predict has been reached."
             )
 
-        tracker, prediction = self._predict_next_with_tracker(tracker, message)
+        prediction = self._predict_next_with_tracker(tracker)
 
-        action = None
-        if prediction:
-            action = rasa.core.actions.action.action_for_index(
-                prediction.max_confidence_index, self.domain, self.action_endpoint
-            )
+        action = rasa.core.actions.action.action_for_index(
+            prediction.max_confidence_index, self.domain, self.action_endpoint
+        )
 
-            logger.debug(
-                f"Predicted next action '{action.name()}' with confidence "
-                f"{prediction.max_confidence:.2f}."
-            )
+        logger.debug(
+            f"Predicted next action '{action.name()}' with confidence "
+            f"{prediction.max_confidence:.2f}."
+        )
 
-        return tracker, action, prediction
+        return action, prediction
 
     @staticmethod
     def _is_reminder(e: Event, name: Text) -> bool:
@@ -576,13 +585,11 @@ class MessageProcessor:
             Parsed data extracted from the message.
         """
         results = self.graph_runner.run(
-            inputs={
-                PLACEHOLDER_MESSAGE: [message] if message else [],
-                PLACEHOLDER_TRACKER: DialogueStateTracker("no_sender", []),
-            },
-            targets=["output_provider"],
+            inputs={PLACEHOLDER_MESSAGE: [message]},
+            targets=[self.model_metadata.nlu_target],
         )
-        parsed_message, _, _ = results["output_provider"]
+        parsed_messages = results[self.model_metadata.nlu_target]
+        parsed_message = parsed_messages[0]
         parse_data = {
             TEXT: "",
             INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
@@ -669,21 +676,16 @@ class MessageProcessor:
         )
 
     async def _run_prediction_loop(
-        self,
-        output_channel: OutputChannel,
-        tracker: DialogueStateTracker,
-        message: Optional[UserMessage] = None,
-    ) -> DialogueStateTracker:
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker,
+    ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
+
         # action loop. predicts actions until we hit action listen
         while should_predict_another_action and self._should_handle_message(tracker):
             # this actually just calls the policy's method by the same name
             try:
-                tracker, action, prediction = self.predict_next_with_tracker_if_should(
-                    tracker, message
-                )
-                message = None
+                action, prediction = self.predict_next_with_tracker_if_should(tracker)
             except ActionLimitReached:
                 logger.warning(
                     "Circuit breaker tripped. Stopped predicting "
@@ -691,18 +693,12 @@ class MessageProcessor:
                 )
                 if self.on_circuit_break:
                     # call a registered callback
-                    self.on_circuit_break(tracker, message.output_channel, self.nlg)
+                    self.on_circuit_break(tracker, output_channel, self.nlg)
                 break
 
-            if action:
-                should_predict_another_action = await self._run_action(
-                    action, tracker, output_channel, self.nlg, prediction
-                )
-            else:
-                # If the model is NLU only, then we will have no action to run.
-                break
-
-        return tracker
+            should_predict_another_action = await self._run_action(
+                action, tracker, output_channel, self.nlg, prediction
+            )
 
     @staticmethod
     def should_predict_another_action(action_name: Text) -> bool:
@@ -895,8 +891,8 @@ class MessageProcessor:
         self.tracker_store.save(tracker)
 
     def _predict_next_with_tracker(
-        self, tracker: DialogueStateTracker, message: Optional[UserMessage] = None
-    ) -> Tuple[DialogueStateTracker, Optional[PolicyPrediction]]:
+        self, tracker: DialogueStateTracker
+    ) -> PolicyPrediction:
         """Collect predictions from ensemble and return action and predictions."""
         followup_action = tracker.followup_action
         if followup_action:
@@ -905,7 +901,7 @@ class MessageProcessor:
                 prediction = PolicyPrediction.for_action_name(
                     self.domain, followup_action, FOLLOWUP_ACTION
                 )
-                return tracker, prediction
+                return prediction
 
             logger.error(
                 f"Trying to run unknown follow-up action '{followup_action}'. "
@@ -914,13 +910,8 @@ class MessageProcessor:
             )
 
         results = self.graph_runner.run(
-            inputs={
-                PLACEHOLDER_MESSAGE: [message] if message else [],
-                PLACEHOLDER_TRACKER: tracker,
-            },
-            targets=["output_provider"],
+            inputs={PLACEHOLDER_TRACKER: tracker},
+            targets=[self.model_metadata.core_target],
         )
-        parsed_message, tracker_with_added_message, policy_prediction = results[
-            "output_provider"
-        ]
-        return tracker_with_added_message, policy_prediction
+        policy_prediction = results[self.model_metadata.core_target]
+        return policy_prediction

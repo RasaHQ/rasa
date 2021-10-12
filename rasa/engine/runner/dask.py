@@ -39,8 +39,7 @@ class DaskGraphRunner(GraphRunner):
             hooks: These are called before and after the execution of each node.
         """
         self._graph_schema = graph_schema
-        self._targets: List[Text] = self._targets_from_schema(graph_schema)
-        self._instantiated_graph: Dict[Text, GraphNode] = self._instantiate_graph(
+        self._instantiated_nodes: Dict[Text, GraphNode] = self._instantiate_nodes(
             graph_schema, model_storage, execution_context, hooks
         )
         self._execution_context: ExecutionContext = execution_context
@@ -57,15 +56,7 @@ class DaskGraphRunner(GraphRunner):
         return cls(graph_schema, model_storage, execution_context, hooks)
 
     @staticmethod
-    def _targets_from_schema(graph_schema: GraphSchema) -> List[Text]:
-        return [
-            node_name
-            for node_name, schema_node in graph_schema.nodes.items()
-            if schema_node.is_target
-        ]
-
-    def _instantiate_graph(
-        self,
+    def _instantiate_nodes(
         graph_schema: GraphSchema,
         model_storage: ModelStorage,
         execution_context: ExecutionContext,
@@ -78,18 +69,18 @@ class DaskGraphRunner(GraphRunner):
             for node_name, schema_node in graph_schema.nodes.items()
         }
 
-    @staticmethod
-    def _instantiated_graph_to_dask_graph(
-        instantiated_graph: Dict[Text, GraphNode]
-    ) -> Dict[Text, Any]:
+    def _build_dask_graph(self, schema: GraphSchema) -> Dict[Text, Any]:
         """Builds a dask graph from the instantiated graph.
 
         For more information about dask graphs
         see: https://docs.dask.org/en/latest/spec.html
         """
         run_graph = {
-            node_name: (graph_node, *graph_node.parent_node_names())
-            for node_name, graph_node in instantiated_graph.items()
+            node_name: (
+                self._instantiated_nodes[node_name],
+                *schema_node.needs.values(),
+            )
+            for node_name, schema_node in schema.nodes.items()
         }
         return run_graph
 
@@ -99,12 +90,12 @@ class DaskGraphRunner(GraphRunner):
         targets: Optional[List[Text]] = None,
     ) -> Dict[Text, Any]:
         """Runs the graph (see parent class for full docstring)."""
-        run_graph = self._instantiated_graph_to_dask_graph(self._instantiated_graph)
+        run_targets = targets if targets else self._graph_schema.target_names
+        minimal_schema = self._graph_schema.minimal_graph_schema(run_targets)
+        run_graph = self._build_dask_graph(minimal_schema)
 
         if inputs:
             self._add_inputs_to_graph(inputs, run_graph)
-
-        run_targets = targets if targets else self._targets
 
         logger.debug(
             f"Running graph with inputs: {inputs}, targets: {targets} "
