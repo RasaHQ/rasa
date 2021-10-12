@@ -31,7 +31,7 @@ def run_cmdline(
             break
 
         if message.startswith(INTENT_MESSAGE_PREFIX):
-            result = asyncio.run(regex_interpreter.parse(message))
+            result = regex_interpreter.synchronous_parse(message)
         else:
             result = interpreter.parse(message)
 
