@@ -27,6 +27,7 @@ def test_migrate_domain_format_with_required_slots(
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
+        version: "2.0"
         intents:
         - greet
         - affirm
@@ -56,6 +57,9 @@ def test_migrate_domain_format_with_required_slots(
                  email:
                  - type: from_text
                    intent: inform
+                 name:
+                 - type: from_entity
+                   entity: surname
         """,
         "domain.yml",
     )
@@ -80,7 +84,7 @@ def test_migrate_domain_format_with_required_slots(
         "name": {
             "type": "text",
             "influence_conversation": False,
-            "mappings": [{"type": "from_entity", "entity": "name"}],
+            "mappings": [{"type": "from_entity", "entity": "surname"}],
         },
         "email": {
             "type": "text",
@@ -94,7 +98,7 @@ def test_migrate_domain_format_with_required_slots(
     expected_forms = {
         "booking_form": {
             "ignored_intents": ["greet"],
-            "required_slots": ["location", "email"],
+            "required_slots": ["location", "email", "name"],
         }
     }
     assert migrated_forms == expected_forms
@@ -106,6 +110,7 @@ def test_migrate_domain_form_without_required_slots(
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
+        version: "2.0"
         intents:
         - greet
         - affirm
@@ -113,6 +118,7 @@ def test_migrate_domain_form_without_required_slots(
         entities:
         - city
         - name
+        - surname
         slots:
           location:
             type: text
@@ -134,6 +140,9 @@ def test_migrate_domain_form_without_required_slots(
                email:
                  - type: from_text
                    intent: inform
+               name:
+                 - type: from_entity
+                   entity: surname
         """,
         "domain.yml",
     )
@@ -158,7 +167,7 @@ def test_migrate_domain_form_without_required_slots(
         "name": {
             "type": "text",
             "influence_conversation": False,
-            "mappings": [{"type": "from_entity", "entity": "name"}],
+            "mappings": [{"type": "from_entity", "entity": "surname"}],
         },
         "email": {
             "type": "text",
@@ -172,7 +181,7 @@ def test_migrate_domain_form_without_required_slots(
     expected_forms = {
         "booking_form": {
             "ignored_intents": ["greet"],
-            "required_slots": ["location", "email"],
+            "required_slots": ["location", "email", "name"],
         }
     }
     assert migrated_forms == expected_forms
@@ -192,10 +201,10 @@ def test_migrate_domain_form_without_required_slots(
 def test_migrate_domain_with_diff_slot_types(
     slot_type: Text, value: Any, tmp_path: Path, domain_out_file: Path
 ):
-    pass
     existing_domain_file = prepare_domain_path(
         tmp_path,
         f"""
+        version: "2.0"
         entities:
             - outdoor
         slots:
@@ -235,6 +244,7 @@ def test_migrate_domain_format_from_dir(tmp_path: Path, domain_out_file: Path):
     prepare_domain_path(
         domain_dir,
         """
+        version: "2.0"
         entities:
             - outdoor
         slots:
@@ -248,6 +258,7 @@ def test_migrate_domain_format_from_dir(tmp_path: Path, domain_out_file: Path):
     prepare_domain_path(
         domain_dir,
         """
+        version: "2.0"
         forms:
           reservation_form:
             required_slots:
@@ -268,3 +279,47 @@ def test_migrate_domain_format_from_dir(tmp_path: Path, domain_out_file: Path):
 
     for file in old_domain_path.iterdir():
         assert file.name in ["slots.yml", "forms.yml"]
+
+
+def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
+    existing_domain_file = prepare_domain_path(
+        tmp_path,
+        """
+        intents:
+        - greet
+        entities:
+        - city
+        slots:
+          city:
+            type: text
+            influence_conversation: false
+        responses:
+            utter_greet:
+            - text: "Hi there!"
+        actions:
+        - action_check_time
+        forms:
+          booking_form:
+            required_slots:
+              city:
+              - type: from_entity
+                entity: city
+        """,
+        "domain.yml",
+    )
+    rasa.core.migrate.migrate_domain_format(existing_domain_file, domain_out_file)
+    domain = Domain.from_path(domain_out_file)
+    assert domain
+
+    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_intents = migrated_domain.get("intents")
+    assert "greet" in migrated_intents
+
+    migrated_entities = migrated_domain.get("entities")
+    assert "city" in migrated_entities
+
+    migrated_responses = migrated_domain.get("responses")
+    assert "utter_greet" in migrated_responses
+
+    migrated_actions = migrated_domain.get("actions")
+    assert "action_check_time" in migrated_actions

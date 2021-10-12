@@ -60,7 +60,7 @@ def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
         }
 
     for slot_name, properties in slots.items():
-        if slot_name in entities:
+        if slot_name in entities and properties.get("auto_fill", True) is True:
             from_entity_mapping = {
                 "type": "from_entity",
                 "entity": slot_name,
