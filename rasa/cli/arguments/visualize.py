@@ -9,6 +9,7 @@ from rasa.cli.arguments.default_arguments import (
 
 
 def set_visualize_stories_arguments(parser: argparse.ArgumentParser) -> None:
+    """Sets the CLI arguments for `rasa data visualize."""
     add_domain_param(parser)
     add_stories_param(parser)
 
