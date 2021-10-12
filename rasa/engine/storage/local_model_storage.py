@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import shutil
-import tarfile
+from tarsafe import TarSafe
 import tempfile
 import uuid
 from contextlib import contextmanager
@@ -72,7 +72,7 @@ class LocalModelStorage(ModelStorage):
     def _extract_archive_to_directory(
         model_archive_path: Union[Text, Path], temporary_directory: Union[Text, Path],
     ) -> None:
-        with tarfile.open(model_archive_path, mode="r:gz") as tar:
+        with TarSafe.open(model_archive_path, mode="r:gz") as tar:
             tar.extractall(temporary_directory)
 
     @staticmethod
