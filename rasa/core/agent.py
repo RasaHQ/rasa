@@ -36,7 +36,6 @@ from rasa.exceptions import ModelNotFound
 from rasa.nlu.utils import is_url
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.tracker_store import TrackerStore
@@ -498,36 +497,6 @@ class Agent:
             self.fingerprint = fingerprint
         else:
             self.fingerprint = uuid.uuid4().hex
-
-    async def visualize(
-        self,
-        resource_name: Text,
-        output_file: Text,
-        max_history: Optional[int] = None,
-        nlu_training_data: Optional[TrainingData] = None,
-        should_merge_nodes: bool = True,
-        fontsize: int = 12,
-    ) -> None:
-        """Visualize the loaded training data from the resource."""
-        # TODO: This needs to be fixed to not use the interpreter
-        from rasa.shared.core.training_data.visualization import visualize_stories
-        from rasa.shared.core.training_data import loading
-
-        # if the user doesn't provide a max history, we will use the
-        # largest value from any policy
-        max_history = max_history or self._max_history()
-
-        story_steps = loading.load_data_from_resource(resource_name, self.domain)
-        await visualize_stories(
-            story_steps,
-            self.domain,
-            output_file,
-            max_history,
-            self.interpreter,
-            nlu_training_data,
-            should_merge_nodes,
-            fontsize,
-        )
 
     @staticmethod
     def _create_tracker_store(
