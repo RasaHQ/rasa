@@ -224,8 +224,8 @@ class GraphTrainer:
                 )
                 if output_result:
                     logger.debug(
-                        f"Updating {current_node_name} to use a "
-                        f"`{PrecomputedValueProvider.__name__}`."
+                        f"Updating '{current_node_name}' to use a "
+                        f"'{PrecomputedValueProvider.__name__}'."
                     )
                     PrecomputedValueProvider.replace_schema_node(node, output_result)
                     # We remove all parent dependencies as the cached output value will

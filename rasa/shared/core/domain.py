@@ -1761,6 +1761,15 @@ class Domain:
 
         return {}
 
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return (
+            f"{self.__class__.__name__}({len(self.action_names_or_texts)} actions, "
+            f"{len(self.intent_properties)} intents, {len(self.responses)} responses, "
+            f"{len(self.slots)} slots, "
+            f"{len(self.entities)} entities, {len(self.form_names)} forms)"
+        )
+
 
 class SlotMapping(Enum):
     """Defines the available slot mappings."""

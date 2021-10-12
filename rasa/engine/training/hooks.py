@@ -63,9 +63,9 @@ class TrainingHook(GraphNodeHook):
         fingerprint_key = input_hook_data["fingerprint_key"]
 
         logger.debug(
-            f"Caching {output} for fingerprint_key: {fingerprint_key} "
-            f"and output_fingerprint: {output_fingerprint} calculated with data "
-            f"{output}."
+            f"Caching '{output.__class__.__name__}' with fingerprint_key: "
+            f"'{fingerprint_key}' and output_fingerprint '{output_fingerprint}' "
+            f"calculated with data '{output}'."
         )
 
         self._cache.cache_output(

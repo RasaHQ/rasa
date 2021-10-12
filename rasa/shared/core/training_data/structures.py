@@ -806,6 +806,10 @@ class StoryGraph:
 
         return not self.story_steps
 
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return f"{self.__class__.__name__}({len(self.story_steps)} story steps)"
+
 
 def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
     """Generate a random UUID.
