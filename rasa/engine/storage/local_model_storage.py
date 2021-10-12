@@ -148,7 +148,7 @@ class LocalModelStorage(ModelStorage):
             )
             self._persist_metadata(model_metadata, temporary_directory)
 
-            with tarfile.open(model_archive_path, "w:gz") as tar:
+            with TarSafe.open(model_archive_path, "w:gz") as tar:
                 tar.add(temporary_directory, arcname="")
 
         logger.debug(f"Model package created in path '{model_archive_path}'.")
