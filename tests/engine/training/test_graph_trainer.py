@@ -1,7 +1,9 @@
+import logging
 from pathlib import Path
 from typing import Callable, Dict, Optional, Text, Type
 from unittest.mock import Mock
 
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 import pytest
@@ -384,3 +386,52 @@ def spy_on_all_components(spy_on_component) -> Callable:
         }
 
     return inner
+
+
+def test_graph_trainer_train_logging(
+    tmp_path: Path,
+    temp_cache: TrainingCache,
+    train_with_schema: Callable,
+    caplog: LogCaptureFixture,
+):
+
+    input_file = tmp_path / "input_file.txt"
+    input_file.write_text("3")
+
+    train_schema = GraphSchema(
+        {
+            "input": SchemaNode(
+                needs={},
+                uses=ProvideX,
+                fn="provide",
+                constructor_name="create",
+                config={},
+            ),
+            "subtract 2": SchemaNode(
+                needs={},
+                uses=ProvideX,
+                fn="provide",
+                constructor_name="create",
+                config={},
+                is_target=True,
+                is_input=True,
+            ),
+            "subtract": SchemaNode(
+                needs={"i": "input"},
+                uses=SubtractByX,
+                fn="subtract_x",
+                constructor_name="create",
+                config={"x": 1},
+                is_target=True,
+                is_input=False,
+            ),
+        }
+    )
+
+    with caplog.at_level(logging.INFO, logger="rasa.engine.training.hooks"):
+        train_with_schema(train_schema, temp_cache)
+
+    assert caplog.messages == [
+        "Starting to train component 'SubtractByX'.",
+        "Finished training component 'SubtractByX'.",
+    ]

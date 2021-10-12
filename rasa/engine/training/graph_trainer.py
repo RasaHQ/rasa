@@ -16,7 +16,7 @@ from rasa.engine.training.components import (
     FingerprintComponent,
     FingerprintStatus,
 )
-from rasa.engine.training.hooks import TrainingHook
+from rasa.engine.training.hooks import TrainingHook, LoggingHook
 from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
@@ -85,6 +85,7 @@ class GraphTrainer:
             )
 
         hooks = [
+            LoggingHook(),
             TrainingHook(
                 cache=self._cache,
                 model_storage=self._model_storage,

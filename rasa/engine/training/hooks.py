@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Text, Type
 
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import ExecutionContext, GraphNodeHook, GraphSchema
+from rasa.engine.graph import ExecutionContext, GraphNodeHook, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import PrecomputedValueProvider
 import rasa.shared.utils.io
@@ -87,3 +87,43 @@ class TrainingHook(GraphNodeHook):
     ) -> Type:
         graph_component_class = execution_context.graph_schema.nodes[node_name].uses
         return graph_component_class
+
+
+class LoggingHook(GraphNodeHook):
+    """Logs the training of components."""
+
+    def on_before_node(
+        self,
+        node_name: Text,
+        execution_context: ExecutionContext,
+        config: Dict[Text, Any],
+        received_inputs: Dict[Text, Any],
+    ) -> Dict:
+        """Logs the training start of a graph node."""
+        node = execution_context.graph_schema.nodes[node_name]
+
+        if self._does_node_train(node):
+            logger.info(f"Starting to train component '{node.uses.__name__}'.")
+
+        return {}
+
+    @staticmethod
+    def _does_node_train(node: SchemaNode) -> bool:
+        # Nodes which train are always targets so that they store their output in the
+        # model storage. `is_input` filters out nodes which don't really train but e.g.
+        # persist some training data.
+        return node.is_target and not node.is_input
+
+    def on_after_node(
+        self,
+        node_name: Text,
+        execution_context: ExecutionContext,
+        config: Dict[Text, Any],
+        output: Any,
+        input_hook_data: Dict,
+    ) -> None:
+        """Logs when a component finished its training."""
+        node = execution_context.graph_schema.nodes[node_name]
+
+        if self._does_node_train(node):
+            logger.info(f"Finished training component '{node.uses.__name__}'.")
