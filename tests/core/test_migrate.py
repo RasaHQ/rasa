@@ -285,6 +285,7 @@ def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
+        version: "2.0"
         intents:
         - greet
         entities:
