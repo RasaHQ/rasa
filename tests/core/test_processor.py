@@ -1128,8 +1128,7 @@ async def test_logging_of_end_to_end_action(
         **kwargs: Any,
     ) -> PolicyPrediction:
         nonlocal number_of_calls
-        # TODO: revert back to "== 0" once we have split recipe targets.
-        if number_of_calls < 2:
+        if number_of_calls == 0:
             prediction = PolicyPrediction.for_action_name(
                 new_domain, end_to_end_action, "some policy"
             )

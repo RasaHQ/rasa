@@ -585,13 +585,11 @@ class MessageProcessor:
             Parsed data extracted from the message.
         """
         results = self.graph_runner.run(
-            inputs={
-                PLACEHOLDER_MESSAGE: [message] if message else [],
-                PLACEHOLDER_TRACKER: DialogueStateTracker("no_sender", []),
-            },
-            targets=["output_provider"],
+            inputs={PLACEHOLDER_MESSAGE: [message]},
+            targets=[self.model_metadata.nlu_target],
         )
-        parsed_message, _, _ = results["output_provider"]
+        parsed_messages = results[self.model_metadata.nlu_target]
+        parsed_message = parsed_messages[0]
         parse_data = {
             TEXT: "",
             INTENT: {INTENT_NAME_KEY: None, PREDICTED_CONFIDENCE_KEY: 0.0},
@@ -912,10 +910,8 @@ class MessageProcessor:
             )
 
         results = self.graph_runner.run(
-            inputs={PLACEHOLDER_MESSAGE: [], PLACEHOLDER_TRACKER: tracker,},
-            targets=["output_provider"],
+            inputs={PLACEHOLDER_TRACKER: tracker},
+            targets=[self.model_metadata.core_target],
         )
-        parsed_message, tracker_with_added_message, policy_prediction = results[
-            "output_provider"
-        ]
+        policy_prediction = results[self.model_metadata.core_target]
         return policy_prediction

@@ -643,9 +643,7 @@ def _run_action_prediction(
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
 ) -> Tuple[Text, PolicyPrediction, Optional[EntityEvaluationResult]]:
-    action, prediction = processor.predict_next_with_tracker_if_should(
-        partial_tracker
-    )
+    action, prediction = processor.predict_next_with_tracker_if_should(partial_tracker)
     predicted_action = _get_predicted_action_name(
         action, partial_tracker, expected_action
     )
