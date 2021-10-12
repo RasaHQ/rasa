@@ -360,6 +360,10 @@ def test_run_evaluation(unpacked_trained_moodbot_path: Text, nlu_as_json_path: T
     )
 
     assert result.get("intent_evaluation")
+    assert all(
+        prediction["confidence"] is not None
+        for prediction in result["response_selection_evaluation"]["predictions"]
+    )
 
 
 def test_eval_data(
@@ -543,6 +547,12 @@ def test_run_cv_evaluation_with_response_selector():
     assert all(
         key in response_selection_results.evaluation for key in ["errors", "report"]
     )
+
+    assert all(
+        prediction["confidence"] is not None and prediction["confidence"] != 0.0
+        for prediction in response_selection_results.evaluation["predictions"]
+    )
+
     assert any(
         isinstance(intent_report, dict)
         and intent_report.get("confused_with") is not None
@@ -807,14 +817,24 @@ def test_empty_response_removal():
         ResponseSelectionEvaluationResult(
             "chitchat/ask_name", "chitchat/ask_name", "What's your name?", 0.98765
         ),
+        # This happens if response selection test data is present but no response
+        # selector is part of the model
+        ResponseSelectionEvaluationResult(
+            "chitchat/ask_name", "chitchat/ask_name", "What's your name?", None
+        ),
     ]
     response_results = remove_empty_response_examples(response_results)
 
-    assert len(response_results) == 1
+    assert len(response_results) == 2
     assert response_results[0].intent_response_key_target == "chitchat/ask_name"
     assert response_results[0].intent_response_key_prediction == "chitchat/ask_name"
     assert response_results[0].confidence == 0.98765
     assert response_results[0].message == "What's your name?"
+
+    assert response_results[1].intent_response_key_target == "chitchat/ask_name"
+    assert response_results[1].intent_response_key_prediction == "chitchat/ask_name"
+    assert response_results[1].confidence == 0.0
+    assert response_results[1].message == "What's your name?"
 
 
 def test_evaluate_entities_cv_empty_tokens():
