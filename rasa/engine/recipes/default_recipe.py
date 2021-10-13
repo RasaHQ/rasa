@@ -743,7 +743,10 @@ class DefaultV1Recipe(Recipe):
 
             from rasa.core.policies.rule_policy import RulePolicyGraphComponent
 
-            if issubclass(component.clazz, RulePolicyGraphComponent):
+            if (
+                issubclass(component.clazz, RulePolicyGraphComponent)
+                and not rule_policy_resource
+            ):
                 rule_policy_resource = train_node_name
 
             predict_nodes[node_name] = dataclasses.replace(
