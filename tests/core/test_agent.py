@@ -15,6 +15,7 @@ from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
 
 import rasa.core
+from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
 from rasa.nlu.persistor import Persistor
@@ -156,7 +157,7 @@ async def test_wait_time_between_pulls_without_interval(
     model_server: TestClient, monkeypatch: MonkeyPatch
 ):
     monkeypatch.setattr(
-        "rasa.core.agent.schedule_model_pulling", lambda *args: 1 / 0
+        "rasa.core.agent._schedule_model_pulling", lambda *args: 1 / 0
     )  # will raise an exception
 
     model_endpoint_config = EndpointConfig.from_dict(
@@ -164,7 +165,7 @@ async def test_wait_time_between_pulls_without_interval(
     )
 
     agent = Agent()
-    # should not call schedule_model_pulling, if it does, this will raise
+    # should not call _schedule_model_pulling, if it does, this will raise
     await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
 
 
@@ -325,3 +326,21 @@ async def test_parse_with_http_interpreter(trained_default_agent_model: Text):
         # mock the parse function with the one defined for this test
         result = await agent.parse_message("lunch?")
         assert result == response_body
+
+
+@pytest.mark.parametrize(
+    "method_name",
+    [
+        "parse_message",
+        "predict_next_for_sender_id",
+        "predict_next_with_tracker",
+        "log_message",
+        "execute_action",
+        "trigger_intent",
+        "handle_text",
+    ],
+)
+def test_agent_checks_if_ready(method_name):
+    not_ready_agent = Agent()
+    with pytest.raises(AgentNotReady):
+        getattr(not_ready_agent, method_name)()
