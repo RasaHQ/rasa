@@ -144,33 +144,6 @@ def filter(record: logging.LogRecord) -> bool
 
 Determines whether current log is different to last log.
 
-#### run\_in\_loop
-
-```python
-def run_in_loop(f: Coroutine[Any, Any, T], loop: Optional[asyncio.AbstractEventLoop] = None) -> T
-```
-
-Execute the awaitable in the passed loop.
-
-If no loop is passed, the currently existing one is used or a new one is created
-if no loop has been started in the current context.
-
-After the awaitable is finished, all remaining tasks on the loop will be
-awaited as well (background tasks).
-
-WARNING: don&#x27;t use this if there are never ending background tasks scheduled.
-in this case, this function will never return.
-
-**Arguments**:
-
-- `f` - function to execute
-- `loop` - loop to use for the execution
-  
-
-**Returns**:
-
-  return value from the function
-
 #### call\_potential\_coroutine
 
 ```python
