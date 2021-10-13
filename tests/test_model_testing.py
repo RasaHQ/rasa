@@ -146,7 +146,7 @@ def test_get_label_set(targets, exclude_label, expected):
     assert set(expected) == set(actual)
 
 
-def test_e2e_warning_if_no_nlu_model(
+async def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
     from rasa.model_testing import test_core
@@ -157,7 +157,7 @@ def test_e2e_warning_if_no_nlu_model(
         sys.modules["rasa.core.test"], "test", asyncio.coroutine(lambda *_, **__: True)
     )
 
-    test_core(trained_core_model, use_conversation_test_files=True)
+    await test_core(trained_core_model, use_conversation_test_files=True)
 
     assert "No NLU model found. Using default" in capsys.readouterr().out
 

@@ -10,7 +10,7 @@ from rasa.core.channels import UserMessage
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import rasa.nlu.test
 import rasa.shared.nlu.training_data.loading
@@ -347,7 +347,7 @@ def test_drop_intents_below_freq():
     300, func_only=True
 )  # these can take a longer time than the default timeout
 async def test_run_evaluation(mood_agent: Agent, nlu_as_json_path: Text):
-    result = run_evaluation(
+    result = await run_evaluation(
         nlu_as_json_path,
         mood_agent.processor,
         errors=False,
@@ -362,7 +362,7 @@ async def test_run_evaluation(mood_agent: Agent, nlu_as_json_path: Text):
     )
 
 
-def test_eval_data(
+async def test_eval_data(
     tmp_path: Path, project: Text, trained_rasa_model: Text,
 ):
     config_path = os.path.join(project, "config.yml")
@@ -377,7 +377,7 @@ def test_eval_data(
     processor = Agent.load(trained_rasa_model).processor
 
     data = data_importer.get_nlu_data()
-    (intent_results, response_selection_results, entity_results) = get_eval_data(
+    (intent_results, response_selection_results, entity_results) = await get_eval_data(
         processor, data
     )
 
@@ -389,7 +389,7 @@ def test_eval_data(
 @pytest.mark.timeout(
     180, func_only=True
 )  # these can take a longer time than the default timeout
-def test_run_cv_evaluation():
+async def test_run_cv_evaluation():
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/test/demo-rasa-more-ents-and-multiplied.yml"
     )
@@ -404,7 +404,7 @@ def test_run_cv_evaluation():
     }
 
     n_folds = 2
-    intent_results, entity_results, response_selection_results = cross_validate(
+    intent_results, entity_results, response_selection_results = await cross_validate(
         td,
         n_folds,
         nlu_config,
@@ -433,7 +433,7 @@ def test_run_cv_evaluation():
 @pytest.mark.timeout(
     180, func_only=True
 )  # these can take a longer time than the default timeout
-def test_run_cv_evaluation_no_entities():
+async def test_run_cv_evaluation_no_entities():
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/test/demo-rasa-no-ents.yml"
     )
@@ -448,7 +448,7 @@ def test_run_cv_evaluation_no_entities():
     }
 
     n_folds = 2
-    intent_results, entity_results, response_selection_results = cross_validate(
+    intent_results, entity_results, response_selection_results = await cross_validate(
         td,
         n_folds,
         nlu_config,
@@ -479,7 +479,7 @@ def test_run_cv_evaluation_no_entities():
 @pytest.mark.timeout(
     180, func_only=True
 )  # these can take a longer time than the default timeout
-def test_run_cv_evaluation_with_response_selector():
+async def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
         "data/test/demo-rasa-more-ents-and-multiplied.yml"
     )
@@ -499,7 +499,7 @@ def test_run_cv_evaluation_with_response_selector():
     }
 
     n_folds = 2
-    intent_results, entity_results, response_selection_results = cross_validate(
+    intent_results, entity_results, response_selection_results = await cross_validate(
         training_data_obj,
         n_folds,
         nlu_config,
@@ -921,7 +921,7 @@ def test_label_replacement():
     assert substitute_labels(original_labels, "O", "no_entity") == target_labels
 
 
-def test_nlu_comparison(
+async def test_nlu_comparison(
     tmp_path: Path, monkeypatch: MonkeyPatch, nlu_as_json_path: Text
 ):
     config = {
@@ -939,7 +939,7 @@ def test_nlu_comparison(
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],
         "get_eval_data",
-        Mock(return_value=(1, None, (None,),)),
+        AsyncMock(return_value=(1, None, (None,),)),
     )
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],
@@ -952,7 +952,7 @@ def test_nlu_comparison(
         training_data_paths=[nlu_as_json_path]
     )
     test_data = test_data_importer.get_nlu_data()
-    compare_nlu_models(
+    await compare_nlu_models(
         configs, test_data, output, runs=2, exclusion_percentages=[50, 80]
     )
 
@@ -1142,13 +1142,13 @@ class ConstantProcessor:
     def __init__(self, prediction_to_return: Dict[Text, Any]) -> None:
         self.prediction = prediction_to_return
 
-    def parse_message(
+    async def parse_message(
         self, message: UserMessage, only_output_properties: bool = True,
     ) -> Dict[Text, Any]:
         return self.prediction
 
 
-def test_replacing_fallback_intent():
+async def test_replacing_fallback_intent():
     expected_intent = "greet"
     expected_confidence = 0.345
     fallback_prediction = {
@@ -1174,7 +1174,7 @@ def test_replacing_fallback_intent():
         [Message.build("hi", "greet"), Message.build("bye", "bye")]
     )
 
-    intent_evaluations, _, _ = get_eval_data(processor, training_data)
+    intent_evaluations, _, _ = await get_eval_data(processor, training_data)
 
     assert all(
         prediction.intent_prediction == expected_intent
@@ -1183,7 +1183,7 @@ def test_replacing_fallback_intent():
     )
 
 
-def test_remove_entities_of_extractors():
+async def test_remove_entities_of_extractors():
     extractor = "TestExtractor"
     extractor_2 = "DIET"
     extractor_3 = "YetAnotherExtractor"

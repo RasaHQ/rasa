@@ -881,7 +881,7 @@ def test_tracker_store_connection_error(config: Dict, domain: Domain):
         TrackerStore.create(store, domain)
 
 
-def prepare_token_serialisation(
+async def prepare_token_serialisation(
     tracker_store: TrackerStore, response_selector_agent: Agent, sender_id: Text,
 ):
     text = "Good morning"
@@ -890,7 +890,7 @@ def prepare_token_serialisation(
     indices = [[t.start, t.end] for t in tokens]
 
     tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)
-    parse_data = response_selector_agent.parse_message(text)
+    parse_data = await response_selector_agent.parse_message(text)
     event = UserUttered(
         "Good morning",
         parse_data.get("intent"),

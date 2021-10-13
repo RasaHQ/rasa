@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from http import HTTPStatus
 import textwrap
 from pathlib import Path
 
@@ -12,9 +13,10 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from typing import Optional, Text, List, Callable, Type, Any
-from unittest.mock import patch
 
+from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
+from rasa.core.tracker_store import InMemoryTrackerStore
 import rasa.shared.utils.io
 from rasa.core.actions.action import (
     ActionBotResponse,
@@ -55,7 +57,6 @@ from rasa.shared.core.events import (
 )
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor
-from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message
@@ -91,7 +92,7 @@ async def test_message_processor(
 async def test_message_id_logging(default_processor: MessageProcessor):
     message = UserMessage("If Meg was an egg would she still have a leg?")
     tracker = DialogueStateTracker("1", [])
-    default_processor._handle_message_with_tracker(message, tracker)
+    await default_processor._handle_message_with_tracker(message, tracker)
     logged_event = tracker.events[-1]
 
     assert logged_event.message_id == message.message_id
@@ -100,12 +101,12 @@ async def test_message_id_logging(default_processor: MessageProcessor):
 
 async def test_parsing(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "boy"}')
-    parsed = default_processor.parse_message(message)
+    parsed = await default_processor.parse_message(message)
     assert parsed["intent"][INTENT_NAME_KEY] == "greet"
     assert parsed["entities"][0]["entity"] == "name"
 
 
-def test_check_for_unseen_feature(default_processor: MessageProcessor):
+async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     message = UserMessage('/greet{"name": "Joe"}')
     old_domain = default_processor.domain
     new_domain = Domain.from_dict(old_domain.as_dict())
@@ -117,7 +118,7 @@ def test_check_for_unseen_feature(default_processor: MessageProcessor):
     new_domain.entities = [e for e in new_domain.entities if e != "name"]
     default_processor.domain = new_domain
 
-    parsed = default_processor.parse_message(message)
+    parsed = await default_processor.parse_message(message)
     with pytest.warns(UserWarning) as record:
         default_processor._check_for_unseen_features(parsed)
     assert len(record) == 2
@@ -133,63 +134,84 @@ async def test_default_intent_recognized(
     default_processor: MessageProcessor, default_intent: Text
 ):
     message = UserMessage(f"/{default_intent}")
-    parsed = default_processor.parse_message(message)
+    parsed = await default_processor.parse_message(message)
     with pytest.warns(None) as record:
         default_processor._check_for_unseen_features(parsed)
     assert len(record) == 0
 
 
-# TODO: Fix and re-enable(x) once RasaNLUHttpInterpreter graph component is implemented
-async def xtest_http_parsing():
+async def test_http_parsing(trained_default_agent_model: Text, domain: Domain):
     message = UserMessage("lunch?")
 
     endpoint = EndpointConfig("https://interpreter.com")
+
+    response_body = {
+        "intent": {INTENT_NAME_KEY: "some_intent", "confidence": 1.0},
+        "entities": [],
+        "text": "lunch?",
+    }
+
     with aioresponses() as mocked:
-        mocked.post("https://interpreter.com/model/parse", repeat=True, status=200)
+        mocked.post(
+            "https://interpreter.com/model/parse",
+            repeat=True,
+            status=HTTPStatus.OK,
+            body=json.dumps(response_body),
+        )
 
         inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
-        try:
-            MessageProcessor(inter, None, None, None, None, None).parse_message(message)
-        except KeyError:
-            pass  # logger looks for intent and entities, so we except
+        processor = MessageProcessor(
+            trained_default_agent_model,
+            InMemoryTrackerStore(domain),
+            InMemoryLockStore(),
+            NaturalLanguageGenerator(),
+            http_interpreter=inter,
+        )
+        data = await processor.parse_message(message)
 
         r = tests.utilities.latest_request(
             mocked, "POST", "https://interpreter.com/model/parse"
         )
 
         assert r
+        assert data == response_body
 
 
-async def mocked_parse(self, text, message_id=None, tracker=None, metadata=None):
-    """Mock parsing a text message and augment it with the slot
-    value from the tracker's state."""
-
-    return {
-        "intent": {INTENT_NAME_KEY: "", "confidence": 0.0},
-        "entities": [],
-        "text": text,
-        "requested_language": tracker.get_slot("requested_language"),
-    }
-
-
-# TODO: Fix and re-enable(x) once RasaNLUHttpInterpreter graph component is implemented
-async def xtest_parsing_with_tracker():
-    tracker = DialogueStateTracker.from_dict("1", [], [Slot("requested_language")])
-
-    # we'll expect this value 'en' to be part of the result from the interpreter
-    tracker._set_slot("requested_language", "en")
+async def test_http_parsing_default_response(
+    trained_default_agent_model: Text, domain: Domain
+):
+    message = UserMessage("lunch?")
 
     endpoint = EndpointConfig("https://interpreter.com")
+
     with aioresponses() as mocked:
-        mocked.post("https://interpreter.com/parse", repeat=True, status=200)
+        mocked.post(
+            "https://interpreter.com/model/parse",
+            repeat=True,
+            status=HTTPStatus.OK,
+            body=None,
+        )
 
-        # mock the parse function with the one defined for this test
-        with patch.object(RasaNLUHttpInterpreter, "parse", mocked_parse):
-            interpreter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
-            agent = Agent(None, None, interpreter)
-            result = agent.parse_message("lunch?", tracker)
+        inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
+        processor = MessageProcessor(
+            trained_default_agent_model,
+            InMemoryTrackerStore(domain),
+            InMemoryLockStore(),
+            NaturalLanguageGenerator(),
+            http_interpreter=inter,
+        )
+        data = await processor.parse_message(message)
 
-            assert result["requested_language"] == "en"
+        r = tests.utilities.latest_request(
+            mocked, "POST", "https://interpreter.com/model/parse"
+        )
+
+        assert r
+        assert data == {
+            "intent": {INTENT_NAME_KEY: "", "confidence": 0.0},
+            "entities": [],
+            "text": "",
+        }
 
 
 async def test_reminder_scheduled(
@@ -1301,10 +1323,10 @@ async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
     assert event_tokens == indices
 
 
-def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
+async def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
     processor = Agent.load(model_path=trained_moodbot_nlu_path).processor
     message = UserMessage("/greet")
-    result = processor.parse_message(message)
+    result = await processor.parse_message(message)
     assert result == {
         "text": "/greet",
         "intent": {"name": "greet", "confidence": 1.0},
@@ -1313,14 +1335,14 @@ def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
     }
 
     message = UserMessage("Hello")
-    result = processor.parse_message(message)
+    result = await processor.parse_message(message)
     assert result["intent"]["name"]
 
 
-def test_parse_message_core_only(trained_core_model: Text):
+async def test_parse_message_core_only(trained_core_model: Text):
     processor = Agent.load(model_path=trained_core_model).processor
     message = UserMessage("/greet")
-    result = processor.parse_message(message)
+    result = await processor.parse_message(message)
     assert result == {
         "text": "/greet",
         "intent": {"name": "greet", "confidence": 1.0},
@@ -1329,14 +1351,14 @@ def test_parse_message_core_only(trained_core_model: Text):
     }
 
     message = UserMessage("Hello")
-    result = processor.parse_message(message)
+    result = await processor.parse_message(message)
     assert not result["intent"]["name"]
 
 
-def test_parse_message_full_model(trained_moodbot_path: Text):
+async def test_parse_message_full_model(trained_moodbot_path: Text):
     processor = Agent.load(model_path=trained_moodbot_path).processor
     message = UserMessage("/greet")
-    result = processor.parse_message(message)
+    result = await processor.parse_message(message)
     assert result == {
         "text": "/greet",
         "intent": {"name": "greet", "confidence": 1.0},
@@ -1345,7 +1367,7 @@ def test_parse_message_full_model(trained_moodbot_path: Text):
     }
 
     message = UserMessage("Hello")
-    result = processor.parse_message(message)
+    result = await processor.parse_message(message)
     assert result["intent"]["name"]
 
 

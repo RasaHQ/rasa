@@ -99,7 +99,7 @@ def _get_sanitized_model_directory(model_directory: Text) -> Text:
     return model_directory
 
 
-def test_core_models(
+async def test_core_models(
     models: List[Text],
     stories: Text,
     output: Text,
@@ -116,7 +116,7 @@ def test_core_models(
     """
     from rasa.core.test import compare_models
 
-    compare_models(
+    await compare_models(
         models,
         stories,
         output,
@@ -124,7 +124,7 @@ def test_core_models(
     )
 
 
-def test_core(
+async def test_core(
     model: Optional[Text] = None,
     stories: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
@@ -176,7 +176,7 @@ def test_core(
         additional_arguments, core_test, ["stories", "agent", "e2e"]
     )
 
-    core_test(
+    await core_test(
         stories,
         _agent,
         e2e=use_conversation_test_files,
@@ -185,7 +185,7 @@ def test_core(
     )
 
 
-def test_nlu(
+async def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
@@ -212,7 +212,7 @@ def test_nlu(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
         _agent = Agent.load(model_path=model)
-        run_evaluation(
+        await run_evaluation(
             nlu_data, _agent.processor, output_directory=output_directory, **kwargs
         )
     else:
@@ -222,7 +222,7 @@ def test_nlu(
         )
 
 
-def compare_nlu_models(
+async def compare_nlu_models(
     configs: List[Text],
     test_data: TrainingData,
     output: Text,
@@ -247,7 +247,7 @@ def compare_nlu_models(
         model_name: [[] for _ in range(runs)] for model_name in model_names
     }
 
-    training_examples_per_run = compare_nlu(
+    training_examples_per_run = await compare_nlu(
         configs,
         test_data,
         exclusion_percentages,
@@ -283,7 +283,7 @@ def plot_nlu_results(output_directory: Text, number_of_examples: List[int]) -> N
     )
 
 
-def perform_nlu_cross_validation(
+async def perform_nlu_cross_validation(
     config: Dict[Text, Any],
     data: TrainingData,
     output: Text,
@@ -314,7 +314,7 @@ def perform_nlu_cross_validation(
         additional_arguments, cross_validate
     )
 
-    results, entity_results, response_selection_results = cross_validate(
+    results, entity_results, response_selection_results = await cross_validate(
         data, folds, config, output, **kwargs
     )
     logger.info(f"CV evaluation (n={folds})")

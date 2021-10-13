@@ -209,7 +209,7 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-async def _trained_default_agent_model(
+async def trained_default_agent_model(
     tmp_path_factory: TempPathFactory,
     stories_path: Text,
     domain_path: Text,
@@ -254,8 +254,8 @@ def reset_conversation_state(agent: Agent) -> Agent:
 
 
 @pytest.fixture
-def default_agent(_trained_default_agent_model: Text) -> Agent:
-    return Agent.load(_trained_default_agent_model)
+def default_agent(trained_default_agent_model: Text) -> Agent:
+    return Agent.load(trained_default_agent_model)
 
 
 @pytest.fixture(scope="session")
@@ -561,11 +561,6 @@ def blank_config() -> RasaNLUModelConfig:
 @pytest.fixture(scope="session")
 async def response_selector_test_stories() -> Path:
     return Path("data/test_response_selector_bot/tests/test_stories.yml")
-
-
-@pytest.fixture(scope="session")
-async def response_selector_results() -> Path:
-    return Path("data/test_response_selector_bot/results/")
 
 
 @pytest.fixture(scope="session")

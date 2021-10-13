@@ -143,7 +143,7 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 
 @pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-def test_train_persist_load_parse(
+async def test_train_persist_load_parse(
     language: Optional[Text],
     pipeline: List[Dict],
     tmp_path: Path,
@@ -163,7 +163,7 @@ def test_train_persist_load_parse(
     agent = Agent.load(persisted_path)
     assert agent.processor
     assert agent.is_ready()
-    assert agent.parse_message("Rasa is great!") is not None
+    assert await agent.parse_message("Rasa is great!") is not None
 
 
 @pytest.mark.timeout(600, func_only=True)
