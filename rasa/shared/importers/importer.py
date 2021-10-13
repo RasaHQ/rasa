@@ -188,6 +188,10 @@ class TrainingDataImporter:
         """Returns a random fingerprint as data shouldn't be cached."""
         return rasa.shared.utils.io.random_string(25)
 
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return self.__class__.__name__
+
 
 class NluDataImporter(TrainingDataImporter):
     """Importer that skips any Core-related file reading."""

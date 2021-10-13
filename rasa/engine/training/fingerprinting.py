@@ -44,7 +44,7 @@ def calculate_fingerprint_key(
 
     logger.debug(
         f"Calculated fingerprint_key '{fingerprint_key}' for class "
-        f"'{graph_component_class}' with config '{config}' and inputs '{inputs}'."
+        f"'{graph_component_class.__name__}'."
     )
 
     return fingerprint_key

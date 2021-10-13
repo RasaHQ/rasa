@@ -353,9 +353,9 @@ class GraphNode:
 
     def _load_component(self, **kwargs: Any) -> None:
         logger.debug(
-            f"Node {self._node_name} loading "
-            f"{self._component_class.__name__}.{self._constructor_name} "
-            f"with config: {self._component_config}, and kwargs: {kwargs}."
+            f"Node '{self._node_name}' loading "
+            f"'{self._component_class.__name__}.{self._constructor_name}' "
+            f"and kwargs: '{kwargs}'."
         )
 
         constructor = getattr(self._component_class, self._constructor_name)
@@ -373,7 +373,7 @@ class GraphNode:
             raise
         except Exception as e:
             raise GraphComponentException(
-                f"Error initializing graph component for node {self._node_name}."
+                f"Error initializing graph component for node '{self._node_name}'."
             ) from e
 
     def _get_resource(self, kwargs: Dict[Text, Any]) -> Resource:
@@ -427,9 +427,9 @@ class GraphNode:
             run_kwargs = kwargs
 
         logger.debug(
-            f"Node {self._node_name} running "
-            f"{self._component_class.__name__}.{self._fn_name} "
-            f"with kwargs: {run_kwargs}."
+            f"Node '{self._node_name}' running "
+            f"'{self._component_class.__name__}.{self._fn_name}' "
+            f"with kwargs: '{run_kwargs}'."
         )
 
         try:
@@ -463,7 +463,7 @@ class GraphNode:
                 )
             except Exception as e:
                 raise GraphComponentException(
-                    f"Error running after hook for node {self._node_name}."
+                    f"Error running after hook for node '{self._node_name}'."
                 ) from e
 
     def _run_before_hooks(self, received_inputs: Dict[Text, Any]) -> List[Dict]:
@@ -483,7 +483,7 @@ class GraphNode:
                 input_hook_outputs.append(hook_output)
             except Exception as e:
                 raise GraphComponentException(
-                    f"Error running before hook for node {self._node_name}."
+                    f"Error running before hook for node '{self._node_name}'."
                 ) from e
         return input_hook_outputs
 

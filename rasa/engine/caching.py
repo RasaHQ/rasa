@@ -306,10 +306,12 @@ class LocalTrainingCache(TrainingCache):
 
                 output.to_cache(tmp_path, model_storage)
 
-                logger.debug(f"Caching output of type '{type(output)}' succeeded.")
+                logger.debug(
+                    f"Caching output of type '{type(output).__name__}' succeeded."
+                )
             except Exception as e:
                 logger.error(
-                    f"Caching output of type '{type(output)}' failed with the "
+                    f"Caching output of type '{type(output).__name__}' failed with the "
                     f"following error:\n{e}"
                 )
                 return None, None
@@ -317,7 +319,7 @@ class LocalTrainingCache(TrainingCache):
             output_size = rasa.utils.common.directory_size_in_mb(tmp_path)
             if output_size > self._max_cache_size:
                 logger.debug(
-                    f"Caching result of type '{type(output)}' was skipped "
+                    f"Caching result of type '{type(output).__name__}' was skipped "
                     f"because it exceeds the maximum cache size of "
                     f"{self._max_cache_size} MiB."
                 )

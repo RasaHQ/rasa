@@ -16,7 +16,7 @@ from rasa.engine.training.components import (
     FingerprintComponent,
     FingerprintStatus,
 )
-from rasa.engine.training.hooks import TrainingHook
+from rasa.engine.training.hooks import TrainingHook, LoggingHook
 from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,14 @@ class GraphTrainer:
                 model_configuration.train_schema, fingerprint_run_outputs
             )
 
-        hooks = [TrainingHook(cache=self._cache, model_storage=self._model_storage)]
+        hooks = [
+            LoggingHook(),
+            TrainingHook(
+                cache=self._cache,
+                model_storage=self._model_storage,
+                pruned_schema=pruned_training_schema,
+            ),
+        ]
 
         graph_runner = self._graph_runner_class.create(
             graph_schema=pruned_training_schema,
@@ -224,8 +231,8 @@ class GraphTrainer:
                 )
                 if output_result:
                     logger.debug(
-                        f"Updating {current_node_name} to use a "
-                        f"`{PrecomputedValueProvider.__name__}`."
+                        f"Updating '{current_node_name}' to use a "
+                        f"'{PrecomputedValueProvider.__name__}'."
                     )
                     PrecomputedValueProvider.replace_schema_node(node, output_result)
                     # We remove all parent dependencies as the cached output value will

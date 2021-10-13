@@ -127,7 +127,7 @@ class JiebaTokenizerGraphComponent(TokenizerGraphComponent):
                 with model_storage.read_from(resource) as resource_directory:
                     cls._load_custom_dictionary(str(resource_directory))
             except ValueError:
-                logger.warning(
+                logger.debug(
                     f"Failed to load {cls.__name__} from model storage. "
                     f"Resource '{resource.name}' doesn't exist."
                 )
