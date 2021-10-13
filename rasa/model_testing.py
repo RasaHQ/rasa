@@ -20,7 +20,7 @@ import rasa.model
 logger = logging.getLogger(__name__)
 
 
-def test_core_models_in_directory(
+async def test_core_models_in_directory(
     model_directory: Text,
     stories: Text,
     output: Text,
@@ -39,7 +39,7 @@ def test_core_models_in_directory(
 
     model_directory = _get_sanitized_model_directory(model_directory)
 
-    compare_models_in_dir(
+    await compare_models_in_dir(
         model_directory,
         stories,
         output,

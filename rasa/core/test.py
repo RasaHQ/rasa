@@ -597,15 +597,16 @@ async def _get_e2e_entity_evaluation_result(
         entity_targets = previous_event.entities
         if entity_targets or entities_predicted_by_policies:
             text = previous_event.text
-            parsed_message = await processor.parse_message(UserMessage(text=text))
-            if parsed_message:
-                tokens = [
-                    Token(text[start:end], start, end)
-                    for start, end in parsed_message.get(TOKENS_NAMES[TEXT], [])
-                ]
-                return EntityEvaluationResult(
-                    entity_targets, entities_predicted_by_policies, tokens, text
-                )
+            if text:
+                parsed_message = await processor.parse_message(UserMessage(text=text))
+                if parsed_message:
+                    tokens = [
+                        Token(text[start:end], start, end)
+                        for start, end in parsed_message.get(TOKENS_NAMES[TEXT], [])
+                    ]
+                    return EntityEvaluationResult(
+                        entity_targets, entities_predicted_by_policies, tokens, text
+                    )
     return None
 
 

@@ -126,7 +126,7 @@ async def run_core_test_async(args: argparse.Namespace) -> None:
         )
 
         if args.evaluate_model_directory:
-            test_core_models_in_directory(
+            await test_core_models_in_directory(
                 args.model, stories, output, use_conversation_test_files=args.e2e
             )
         else:

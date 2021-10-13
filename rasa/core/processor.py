@@ -630,7 +630,7 @@ class MessageProcessor:
         parse_data.update(
             parsed_message.as_dict(only_output_properties=only_output_properties)
         )
-        return parsed_message
+        return parse_data
 
     async def _handle_message_with_tracker(
         self, message: UserMessage, tracker: DialogueStateTracker
@@ -931,9 +931,12 @@ class MessageProcessor:
                 "and predict the next action."
             )
 
+        target = self.model_metadata.core_target
+        if not target:
+            raise ValueError("Cannot predict next action if there is no core target.")
+
         results = self.graph_runner.run(
-            inputs={PLACEHOLDER_TRACKER: tracker},
-            targets=[self.model_metadata.core_target],
+            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target],
         )
-        policy_prediction = results[self.model_metadata.core_target]
+        policy_prediction = results[target]
         return policy_prediction

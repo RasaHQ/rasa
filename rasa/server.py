@@ -1187,7 +1187,7 @@ def create_app(
                 HTTPStatus.CONFLICT, "Conflict", "Loaded model file not found."
             )
 
-        return rasa.nlu.test.run_evaluation(
+        return await rasa.nlu.test.run_evaluation(
             data_path, eval_agent.processor, disable_plotting=True, report_as_dict=True
         )
 
