@@ -1,11 +1,11 @@
 import typing
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.constants import ENTITIES, TEXT
-from rasa.nlu.utils.spacy_utils import SpacyModel
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyModelProvider
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors._spacy_entity_extractor import SpacyEntityExtractor
@@ -19,6 +19,11 @@ SpacyEntityExtractor = SpacyEntityExtractor
 
 class SpacyEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """Entity extractor which uses SpaCy."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [SpacyModelProvider]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
