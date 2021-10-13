@@ -452,8 +452,7 @@ class GraphNode:
 
         logger.debug(
             f"Node '{self._node_name}' running "
-            f"'{self._component_class.__name__}.{self._fn_name}' "
-            f"with kwargs: '{run_kwargs}'."
+            f"'{self._component_class.__name__}.{self._fn_name}'."
         )
 
         try:
