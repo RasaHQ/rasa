@@ -177,7 +177,7 @@ def test_core(
         additional_arguments, core_test, ["stories", "agent", "e2e"]
     )
 
-    rasa.utils.common.run_in_loop(
+    asyncio.run(
         core_test(
             stories,
             _agent,
