@@ -1009,7 +1009,6 @@ def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
                 ENTITY_ATTRIBUTE_TYPE,
                 ENTITY_ATTRIBUTE_START,
                 ENTITY_ATTRIBUTE_END,
-                EXTRACTOR,
             }
             for item in entity_data
         )
