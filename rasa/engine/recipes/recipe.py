@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import abc
-from typing import Text, Tuple, Dict, Any, Optional
+from typing import Text, Dict, Any, Optional
 
 import rasa.shared.utils.io
-from rasa.engine.graph import GraphSchema
+from rasa.engine.graph import GraphModelConfiguration
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.autoconfig import TrainingType
 
@@ -50,14 +50,14 @@ class Recipe(abc.ABC):
         )
 
     @abc.abstractmethod
-    def schemas_for_config(
+    def graph_config_for_recipe(
         self,
         config: Dict,
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
         is_finetuning: bool = False,
-    ) -> Tuple[GraphSchema, GraphSchema, Optional[Text]]:
-        """Converts a config to graph schemas for training and prediction.
+    ) -> GraphModelConfiguration:
+        """Converts a config to a graph compatible model configuration.
 
         Args:
             config: The config which the `Recipe` is supposed to convert.
@@ -70,8 +70,7 @@ class Recipe(abc.ABC):
                 scratch.
 
         Returns:
-            A schema for training a model and a schema for making predictions with this
-            trained model and the language of the model (`None` in case the language
-            was not specified)
+            The model configuration which enables to run the model as a graph for
+            training and prediction.
         """
         ...

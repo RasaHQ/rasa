@@ -45,7 +45,7 @@ def test_default_predict_ignores_other_kwargs(
         policy_name="arbitrary", probabilities=[1.0], policy_priority=1
     )
 
-    final_tracker, final_prediction = default_ensemble.combine_predictions_from_kwargs(
+    final_prediction = default_ensemble.combine_predictions_from_kwargs(
         domain=domain,
         tracker=tracker,
         **{
@@ -55,7 +55,6 @@ def test_default_predict_ignores_other_kwargs(
         },
     )
     assert final_prediction.policy_name == prediction.policy_name
-    assert final_tracker == tracker
 
 
 def test_default_predict_excludes_rejected_action(
@@ -79,13 +78,12 @@ def test_default_predict_excludes_rejected_action(
         for idx in range(2)
     ]
     index_of_excluded_action = domain.index_for_action(excluded_action)
-    final_tracker, prediction = default_ensemble.combine_predictions_from_kwargs(
+    prediction = default_ensemble.combine_predictions_from_kwargs(
         domain=domain,
         tracker=tracker,
         **{prediction.policy_name: prediction for prediction in predictions},
     )
     assert prediction.probabilities[index_of_excluded_action] == 0.0
-    assert final_tracker == tracker
 
 
 @pytest.mark.parametrize(
@@ -197,7 +195,7 @@ def test_default_combine_predictions(
     tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=evts)
 
     # get the best prediction!
-    final_tracker, best_prediction = default_ensemble.combine_predictions_from_kwargs(
+    best_prediction = default_ensemble.combine_predictions_from_kwargs(
         tracker,
         domain=domain,
         **{prediction.policy_name: prediction for prediction in predictions},
@@ -222,4 +220,3 @@ def test_default_combine_predictions(
 
     # now, we can compare:
     assert best_prediction == predictions[expected_winner_idx]
-    assert final_tracker == tracker

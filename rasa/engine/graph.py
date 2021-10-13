@@ -15,6 +15,7 @@ from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.autoconfig import TrainingType
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +47,14 @@ class GraphSchema:
         Returns:
             The graph schema in a format which can be dumped as JSON or other formats.
         """
-        serializable_graph_schema = {}
+        serializable_graph_schema = {"nodes": {}}
         for node_name, node in self.nodes.items():
             serializable = dataclasses.asdict(node)
 
             # Classes are not JSON serializable (surprise)
             serializable["uses"] = f"{node.uses.__module__}.{node.uses.__name__}"
 
-            serializable_graph_schema[node_name] = serializable
+            serializable_graph_schema["nodes"][node_name] = serializable
 
         return serializable_graph_schema
 
@@ -72,7 +73,7 @@ class GraphSchema:
                 found.
         """
         nodes = {}
-        for node_name, serialized_node in serialized_graph_schema.items():
+        for node_name, serialized_node in serialized_graph_schema["nodes"].items():
             try:
                 serialized_node[
                     "uses"
@@ -100,9 +101,11 @@ class GraphSchema:
         """Returns the names of all target nodes."""
         return [node_name for node_name, node in self.nodes.items() if node.is_target]
 
-    def minimal_graph_schema(self) -> GraphSchema:
+    def minimal_graph_schema(self, targets: Optional[List[Text]] = None) -> GraphSchema:
         """Returns a new schema where all nodes are a descendant of a target."""
-        dependencies = self._all_dependencies_schema(self.target_names)
+        dependencies = self._all_dependencies_schema(
+            targets if targets else self.target_names
+        )
 
         return GraphSchema(
             {
@@ -116,7 +119,10 @@ class GraphSchema:
         required = []
         for target in targets:
             required.append(target)
-            target_dependencies = self.nodes[target].needs.values()
+            try:
+                target_dependencies = self.nodes[target].needs.values()
+            except KeyError:  # This can happen if the target is an input placeholder.
+                continue
             for dependency in target_dependencies:
                 required += self._all_dependencies_schema([dependency])
 
@@ -504,3 +510,15 @@ class GraphNode:
             resource=schema_node.resource,
             hooks=hooks,
         )
+
+
+@dataclass()
+class GraphModelConfiguration:
+    """The model configuration to run as a graph during training and prediction."""
+
+    train_schema: GraphSchema
+    predict_schema: GraphSchema
+    training_type: TrainingType
+    language: Optional[Text]
+    core_target: Optional[Text]
+    nlu_target: Optional[Text]

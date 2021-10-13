@@ -17,6 +17,7 @@ from typing import (
 
 import dataclasses
 
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.training.fingerprinting import Fingerprintable
 import rasa.utils.common
 import typing_utils
@@ -27,11 +28,13 @@ from rasa.engine.graph import (
     GraphComponent,
     SchemaNode,
     ExecutionContext,
+    GraphModelConfiguration,
 )
 from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.training_data.message import Message
 
 TypeAnnotation = Union[TypeVar, Text, Type]
 
@@ -54,9 +57,7 @@ KEYWORDS_EXPECTED_TYPES: Dict[Text, TypeAnnotation] = {
 }
 
 
-def validate(
-    schema: GraphSchema, language: Optional[Text], is_train_graph: bool
-) -> None:
+def validate(model_configuration: GraphModelConfiguration) -> None:
     """Validates a graph schema.
 
     This tries to validate that the graph structure is correct (e.g. all nodes pass the
@@ -64,15 +65,24 @@ def validate(
     components.
 
     Args:
-        schema: The schema which needs validating.
-        language: Used to validate if all components support the language the assistant
-            is used in. If the language is `None`, all components are assumed to be
-            compatible.
-        is_train_graph: Whether the graph is used for training.
+        model_configuration: The model configuration (schemas, language, etc.)
 
     Raises:
         GraphSchemaValidationException: If the validation failed.
     """
+    _validate(model_configuration.train_schema, True, model_configuration.language)
+    _validate(model_configuration.predict_schema, False, model_configuration.language)
+
+    _validate_prediction_targets(
+        model_configuration.predict_schema,
+        core_target=model_configuration.core_target,
+        nlu_target=model_configuration.nlu_target,
+    )
+
+
+def _validate(
+    schema: GraphSchema, is_train_graph: bool, language: Optional[Text]
+) -> None:
     _validate_cycle(schema)
 
     for node_name, node in schema.nodes.items():
@@ -97,6 +107,51 @@ def validate(
         )
 
     _validate_required_components(schema)
+
+
+def _validate_prediction_targets(
+    schema: GraphSchema, core_target: Optional[Text], nlu_target: Text
+) -> None:
+    if not nlu_target:
+        raise GraphSchemaValidationException(
+            "Graph schema specifies no target for the 'nlu_target'. It is required "
+            "for a prediction graph to specify this. Please choose a valid node "
+            "name for this."
+        )
+
+    _validate_target(nlu_target, "NLU", List[Message], schema)
+
+    if core_target:
+        _validate_target(core_target, "Core", PolicyPrediction, schema)
+
+
+def _validate_target(
+    target_name: Text, target_type: Text, expected_type: Type, schema: GraphSchema,
+) -> None:
+    if target_name not in schema.nodes:
+        raise GraphSchemaValidationException(
+            f"Graph schema specifies invalid {target_type} target '{target_name}'. "
+            f"Please make sure specify a valid node name as target."
+        )
+
+    if any(target_name in node.needs.values() for node in schema.nodes.values()):
+        raise GraphSchemaValidationException(
+            f"One graph node uses the {target_type} target '{target_name}' as input. "
+            f"This is not allowed as NLU prediction and Core prediction are run "
+            f"separately."
+        )
+
+    target_node = schema.nodes[target_name]
+    _, target_return_type = _get_parameter_information(
+        target_name, target_node.uses, target_node.fn
+    )
+
+    if not typing_utils.issubtype(target_return_type, expected_type):
+        raise GraphSchemaValidationException(
+            f"The {target_type} target '{target_name}' returns an invalid return "
+            f"type '{target_return_type}'. This is not allowed. The {target_type} "
+            f"target is expected to have a return type of '{expected_type}'."
+        )
 
 
 def _validate_cycle(schema: GraphSchema) -> None:

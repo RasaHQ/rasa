@@ -207,12 +207,11 @@ def _train_graph(
 
     config = file_importer.get_config()
     recipe = Recipe.recipe_for_name(config.get("recipe"))
-    train_schema, predict_schema, language = recipe.schemas_for_config(
+    model_configuration = recipe.graph_config_for_recipe(
         config, kwargs, training_type=training_type, is_finetuning=is_finetuning
     )
 
-    rasa.engine.validation.validate(train_schema, language, is_train_graph=True)
-    rasa.engine.validation.validate(predict_schema, language, is_train_graph=False)
+    rasa.engine.validation.validate(model_configuration)
 
     with tempfile.TemporaryDirectory() as temp_model_dir:
         model_storage = _create_model_storage(
@@ -222,7 +221,9 @@ def _train_graph(
         trainer = GraphTrainer(model_storage, cache, DaskGraphRunner)
 
         if dry_run:
-            fingerprint_status = trainer.fingerprint(train_schema, file_importer)
+            fingerprint_status = trainer.fingerprint(
+                model_configuration.train_schema, file_importer
+            )
             return _dry_run_result(fingerprint_status, force_full_training)
 
         model_name = _determine_model_name(fixed_model_name, training_type)
@@ -232,13 +233,11 @@ def _train_graph(
             file_importer, model_type=training_type.model_type,
         ):
             trainer.train(
-                train_schema,
-                predict_schema,
+                model_configuration,
                 file_importer,
                 full_model_path,
                 force_retraining=force_full_training,
                 is_finetuning=is_finetuning,
-                training_type=training_type,
             )
             rasa.shared.utils.cli.print_success(
                 f"Your Rasa model is trained and saved at '{full_model_path}'."

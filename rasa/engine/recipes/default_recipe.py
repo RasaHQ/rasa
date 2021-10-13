@@ -19,6 +19,7 @@ from rasa.engine.graph import (
     GraphSchema,
     GraphComponent,
     SchemaNode,
+    GraphModelConfiguration,
 )
 from rasa.engine.constants import (
     PLACEHOLDER_IMPORTER,
@@ -27,9 +28,6 @@ from rasa.engine.constants import (
 )
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
-from rasa.graph_components.adders.nlu_prediction_to_history_adder import (
-    NLUPredictionToHistoryAdder,
-)
 from rasa.graph_components.converters.nlu_message_converter import NLUMessageConverter
 from rasa.graph_components.providers.domain_provider import DomainProvider
 from rasa.graph_components.providers.domain_without_response_provider import (
@@ -37,9 +35,6 @@ from rasa.graph_components.providers.domain_without_response_provider import (
 )
 from rasa.graph_components.providers.nlu_training_data_provider import (
     NLUTrainingDataProvider,
-)
-from rasa.graph_components.providers.prediction_output_provider import (
-    PredictionOutputProvider,
 )
 from rasa.graph_components.providers.rule_only_provider import RuleOnlyDataProvider
 from rasa.graph_components.providers.story_graph_provider import StoryGraphProvider
@@ -157,13 +152,13 @@ class DefaultV1Recipe(Recipe):
             f"'@DefaultV1Recipe.register' decorator."
         )
 
-    def schemas_for_config(
+    def graph_config_for_recipe(
         self,
         config: Dict,
         cli_parameters: Dict[Text, Any],
         training_type: TrainingType = TrainingType.BOTH,
         is_finetuning: bool = False,
-    ) -> Tuple[GraphSchema, GraphSchema, Optional[Text]]:
+    ) -> GraphModelConfiguration:
         """Converts the default config to graphs (see interface for full docstring)."""
         self._use_core = (
             bool(config.get("policies")) and not training_type == TrainingType.NLU
@@ -195,10 +190,19 @@ class DefaultV1Recipe(Recipe):
         train_nodes, preprocessors = self._create_train_nodes(config, cli_parameters)
         predict_nodes = self._create_predict_nodes(config, preprocessors, train_nodes)
 
-        return (
-            GraphSchema(train_nodes),
-            GraphSchema(predict_nodes),
-            config.get("language"),
+        core_target = "select_prediction" if self._use_core else None
+
+        from rasa.nlu.classifiers.regex_message_handler import (
+            RegexMessageHandlerGraphComponent,
+        )
+
+        return GraphModelConfiguration(
+            train_schema=GraphSchema(train_nodes),
+            predict_schema=GraphSchema(predict_nodes),
+            training_type=training_type,
+            language=config.get("language"),
+            core_target=core_target,
+            nlu_target=f"run_{RegexMessageHandlerGraphComponent.__name__}",
         )
 
     def _create_train_nodes(
@@ -593,38 +597,10 @@ class DefaultV1Recipe(Recipe):
             config={},
         )
 
-        predict_nodes["nlu_prediction_to_history_adder"] = SchemaNode(
-            **default_predict_kwargs,
-            needs={
-                "predictions": regex_handler_node_name,
-                "original_messages": PLACEHOLDER_MESSAGE,
-                "tracker": PLACEHOLDER_TRACKER,
-                **domain_needs,
-            },
-            uses=NLUPredictionToHistoryAdder,
-            fn="add",
-            config={},
-        )
-
-        output_provider_needs = {
-            "parsed_messages": regex_handler_node_name,
-            "tracker_with_added_message": "nlu_prediction_to_history_adder",
-        }
-
         if self._use_core:
             self._add_core_predict_nodes(
                 predict_config, predict_nodes, train_nodes, preprocessors,
             )
-            output_provider_needs["ensemble_output"] = "select_prediction"
-
-        predict_nodes["output_provider"] = SchemaNode(
-            needs=output_provider_needs,
-            uses=PredictionOutputProvider,
-            constructor_name="create",
-            fn="provide",
-            config={},
-            eager=True,
-        )
 
         return predict_nodes
 
@@ -782,7 +758,7 @@ class DefaultV1Recipe(Recipe):
                         and node_with_e2e_features
                         else {}
                     ),
-                    "tracker": "nlu_prediction_to_history_adder",
+                    "tracker": PLACEHOLDER_TRACKER,
                     "rule_only_data": rule_only_data_provider_name,
                 },
                 fn="predict_action_probabilities",
@@ -804,7 +780,7 @@ class DefaultV1Recipe(Recipe):
             needs={
                 **{f"policy{idx}": name for idx, name in enumerate(policies)},
                 "domain": "domain_provider",
-                "tracker": "nlu_prediction_to_history_adder",
+                "tracker": PLACEHOLDER_TRACKER,
             },
             uses=DefaultPolicyPredictionEnsemble,
             fn="combine_predictions_from_kwargs",
@@ -816,7 +792,7 @@ class DefaultV1Recipe(Recipe):
     ) -> Text:
         predict_nodes["tracker_to_message_converter"] = SchemaNode(
             **default_predict_kwargs,
-            needs={"tracker": "nlu_prediction_to_history_adder"},
+            needs={"tracker": PLACEHOLDER_TRACKER},
             uses=CoreFeaturizationInputConverter,
             fn="convert_for_inference",
             config={},

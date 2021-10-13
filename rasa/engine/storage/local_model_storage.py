@@ -10,13 +10,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Text, ContextManager, Tuple, Union
 
-from rasa.shared.importers.autoconfig import TrainingType
 import rasa.utils.common
 import rasa.shared.utils.io
-from rasa.engine.storage.storage import ModelMetadata, ModelStorage
+from rasa.engine.storage.storage import (
+    ModelMetadata,
+    ModelStorage,
+)
+from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-from rasa.engine.graph import GraphSchema
 import rasa.model
 
 logger = logging.getLogger(__name__)
@@ -143,10 +145,8 @@ class LocalModelStorage(ModelStorage):
     def create_model_package(
         self,
         model_archive_path: Union[Text, Path],
-        train_schema: GraphSchema,
-        predict_schema: GraphSchema,
+        model_configuration: GraphModelConfiguration,
         domain: Domain,
-        training_type: TrainingType = TrainingType.BOTH,
     ) -> ModelMetadata:
         """Creates model package (see parent class for full docstring)."""
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
@@ -158,9 +158,7 @@ class LocalModelStorage(ModelStorage):
                 self._storage_path, temporary_directory / MODEL_ARCHIVE_COMPONENTS_DIR
             )
 
-            model_metadata = self._create_model_metadata(
-                domain, predict_schema, train_schema, training_type
-            )
+            model_metadata = self._create_model_metadata(domain, model_configuration)
             self._persist_metadata(model_metadata, temporary_directory)
 
             if not model_archive_path.parent.exists():
@@ -182,18 +180,18 @@ class LocalModelStorage(ModelStorage):
 
     @staticmethod
     def _create_model_metadata(
-        domain: Domain,
-        predict_schema: GraphSchema,
-        train_schema: GraphSchema,
-        training_type: TrainingType = TrainingType.BOTH,
+        domain: Domain, model_configuration: GraphModelConfiguration
     ) -> ModelMetadata:
         return ModelMetadata(
             trained_at=datetime.utcnow(),
             rasa_open_source_version=rasa.__version__,
             model_id=uuid.uuid4().hex,
             domain=domain,
-            train_schema=train_schema,
-            predict_schema=predict_schema,
-            training_type=training_type,
+            train_schema=model_configuration.train_schema,
+            predict_schema=model_configuration.predict_schema,
+            training_type=model_configuration.training_type,
             project_fingerprint=rasa.model.project_fingerprint(),
+            language=model_configuration.language,
+            core_target=model_configuration.core_target,
+            nlu_target=model_configuration.nlu_target,
         )
