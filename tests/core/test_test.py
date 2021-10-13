@@ -112,8 +112,13 @@ async def test_testing_warns_if_action_unknown(
     capsys: CaptureFixture,
     e2e_bot_agent: Agent,
     e2e_bot_test_stories_with_unknown_bot_utterances: Path,
+    tmp_path: Path,
 ):
-    rasa.core.test.test(e2e_bot_test_stories_with_unknown_bot_utterances, e2e_bot_agent)
+    await rasa.core.test.test(
+        e2e_bot_test_stories_with_unknown_bot_utterances,
+        e2e_bot_agent,
+        out_directory=str(tmp_path),
+    )
     output = capsys.readouterr().out
     assert "Test story" in output
     assert "contains the bot utterance" in output
@@ -123,20 +128,17 @@ async def test_testing_warns_if_action_unknown(
 async def test_testing_with_utilizing_retrieval_intents(
     response_selector_agent: Agent,
     response_selector_test_stories: Path,
-    response_selector_results: Path,
+    tmp_path: Path,
 ):
-    if not response_selector_results.exists():
-        response_selector_results.mkdir()
-
-    result = rasa.core.test.test(
+    result = await rasa.core.test.test(
         stories=response_selector_test_stories,
         agent=response_selector_agent,
         e2e=True,
-        out_directory=response_selector_results,
+        out_directory=str(tmp_path),
         disable_plotting=True,
         warnings=False,
     )
-    failed_stories_path = response_selector_results / "failed_test_stories.yml"
+    failed_stories_path = tmp_path / "failed_test_stories.yml"
     failed_stories = read_yaml(read_file(failed_stories_path, "utf-8"))
     # check that the intent is shown correctly in the failed test stories file
     target_intents = {
@@ -164,10 +166,12 @@ async def test_testing_with_utilizing_retrieval_intents(
 
 
 async def test_testing_does_not_warn_if_intent_in_domain(
-    default_agent: Agent, stories_path: Text,
+    default_agent: Agent, stories_path: Text, tmp_path: Path
 ):
     with pytest.warns(UserWarning) as record:
-        rasa.core.test.test(Path(stories_path), default_agent)
+        await rasa.core.test.test(
+            Path(stories_path), default_agent, out_directory=str(tmp_path)
+        )
 
     assert not any("Found intent" in r.message.args[0] for r in record)
     assert all(
@@ -176,9 +180,11 @@ async def test_testing_does_not_warn_if_intent_in_domain(
     )
 
 
-async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
-    result = rasa.core.test.test(
-        "data/test_yaml_stories/test_stories_entity_annotations.yml", core_agent
+async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent, tmp_path: Path):
+    result = await rasa.core.test.test(
+        "data/test_yaml_stories/test_stories_entity_annotations.yml",
+        core_agent,
+        out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
 
@@ -265,7 +271,7 @@ async def test_action_unlikely_intent_warning(
     # predicted correctly.
     agent = await _train_rule_based_agent(file_name, True)
 
-    result = rasa.core.test.test(
+    result = await rasa.core.test.test(
         str(file_name),
         agent,
         out_directory=str(tmp_path),
@@ -315,7 +321,7 @@ async def test_action_unlikely_intent_correctly_predicted(
     # predicted correctly.
     agent = await _train_rule_based_agent(file_name, False)
 
-    result = rasa.core.test.test(
+    result = await rasa.core.test.test(
         str(file_name),
         agent,
         out_directory=str(tmp_path),
@@ -378,7 +384,7 @@ async def test_wrong_action_after_action_unlikely_intent(
     # predicted correctly.
     agent = await _train_rule_based_agent(train_file_name, True)
 
-    result = rasa.core.test.test(
+    result = await rasa.core.test.test(
         str(test_file_name),
         agent,
         out_directory=str(tmp_path),
@@ -448,7 +454,7 @@ async def test_action_unlikely_intent_not_found(
     # predicted correctly.
     agent = await _train_rule_based_agent(train_file_name, False)
 
-    result = rasa.core.test.test(
+    result = await rasa.core.test.test(
         str(test_file_name), agent, out_directory=str(tmp_path)
     )
     assert "report" in result.keys()
@@ -514,7 +520,7 @@ async def test_action_unlikely_intent_warning_and_story_error(
     # predicted correctly.
     agent = await _train_rule_based_agent(train_file_name, True)
 
-    result = rasa.core.test.test(
+    result = await rasa.core.test.test(
         str(test_file_name), agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
@@ -564,7 +570,7 @@ async def test_fail_on_prediction_errors(
     agent = await _train_rule_based_agent(file_name, False)
 
     with pytest.raises(rasa.core.test.WrongPredictionException):
-        rasa.core.test.test(
+        await rasa.core.test.test(
             str(file_name),
             agent,
             out_directory=str(tmp_path),
@@ -659,7 +665,7 @@ async def test_multiple_warnings_sorted_on_severity(
     # predicted correctly.
     agent = await _train_rule_based_agent(Path(test_story_path), True)
 
-    rasa.core.test.test(
+    await rasa.core.test.test(
         test_story_path,
         agent,
         out_directory=str(tmp_path),

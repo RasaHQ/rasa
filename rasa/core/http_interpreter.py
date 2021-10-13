@@ -5,39 +5,34 @@ import logging
 from typing import Text, Dict, Any, Optional
 
 from rasa.core import constants
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.core.channels import UserMessage
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
 
-# TODO: This needs to be converted into a graph component
 class RasaNLUHttpInterpreter:
+    """Allows for an HTTP endpoint to be used to parse messages."""
+
     def __init__(self, endpoint_config: Optional[EndpointConfig] = None) -> None:
+        """Initializes a `RasaNLUHttpInterpreter`"""
         if endpoint_config:
             self.endpoint_config = endpoint_config
         else:
             self.endpoint_config = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    async def parse(
-        self,
-        text: Text,
-        message_id: Optional[Text] = None,
-        tracker: Optional[DialogueStateTracker] = None,
-        metadata: Optional[Dict] = None,
-    ) -> Dict[Text, Any]:
+    async def parse(self, message: UserMessage,) -> Dict[Text, Any]:
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
-
         default_return = {
             "intent": {INTENT_NAME_KEY: "", "confidence": 0.0},
             "entities": [],
             "text": "",
         }
-        result = await self._rasa_http_parse(text, message_id)
 
+        result = await self._rasa_http_parse(message.text, message.sender_id)
         return result if result is not None else default_return
 
     async def _rasa_http_parse(

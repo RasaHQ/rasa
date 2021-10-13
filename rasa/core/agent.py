@@ -20,6 +20,7 @@ from aiohttp import ClientError
 from rasa.core import jobs
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -233,6 +234,7 @@ async def load_agent(
     lock_store = None
     generator = None
     action_endpoint = None
+    http_interpreter = None
 
     if endpoints:
         broker = await EventBroker.create(endpoints.event_broker, loop=loop)
@@ -243,6 +245,8 @@ async def load_agent(
         generator = endpoints.nlg
         action_endpoint = endpoints.action
         model_server = endpoints.model if endpoints.model else model_server
+        if endpoints.nlu:
+            http_interpreter = RasaNLUHttpInterpreter(endpoints.nlu)
 
     agent = Agent(
         generator=generator,
@@ -251,6 +255,7 @@ async def load_agent(
         action_endpoint=action_endpoint,
         model_server=model_server,
         remote_storage=remote_storage,
+        http_interpreter=http_interpreter,
     )
 
     try:
@@ -280,11 +285,11 @@ async def load_agent(
 
 
 class Agent:
-    """The Agent class provides a convenient interface for the most important
-    Rasa functionality.
+    """The Agent class provides an interface for the most important Rasa functionality.
 
     This includes training, handling messages, loading a dialogue model,
-    getting the next action, and handling a channel."""
+    getting the next action, and handling a channel.
+    """
 
     def __init__(
         self,
@@ -296,6 +301,7 @@ class Agent:
         fingerprint: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
+        http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
     ):
         """Initializes an `Agent`."""
         self.domain = domain
@@ -305,6 +311,7 @@ class Agent:
         self.tracker_store = self._create_tracker_store(tracker_store, self.domain)
         self.lock_store = self._create_lock_store(lock_store)
         self.action_endpoint = action_endpoint
+        self.http_interpreter = http_interpreter
 
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
@@ -322,6 +329,7 @@ class Agent:
         fingerprint: Optional[Text] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
+        http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
     ) -> Agent:
         """Constructs a new agent and loads the processer and model."""
         agent = Agent(
@@ -333,6 +341,7 @@ class Agent:
             fingerprint=fingerprint,
             model_server=model_server,
             remote_storage=remote_storage,
+            http_interpreter=http_interpreter,
         )
         agent.load_model(model_path=model_path, fingerprint=fingerprint)
         return agent
@@ -347,6 +356,7 @@ class Agent:
             lock_store=self.lock_store,
             action_endpoint=self.action_endpoint,
             generator=self.nlg,
+            http_interpreter=self.http_interpreter,
         )
         self.domain = self.processor.domain
 
@@ -371,7 +381,7 @@ class Agent:
         """Check if all necessary components are instantiated to use agent."""
         return self.tracker_store is not None and self.processor is not None
 
-    def parse_message(self, message_data: Text) -> Dict[Text, Any]:
+    async def parse_message(self, message_data: Text) -> Dict[Text, Any]:
         """Handles message text and intent payload input messages.
 
         The return value of this function is parsed_data.
@@ -400,7 +410,7 @@ class Agent:
                 "processor and a tracker store."
             )
         message = UserMessage(message_data)
-        return self.processor.parse_message(message)
+        return await self.processor.parse_message(message)
 
     async def handle_message(
         self, message: UserMessage,

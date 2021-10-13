@@ -4,7 +4,7 @@ from typing import Text
 from rasa.core.agent import Agent
 from rasa.shared.utils.cli import print_info, print_success
 from rasa.shared.utils.io import json_to_string
-
+import rasa.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,6 @@ def run_cmdline(model_path: Text) -> None:
             print_info("Wrapping up command line chat...")
             break
 
-        result = agent.parse_message(message)
+        result = rasa.utils.common.run_in_loop(agent.parse_message(message))
 
         print(json_to_string(result))

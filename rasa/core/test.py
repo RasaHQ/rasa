@@ -581,7 +581,7 @@ def emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None:
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
-def _get_e2e_entity_evaluation_result(
+async def _get_e2e_entity_evaluation_result(
     processor: "MessageProcessor",
     tracker: DialogueStateTracker,
     prediction: PolicyPrediction,
@@ -597,7 +597,7 @@ def _get_e2e_entity_evaluation_result(
         entity_targets = previous_event.entities
         if entity_targets or entities_predicted_by_policies:
             text = previous_event.text
-            parsed_message = processor.parse_message(UserMessage(text=text))
+            parsed_message = await processor.parse_message(UserMessage(text=text))
             if parsed_message:
                 tokens = [
                     Token(text[start:end], start, end)
@@ -638,7 +638,7 @@ def _get_predicted_action_name(
     return predicted_action_name
 
 
-def _run_action_prediction(
+async def _run_action_prediction(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
@@ -648,7 +648,7 @@ def _run_action_prediction(
         action, partial_tracker, expected_action
     )
 
-    policy_entity_result = _get_e2e_entity_evaluation_result(
+    policy_entity_result = await _get_e2e_entity_evaluation_result(
         processor, partial_tracker, prediction
     )
     if (
@@ -675,7 +675,7 @@ def _run_action_prediction(
     return predicted_action, prediction, policy_entity_result
 
 
-def _collect_action_executed_predictions(
+async def _collect_action_executed_predictions(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     event: ActionExecuted,
@@ -692,9 +692,11 @@ def _collect_action_executed_predictions(
     prev_action_unlikely_intent = False
 
     try:
-        predicted_action, prediction, policy_entity_result = _run_action_prediction(
-            processor, partial_tracker, expected_action
-        )
+        (
+            predicted_action,
+            prediction,
+            policy_entity_result,
+        ) = await _run_action_prediction(processor, partial_tracker, expected_action)
     except ActionLimitReached:
         prediction = PolicyPrediction([], policy_name=None)
         predicted_action = "circuit breaker tripped"
@@ -715,7 +717,11 @@ def _collect_action_executed_predictions(
         prev_action_unlikely_intent = True
 
         try:
-            predicted_action, prediction, policy_entity_result = _run_action_prediction(
+            (
+                predicted_action,
+                prediction,
+                policy_entity_result,
+            ) = await _run_action_prediction(
                 processor, partial_tracker, expected_action
             )
         except ActionLimitReached:
@@ -783,7 +789,7 @@ def _form_might_have_been_rejected(
     )
 
 
-def _predict_tracker_actions(
+async def _predict_tracker_actions(
     tracker: DialogueStateTracker,
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
@@ -815,7 +821,7 @@ def _predict_tracker_actions(
                 action_executed_result,
                 prediction,
                 entity_result,
-            ) = _collect_action_executed_predictions(
+            ) = await _collect_action_executed_predictions(
                 processor, partial_tracker, event, fail_on_prediction_errors,
             )
             if entity_result:
@@ -841,7 +847,7 @@ def _predict_tracker_actions(
             # in YAML format containing a user message, or in Markdown format.
             # Leaving that as it is because Markdown is in legacy mode.
             else:
-                predicted = processor.parse_message(UserMessage(event.text))
+                predicted = await processor.parse_message(UserMessage(event.text))
 
             user_uttered_result = _collect_user_uttered_predictions(
                 event, predicted, partial_tracker, fail_on_prediction_errors
@@ -905,7 +911,7 @@ def _sort_trackers_with_severity_of_warning(
     return [tracker for (_, tracker) in sorted_trackers_with_severity]
 
 
-def _collect_story_predictions(
+async def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
@@ -933,7 +939,9 @@ def _collect_story_predictions(
             predicted_tracker,
             tracker_actions,
             tracker_entity_results,
-        ) = _predict_tracker_actions(tracker, agent, fail_on_prediction_errors, use_e2e)
+        ) = await _predict_tracker_actions(
+            tracker, agent, fail_on_prediction_errors, use_e2e
+        )
 
         entity_results.extend(tracker_entity_results)
 
@@ -1018,7 +1026,7 @@ def _log_stories(
             f.write(YAMLStoryWriter().dumps(steps))
 
 
-def test(
+async def test(
     stories: Text,
     agent: "Agent",
     max_stories: Optional[int] = None,
@@ -1054,7 +1062,7 @@ def test(
     generator = _create_data_generator(stories, agent, max_stories, e2e)
     completed_trackers = generator.generate_story_trackers()
 
-    story_evaluation, _, entity_results = _collect_story_predictions(
+    story_evaluation, _, entity_results = await _collect_story_predictions(
         completed_trackers, agent, fail_on_prediction_errors, use_e2e=e2e
     )
 
@@ -1202,7 +1210,7 @@ def _plot_story_evaluation(
     )
 
 
-def compare_models_in_dir(
+async def compare_models_in_dir(
     model_dir: Text,
     stories_file: Text,
     output: Text,
@@ -1229,7 +1237,7 @@ def compare_models_in_dir(
             # The model files are named like <config-name>PERCENTAGE_KEY<number>.tar.gz
             # Remove the percentage key and number from the name to get the config name
             config_name = os.path.basename(model).split(PERCENTAGE_KEY)[0]
-            number_of_correct_stories = _evaluate_core_model(
+            number_of_correct_stories = await _evaluate_core_model(
                 model,
                 stories_file,
                 use_conversation_test_files=use_conversation_test_files,
@@ -1244,7 +1252,7 @@ def compare_models_in_dir(
     )
 
 
-def compare_models(
+async def compare_models(
     models: List[Text],
     stories_file: Text,
     output: Text,
@@ -1262,7 +1270,7 @@ def compare_models(
     number_correct = defaultdict(list)
 
     for model in models:
-        number_of_correct_stories = _evaluate_core_model(
+        number_of_correct_stories = await _evaluate_core_model(
             model, stories_file, use_conversation_test_files=use_conversation_test_files
         )
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
@@ -1272,7 +1280,7 @@ def compare_models(
     )
 
 
-def _evaluate_core_model(
+async def _evaluate_core_model(
     model: Text, stories_file: Text, use_conversation_test_files: bool = False
 ) -> int:
     from rasa.core.agent import Agent
@@ -1286,7 +1294,7 @@ def _evaluate_core_model(
     completed_trackers = generator.generate_story_trackers()
 
     # Entities are ignored here as we only compare number of correct stories.
-    story_eval_store, number_of_stories, _ = _collect_story_predictions(
+    story_eval_store, number_of_stories, _ = await _collect_story_predictions(
         completed_trackers, agent
     )
     failed_stories = story_eval_store.failed_stories

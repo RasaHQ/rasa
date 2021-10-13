@@ -1,9 +1,11 @@
 import asyncio
+import json
 from pathlib import Path
 from typing import Any, Dict, Text, Callable, Optional
 from unittest.mock import patch
 import uuid
 
+from aioresponses import aioresponses
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from pytest_sanic.utils import TestClient
@@ -12,6 +14,7 @@ from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
 
 import rasa.core
+from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
 from rasa.nlu.persistor import Persistor
 from rasa.shared.core.events import (
@@ -21,6 +24,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     UserUttered,
 )
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.common
 import rasa.utils.io
 from rasa.core import jobs
@@ -95,7 +99,7 @@ async def test_agent_train(default_agent: Agent):
 async def test_agent_parse_message(
     default_agent: Agent, text_message_data: Text, expected: Dict[Text, Any]
 ):
-    result = default_agent.parse_message(text_message_data)
+    result = await default_agent.parse_message(text_message_data)
     assert result == expected
 
 
@@ -296,3 +300,27 @@ async def test_agent_update_model(trained_core_model: Text, trained_nlu_model: T
         agent1.processor.model_metadata.predict_schema
         == agent2.processor.model_metadata.predict_schema
     )
+
+
+async def test_parse_with_http_interpreter(trained_default_agent_model: Text):
+    endpoints = AvailableEndpoints(nlu=EndpointConfig("https://interpreter.com"))
+    agent = await load_agent(
+        model_path=trained_default_agent_model, endpoints=endpoints
+    )
+    response_body = {
+        "intent": {INTENT_NAME_KEY: "some_intent", "confidence": 1.0},
+        "entities": [],
+        "text": "lunch?",
+    }
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://interpreter.com/model/parse",
+            repeat=True,
+            status=200,
+            body=json.dumps(response_body),
+        )
+
+        # mock the parse function with the one defined for this test
+        result = await agent.parse_message("lunch?")
+        assert result == response_body

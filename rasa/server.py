@@ -1131,7 +1131,7 @@ def create_app(
             test_data = payload.get("training_files")
 
             if cross_validation_folds:
-                test_coroutine = _cross_validate(
+                test_coroutine = await _cross_validate(
                     test_data, config_file, int(cross_validation_folds)
                 )
         else:
@@ -1199,7 +1199,7 @@ def create_app(
         config = importer.get_config()
         nlu_data = importer.get_nlu_data()
 
-        evaluations = rasa.nlu.test.cross_validate(
+        evaluations = await rasa.nlu.test.cross_validate(
             data=nlu_data,
             n_folds=folds,
             nlu_config=config,
@@ -1282,7 +1282,7 @@ def create_app(
         try:
             data = emulator.normalise_request_json(request.json)
             try:
-                parsed_data = app.agent.parse_message(data.get("text"))
+                parsed_data = await app.agent.parse_message(data.get("text"))
             except Exception as e:
                 logger.debug(traceback.format_exc())
                 raise ErrorResponse(

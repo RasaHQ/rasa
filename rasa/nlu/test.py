@@ -1226,7 +1226,7 @@ def align_all_entity_predictions(
     return aligned_predictions
 
 
-def get_eval_data(
+async def get_eval_data(
     processor: MessageProcessor, test_data: TrainingData
 ) -> Tuple[
     List[IntentEvaluationResult],
@@ -1261,7 +1261,7 @@ def get_eval_data(
     should_eval_entities = len(test_data.entity_examples) > 0
 
     for example in tqdm(test_data.nlu_examples):
-        result = processor.parse_message(
+        result = await processor.parse_message(
             UserMessage(text=example.get(TEXT)), only_output_properties=False
         )
         _remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)
@@ -1345,7 +1345,7 @@ def _remove_entities_of_extractors(
     nlu_parse_result[ENTITIES] = filtered_entities
 
 
-def run_evaluation(
+async def run_evaluation(
     data_path: Text,
     processor: MessageProcessor,
     output_directory: Optional[Text] = None,
@@ -1387,7 +1387,7 @@ def run_evaluation(
     if output_directory:
         rasa.shared.utils.io.create_directory(output_directory)
 
-    (intent_results, response_selection_results, entity_results) = get_eval_data(
+    (intent_results, response_selection_results, entity_results) = await get_eval_data(
         processor, test_data
     )
 
@@ -1464,7 +1464,7 @@ def generate_folds(
         )
 
 
-def combine_result(
+async def combine_result(
     intent_metrics: IntentMetrics,
     entity_metrics: EntityMetrics,
     response_selection_metrics: ResponseSelectionMetrics,
@@ -1501,7 +1501,7 @@ def combine_result(
         current_intent_results,
         current_entity_results,
         current_response_selection_results,
-    ) = compute_metrics(processor, data)
+    ) = await compute_metrics(processor, data)
 
     if intent_results is not None:
         intent_results += current_intent_results
@@ -1534,7 +1534,7 @@ def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> boo
     return False
 
 
-def cross_validate(
+async def cross_validate(
     data: TrainingData,
     n_folds: int,
     nlu_config: Union[RasaNLUModelConfig, Text, Dict],
@@ -1598,7 +1598,7 @@ def cross_validate(
             processor = Agent.load(model_file).processor
 
             # calculate train accuracy
-            combine_result(
+            await combine_result(
                 intent_train_metrics,
                 entity_train_metrics,
                 response_selection_train_metrics,
@@ -1606,7 +1606,7 @@ def cross_validate(
                 train,
             )
             # calculate test accuracy
-            combine_result(
+            await combine_result(
                 intent_test_metrics,
                 entity_test_metrics,
                 response_selection_test_metrics,
@@ -1679,7 +1679,7 @@ def _targets_predictions_from(
     return zip(*[(getattr(r, target_key), getattr(r, prediction_key)) for r in results])
 
 
-def compute_metrics(
+async def compute_metrics(
     processor: MessageProcessor, training_data: TrainingData
 ) -> Tuple[
     IntentMetrics,
@@ -1698,7 +1698,7 @@ def compute_metrics(
 
     Returns: intent, response selection and entity metrics, and prediction results.
     """
-    intent_results, response_selection_results, entity_results = get_eval_data(
+    intent_results, response_selection_results, entity_results = await get_eval_data(
         processor, training_data
     )
 
@@ -1736,7 +1736,7 @@ def compute_metrics(
     )
 
 
-def compare_nlu(
+async def compare_nlu(
     configs: List[Text],
     data: TrainingData,
     exclusion_percentages: List[int],
@@ -1821,7 +1821,7 @@ def compare_nlu(
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
                 processor = Agent.load(model_path=model_path).processor
-                result = run_evaluation(
+                result = await run_evaluation(
                     test_path, processor, output_directory=output_path, errors=True
                 )
 

@@ -7,6 +7,7 @@ import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
+from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.engine import loader
 from rasa.engine.constants import PLACEHOLDER_MESSAGE, PLACEHOLDER_TRACKER
 from rasa.engine.runner.dask import DaskGraphRunner
@@ -81,6 +82,7 @@ class MessageProcessor:
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         on_circuit_break: Optional[LambdaType] = None,
+        http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
@@ -92,6 +94,7 @@ class MessageProcessor:
         self.model_metadata, self.graph_runner = self._load_model(model_path)
         self.model_path = Path(model_path)
         self.domain = self.model_metadata.domain
+        self.http_interpreter = http_interpreter
 
     @staticmethod
     def _load_model(model_path: Union[Text, Path]) -> Tuple[ModelMetadata, GraphRunner]:
@@ -340,7 +343,7 @@ class MessageProcessor:
             message.sender_id, message.output_channel, message.metadata
         )
 
-        self._handle_message_with_tracker(message, tracker)
+        await self._handle_message_with_tracker(message, tracker)
 
         if should_save_tracker:
             self._save_tracker(tracker)
@@ -573,7 +576,34 @@ class MessageProcessor:
             action_name, self.domain, self.action_endpoint
         )
 
-    def parse_message(
+    async def parse_message(
+        self, message: UserMessage, only_output_properties: bool = True
+    ) -> Dict[Text, Any]:
+        """Interprets the passed message.
+
+        Arguments:
+            message: Message to handle
+
+        Returns:
+            Parsed data extracted from the message.
+        """
+        if self.http_interpreter:
+            parse_data = await self.http_interpreter.parse(message)
+        else:
+            parse_data = self._parse_message_with_graph(message, only_output_properties)
+
+        logger.debug(
+            "Received user message '{}' with intent '{}' "
+            "and entities '{}'".format(
+                parse_data["text"], parse_data["intent"], parse_data["entities"]
+            )
+        )
+
+        self._check_for_unseen_features(parse_data)
+
+        return parse_data
+
+    def _parse_message_with_graph(
         self, message: UserMessage, only_output_properties: bool = True
     ) -> Dict[Text, Any]:
         """Interprets the passed message.
@@ -598,26 +628,16 @@ class MessageProcessor:
         parse_data.update(
             parsed_message.as_dict(only_output_properties=only_output_properties)
         )
+        return parsed_message
 
-        logger.debug(
-            "Received user message '{}' with intent '{}' "
-            "and entities '{}'".format(
-                parse_data["text"], parse_data["intent"], parse_data["entities"]
-            )
-        )
-
-        self._check_for_unseen_features(parse_data)
-
-        return parse_data
-
-    def _handle_message_with_tracker(
+    async def _handle_message_with_tracker(
         self, message: UserMessage, tracker: DialogueStateTracker
     ) -> None:
 
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            parse_data = self.parse_message(message)
+            parse_data = await self.parse_message(message)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
