@@ -1,6 +1,7 @@
 import pytest
 from aioresponses import aioresponses
 
+from rasa.core.channels import UserMessage
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request, json_of_latest_request
@@ -20,7 +21,8 @@ async def test_http_interpreter(endpoint_url, joined_url):
 
         endpoint = EndpointConfig(endpoint_url)
         interpreter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
-        await interpreter.parse(text="message_text", message_id="message_id")
+        message = UserMessage(text="message_text", sender_id="message_id")
+        await interpreter.parse(message)
 
         r = latest_request(mocked, "POST", joined_url)
 

@@ -1096,7 +1096,9 @@ def create_app(
         e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
-            evaluation = test(test_data, app.agent, e2e=e2e, disable_plotting=True)
+            evaluation = await test(
+                test_data, app.agent, e2e=e2e, disable_plotting=True
+            )
             return response.json(evaluation)
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -1131,7 +1133,7 @@ def create_app(
             test_data = payload.get("training_files")
 
             if cross_validation_folds:
-                test_coroutine = await _cross_validate(
+                test_coroutine = _cross_validate(
                     test_data, config_file, int(cross_validation_folds)
                 )
         else:
