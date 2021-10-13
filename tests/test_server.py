@@ -66,6 +66,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
+from tests.conftest import AsyncMock
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -960,7 +961,7 @@ async def test_cross_validation_with_callback_success(
     with aioresponses() as mocked:
         mocked.post(callback_url, payload={})
 
-        mocked_cross_validation = Mock(
+        mocked_cross_validation = AsyncMock(
             return_value=(
                 CVEvaluationResult({}, {}, {}),
                 CVEvaluationResult({}, {}, {}),

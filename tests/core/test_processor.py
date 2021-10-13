@@ -840,7 +840,15 @@ async def test_handle_message_with_session_start(
         UserUttered(
             f"/greet{json.dumps(slot_1)}",
             {INTENT_NAME_KEY: "greet", "confidence": 1.0},
-            [{"entity": entity, "start": 6, "end": 22, "value": "Core"}],
+            [
+                {
+                    "entity": entity,
+                    "start": 6,
+                    "end": 22,
+                    "value": "Core",
+                    "extractor": "RegexMessageHandlerGraphComponent",
+                }
+            ],
         ),
         SlotSet(entity, slot_1[entity]),
         DefinePrevUserUtteredFeaturization(False),
@@ -861,6 +869,7 @@ async def test_handle_message_with_session_start(
                     "start": 6,
                     "end": 42,
                     "value": "post-session start hello",
+                    "extractor": "RegexMessageHandlerGraphComponent",
                 }
             ],
         ),
@@ -873,7 +882,6 @@ async def test_handle_message_with_session_start(
         ),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
-
     assert list(tracker.events) == expected
 
 
@@ -954,7 +962,15 @@ async def test_restart_triggers_session_start(
         UserUttered(
             f"/greet{json.dumps(slot_1)}",
             {INTENT_NAME_KEY: "greet", "confidence": 1.0},
-            [{"entity": entity, "start": 6, "end": 23, "value": "name1"}],
+            [
+                {
+                    "entity": entity,
+                    "start": 6,
+                    "end": 23,
+                    "value": "name1",
+                    "extractor": "RegexMessageHandlerGraphComponent",
+                }
+            ],
         ),
         SlotSet(entity, slot_1[entity]),
         DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
