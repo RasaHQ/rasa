@@ -10,6 +10,7 @@ from typing import (
     Union,
     Dict,
 )
+import asyncio
 
 import rasa.core.interpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -608,7 +609,7 @@ def train_nlu(
         otherwise the path to the directory with the trained model files.
 
     """
-    return rasa.utils.common.run_in_loop(
+    return asyncio.run(
         train_nlu_async(
             config,
             nlu_data,
