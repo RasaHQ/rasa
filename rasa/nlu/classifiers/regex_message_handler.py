@@ -6,10 +6,12 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
+from rasa.shared.nlu.constants import ENTITIES
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
 )
-class RegexMessageHandlerGraphComponent(GraphComponent):
+class RegexMessageHandlerGraphComponent(GraphComponent, EntityExtractorMixin):
     """Unpacks messages where `TEXT` contains an encoding of attributes.
 
     The `TEXT` attribute of such messages consists of the following sub-strings:
@@ -60,7 +62,12 @@ class RegexMessageHandlerGraphComponent(GraphComponent):
             if that message does not need to be unpacked, and a new message with the
             extracted attributes otherwise
         """
-        return [
+        messages = [
             YAMLStoryReader.unpack_regex_message(message, domain)
             for message in messages
         ]
+
+        for message in messages:
+            message.data[ENTITIES] = self.add_extractor_name(message.get(ENTITIES, []))
+
+        return messages

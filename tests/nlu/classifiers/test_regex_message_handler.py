@@ -1,3 +1,4 @@
+from rasa.nlu.constants import EXTRACTOR
 from rasa.shared.nlu.training_data.features import Features
 from typing import Text
 import numpy as np
@@ -14,6 +15,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     INTENT,
     TEXT,
+    ENTITIES,
 )
 
 
@@ -67,3 +69,34 @@ def test_process_does_not_do_anything(
     parsed_messages = regex_message_handler.process([message], domain)
 
     assert parsed_messages[0] == message
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        f"{INTENT_MESSAGE_PREFIX}greet",
+        f'{INTENT_MESSAGE_PREFIX}greet{{"name": "Leroy"}}',
+        f'{INTENT_MESSAGE_PREFIX}greet{{"name": "Leroy", "age": "100"}}',
+    ],
+)
+def test_regex_message_handler_adds_extractor_name(
+    regex_message_handler: RegexMessageHandlerGraphComponent, text: Text
+):
+
+    message = Message(
+        data={TEXT: text, INTENT: "bla"},
+        features=[
+            Features(
+                features=np.zeros((1, 1)),
+                feature_type=FEATURE_TYPE_SENTENCE,
+                attribute=TEXT,
+                origin="nlu-pipeline",
+            )
+        ],
+    )
+    parsed_messages = regex_message_handler.process([message])
+
+    for message in parsed_messages:
+
+        for entity in message.get(ENTITIES):
+            assert entity[EXTRACTOR] == RegexMessageHandlerGraphComponent.__name__
