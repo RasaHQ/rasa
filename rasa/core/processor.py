@@ -581,8 +581,10 @@ class MessageProcessor:
     ) -> Dict[Text, Any]:
         """Interprets the passed message.
 
-        Arguments:
-            message: Message to handle
+        Args:
+            message: Message to handle.
+            only_output_properties: If `True`, restrict the output to
+                Message.only_output_properties.
 
         Returns:
             Parsed data extracted from the message.

@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from http import HTTPStatus
 import textwrap
 from pathlib import Path
 
@@ -154,7 +155,7 @@ async def test_http_parsing(trained_default_agent_model: Text, domain: Domain):
         mocked.post(
             "https://interpreter.com/model/parse",
             repeat=True,
-            status=200,
+            status=HTTPStatus.OK,
             body=json.dumps(response_body),
         )
 
@@ -185,7 +186,10 @@ async def test_http_parsing_default_response(
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://interpreter.com/model/parse", repeat=True, status=200, body=None,
+            "https://interpreter.com/model/parse",
+            repeat=True,
+            status=HTTPStatus.OK,
+            body=None,
         )
 
         inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)

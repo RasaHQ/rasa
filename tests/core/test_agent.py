@@ -1,4 +1,5 @@
 import asyncio
+from http import HTTPStatus
 import json
 from pathlib import Path
 from typing import Any, Dict, Text, Callable, Optional
@@ -317,7 +318,7 @@ async def test_parse_with_http_interpreter(trained_default_agent_model: Text):
         mocked.post(
             "https://interpreter.com/model/parse",
             repeat=True,
-            status=200,
+            status=HTTPStatus.OK,
             body=json.dumps(response_body),
         )
 

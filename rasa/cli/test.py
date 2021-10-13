@@ -258,10 +258,10 @@ def run_nlu_test(args: argparse.Namespace) -> None:
 
 
 def run_core_test(args: argparse.Namespace) -> None:
-    """Runs NLU tests.
+    """Runs Core tests.
 
     Args:
-        args: the parsed CLI arguments for 'rasa test nlu'.
+        args: the parsed CLI arguments for 'rasa test core'.
     """
     rasa.utils.common.run_in_loop(run_core_test_async(args))
 

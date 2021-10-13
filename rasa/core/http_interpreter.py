@@ -16,7 +16,7 @@ class RasaNLUHttpInterpreter:
     """Allows for an HTTP endpoint to be used to parse messages."""
 
     def __init__(self, endpoint_config: Optional[EndpointConfig] = None) -> None:
-        """Initializes a `RasaNLUHttpInterpreter`"""
+        """Initializes a `RasaNLUHttpInterpreter`."""
         if endpoint_config:
             self.endpoint_config = endpoint_config
         else:
@@ -25,7 +25,8 @@ class RasaNLUHttpInterpreter:
     async def parse(self, message: UserMessage,) -> Dict[Text, Any]:
         """Parse a text message.
 
-        Return a default value if the parsing of the text failed."""
+        Return a default value if the parsing of the text failed.
+        """
         default_return = {
             "intent": {INTENT_NAME_KEY: "", "confidence": 0.0},
             "entities": [],
