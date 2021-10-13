@@ -11,7 +11,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
-from rasa.shared.nlu.constants import ENTITIES
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -49,12 +48,9 @@ class RegexMessageHandlerGraphComponent(GraphComponent, EntityExtractorMixin):
             The messages with potentially intent and entity prediction replaced
             in case the message started with a `/`.
         """
-        messages = [
-            YAMLStoryReader.unpack_regex_message(message, domain)
+        return [
+            YAMLStoryReader.unpack_regex_message(
+                message, domain, entity_extractor_name=self.name
+            )
             for message in messages
         ]
-
-        for message in messages:
-            message.data[ENTITIES] = self.add_extractor_name(message.get(ENTITIES, []))
-
-        return messages

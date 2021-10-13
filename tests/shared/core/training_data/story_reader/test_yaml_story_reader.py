@@ -50,6 +50,7 @@ from rasa.shared.nlu.constants import (
     INTENT_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,
     TEXT,
+    EXTRACTOR,
 )
 
 
@@ -508,7 +509,9 @@ stories:
     assert user_uttered == UserUttered(
         plain_text,
         intent={"name": intent},
-        entities=[{"entity": "name", "start": 6, "end": 22, "value": "test"}],
+        entities=[
+            {"entity": "name", "start": 6, "end": 22, "value": "test", EXTRACTOR: None}
+        ],
     )
 
 
@@ -1008,6 +1011,7 @@ def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
                 ENTITY_ATTRIBUTE_TYPE,
                 ENTITY_ATTRIBUTE_START,
                 ENTITY_ATTRIBUTE_END,
+                EXTRACTOR,
             }
             for item in entity_data
         )
@@ -1070,7 +1074,10 @@ def test_process_warns_if_intent_or_entities_not_in_domain(
         assert unpacked_message == message
 
 
-async def test_unpack_regex_message_has_correct_entity_start_and_end():
+@pytest.mark.parametrize("extractor_name", [None, "RegexMessageHandler"])
+async def test_unpack_regex_message_has_correct_entity_start_and_end(
+    extractor_name: Optional[Text],
+):
     entity = "name"
     slot_1 = {entity: "Core"}
     text = f"/greet{json.dumps(slot_1)}"
@@ -1086,11 +1093,21 @@ async def test_unpack_regex_message_has_correct_entity_start_and_end():
         forms={},
     )
 
-    message = YAMLStoryReader.unpack_regex_message(message, domain)
+    message = YAMLStoryReader.unpack_regex_message(
+        message, domain, entity_extractor_name=extractor_name
+    )
 
     assert message.data == {
         "text": '/greet{"name": "Core"}',
         "intent": {"name": "greet", "confidence": 1.0},
         "intent_ranking": [{"name": "greet", "confidence": 1.0}],
-        "entities": [{"entity": "name", "value": "Core", "start": 6, "end": 22}],
+        "entities": [
+            {
+                "entity": "name",
+                "value": "Core",
+                "start": 6,
+                "end": 22,
+                "extractor": extractor_name,
+            }
+        ],
     }

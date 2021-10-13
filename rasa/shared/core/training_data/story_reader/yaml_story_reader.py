@@ -26,6 +26,7 @@ from rasa.shared.nlu.constants import (
     FULL_RETRIEVAL_INTENT_NAME_KEY,
     ACTION_TEXT,
     TEXT,
+    EXTRACTOR,
 )
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
@@ -597,13 +598,18 @@ class YAMLStoryReader(StoryReader):
 
     @staticmethod
     def unpack_regex_message(
-        message: Message, domain: Optional[Domain] = None
+        message: Message,
+        domain: Optional[Domain] = None,
+        entity_extractor_name: Optional[Text] = None,
     ) -> Message:
         """Unpacks the message if `TEXT` contains an encoding of attributes.
 
         Args:
             message: some message
             domain: the domain
+            entity_extractor_name: An extractor name which should be added for the
+                entities.
+
         Returns:
             the given message if that message does not need to be unpacked, and a new
             message with the extracted attributes otherwise
@@ -627,7 +633,9 @@ class YAMLStoryReader(StoryReader):
         # Extract attributes from the match - and validate it via the domain.
         intent_name = YAMLStoryReader._intent_name_from_regex_match(match, domain)
         confidence = YAMLStoryReader._confidences_from_regex_match(match)
-        entities = YAMLStoryReader._entities_from_regex_match(match, domain)
+        entities = YAMLStoryReader._entities_from_regex_match(
+            match, domain, entity_extractor_name
+        )
 
         # The intent name is *not* optional, but during parsing we might find out
         # that the given intent is unknown (and warn). In this case, stop here.
@@ -673,7 +681,7 @@ class YAMLStoryReader(StoryReader):
 
     @staticmethod
     def _entities_from_regex_match(
-        match: Match, domain: Domain
+        match: Match, domain: Domain, extractor_name: Optional[Text]
     ) -> List[Dict[Text, Any]]:
         """Extracts the optional entity information from the given pattern match.
 
@@ -683,6 +691,8 @@ class YAMLStoryReader(StoryReader):
         Args:
             match: a match produced by `self.pattern`
             domain: the domain
+            extractor_name: A extractor name which should be added for the entities
+
         Returns:
             some list of entities
         """
@@ -738,6 +748,7 @@ class YAMLStoryReader(StoryReader):
                         ENTITY_ATTRIBUTE_VALUE: entity_value,
                         ENTITY_ATTRIBUTE_START: match.start(ENTITIES),
                         ENTITY_ATTRIBUTE_END: match.end(ENTITIES),
+                        EXTRACTOR: extractor_name,
                     }
                 )
         return entities
