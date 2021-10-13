@@ -1,7 +1,11 @@
+import logging
+
 import pytest
 from typing import Callable, Dict, Text, Any
 import re
 import copy
+
+from _pytest.logging import LogCaptureFixture
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -175,7 +179,13 @@ def test_load_without_training(
     create_or_load_mitie_extractor: Callable[
         [Dict[Text, Any]], MitieEntityExtractorGraphComponent
     ],
+    caplog: LogCaptureFixture,
 ):
-    with pytest.warns(UserWarning):
-        extractor = create_or_load_mitie_extractor({}, load=True)
-    assert isinstance(extractor, MitieEntityExtractorGraphComponent)
+    with caplog.at_level(logging.DEBUG):
+        create_or_load_mitie_extractor({}, load=True)
+
+    assert any(
+        "Failed to load MitieEntityExtractorGraphComponent from model storage."
+        in message
+        for message in caplog.messages
+    )

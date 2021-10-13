@@ -84,7 +84,7 @@ def test_loading_from_storage_fail(
     default_execution_context: ExecutionContext,
     caplog: LogCaptureFixture,
 ):
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.DEBUG):
         loaded = SklearnIntentClassifierGraphComponent.load(
             SklearnIntentClassifierGraphComponent.get_default_config(),
             default_model_storage,
