@@ -1,4 +1,3 @@
-import pytest
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage

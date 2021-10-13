@@ -4,9 +4,7 @@ from typing import Callable
 from _pytest.monkeypatch import MonkeyPatch
 import pytest
 
-from rasa.engine.caching import LocalTrainingCache, TrainingCache
-from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.training.hooks import TrainingHook
+from rasa.engine.caching import LocalTrainingCache
 
 
 @pytest.fixture()
