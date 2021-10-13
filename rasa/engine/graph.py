@@ -355,7 +355,7 @@ class GraphNode:
         logger.debug(
             f"Node '{self._node_name}' loading "
             f"'{self._component_class.__name__}.{self._constructor_name}' "
-            f"with config: '{self._component_config}', and kwargs: '{kwargs}'."
+            f"and kwargs: '{kwargs}'."
         )
 
         constructor = getattr(self._component_class, self._constructor_name)
