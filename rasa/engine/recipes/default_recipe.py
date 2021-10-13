@@ -50,7 +50,7 @@ import rasa.shared.utils.common
 logger = logging.getLogger(__name__)
 
 
-default_predict_kwargs = dict(constructor_name="load", eager=True, is_target=False,)
+DEFAULT_PREDICT_KWARGS = dict(constructor_name="load", eager=True, is_target=False,)
 
 
 class DefaultV1RecipeRegisterException(RasaException):
@@ -570,7 +570,7 @@ class DefaultV1Recipe(Recipe):
         )
 
         predict_nodes["nlu_message_converter"] = SchemaNode(
-            **default_predict_kwargs,
+            **DEFAULT_PREDICT_KWARGS,
             needs={"messages": PLACEHOLDER_MESSAGE},
             uses=NLUMessageConverter,
             fn="convert_user_message",
@@ -590,7 +590,7 @@ class DefaultV1Recipe(Recipe):
 
         regex_handler_node_name = f"run_{RegexMessageHandlerGraphComponent.__name__}"
         predict_nodes[regex_handler_node_name] = SchemaNode(
-            **default_predict_kwargs,
+            **DEFAULT_PREDICT_KWARGS,
             needs={"messages": last_run_nlu_node, **domain_needs},
             uses=RegexMessageHandlerGraphComponent,
             fn="process",
@@ -617,7 +617,7 @@ class DefaultV1Recipe(Recipe):
             component_name = f"{component_name}{idx}"
             if component.type == self.ComponentType.MODEL_LOADER:
                 predict_nodes[f"run_{component_name}"] = SchemaNode(
-                    **default_predict_kwargs,
+                    **DEFAULT_PREDICT_KWARGS,
                     needs={},
                     uses=component.clazz,
                     fn="provide",
@@ -702,7 +702,7 @@ class DefaultV1Recipe(Recipe):
             node,
             needs={"messages": last_run_node, **model_provider_needs},
             fn="process",
-            **default_predict_kwargs,
+            **DEFAULT_PREDICT_KWARGS,
         )
 
         return node_name
@@ -715,7 +715,7 @@ class DefaultV1Recipe(Recipe):
         preprocessors: List[Text],
     ) -> None:
         predict_nodes["domain_provider"] = SchemaNode(
-            **default_predict_kwargs,
+            **DEFAULT_PREDICT_KWARGS,
             needs={},
             uses=DomainProvider,
             fn="provide_inference",
@@ -748,7 +748,7 @@ class DefaultV1Recipe(Recipe):
 
             predict_nodes[node_name] = dataclasses.replace(
                 train_nodes[train_node_name],
-                **default_predict_kwargs,
+                **DEFAULT_PREDICT_KWARGS,
                 needs={
                     "domain": "domain_provider",
                     **(
@@ -767,7 +767,7 @@ class DefaultV1Recipe(Recipe):
             policies.append(node_name)
 
         predict_nodes["rule_only_data_provider"] = SchemaNode(
-            **default_predict_kwargs,
+            **DEFAULT_PREDICT_KWARGS,
             needs={},
             uses=RuleOnlyDataProvider,
             fn="provide",
@@ -776,7 +776,7 @@ class DefaultV1Recipe(Recipe):
         )
 
         predict_nodes["select_prediction"] = SchemaNode(
-            **default_predict_kwargs,
+            **DEFAULT_PREDICT_KWARGS,
             needs={
                 **{f"policy{idx}": name for idx, name in enumerate(policies)},
                 "domain": "domain_provider",
@@ -791,7 +791,7 @@ class DefaultV1Recipe(Recipe):
         self, predict_nodes: Dict[Text, SchemaNode], preprocessors: List[Text],
     ) -> Text:
         predict_nodes["tracker_to_message_converter"] = SchemaNode(
-            **default_predict_kwargs,
+            **DEFAULT_PREDICT_KWARGS,
             needs={"tracker": PLACEHOLDER_TRACKER},
             uses=CoreFeaturizationInputConverter,
             fn="convert_for_inference",
@@ -810,7 +810,7 @@ class DefaultV1Recipe(Recipe):
 
         node_with_e2e_features = "end_to_end_features_provider"
         predict_nodes[node_with_e2e_features] = SchemaNode(
-            **default_predict_kwargs,
+            **DEFAULT_PREDICT_KWARGS,
             needs={"messages": last_node_name,},
             uses=CoreFeaturizationCollector,
             fn="collect",
