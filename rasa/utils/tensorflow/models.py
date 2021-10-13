@@ -147,7 +147,7 @@ class RasaModel(TmpKerasModel):
         self._training = True
 
         # calculate supervision and regularization losses separately
-        with tf.GradientTape(persistent=True) as tape:
+        with tf.GradientTape() as tape:
             prediction_loss = self.batch_loss(batch_in)
             regularization_loss = tf.math.add_n(self.losses)
             total_loss = prediction_loss + regularization_loss
@@ -155,26 +155,28 @@ class RasaModel(TmpKerasModel):
         self.total_loss.update_state(total_loss)
 
         # calculate the gradients that come from supervision signal
-        prediction_gradients = tape.gradient(prediction_loss, self.trainable_variables)
-        # calculate the gradients that come from regularization
-        regularization_gradients = tape.gradient(
-            regularization_loss, self.trainable_variables
-        )
+        # prediction_gradients = tape.gradient(prediction_loss, self.trainable_variables)
+        # # calculate the gradients that come from regularization
+        # regularization_gradients = tape.gradient(
+        #     regularization_loss, self.trainable_variables
+        # )
+
+        gradients = tape.gradient(total_loss, self.trainable_variables)
         # delete gradient tape manually
         # since it was created with `persistent=True` option
-        del tape
+        # del tape
 
-        gradients = []
-        for pred_grad, reg_grad in zip(prediction_gradients, regularization_gradients):
-            if pred_grad is not None and reg_grad is not None:
-                # remove regularization gradient for variables
-                # that don't have prediction gradient
-                gradients.append(
-                    pred_grad
-                    + tf.where(pred_grad > 0, reg_grad, tf.zeros_like(reg_grad))
-                )
-            else:
-                gradients.append(pred_grad)
+        # gradients = []
+        # for pred_grad, reg_grad in zip(prediction_gradients, regularization_gradients):
+        #     if pred_grad is not None and reg_grad is not None:
+        #         # remove regularization gradient for variables
+        #         # that don't have prediction gradient
+        #         gradients.append(
+        #             pred_grad
+        #             + tf.where(pred_grad > 0, reg_grad, tf.zeros_like(reg_grad))
+        #         )
+        #     else:
+        #         gradients.append(pred_grad)
 
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
