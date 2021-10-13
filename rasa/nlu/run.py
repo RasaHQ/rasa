@@ -7,7 +7,6 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.nlu.model import Interpreter
 from rasa.shared.utils.io import json_to_string
-import asyncio
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import ComponentBuilder
