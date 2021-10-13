@@ -738,9 +738,14 @@ class YAMLStoryReader(StoryReader):
 
         # convert them into the list of dictionaries that we expect
         entities: List[Dict[Text, Any]] = []
+        default_properties = {}
+        if extractor_name:
+            default_properties = {EXTRACTOR: extractor_name}
+
         for entity_type, entity_values in parsed_entities.items():
             if not isinstance(entity_values, list):
                 entity_values = [entity_values]
+
             for entity_value in entity_values:
                 entities.append(
                     {
@@ -748,7 +753,7 @@ class YAMLStoryReader(StoryReader):
                         ENTITY_ATTRIBUTE_VALUE: entity_value,
                         ENTITY_ATTRIBUTE_START: match.start(ENTITIES),
                         ENTITY_ATTRIBUTE_END: match.end(ENTITIES),
-                        EXTRACTOR: extractor_name,
+                        **default_properties,
                     }
                 )
         return entities

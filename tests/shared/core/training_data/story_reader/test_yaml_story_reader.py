@@ -509,9 +509,7 @@ stories:
     assert user_uttered == UserUttered(
         plain_text,
         intent={"name": intent},
-        entities=[
-            {"entity": "name", "start": 6, "end": 22, "value": "test", EXTRACTOR: None}
-        ],
+        entities=[{"entity": "name", "start": 6, "end": 22, "value": "test"}],
     )
 
 
@@ -1074,10 +1072,7 @@ def test_process_warns_if_intent_or_entities_not_in_domain(
         assert unpacked_message == message
 
 
-@pytest.mark.parametrize("extractor_name", [None, "RegexMessageHandler"])
-async def test_unpack_regex_message_has_correct_entity_start_and_end(
-    extractor_name: Optional[Text],
-):
+async def test_unpack_regex_message_has_correct_entity_start_and_end():
     entity = "name"
     slot_1 = {entity: "Core"}
     text = f"/greet{json.dumps(slot_1)}"
@@ -1094,7 +1089,7 @@ async def test_unpack_regex_message_has_correct_entity_start_and_end(
     )
 
     message = YAMLStoryReader.unpack_regex_message(
-        message, domain, entity_extractor_name=extractor_name
+        message, domain, entity_extractor_name="RegexMessageHandler"
     )
 
     assert message.data == {
@@ -1107,7 +1102,7 @@ async def test_unpack_regex_message_has_correct_entity_start_and_end(
                 "value": "Core",
                 "start": 6,
                 "end": 22,
-                "extractor": extractor_name,
+                EXTRACTOR: "RegexMessageHandler",
             }
         ],
     }
