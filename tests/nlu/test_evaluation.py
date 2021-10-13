@@ -10,7 +10,8 @@ from rasa.core.channels import UserMessage
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
+from tests.conftest import AsyncMock
 
 import rasa.nlu.test
 import rasa.shared.nlu.training_data.loading
