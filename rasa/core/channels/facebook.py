@@ -10,7 +10,7 @@ from fbmessenger.sender_actions import SenderAction
 import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
+from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional, Union
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
@@ -276,11 +276,19 @@ class MessengerBot(OutputChannel):
         self.messenger_client.send(payload, recipient_id, "RESPONSE")
 
     async def send_custom_json(
-        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
+        self,
+        recipient_id: Text,
+        json_message: Union[List, Dict[Text, Any]],
+        **kwargs: Any,
     ) -> None:
         """Sends custom json data to the output."""
-
-        recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
+        if isinstance(json_message, dict) and "sender" in json_message.keys():
+            recipient_id = json_message.pop("sender", {}).pop("id", recipient_id)
+        elif isinstance(json_message, list):
+            for message in json_message:
+                if "sender" in message.keys():
+                    recipient_id = message.pop("sender", {}).pop("id", recipient_id)
+                    break
 
         self.messenger_client.send(json_message, recipient_id, "RESPONSE")
 
