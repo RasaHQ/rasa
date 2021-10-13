@@ -76,18 +76,6 @@ forms:
             value: false
 ```
 
-:::caution Deprecated in 2.6
-The `required_slots` keyword was introduced. The following syntax is deprecated and will be removed in 3.0.0:
-```yaml-rasa title="domain.yml"
-forms:
-  restaurant_form:
-    # this format is deprecated
-    cuisine:
-      - type: from_entity
-        entity: cuisine
-```
-:::
-
 For any slot filled `from_entity`, the entity needs to be added
 to the domain.
 

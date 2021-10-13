@@ -63,18 +63,6 @@ forms:
             entity: number
 ```
 
-:::caution Deprecated in 2.6
-The `required_slots` keyword was introduced. The following syntax is deprecated and will be removed in 3.0.0:
-```yaml-rasa title="domain.yml"
-forms:
-  restaurant_form:
-    # this format is deprecated
-    cuisine:
-      - type: from_entity
-        entity: cuisine
-```
-:::
-
 Once the form action gets called for the first time, the form gets activated and will
 prompt the user for the next required slot value. It does this by
 looking for a [response](./responses.mdx) called
