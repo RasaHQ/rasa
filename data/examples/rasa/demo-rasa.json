@@ -344,7 +344,7 @@
         "text": "have a good one",
         "intent": "goodbye",
         "entities": []
-      },
+      }
     ]
   }
 }
