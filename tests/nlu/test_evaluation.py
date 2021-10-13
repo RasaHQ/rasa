@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import textwrap
 
 from pathlib import Path
 from typing import Text, List, Dict, Any, Set
@@ -360,6 +361,34 @@ async def test_run_evaluation(mood_agent: Agent, nlu_as_json_path: Text):
     assert all(
         prediction["confidence"] is not None
         for prediction in result["response_selection_evaluation"]["predictions"]
+    )
+
+
+@pytest.mark.timeout(
+    300, func_only=True
+)  # these can take a longer time than the default timeout
+async def test_run_evaluation_with_regex_message(mood_agent: Agent, tmp_path: Path):
+    training_data = textwrap.dedent(
+        """
+    version: '2.0'
+    nlu:
+    - intent: goodbye
+      examples: |
+        - Bye
+        - /goodbye{"location": "29432"}
+    """
+    )
+
+    data_path = tmp_path / "test.yml"
+    rasa.shared.utils.io.write_text_file(training_data, data_path)
+
+    # Does not raise
+    await run_evaluation(
+        str(data_path),
+        mood_agent.processor,
+        errors=False,
+        successes=False,
+        disable_plotting=True,
     )
 
 

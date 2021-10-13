@@ -345,18 +345,6 @@
         "intent": "goodbye",
         "entities": []
       },
-      {
-        "text": "/goodbye{\"location\": \"29432\"}",
-        "intent": "goodbye",
-        "entities": [
-          {
-            "start": 8,
-            "end": 29,
-            "value": "29432",
-            "entity": "location"
-          }
-        ]
-      }
     ]
   }
 }
