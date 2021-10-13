@@ -273,8 +273,8 @@ class DefaultV1Recipe(Recipe):
         last_run_node = "nlu_training_data_provider"
         preprocessors: List[Text] = []
 
-        for idx, item in enumerate(train_config["pipeline"]):
-            component_name = item.pop("name")
+        for idx, config in enumerate(train_config["pipeline"]):
+            component_name = config.pop("name")
             component = self._from_registry(component_name)
             component_name = f"{component_name}{idx}"
 
@@ -285,7 +285,7 @@ class DefaultV1Recipe(Recipe):
                     uses=component.clazz,
                     constructor_name="create",
                     fn="provide",
-                    config=item,
+                    config=config,
                 )
                 # TODO: Spacy preprocessor
             else:
@@ -296,7 +296,7 @@ class DefaultV1Recipe(Recipe):
                         component.clazz,
                         component_name,
                         last_run_node,
-                        item,
+                        config,
                         cli_parameters,
                     )
 
@@ -309,7 +309,7 @@ class DefaultV1Recipe(Recipe):
                         component.clazz,
                         component_name,
                         last_run_node,
-                        item,
+                        config,
                         from_resource=from_resource,
                     )
 
@@ -487,12 +487,12 @@ class DefaultV1Recipe(Recipe):
         )
 
         policy_with_end_to_end_support_used = False
-        for idx, item in enumerate(train_config["policies"]):
-            component_name = item.pop("name")
+        for idx, config in enumerate(train_config["policies"]):
+            component_name = config.pop("name")
             component = self._from_registry(component_name)
 
             extra_config_from_cli = self._extra_config_from_cli(
-                cli_parameters, component.clazz, item
+                cli_parameters, component.clazz, config
             )
 
             requires_end_to_end_data = self._use_end_to_end and (
@@ -516,7 +516,7 @@ class DefaultV1Recipe(Recipe):
                 constructor_name="load" if self._is_finetuning else "create",
                 fn="train",
                 is_target=True,
-                config={**item, **extra_config_from_cli},
+                config={**config, **extra_config_from_cli},
             )
 
         if self._use_end_to_end and policy_with_end_to_end_support_used:
@@ -611,8 +611,8 @@ class DefaultV1Recipe(Recipe):
         predict_nodes: Dict[Text, SchemaNode],
         train_nodes: Dict[Text, SchemaNode],
     ) -> Text:
-        for idx, item in enumerate(predict_config["pipeline"]):
-            component_name = item.pop("name")
+        for idx, config in enumerate(predict_config["pipeline"]):
+            component_name = config.pop("name")
             component = self._from_registry(component_name)
             component_name = f"{component_name}{idx}"
             if component.type == self.ComponentType.MODEL_LOADER:
@@ -621,7 +621,7 @@ class DefaultV1Recipe(Recipe):
                     needs={},
                     uses=component.clazz,
                     fn="provide",
-                    config=item,
+                    config=config,
                 )
             elif component.type in [
                 self.ComponentType.MESSAGE_TOKENIZER,
@@ -632,7 +632,7 @@ class DefaultV1Recipe(Recipe):
                     component_name,
                     train_nodes,
                     last_run_node,
-                    item,
+                    config,
                     from_resource=component.is_trainable,
                 )
             elif component.type in [
@@ -645,7 +645,7 @@ class DefaultV1Recipe(Recipe):
                         component_name,
                         train_nodes,
                         last_run_node,
-                        item,
+                        config,
                         from_resource=component.is_trainable,
                     )
                 else:
@@ -654,7 +654,7 @@ class DefaultV1Recipe(Recipe):
                         uses=component.clazz,
                         constructor_name="create",
                         fn="process",
-                        config=item,
+                        config=config,
                     )
 
                     last_run_node = self._add_nlu_predict_node(
@@ -734,8 +734,8 @@ class DefaultV1Recipe(Recipe):
         rule_policy_resource = None
         policies: List[Text] = []
 
-        for idx, item in enumerate(predict_config["policies"]):
-            component_name = item.pop("name")
+        for idx, config in enumerate(predict_config["policies"]):
+            component_name = config.pop("name")
             component = self._from_registry(component_name)
 
             train_node_name = f"train_{component_name}{idx}"
