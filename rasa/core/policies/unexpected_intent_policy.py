@@ -521,11 +521,11 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         def _compile_metadata_for_label(
             label_name: Text, similarity_score: float, threshold: Optional[float],
         ) -> "RankingCandidateMetadata":
-            severity = threshold - similarity_score if threshold else None
+            severity = float(threshold - similarity_score) if threshold else None
             return {
                 NAME: label_name,
-                SCORE_KEY: similarity_score,
-                THRESHOLD_KEY: threshold,
+                SCORE_KEY: float(similarity_score),
+                THRESHOLD_KEY: float(threshold) if threshold else None,
                 SEVERITY_KEY: severity,
             }
 
