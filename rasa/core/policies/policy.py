@@ -520,7 +520,7 @@ class PolicyGraphComponent(GraphComponent):
 
     def __repr__(self) -> Text:
         """Returns text representation of object."""
-        return self.__class__.__name__
+        return f"{self.__class__.__name__}@{id(self)}"
 
 
 class PolicyPrediction:
