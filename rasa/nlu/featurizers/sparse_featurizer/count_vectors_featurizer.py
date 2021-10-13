@@ -2,7 +2,8 @@ from __future__ import annotations
 import logging
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text, Tuple, Set
+from typing import Any, Dict, List, Optional, Text, Tuple, Set, Type
+from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -49,6 +50,11 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     to use the idea of Subword Semantic Hashing
     from https://arxiv.org/abs/1810.07150.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
