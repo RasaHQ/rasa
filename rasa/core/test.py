@@ -228,6 +228,7 @@ class EvaluationStore:
         return deduplicated_targets != deduplicated_predictions
 
     def has_prediction_target_mismatch(self) -> bool:
+        """Checks if intent, entity or action predictions don't match expected ones."""
         return (
             self.intent_predictions != self.intent_targets
             or self._has_entity_prediction_target_mismatch()
