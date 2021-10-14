@@ -113,6 +113,10 @@ You will need a running Kafka server.
 
 ### Partition Key
 
+:::info New in 2.5
+The `partition_by_sender` parameter was added.
+:::
+
 Rasa Open Source's Kafka producer can optionally be configured to partition messages by conversation ID.
 This can be configured by setting `partition_by_sender` in the `endpoints.yml` file to True.
 By default, this parameter is set to `False` and the producer will randomly assign a partition to each message.  
@@ -149,6 +153,10 @@ be provided as arguments, as well as the CA's root certificate.
 When using the `SASL_PLAINTEXT` and `SASL_SSL` protocols, the `sasl_mechanism` can be
 optionally configured and is set to `PLAIN` by default. Valid values for `sasl_mechanism`
 are: `PLAIN`, `GSSAPI`, `OAUTHBEARER`, `SCRAM-SHA-256`, and `SCRAM-SHA-512`.
+
+If `GSSAPI` is used for the `sasl_mechanism`, you will need to additionally install
+[python-gssapi](https://pypi.org/project/python-gssapi/) and the necessary C library
+Kerberos dependencies.
 
 If the `ssl_check_hostname` parameter is enabled, the clients will verify
 if the broker's hostname matches the certificate. It's used on client's connections
