@@ -69,6 +69,10 @@ class Token:
             other.lemma,
         )
 
+    def __repr__(self) -> Text:
+        return f"<Token object value='{self.text}' start={self.start} end={self.end} \
+        at {hex(id(self))}>"
+
     def fingerprint(self) -> Text:
         """Returns a stable hash for this Token."""
         return rasa.shared.utils.io.deep_container_fingerprint(

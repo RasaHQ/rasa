@@ -87,18 +87,6 @@ State = Dict[Text, SubState]
 logger = logging.getLogger(__name__)
 
 
-def _mark_conditional_response_variations_warning(
-    responses: Dict[Text, List[Dict[Text, Any]]]
-) -> None:
-    for response_variations in responses.values():
-        for variation in response_variations:
-            if RESPONSE_CONDITION in variation:
-                rasa.shared.utils.common.mark_as_experimental_feature(
-                    "conditional response variation feature"
-                )
-                break
-
-
 class InvalidDomain(RasaException):
     """Exception that can be raised when domain is not valid."""
 
@@ -607,8 +595,6 @@ class Domain:
         action_names += overridden_form_actions
 
         self.responses = responses
-        # if domain has conditions, logs experimental feature warning
-        _mark_conditional_response_variations_warning(self.responses)
 
         self.action_texts = action_texts or []
         self.session_config = session_config
