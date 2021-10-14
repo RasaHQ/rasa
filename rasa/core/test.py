@@ -214,10 +214,23 @@ class EvaluationStore:
             entity_targets=other.entity_targets,
         )
 
+    def _has_entity_prediction_target_mismatch(self) -> bool:
+        """Checks that same entities were expected and actually extracted.
+
+        Possible duplicates or differences in order should not matter.
+        """
+        deduplicated_targets = set(
+            tuple(entity.items()) for entity in self.entity_targets
+        )
+        deduplicated_predictions = set(
+            tuple(entity.items()) for entity in self.entity_predictions
+        )
+        return deduplicated_targets != deduplicated_predictions
+
     def has_prediction_target_mismatch(self) -> bool:
         return (
             self.intent_predictions != self.intent_targets
-            or self.entity_predictions != self.entity_targets
+            or self._has_entity_prediction_target_mismatch()
             or self.action_predictions != self.action_targets
         )
 
