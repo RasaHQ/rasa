@@ -1,9 +1,31 @@
+import itertools
+from typing import Text
+
 import numpy as np
 import pytest
 import scipy.sparse
 
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, TEXT, FEATURE_TYPE_SEQUENCE
+
+
+@pytest.mark.parametrize(
+    "type,is_sparse,",
+    itertools.product([FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE], [True, False]),
+)
+def test_print(type: Text, is_sparse: bool):
+    first_dim = 1 if type == FEATURE_TYPE_SEQUENCE else 3
+    matrix = np.full(shape=(first_dim, 2), fill_value=1)
+    if is_sparse:
+        matrix = scipy.sparse.coo_matrix(matrix)
+    feat = Features(
+        features=matrix,
+        attribute="fixed-attribute",
+        feature_type=type,
+        origin="origin--doesn't-matter-here",
+    )
+    assert repr(feat)
+    assert str(feat)
 
 
 def test_combine_with_existing_dense_features():
