@@ -1,7 +1,8 @@
 from __future__ import annotations
 import logging
+from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
 import typing
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -16,7 +17,7 @@ from rasa.shared.nlu.constants import (
     TEXT,
     ENTITIES,
 )
-from rasa.nlu.utils.mitie_utils import MitieModel
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -37,6 +38,11 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`)."""
 
     MITIE_RESOURCE_FILE = "mitie_ner.dat"
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [MitieNLPGraphComponent, TokenizerGraphComponent]
 
     @staticmethod
     def required_packages() -> List[Text]:

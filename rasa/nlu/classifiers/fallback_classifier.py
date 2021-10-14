@@ -1,7 +1,7 @@
 from __future__ import annotations
 import copy
 import logging
-from typing import Any, List, Text, Dict, Union, Tuple, Optional
+from typing import Any, List, Text, Dict, Type, Union, Tuple, Optional
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -11,6 +11,7 @@ from rasa.core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
 )
+from rasa.nlu.classifiers.classifier import IntentClassifier2
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -30,8 +31,13 @@ AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
 logger = logging.getLogger(__name__)
 
 
-class FallbackClassifierGraphComponent(GraphComponent):
+class FallbackClassifierGraphComponent(GraphComponent, IntentClassifier2):
     """Handles incoming messages with low NLU confidence."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [IntentClassifier2]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

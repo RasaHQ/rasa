@@ -60,14 +60,13 @@ import asyncio
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.tracker_store import InMemoryTrackerStore
 
-event_loop = asyncio.get_event_loop()
 pika_broker = PikaEventBroker('localhost',
                               'username',
                               'password',
                               queues=['rasa_events'],
                               event_loop=event_loop
                               )
-event_loop.run_until_complete(pika_broker.connect())
+asyncio.run(pika_broker.connect())
 
 tracker_store = InMemoryTrackerStore(domain=domain, event_broker=pika_broker)
 ```

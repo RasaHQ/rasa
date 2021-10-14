@@ -289,11 +289,11 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     from rasa.core.tracker_store import TrackerStore
     from rasa.core.utils import AvailableEndpoints
     from rasa.core.brokers.broker import EventBroker
-    import rasa.utils.common
+    import asyncio
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
-    _broker = rasa.utils.common.run_in_loop(EventBroker.create(_endpoints.event_broker))
+    _broker = asyncio.run(EventBroker.create(_endpoints.event_broker))
     _tracker_store = TrackerStore.create(_endpoints.tracker_store, event_broker=_broker)
     _lock_store = LockStore.create(_endpoints.lock_store)
 
