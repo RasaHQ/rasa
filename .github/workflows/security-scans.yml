@@ -89,7 +89,7 @@ jobs:
   snyk:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       - name: Run Snyk Open Source to check for Python vulnerabilities
         uses: snyk/actions/python-3.8@master
         continue-on-error: true
