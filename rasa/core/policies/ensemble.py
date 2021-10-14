@@ -18,11 +18,6 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.core.policies.rule_policy import RulePolicyGraphComponent
-from rasa.core.policies.memoization import (
-    MemoizationPolicyGraphComponent,
-    AugmentedMemoizationPolicyGraphComponent,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +40,12 @@ def is_not_in_training_data(
         `False` if and only if an action was predicted (i.e. `max_confidence` > 0) by
         a `MemoizationPolicy`
     """
+    from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+    from rasa.core.policies.memoization import (
+        MemoizationPolicyGraphComponent,
+        AugmentedMemoizationPolicyGraphComponent,
+    )
+
     if not policy_name:
         return True
 

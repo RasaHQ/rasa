@@ -44,8 +44,6 @@ from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
-from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
-from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.training import training
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -74,6 +72,8 @@ class PolicyEnsemble:
         self._set_rule_only_data()
 
     def _set_rule_only_data(self) -> None:
+        from rasa.core.policies.rule_policy import RulePolicy
+
         rule_only_data = {}
         for policy in self.policies:
             if isinstance(policy, RulePolicy):
@@ -84,6 +84,7 @@ class PolicyEnsemble:
             policy.set_shared_policy_states(rule_only_data=rule_only_data)
 
     def _check_for_important_policies(self) -> None:
+        from rasa.core.policies.rule_policy import RulePolicy
 
         if not any(isinstance(policy, RulePolicy) for policy in self.policies):
             rasa.shared.utils.io.raise_warning(
@@ -100,6 +101,8 @@ class PolicyEnsemble:
         ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations."""
+        from rasa.core.policies.rule_policy import RulePolicy
+
         policies_needing_validation = [
             RulePolicy,
         ]
@@ -158,6 +161,8 @@ class PolicyEnsemble:
         self, training_trackers: List[DialogueStateTracker]
     ) -> None:
         """Emit `UserWarning`s about missing rule-based data."""
+        from rasa.core.policies.rule_policy import RulePolicy
+
         is_rules_consuming_policy_available = (
             self._policy_ensemble_contains_policy_with_rules_support()
         )
@@ -482,6 +487,12 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         Returns: `True` if it's a `MemoizationPolicy`, `False` otherwise.
         """
+        from rasa.core.policies.memoization import (
+            MemoizationPolicy,
+            AugmentedMemoizationPolicy,
+        )
+        from rasa.core.policies.rule_policy import RulePolicy
+
         if not policy_name:
             return True
 
@@ -663,6 +674,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 def _check_policy_for_forms_available(
     domain: Domain, ensemble: Optional["PolicyEnsemble"]
 ) -> None:
+    from rasa.core.policies.rule_policy import RulePolicy
+
     if not ensemble:
         return
 

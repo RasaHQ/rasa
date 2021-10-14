@@ -5,6 +5,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
@@ -34,6 +35,11 @@ if typing.TYPE_CHECKING:
 MitieEntityExtractor = MitieEntityExtractor
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    is_trainable=True,
+    model_from="MitieNLPGraphComponent",
+)
 class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`)."""
 
@@ -114,18 +120,18 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         """
         return cls(config, model_storage, resource)
 
-    def train(self, training_data: TrainingData, mitie_model: MitieModel) -> Resource:
+    def train(self, training_data: TrainingData, model: MitieModel) -> Resource:
         """Trains a MITIE named entity recognizer.
 
         Args:
             training_data: the training data
-            mitie_model: a MitieModel
+            model: a MitieModel
         Returns:
             resource for loading the trained model
         """
         import mitie
 
-        trainer = mitie.ner_trainer(str(mitie_model.model_path))
+        trainer = mitie.ner_trainer(str(model.model_path))
         trainer.num_threads = self._config["num_threads"]
 
         # check whether there are any (not pre-trained) entities in the training data
@@ -191,9 +197,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 continue
         return sample
 
-    def process(
-        self, messages: List[Message], mitie_model: MitieModel,
-    ) -> List[Message]:
+    def process(self, messages: List[Message], model: MitieModel,) -> List[Message]:
         """Extracts entities from messages and appends them to the attribute.
 
         If no patterns where found during training, then the given messages will not
@@ -211,7 +215,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             return messages
 
         for message in messages:
-            entities = self._extract_entities(message, mitie_model=mitie_model)
+            entities = self._extract_entities(message, mitie_model=model)
             extracted = self.add_extractor_name(entities)
             message.set(
                 ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True
@@ -277,7 +281,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 return cls(config, model_storage, resource, ner=ner)
 
         except (FileNotFoundError, ValueError) as e:
-            rasa.shared.utils.io.raise_warning(
+            logger.debug(
                 f"Failed to load {cls.__name__} from model storage. "
                 f"This can happen if the model could not be trained because regexes "
                 f"could not be extracted from the given training data - and hence "

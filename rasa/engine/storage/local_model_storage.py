@@ -12,11 +12,14 @@ from typing import Text, ContextManager, Tuple, Union
 
 import rasa.utils.common
 import rasa.shared.utils.io
-from rasa.engine.storage.storage import ModelMetadata, ModelStorage
+from rasa.engine.storage.storage import (
+    ModelMetadata,
+    ModelStorage,
+)
+from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-
-from rasa.engine.graph import GraphSchema
+import rasa.model
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +70,19 @@ class LocalModelStorage(ModelStorage):
                 cls(storage_path),
                 metadata,
             )
+
+    @classmethod
+    def metadata_from_archive(
+        cls, model_archive_path: Union[Text, Path]
+    ) -> ModelMetadata:
+        """Retrieves metadata from archive (see parent class for full docstring)."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_directory = Path(temporary_directory)
+
+            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
+            metadata = cls._load_metadata(temporary_directory)
+
+            return metadata
 
     @staticmethod
     def _extract_archive_to_directory(
@@ -129,8 +145,7 @@ class LocalModelStorage(ModelStorage):
     def create_model_package(
         self,
         model_archive_path: Union[Text, Path],
-        train_schema: GraphSchema,
-        predict_schema: GraphSchema,
+        model_configuration: GraphModelConfiguration,
         domain: Domain,
     ) -> ModelMetadata:
         """Creates model package (see parent class for full docstring)."""
@@ -143,10 +158,11 @@ class LocalModelStorage(ModelStorage):
                 self._storage_path, temporary_directory / MODEL_ARCHIVE_COMPONENTS_DIR
             )
 
-            model_metadata = self._create_model_metadata(
-                domain, predict_schema, train_schema
-            )
+            model_metadata = self._create_model_metadata(domain, model_configuration)
             self._persist_metadata(model_metadata, temporary_directory)
+
+            if not model_archive_path.parent.exists():
+                model_archive_path.parent.mkdir(parents=True)
 
             with TarSafe.open(model_archive_path, "w:gz") as tar:
                 tar.add(temporary_directory, arcname="")
@@ -164,13 +180,18 @@ class LocalModelStorage(ModelStorage):
 
     @staticmethod
     def _create_model_metadata(
-        domain: Domain, predict_schema: GraphSchema, train_schema: GraphSchema
+        domain: Domain, model_configuration: GraphModelConfiguration
     ) -> ModelMetadata:
         return ModelMetadata(
             trained_at=datetime.utcnow(),
             rasa_open_source_version=rasa.__version__,
             model_id=uuid.uuid4().hex,
             domain=domain,
-            train_schema=train_schema,
-            predict_schema=predict_schema,
+            train_schema=model_configuration.train_schema,
+            predict_schema=model_configuration.predict_schema,
+            training_type=model_configuration.training_type,
+            project_fingerprint=rasa.model.project_fingerprint(),
+            language=model_configuration.language,
+            core_target=model_configuration.core_target,
+            nlu_target=model_configuration.nlu_target,
         )

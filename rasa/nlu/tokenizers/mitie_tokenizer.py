@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Text, Dict, Any
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
@@ -14,6 +15,9 @@ from rasa.nlu.tokenizers._mitie_tokenizer import MitieTokenizer
 MitieTokenizer = MitieTokenizer
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
+)
 class MitieTokenizerGraphComponent(TokenizerGraphComponent):
     """Tokenizes messages using the `mitie` library.."""
 

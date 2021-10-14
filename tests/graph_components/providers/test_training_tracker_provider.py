@@ -49,9 +49,7 @@ def test_generating_trackers(
         default_execution_context,
     )
 
-    trackers = component.generate_trackers(
-        story_graph=StoryGraph(steps), domain=Domain.empty()
-    )
+    trackers = component.provide(story_graph=StoryGraph(steps), domain=Domain.empty())
 
     assert len(trackers) == expected_trackers
     assert all(isinstance(t, TrackerWithCachedStates) for t in trackers)

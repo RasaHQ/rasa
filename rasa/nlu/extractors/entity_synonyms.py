@@ -1,9 +1,10 @@
 from __future__ import annotations
 import os
-from typing import Any, Dict, List, Optional, Text, Type
+from typing import Any, Dict, List, Optional, Text
 import logging
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
 from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -22,15 +23,13 @@ EntitySynonymMapper = EntitySynonymMapper
 logger = logging.getLogger(__name__)
 
 
-class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
+)
+class EntitySynonymMapperGraphComponent(GraphComponent, EntityExtractorMixin):
     """Maps entities to their synonyms if they appear in the training data."""
 
     SYNONYM_FILENAME = "synonyms.json"
-
-    @classmethod
-    def required_components(cls) -> List[Type]:
-        """Components that should be included in the pipeline before this component."""
-        return [EntityExtractorMixin]
 
     def __init__(
         self,
@@ -63,11 +62,11 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         synonyms: Optional[Dict[Text, Any]] = None,
-    ) -> EntitySynonymMapperComponent:
+    ) -> EntitySynonymMapperGraphComponent:
         """Creates component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, synonyms)
 
-    def train(self, training_data: TrainingData,) -> None:
+    def train(self, training_data: TrainingData,) -> Resource:
         """Trains the synonym lookup table."""
         for key, value in list(training_data.entity_synonyms.items()):
             self._add_entities_if_synonyms(key, value)
@@ -78,6 +77,7 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
                 self._add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
         self._persist()
+        return self._resource
 
     def process(self, messages: List[Message]) -> List[Message]:
         """Modifies entities attached to message to resolve synonyms.
@@ -101,7 +101,7 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
         if self.synonyms:
             with self._model_storage.write_to(self._resource) as storage:
                 entity_synonyms_file = (
-                    storage / EntitySynonymMapperComponent.SYNONYM_FILENAME
+                    storage / EntitySynonymMapperGraphComponent.SYNONYM_FILENAME
                 )
 
                 write_json_to_file(
@@ -117,13 +117,13 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> EntitySynonymMapperComponent:
+    ) -> EntitySynonymMapperGraphComponent:
         """Loads trained component (see parent class for full docstring)."""
         synonyms = None
         try:
             with model_storage.read_from(resource) as storage:
                 entity_synonyms_file = (
-                    storage / EntitySynonymMapperComponent.SYNONYM_FILENAME
+                    storage / EntitySynonymMapperGraphComponent.SYNONYM_FILENAME
                 )
 
                 if os.path.isfile(entity_synonyms_file):
@@ -135,7 +135,7 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
                         docs=DOCS_URL_TRAINING_DATA + "#synonyms",
                     )
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )

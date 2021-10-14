@@ -61,7 +61,6 @@ from rasa.shared.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-import rasa.core.interpreter
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,

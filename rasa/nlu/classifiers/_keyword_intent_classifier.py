@@ -106,7 +106,7 @@ class KeywordIntentClassifier(IntentClassifier):
                 f"keyword of another intent."
             )
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message) -> None:
         """Set the message intent and add it to the output is it exists."""
         intent_name = self._map_keyword_to_intent(message.get(TEXT))
 

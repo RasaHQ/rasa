@@ -1,10 +1,13 @@
 import asyncio
+from http import HTTPStatus
+import json
 from pathlib import Path
-from typing import Any, Dict, Text, List, Callable, Optional
-from unittest.mock import Mock
+from typing import Any, Dict, Text, Callable, Optional
+from unittest.mock import patch
+import uuid
 
+from aioresponses import aioresponses
 import pytest
-from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from pytest_sanic.utils import TestClient
 from sanic import Sanic, response
@@ -12,17 +15,25 @@ from sanic.request import Request
 from sanic.response import StreamingHTTPResponse
 
 import rasa.core
+from rasa.core.exceptions import AgentNotReady
+from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
+from rasa.nlu.persistor import Persistor
+from rasa.shared.core.events import (
+    ActionExecuted,
+    BotUttered,
+    DefinePrevUserUtteredFeaturization,
+    SessionStarted,
+    UserUttered,
+)
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.common
-from rasa.core.policies.rule_policy import RulePolicy
 import rasa.utils.io
 from rasa.core import jobs
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
-from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -41,7 +52,7 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
 
         return await response.file_stream(
             location=model_path,
-            headers={"ETag": model_hash, "filename": model_path},
+            headers={"ETag": model_hash, "filename": Path(model_path).name},
             mime_type="application/gzip",
         )
 
@@ -56,36 +67,19 @@ def model_server(
     return loop.run_until_complete(sanic_client(app))
 
 
-def test_training_data_is_reproducible():
-    training_data_file = "data/test_moodbot/data/stories.yml"
-    agent = Agent("data/test_moodbot/domain.yml")
-
-    training_data = agent.load_data(training_data_file)
-    # make another copy of training data
-    same_training_data = agent.load_data(training_data_file)
-
-    # test if both datasets are identical (including in the same order)
-    for i, x in enumerate(training_data):
-        assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
-
-
-async def test_agent_train(trained_rasa_model: Text):
+async def test_agent_train(default_agent: Agent):
     domain = Domain.load("data/test_domains/default_with_slots.yml")
-    loaded = Agent.load(trained_rasa_model)
 
-    # test domain
-    assert loaded.domain.action_names_or_texts == domain.action_names_or_texts
-    assert loaded.domain.intents == domain.intents
-    assert loaded.domain.entities == domain.entities
-    assert loaded.domain.responses == domain.responses
-    assert [s.name for s in loaded.domain.slots] == [s.name for s in domain.slots]
-
-    # test policies
-    assert isinstance(loaded.policy_ensemble, SimplePolicyEnsemble)
-    assert [type(p) for p in loaded.policy_ensemble.policies] == [
-        MemoizationPolicy,
-        RulePolicy,
+    assert default_agent.domain.action_names_or_texts == domain.action_names_or_texts
+    assert default_agent.domain.intents == domain.intents
+    assert default_agent.domain.entities == domain.entities
+    assert default_agent.domain.responses == domain.responses
+    assert [s.name for s in default_agent.domain.slots] == [
+        s.name for s in domain.slots
     ]
+
+    assert default_agent.processor
+    assert default_agent.processor.graph_runner
 
 
 @pytest.mark.parametrize(
@@ -98,25 +92,22 @@ async def test_agent_train(trained_rasa_model: Text):
                 "intent": {"name": "greet", "confidence": 1.0},
                 "intent_ranking": [{"name": "greet", "confidence": 1.0}],
                 "entities": [
-                    {"entity": "name", "start": 6, "end": 21, "value": "Rasa"}
+                    {
+                        "entity": "name",
+                        "start": 6,
+                        "end": 21,
+                        "value": "Rasa",
+                        "extractor": "RegexMessageHandlerGraphComponent",
+                    }
                 ],
-            },
-        ),
-        (
-            "text",
-            {
-                "text": "/text",
-                "intent": {"name": "text", "confidence": 1.0},
-                "intent_ranking": [{"name": "text", "confidence": 1.0}],
-                "entities": [],
             },
         ),
     ],
 )
-async def test_agent_parse_message_using_nlu_interpreter(
+async def test_agent_parse_message(
     default_agent: Agent, text_message_data: Text, expected: Dict[Text, Any]
 ):
-    result = await default_agent.parse_message_using_nlu_interpreter(text_message_data)
+    result = await default_agent.parse_message(text_message_data)
     assert result == expected
 
 
@@ -128,7 +119,7 @@ async def test_agent_handle_text(default_agent: Agent):
     ]
 
 
-async def test_agent_handle_message(default_agent: Agent):
+async def test_default_agent_handle_message(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     message = UserMessage(text, sender_id="test_agent_handle_message")
     result = await default_agent.handle_message(message)
@@ -137,7 +128,7 @@ async def test_agent_handle_message(default_agent: Agent):
     ]
 
 
-def test_agent_wrong_use_of_load():
+async def test_agent_wrong_use_of_load():
     training_data_file = "data/test_moodbot/data/stories.yml"
 
     with pytest.raises(ModelNotFound):
@@ -147,7 +138,7 @@ def test_agent_wrong_use_of_load():
 
 
 async def test_agent_with_model_server_in_thread(
-    model_server: TestClient, domain: Domain, unpacked_trained_rasa_model: Text
+    model_server: TestClient, domain: Domain
 ):
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": model_server.make_url("/model"), "wait_time_between_pulls": 2}
@@ -162,16 +153,8 @@ async def test_agent_with_model_server_in_thread(
 
     assert agent.fingerprint == "somehash"
     assert agent.domain.as_dict() == domain.as_dict()
+    assert agent.processor.graph_runner
 
-    expected_policies = PolicyEnsemble.load_metadata(
-        str(Path(unpacked_trained_rasa_model, "core"))
-    )["policy_names"]
-
-    agent_policies = {
-        rasa.shared.utils.common.module_path_from_instance(p)
-        for p in agent.policy_ensemble.policies
-    }
-    assert agent_policies == set(expected_policies)
     assert model_server.app.number_of_model_requests == 1
     jobs.kill_scheduler()
 
@@ -180,7 +163,7 @@ async def test_wait_time_between_pulls_without_interval(
     model_server: TestClient, monkeypatch: MonkeyPatch
 ):
     monkeypatch.setattr(
-        "rasa.core.agent.schedule_model_pulling", lambda *args: 1 / 0
+        "rasa.core.agent._schedule_model_pulling", lambda *args: 1 / 0
     )  # will raise an exception
 
     model_endpoint_config = EndpointConfig.from_dict(
@@ -188,140 +171,44 @@ async def test_wait_time_between_pulls_without_interval(
     )
 
     agent = Agent()
-    # should not call schedule_model_pulling, if it does, this will raise
+    # should not call _schedule_model_pulling, if it does, this will raise
     await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
-
-
-async def test_pull_model_with_invalid_domain(
-    model_server: TestClient, monkeypatch: MonkeyPatch, caplog: LogCaptureFixture
-):
-    # mock `Domain.load()` as if the domain contains invalid YAML
-    error_message = "domain is invalid"
-    mock_load = Mock(side_effect=InvalidDomain(error_message))
-
-    monkeypatch.setattr(Domain, "load", mock_load)
-    model_endpoint_config = EndpointConfig.from_dict(
-        {"url": model_server.make_url("/model"), "wait_time_between_pulls": None}
-    )
-
-    agent = Agent()
-    await rasa.core.agent.load_from_server(agent, model_server=model_endpoint_config)
-
-    # `Domain.load()` was called
-    mock_load.assert_called_once()
-
-    # error was logged
-    assert error_message in caplog.text
 
 
 async def test_load_agent(trained_rasa_model: Text):
     agent = await load_agent(model_path=trained_rasa_model)
 
     assert agent.tracker_store is not None
-    assert agent.interpreter is not None
-    assert agent.model_directory is not None
-
-
-@pytest.mark.parametrize(
-    "policy_config", [{"policies": [{"name": "MemoizationPolicy"}]}]
-)
-def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
-    with pytest.raises(InvalidDomain) as execinfo:
-        Agent(
-            domain=Domain.from_dict({"forms": {"restaurant_form": {}}}),
-            policies=PolicyEnsemble.from_dict(policy_config),
-        )
-    assert "have not added the 'RulePolicy'" in str(execinfo.value)
-
-
-def test_forms_with_suited_policy():
-    policy_config = {"policies": [{"name": RulePolicy.__name__}]}
-    # Doesn't raise
-    Agent(
-        domain=Domain.from_dict({"forms": {"restaurant_form": {}}}),
-        policies=PolicyEnsemble.from_dict(policy_config),
-    )
-
-
-@pytest.mark.parametrize(
-    "domain, policy_config",
-    [
-        (
-            {"actions": ["other-action"]},
-            {
-                "policies": [
-                    {"name": "RulePolicy", "core_fallback_action_name": "my_fallback"}
-                ]
-            },
-        )
-    ],
-)
-def test_rule_policy_without_fallback_action_present(
-    domain: Dict[Text, Any], policy_config: Dict[Text, Any]
-):
-    with pytest.raises(InvalidDomain) as execinfo:
-        Agent(
-            domain=Domain.from_dict(domain),
-            policies=PolicyEnsemble.from_dict(policy_config),
-        )
-
-    assert RulePolicy.__name__ in str(execinfo.value)
-
-
-@pytest.mark.parametrize(
-    "domain, policy_config",
-    [
-        (
-            {"actions": ["other-action"]},
-            {
-                "policies": [
-                    {
-                        "name": "RulePolicy",
-                        "core_fallback_action_name": "my_fallback",
-                        "enable_fallback_prediction": False,
-                    }
-                ]
-            },
-        ),
-        (
-            {"actions": ["my-action"]},
-            {
-                "policies": [
-                    {"name": "RulePolicy", "core_fallback_action_name": "my-action"}
-                ]
-            },
-        ),
-        ({}, {"policies": [{"name": "MemoizationPolicy"}]}),
-    ],
-)
-def test_rule_policy_valid(domain: Dict[Text, Any], policy_config: Dict[Text, Any]):
-    # no exception should be thrown
-    Agent(
-        domain=Domain.from_dict(domain),
-        policies=PolicyEnsemble.from_dict(policy_config),
-    )
-
-
-async def test_agent_update_model_none_domain(trained_rasa_model: Text):
-    agent = await load_agent(model_path=trained_rasa_model)
-    agent.update_model(
-        None, None, agent.fingerprint, agent.interpreter, agent.model_directory
-    )
-
-    assert agent.domain is not None
-    sender_id = "test_sender_id"
-    message = UserMessage("hello", sender_id=sender_id)
-    await agent.handle_message(message)
-    tracker = agent.tracker_store.get_or_create_tracker(sender_id)
-
-    # UserUttered event was added to tracker, with correct intent data
-    assert tracker.events[3].intent["name"] == "greet"
+    assert agent.lock_store is not None
+    assert agent.processor is not None
+    assert agent.processor.graph_runner is not None
 
 
 async def test_load_agent_on_not_existing_path():
     agent = await load_agent(model_path="some-random-path")
 
-    assert agent is None
+    assert agent
+    assert agent.processor is None
+
+
+async def test_load_from_remote_storage(trained_nlu_model: Text):
+    class FakePersistor(Persistor):
+        def _persist_tar(self, filekey: Text, tarname: Text) -> None:
+            pass
+
+        def _retrieve_tar(self, filename: Text) -> Text:
+            pass
+
+        def retrieve(self, model_name: Text, target_path: Text) -> None:
+            self._copy(model_name, target_path)
+
+    with patch("rasa.nlu.persistor.get_persistor", new=lambda _: FakePersistor()):
+        agent = await load_agent(
+            remote_storage="some-random-remote", model_path=trained_nlu_model
+        )
+
+    assert agent is not None
+    assert agent.is_ready()
 
 
 @pytest.mark.parametrize(
@@ -336,3 +223,130 @@ async def test_load_agent_on_not_existing_path():
 async def test_agent_load_on_invalid_model_path(model_path: Optional[Text]):
     with pytest.raises(ModelNotFound):
         Agent.load(model_path)
+
+
+async def test_agent_handle_message_full_model(default_agent: Agent):
+    sender_id = uuid.uuid4().hex
+    message = UserMessage("hello", sender_id=sender_id)
+    await default_agent.handle_message(message)
+    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    expected_events = [
+        ActionExecuted(action_name="action_session_start"),
+        SessionStarted(),
+        ActionExecuted(action_name="action_listen"),
+        UserUttered(text="hello", intent={"name": "greet"}),
+        DefinePrevUserUtteredFeaturization(False),
+        ActionExecuted(action_name="utter_greet"),
+        BotUttered("hey there None!"),
+        ActionExecuted(action_name="action_listen"),
+    ]
+    assert len(tracker.events) == len(expected_events)
+    for e1, e2 in zip(tracker.events, expected_events):
+        assert e1 == e1
+
+
+async def test_agent_handle_message_only_nlu(trained_nlu_model: Text):
+    agent = await load_agent(model_path=trained_nlu_model)
+    sender_id = uuid.uuid4().hex
+    message = UserMessage("hello", sender_id=sender_id)
+    await agent.handle_message(message)
+    tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+    expected_events = [
+        ActionExecuted(action_name="action_session_start"),
+        SessionStarted(),
+        ActionExecuted(action_name="action_listen"),
+        UserUttered(text="hello", intent={"name": "greet"}),
+    ]
+    assert len(tracker.events) == len(expected_events)
+    for e1, e2 in zip(tracker.events, expected_events):
+        assert e1 == e2
+
+
+async def test_agent_handle_message_only_core(trained_core_model: Text):
+    agent = await load_agent(model_path=trained_core_model)
+    sender_id = uuid.uuid4().hex
+    message = UserMessage("/greet", sender_id=sender_id)
+    await agent.handle_message(message)
+    tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+    expected_events = [
+        ActionExecuted(action_name="action_session_start"),
+        SessionStarted(),
+        ActionExecuted(action_name="action_listen"),
+        UserUttered(text="/greet", intent={"name": "greet"}),
+        DefinePrevUserUtteredFeaturization(False),
+        ActionExecuted(action_name="utter_greet"),
+        BotUttered(
+            "hey there None!",
+            {
+                "elements": None,
+                "quick_replies": None,
+                "buttons": None,
+                "attachment": None,
+                "image": None,
+                "custom": None,
+            },
+            {"utter_action": "utter_greet"},
+        ),
+        ActionExecuted(action_name="action_listen"),
+    ]
+    assert len(tracker.events) == len(expected_events)
+    for e1, e2 in zip(tracker.events, expected_events):
+        assert e1 == e2
+
+
+async def test_agent_update_model(trained_core_model: Text, trained_nlu_model: Text):
+    agent1 = await load_agent(model_path=trained_core_model)
+    agent2 = await load_agent(model_path=trained_core_model)
+
+    assert (
+        agent1.processor.model_metadata.predict_schema
+        == agent2.processor.model_metadata.predict_schema
+    )
+
+    agent2.load_model(trained_nlu_model)
+    assert not (
+        agent1.processor.model_metadata.predict_schema
+        == agent2.processor.model_metadata.predict_schema
+    )
+
+
+async def test_parse_with_http_interpreter(trained_default_agent_model: Text):
+    endpoints = AvailableEndpoints(nlu=EndpointConfig("https://interpreter.com"))
+    agent = await load_agent(
+        model_path=trained_default_agent_model, endpoints=endpoints
+    )
+    response_body = {
+        "intent": {INTENT_NAME_KEY: "some_intent", "confidence": 1.0},
+        "entities": [],
+        "text": "lunch?",
+    }
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://interpreter.com/model/parse",
+            repeat=True,
+            status=HTTPStatus.OK,
+            body=json.dumps(response_body),
+        )
+
+        # mock the parse function with the one defined for this test
+        result = await agent.parse_message("lunch?")
+        assert result == response_body
+
+
+@pytest.mark.parametrize(
+    "method_name",
+    [
+        "parse_message",
+        "predict_next_for_sender_id",
+        "predict_next_with_tracker",
+        "log_message",
+        "execute_action",
+        "trigger_intent",
+        "handle_text",
+    ],
+)
+def test_agent_checks_if_ready(method_name):
+    not_ready_agent = Agent()
+    with pytest.raises(AgentNotReady):
+        getattr(not_ready_agent, method_name)()

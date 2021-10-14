@@ -10,6 +10,7 @@ import numpy as np
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
@@ -30,6 +31,9 @@ if typing.TYPE_CHECKING:
     import sklearn
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
 class SklearnIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
     """Intent classifier using the sklearn framework."""
 
@@ -288,7 +292,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
 
                     return cls(config, model_storage, resource, classifier, encoder,)
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load '{cls.__name__}' from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )

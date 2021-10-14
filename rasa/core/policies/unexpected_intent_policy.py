@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, TYPE_CHECKING
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.training_data.features import Features
@@ -32,7 +33,12 @@ from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
+from rasa.core.constants import (
+    DIALOGUE,
+    POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
+    UNLIKELY_INTENT_POLICY_PRIORITY,
+)
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
@@ -138,6 +144,9 @@ logger = logging.getLogger(__name__)
 UnexpecTEDIntentPolicy = UnexpecTEDIntentPolicy
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+)
 class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
     """`UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
 
@@ -285,6 +294,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             BILOU_FLAG: False,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
+            # Determines the importance of policies, higher values take precedence
+            POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
         }
 
     def __init__(

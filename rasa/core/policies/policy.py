@@ -449,7 +449,7 @@ class PolicyGraphComponent(GraphComponent):
                 config.update(kwargs)
 
         except (ValueError, FileNotFoundError, FileIOException):
-            logger.info(
+            logger.debug(
                 f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
                 f"metadata couldn't be loaded."
             )
@@ -517,6 +517,10 @@ class PolicyGraphComponent(GraphComponent):
                     formatted_states.append(state_formatted)
 
         return "\n".join(formatted_states)
+
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return f"{self.__class__.__name__}@{id(self)}"
 
 
 class PolicyPrediction:

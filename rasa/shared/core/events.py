@@ -503,11 +503,13 @@ class UserUttered(Event):
         return (
             self.text,
             self.intent_name,
-            [jsonpickle.encode(ent) for ent in self.entities],
+            [
+                jsonpickle.encode(sorted(ent)) for ent in self.entities
+            ],  # TODO: test? Or fix in regex_message_handler?
         ) == (
             other.text,
             other.intent_name,
-            [jsonpickle.encode(ent) for ent in other.entities],
+            [jsonpickle.encode(sorted(ent)) for ent in other.entities],
         )
 
     def __str__(self) -> Text:

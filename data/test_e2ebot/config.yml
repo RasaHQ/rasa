@@ -15,3 +15,4 @@ policies:
 - name: TEDPolicy
   random_seed: 42
   epochs: 5
+- name: RulePolicy

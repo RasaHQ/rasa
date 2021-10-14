@@ -1,21 +1,17 @@
 import os
-from typing import Text, List
+from typing import Text
 from unittest.mock import Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.shared.exceptions import InvalidConfigException, YamlSyntaxException
+from rasa.shared.exceptions import YamlSyntaxException
 from rasa.shared.importers import autoconfig
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu import config
-import rasa.shared.nlu.training_data.loading
-from rasa.nlu import components
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.constants import COMPONENT_INDEX
-from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.nlu.model import Trainer
 from tests.nlu.utilities import write_file_config
 
 
@@ -35,46 +31,6 @@ def test_invalid_config_json(tmp_path):
 
     with pytest.raises(YamlSyntaxException):
         config.load(str(f))
-
-
-def test_invalid_many_tokenizers_in_config():
-    nlu_config = {
-        "pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyTokenizer"}]
-    }
-
-    with pytest.raises(InvalidConfigException) as execinfo:
-        Trainer(config.RasaNLUModelConfig(nlu_config))
-    assert "The pipeline configuration contains more than one" in str(execinfo.value)
-
-
-@pytest.mark.parametrize(
-    "_config",
-    [
-        {"pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "SpacyFeaturizer"}]},
-        pytest.param(
-            {
-                "pipeline": [
-                    {"name": "WhitespaceTokenizer"},
-                    {"name": "MitieIntentClassifier"},
-                ]
-            }
-        ),
-    ],
-)
-@pytest.mark.skip_on_windows
-def test_missing_required_component(_config):
-    with pytest.raises(InvalidConfigException) as execinfo:
-        Trainer(config.RasaNLUModelConfig(_config))
-    assert "The pipeline configuration contains errors" in str(execinfo.value)
-
-
-@pytest.mark.parametrize(
-    "pipeline_config", [{"pipeline": [{"name": "CountVectorsFeaturizer"}]}]
-)
-def test_missing_property(pipeline_config):
-    with pytest.raises(InvalidConfigException) as execinfo:
-        Trainer(config.RasaNLUModelConfig(pipeline_config))
-    assert "The pipeline configuration contains errors" in str(execinfo.value)
 
 
 def test_default_config_file():
@@ -170,68 +126,3 @@ async def test_train_docker_and_docs_configs(
 
     assert len(loaded_config.component_names) > 1
     assert loaded_config.language == imported_config["language"]
-
-
-@pytest.mark.parametrize(
-    "config_path, data_path, expected_warning_excerpts",
-    [
-        (
-            "data/test_config/config_supervised_embeddings.yml",
-            "data/examples/rasa",
-            ["add a 'ResponseSelector'"],
-        ),
-        (
-            "data/test_config/config_spacy_entity_extractor.yml",
-            "data/test/duplicate_intents_yaml/demo-rasa-intents-2.yml",
-            [f"add one of {TRAINABLE_EXTRACTORS}"],
-        ),
-        (
-            "data/test_config/config_crf_no_regex.yml",
-            "data/test/duplicate_intents_yaml/demo-rasa-intents-2.yml",
-            ["training data with regexes", "include a 'RegexFeaturizer'"],
-        ),
-        (
-            "data/test_config/config_crf_no_regex.yml",
-            "data/test/lookup_tables/lookup_table.json",
-            ["training data consisting of lookup tables", "add a 'RegexFeaturizer'"],
-        ),
-        (
-            "data/test_config/config_spacy_entity_extractor.yml",
-            "data/test/lookup_tables/lookup_table.json",
-            [
-                "add a 'DIETClassifier' or a 'CRFEntityExtractor' "
-                "with the 'pattern' feature"
-            ],
-        ),
-        (
-            "data/test_config/config_crf_no_pattern_feature.yml",
-            "data/test/lookup_tables/lookup_table.yml",
-            "your NLU pipeline's 'CRFEntityExtractor' does not include "
-            "the 'pattern' feature",
-        ),
-        (
-            "data/test_config/config_crf_no_synonyms.yml",
-            "data/test/synonyms_only.yml",
-            ["add an 'EntitySynonymMapper'"],
-        ),
-        (
-            "data/test_config/config_embedding_intent_response_selector.yml",
-            "data/test/demo-rasa-composite-entities.yml",
-            ["include either 'DIETClassifier' or 'CRFEntityExtractor'"],
-        ),
-    ],
-)
-def test_validate_required_components_from_data(
-    config_path: Text, data_path: Text, expected_warning_excerpts: List[Text]
-):
-    loaded_config = config.load(config_path)
-    trainer = Trainer(loaded_config)
-    training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
-    with pytest.warns(UserWarning) as record:
-        components.validate_required_components_from_data(
-            trainer.pipeline, training_data
-        )
-    assert len(record) == 1
-    assert all(
-        [excerpt in record[0].message.args[0]] for excerpt in expected_warning_excerpts
-    )

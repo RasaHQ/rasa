@@ -2,12 +2,12 @@ from __future__ import annotations
 import numpy as np
 import logging
 
-from typing import Any, Optional, Text, List, Dict, Tuple, Type
+from typing import Any, Text, List, Dict, Tuple, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -42,6 +42,9 @@ MAX_SEQUENCE_LENGTHS = {
 }
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
 class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """A featurizer that uses transformer-based language models.
 
@@ -702,12 +705,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
         return batch_docs
 
-    def process_training_data(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> TrainingData:
+    def process_training_data(self, training_data: TrainingData,) -> TrainingData:
         """Computes tokens and dense features for each message in training data.
 
         Args:

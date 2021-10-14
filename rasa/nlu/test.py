@@ -1,6 +1,9 @@
 import itertools
 import os
 import logging
+import tempfile
+from pathlib import Path
+
 import numpy as np
 from collections import defaultdict, namedtuple
 from tqdm import tqdm
@@ -20,6 +23,10 @@ from typing import (
 )
 
 from rasa import telemetry
+from rasa.core.agent import Agent
+from rasa.core.channels import UserMessage
+from rasa.core.processor import MessageProcessor
+from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 import rasa.utils.plotting as plot_utils
 import rasa.utils.io as io_utils
@@ -51,13 +58,11 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.model import get_model
-from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.classifiers import fallback_classifier
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
@@ -882,11 +887,16 @@ def evaluate_entities(
             report_as_dict,
             exclude_label=NO_ENTITY,
         )
+        # TODO: Remove once we've removed all old components and the new components
+        # lost their `GraphComponent` suffix
+        actual_extractor = extractor.replace("GraphComponent", "")
+
         if output_directory:
-            _dump_report(output_directory, f"{extractor}_report.json", report)
+
+            _dump_report(output_directory, f"{actual_extractor}_report.json", report)
 
         if successes:
-            successes_filename = f"{extractor}_successes.json"
+            successes_filename = f"{actual_extractor}_successes.json"
             if output_directory:
                 successes_filename = os.path.join(output_directory, successes_filename)
             # save classified samples to file for debugging
@@ -898,12 +908,14 @@ def evaluate_entities(
             entity_results, merged_predictions, merged_targets
         )
         if errors and output_directory:
-            errors_filename = os.path.join(output_directory, f"{extractor}_errors.json")
+            errors_filename = os.path.join(
+                output_directory, f"{actual_extractor}_errors.json"
+            )
 
             _write_errors(entity_errors, errors_filename, "entity")
 
         if not disable_plotting:
-            confusion_matrix_filename = f"{extractor}_confusion_matrix.png"
+            confusion_matrix_filename = f"{actual_extractor}_confusion_matrix.png"
             if output_directory:
                 confusion_matrix_filename = os.path.join(
                     output_directory, confusion_matrix_filename
@@ -915,9 +927,9 @@ def evaluate_entities(
                 output_file=confusion_matrix_filename,
             )
 
-            if extractor in EXTRACTORS_WITH_CONFIDENCES:
+            if actual_extractor in EXTRACTORS_WITH_CONFIDENCES:
                 merged_confidences = merge_confidences(aligned_predictions, extractor)
-                histogram_filename = f"{extractor}_histogram.png"
+                histogram_filename = f"{actual_extractor}_histogram.png"
                 if output_directory:
                     histogram_filename = os.path.join(
                         output_directory, histogram_filename
@@ -1226,8 +1238,8 @@ def align_all_entity_predictions(
     return aligned_predictions
 
 
-def get_eval_data(
-    interpreter: Interpreter, test_data: TrainingData
+async def get_eval_data(
+    processor: MessageProcessor, test_data: TrainingData
 ) -> Tuple[
     List[IntentEvaluationResult],
     List[ResponseSelectionEvaluationResult],
@@ -1241,7 +1253,7 @@ def get_eval_data(
     (entity_targets, entity_predictions, and tokens).
 
     Args:
-        interpreter: the interpreter
+        processor: the processor
         test_data: test data
 
     Returns: intent, response, and entity evaluation results
@@ -1261,7 +1273,9 @@ def get_eval_data(
     should_eval_entities = len(test_data.entity_examples) > 0
 
     for example in tqdm(test_data.nlu_examples):
-        result = interpreter.parse(example.get(TEXT), only_output_properties=False)
+        result = await processor.parse_message(
+            UserMessage(text=example.get(TEXT)), only_output_properties=False
+        )
         _remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)
         if should_eval_intents:
             if fallback_classifier.is_fallback_classifier_prediction(result):
@@ -1346,13 +1360,12 @@ def _remove_entities_of_extractors(
     nlu_parse_result[ENTITIES] = filtered_entities
 
 
-def run_evaluation(
+async def run_evaluation(
     data_path: Text,
-    model_path: Text,
+    processor: MessageProcessor,
     output_directory: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,
-    component_builder: Optional[ComponentBuilder] = None,
     disable_plotting: bool = False,
     report_as_dict: Optional[bool] = None,
 ) -> Dict:  # pragma: no cover
@@ -1360,11 +1373,10 @@ def run_evaluation(
 
     Args:
         data_path: path to the test data
-        model_path: path to the model
+        processor: the processor used to process and predict
         output_directory: path to folder where all output will be stored
         successes: if true successful predictions are written to a file
         errors: if true incorrect predictions are written to a file
-        component_builder: component builder
         disable_plotting: if true confusion matrix and histogram will not be rendered
         report_as_dict: `True` if the evaluation report should be returned as `dict`.
             If `False` the report is returned in a human-readable text format. If `None`
@@ -1375,9 +1387,6 @@ def run_evaluation(
     """
     import rasa.shared.nlu.training_data.loading
     from rasa.shared.constants import DEFAULT_DOMAIN_PATH
-
-    # get the metadata config from the package data
-    interpreter = Interpreter.load(model_path, component_builder)
 
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
@@ -1393,8 +1402,8 @@ def run_evaluation(
     if output_directory:
         rasa.shared.utils.io.create_directory(output_directory)
 
-    (intent_results, response_selection_results, entity_results) = get_eval_data(
-        interpreter, test_data
+    (intent_results, response_selection_results, entity_results) = await get_eval_data(
+        processor, test_data
     )
 
     if intent_results:
@@ -1470,11 +1479,11 @@ def generate_folds(
         )
 
 
-def combine_result(
+async def combine_result(
     intent_metrics: IntentMetrics,
     entity_metrics: EntityMetrics,
     response_selection_metrics: ResponseSelectionMetrics,
-    interpreter: Interpreter,
+    processor: MessageProcessor,
     data: TrainingData,
     intent_results: Optional[List[IntentEvaluationResult]] = None,
     entity_results: Optional[List[EntityEvaluationResult]] = None,
@@ -1492,7 +1501,7 @@ def combine_result(
         intent_metrics: intent metrics
         entity_metrics: entity metrics
         response_selection_metrics: response selection metrics
-        interpreter: the interpreter
+        processor: the processor
         data: training data
         intent_results: intent evaluation results
         entity_results: entity evaluation results
@@ -1507,7 +1516,7 @@ def combine_result(
         current_intent_results,
         current_entity_results,
         current_response_selection_results,
-    ) = compute_metrics(interpreter, data)
+    ) = await compute_metrics(processor, data)
 
     if intent_results is not None:
         intent_results += current_intent_results
@@ -1540,7 +1549,7 @@ def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> boo
     return False
 
 
-def cross_validate(
+async def cross_validate(
     data: TrainingData,
     n_folds: int,
     nlu_config: Union[RasaNLUModelConfig, Text, Dict],
@@ -1569,100 +1578,110 @@ def cross_validate(
         dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
-    import rasa.nlu.config
+    import rasa.model_training
 
-    if isinstance(nlu_config, (str, Dict)):
-        nlu_config = rasa.nlu.config.load(nlu_config)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        tmp_path = Path(temp_dir)
 
-    if output:
-        rasa.shared.utils.io.create_directory(output)
+        if isinstance(nlu_config, Dict):
+            config_path = tmp_path / "config.yml"
+            rasa.shared.utils.io.write_yaml(nlu_config, config_path)
+            nlu_config = str(config_path)
 
-    trainer = Trainer(nlu_config)
+        if output:
+            rasa.shared.utils.io.create_directory(output)
 
-    intent_train_metrics: IntentMetrics = defaultdict(list)
-    intent_test_metrics: IntentMetrics = defaultdict(list)
-    entity_train_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
-    entity_test_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
-    response_selection_train_metrics: ResponseSelectionMetrics = defaultdict(list)
-    response_selection_test_metrics: ResponseSelectionMetrics = defaultdict(list)
+        intent_train_metrics: IntentMetrics = defaultdict(list)
+        intent_test_metrics: IntentMetrics = defaultdict(list)
+        entity_train_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
+        entity_test_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
+        response_selection_train_metrics: ResponseSelectionMetrics = defaultdict(list)
+        response_selection_test_metrics: ResponseSelectionMetrics = defaultdict(list)
 
-    intent_test_results: List[IntentEvaluationResult] = []
-    entity_test_results: List[EntityEvaluationResult] = []
-    response_selection_test_results: List[ResponseSelectionEvaluationResult] = []
+        intent_test_results: List[IntentEvaluationResult] = []
+        entity_test_results: List[EntityEvaluationResult] = []
+        response_selection_test_results: List[ResponseSelectionEvaluationResult] = []
 
-    for train, test in generate_folds(n_folds, data):
-        interpreter = trainer.train(train)
+        for train, test in generate_folds(n_folds, data):
+            training_data_file = tmp_path / "training_data.yml"
+            RasaYAMLWriter().dump(training_data_file, train)
 
-        # calculate train accuracy
-        combine_result(
-            intent_train_metrics,
-            entity_train_metrics,
-            response_selection_train_metrics,
-            interpreter,
-            train,
+            model_file = rasa.model_training.train_nlu(
+                nlu_config, str(training_data_file), str(tmp_path)
+            )
+
+            processor = Agent.load(model_file).processor
+
+            # calculate train accuracy
+            await combine_result(
+                intent_train_metrics,
+                entity_train_metrics,
+                response_selection_train_metrics,
+                processor,
+                train,
+            )
+            # calculate test accuracy
+            await combine_result(
+                intent_test_metrics,
+                entity_test_metrics,
+                response_selection_test_metrics,
+                processor,
+                test,
+                intent_test_results,
+                entity_test_results,
+                response_selection_test_results,
+            )
+
+        if intent_test_results:
+            logger.info("Accumulated test folds intent evaluation results:")
+            intent_evaluation = evaluate_intents(
+                intent_test_results,
+                output,
+                successes,
+                errors,
+                disable_plotting,
+                report_as_dict=report_as_dict,
+            )
+
+        entity_evaluation = {}
+        if entity_test_results:
+            logger.info("Accumulated test folds entity evaluation results:")
+            extractors = _get_active_entity_extractors(entity_test_results)
+            entity_evaluation = evaluate_entities(
+                entity_test_results,
+                extractors,
+                output,
+                successes,
+                errors,
+                disable_plotting,
+                report_as_dict=report_as_dict,
+            )
+
+        responses_evaluation = {}
+        if response_selection_test_results:
+            logger.info("Accumulated test folds response selection evaluation results:")
+            responses_evaluation = evaluate_response_selections(
+                response_selection_test_results,
+                output,
+                successes,
+                errors,
+                disable_plotting,
+                report_as_dict=report_as_dict,
+            )
+
+        return (
+            CVEvaluationResult(
+                dict(intent_train_metrics), dict(intent_test_metrics), intent_evaluation
+            ),
+            CVEvaluationResult(
+                dict(entity_train_metrics), dict(entity_test_metrics), entity_evaluation
+            ),
+            CVEvaluationResult(
+                dict(response_selection_train_metrics),
+                dict(response_selection_test_metrics),
+                responses_evaluation,
+            ),
         )
-        # calculate test accuracy
-        combine_result(
-            intent_test_metrics,
-            entity_test_metrics,
-            response_selection_test_metrics,
-            interpreter,
-            test,
-            intent_test_results,
-            entity_test_results,
-            response_selection_test_results,
-        )
-
-    if intent_test_results:
-        logger.info("Accumulated test folds intent evaluation results:")
-        intent_evaluation = evaluate_intents(
-            intent_test_results,
-            output,
-            successes,
-            errors,
-            disable_plotting,
-            report_as_dict=report_as_dict,
-        )
-
-    entity_evaluation = {}
-    if entity_test_results:
-        logger.info("Accumulated test folds entity evaluation results:")
-        extractors = _get_active_entity_extractors(entity_test_results)
-        entity_evaluation = evaluate_entities(
-            entity_test_results,
-            extractors,
-            output,
-            successes,
-            errors,
-            disable_plotting,
-            report_as_dict=report_as_dict,
-        )
-
-    responses_evaluation = {}
-    if response_selection_test_results:
-        logger.info("Accumulated test folds response selection evaluation results:")
-        responses_evaluation = evaluate_response_selections(
-            response_selection_test_results,
-            output,
-            successes,
-            errors,
-            disable_plotting,
-            report_as_dict=report_as_dict,
-        )
-
-    return (
-        CVEvaluationResult(
-            dict(intent_train_metrics), dict(intent_test_metrics), intent_evaluation
-        ),
-        CVEvaluationResult(
-            dict(entity_train_metrics), dict(entity_test_metrics), entity_evaluation
-        ),
-        CVEvaluationResult(
-            dict(response_selection_train_metrics),
-            dict(response_selection_test_metrics),
-            responses_evaluation,
-        ),
-    )
 
 
 def _targets_predictions_from(
@@ -1675,8 +1694,8 @@ def _targets_predictions_from(
     return zip(*[(getattr(r, target_key), getattr(r, prediction_key)) for r in results])
 
 
-def compute_metrics(
-    interpreter: Interpreter, training_data: TrainingData
+async def compute_metrics(
+    processor: MessageProcessor, training_data: TrainingData
 ) -> Tuple[
     IntentMetrics,
     EntityMetrics,
@@ -1689,13 +1708,13 @@ def compute_metrics(
     extraction.
 
     Args:
-        interpreter: the interpreter
+        processor: the processor
         training_data: training data
 
     Returns: intent, response selection and entity metrics, and prediction results.
     """
-    intent_results, response_selection_results, entity_results = get_eval_data(
-        interpreter, training_data
+    intent_results, response_selection_results, entity_results = await get_eval_data(
+        processor, training_data
     )
 
     intent_results = remove_empty_intent_examples(intent_results)
@@ -1759,9 +1778,6 @@ async def compare_nlu(
 
     Returns: training examples per run
     """
-
-    from rasa.model_training import train_nlu_async
-
     training_examples_per_run = []
 
     for run in range(runs):
@@ -1805,7 +1821,7 @@ async def compare_nlu(
                 )
 
                 try:
-                    model_path = await train_nlu_async(
+                    model_path = rasa.model_training.train_nlu(
                         nlu_config,
                         train_split_path,
                         model_output_path,
@@ -1818,11 +1834,10 @@ async def compare_nlu(
                     f_score_results[model_name][run].append(0.0)
                     continue
 
-                model_path = os.path.join(get_model(model_path), "nlu")
-
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
-                result = run_evaluation(
-                    test_path, model_path, output_directory=output_path, errors=True
+                processor = Agent.load(model_path=model_path).processor
+                result = await run_evaluation(
+                    test_path, processor, output_directory=output_path, errors=True
                 )
 
                 f1 = result["intent_evaluation"]["f1_score"]

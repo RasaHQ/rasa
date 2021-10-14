@@ -44,7 +44,6 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa import model
 from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
@@ -55,7 +54,6 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.core.agent import Agent
-from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
@@ -63,9 +61,7 @@ from rasa.core.channels.channel import (
 )
 import rasa.shared.core.events
 from rasa.shared.core.events import Event
-from rasa.core.lock_store import LockStore
 from rasa.core.test import test
-from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
@@ -147,11 +143,7 @@ def ensure_loaded_agent(
         @wraps(f)
         def decorated(*args: Any, **kwargs: Any) -> Any:
             # noinspection PyUnresolvedReferences
-            if not app.agent or not (
-                app.agent.is_core_ready()
-                if require_core_is_ready
-                else app.agent.is_ready()
-            ):
+            if not app.agent or not app.agent.is_ready():
                 raise ErrorResponse(
                     HTTPStatus.CONFLICT,
                     "Conflict",
@@ -476,31 +468,13 @@ async def _load_agent(
     model_server: Optional[EndpointConfig] = None,
     remote_storage: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
-    lock_store: Optional[LockStore] = None,
 ) -> Agent:
     try:
-        tracker_store = None
-        generator = None
-        action_endpoint = None
-
-        if endpoints:
-            broker = await EventBroker.create(endpoints.event_broker)
-            tracker_store = TrackerStore.create(
-                endpoints.tracker_store, event_broker=broker
-            )
-            generator = endpoints.nlg
-            action_endpoint = endpoints.action
-            if not lock_store:
-                lock_store = LockStore.create(endpoints.lock_store)
-
         loaded_agent = await rasa.core.agent.load_agent(
-            model_path,
-            model_server,
-            remote_storage,
-            generator=generator,
-            tracker_store=tracker_store,
-            lock_store=lock_store,
-            action_endpoint=action_endpoint,
+            model_path=model_path,
+            model_server=model_server,
+            remote_storage=remote_storage,
+            endpoints=endpoints,
         )
     except Exception as e:
         logger.debug(traceback.format_exc())
@@ -510,7 +484,7 @@ async def _load_agent(
             f"An unexpected error occurred. Error: {e}",
         )
 
-    if not loaded_agent:
+    if not loaded_agent.is_ready():
         raise ErrorResponse(
             HTTPStatus.BAD_REQUEST,
             "BadRequest",
@@ -717,9 +691,8 @@ def create_app(
 
         return response.json(
             {
-                "model_file": app.agent.path_to_model_archive
-                or app.agent.model_directory,
-                "fingerprint": model.fingerprint_from_path(app.agent.model_directory),
+                "model_file": app.agent.model_name,
+                "fingerprint": app.agent.model_id,
                 "num_active_training_jobs": app.active_training_processes.value,
             }
         )
@@ -732,7 +705,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await app.agent.create_processor().fetch_tracker_with_initial_session(
+        tracker = await app.agent.processor.fetch_tracker_with_initial_session(
             conversation_id
         )
 
@@ -761,7 +734,7 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                processor = app.agent.create_processor()
+                processor = app.agent.processor
                 events = _get_events_from_request_body(request)
 
                 tracker = await update_conversation_with_events(
@@ -851,7 +824,7 @@ def create_app(
 
         try:
             stories = get_test_stories(
-                app.agent.create_processor(),
+                app.agent.processor,
                 conversation_id,
                 until_time,
                 fetch_all_sessions=fetch_all_sessions,
@@ -889,7 +862,7 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 tracker = await (
-                    app.agent.create_processor().fetch_tracker_and_update_session(
+                    app.agent.processor.fetch_tracker_and_update_session(
                         conversation_id
                     )
                 )
@@ -942,7 +915,7 @@ def create_app(
         try:
             async with app.agent.lock_store.lock(conversation_id):
                 tracker = await (
-                    app.agent.create_processor().fetch_tracker_and_update_session(
+                    app.agent.processor.fetch_tracker_and_update_session(
                         conversation_id
                     )
                 )
@@ -985,7 +958,7 @@ def create_app(
     async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
         try:
             # Fetches the appropriate bot response in a json format
-            responses = await app.agent.predict_next(conversation_id)
+            responses = await app.agent.predict_next_for_sender_id(conversation_id)
             responses["scores"] = sorted(
                 responses["scores"], key=lambda k: (-k["score"], k["action"])
             )
@@ -1059,10 +1032,10 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            from rasa.model_training import train_async
+            from rasa.model_training import train
 
             # pass `None` to run in default executor
-            training_result = await train_async(**training_payload)
+            training_result = train(**training_payload)
 
             if training_result.model:
                 filename = os.path.basename(training_result.model)
@@ -1197,28 +1170,20 @@ def create_app(
                 # a job to pull the model from the server
                 model_server.kwargs["wait_time_between_pulls"] = 0
             eval_agent = await _load_agent(
-                model_path, model_server, app.agent.remote_storage
+                model_path=model_path,
+                model_server=model_server,
+                remote_storage=app.agent.remote_storage,
             )
 
         data_path = os.path.abspath(test_data_file)
 
-        if not eval_agent.model_directory or not os.path.exists(
-            eval_agent.model_directory
-        ):
+        if not eval_agent.is_ready():
             raise ErrorResponse(
                 HTTPStatus.CONFLICT, "Conflict", "Loaded model file not found."
             )
 
-        model_directory = eval_agent.model_directory
-        _, nlu_model = model.get_model_subdirectories(model_directory)
-
-        if nlu_model is None:
-            raise ErrorResponse(
-                HTTPStatus.CONFLICT, "Conflict", "Missing NLU model directory.",
-            )
-
-        return rasa.nlu.test.run_evaluation(
-            data_path, nlu_model, disable_plotting=True, report_as_dict=True
+        return await rasa.nlu.test.run_evaluation(
+            data_path, eval_agent.processor, disable_plotting=True, report_as_dict=True
         )
 
     async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:
@@ -1229,7 +1194,7 @@ def create_app(
         config = importer.get_config()
         nlu_data = importer.get_nlu_data()
 
-        evaluations = rasa.nlu.test.cross_validate(
+        evaluations = await rasa.nlu.test.cross_validate(
             data=nlu_data,
             n_folds=folds,
             nlu_config=config,
@@ -1286,9 +1251,7 @@ def create_app(
             )
 
         try:
-            result = app.agent.create_processor().predict_next_with_tracker(
-                tracker, verbosity
-            )
+            result = app.agent.predict_next_with_tracker(tracker, verbosity)
 
             return response.json(result)
         except Exception as e:
@@ -1314,9 +1277,7 @@ def create_app(
         try:
             data = emulator.normalise_request_json(request.json)
             try:
-                parsed_data = await app.agent.parse_message_using_nlu_interpreter(
-                    data.get("text")
-                )
+                parsed_data = await app.agent.parse_message(data.get("text"))
             except Exception as e:
                 logger.debug(traceback.format_exc())
                 raise ErrorResponse(
@@ -1357,9 +1318,14 @@ def create_app(
                     {"parameter": "model_server", "in": "body"},
                 )
 
-        app.agent = await _load_agent(
-            model_path, model_server, remote_storage, endpoints, app.agent.lock_store
+        new_agent = await _load_agent(
+            model_path=model_path,
+            model_server=model_server,
+            remote_storage=remote_storage,
+            endpoints=endpoints,
         )
+        new_agent.lock_store = app.agent.lock_store
+        app.agent = new_agent
 
         logger.debug(f"Successfully loaded model '{model_path}'.")
         return response.json(None, status=HTTPStatus.NO_CONTENT)
@@ -1367,7 +1333,7 @@ def create_app(
     @app.delete("/model")
     @requires_auth(app, auth_token)
     async def unload_model(request: Request) -> HTTPResponse:
-        model_file = app.agent.model_directory
+        model_file = app.agent.model_name
 
         app.agent = Agent(lock_store=app.agent.lock_store)
 

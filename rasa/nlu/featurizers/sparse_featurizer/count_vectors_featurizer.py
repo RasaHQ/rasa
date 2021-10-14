@@ -7,6 +7,7 @@ from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
@@ -40,6 +41,9 @@ BUFFER_SLOTS_PREFIX = "buf_"
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
 class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
@@ -829,7 +833,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                 return ftr
 
         except (ValueError, FileNotFoundError, FileIOException):
-            logger.warning(
+            logger.debug(
                 f"Failed to load `{cls.__class__.__name__}` from model storage. "
                 f"Resource '{resource.name}' doesn't exist."
             )

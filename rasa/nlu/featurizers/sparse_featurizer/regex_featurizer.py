@@ -10,6 +10,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
@@ -29,6 +30,9 @@ logger = logging.getLogger(__name__)
 RegexFeaturizer = RegexFeaturizer
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
 class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Adds message features based on regex expressions."""
 

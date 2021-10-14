@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from collections import OrderedDict
 from enum import Enum
 import logging
 import typing
@@ -10,6 +12,7 @@ import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.shared.utils.io
 import rasa.utils.train_utils
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.test import determine_token_labels
@@ -84,6 +87,9 @@ class CRFEntityExtractorOptions(str, Enum):
     ENTITY = "entity"
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
+)
 class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """Implements conditional random fields (CRF) to do named entity recognition."""
 
@@ -383,9 +389,11 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         import joblib
 
         try:
-            entity_taggers = {}
+            entity_taggers = OrderedDict()
             with model_storage.read_from(resource) as model_dir:
-                file_names = list(model_dir.glob("**/*.pkl"))
+                # We have to load in the same order as we persisted things as otherwise
+                # the predictions might be off
+                file_names = sorted(model_dir.glob("**/*.pkl"))
                 if not file_names:
                     logger.debug(
                         "Failed to load model for 'CRFEntityExtractor'. "
@@ -395,7 +403,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                     return cls(config, model_storage, resource)
 
                 for file_name in file_names:
-                    name = file_name.stem
+                    name = file_name.stem[1:]
                     entity_taggers[name] = joblib.load(file_name)
 
                 return cls(config, model_storage, resource, entity_taggers)
@@ -412,8 +420,10 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
         with self._model_storage.write_to(self._resource) as model_dir:
             if self.entity_taggers:
-                for name, entity_tagger in self.entity_taggers.items():
-                    model_file_name = model_dir / f"{name}.pkl"
+                for idx, (name, entity_tagger) in enumerate(
+                    self.entity_taggers.items()
+                ):
+                    model_file_name = model_dir / f"{idx}{name}.pkl"
                     joblib.dump(entity_tagger, model_file_name)
 
     def _crf_tokens_to_features(
@@ -626,7 +636,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         """Train the crf tagger based on the training data."""
         import sklearn_crfsuite
 
-        self.entity_taggers = {}
+        self.entity_taggers = OrderedDict()
 
         for tag_name in self.crf_order:
             logger.debug(f"Training CRF for '{tag_name}'.")

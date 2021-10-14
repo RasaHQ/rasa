@@ -4,6 +4,7 @@ import logging
 from typing import Any, List, Text, Dict, Type, Union, Tuple, Optional
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
@@ -31,6 +32,9 @@ AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
+)
 class FallbackClassifierGraphComponent(GraphComponent, IntentClassifier2):
     """Handles incoming messages with low NLU confidence."""
 

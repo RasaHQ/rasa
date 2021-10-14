@@ -9,6 +9,7 @@ import tensorflow as tf
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DIAGNOSTIC_DATA
@@ -109,6 +110,9 @@ ResponseSelector = ResponseSelector
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
 class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
     """Response selector using supervised embeddings.
 
@@ -679,7 +683,7 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
                 model.all_retrieval_intents = all_retrieval_intents
                 return model
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
