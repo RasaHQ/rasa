@@ -10,7 +10,6 @@ from typing import (
     Dict,
     Any,
 )
-import asyncio
 
 import rasa.engine.validation
 from rasa.engine.caching import LocalTrainingCache
