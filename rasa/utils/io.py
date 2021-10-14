@@ -3,6 +3,7 @@ import logging
 import os
 import pickle
 import tarfile
+from tarsafe import TarSafe
 import tempfile
 import warnings
 import zipfile
@@ -87,7 +88,7 @@ def unarchive(byte_array: bytes, directory: Text) -> Text:
     Tries to use tar first to unpack, if that fails, zip will be used."""
 
     try:
-        tar = tarfile.open(fileobj=IOReader(byte_array))
+        tar = TarSafe.open(fileobj=IOReader(byte_array))
         tar.extractall(directory)
         tar.close()
         return directory
