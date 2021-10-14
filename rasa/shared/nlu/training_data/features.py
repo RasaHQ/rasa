@@ -57,6 +57,25 @@ class Features:
             f"attribute={self.attribute})"
         )
 
+    def __repr__(self) -> Text:
+        return (
+            f"{self.__class__.__name__}("
+            f"features={self.features}, "
+            f"type={self.type}, "
+            f"origin={self.origin}, "
+            f"attribute={self.attribute})"
+        )
+
+    def __str__(self) -> Text:
+        return (
+            f"{self.__class__.__name__}("
+            f"features.shape={self.features.shape}, "
+            f"is_sparse={self.is_sparse()}, "
+            f"type={self.type}, "
+            f"origin={self.origin}, "
+            f"attribute={self.attribute})"
+        )
+
     def is_sparse(self) -> bool:
         """Checks if features are sparse or not.
 
