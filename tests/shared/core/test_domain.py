@@ -324,8 +324,8 @@ slots: {{}}
 
     assert (
         "Slot auto-fill has been removed in 3.0"
-        " and replaced by a new explicit mechanism to set slots. "
-        "Please refer to the docs to learn more." == record[0].message.args[0]
+        " and replaced with a new explicit mechanism to set slots. "
+        in record[0].message.args[0]
     )
 
     expected = rasa.shared.utils.io.read_yaml(test_yaml)
@@ -1720,6 +1720,7 @@ def test_slot_mapping_intent_is_desired(domain: Domain):
 def test_slot_mappings_ignored_intents_during_active_loop():
     domain = Domain.from_yaml(
         """
+    version: "2.0"
     intents:
     - greet
     - chitchat
@@ -1750,3 +1751,129 @@ def test_slot_mappings_ignored_intents_during_active_loop():
     assert (
         SlotMapping.intent_is_desired(mappings_for_cuisine[0], tracker, domain) is False
     )
+
+
+def test_domain_slots_for_entities_with_mapping_conditions_no_slot_set():
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            """
+            version: "2.0"
+            entities:
+            - city
+            slots:
+              location:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: city
+                  conditions:
+                  - active_loop: booking_form
+            forms:
+              booking_form:
+                required_slots:
+                  - location
+            """
+        )
+    )
+    events = domain.slots_for_entities([{"entity": "city", "value": "Berlin"}])
+    assert len(events) == 0
+
+
+def test_domain_slots_for_entities_sets_valid_slot():
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            """
+            version: "2.0"
+            entities:
+            - city
+            slots:
+              location:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: city
+            """
+        )
+    )
+    events = domain.slots_for_entities([{"entity": "city", "value": "Berlin"}])
+    assert events == [SlotSet("location", "Berlin")]
+
+
+def test_invalid_domain_from_trigger_intent_mapping_slot_not_in_forms():
+    message = (
+        "Slot 'started_booking_form' has a from_trigger_intent mapping, "
+        "but it's not listed in any form 'required_slots'."
+    )
+    with pytest.raises(InvalidDomain, match=message):
+        Domain.from_yaml(
+            textwrap.dedent(
+                """
+            version: "2.0"
+            intents:
+            - activate_booking
+            entities:
+            - city
+            slots:
+              location:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: city
+                  conditions:
+                  - active_loop: booking_form
+              started_booking_form:
+                type: bool
+                influence_conversation: false
+                mappings:
+                - type: from_trigger_intent
+                  intent: activate_booking
+                  value: true
+            forms:
+              booking_form:
+                required_slots:
+                  - location
+            """
+            )
+        )
+
+
+def test_invalid_domain_slot_with_mapping_conditions_not_in_form():
+    message = (
+        "Slot 'location' has a mapping condition for form 'booking_form', "
+        "but it's not present in 'booking_form' form's 'required_slots'."
+    )
+    with pytest.raises(InvalidDomain, match=message):
+        Domain.from_yaml(
+            textwrap.dedent(
+                """
+            version: "2.0"
+            intents:
+            - activate_booking
+            entities:
+            - city
+            slots:
+              location:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: city
+                  conditions:
+                  - active_loop: booking_form
+              started_booking_form:
+                type: bool
+                influence_conversation: false
+                mappings:
+                - type: from_trigger_intent
+                  intent: activate_booking
+                  value: true
+            forms:
+              booking_form:
+                required_slots:
+                  - started_booking_form
+            """
+            )
+        )
