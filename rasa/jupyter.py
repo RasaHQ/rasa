@@ -1,6 +1,7 @@
 import pprint as pretty_print
 import typing
 from typing import Any, Dict, Optional, Text
+import asyncio
 
 from rasa.shared.utils.cli import print_success
 import rasa.core.agent
@@ -36,7 +37,7 @@ def chat(
         if message == "/stop":
             break
 
-        responses = rasa.utils.common.run_in_loop(agent.handle_text(message))
+        responses = asyncio.run(agent.handle_text(message))
         for response in responses:
             _display_bot_response(response)
 
