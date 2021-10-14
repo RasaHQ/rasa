@@ -261,7 +261,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             LOSS_TYPE: CROSS_ENTROPY,
             # Number of top actions for which confidences should be predicted.
             # The remaining actions will be ignored and treated as if they were
-            # predicted with confidence 0.
+            # predicted with confidence 0. Set to `0` if all confidences should be reported.
             RANKING_LENGTH: LABEL_RANKING_LENGTH,
             # Determines wether the confidences of the chosen top actions should be
             # renormalized so that they sum up to 1. By default, we do not renormalize

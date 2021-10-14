@@ -98,7 +98,7 @@ class TrainingDataImporter:
 #### Normalization of Confidences in `DIETClassifier` and `ResponseSelector`
 
 `DIETClassifier` and `ResponseSelector` will no longer automatically report
-re-normalized confidences when a `ranking_length >0` is defined.
+re-normalized confidences when `ranking_length` is set to a value greater than `0`.
 This change affects the reported confidences but does not influence the final
 predicted intent, which might be used by policies.
 The previous behavior can still be enforced by setting `renormalize_confidences=True`

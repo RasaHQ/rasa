@@ -186,6 +186,7 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
             # Number of top intents for which confidences should be reported.
+            # Set to 0 if confidences for all intents should be reported.
             RANKING_LENGTH: LABEL_RANKING_LENGTH,
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
