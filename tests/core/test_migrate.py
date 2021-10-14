@@ -324,3 +324,56 @@ def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
 
     migrated_actions = migrated_domain.get("actions")
     assert "action_check_time" in migrated_actions
+
+
+def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file: Path):
+    existing_domain_file = prepare_domain_path(
+        tmp_path,
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - affirm
+        - inform
+        entities:
+        - city
+        - name
+        slots:
+          location:
+            type: text
+            influence_conversation: false
+          name:
+            type: text
+            influence_conversation: false
+            auto_fill: false
+          email:
+            type: text
+            influence_conversation: false
+        forms:
+           booking_form:
+               ignored_intents:
+               - greet
+               required_slots:
+                 location:
+                 - type: from_entity
+                   entity: city
+                 email:
+                 - type: from_text
+                   intent: inform
+        """,
+        "domain.yml",
+    )
+
+    rasa.core.migrate.migrate_domain_format(existing_domain_file, domain_out_file)
+
+    domain = Domain.from_path(domain_out_file)
+    assert domain
+
+    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_slots = migrated_domain.get("slots")
+    custom_slot = migrated_slots.get("name")
+    assert custom_slot == {
+        "type": "text",
+        "influence_conversation": False,
+        "mappings": [{"type": "custom"}],
+    }

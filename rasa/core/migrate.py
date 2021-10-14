@@ -73,6 +73,9 @@ def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
         if "auto_fill" in properties:
             del properties["auto_fill"]
 
+        if not properties.get("mappings"):
+            properties.update({"mappings": [{"type": "custom"}]})
+
         new_slots[slot_name] = properties
 
     new_domain = {
