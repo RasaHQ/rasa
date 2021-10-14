@@ -545,7 +545,7 @@ def _collect_user_uttered_predictions(
         if fail_on_prediction_errors:
             story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
             raise WrongPredictionException(
-                f"NLU model predicted a wrong intent. Failed Story:"
+                f"NLU model predicted a wrong intent or entities. Failed Story:"
                 f" \n\n{story_dump}"
             )
     else:
