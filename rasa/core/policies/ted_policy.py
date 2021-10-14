@@ -749,13 +749,18 @@ class TEDPolicy(Policy):
             non_e2e_action_name = domain.action_names_or_texts[
                 np.argmax(confidences[0])
             ]
-            logger.debug(f"User intent lead to '{non_e2e_action_name}'.")
+            logger.debug(
+                f"User intent lead to '{non_e2e_action_name}' with {np.max(confidences[0])} similarity value."
+            )
             e2e_action_name = domain.action_names_or_texts[np.argmax(confidences[1])]
-            logger.debug(f"User text lead to '{e2e_action_name}'.")
+            logger.debug(
+                f"User text lead to '{e2e_action_name}' with {np.max(confidences[1])} similarity value."
+            )
             if (
                 np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
                 # TODO maybe compare confidences is better
                 and np.max(similarities[1]) > np.max(similarities[0])
+                and non_e2e_action_name != e2e_action_name
             ):
                 logger.debug(f"TED predicted '{e2e_action_name}' based on user text.")
                 return confidences[1], True

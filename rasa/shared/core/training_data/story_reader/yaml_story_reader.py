@@ -314,7 +314,19 @@ class YAMLStoryReader(StoryReader):
         else:
             self._validate_that_utterance_is_in_domain(utterance)
 
-        self.current_step_builder.add_user_messages([utterance])
+    def _parse_user_utterance_inside_or(self, step: Dict[Text, Any]) -> None:
+        utterance = self._parse_raw_user_utterance(step)
+
+        if not utterance:
+            return
+
+        is_end_to_end_utterance = KEY_USER_INTENT not in step
+        if is_end_to_end_utterance:
+            utterance.intent = {INTENT_NAME_KEY: None}
+        else:
+            self._validate_that_utterance_is_in_domain(utterance)
+
+        return utterance
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
@@ -346,14 +358,16 @@ class YAMLStoryReader(StoryReader):
                 if utterance:
                     utterances.append(utterance)
             else:
-                rasa.shared.utils.io.raise_warning(
-                    f"Issue found in '{self.source_name}': \n"
-                    f"`OR` statement can only have '{KEY_USER_INTENT}' "
-                    f"as a sub-element. This step will be skipped:\n"
-                    f"'{utterance}'\n",
-                    docs=self._get_docs_link(),
-                )
-                return
+                utterance = self._parse_user_utterance_inside_or(utterance)
+                if utterance:
+                    utterances.append(utterance)
+                # rasa.shared.utils.io.raise_warning(
+                #     f"Issue found in '{self.source_name}': \n"
+                #     f"`OR` statement can only have '{KEY_USER_INTENT}' "
+                #     f"as a sub-element. This step will be skipped:\n"
+                #     f"'{utterance}'\n",
+                #     docs=self._get_docs_link(),
+                # )
 
         self.current_step_builder.add_user_messages(
             utterances, self._is_used_for_training
