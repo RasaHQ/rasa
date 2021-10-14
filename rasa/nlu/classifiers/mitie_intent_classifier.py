@@ -1,12 +1,15 @@
 from __future__ import annotations
 import logging
+from rasa.nlu.featurizers.featurizer import Featurizer2
 import typing
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.utils.mitie_utils import MitieModel
+from rasa.nlu.classifiers.classifier import IntentClassifier2
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -25,8 +28,18 @@ MitieIntentClassifier = (
 logger = logging.getLogger(__name__)
 
 
-class MitieIntentClassifierGraphComponent(GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+    is_trainable=True,
+    model_from="MitieNLPGraphComponent",
+)
+class MitieIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
     """Intent classifier which uses the `mitie` library."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [MitieNLPGraphComponent, Featurizer2]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -77,7 +90,7 @@ class MitieIntentClassifierGraphComponent(GraphComponent):
 
         return self._resource
 
-    def process(self, messages: List[Message], model: MitieModel) -> None:
+    def process(self, messages: List[Message], model: MitieModel) -> List[Message]:
         """Make intent predictions using `mitie`.
 
         Args:
@@ -97,6 +110,8 @@ class MitieIntentClassifierGraphComponent(GraphComponent):
             message.set(
                 "intent", {"name": intent, "confidence": confidence}, add_to_output=True
             )
+
+        return messages
 
     @staticmethod
     def _tokens_of_message(message: Message) -> List[Text]:

@@ -2,14 +2,15 @@ from __future__ import annotations
 import logging
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set
+from typing import Any, Dict, List, Optional, Text, Tuple, Set, Type
+from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
@@ -40,6 +41,9 @@ BUFFER_SLOTS_PREFIX = "buf_"
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
 class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
@@ -50,6 +54,11 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     to use the idea of Subword Semantic Hashing
     from https://arxiv.org/abs/1810.07150.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -824,7 +833,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                 return ftr
 
         except (ValueError, FileNotFoundError, FileIOException):
-            logger.warning(
+            logger.debug(
                 f"Failed to load `{cls.__class__.__name__}` from model storage. "
                 f"Resource '{resource.name}' doesn't exist."
             )
@@ -838,11 +847,4 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        pass
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
         pass

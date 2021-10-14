@@ -1,0 +1,161 @@
+[
+  {
+    "tracker_ID": "dialogue_1",
+    "bot-version": "<version-number>",
+    "markers": [
+      {
+        "marker": "no_restart",
+        "num_preceding_user_turns": [
+          20
+        ],
+        "timestamps": [
+          63123.21442
+        ]
+      },
+      {
+        "marker": "all_required_data_gathered",
+        "num_preceding_user_turns": [
+          8
+        ],
+        "timestamps": [
+          24123.21452
+        ]
+      },
+      {
+        "marker": "carbon_offset_calculated",
+        "num_preceding_user_turns": [
+          8,
+          12
+        ],
+        "timestamps": [
+          24723.21485,
+          33100.24350
+        ]
+      },
+      {
+        "marker": "chitchat_and_FAQ",
+        "num_preceding_user_turns": [
+          2,
+          9,
+          13
+        ],
+        "timestamps": [
+          14123.21452,
+          25163.21452,
+          35173.21452
+        ]
+      },
+      {
+        "marker": "dialog_expected_order",
+        "num_preceding_user_turns": [
+          5
+        ],
+        "timestamps": [
+          20123.54555
+        ]
+      }
+    ]
+  },
+  {
+    "tracker_ID": "dialogue_2",
+    "bot-version": "<version-number>",
+    "markers": [
+      {
+        "marker": "no_restart",
+        "num_preceding_user_turns": [
+          13
+        ],
+        "timestamps": [
+          63123.21442
+        ]
+      },
+      {
+        "marker": "all_required_data_gathered",
+        "num_preceding_user_turns": [
+          8
+        ],
+        "timestamps": [
+          24123.21452
+        ]
+      },
+      {
+        "marker": "carbon_offset_calculated",
+        "num_preceding_user_turns": [
+          8,
+          12
+        ],
+        "timestamps": [
+          24723.21485,
+          33100.24350
+        ]
+      },
+      {
+        "marker": "chitchat_and_FAQ",
+        "num_preceding_user_turns": [],
+        "timestamps": []
+      },
+      {
+        "marker": "dialog_expected_order",
+        "num_preceding_user_turns": [
+          7
+        ],
+        "timestamps": [
+          20123.54555
+        ]
+      }
+    ]
+  },
+  {
+    "tracker_ID": "dialogue_3",
+    "bot-version": "<version-number>",
+    "markers": [
+      {
+        "marker": "no_restart",
+        "num_preceding_user_turns": [],
+        "timestamps": []
+      },
+      {
+        "marker": "all_required_data_gathered",
+        "num_preceding_user_turns": [
+          8,
+          20
+        ],
+        "timestamps": [
+          24123.21452,
+          25123.21452
+        ]
+      },
+      {
+        "marker": "carbon_offset_calculated",
+        "num_preceding_user_turns": [
+          10,
+          22
+        ],
+        "timestamps": [
+          24723.21485,
+          33100.24350
+        ]
+      },
+      {
+        "marker": "chitchat_and_FAQ",
+        "num_preceding_user_turns": [
+          2
+        ],
+        "timestamps": [
+          14123.21452
+        ]
+      },
+      {
+        "marker": "dialog_expected_order",
+        "num_preceding_user_turns": [
+          9,
+          19
+        ],
+        "timestamps": [
+          20123.54555,
+          20123.54555
+        ]
+      }
+    ]
+  }
+]

@@ -19,8 +19,7 @@ from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecut
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
-from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
-from rasa.core.lock_store import InMemoryLockStore
+from rasa.core.tracker_store import MongoTrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
@@ -74,16 +73,7 @@ def default_channel() -> OutputChannel:
 
 @pytest.fixture
 async def default_processor(default_agent: Agent) -> MessageProcessor:
-    tracker_store = InMemoryTrackerStore(default_agent.domain)
-    lock_store = InMemoryLockStore()
-    return MessageProcessor(
-        default_agent.interpreter,
-        default_agent.policy_ensemble,
-        default_agent.domain,
-        tracker_store,
-        lock_store,
-        TemplatedNaturalLanguageGenerator(default_agent.domain.responses),
-    )
+    return default_agent.processor
 
 
 @pytest.fixture
@@ -153,7 +143,7 @@ async def trained_formbot(trained_async: Callable) -> Text:
 async def form_bot_agent(trained_formbot: Text) -> Agent:
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
 
-    return Agent.load_local_model(trained_formbot, action_endpoint=endpoint)
+    return Agent.load(trained_formbot, action_endpoint=endpoint)
 
 
 @pytest.fixture

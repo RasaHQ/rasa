@@ -25,21 +25,19 @@ def blank_config() -> RasaNLUModelConfig:
 
 
 @pytest.fixture()
-def pretrained_embeddings_spacy_config() -> RasaNLUModelConfig:
-    return RasaNLUModelConfig(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "SpacyNLP", "model": "en_core_web_md"},
-                {"name": "SpacyTokenizer"},
-                {"name": "SpacyFeaturizer"},
-                {"name": "RegexFeaturizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
-                {"name": "EntitySynonymMapper"},
-                {"name": "SklearnIntentClassifier"},
-            ],
-        }
-    )
+def pretrained_embeddings_spacy_config() -> Dict:
+    return {
+        "language": "en",
+        "pipeline": [
+            {"name": "SpacyNLP", "model": "en_core_web_md"},
+            {"name": "SpacyTokenizer"},
+            {"name": "SpacyFeaturizer"},
+            {"name": "RegexFeaturizer"},
+            {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
+            {"name": "EntitySynonymMapper"},
+            {"name": "SklearnIntentClassifier"},
+        ],
+    }
 
 
 @pytest.fixture()
