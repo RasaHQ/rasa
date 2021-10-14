@@ -57,9 +57,8 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
     # two for slot auto-fill removal
     assert len(record) == 2
     assert (
-        "Slot auto-fill has been removed in 3.0 and replaced by "
-        "a new explicit mechanism to set slots. Please refer to "
-        "the docs to learn more." == record[0].message.args[0]
+        "Slot auto-fill has been removed in 3.0 and replaced with "
+        "a new explicit mechanism to set slots." in record[0].message.args[0]
     )
     assert record[0].message.args[0] == record[1].message.args[0]
 
@@ -82,8 +81,7 @@ def test_example_bot_training_on_initial_project(tmp_path: Path):
     # two for slot auto-fill removal
     assert len(record) == 2
     assert (
-        "Slot auto-fill has been removed in 3.0 and replaced by "
-        "a new explicit mechanism to set slots. Please refer to "
-        "the docs to learn more." == record[0].message.args[0]
+        "Slot auto-fill has been removed in 3.0 and replaced with "
+        "a new explicit mechanism to set slots." in record[0].message.args[0]
     )
     assert record[0].message.args[0] == record[1].message.args[0]

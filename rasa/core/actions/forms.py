@@ -2,10 +2,11 @@ from typing import Text, List, Optional, Union, Any, Dict, Set
 import logging
 import json
 
+import rasa.core.actions.action
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.shared.core.domain import Domain, InvalidDomain, SlotMapping, KEY_SLOTS
+from rasa.shared.core.domain import Domain, SlotMapping, KEY_SLOTS
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
@@ -326,37 +327,29 @@ class FormAction(LoopAction):
         for requested_slot_mapping in requested_slot_mappings:
             logger.debug(f"Got mapping '{requested_slot_mapping}'")
 
-            if SlotMapping.intent_is_desired(requested_slot_mapping, tracker, domain):
-                if not self._matches_mapping_conditions(
-                    requested_slot_mapping, slot_to_fill
-                ):
-                    continue
+            if not SlotMapping.intent_is_desired(
+                requested_slot_mapping, tracker, domain
+            ):
+                continue
 
-                mapping_type = requested_slot_mapping["type"]
-                if mapping_type == str(SlotMapping.FROM_ENTITY):
-                    value = self.get_entity_value_for_slot(
-                        requested_slot_mapping.get("entity"),
-                        tracker,
-                        slot_to_fill,
-                        requested_slot_mapping.get("role"),
-                        requested_slot_mapping.get("group"),
-                    )
-                elif mapping_type == str(SlotMapping.FROM_INTENT):
-                    value = requested_slot_mapping.get("value")
-                elif mapping_type == str(SlotMapping.FROM_TRIGGER_INTENT):
-                    # from_trigger_intent is only used on form activation
-                    continue
-                elif mapping_type == str(SlotMapping.FROM_TEXT):
-                    value = tracker.latest_message.text
-                else:
-                    raise InvalidDomain("Provided slot mapping type is not supported")
+            if not self._matches_mapping_conditions(
+                requested_slot_mapping, slot_to_fill
+            ):
+                continue
 
-                if value is not None:
-                    logger.debug(
-                        f"Successfully extracted '{value}' for requested slot "
-                        f"'{slot_to_fill}'"
-                    )
-                    return {slot_to_fill: value}
+            value = rasa.core.actions.action.extract_slot_value_from_predefined_mapping(
+                requested_slot_mapping, tracker
+            )
+
+            if value:
+                if not isinstance(tracker.slots.get(slot_to_fill), ListSlot):
+                    value = value[-1]
+
+                logger.debug(
+                    f"Successfully extracted '{value}' for requested slot "
+                    f"'{slot_to_fill}'"
+                )
+                return {slot_to_fill: value}
 
         logger.debug(f"Failed to extract requested slot '{slot_to_fill}'")
         return {}
