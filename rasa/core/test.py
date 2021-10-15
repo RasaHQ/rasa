@@ -227,7 +227,7 @@ class EvaluationStore:
         )
         return deduplicated_targets != deduplicated_predictions
 
-    def has_prediction_target_mismatch(self) -> bool:
+    def check_prediction_target_mismatch(self) -> bool:
         """Checks if intent, entity or action predictions don't match expected ones."""
         return (
             self.intent_predictions != self.intent_targets
@@ -552,7 +552,7 @@ def _collect_user_uttered_predictions(
             entity_predictions=_clean_entity_results(event.text, predicted_entities),
         )
 
-    if user_uttered_eval_store.has_prediction_target_mismatch():
+    if user_uttered_eval_store.check_prediction_target_mismatch():
         partial_tracker.update(
             WronglyClassifiedUserUtterance(event, user_uttered_eval_store)
         )
@@ -693,7 +693,7 @@ def _collect_action_executed_predictions(
         action_predictions=[predicted_action], action_targets=[expected_action]
     )
 
-    if action_executed_eval_store.has_prediction_target_mismatch():
+    if action_executed_eval_store.check_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
                 expected_action_name,
@@ -937,7 +937,7 @@ async def _collect_story_predictions(
 
         action_list.extend(tracker_actions)
 
-        if tracker_results.has_prediction_target_mismatch():
+        if tracker_results.check_prediction_target_mismatch():
             # there is at least one wrong prediction
             failed_stories.append(predicted_tracker)
             correct_dialogues.append(0)

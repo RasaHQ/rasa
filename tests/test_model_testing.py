@@ -414,12 +414,12 @@ def test_duplicated_entity_predictions_tolerated():
     evaluation_with_duplicated_prediction = EvaluationStore(
         entity_predictions=[entity, entity], entity_targets=[entity]
     )
-    assert not evaluation_with_duplicated_prediction.has_prediction_target_mismatch()
+    assert not evaluation_with_duplicated_prediction.check_prediction_target_mismatch()
 
     evaluation_with_duplicated_target = EvaluationStore(
         entity_predictions=[entity, entity], entity_targets=[entity]
     )
-    assert not evaluation_with_duplicated_target.has_prediction_target_mismatch()
+    assert not evaluation_with_duplicated_target.check_prediction_target_mismatch()
 
 
 def test_differently_ordered_entity_predictions_tolerated():
@@ -451,4 +451,4 @@ def test_differently_ordered_entity_predictions_tolerated():
     evaluation = EvaluationStore(
         entity_predictions=[entity1, entity2], entity_targets=[entity2, entity1]
     )
-    assert not evaluation.has_prediction_target_mismatch()
+    assert not evaluation.check_prediction_target_mismatch()
