@@ -8,6 +8,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
+from rasa.nlu.classifiers.classifier import IntentClassifier2
 from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -21,7 +22,7 @@ KeywordIntentClassifier = KeywordIntentClassifier
 logger = logging.getLogger(__name__)
 
 
-class KeywordIntentClassifierGraphComponent(GraphComponent):
+class KeywordIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
     """Intent classifier using simple keyword matching.
 
     The classifier takes a list of keywords and associated intents as an input.

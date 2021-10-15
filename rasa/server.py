@@ -630,14 +630,7 @@ def run_in_thread(f: Callable[..., Coroutine]) -> Callable:
         # Use a sync wrapper for our `async` function as `run_in_executor` only supports
         # sync functions
         def run() -> HTTPResponse:
-            # This is a new thread, so we need to create and set a new event loop
-            thread_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(thread_loop)
-
-            try:
-                return thread_loop.run_until_complete(f(request, *args, **kwargs))
-            finally:
-                thread_loop.close()
+            return asyncio.run(f(request, *args, **kwargs))
 
         with concurrent.futures.ThreadPoolExecutor() as pool:
             return await request.app.loop.run_in_executor(pool, run)

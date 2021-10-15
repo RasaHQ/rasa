@@ -5,8 +5,7 @@ from typing import List
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import visualize as arguments
 from rasa.shared.constants import DEFAULT_DATA_PATH
-import rasa.shared.data
-import rasa.utils.common  # noqa: F401
+import asyncio
 
 
 def add_subparser(
@@ -37,7 +36,7 @@ def visualize_stories(args: argparse.Namespace) -> None:
     if args.nlu is None and os.path.exists(DEFAULT_DATA_PATH):
         args.nlu = rasa.shared.data.get_nlu_directory(DEFAULT_DATA_PATH)
 
-    rasa.utils.common.run_in_loop(
+    asyncio.run(
         rasa.core.visualize.visualize(
             args.config, args.domain, args.stories, args.nlu, args.out, args.max_history
         )
