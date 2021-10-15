@@ -214,7 +214,7 @@ class EvaluationStore:
             entity_targets=other.entity_targets,
         )
 
-    def _has_entity_prediction_target_mismatch(self) -> bool:
+    def _check_entity_prediction_target_mismatch(self) -> bool:
         """Checks that same entities were expected and actually extracted.
 
         Possible duplicates or differences in order should not matter.
@@ -231,7 +231,7 @@ class EvaluationStore:
         """Checks if intent, entity or action predictions don't match expected ones."""
         return (
             self.intent_predictions != self.intent_targets
-            or self._has_entity_prediction_target_mismatch()
+            or self._check_entity_prediction_target_mismatch()
             or self.action_predictions != self.action_targets
         )
 
