@@ -11,7 +11,6 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
 )
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
