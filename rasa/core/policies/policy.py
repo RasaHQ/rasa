@@ -68,25 +68,6 @@ class SupportedData(Enum):
     # policy supports both ML-based and rule-based data ("stories" as well as "rules")
     ML_AND_RULE_DATA = 3
 
-    # TODO: Dump after the finished migration
-    @staticmethod
-    def trackers_for_policy(
-        policy: Union[PolicyGraphComponent, Type[PolicyGraphComponent]],
-        trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
-    ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
-        """Return trackers for a given policy.
-
-        Args:
-            policy: Policy or policy type to return trackers for.
-            trackers: Trackers to split.
-
-        Returns:
-            Trackers from ML-based training data and/or rule-based data.
-        """
-        supported_data = policy.supported_data()
-
-        return SupportedData.trackers_for_supported_data(supported_data, trackers)
-
     @staticmethod
     def trackers_for_supported_data(
         supported_data: SupportedData,
