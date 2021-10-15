@@ -12,7 +12,6 @@ from typing import (
     Text,
     Dict,
     Callable,
-    Type,
     Union,
     Tuple,
     TYPE_CHECKING,
@@ -24,15 +23,9 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-)
-from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer2 as SingleStateFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 import rasa.utils.common
 import rasa.shared.utils.io
@@ -55,18 +48,11 @@ from rasa.shared.core.constants import (
 import rasa.shared.utils.common
 
 
-# All code outside this module will continue to use the old `Policy` interface
-from rasa.core.policies._policy import Policy
-
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-Policy = Policy
 
 
 class SupportedData(Enum):
@@ -80,25 +66,6 @@ class SupportedData(Enum):
 
     # policy supports both ML-based and rule-based data ("stories" as well as "rules")
     ML_AND_RULE_DATA = 3
-
-    # TODO: Dump after the finished migration
-    @staticmethod
-    def trackers_for_policy(
-        policy: Union[Policy, Type[Policy]],
-        trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
-    ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
-        """Return trackers for a given policy.
-
-        Args:
-            policy: Policy or policy type to return trackers for.
-            trackers: Trackers to split.
-
-        Returns:
-            Trackers from ML-based training data and/or rule-based data.
-        """
-        supported_data = policy.supported_data()
-
-        return SupportedData.trackers_for_supported_data(supported_data, trackers)
 
     @staticmethod
     def trackers_for_supported_data(
@@ -449,7 +416,7 @@ class PolicyGraphComponent(GraphComponent):
                 config.update(kwargs)
 
         except (ValueError, FileNotFoundError, FileIOException):
-            logger.info(
+            logger.debug(
                 f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
                 f"metadata couldn't be loaded."
             )
@@ -517,6 +484,10 @@ class PolicyGraphComponent(GraphComponent):
                     formatted_states.append(state_formatted)
 
         return "\n".join(formatted_states)
+
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return f"{self.__class__.__name__}@{id(self)}"
 
 
 class PolicyPrediction:

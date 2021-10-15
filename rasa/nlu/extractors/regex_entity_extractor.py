@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
@@ -19,14 +20,13 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.nlu.extractors._regex_entity_extractor import RegexEntityExtractor
 
 logger = logging.getLogger(__name__)
 
-# TODO: remove after everything is migrated
-RegexEntityExtractor = RegexEntityExtractor
 
-
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
+)
 class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     """Extracts entities via lookup tables and regexes defined in the training data."""
 
@@ -53,7 +53,7 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> GraphComponent:
+    ) -> RegexEntityExtractorGraphComponent:
         """Creates a new `GraphComponent`.
 
         Args:
@@ -197,22 +197,20 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             with model_storage.read_from(resource) as model_path:
                 regex_file = model_path / cls.REGEX_FILE_NAME
                 patterns = rasa.shared.utils.io.read_json_file(regex_file)
-                return RegexEntityExtractorGraphComponent(
+                return cls(
                     config,
                     model_storage=model_storage,
                     resource=resource,
                     patterns=patterns,
                 )
-        except ValueError:
+        except (ValueError, FileNotFoundError):
             rasa.shared.utils.io.raise_warning(
                 f"Failed to load {cls.__name__} from model storage. "
                 f"This can happen if the model could not be trained because regexes "
                 f"could not be extracted from the given training data - and hence "
                 f"could not be persisted."
             )
-            return RegexEntityExtractorGraphComponent(
-                config, model_storage=model_storage, resource=resource,
-            )
+            return cls(config, model_storage=model_storage, resource=resource,)
 
     def persist(self) -> None:
         """Persist this model."""

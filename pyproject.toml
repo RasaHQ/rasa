@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "2.8.7"
+version = "2.8.8"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -125,6 +125,7 @@ pyTelegramBotAPI = "^3.7.3"
 dask = "2021.7.2"
 typing-extensions = "^3.7.4"
 typing-utils = "^0.1.0"
+tarsafe = "^0.0.3"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"

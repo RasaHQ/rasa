@@ -1,3 +1,5 @@
+recipe: default.v1
+
 # Configuration for Rasa NLU.
 # https://rasa.com/docs/rasa/nlu/components/
 language: en

@@ -28,7 +28,7 @@ def test_nlu_training_data_provider(
 
     # check the default configuration is as expected
     config_1 = NLUTrainingDataProvider.get_default_config()
-    assert "language" not in config_1
+    assert config_1["language"] is None
     assert config_1["persist"] is False
 
     # create a provider with persist == True

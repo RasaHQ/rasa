@@ -12,8 +12,8 @@ from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
 from pymongo.errors import OperationFailure
 
-from rasa.nlu.model import Interpreter
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.core.agent import Agent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
@@ -881,18 +881,18 @@ def test_tracker_store_connection_error(config: Dict, domain: Domain):
         TrackerStore.create(store, domain)
 
 
-def prepare_token_serialisation(
-    tracker_store: TrackerStore,
-    response_selector_interpreter: Interpreter,
-    sender_id: Text,
+async def prepare_token_serialisation(
+    tracker_store: TrackerStore, response_selector_agent: Agent, sender_id: Text,
 ):
     text = "Good morning"
-    tokenizer = WhitespaceTokenizer()
+    tokenizer = WhitespaceTokenizerGraphComponent(
+        WhitespaceTokenizerGraphComponent.get_default_config()
+    )
     tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [[t.start, t.end] for t in tokens]
 
     tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)
-    parse_data = response_selector_interpreter.parse(text)
+    parse_data = await response_selector_agent.parse_message(text)
     event = UserUttered(
         "Good morning",
         parse_data.get("intent"),
@@ -911,23 +911,21 @@ def prepare_token_serialisation(
 
 
 def test_inmemory_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_interpreter: Interpreter
+    domain: Domain, response_selector_agent: Agent
 ):
     tracker_store = InMemoryTrackerStore(domain)
-    prepare_token_serialisation(
-        tracker_store, response_selector_interpreter, "inmemory"
-    )
+    prepare_token_serialisation(tracker_store, response_selector_agent, "inmemory")
 
 
 def test_mongo_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_interpreter: Interpreter
+    domain: Domain, response_selector_agent: Agent
 ):
     tracker_store = MockedMongoTrackerStore(domain)
-    prepare_token_serialisation(tracker_store, response_selector_interpreter, "mongo")
+    prepare_token_serialisation(tracker_store, response_selector_agent, "mongo")
 
 
 def test_sql_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_interpreter: Interpreter
+    domain: Domain, response_selector_agent: Agent
 ):
     tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
-    prepare_token_serialisation(tracker_store, response_selector_interpreter, "sql")
+    prepare_token_serialisation(tracker_store, response_selector_agent, "sql")

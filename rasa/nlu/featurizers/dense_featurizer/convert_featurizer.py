@@ -9,11 +9,12 @@ import numpy as np
 import tensorflow as tf
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
 import rasa.core.utils
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -29,7 +30,6 @@ from rasa.shared.nlu.constants import (
 from rasa.exceptions import RasaException
 import rasa.nlu.utils
 import rasa.utils.train_utils as train_utils
-from rasa.nlu.featurizers.dense_featurizer._convert_featurizer import ConveRTFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +46,10 @@ RESTRICTED_ACCESS_URL = (
     "integration-model-storage/convert_tf2.tar.gz"
 )
 
-# TODO: remove this once all featurizers are migrated
-ConveRTFeaturizer = ConveRTFeaturizer
 
-
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
 class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """Featurizer using ConveRT model.
 
@@ -57,6 +57,11 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     model from TFHub and computes sentence and sequence level feature representations
     for dense featurizable attributes of each message object.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -123,13 +128,6 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
         cls._validate_model_url(config)
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
-        pass
 
     @staticmethod
     def _validate_model_files_exist(model_directory: Text) -> None:

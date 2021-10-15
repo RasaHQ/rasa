@@ -2,14 +2,14 @@ from __future__ import annotations
 import numpy as np
 import logging
 
-from typing import Any, Optional, Text, List, Type, Dict, Tuple
+from typing import Any, Text, List, Dict, Tuple, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
-from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -25,12 +25,8 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
 )
 from rasa.utils import train_utils
-from rasa.nlu.featurizers.dense_featurizer._lm_featurizer import LanguageModelFeaturizer
 
 logger = logging.getLogger(__name__)
-
-# TODO: remove after all references to old featurizer have been removed
-LanguageModelFeaturizer = LanguageModelFeaturizer
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
@@ -42,6 +38,9 @@ MAX_SEQUENCE_LENGTHS = {
 }
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
 class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """A featurizer that uses transformer-based language models.
 
@@ -51,6 +50,11 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     It also tokenizes and featurizes the featurizable dense attributes of
     each message.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     def __init__(
         self, config: Dict[Text, Any], execution_context: ExecutionContext,
@@ -79,13 +83,6 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates the configuration."""
-        pass
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Checks that the featurizer and tokenizer are compatible."""
         pass
 
     @classmethod
@@ -704,12 +701,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
         return batch_docs
 
-    def process_training_data(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> TrainingData:
+    def process_training_data(self, training_data: TrainingData,) -> TrainingData:
         """Computes tokens and dense features for each message in training data.
 
         Args:

@@ -237,9 +237,8 @@ def test_lookup_tables(
     labeled_tokens: List[float],
     spacy_nlp: Any,
     spacy_tokenizer: SpacyTokenizerGraphComponent,
+    create_featurizer: Callable[..., RegexFeaturizerGraphComponent],
 ):
-    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-
     lookups = [
         {
             "name": "drinks",
@@ -247,10 +246,11 @@ def test_lookup_tables(
         },
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
-    ftr = RegexFeaturizer()
+    ftr = create_featurizer()
     training_data = TrainingData()
     training_data.lookup_tables = lookups
     ftr.train(training_data)
+    ftr.process_training_data(training_data)
 
     # adds tokens to the message
     message = Message(data={TEXT: sentence})
