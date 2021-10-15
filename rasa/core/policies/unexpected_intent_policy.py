@@ -49,7 +49,6 @@ from rasa.core.policies.ted_policy import (
     SEQUENCE,
     PREDICTION_FEATURES,
 )
-from rasa.core.policies._unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.constants import (
@@ -138,10 +137,6 @@ if TYPE_CHECKING:
     )
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-UnexpecTEDIntentPolicy = UnexpecTEDIntentPolicy
 
 
 @DefaultV1Recipe.register(

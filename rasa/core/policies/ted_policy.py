@@ -127,16 +127,11 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
     EPOCH_OVERRIDE,
 )
-from rasa.core.policies._ted_policy import TEDPolicy
 
 from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-TEDPolicy = TEDPolicy
 
 E2E_CONFIDENCE_THRESHOLD = "e2e_confidence_threshold"
 LABEL_KEY = LABEL

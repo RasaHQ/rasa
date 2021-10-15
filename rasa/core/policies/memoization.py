@@ -39,15 +39,6 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
 )
-from rasa.core.policies._memoization import (
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy,
-)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MemoizationPolicy = MemoizationPolicy
-AugmentedMemoizationPolicy = AugmentedMemoizationPolicy
 
 logger = logging.getLogger(__name__)
 

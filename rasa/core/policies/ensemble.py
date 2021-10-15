@@ -8,7 +8,6 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.runner.interface import ExecutionContext
 from rasa.core.policies.policy import PolicyPrediction
-from rasa.core.policies._ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
@@ -20,11 +19,6 @@ from rasa.shared.core.events import (
 from rasa.shared.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-SimplePolicyEnsemble = SimplePolicyEnsemble
-PolicyEnsemble = PolicyEnsemble
 
 
 def is_not_in_training_data(

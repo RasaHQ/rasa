@@ -55,18 +55,11 @@ from rasa.shared.core.constants import (
 import rasa.shared.utils.common
 
 
-# All code outside this module will continue to use the old `Policy` interface
-from rasa.core.policies._policy import Policy
-
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-Policy = Policy
 
 
 class SupportedData(Enum):
