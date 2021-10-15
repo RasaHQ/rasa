@@ -1,6 +1,6 @@
 import random
 from dataclasses import dataclass, field
-from typing import OrderedDict, Set, Text, List, Optional, TypedDict
+from typing import Dict, Set, Text, List, Optional, TypedDict
 
 import numpy as np
 import scipy.sparse
@@ -246,7 +246,7 @@ class DummyFeatures:
 
     @staticmethod
     def compare_with_feature_arrays(
-        actual: OrderedDict[Text, List[FeatureArray]],
+        actual: Dict[Text, List[FeatureArray]],
         expected: List[ConcatenatedFeaturizations],
     ) -> None:
         """Compares concatenated features."""
