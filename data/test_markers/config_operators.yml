@@ -6,7 +6,7 @@ markers:
 
   - marker: all_required_data_gathered
     condition:
-      - slot_is_set:
+      - slot_set:
         - travel_flight_class
         - travel_departure
         - travel_destination
@@ -14,7 +14,7 @@ markers:
   - marker: carbon_offset_calculated
     operator: AND
     condition:
-      - slot_is_set:
+      - slot_set:
         - travel_flight_class
         - travel_departure
         - travel_destination

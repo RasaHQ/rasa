@@ -14,7 +14,7 @@ def simple_marker_config_json() -> dict:
                 "operator": "AND",
                 "condition": [
                     {
-                        "slot_is_set": [
+                        "slot_set": [
                             "travel_flight_class",
                             "travel_departure",
                             "travel_destination",
@@ -41,7 +41,7 @@ def multi_marker_config_json() -> dict:
                 "marker": "all_required_data_gathered",
                 "condition": [
                     {
-                        "slot_is_set": [
+                        "slot_set": [
                             "travel_flight_class",
                             "travel_departure",
                             "travel_destination",
@@ -54,7 +54,7 @@ def multi_marker_config_json() -> dict:
                 "operator": "AND",
                 "condition": [
                     {
-                        "slot_is_set": [
+                        "slot_set": [
                             "travel_flight_class",
                             "travel_departure",
                             "travel_destination",
@@ -80,7 +80,7 @@ def test_from_yaml(simple_marker_config_json):
       - marker: carbon_offset_calculated
         operator: AND
         condition:
-          - slot_is_set:
+          - slot_set:
             - travel_flight_class
             - travel_departure
             - travel_destination

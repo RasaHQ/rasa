@@ -24,14 +24,12 @@ CONDITION_SCHEMA = {
     "items": {
         "type": "object",
         "properties": {
-            "slot_is_set": EVENT_SCHEMA,
-            "slot_is_not_set": EVENT_SCHEMA,
+            "slot_set": EVENT_SCHEMA,
+            "slot_not_set": EVENT_SCHEMA,
             "action_executed": EVENT_SCHEMA,
             "action_not_executed": EVENT_SCHEMA,
             "intent_detected": EVENT_SCHEMA,
             "intent_not_detected": EVENT_SCHEMA,
-            "user_uttered": EVENT_SCHEMA,
-            "bot_uttered": EVENT_SCHEMA,
         },
         "additionalProperties": False,
     },
