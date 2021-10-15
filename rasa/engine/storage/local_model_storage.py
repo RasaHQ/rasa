@@ -25,8 +25,6 @@ logger = logging.getLogger(__name__)
 
 # Paths within model archive
 MODEL_ARCHIVE_COMPONENTS_DIR = "components"
-MODEL_ARCHIVE_TRAIN_SCHEMA_FILE = "train_schema.yml"
-MODEL_ARCHIVE_PREDICT_SCHEMA_FILE = "predict_schema.yml"
 MODEL_ARCHIVE_METADATA_FILE = "metadata.json"
 
 

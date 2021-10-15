@@ -27,17 +27,16 @@ from rasa.shared.core.events import (
 from rasa.core import training
 from rasa.core.constants import POLICY_MAX_HISTORY
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer,
+    IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer2 as SingleStateFeaturizer,
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    SingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.core.policies.policy import (
     SupportedData,
-    Policy,
     InvalidPolicyConfig,
     PolicyGraphComponent,
 )
@@ -207,7 +206,7 @@ class PolicyTestCollection:
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(
-        self, trained_policy: Policy, default_domain: Domain
+        self, trained_policy: PolicyGraphComponent, default_domain: Domain
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
@@ -254,8 +253,7 @@ class PolicyTestCollection:
             (
                 [
                     {
-                        # TODO: remove "2" when migration of policies is done
-                        "name": "MaxHistoryTrackerFeaturizer2",
+                        "name": "MaxHistoryTrackerFeaturizer",
                         "max_history": 12,
                         "state_featurizer": [],
                     }
@@ -264,19 +262,17 @@ class PolicyTestCollection:
                 type(None),
             ),
             (
-                # TODO: remove "2" when migration of policies is done
-                [{"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12}],
+                [{"name": "MaxHistoryTrackerFeaturizer", "max_history": 12}],
                 MaxHistoryTrackerFeaturizer(max_history=12),
                 type(None),
             ),
             (
                 [
                     {
-                        # TODO: remove "2" when migration of policies is done
-                        "name": "IntentMaxHistoryTrackerFeaturizer2",
+                        "name": "IntentMaxHistoryTrackerFeaturizer",
                         "max_history": 12,
                         "state_featurizer": [
-                            {"name": "IntentTokenizerSingleStateFeaturizer2"}
+                            {"name": "IntentTokenizerSingleStateFeaturizer"}
                         ],
                     }
                 ],
@@ -321,18 +317,16 @@ class PolicyTestCollection:
         "featurizer_config",
         [
             [
-                # TODO: remove "2" when migration of policies is done
-                {"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12},
-                {"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12},
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
             ],
             [
                 {
-                    # TODO: remove "2" when migration of policies is done
-                    "name": "IntentMaxHistoryTrackerFeaturizer2",
+                    "name": "IntentMaxHistoryTrackerFeaturizer",
                     "max_history": 12,
                     "state_featurizer": [
-                        {"name": "IntentTokenizerSingleStateFeaturizer2"},
-                        {"name": "IntentTokenizerSingleStateFeaturizer2"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
                     ],
                 }
             ],
@@ -735,7 +729,9 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         (MemoizationPolicyGraphComponent, SupportedData.ML_DATA),
     ],
 )
-def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
+def test_supported_data(
+    policy: Type[PolicyGraphComponent], supported_data: SupportedData
+):
     assert policy.supported_data() == supported_data
 
 

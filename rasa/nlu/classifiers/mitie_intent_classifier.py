@@ -14,16 +14,9 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-import rasa.nlu.classifiers._mitie_intent_classifier
 
 if typing.TYPE_CHECKING:
     import mitie
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MitieIntentClassifier = (
-    rasa.nlu.classifiers._mitie_intent_classifier.MitieIntentClassifier
-)
 
 logger = logging.getLogger(__name__)
 

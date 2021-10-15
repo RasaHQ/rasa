@@ -8,7 +8,6 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
-from rasa.nlu.featurizers.dense_featurizer._mitie_featurizer import MitieFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -26,10 +25,6 @@ if typing.TYPE_CHECKING:
     import mitie
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MitieFeaturizer = MitieFeaturizer
 
 
 @DefaultV1Recipe.register(

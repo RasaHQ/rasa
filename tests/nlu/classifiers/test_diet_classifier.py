@@ -273,15 +273,13 @@ def test_model_data_signature_with_entities(
     messages: List[Message],
     entity_expected: bool,
     create_diet: Callable[..., DIETClassifierGraphComponent],
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
     classifier = create_diet({"BILOU_flag": False})
     training_data = TrainingData(messages)
 
     # create tokens for entity parsing inside DIET
-    tokenizer = WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    )
-    tokenizer.process_training_data(training_data)
+    whitespace_tokenizer.process_training_data(training_data)
 
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()

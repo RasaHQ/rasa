@@ -14,12 +14,6 @@ from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.training_data.message import Message
 
-from rasa.nlu.tokenizers._whitespace_tokenizer import WhitespaceTokenizer
-
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-WhitespaceTokenizer = WhitespaceTokenizer
-
 
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False

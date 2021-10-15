@@ -23,14 +23,10 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import (
@@ -49,7 +45,6 @@ from rasa.core.policies.ted_policy import (
     SEQUENCE,
     PREDICTION_FEATURES,
 )
-from rasa.core.policies._unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.constants import (
@@ -138,10 +133,6 @@ if TYPE_CHECKING:
     )
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-UnexpecTEDIntentPolicy = UnexpecTEDIntentPolicy
 
 
 @DefaultV1Recipe.register(

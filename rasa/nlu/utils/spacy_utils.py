@@ -13,8 +13,6 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import DENSE_FEATURIZABLE_ATTRIBUTES, SPACY_DOCS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-import rasa.nlu.utils._spacy_utils
-import rasa.utils.train_utils
 from rasa.nlu.model import InvalidModelError
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 
@@ -23,10 +21,6 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from spacy.language import Language  # noqa: F401
     from spacy.tokens import Doc
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-SpacyNLP = rasa.nlu.utils._spacy_utils.SpacyNLP
 
 
 @dataclasses.dataclass

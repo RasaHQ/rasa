@@ -16,10 +16,6 @@ from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-from rasa.nlu.extractors._duckling_entity_extractor import DucklingEntityExtractor
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-DucklingEntityExtractor = DucklingEntityExtractor
 
 
 logger = logging.getLogger(__name__)

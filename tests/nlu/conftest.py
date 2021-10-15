@@ -6,22 +6,15 @@ import pytest
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
     SpacyFeaturizerGraphComponent,
 )
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-
-
-@pytest.fixture(scope="session")
-def blank_config() -> RasaNLUModelConfig:
-    return RasaNLUModelConfig({"language": "en", "pipeline": []})
 
 
 @pytest.fixture()
@@ -38,43 +31,6 @@ def pretrained_embeddings_spacy_config() -> Dict:
             {"name": "SklearnIntentClassifier"},
         ],
     }
-
-
-@pytest.fixture()
-def supervised_embeddings_config() -> RasaNLUModelConfig:
-    return RasaNLUModelConfig(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "RegexFeaturizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 1, RANDOM_SEED: 42},
-                {"name": "EntitySynonymMapper"},
-                {"name": "CountVectorsFeaturizer"},
-                {
-                    "name": "CountVectorsFeaturizer",
-                    "analyzer": "char_wb",
-                    "min_ngram": 1,
-                    "max_ngram": 4,
-                },
-                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
-            ],
-        }
-    )
-
-
-@pytest.fixture()
-def pretrained_embeddings_convert_config() -> RasaNLUModelConfig:
-    return RasaNLUModelConfig(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "ConveRTFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
-            ],
-        }
-    )
 
 
 @pytest.fixture()
@@ -128,13 +84,6 @@ def process_message(default_model_storage: ModelStorage,) -> Callable[..., Messa
         return message
 
     return inner
-
-
-@pytest.fixture()
-def whitespace_tokenizer() -> WhitespaceTokenizerGraphComponent:
-    return WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    )
 
 
 @pytest.fixture()

@@ -20,8 +20,8 @@ from rasa.shared.exceptions import (
 )
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core import training
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer2
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer2
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 
 from rasa.shared.constants import (
@@ -728,7 +728,7 @@ def test_read_story_file_with_cycles(domain: Domain):
 
 
 def test_generate_training_data_with_cycles(domain: Domain):
-    featurizer = MaxHistoryTrackerFeaturizer2(SingleStateFeaturizer2(), max_history=4)
+    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
     training_trackers = training.load_data(
         "data/test_yaml_stories/stories_with_cycle.yml", domain, augmentation_factor=0,
     )
@@ -801,7 +801,7 @@ def test_visualize_training_data_graph(tmp_path: Path, domain: Domain):
 
 
 def test_load_multi_file_training_data(domain: Domain):
-    featurizer = MaxHistoryTrackerFeaturizer2(SingleStateFeaturizer2(), max_history=2)
+    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
     trackers = training.load_data(
         "data/test_yaml_stories/stories.yml", domain, augmentation_factor=0
     )
@@ -817,9 +817,7 @@ def test_load_multi_file_training_data(domain: Domain):
         trackers, domain, precomputations=None
     )
 
-    featurizer_mul = MaxHistoryTrackerFeaturizer2(
-        SingleStateFeaturizer2(), max_history=2
-    )
+    featurizer_mul = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
     trackers_mul = training.load_data(
         "data/test_multifile_yaml_stories", domain, augmentation_factor=0
     )

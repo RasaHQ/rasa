@@ -20,12 +20,8 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.nlu.extractors._regex_entity_extractor import RegexEntityExtractor
 
 logger = logging.getLogger(__name__)
-
-# TODO: remove after everything is migrated
-RegexEntityExtractor = RegexEntityExtractor
 
 
 @DefaultV1Recipe.register(

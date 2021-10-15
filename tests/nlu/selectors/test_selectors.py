@@ -18,7 +18,6 @@ from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
     RegexFeaturizerGraphComponent,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
-import rasa.nlu.train
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage

@@ -4,14 +4,14 @@ import pytest
 from _pytest.tmpdir import TempPathFactory
 
 from rasa.core.agent import Agent
+from rasa.core.policies.policy import PolicyGraphComponent
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.nlu import registry
-import rasa.nlu.train
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.tensorflow.constants import EPOCHS
 from typing import Any, Dict, List, Tuple, Text, Union, Optional
 import rasa.model_training
 import rasa.shared.utils.io
+import rasa.engine.recipes.default_components
 
 COMPONENTS_TEST_PARAMS = {
     "DIETClassifier": {EPOCHS: 1},
@@ -129,15 +129,26 @@ def test_all_components_are_in_at_least_one_test_pipeline():
     all_pipelines = pipelines_for_tests() + pipelines_for_non_windows_tests()
     all_components = [c["name"] for _, p in all_pipelines for c in p]
 
-    for cls in registry.component_classes:
-        if "convert" in cls.name.lower():
+    all_registered_components = (
+        rasa.engine.recipes.default_components.DEFAULT_COMPONENTS
+    )
+    all_registered_nlu_components = [
+        c for c in all_registered_components if not issubclass(c, PolicyGraphComponent)
+    ]
+
+    for cls in all_registered_nlu_components:
+        if "convert" in cls.__name__.lower():
             # TODO
             #   skip ConveRTFeaturizer as the ConveRT model is not
             #   publicly available anymore
             #   (see https://github.com/RasaHQ/rasa/issues/6806)
             continue
+        # If this fails, it means that we've dropped the `GraphComponent` suffix as
+        # part of the architecture revamp wrap up. This means it's safe to drop the
+        # following line as well as the `replace("GraphComponent", "")` part.
+        assert cls.__name__.endswith("GraphComponent")
         assert (
-            cls.name in all_components
+            cls.__name__.replace("GraphComponent", "") in all_components
         ), "`all_components` template is missing component."
 
 
@@ -170,7 +181,7 @@ async def test_train_persist_load_parse(
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 def test_train_persist_load_parse_non_windows(
-    language, pipeline, component_builder, tmp_path, nlu_as_json_path: Text
+    language, pipeline, tmp_path, nlu_as_json_path: Text
 ):
     test_train_persist_load_parse(language, pipeline, tmp_path, nlu_as_json_path)
 

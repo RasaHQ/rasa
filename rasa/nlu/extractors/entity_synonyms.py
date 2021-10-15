@@ -13,12 +13,8 @@ from rasa.nlu.utils import write_json_to_file
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.nlu.extractors._entity_synonyms import EntitySynonymMapper
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-EntitySynonymMapper = EntitySynonymMapper
 
 logger = logging.getLogger(__name__)
 
