@@ -1,41 +1,36 @@
+from __future__ import annotations
 import logging
-
+import os
 from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 
 from tensorflow.python.eager.wrap_function import WrappedFunction
 from tqdm import tqdm
-import os
+import numpy as np
+import tensorflow as tf
 
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
 import rasa.core.utils
-from rasa.utils import common
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.model import Metadata
-from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizer
-from rasa.shared.nlu.training_data.features import Features
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    FEATURIZER_CLASS_ALIAS,
     TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
 )
 from rasa.exceptions import RasaException
 import rasa.nlu.utils
-import numpy as np
-import tensorflow as tf
-
 import rasa.utils.train_utils as train_utils
+from rasa.nlu.featurizers.dense_featurizer._convert_featurizer import ConveRTFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +47,14 @@ RESTRICTED_ACCESS_URL = (
     "integration-model-storage/convert_tf2.tar.gz"
 )
 
+# TODO: remove this once all featurizers are migrated
+ConveRTFeaturizer = ConveRTFeaturizer
 
-class ConveRTFeaturizer(DenseFeaturizer):
+
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
+class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """Featurizer using ConveRT model.
 
     Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
@@ -61,30 +62,59 @@ class ConveRTFeaturizer(DenseFeaturizer):
     for dense featurizable attributes of each message object.
     """
 
-    defaults = {
-        # Remote URL/Local path to model files
-        "model_url": None
-    }
-
     @classmethod
-    def required_components(cls) -> List[Type[Component]]:
+    def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [Tokenizer]
+        return [TokenizerGraphComponent]
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """The component's default config (see parent class for full docstring)."""
+        return {
+            **DenseFeaturizer2.get_default_config(),
+            # Remote URL/Local path to model files
+            "model_url": None,
+        }
+
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Packages needed to be installed."""
         return ["tensorflow_text", "tensorflow_hub"]
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        """Initializes ConveRTFeaturizer with the model and different
-        encoding signatures.
+    @staticmethod
+    def supported_languages() -> Optional[List[Text]]:
+        """Determines which languages this component can work with.
+
+        Returns: A list of supported languages, or `None` to signify all are supported.
+        """
+        return ["en"]
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> ConveRTFeaturizerGraphComponent:
+        """Creates a new component (see parent class for full docstring)."""
+        return cls(name=execution_context.node_name, config=config)
+
+    def __init__(self, name: Text, config: Dict[Text, Any]) -> None:
+        """Initializes a `ConveRTFeaturizer`.
 
         Args:
-            component_config: Configuration for the component.
+            name: An identifier for this featurizer.
+            config: The configuration.
         """
-        super(ConveRTFeaturizer, self).__init__(component_config)
-        self.model_url = self._get_validated_model_url()
+        super().__init__(name=name, config=config)
+
+        model_url = self._config["model_url"]
+        self.model_url = (
+            model_url
+            if rasa.nlu.utils.is_url(model_url)
+            else os.path.abspath(model_url)
+        )
 
         self.module = train_utils.load_tf_hub_model(self.model_url)
 
@@ -97,6 +127,11 @@ class ConveRTFeaturizer(DenseFeaturizer):
         self.sentence_encoding_signature: WrappedFunction = self._get_signature(
             "default", self.module
         )
+
+    @classmethod
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
+        """Validates that the component is configured properly."""
+        cls._validate_model_url(config)
 
     @staticmethod
     def _validate_model_files_exist(model_directory: Text) -> None:
@@ -121,22 +156,23 @@ class ConveRTFeaturizer(DenseFeaturizer):
                     f"files - [{', '.join(files_to_check)}]"
                 )
 
-    def _get_validated_model_url(self) -> Text:
+    @classmethod
+    def _validate_model_url(cls, config: Dict[Text, Any]) -> None:
         """Validates the specified `model_url` parameter.
 
         The `model_url` parameter cannot be left empty. It can either
         be set to a remote URL where the model is hosted or it can be
         a path to a local directory.
 
-        Returns:
-            Validated path to model
+        Args:
+            config: a configuration for this graph component
         """
-        model_url = self.component_config.get("model_url", None)
+        model_url = config.get("model_url", None)
 
         if not model_url:
             raise RasaException(
                 f"Parameter 'model_url' was not specified in the configuration "
-                f"of '{ConveRTFeaturizer.__name__}'. "
+                f"of '{ConveRTFeaturizerGraphComponent.__name__}'. "
                 f"It is mandatory to pass a value for this parameter. "
                 f"You can either use a community hosted URL of the model "
                 f"or if you have a local copy of the model, pass the "
@@ -146,7 +182,8 @@ class ConveRTFeaturizer(DenseFeaturizer):
         if model_url == ORIGINAL_TF_HUB_MODULE_URL:
             # Can't use the originally hosted URL
             raise RasaException(
-                f"Parameter 'model_url' of '{ConveRTFeaturizer.__name__}' was "
+                f"Parameter 'model_url' of "
+                f"'{ConveRTFeaturizerGraphComponent.__name__}' was "
                 f"set to '{model_url}' which does not contain the model any longer. "
                 f"You can either use a community hosted URL or if you have a "
                 f"local copy of the model, pass the path to the directory "
@@ -156,7 +193,8 @@ class ConveRTFeaturizer(DenseFeaturizer):
         if model_url == RESTRICTED_ACCESS_URL:
             # Can't use the URL that is reserved for tests only
             raise RasaException(
-                f"Parameter 'model_url' of '{ConveRTFeaturizer.__name__}' was "
+                f"Parameter 'model_url' of "
+                f"'{ConveRTFeaturizerGraphComponent.__name__}' was "
                 f"set to '{model_url}' which is strictly reserved for pytests of "
                 f"Rasa Open Source only. Due to licensing issues you are "
                 f"not allowed to use the model from this URL. "
@@ -168,38 +206,35 @@ class ConveRTFeaturizer(DenseFeaturizer):
         if os.path.isfile(model_url):
             # Definitely invalid since the specified path should be a directory
             raise RasaException(
-                f"Parameter 'model_url' of '{ConveRTFeaturizer.__name__}' was "
+                f"Parameter 'model_url' of "
+                f"'{ConveRTFeaturizerGraphComponent.__name__}' was "
                 f"set to the path of a file which is invalid. You "
                 f"can either use a community hosted URL or if you have a "
                 f"local copy of the model, pass the path to the directory "
                 f"containing the model files."
             )
 
-        if rasa.nlu.utils.is_url(model_url):
-            return model_url
+        if not rasa.nlu.utils.is_url(model_url) and not os.path.isdir(model_url):
+            raise RasaException(
+                f"{model_url} is neither a valid remote URL nor a local directory. "
+                f"You can either use a community hosted URL or if you have a "
+                f"local copy of the model, pass the path to "
+                f"the directory containing the model files."
+            )
 
         if os.path.isdir(model_url):
             # Looks like a local directory. Inspect the directory
             # to see if model files exist.
-            self._validate_model_files_exist(model_url)
-            # Convert the path to an absolute one since
-            # TFHUB doesn't like relative paths
-            return os.path.abspath(model_url)
-
-        raise RasaException(
-            f"{model_url} is neither a valid remote URL nor a local directory. "
-            f"You can either use a community hosted URL or if you have a "
-            f"local copy of the model, pass the path to "
-            f"the directory containing the model files."
-        )
+            cls._validate_model_files_exist(model_url)
 
     @staticmethod
     def _get_signature(signature: Text, module: Any) -> NoReturn:
         """Retrieve a signature from a (hopefully loaded) TF model."""
         if not module:
             raise Exception(
-                "ConveRTFeaturizer needs a proper loaded tensorflow module when used. "
-                "Make sure to pass a module when training and using the component."
+                f"{ConveRTFeaturizerGraphComponent.__name__} needs "
+                f"a proper loaded tensorflow module when used. "
+                f"Make sure to pass a module when training and using the component."
             )
 
         return module.signatures[signature]
@@ -306,28 +341,15 @@ class ConveRTFeaturizer(DenseFeaturizer):
             "sequence_encoding"
         ].numpy()
 
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
+    def process_training_data(self, training_data: TrainingData,) -> TrainingData:
         """Featurize all message attributes in the training data with the ConveRT model.
 
         Args:
             training_data: Training data to be featurized
-            config: Pipeline configuration
-            **kwargs: Any other arguments.
-        """
-        if config is not None and config.language != "en":
-            rasa.shared.utils.io.raise_warning(
-                f"Since ``ConveRT`` model is trained only on an english "
-                f"corpus of conversations, this featurizer should only be "
-                f"used if your training data is in english language. "
-                f"However, you are training in '{config.language}'. ",
-                docs=DOCS_URL_COMPONENTS + "#convertfeaturizer",
-            )
 
+        Returns:
+            featurized training data
+        """
         batch_size = 64
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
@@ -359,23 +381,25 @@ class ConveRTFeaturizer(DenseFeaturizer):
                     batch_sentence_features,
                     attribute,
                 )
+        return training_data
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, messages: List[Message]) -> List[Message]:
         """Featurize an incoming message with the ConveRT model.
 
         Args:
-            message: Message to be featurized
-            **kwargs: Any other arguments.
+            messages: Message to be featurized
         """
-        for attribute in {TEXT, ACTION_TEXT}:
-            if message.get(attribute):
-                sequence_features, sentence_features = self._compute_features(
-                    [message], attribute=attribute
-                )
+        for message in messages:
+            for attribute in {TEXT, ACTION_TEXT}:
+                if message.get(attribute):
+                    sequence_features, sentence_features = self._compute_features(
+                        [message], attribute=attribute
+                    )
 
-                self._set_features(
-                    [message], sequence_features, sentence_features, attribute
-                )
+                    self._set_features(
+                        [message], sequence_features, sentence_features, attribute
+                    )
+        return messages
 
     def _set_features(
         self,
@@ -385,40 +409,12 @@ class ConveRTFeaturizer(DenseFeaturizer):
         attribute: Text,
     ) -> None:
         for index, example in enumerate(examples):
-            _sequence_features = Features(
-                sequence_features[index],
-                FEATURE_TYPE_SEQUENCE,
-                attribute,
-                self.component_config[FEATURIZER_CLASS_ALIAS],
+            self.add_features_to_message(
+                sequence=sequence_features[index],
+                sentence=sentence_features[index],
+                message=example,
+                attribute=attribute,
             )
-            example.add_features(_sequence_features)
-
-            _sentence_features = Features(
-                sentence_features[index],
-                FEATURE_TYPE_SENTENCE,
-                attribute,
-                self.component_config[FEATURIZER_CLASS_ALIAS],
-            )
-            example.add_features(_sentence_features)
-
-    @classmethod
-    def cache_key(
-        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
-    ) -> Optional[Text]:
-        """Cache the component for future use.
-
-        Args:
-            component_meta: configuration for the component.
-            model_metadata: configuration for the whole pipeline.
-
-        Returns: key of the cache for future retrievals.
-        """
-        _config = common.update_existing_keys(cls.defaults, component_meta)
-        return f"{cls.name}-{rasa.shared.utils.io.deep_container_fingerprint(_config)}"
-
-    def provide_context(self) -> Dict[Text, Any]:
-        """Store the model in pipeline context for future use."""
-        return {"tf_hub_module": self.module}
 
     def _tokenize(self, sentence: Text) -> Any:
 

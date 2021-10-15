@@ -157,10 +157,10 @@ as well.
 ### Or Statements
 
 Another way to write shorter stories, or to handle multiple intents
-the same way, is to use an `or` statement. For example, if you ask
-the user to confirm something, and you want to treat the `affirm`
-and `thankyou` intents in the same way. The story below will be
-converted into two stories at training time:
+or slot events the same way, is to use an `or` statement.
+For example, if you ask the user to confirm something, and you want
+to treat the `affirm` and `thankyou` intents in the same way.
+The story below will be converted into two stories at training time:
 
 ```yaml-rasa
 stories:
@@ -172,6 +172,25 @@ stories:
     - intent: affirm
     - intent: thankyou
   - action: action_handle_affirmation
+```
+
+You can also use `or` statements with slot events.
+The following means the story requires that the current value for
+the `name` slot is set and is either `joe` or `bob`:
+
+```yaml-rasa
+stories:
+- story:
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: tell_name
+  - or:
+    - slot_was_set:
+        - name: joe
+    - slot_was_set:
+        - name: bob
+  # ... next actions
 ```
 
 `or` statements can be useful, but if you are using a

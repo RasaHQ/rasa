@@ -1,6 +1,8 @@
 from typing import Text, Any
 
+import logging
 import pytest
+from _pytest.logging import LogCaptureFixture
 
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.domain import Domain
@@ -398,3 +400,44 @@ async def test_nlg_conditional_edgecases(slots, channel, expected_response):
     tracker = DialogueStateTracker(sender_id="test", slots=slots)
     r = await t.generate("utter_action", tracker, channel)
     assert r.get("text") == expected_response
+
+
+async def test_nlg_conditional_response_variations_condition_logging(
+    caplog: LogCaptureFixture,
+):
+    domain = Domain.from_yaml(
+        """
+        version: "2.0"
+        responses:
+           utter_action:
+             - text: "example"
+               condition:
+                - type: slot
+                  name: test_A
+                  value: A
+                - type: slot
+                  name: test_B
+                  value: B
+             - text: "default"
+        """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    slot_A = TextSlot(name="test_A", initial_value="A", influence_conversation=False)
+    slot_B = TextSlot(name="test_B", initial_value="B", influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="test", slots=[slot_A, slot_B])
+
+    with caplog.at_level(logging.DEBUG):
+        await t.generate("utter_action", tracker=tracker, output_channel="")
+
+    assert any(
+        "Selecting response variation with conditions:" in message
+        for message in caplog.messages
+    )
+    assert any(
+        "[condition 1] type: slot | name: test_A | value: A" in message
+        for message in caplog.messages
+    )
+    assert any(
+        "[condition 2] type: slot | name: test_B | value: B" in message
+        for message in caplog.messages
+    )

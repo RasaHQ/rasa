@@ -1,10 +1,10 @@
 [build-system]
-requires = [ "poetry-core>=1.0.0",]
+requires = [ "poetry-core>=1.0.4",]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py36", "py37", "py38",]
+target-version = [ "py37", "py38",]
 exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
@@ -63,7 +63,7 @@ name = "Miscellaneous internal changes"
 showcontent = false
 
 [tool.poetry.dependencies]
-python = ">=3.6,<3.9"
+python = ">=3.7,<3.9"
 boto3 = "^1.12"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.4"
@@ -75,7 +75,7 @@ scipy = "^1.4.1"
 absl-py = ">=0.9,<0.14"
 apscheduler = ">=3.6,<3.8"
 tqdm = "^4.31"
-networkx = ">=2.4,<2.6"
+networkx = ">=2.4,<2.7"
 fbmessenger = "~6.0.0"
 pykwalify = ">=1.7,<1.9"
 coloredlogs = ">=10,<16"
@@ -99,7 +99,7 @@ sanic-jwt = ">=1.3.2,<1.7.0"
 pyjwt = "~2.1.0"
 cloudpickle = ">=1.2,<1.7"
 aiohttp = ">=3.6,<3.8,!=3.7.4.post0"
-questionary = ">=1.5.1,<1.10.0"
+questionary = ">=1.5.1,<1.11.0"
 prompt-toolkit = "^2.0"
 python-socketio = ">=4.4,<6"
 python-engineio = ">=4,<6,!=5.0.0"
@@ -118,11 +118,14 @@ setuptools = ">=41.0.0"
 kafka-python = ">=1.4,<3.0"
 ujson = ">=1.35,<5.0"
 oauth2client = "4.1.3"
-regex = ">=2020.6,<2021.8"
+regex = ">=2020.6,<2021.9"
 joblib = ">=0.15.1,<1.1.0"
-sentry-sdk = ">=0.17.0,<1.3.0"
+sentry-sdk = ">=0.17.0,<1.4.0"
 aio-pika = "^6.7.1"
 pyTelegramBotAPI = "^3.7.3"
+dask = "2021.7.2"
+typing-extensions = "^3.7.4"
+typing-utils = "^0.1.0"
 tarsafe = "^0.0.3"
 
 [tool.poetry.dev-dependencies]
@@ -134,7 +137,7 @@ pytest = "^6.2.2"
 freezegun = "^1.0.0"
 responses = "^0.13.3"
 aioresponses = "^0.7.2"
-moto = "~=2.0.10"
+moto = "~=2.2.6"
 fakeredis = "^1.5.2"
 mongomock = "^3.18.0"
 black = "^19.10b0"
@@ -146,11 +149,10 @@ coveralls = "^3.0.1"
 towncrier = "^21.3.0"
 toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
-pydoc-markdown = "^3.10.3"
+pydoc-markdown = "^4.1.6"
 pytest-timeout = "^1.4.2"
 mypy = "^0.910"
 bandit = "^1.6.3"
-typing-extensions = "^3.7.4"
 types-pkg-resources = "^0.1.3"
 types-pytz = "^2021.1.0"
 types-python-dateutil = "^0.1.4"
@@ -158,6 +160,7 @@ types-requests = "^2.25.0"
 types-setuptools = "^57.0.0"
 memory-profiler = "^0.58.0"
 psutil = "^5.8.0"
+mypy-extensions = "^0.4.3"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
@@ -178,7 +181,7 @@ version = "^0.4.4"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.spacy]
-version = "^3.0"
+version = "^3.1"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]

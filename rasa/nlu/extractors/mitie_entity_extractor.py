@@ -1,89 +1,140 @@
+from __future__ import annotations
 import logging
-import os
+from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, ENTITIES
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.components import Component
-from rasa.nlu.extractors.extractor import EntityExtractor
-from rasa.nlu.model import Metadata
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_CONFIDENCE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    TEXT,
+    ENTITIES,
+)
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
+from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
+from rasa.nlu.extractors._mitie_entity_extractor import MitieEntityExtractor
+from rasa.shared.exceptions import InvalidConfigException
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import mitie
 
+# TODO: remove when everything has been migrated
+MitieEntityExtractor = MitieEntityExtractor
 
-class MitieEntityExtractor(EntityExtractor):
+
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    is_trainable=True,
+    model_from="MitieNLPGraphComponent",
+)
+class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+    """A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`)."""
+
+    MITIE_RESOURCE_FILE = "mitie_ner.dat"
+
     @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [MitieNLP, Tokenizer]
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [MitieNLPGraphComponent, TokenizerGraphComponent]
+
+    @staticmethod
+    def required_packages() -> List[Text]:
+        """Any extra python dependencies required for this component to run."""
+        return ["mitie"]
+
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """The component's default config (see parent class for full docstring)."""
+        return {
+            "num_threads": 1,
+        }
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
         ner: Optional["mitie.named_entity_extractor"] = None,
     ) -> None:
-        """Construct a new intent classifier using the sklearn framework."""
-        super().__init__(component_config)
-        self.ner = ner
+        """Creates a new instance.
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
-        return ["mitie"]
+        Args:
+            config: The configuration.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
+            resource: Resource locator for this component which can be used to persist
+                and load itself from the `model_storage`.
+            ner: Mitie named entity extractor
+        """
+        self._config = config
+        self._model_storage = model_storage
+        self._resource = resource
+        self.validate_config(self._config)
+        self._ner = ner
 
-    def extract_entities(
-        self,
-        text: Text,
-        tokens: List[Token],
-        feature_extractor: Optional["mitie.total_word_feature_extractor"],
-    ) -> List[Dict[Text, Any]]:
-        ents = []
-        tokens_strs = [token.text for token in tokens]
-        if self.ner:
-            entities = self.ner.extract_entities(tokens_strs, feature_extractor)
-            for e in entities:
-                if len(e[0]):
-                    start = tokens[e[0][0]].start
-                    end = tokens[e[0][-1]].end
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
+        """Checks whether the given configuration is valid.
 
-                    ents.append(
-                        {
-                            "entity": e[1],
-                            "value": text[start:end],
-                            "start": start,
-                            "end": end,
-                            "confidence": None,
-                        }
-                    )
-
-        return ents
-
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
-        import mitie
-
-        model_file = kwargs.get("mitie_file")
-        if not model_file:
-            raise Exception(
-                "Can not run MITIE entity extractor without a "
-                "language model. Make sure this component is "
-                "preceeded by the 'MitieNLP' component."
+        Args:
+          config: a configuration for a Mitie entity extractor component
+        """
+        num_threads = config.get("num_threads")
+        if num_threads is None or num_threads <= 0:
+            raise InvalidConfigException(
+                f"Expected `num_threads` to be some value >= 1 (default: 1)."
+                f"but received {num_threads}"
             )
 
-        trainer = mitie.ner_trainer(model_file)
-        trainer.num_threads = kwargs.get("num_threads", 1)
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> GraphComponent:
+        """Creates a new `MitieEntityExtractorGraphComponent`.
+
+        Args:
+            config: This config overrides the `default_config`.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
+            resource: Resource locator for this component which can be used to persist
+                and load itself from the `model_storage`.
+            execution_context: Information about the current graph run. Unused.
+
+        Returns: An instantiated `MitieEntityExtractorGraphComponent`.
+        """
+        return cls(config, model_storage, resource)
+
+    def train(self, training_data: TrainingData, model: MitieModel) -> Resource:
+        """Trains a MITIE named entity recognizer.
+
+        Args:
+            training_data: the training data
+            model: a MitieModel
+        Returns:
+            resource for loading the trained model
+        """
+        import mitie
+
+        trainer = mitie.ner_trainer(str(model.model_path))
+        trainer.num_threads = self._config["num_threads"]
+
+        # check whether there are any (not pre-trained) entities in the training data
         found_one_entity = False
 
         # filter out pre-trained entity examples
@@ -99,10 +150,21 @@ class MitieEntityExtractor(EntityExtractor):
 
         # Mitie will fail to train if there is not a single entity tagged
         if found_one_entity:
-            self.ner = trainer.train()
+            self._ner = trainer.train()
+        else:
+            rasa.shared.utils.io.raise_warning(
+                f"{self.__class__.__name__} could not be trained because no trainable "
+                f"entities where found in the given training data. Please add some "
+                f"NLU training examples that include entities where the `extractor` "
+                f"is either `None` or '{self.__class__.__name__}'."
+            )
+
+        self.persist()
+        return self._resource
 
     @staticmethod
     def _prepare_mitie_sample(training_example: Message) -> Any:
+        """Prepare a message so that it can be passed to a MITIE trainer."""
         import mitie
 
         text = training_example.get(TEXT)
@@ -111,7 +173,9 @@ class MitieEntityExtractor(EntityExtractor):
         for ent in training_example.get(ENTITIES, []):
             try:
                 # if the token is not aligned an exception will be raised
-                start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
+                start, end = MitieEntityExtractorGraphComponent.find_entity(
+                    ent, text, tokens
+                )
             except ValueError as e:
                 rasa.shared.utils.io.raise_warning(
                     f"Failed to use example '{text}' to train MITIE "
@@ -133,50 +197,102 @@ class MitieEntityExtractor(EntityExtractor):
                 continue
         return sample
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
-        if not mitie_feature_extractor:
-            raise Exception(
-                "Failed to train 'MitieFeaturizer'. "
-                "Missing a proper MITIE feature extractor."
-            )
+    def process(self, messages: List[Message], model: MitieModel,) -> List[Message]:
+        """Extracts entities from messages and appends them to the attribute.
 
-        ents = self.extract_entities(
-            message.get(TEXT), message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
+        If no patterns where found during training, then the given messages will not
+        be modified. In particular, if no `ENTITIES` attribute exists yet, then
+        it will *not* be created.
+
+        If no pattern can be found in the given message, then no entities will be
+        added to any existing list of entities. However, if no `ENTITIES` attribute
+        exists yet, then an `ENTITIES` attribute will be created.
+
+        Returns:
+           the given list of messages that have been modified
+        """
+        if not self._ner:
+            return messages
+
+        for message in messages:
+            entities = self._extract_entities(message, mitie_model=model)
+            extracted = self.add_extractor_name(entities)
+            message.set(
+                ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True
+            )
+        return messages
+
+    def _extract_entities(
+        self, message: Message, mitie_model: MitieModel,
+    ) -> List[Dict[Text, Any]]:
+        """Extract entities of the given type from the given user message.
+
+        Args:
+            message: a user message
+            mitie_model: MitieModel containing a `mitie.total_word_feature_extractor`
+
+        Returns:
+            a list of dictionaries describing the entities
+        """
+        text = message.get(TEXT)
+        tokens = message.get(TOKENS_NAMES[TEXT])
+
+        entities = []
+        token_texts = [token.text for token in tokens]
+        mitie_entities = self._ner.extract_entities(
+            token_texts, mitie_model.word_feature_extractor,
         )
-        extracted = self.add_extractor_name(ents)
-        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
+        for e in mitie_entities:
+            if len(e[0]):
+                start = tokens[e[0][0]].start
+                end = tokens[e[0][-1]].end
+
+                entities.append(
+                    {
+                        ENTITY_ATTRIBUTE_TYPE: e[1],
+                        ENTITY_ATTRIBUTE_VALUE: text[start:end],
+                        ENTITY_ATTRIBUTE_START: start,
+                        ENTITY_ATTRIBUTE_END: end,
+                        ENTITY_ATTRIBUTE_CONFIDENCE: None,
+                    }
+                )
+        return entities
 
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Text,
-        model_metadata: Metadata = None,
-        cached_component: Optional["MitieEntityExtractor"] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "MitieEntityExtractor":
+    ) -> MitieEntityExtractorGraphComponent:
         """Loads trained component (see parent class for full docstring)."""
         import mitie
 
-        file_name = meta.get("file")
+        try:
+            with model_storage.read_from(resource) as model_path:
+                ner_file = model_path / cls.MITIE_RESOURCE_FILE
+                if not ner_file.exists():
+                    raise FileNotFoundError(
+                        f"Expected a MITIE extractor file at {ner_file}."
+                    )
+                ner = mitie.named_entity_extractor(str(ner_file))
+                return cls(config, model_storage, resource, ner=ner)
 
-        if not file_name:
-            return cls(meta)
+        except (FileNotFoundError, ValueError) as e:
+            logger.debug(
+                f"Failed to load {cls.__name__} from model storage. "
+                f"This can happen if the model could not be trained because regexes "
+                f"could not be extracted from the given training data - and hence "
+                f"could not be persisted. Error: {e}."
+            )
+            return cls(config, model_storage, resource)
 
-        classifier_file = os.path.join(model_dir, file_name)
-        if os.path.exists(classifier_file):
-            extractor = mitie.named_entity_extractor(classifier_file)
-            return cls(meta, extractor)
-        else:
-            return cls(meta)
-
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-
-        if self.ner:
-            file_name = file_name + ".dat"
-            entity_extractor_file = os.path.join(model_dir, file_name)
-            self.ner.save_to_disk(entity_extractor_file, pure_model=True)
-            return {"file": file_name}
-        else:
-            return {"file": None}
+    def persist(self) -> None:
+        """Persist this model."""
+        if not self._ner:
+            return
+        with self._model_storage.write_to(self._resource) as model_path:
+            ner_file = model_path / self.MITIE_RESOURCE_FILE
+            self._ner.save_to_disk(str(ner_file), pure_model=True)

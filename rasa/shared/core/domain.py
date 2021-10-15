@@ -26,7 +26,6 @@ from rasa.shared.constants import (
     DOMAIN_SCHEMA_FILE,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
-    DOCS_URL_MIGRATION_GUIDE,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
@@ -81,7 +80,8 @@ PREV_PREFIX = "prev_"
 # State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # representing the origin of a SubState;
 # the values are SubStates, that contain the information needed for featurization
-SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
+SubStateValue = Union[Text, Tuple[Union[float, Text]]]
+SubState = Dict[Text, SubStateValue]
 State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
@@ -670,15 +670,12 @@ class Domain:
 
     @staticmethod
     def _initialize_forms(
-        forms: Union[Dict[Text, Any], List[Text]]
+        forms: Dict[Text, Any]
     ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
         """Retrieves the initial values for the Domain's form fields.
 
         Args:
-            forms: Form names (if forms are a list) or a form dictionary. Forms
-                provided in dictionary format have the form names as keys, and either
-                empty dictionaries as values, or objects containing
-                `SlotMapping`s.
+            forms: Parsed content of the `forms` section in the domain.
 
         Returns:
             The form names, a mapping of form names and slot mappings, and custom
@@ -688,35 +685,10 @@ class Domain:
             for it. This can e.g. be used to run the deprecated Rasa Open Source 1
             `FormAction` which is implemented in the Rasa SDK.
         """
-        if isinstance(forms, dict):
-            for form_name, form_data in forms.items():
-                if form_data is not None and REQUIRED_SLOTS_KEY not in form_data:
-                    forms[form_name] = {REQUIRED_SLOTS_KEY: form_data}
-            # dict with slot mappings
-            return list(forms.keys()), forms, []
-
-        if isinstance(forms, list) and (not forms or isinstance(forms[0], str)):
-            # list of form names (Rasa Open Source 1 format)
-            rasa.shared.utils.io.raise_warning(
-                "The `forms` section in the domain used the old Rasa Open Source 1 "
-                "list format to define forms. Rasa Open Source will be configured to "
-                "use the deprecated `FormAction` within the Rasa SDK. If you want to "
-                "use the new Rasa Open Source 2 `FormAction` adapt your `forms` "
-                "section as described in the documentation. Support for the "
-                "deprecated `FormAction` in the Rasa SDK will be removed in Rasa Open "
-                "Source 3.0.",
-                docs=rasa.shared.constants.DOCS_URL_FORMS,
-                category=FutureWarning,
-            )
-            return forms, {form_name: {} for form_name in forms}, forms
-
-        rasa.shared.utils.io.raise_warning(
-            f"The `forms` section in the domain needs to contain a dictionary. "
-            f"Instead found an object of type '{type(forms)}'.",
-            docs=DOCS_URL_FORMS,
-        )
-
-        return [], {}, []
+        for form_name, form_data in forms.items():
+            if form_data is not None and REQUIRED_SLOTS_KEY not in form_data:
+                forms[form_name] = {REQUIRED_SLOTS_KEY: form_data}
+        return list(forms.keys()), forms, []
 
     def __hash__(self) -> int:
         """Returns a unique hash for the domain."""
@@ -743,21 +715,6 @@ class Domain:
         return self.user_actions + self.form_names
 
     @rasa.shared.utils.common.lazy_property
-    def action_names(self) -> List[Text]:
-        """Returns action names or texts."""
-        # Raise `DeprecationWarning` instead of `FutureWarning` as we only want to
-        # notify developers about the deprecation (e.g. developers who are using the
-        # Python API or writing custom policies). End users can't change anything
-        # about this warning except making their developers change any custom code
-        # which calls this.
-        rasa.shared.utils.io.raise_warning(
-            f"{Domain.__name__}.{Domain.action_names.__name__} "
-            f"is deprecated and will be removed version 3.0.0.",
-            category=DeprecationWarning,
-        )
-        return self.action_names_or_texts
-
-    @rasa.shared.utils.common.lazy_property
     def num_actions(self) -> int:
         """Returns the number of available actions."""
         # noinspection PyTypeChecker
@@ -767,17 +724,6 @@ class Domain:
     def num_states(self) -> int:
         """Number of used input states for the action prediction."""
         return len(self.input_states)
-
-    @rasa.shared.utils.common.lazy_property
-    def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Return only the responses which are defined for retrieval intents."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by "
-            "'response', call `retrieval_intent_responses` instead of "
-            "`retrieval_intent_templates`.",
-            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-        )
-        return self.retrieval_intent_responses
 
     @rasa.shared.utils.common.lazy_property
     def retrieval_intent_responses(self) -> Dict[Text, List[Dict[Text, Any]]]:
@@ -790,35 +736,6 @@ class Domain:
                 self.responses.items(),
             )
         )
-
-    @rasa.shared.utils.common.lazy_property
-    def templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Temporary property before templates become completely deprecated."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. "
-            "Instead of using the `templates` property, "
-            "please use the `responses` property instead.",
-            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-        )
-        return self.responses
-
-    @staticmethod
-    def is_retrieval_intent_template(
-        response: Tuple[Text, List[Dict[Text, Any]]]
-    ) -> bool:
-        """Check if the response is for a retrieval intent.
-
-        These templates have a `/` symbol in their name. Use that to filter them from
-        the rest.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated "
-            "and replaced by 'response', "
-            "call `is_retrieval_intent_response` "
-            "instead of `is_retrieval_intent_template`.",
-            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-        )
-        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
 
     @staticmethod
     def is_retrieval_intent_response(
@@ -847,16 +764,6 @@ class Domain:
         for slot in [s for s in self.slots if isinstance(s, CategoricalSlot)]:
             slot.add_default_value()
 
-    def add_categorical_slot_default_value(self) -> None:
-        """See `_add_categorical_slot_default_value` for docstring."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.add_categorical_slot_default_value.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. This method is now "
-            f"automatically called when the Domain is created which makes a manual "
-            f"call superfluous."
-        )
-        self._add_categorical_slot_default_value()
-
     def _add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.
 
@@ -872,16 +779,6 @@ class Domain:
                     influence_conversation=False,
                 )
             )
-
-    def add_requested_slot(self) -> None:
-        """See `_add_categorical_slot_default_value` for docstring."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.add_requested_slot.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. This method is now "
-            f"automatically called when the Domain is created which makes a manual "
-            f"call superfluous."
-        )
-        self._add_requested_slot()
 
     def _add_knowledge_base_slots(self) -> None:
         """Add slots for the knowledge base action to slots.
@@ -910,16 +807,6 @@ class Domain:
             for slot in knowledge_base_slots:
                 if slot not in slot_names:
                     self.slots.append(TextSlot(slot, influence_conversation=False))
-
-    def add_knowledge_base_slots(self) -> None:
-        """See `_add_categorical_slot_default_value` for docstring."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.add_knowledge_base_slots.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. This method is now "
-            f"automatically called when the Domain is created which makes a manual "
-            f"call superfluous."
-        )
-        self._add_knowledge_base_slots()
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
@@ -951,32 +838,6 @@ class Domain:
             f"action for this domain. "
             f"Available actions are: \n{action_names}"
         )
-
-    def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
-        """Returns a random response for an action name.
-
-        Args:
-            utter_action: The name of the utter action.
-
-        Returns:
-            A response for an utter action.
-        """
-        import numpy as np
-
-        # Raise `DeprecationWarning` instead of `FutureWarning` as we only want to
-        # notify developers about the deprecation (e.g. developers who are using the
-        # Python API or writing custom policies). End users can't change anything
-        # about this warning except making their developers change any custom code
-        # which calls this.
-        rasa.shared.utils.io.raise_warning(
-            f"'{Domain.__name__}.{Domain.random_template_for.__class__}' "
-            f"is deprecated and will be removed version 3.0.0.",
-            category=DeprecationWarning,
-        )
-        if utter_action in self.responses:
-            return np.random.choice(self.responses[utter_action])
-        else:
-            return None
 
     # noinspection PyTypeChecker
     @rasa.shared.utils.common.lazy_property
@@ -1092,7 +953,7 @@ class Domain:
 
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
-    ) -> Dict[Text, Union[Text, Tuple[Text]]]:
+    ) -> Dict[Text, Union[None, Text, List[Optional[Text]], Tuple[str, ...]]]:
         """Turns latest UserUttered event into a substate.
 
         The substate will contain intent, text, and entities (if any are present).
@@ -1108,7 +969,9 @@ class Domain:
         if not latest_message or latest_message.is_empty():
             return {}
 
-        sub_state = latest_message.as_sub_state()
+        sub_state: Dict[
+            Text, Union[None, Text, List[Optional[Text]], Tuple[str, ...]]
+        ] = latest_message.as_sub_state()
 
         # Filter entities based on intent config. We need to convert the set into a
         # tuple because sub_state will be later transformed into a frozenset (so it can
@@ -1143,7 +1006,7 @@ class Domain:
         Returns:
             a mapping of slot names to their featurization
         """
-        slots = {}
+        slots: Dict[Text, Union[Text, Tuple[float]]] = {}
         for slot_name, slot in tracker.slots.items():
             # If the slot doesn't influence conversations, slot.as_feature() will return
             # a result that evaluates to False, meaning that the slot shouldn't be
@@ -1165,8 +1028,9 @@ class Domain:
     @staticmethod
     def _get_prev_action_sub_state(
         tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Text]:
+    ) -> Optional[Dict[Text, Text]]:
         """Turn the previous taken action into a state name.
+
         Args:
             tracker: dialog state tracker containing the dialog so far
         Returns:
@@ -1447,7 +1311,9 @@ class Domain:
 
         return final_responses
 
-    def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
+    def _transform_intents_for_file(
+        self,
+    ) -> List[Dict[Text, Dict[Text, Union[bool, List[Text]]]]]:
         """Transform intent properties for displaying or writing into a domain file.
 
         Internally, there is a property `used_entities` that lists all entities to be
@@ -1493,7 +1359,7 @@ class Domain:
         Returns:
             The entity properties as they are used in domain files.
         """
-        entities_for_file = []
+        entities_for_file: List[Union[Text, Dict[Text, Any]]] = []
 
         for entity in self.entities:
             if entity in self.roles and entity in self.groups:
@@ -1804,17 +1670,6 @@ class Domain:
                 )
             )
 
-    def check_missing_templates(self) -> None:
-        """Warn user of utterance names which have no specified response."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated "
-            "and replaced by 'response'. "
-            "Please use `check_missing_responses` "
-            "instead of `check_missing_templates`.",
-            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-        )
-        self.check_missing_responses()
-
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""
         utterances = [
@@ -1892,6 +1747,15 @@ class Domain:
 
         return {}
 
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return (
+            f"{self.__class__.__name__}: {len(self.action_names_or_texts)} actions, "
+            f"{len(self.intent_properties)} intents, {len(self.responses)} responses, "
+            f"{len(self.slots)} slots, "
+            f"{len(self.entities)} entities, {len(self.form_names)} forms"
+        )
+
 
 class SlotMapping(Enum):
     """Defines the available slot mappings."""
@@ -1952,16 +1816,6 @@ class SlotMapping(Enum):
 
 
 def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
-    if isinstance(forms, list):
-        if not all(isinstance(form_name, str) for form_name in forms):
-            raise InvalidDomain(
-                f"If you use the deprecated list syntax for forms, "
-                f"all form names have to be strings. Please see "
-                f"{DOCS_URL_FORMS} for more information."
-            )
-
-        return
-
     if not isinstance(forms, dict):
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
@@ -1985,17 +1839,7 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
                 f"for more information."
             )
 
-        if REQUIRED_SLOTS_KEY in form_data:
-            slots = forms[form_name].get(REQUIRED_SLOTS_KEY)
-        else:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"The definition of slot mappings in your form "
-                f"should always be preceded by the keyword `{REQUIRED_SLOTS_KEY}`. "
-                f"The lack of this keyword will be deprecated in "
-                f"Rasa Open Source 3.0.0. Please see {DOCS_URL_FORMS} "
-                f"for more information.",
-            )
-            slots = form_data
+        slots = forms[form_name].get(REQUIRED_SLOTS_KEY, {})
 
         if not isinstance(slots, Dict):
             raise InvalidDomain(

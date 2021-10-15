@@ -60,14 +60,13 @@ import asyncio
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.tracker_store import InMemoryTrackerStore
 
-event_loop = asyncio.get_event_loop()
 pika_broker = PikaEventBroker('localhost',
                               'username',
                               'password',
                               queues=['rasa_events'],
                               event_loop=event_loop
                               )
-event_loop.run_until_complete(pika_broker.connect())
+asyncio.run(pika_broker.connect())
 
 tracker_store = InMemoryTrackerStore(domain=domain, event_broker=pika_broker)
 ```
@@ -84,26 +83,25 @@ import json
 import pika
 
 
-def _callback(self, ch, method, properties, body):
+def _callback(ch, method, properties, body):
         # Do something useful with your incoming message body here, e.g.
         # saving it to a database
-        print('Received event {}'.format(json.loads(body)))
+        print("Received event {}".format(json.loads(body)))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # RabbitMQ credentials with username and password
-    credentials = pika.PlainCredentials('username', 'password')
+    credentials = pika.PlainCredentials("username", "password")
 
     # Pika connection to the RabbitMQ host - typically 'rabbit' in a
     # docker environment, or 'localhost' in a local environment
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters('rabbit', credentials=credentials))
+        pika.ConnectionParameters("rabbit", credentials=credentials)
+    )
 
     # start consumption of channel
     channel = connection.channel()
-    channel.basic_consume(_callback,
-                          queue='rasa_events',
-                          no_ack=True)
+    channel.basic_consume(queue="rasa_events", on_message_callback=_callback, auto_ack=True)
     channel.start_consuming()
 ```
 

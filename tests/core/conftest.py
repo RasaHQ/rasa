@@ -17,15 +17,14 @@ from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
-from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
-from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
-from rasa.core.lock_store import InMemoryLockStore
+from rasa.core.tracker_store import MongoTrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
-from tests.core.utilities import tracker_from_dialogue_file
+from tests.dialogues import TEST_MOODBOT_DIALOGUE
+from tests.core.utilities import tracker_from_dialogue
 
 
 class CustomSlot(Slot):
@@ -33,27 +32,14 @@ class CustomSlot(Slot):
         return [0.5]
 
 
-# noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
-class ExamplePolicy(Policy):
-    def __init__(self, *args, **kwargs):
-        super(ExamplePolicy, self).__init__(*args, **kwargs)
-
-
 class MockedMongoTrackerStore(MongoTrackerStore):
     """In-memory mocked version of `MongoTrackerStore`."""
 
-    def __init__(
-        self,
-        _domain: Domain,
-        retrieve_events_from_previous_conversation_sessions: bool = False,
-    ) -> None:
+    def __init__(self, _domain: Domain,) -> None:
         from mongomock import MongoClient
 
         self.db = MongoClient().rasa
         self.collection = "conversations"
-        self.retrieve_events_from_previous_conversation_sessions = (
-            retrieve_events_from_previous_conversation_sessions
-        )
 
         # skipcq: PYL-E1003
         # Skip `MongoTrackerStore` constructor to avoid that actual Mongo connection
@@ -87,16 +73,7 @@ def default_channel() -> OutputChannel:
 
 @pytest.fixture
 async def default_processor(default_agent: Agent) -> MessageProcessor:
-    tracker_store = InMemoryTrackerStore(default_agent.domain)
-    lock_store = InMemoryLockStore()
-    return MessageProcessor(
-        default_agent.interpreter,
-        default_agent.policy_ensemble,
-        default_agent.domain,
-        tracker_store,
-        lock_store,
-        TemplatedNaturalLanguageGenerator(default_agent.domain.responses),
-    )
+    return default_agent.processor
 
 
 @pytest.fixture
@@ -166,7 +143,7 @@ async def trained_formbot(trained_async: Callable) -> Text:
 async def form_bot_agent(trained_formbot: Text) -> Agent:
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
 
-    return Agent.load_local_model(trained_formbot, action_endpoint=endpoint)
+    return Agent.load(trained_formbot, action_endpoint=endpoint)
 
 
 @pytest.fixture
@@ -179,7 +156,8 @@ def moodbot_features(
     Returns:
       A dict containing dicts for mapping action and intent names to features.
     """
-    origin = getattr(request, "param", "SingleStateFeaturizer")
+    # TODO: remove "2" once migration of policies is done
+    origin = getattr(request, "param", "SingleStateFeaturizer") + "2"
     action_shape = (1, len(moodbot_domain.action_names_or_texts))
     actions = {}
     for index, action in enumerate(moodbot_domain.action_names_or_texts):
@@ -203,6 +181,4 @@ def moodbot_features(
 
 @pytest.fixture
 def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
-    return tracker_from_dialogue_file(
-        "data/test_dialogues/moodbot.json", moodbot_domain
-    )
+    return tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)

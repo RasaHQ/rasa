@@ -1,12 +1,17 @@
+from __future__ import annotations
 import functools
 import logging
-from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any, List, Dict, Text, Optional, Set, Tuple
 
 from tqdm import tqdm
 import numpy as np
 import json
 from collections import defaultdict
 
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_RULES
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
@@ -16,8 +21,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.memoization import MemoizationPolicyGraphComponent
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
@@ -25,7 +29,12 @@ from rasa.shared.core.trackers import (
     is_prev_action_listen_in_state,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DEFAULT_CORE_FALLBACK_THRESHOLD, RULE_POLICY_PRIORITY
+from rasa.core.constants import (
+    DEFAULT_CORE_FALLBACK_THRESHOLD,
+    RULE_POLICY_PRIORITY,
+    POLICY_PRIORITY,
+    POLICY_MAX_HISTORY,
+)
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     USER_INTENT_BACK,
@@ -49,12 +58,13 @@ from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
 import rasa.core.training.training
-
-
-if TYPE_CHECKING:
-    from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.core.policies._rule_policy import RulePolicy
 
 logger = logging.getLogger(__name__)
+
+# TODO: This is a workaround around until we have all components migrated to
+# `GraphComponent`.
+RulePolicy = RulePolicy
 
 # These are Rasa Open Source default actions and overrule everything at any time.
 DEFAULT_ACTION_MAPPINGS = {
@@ -89,8 +99,11 @@ class InvalidRule(RasaException):
         )
 
 
-class RulePolicy(MemoizationPolicy):
-    """Policy which handles all the rules"""
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
+class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
+    """Policy which handles all the rules."""
 
     # rules use explicit json strings
     ENABLE_FEATURE_STRING_COMPRESSION = False
@@ -107,74 +120,74 @@ class RulePolicy(MemoizationPolicy):
         """
         return SupportedData.ML_AND_RULE_DATA
 
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the default config (see parent class for full docstring)."""
+        return {
+            # Priority of the policy which is used if multiple policies predict
+            # actions with the same confidence.
+            POLICY_PRIORITY: RULE_POLICY_PRIORITY,
+            # Confidence of the prediction if no rule matched and de-facto
+            # threshold for a core fallback.
+            "core_fallback_threshold": DEFAULT_CORE_FALLBACK_THRESHOLD,
+            # Name of the action which should be predicted if no rule matched.
+            "core_fallback_action_name": ACTION_DEFAULT_FALLBACK_NAME,
+            # If `True` `core_fallback_action_name` is predicted in case no rule
+            # matched.
+            "enable_fallback_prediction": True,
+            # If `True` rules are restricted to contain a maximum of 1
+            # user message. This is used to avoid that users build a state machine
+            # using the rules.
+            "restrict_rules": True,
+            # Whether to check for contradictions between rules and stories
+            "check_for_contradictions": True,
+            # the policy will use the confidence of NLU on the latest
+            # user message to set the confidence of the action
+            "use_nlu_confidence_as_score": False,
+        }
+
     def __init__(
         self,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = RULE_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
-        core_fallback_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
-        core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
-        enable_fallback_prediction: bool = True,
-        restrict_rules: bool = True,
-        check_for_contradictions: bool = True,
-        **kwargs: Any,
     ) -> None:
-        """Create a `RulePolicy` object.
+        """Initializes the policy."""
+        # max history is set to `None` in order to capture any lengths of rule stories
+        config[POLICY_MAX_HISTORY] = None
 
-        Args:
-            featurizer: `Featurizer` which is used to convert conversation states to
-                features.
-            priority: Priority of the policy which is used if multiple policies predict
-                actions with the same confidence.
-            lookup: Lookup table which is used to pick matching rules for a conversation
-                state.
-            core_fallback_threshold: Confidence of the prediction if no rule matched
-                and de-facto threshold for a core fallback.
-            core_fallback_action_name: Name of the action which should be predicted
-                if no rule matched.
-            enable_fallback_prediction: If `True` `core_fallback_action_name` is
-                predicted in case no rule matched.
-            restrict_rules: If `True` rules are restricted to contain a maximum of 1
-                user message. This is used to avoid that users build a state machine
-                using the rules.
-            check_for_contradictions: Check for contradictions.
-        """
-        self._core_fallback_threshold = core_fallback_threshold
-        self._fallback_action_name = core_fallback_action_name
-        self._enable_fallback_prediction = enable_fallback_prediction
-        self._restrict_rules = restrict_rules
-        self._check_for_contradictions = check_for_contradictions
+        super().__init__(
+            config, model_storage, resource, execution_context, featurizer, lookup,
+        )
+
+        self._fallback_action_name = config["core_fallback_action_name"]
+        self._enable_fallback_prediction = config["enable_fallback_prediction"]
+        self._check_for_contradictions = config["check_for_contradictions"]
 
         self._rules_sources = defaultdict(list)
 
-        # max history is set to `None` in order to capture any lengths of rule stories
-        super().__init__(
-            featurizer=featurizer,
-            priority=priority,
-            max_history=None,
-            lookup=lookup,
-            **kwargs,
-        )
-
     @classmethod
-    def validate_against_domain(
-        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    def raise_if_incompatible_with_domain(
+        cls, config: Dict[Text, Any], domain: Domain
     ) -> None:
-        if ensemble is None:
-            return
+        """Checks whether the domains action names match the configured fallback.
 
-        rule_policy = next(
-            (p for p in ensemble.policies if isinstance(p, RulePolicy)), None
-        )
-        if not rule_policy or not rule_policy._enable_fallback_prediction:
-            return
-
+        Args:
+            config: configuration of a `RulePolicy`
+            domain: a domain
+        Raises:
+            `InvalidDomain` if this policy is incompatible with the domain
+        """
+        fallback_action_name = config.get("core_fallback_action_name", None)
         if (
-            domain is None
-            or rule_policy._fallback_action_name not in domain.action_names_or_texts
+            fallback_action_name
+            and fallback_action_name not in domain.action_names_or_texts
         ):
             raise InvalidDomain(
-                f"The fallback action '{rule_policy._fallback_action_name}' which was "
+                f"The fallback action '{fallback_action_name}' which was "
                 f"configured for the {RulePolicy.__name__} must be present in the "
                 f"domain."
             )
@@ -193,7 +206,7 @@ class RulePolicy(MemoizationPolicy):
             new_states.insert(0, state)
 
         if not new_states:
-            return
+            return None
 
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
@@ -421,7 +434,7 @@ class RulePolicy(MemoizationPolicy):
         for states in trackers_as_states:
             for state in states:
                 slots.update(set(state.get(SLOTS, {}).keys()))
-                active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+                active_loop: Optional[Text] = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
                 if active_loop:
                     loops.add(active_loop)
         return slots, loops
@@ -592,7 +605,7 @@ class RulePolicy(MemoizationPolicy):
         trackers: List[TrackerWithCachedStates],
         domain: Domain,
         collect_sources: bool,
-    ) -> Tuple[List[Text], Set[Text]]:
+    ) -> Tuple[List[Text], Set[Optional[Text]]]:
         if collect_sources:
             self._rules_sources = defaultdict(list)
 
@@ -665,7 +678,7 @@ class RulePolicy(MemoizationPolicy):
 
     def _find_contradicting_and_used_in_stories_rules(
         self, trackers: List[TrackerWithCachedStates], domain: Domain
-    ) -> Tuple[List[Text], Set[Text]]:
+    ) -> Tuple[List[Text], Set[Optional[Text]]]:
         return self._run_prediction_on_trackers(trackers, domain, collect_sources=False)
 
     def _analyze_rules(
@@ -683,7 +696,6 @@ class RulePolicy(MemoizationPolicy):
             rule_trackers: The list of the rule trackers.
             all_trackers: The list of all trackers.
             domain: The domain.
-            interpreter: Interpreter which can be used by the polices for featurization.
 
         Returns:
              Rules that are not present in the stories.
@@ -767,23 +779,26 @@ class RulePolicy(MemoizationPolicy):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> None:
+    ) -> Resource:
         """Trains the policy on given training trackers.
 
         Args:
             training_trackers: The list of the trackers.
             domain: The domain.
-            interpreter: Interpreter which can be used by the polices for featurization.
+
+        Returns:
+            The resource which can be used to load the trained policy.
         """
+        self.raise_if_incompatible_with_domain(self.config, domain)
+
         # only consider original trackers (no augmented ones)
         training_trackers = [
             t for t in training_trackers if not getattr(t, "is_augmented", False)
         ]
         # trackers from rule-based training data
         rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
-        if self._restrict_rules:
+        if self.config["restrict_rules"]:
             self._check_rule_restriction(rule_trackers)
         if self._check_for_contradictions:
             self._check_for_incomplete_rules(rule_trackers, domain)
@@ -802,6 +817,10 @@ class RulePolicy(MemoizationPolicy):
             )
 
         logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
+
+        self.persist()
+
+        return self._resource
 
     @staticmethod
     def _does_rule_match_state(rule_state: State, conversation_state: State) -> bool:
@@ -842,7 +861,7 @@ class RulePolicy(MemoizationPolicy):
     def _is_rule_applicable(
         self, rule_key: Text, turn_index: int, conversation_state: State
     ) -> bool:
-        """Check if rule is satisfied with current state at turn.
+        """Checks if rule is satisfied with current state at turn.
 
         Args:
             rule_key: the textual representation of learned rule
@@ -907,20 +926,21 @@ class RulePolicy(MemoizationPolicy):
         ):
             return None, None
 
-        default_action_name = DEFAULT_ACTION_MAPPINGS.get(
-            tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        intent_name = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        if intent_name is None:
+            return None, None
+
+        default_action_name = DEFAULT_ACTION_MAPPINGS.get(intent_name)
+        if default_action_name is None:
+            return None, None
+
+        logger.debug(f"Predicted default action '{default_action_name}'.")
+        return (
+            default_action_name,
+            # create prediction source that corresponds to one of
+            # default prediction sources in `_default_sources()`
+            DEFAULT_RULES + intent_name,
         )
-
-        if default_action_name:
-            logger.debug(f"Predicted default action '{default_action_name}'.")
-            return (
-                default_action_name,
-                # create prediction source that corresponds to one of
-                # default prediction sources in `_default_sources()`
-                DEFAULT_RULES + tracker.latest_message.intent.get(INTENT_NAME_KEY),
-            )
-
-        return None, None
 
     @staticmethod
     def _find_action_from_loop_happy_path(
@@ -928,16 +948,16 @@ class RulePolicy(MemoizationPolicy):
     ) -> Tuple[Optional[Text], Optional[Text]]:
 
         active_loop_name = tracker.active_loop_name
+        if active_loop_name is None:
+            return None, None
+
         active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
         should_predict_loop = (
-            active_loop_name
-            and not active_loop_rejected
+            not active_loop_rejected
             and tracker.latest_action.get(ACTION_NAME) != active_loop_name
         )
         should_predict_listen = (
-            active_loop_name
-            and not active_loop_rejected
-            and tracker.latest_action_name == active_loop_name
+            not active_loop_rejected and tracker.latest_action_name == active_loop_name
         )
 
         if should_predict_loop:
@@ -987,7 +1007,12 @@ class RulePolicy(MemoizationPolicy):
             # the text or the intent
             return None, None, False
 
-        states = self._prediction_states(tracker, domain, use_text_for_last_user_input)
+        states = self._prediction_states(
+            tracker,
+            domain,
+            use_text_for_last_user_input,
+            rule_only_data=self._get_rule_only_data(),
+        )
 
         current_states = self.format_tracker_states(states)
         logger.debug(f"Current tracker state:{current_states}")
@@ -1071,16 +1096,16 @@ class RulePolicy(MemoizationPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
-    ) -> "PolicyPrediction":
+    ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
         prediction, _ = self._predict(tracker, domain)
         return prediction
 
     def _predict(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[PolicyPrediction, Text]:
+    ) -> Tuple[PolicyPrediction, Optional[Text]]:
         (
             rules_action_name_from_text,
             prediction_source_from_text,
@@ -1200,25 +1225,30 @@ class RulePolicy(MemoizationPolicy):
         result = super()._default_predictions(domain)
 
         if self._enable_fallback_prediction:
-            result[
-                domain.index_for_action(self._fallback_action_name)
-            ] = self._core_fallback_threshold
+            result[domain.index_for_action(self._fallback_action_name)] = self.config[
+                "core_fallback_threshold"
+            ]
         return result
+
+    def persist(self) -> None:
+        """Persists trained `RulePolicy`."""
+        super().persist()
+        with self._model_storage.write_to(self._resource) as directory:
+            rule_only_data = self._get_rule_only_data()
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                directory / "rule_only_data.json", rule_only_data
+            )
 
     def _metadata(self) -> Dict[Text, Any]:
         return {
-            "priority": self.priority,
             "lookup": self.lookup,
-            "core_fallback_threshold": self._core_fallback_threshold,
-            "core_fallback_action_name": self._fallback_action_name,
-            "enable_fallback_prediction": self._enable_fallback_prediction,
         }
 
     @classmethod
     def _metadata_filename(cls) -> Text:
         return "rule_policy.json"
 
-    def get_rule_only_data(self) -> Dict[Text, Any]:
+    def _get_rule_only_data(self) -> Dict[Text, Any]:
         """Gets the slots and loops that are used only in rule data.
 
         Returns:

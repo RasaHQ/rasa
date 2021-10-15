@@ -21,6 +21,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
     ACTION_NAME,
+    TEXT_TOKENS,
 )
 from rasa.shared.constants import DIAGNOSTIC_DATA
 
@@ -29,6 +30,16 @@ if typing.TYPE_CHECKING:
 
 
 class Message:
+    """Container for data that can be used to describe a conversation turn.
+
+    The turn is described by a set of attributes such as e.g. `TEXT`  and  `INTENT`
+    when describing a user utterance or e.g. `ACTION_NAME` for describing a bot action.
+    The container includes raw information (`self.data`) as well as features
+    (`self.features`) for each such attribute.
+    Moreover, the message has a timestamp and can keep track about information
+    on a specific subset of attributes (`self.output_properties`).
+    """
+
     def __init__(
         self,
         data: Optional[Dict[Text, Any]] = None,
@@ -37,6 +48,7 @@ class Message:
         features: Optional[List["Features"]] = None,
         **kwargs: Any,
     ) -> None:
+        """Creates an instance of Message."""
         self.time = time
         self.data = data.copy() if data else {}
         self.features = features if features else []
@@ -95,12 +107,15 @@ class Message:
         return d
 
     def as_dict(self, only_output_properties: bool = False) -> Dict:
+        """Gets dict representation of message."""
         if only_output_properties:
-            d = {
-                key: value
-                for key, value in self.data.items()
-                if key in self.output_properties
-            }
+            d = {}
+            for key, value in self.data.items():
+                if key in self.output_properties:
+                    if key == TEXT_TOKENS:
+                        d[TEXT_TOKENS] = [(t.start, t.end) for t in value]
+                    else:
+                        d[key] = value
         else:
             d = self.data
 
@@ -128,7 +143,9 @@ class Message:
         Returns:
             Fingerprint of the message.
         """
-        return rasa.shared.utils.io.deep_container_fingerprint(self.data)
+        return rasa.shared.utils.io.deep_container_fingerprint(
+            [self.data, self.features]
+        )
 
     @classmethod
     def build(
@@ -179,21 +196,19 @@ class Message:
             else self.get(INTENT)
         )
 
-    def get_combined_intent_response_key(self) -> Text:
-        """Get intent as it appears in training data."""
-        rasa.shared.utils.io.raise_warning(
-            "`get_combined_intent_response_key` is deprecated and "
-            "will be removed in Rasa 3.0.0. "
-            "Please use `get_full_intent` instead.",
-            category=DeprecationWarning,
-        )
-        return self.get_full_intent()
-
     @staticmethod
     def separate_intent_response_key(
         original_intent: Text,
     ) -> Tuple[Text, Optional[Text]]:
+        """Splits intent into main intent name and optional sub-intent name.
 
+        For example, `"FAQ/how_to_contribute"` would be split into
+        `("FAQ", "how_to_contribute")`. The response delimiter can
+        take different values (not just `"/"`) and depends on the
+        constant - `RESPONSE_IDENTIFIER_DELIMITER`.
+        If there is no response delimiter in the intent, the second tuple
+        item is `None`, e.g. `"FAQ"` would be mapped to `("FAQ", None)`.
+        """
         split_title = original_intent.split(RESPONSE_IDENTIFIER_DELIMITER)
         if len(split_title) == 2:
             return split_title[0], split_title[1]
@@ -226,10 +241,14 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(sequence_features, featurizers)
-        sentence_features = self._combine_features(sentence_features, featurizers)
+        combined_sequence_features = self._combine_features(
+            sequence_features, featurizers
+        )
+        combined_sentence_features = self._combine_features(
+            sentence_features, featurizers
+        )
 
-        return sequence_features, sentence_features
+        return combined_sequence_features, combined_sentence_features
 
     def get_sparse_feature_sizes(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
@@ -280,10 +299,14 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(sequence_features, featurizers)
-        sentence_features = self._combine_features(sentence_features, featurizers)
+        combined_sequence_features = self._combine_features(
+            sequence_features, featurizers
+        )
+        combined_sentence_features = self._combine_features(
+            sentence_features, featurizers
+        )
 
-        return sequence_features, sentence_features
+        return combined_sequence_features, combined_sentence_features
 
     def get_all_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None

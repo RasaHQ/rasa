@@ -146,16 +146,7 @@ def test_get_label_set(targets, exclude_label, expected):
     assert set(expected) == set(actual)
 
 
-async def test_interpreter_passed_to_agent(
-    monkeypatch: MonkeyPatch, trained_rasa_model: Text
-):
-    from rasa.core.interpreter import RasaNLUInterpreter
-
-    agent = Agent.load(trained_rasa_model)
-    assert isinstance(agent.interpreter, RasaNLUInterpreter)
-
-
-def test_e2e_warning_if_no_nlu_model(
+async def test_e2e_warning_if_no_nlu_model(
     monkeypatch: MonkeyPatch, trained_core_model: Text, capsys: CaptureFixture
 ):
     from rasa.model_testing import test_core
@@ -166,7 +157,7 @@ def test_e2e_warning_if_no_nlu_model(
         sys.modules["rasa.core.test"], "test", asyncio.coroutine(lambda *_, **__: True)
     )
 
-    test_core(trained_core_model, additional_arguments={"e2e": True})
+    await test_core(trained_core_model, use_conversation_test_files=True)
 
     assert "No NLU model found. Using default" in capsys.readouterr().out
 
@@ -362,7 +353,7 @@ def test_evaluation_store_serialise(entity_predictions, entity_targets):
             i_target += 1
 
 
-async def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):
+def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):
     from rasa.core.test import _create_data_generator
 
     test_file = tmp_path / "test.yml"
@@ -383,7 +374,7 @@ rules:
 
     test_file.write_text(tests)
 
-    generator = await _create_data_generator(str(test_file), default_agent)
+    generator = _create_data_generator(str(test_file), default_agent)
     test_trackers = generator.generate_story_trackers()
     assert len(test_trackers) == 1
     assert test_trackers[0].sender_id == test_name

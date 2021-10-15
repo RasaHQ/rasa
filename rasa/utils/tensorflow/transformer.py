@@ -37,7 +37,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
     ) -> None:
         super().__init__()
@@ -55,8 +55,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.use_key_relative_position = use_key_relative_position
         self.use_value_relative_position = use_value_relative_position
         self.relative_length = max_relative_position
-        if self.relative_length is not None:
-            self.relative_length += 1  # include current time
+        self.relative_length += 1  # include current time
         self.heads_share_relative_embedding = heads_share_relative_embedding
 
         self._depth = units // self.num_heads
@@ -413,7 +412,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
     ) -> None:
         super().__init__()
@@ -520,7 +519,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
         name: Optional[Text] = None,
     ) -> None:

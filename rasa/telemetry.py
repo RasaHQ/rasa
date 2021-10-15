@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from datetime import datetime
 from functools import wraps
 import hashlib
@@ -13,8 +14,6 @@ import textwrap
 import typing
 from typing import Any, Callable, Dict, List, Optional, Text
 import uuid
-
-import async_generator
 import requests
 from terminaltables import SingleTable
 
@@ -26,6 +25,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
@@ -472,7 +472,6 @@ def _default_context_fields() -> Dict[Text, Any]:
     Return:
         A new context containing information about the runtime environment.
     """
-
     global TELEMETRY_CONTEXT
 
     if not TELEMETRY_CONTEXT:
@@ -580,7 +579,7 @@ def filter_errors(
         the event without any sensitive / PII data or `None` if the event constitutes
         an `ImportError` which should be discarded.
     """
-    if "exc_info" in hint:
+    if hint and "exc_info" in hint:
         exc_type, exc_value, tb = hint.get("exc_info")
         if isinstance(exc_value, ImportError):
             return None
@@ -715,10 +714,10 @@ def initialize_error_reporting() -> None:
             scope.set_context("Environment", default_context)
 
 
-@async_generator.asynccontextmanager
-async def track_model_training(
+@contextlib.contextmanager
+def track_model_training(
     training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False
-) -> typing.AsyncGenerator[None, None]:
+) -> typing.Generator[None, None, None]:
     """Track a model training started.
 
     WARNING: since this is a generator, it can't use the ensure telemetry
@@ -734,12 +733,12 @@ async def track_model_training(
     if not initialize_telemetry():
         # telemetry reporting is disabled. we won't do any reporting
         yield  # runs the training
-        return  # closes the async context
+        return
 
-    config = await training_data.get_config()
-    stories = await training_data.get_stories()
-    nlu_data = await training_data.get_nlu_data()
-    domain = await training_data.get_domain()
+    config = training_data.get_config()
+    stories = training_data.get_stories()
+    nlu_data = training_data.get_nlu_data()
+    domain = training_data.get_domain()
     count_conditional_responses = domain.count_conditional_response_variations()
 
     training_id = uuid.uuid4().hex
@@ -874,7 +873,7 @@ def track_server_start(
     number_of_workers: int,
     is_api_enabled: bool,
 ) -> None:
-    """Track when a user starts a rasa server.
+    """Tracks when a user starts a rasa server.
 
     Args:
         input_channels: Used input channels
@@ -888,15 +887,17 @@ def track_server_start(
     def project_fingerprint_from_model(
         _model_directory: Optional[Text],
     ) -> Optional[Text]:
-        """Get project fingerprint from an app's loaded model."""
-        if _model_directory:
-            try:
-                with model.get_model(_model_directory) as unpacked_model:
-                    fingerprint = model.fingerprint_from_path(unpacked_model)
-                    return fingerprint.get(model.FINGERPRINT_PROJECT)
-            except Exception:
-                return None
-        return None
+        """Gets project fingerprint from an app's loaded model."""
+        if not model_directory:
+            return None
+
+        try:
+            model_archive = model.get_local_model(_model_directory)
+            metadata = LocalModelStorage.metadata_from_archive(model_archive)
+
+            return metadata.project_fingerprint
+        except Exception:
+            return None
 
     if not endpoints:
         endpoints = AvailableEndpoints()
@@ -969,11 +970,13 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
         e2e: indicator if tests running in end to end mode
         agent: Agent of the model getting tested
     """
-    fingerprint = model.fingerprint_from_path(agent.model_directory or "")
-    project = fingerprint.get(model.FINGERPRINT_PROJECT)
     _track(
         TELEMETRY_TEST_CORE_EVENT,
-        {"project": project, "end_to_end": e2e, "num_story_steps": num_story_steps},
+        {
+            "project": agent.processor.model_metadata.project_fingerprint,
+            "end_to_end": e2e,
+            "num_story_steps": num_story_steps,
+        },
     )
 
 

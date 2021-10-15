@@ -334,34 +334,16 @@ class DialogueStateTracker:
         else:
             self.active_loop = {}
 
-    def change_form_to(self, form_name: Text) -> None:
-        rasa.shared.utils.io.raise_warning(
-            "`change_form_to` is deprecated and will be removed "
-            "in future versions. Please use `change_loop_to` "
-            "instead.",
-            category=DeprecationWarning,
-        )
-        self.change_loop_to(form_name)
-
     def interrupt_loop(self, is_interrupted: bool) -> None:
         """Interrupt loop and mark that we entered an unhappy path in the conversation.
+
         Args:
             is_interrupted: `True` if the loop was run after an unhappy path.
         """
         self.active_loop[LOOP_INTERRUPTED] = is_interrupted
 
-    def set_form_validation(self, validate: bool) -> None:
-        rasa.shared.utils.io.raise_warning(
-            "`set_form_validation` is deprecated and will be removed "
-            "in future versions. Please use `interrupt_loop` "
-            "instead.",
-            category=DeprecationWarning,
-        )
-        # `validate = True` means `is_interrupted = False`
-        self.interrupt_loop(not validate)
-
     def reject_action(self, action_name: Text) -> None:
-        """Notify active loop that it was rejected"""
+        """Notify active loop that it was rejected."""
         if action_name == self.active_loop_name:
             self.active_loop[LOOP_REJECTED] = True
 
@@ -721,12 +703,7 @@ class DialogueStateTracker:
         Returns:
             The dumped tracker as a string.
         """
-
-        # TODO: we need to revisit all usages of this, the caller needs to specify
-        #       the format. this likely points to areas where we are not properly
-        #       handling markdown vs yaml
         story = self.as_story(include_source)
-
         return writer.dumps(
             story.story_steps, is_appendable=should_append_stories, is_test_story=e2e
         )
@@ -877,8 +854,26 @@ class DialogueStateTracker:
             ACTION_TEXT
         )
 
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the tracker which is stable across python runs.
 
-def get_active_loop_name(state: State) -> Optional[Text]:
+        Returns:
+            fingerprint of the tracker
+        """
+        data: Dict[Text, Any] = {"sender_id": self.sender_id}
+
+        if self.slots:
+            data.update(self.slots)
+
+        if self.events:
+            data["events"] = list(self.events)
+
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
+
+
+def get_active_loop_name(
+    state: State,
+) -> Optional[Union[Text, Tuple[Union[float, Text]]]]:
     """Get the name of current active loop.
 
     Args:
@@ -891,7 +886,7 @@ def get_active_loop_name(state: State) -> Optional[Text]:
         not state.get(ACTIVE_LOOP)
         or state[ACTIVE_LOOP].get(LOOP_NAME) == SHOULD_NOT_BE_SET
     ):
-        return
+        return None
 
     return state[ACTIVE_LOOP].get(LOOP_NAME)
 

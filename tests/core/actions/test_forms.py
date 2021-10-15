@@ -8,9 +8,6 @@ from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
-from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore
-from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
 from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
@@ -84,7 +81,7 @@ async def test_activate_with_prefilled_slot():
             - type: from_text
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -100,7 +97,7 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
-async def test_switch_forms_with_same_slot(empty_agent: Agent):
+async def test_switch_forms_with_same_slot(default_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
     Tests the fix for issue 7710"""
@@ -146,14 +143,8 @@ responses:
     domain = Domain.from_yaml(domain)
 
     # Driving it like rasa/core/processor
-    processor = MessageProcessor(
-        empty_agent.interpreter,
-        empty_agent.policy_ensemble,
-        domain,
-        InMemoryTrackerStore(domain),
-        InMemoryLockStore(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-    )
+    processor = default_agent.processor
+    processor.domain = domain
 
     # activate the first form
     tracker = DialogueStateTracker.from_events(
@@ -261,7 +252,7 @@ async def test_activate_and_immediate_deactivate():
               entity: {slot_name}
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -340,7 +331,7 @@ async def test_action_rejection():
               entity: some_entity
     slots:
       {slot_to_fill}:
-        type: unfeaturized
+        type: any
     """
     domain = Domain.from_yaml(domain)
 
@@ -630,7 +621,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
     domain = f"""
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
@@ -703,7 +694,7 @@ def test_temporary_tracker():
         version: "2.0"
         slots:
           {extra_slot}:
-            type: unfeaturized
+            type: any
         """
     )
 
