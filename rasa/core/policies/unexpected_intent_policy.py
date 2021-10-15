@@ -9,6 +9,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -209,7 +210,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             NUM_NEG: 20,
             # Number of intents to store in ranking key of predicted action metadata.
             # Set this to `0` to include all intents.
-            RANKING_LENGTH: 10,
+            RANKING_LENGTH: LABEL_RANKING_LENGTH,
             # If 'True' scale loss inverse proportionally to the confidence
             # of the correct prediction
             SCALE_LOSS: True,
