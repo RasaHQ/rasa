@@ -104,20 +104,6 @@ predicted intent, which might be used by policies.
 The previous behavior can still be enforced by setting `renormalize_confidences=True`
 when using `model_confidence=softmax`.
 
-In Rasa Open Source `2.3.x`, the `ranking_length` many confidences were
-renormalised by default, if the chosen `model_confidence` was `softmax`,
-so that they sum up to 1.
-Moreover, the reported confidences did not necessarily sum up to 1 since each
-model did report at most  `LABEL_RANKING_LENGTH` (i.e. 10) many confidences, which
-might be less than the specified `ranking_length`.
-In Rasa Open Source `3.0.0`, specifying a `ranking_length` means that the models
-will report the top `ranking_length` confidences only.
-By default, these confidences are not modified. However, if the `model_confidence` is
-`softmax`, then these confidences can still be re-normalized by setting
-`renormalize_confidences=True`. Hence, in Rasa 3.0.0 the reported confidences will
-always sum up to 1, if a `ranking_length` is specified and
-`renormalize_confidences=True`.
-
 #### Normalization of confidences in `TEDPolicy`
 
 Predictions of `TEDPolicy` will no longer be modified by masking and renormalizing
@@ -125,16 +111,6 @@ confidences. This change can affect the maximum confidence predicted by the
 `TEDPolicy` and thereby affect the final result of the policy ensemble.
 However, the previous behavior can still be enforced by setting
 `ranking_length=10` and `renormalize_confidences=True`.
-
-In Rasa Open Source `2.3.x`, the predicted confidences for actions that were
-not among the top `ranking_length` actions where set to 0 and the remaining confidences
-where renormalised (i.e. increased by dividing them by their sum) so that they sum
-up to 1.
-In Rasa Open Source `3.0.0`, the predicted confidences are not modified by default.
-The previous behavior, can be enforced by setting `ranking_length=10` and
-`renormalize_confidences=True`.
-
-
 
 ## Rasa 2.7 to 2.8
 

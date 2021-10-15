@@ -282,7 +282,7 @@ class TestTEDPolicy(PolicyTestCollection):
         # count number of non-zero confidences
         assert (
             sum([confidence > 0 for confidence in prediction.probabilities])
-            <= trained_policy.config[RANKING_LENGTH]  # == 10
+            == trained_policy.config[RANKING_LENGTH]
         )
         # not re-normalized by default
         assert sum(
@@ -660,6 +660,7 @@ class TestTEDPolicyNormalization(TestTEDPolicy):
             tracker, default_domain, precomputations,
         ).probabilities
         assert all([confidence >= 0 for confidence in predicted_probabilities])
+        assert sum([confidence > 0 for confidence in predicted_probabilities]) == 4
         assert sum(predicted_probabilities) == pytest.approx(1)
 
 
@@ -717,6 +718,7 @@ class TestTEDPolicyZeroRankingLength(TestTEDPolicy):
         predicted_probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations,
         ).probabilities
+        assert all(prob > 0 for prob in predicted_probabilities)
         assert sum(predicted_probabilities) == pytest.approx(1)
 
 
