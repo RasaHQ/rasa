@@ -14,7 +14,7 @@ def extract_markers(tracker: DialogueStateTracker, marker_config: Dict):
             condition=marker_dict.get("condition"),
         )
         Marker.does_marker_apply(applied_events)
-        # TODO save the marker to a file 
+        # TODO save the marker to a file
 
 
 class Marker:
@@ -51,21 +51,18 @@ class Marker:
         for item in condition:
             if atomic_condition in item.keys():
                 all_items.extend(item.get(atomic_condition))
-        return list(set(all_items))
+        return list(set(all_items))  # return unique values
 
     def does_marker_apply(self, events) -> bool:
-
+        """Checks if the marker applied."""
         if self.operator == "AND":
-            # TODO check that all apply
-            return True
+            return self.check_and(events)
 
         elif self.operator == "OR":
-            # TODO check that any apply
-            return True
+            return self.check_or(events)
 
         elif self.operator == "SEQ":
-            # TODO check that all apply in the same order
-            return True
+            return self.check_seq(events)
 
         else:
             raise RasaException(
@@ -100,15 +97,56 @@ class Marker:
 
     def check_and(self, events):
         """Checks that the AND condition applies"""
-        return
+        satisfied_pos = dict.fromkeys(self.slot_set + self.action_executed + self.intent_detected, False)
+        satisfied_neg = dict.fromkeys(self.slot_not_set + self.action_not_executed + self.intent_not_detected, False)
+        satisfied_at_least_once = False
+        user_turn_index = 0
+
+        for e in events:
+            if isinstance(e, SlotSet):
+                if e.key in self.slot_set and e.value:
+                    satisfied_pos[e.key] = True
+                if e.key in self.slot_not_set and e.value:
+                    satisfied_neg[e.key] = True
+
+                if self._check_all_conditions(satisfied_pos, satisfied_neg):
+                    satisfied_at_least_once = True
+                    self._mark_event(e.timestamp, user_turn_index)
+
+            if isinstance(e, ActionExecuted):
+                if e.action_name in self.action_executed:
+                    satisfied_pos[e.action_name] = True
+                if e.action_name in self.action_not_executed:
+                    satisfied_neg[e.action_name] = True
+
+                if self._check_all_conditions(satisfied_pos, satisfied_neg):
+                    satisfied_at_least_once = True
+                    self._mark_event(e.timestamp, user_turn_index)
+
+            if isinstance(e, UserUttered):
+                user_turn_index += 1
+                if e.intent.get("name") in self.intent_detected:
+                    satisfied_pos[e.intent.get("name")] = True
+                if e.intent.get("name") in self.intent_not_detected:
+                    satisfied_neg[e.intent.get("name")] = True
+
+                if self._check_all_conditions(satisfied_pos, satisfied_neg):
+                    satisfied_at_least_once = True
+                    self._mark_event(e.timestamp, user_turn_index)
+
+        return satisfied_at_least_once
+
+    @staticmethod
+    def _check_all_conditions(satisfied_pos, satisfied_neg):
+        return all(satisfied_pos.values()) and not any(satisfied_neg.values())
 
     def check_or(self, events):
         """Checks that the OR condition applies."""
+        satisfied = False
         user_turn_index = 0
         slot_set = []
         action_executed = []
         intent_detected = []
-        satisfied = False
 
         # check the positive atomic conditions (slot_set, action_executed, etc.)
         for e in events:
@@ -155,7 +193,7 @@ class Marker:
 
     def check_seq(self, events):
         """Checks that the SEQ condition applies."""
-        return
+        return False
 
     def _mark_event(self, timestamp, user_turn_index):
         self.timestamps.append(timestamp)

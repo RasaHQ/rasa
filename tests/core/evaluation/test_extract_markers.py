@@ -236,3 +236,45 @@ def test_markers_operator_or_combo_none_found():
     assert marker.timestamps == []
     assert len(marker.preceding_user_turns) == 0
     assert marker.preceding_user_turns == []
+
+
+def test_markers_operator_and():
+    sample_yaml = """
+        markers:
+          - marker: marker_1
+            operator: AND
+            condition:
+              - slot_set:
+                  - flight_class
+                  - travel_departure
+              - action_executed:
+                  - action_calculate_offsets
+              - intent_not_detected:
+                  - insult
+                  - vulgar           
+        """
+    config = MarkerConfig.from_yaml(sample_yaml)
+    marker_dict = config.get("markers")[0]
+    marker = Marker(
+        name=marker_dict.get("marker"),
+        operator=marker_dict.get("operator"),
+        condition=marker_dict.get("condition"),
+    )
+
+    domain = Domain.empty()
+    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
+    tracker.update(SlotSet("flight_class", value='first'), domain)
+    tracker.update(SlotSet("travel_departure", value='edinburgh'), domain)
+    tracker.update(SlotSet("travel_destination", value='berlin'), domain)
+    tracker.update(ActionExecuted("action_disclaimer"), domain)
+    tracker.update(ActionExecuted("action_calculate_offsets"), domain)  # true
+    tracker.update(SlotSet("flight_class", value='business'), domain)  # true
+    tracker.update(SlotSet("travel_departure", value='berlin'), domain)  # true
+    tracker.update(SlotSet("travel_destination", value='new york'), domain)  # true
+    tracker.update(ActionExecuted("action_calculate_offsets"), domain)  # true
+
+    assert marker.check_and(tracker.events)
+
+    assert len(marker.timestamps) == 5
+    assert len(marker.preceding_user_turns) == 5
+
