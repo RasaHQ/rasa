@@ -144,14 +144,14 @@ def test_config_missing_required_top_level_markers_label():
 
 def test_config_missing_required_marker_label():
     """Tests an invalid config"""
-    sample_json = """
+    sample_yaml = """
     markers:
       - condition:
           - action_not_executed:
               - action_restart
     """
     with pytest.raises(ValidationError):
-        MarkerConfig.from_yaml(sample_json)
+        MarkerConfig.from_yaml(sample_yaml)
 
 
 def test_config_missing_required_condition_label():
@@ -218,11 +218,11 @@ def test_config_non_unique_events_under_condition():
 
 def test_config_not_enough_events_under_condition():
     """Tests an invalid config"""
-    sample_json = """
+    sample_yaml = """
     markers:
       - marker: no_restart
         condition:
           - action_executed: []
     """
     with pytest.raises(ValidationError):
-        MarkerConfig.from_yaml(sample_json)
+        MarkerConfig.from_yaml(sample_yaml)
