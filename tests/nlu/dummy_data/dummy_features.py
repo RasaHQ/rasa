@@ -115,7 +115,18 @@ class DummyFeatures:
         """Imitates the application of a featurizer to a specific message attribute.
 
         Args:
-            ...
+            message: the message to be featurized
+            attribute: identifies which attribute of the given message should be
+               featurized
+            featurizer_description: a description of the kind of featurizer that
+               should be imitated
+            add_to_messages: determines whether the features should be added to the
+               given message
+            skip_sentence_features: whether no sentence features should be created
+        Returns:
+            a pseudo-random featurization that includes either sparse or dense
+            features (depending on the description of the featurizer) with sentence
+            features missing if `skip_sentence_features` is set to `True`
         """
         tokens = message.get(TOKENS_NAMES[attribute], [])
         if not tokens:
