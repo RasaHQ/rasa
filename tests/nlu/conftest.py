@@ -88,13 +88,6 @@ def process_message(default_model_storage: ModelStorage,) -> Callable[..., Messa
 
 
 @pytest.fixture()
-def whitespace_tokenizer() -> WhitespaceTokenizerGraphComponent:
-    return WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    )
-
-
-@pytest.fixture()
 def spacy_tokenizer() -> SpacyTokenizerGraphComponent:
     return SpacyTokenizerGraphComponent(
         SpacyTokenizerGraphComponent.get_default_config()

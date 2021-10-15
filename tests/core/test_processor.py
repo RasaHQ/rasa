@@ -1324,12 +1324,11 @@ def test_predict_next_action_raises_limit_reached_exception(
         default_processor.predict_next_with_tracker_if_should(tracker)
 
 
-async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
+async def test_processor_logs_text_tokens_in_tracker(
+    mood_agent: Agent, whitespace_tokenizer: WhitespaceTokenizerGraphComponent
+):
     text = "Hello there"
-    tokenizer = WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    )
-    tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
+    tokens = whitespace_tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [(t.start, t.end) for t in tokens]
 
     message = UserMessage(text)

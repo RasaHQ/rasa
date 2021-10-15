@@ -418,7 +418,9 @@ def test_data_merging(files):
     assert td.regex_features == td_reference.regex_features
 
 
-def test_repeated_entities(tmp_path):
+def test_repeated_entities(
+    tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizerGraphComponent
+):
     data = """
 {
   "rasa_nlu_data": {
@@ -445,9 +447,7 @@ def test_repeated_entities(tmp_path):
     example = td.entity_examples[0]
     entities = example.get("entities")
     assert len(entities) == 1
-    tokens = WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    ).tokenize(example, attribute=TEXT)
+    tokens = whitespace_tokenizer.tokenize(example, attribute=TEXT)
     start, end = MitieEntityExtractorGraphComponent.find_entity(
         entities[0], example.get(TEXT), tokens
     )
@@ -455,7 +455,9 @@ def test_repeated_entities(tmp_path):
     assert end == 10
 
 
-def test_multiword_entities(tmp_path):
+def test_multiword_entities(
+    tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizerGraphComponent
+):
     data = """
 {
   "rasa_nlu_data": {
@@ -482,9 +484,7 @@ def test_multiword_entities(tmp_path):
     example = td.entity_examples[0]
     entities = example.get("entities")
     assert len(entities) == 1
-    tokens = WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    ).tokenize(example, attribute=TEXT)
+    tokens = whitespace_tokenizer.tokenize(example, attribute=TEXT)
     start, end = MitieEntityExtractorGraphComponent.find_entity(
         entities[0], example.get(TEXT), tokens
     )
@@ -834,7 +834,9 @@ def test_label_fingerprints(message: Message):
     assert training_data1.label_fingerprint() != training_data2.label_fingerprint()
 
 
-def test_training_data_fingerprint_incorporates_tokens():
+def test_training_data_fingerprint_incorporates_tokens(
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+):
     from rasa.shared.importers.utils import training_data_from_paths
 
     files = [
@@ -843,10 +845,7 @@ def test_training_data_fingerprint_incorporates_tokens():
     ]
     training_data = training_data_from_paths(files, language="en")
     fp1 = training_data.fingerprint()
-    tokenizer = WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    )
-    tokenizer.process_training_data(training_data)
+    whitespace_tokenizer.process_training_data(training_data)
     # training data fingerprint has changed
     assert fp1 != training_data.fingerprint()
 

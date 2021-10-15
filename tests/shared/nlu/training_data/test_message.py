@@ -384,13 +384,12 @@ def test_add_diagnostic_data_with_repeated_component_raises_warning():
         message.add_diagnostic_data("a", {})
 
 
-def test_message_fingerprint_includes_data_and_features():
+def test_message_fingerprint_includes_data_and_features(
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+):
     message = Message(data={TEXT: "This is a test sentence."})
     fp1 = message.fingerprint()
-    tokenizer = WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    )
-    tokenizer.process([message])
+    whitespace_tokenizer.process([message])
     fp2 = message.fingerprint()
 
     assert fp1 != fp2

@@ -882,13 +882,13 @@ def test_tracker_store_connection_error(config: Dict, domain: Domain):
 
 
 async def prepare_token_serialisation(
-    tracker_store: TrackerStore, response_selector_agent: Agent, sender_id: Text,
+    tracker_store: TrackerStore,
+    response_selector_agent: Agent,
+    sender_id: Text,
+    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
 ):
     text = "Good morning"
-    tokenizer = WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    )
-    tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
+    tokens = whitespace_tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [[t.start, t.end] for t in tokens]
 
     tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)

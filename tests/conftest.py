@@ -32,6 +32,7 @@ from rasa import server
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 
 from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
@@ -757,3 +758,10 @@ def enable_cache(cache_dir: Path):
     yield
 
     LocalTrainingCache._get_cache_location = old_get_cache_location
+
+
+@pytest.fixture()
+def whitespace_tokenizer() -> WhitespaceTokenizerGraphComponent:
+    return WhitespaceTokenizerGraphComponent(
+        WhitespaceTokenizerGraphComponent.get_default_config()
+    )
