@@ -436,6 +436,42 @@ class FormAction(LoopAction):
             isinstance(event, ActionExecutionRejected) for event in validation_events
         )
 
+    def _get_slot_extractions(
+        self, tracker: "DialogueStateTracker", domain: Domain,
+    ) -> Dict[Text, Any]:
+        if tracker.latest_message in tracker.events:
+            index = tracker.events.index(tracker.latest_message)
+        else:
+            index = 0
+
+        tracker_events = list(tracker.events)
+        events_since_last_user_uttered = [
+            event for event in tracker_events[index:] if isinstance(event, SlotSet)
+        ]
+
+        slot_values = {}
+        for event in events_since_last_user_uttered:
+            if not tracker.active_loop:
+                # pre-filled slots were already validated at form activation
+                break
+
+            if event.key not in self.required_slots(domain):
+                continue
+
+            slot_mappings = self.get_mappings_for_slot(event.key, domain)
+
+            for mapping in slot_mappings:
+                if self._matches_mapping_conditions(mapping, event.key):
+                    slot_values[event.key] = event.value
+
+                if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
+                    continue
+
+                if not self._entity_mapping_is_unique(mapping, domain):
+                    del slot_values[event.key]
+
+        return slot_values
+
     async def validate(
         self,
         tracker: "DialogueStateTracker",
@@ -448,16 +484,7 @@ class FormAction(LoopAction):
         If nothing was extracted reject execution of the form action.
         Subclass this method to add custom validation and rejection logic
         """
-        # extract other slots that were not requested
-        # but set by corresponding entity or trigger intent mapping
-        slot_values = self.extract_other_slots(tracker, domain)
-
-        # extract requested slot
-        slot_to_fill = self.get_slot_to_fill(tracker)
-        if slot_to_fill:
-            slot_values.update(
-                self.extract_requested_slot(tracker, domain, slot_to_fill)
-            )
+        slot_values = self._get_slot_extractions(tracker, domain)
 
         validation_events = await self.validate_slots(
             slot_values, tracker, domain, output_channel, nlg
@@ -470,6 +497,9 @@ class FormAction(LoopAction):
             # to be filled by the user.
             if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
+
+        # extract requested slot
+        slot_to_fill = self.get_slot_to_fill(tracker)
 
         if (
             slot_to_fill

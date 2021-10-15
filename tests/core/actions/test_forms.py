@@ -258,6 +258,7 @@ async def test_activate_and_immediate_deactivate():
                 {"name": "greet"},
                 entities=[{"entity": slot_name, "value": slot_value}],
             ),
+            SlotSet(slot_name, slot_value),
         ],
     )
     form_name = "my form"
@@ -298,6 +299,7 @@ async def test_set_slot_and_deactivate():
         SlotSet(REQUESTED_SLOT, slot_name),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(slot_value),
+        SlotSet(slot_name, slot_value),
     ]
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
 
@@ -475,6 +477,7 @@ async def test_validate_slots(
         SlotSet(REQUESTED_SLOT, slot_name),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(slot_value, entities=[{"entity": "num_tables", "value": 5}]),
+        SlotSet("num_tables", 5),
     ]
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
 
@@ -512,6 +515,7 @@ async def test_validate_slots(
             tracker,
             domain,
         )
+        print([str(e) for e in events])
         assert events == expected_events
 
 
