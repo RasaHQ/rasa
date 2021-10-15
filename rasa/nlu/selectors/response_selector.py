@@ -1,6 +1,7 @@
 from __future__ import annotations
 import copy
 import logging
+from rasa.nlu.featurizers.featurizer import Featurizer2
 
 import numpy as np
 import tensorflow as tf
@@ -8,6 +9,7 @@ import tensorflow as tf
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DIAGNOSTIC_DATA
@@ -109,6 +111,9 @@ ResponseSelector = ResponseSelector
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
 class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
     """Response selector using supervised embeddings.
 
@@ -130,6 +135,11 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
 
     # The `transformer_size` to use as a default when the transformer is enabled.
     default_transformer_size_when_enabled = 256
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Featurizer2]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -680,7 +690,7 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
                 model.all_retrieval_intents = all_retrieval_intents
                 return model
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )

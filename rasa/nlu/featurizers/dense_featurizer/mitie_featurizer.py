@@ -1,20 +1,21 @@
 import numpy as np
 import logging
 import typing
-from typing import Any, List, Text, Dict, Tuple
+from typing import Any, List, Text, Dict, Tuple, Type
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.nlu.featurizers.dense_featurizer._mitie_featurizer import MitieFeaturizer
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
     TOKENS_NAMES,
 )
-from rasa.nlu.utils.mitie_utils import MitieModel
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
@@ -31,8 +32,18 @@ logger = logging.getLogger(__name__)
 MitieFeaturizer = MitieFeaturizer
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER,
+    is_trainable=False,
+    model_from="MitieNLPGraphComponent",
+)
 class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """A class that featurizes using Mitie."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [MitieNLPGraphComponent, TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

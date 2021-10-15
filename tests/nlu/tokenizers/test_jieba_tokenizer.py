@@ -82,7 +82,7 @@ def test_jieba_load_and_persist_dictionary(
     tk.process_training_data(TrainingData([Message(data={TEXT: ""})]))
 
     # The dictionary has not been persisted yet.
-    with caplog.at_level(logging.WARN):
+    with caplog.at_level(logging.DEBUG):
         JiebaTokenizerGraphComponent.load(
             {**JiebaTokenizerGraphComponent.get_default_config(), **component_config},
             default_model_storage,

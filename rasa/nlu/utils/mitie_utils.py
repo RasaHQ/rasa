@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 import rasa.nlu.utils._mitie_utils
@@ -45,6 +46,9 @@ class MitieModel:
         return str(self.model_path)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MODEL_LOADER, is_trainable=False
+)
 class MitieNLPGraphComponent(GraphComponent):
     """Component which provides the common configuration and loaded model to others.
 

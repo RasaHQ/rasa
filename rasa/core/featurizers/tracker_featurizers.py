@@ -9,8 +9,10 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
 import numpy as np
 
-
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer,
+    SingleStateFeaturizer2,
+)
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
 import rasa.shared.core.trackers
@@ -652,7 +654,7 @@ class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2):
 
     def __init__(
         self,
-        state_featurizer: Optional[SingleStateFeaturizer] = None,
+        state_featurizer: Optional[SingleStateFeaturizer2] = None,
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
     ) -> None:
