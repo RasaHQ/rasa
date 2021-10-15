@@ -98,7 +98,7 @@ Sends elements to the output.
 #### send\_custom\_json
 
 ```python
- | async send_custom_json(recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any) -> None
+ | async send_custom_json(recipient_id: Text, json_message: Union[List, Dict[Text, Any]], **kwargs: Any, ,) -> None
 ```
 
 Sends custom json data to the output.
