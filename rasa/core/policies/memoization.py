@@ -12,16 +12,13 @@ from pathlib import Path
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 from rasa.shared.exceptions import FileIOException
 from rasa.core.policies.policy import (
@@ -38,19 +35,13 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
 )
-from rasa.core.policies._memoization import (
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy,
-)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MemoizationPolicy = MemoizationPolicy
-AugmentedMemoizationPolicy = AugmentedMemoizationPolicy
 
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
 class MemoizationPolicyGraphComponent(PolicyGraphComponent):
     """A policy that follows exact examples of `max_history` turns in training stories.
 
@@ -175,7 +166,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         **kwargs: Any,
-    ) -> None:
+    ) -> Resource:
         # only considers original trackers (no augmented ones)
         training_trackers = [
             t
@@ -196,6 +187,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
         self.persist()
+        return self._resource
 
     def _recall_states(self, states: List[State]) -> Optional[Text]:
         return self.lookup.get(self._create_feature_key(states))
@@ -327,6 +319,9 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         )
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
 class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
     """The policy that remembers examples from training stories for `max_history` turns.
 

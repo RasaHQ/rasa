@@ -1,24 +1,28 @@
 import typing
-from typing import Dict, Text, List, Any, Optional
+from typing import Dict, Text, List, Any, Optional, Type
 
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.nlu.utils.spacy_utils import SpacyPreprocessorGraphComponent
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
-from rasa.shared.nlu.training_data.message import Message
-
 from rasa.nlu.constants import SPACY_DOCS
-
-from rasa.nlu.tokenizers._spacy_tokenizer import SpacyTokenizer
+from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc
 
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-SpacyTokenizer = SpacyTokenizer
-
 POS_TAG_KEY = "pos"
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
+)
 class SpacyTokenizerGraphComponent(TokenizerGraphComponent):
     """Tokenizer that uses SpaCy."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [SpacyPreprocessorGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

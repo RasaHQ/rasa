@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Iterable, List, Dict, Text, Any, Set, Type
 
+from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
@@ -16,7 +17,7 @@ from rasa.nlu.extractors.crf_entity_extractor import (
     CRFEntityExtractorGraphComponent,
     CRFEntityExtractorOptions,
 )
-from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperComponent
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperGraphComponent
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
     RegexFeaturizerGraphComponent,
 )
@@ -48,7 +49,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 
-# TODO: replace these once the Recipe is merged
+# TODO: Can we replace this with the registered types from the regitry?
 TRAINABLE_EXTRACTORS = [
     MitieEntityExtractorGraphComponent,
     CRFEntityExtractorGraphComponent,
@@ -123,6 +124,8 @@ class DefaultV1RecipeValidator(GraphComponent):
         Args:
            training_data: The training data for the NLU components.
         """
+        training_data.validate()
+
         self._raise_if_more_than_one_tokenizer()
         self._raise_if_featurizers_are_not_compatible()
         self._warn_of_competing_extractors()
@@ -256,14 +259,15 @@ class DefaultV1RecipeValidator(GraphComponent):
 
         if (
             training_data.entity_synonyms
-            and EntitySynonymMapperComponent not in self._component_types
+            and EntitySynonymMapperGraphComponent not in self._component_types
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined synonyms in your training data, but "
                 f"your NLU configuration does not include an "
-                f"'{EntitySynonymMapperComponent.__name__}'. "
+                f"'{EntitySynonymMapperGraphComponent.__name__}'. "
                 f"To map synonyms, add an "
-                f"'{EntitySynonymMapperComponent.__name__}' to your configuration.",
+                f"'{EntitySynonymMapperGraphComponent.__name__}' to your "
+                f"configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
@@ -281,9 +285,16 @@ class DefaultV1RecipeValidator(GraphComponent):
             schema_node.uses
             for schema_node in self._graph_schema.nodes.values()
             if issubclass(schema_node.uses, TokenizerGraphComponent)
+            and schema_node.fn != "train"
         ]
 
-        if len(types_of_tokenizer_schema_nodes) > 1:
+        is_end_to_end = any(
+            issubclass(schema_node.uses, CoreFeaturizationInputConverter)
+            for schema_node in self._graph_schema.nodes.values()
+        )
+
+        allowed_number_of_tokenizers = 2 if is_end_to_end else 1
+        if len(types_of_tokenizer_schema_nodes) > allowed_number_of_tokenizers:
             raise InvalidConfigException(
                 f"The configuration configuration contains more than one tokenizer, "
                 f"which is not possible at this time. You can only use one tokenizer. "
@@ -297,9 +308,6 @@ class DefaultV1RecipeValidator(GraphComponent):
         Competing extractors are e.g. `CRFEntityExtractor` and `DIETClassifier`.
         Both of these look for the same entities based on the same training data
         leading to ambiguity in the results.
-
-        Args:
-           node_names: names of all components
         """
         extractors_in_configuration: Set[
             Type[GraphComponent]
@@ -365,9 +373,15 @@ class DefaultV1RecipeValidator(GraphComponent):
         """
         featurizers: List[SchemaNode] = [
             node
-            for node in self._graph_schema.nodes.values()
+            for node_name, node in self._graph_schema.nodes.items()
             if issubclass(node.uses, Featurizer2)
+            # Featurizers are split in `train` and `process_training_data` -
+            # we only need to look at the nodes which _add_ features.
+            and node.fn == "process_training_data"
+            # Tokenizers are re-used in the Core part of the graph when using End-to-End
+            and not node_name.startswith("e2e")
         ]
+
         Featurizer2.raise_if_featurizer_configs_are_not_compatible(
             [schema_node.config for schema_node in featurizers]
         )

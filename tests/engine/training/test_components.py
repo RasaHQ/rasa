@@ -2,6 +2,7 @@ import dataclasses
 from typing import Text
 import uuid
 
+
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema, SchemaNode
 from rasa.engine.storage.resource import Resource

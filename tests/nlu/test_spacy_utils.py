@@ -6,7 +6,10 @@ import spacy.tokens.doc
 
 from rasa.nlu.constants import DENSE_FEATURIZABLE_ATTRIBUTES, SPACY_DOCS
 from rasa.nlu.model import InvalidModelError
-from rasa.nlu.utils.spacy_utils import SpacyModelProvider, SpacyPreprocessor
+from rasa.nlu.utils.spacy_utils import (
+    SpacyNLPGraphComponent,
+    SpacyPreprocessorGraphComponent,
+)
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, RESPONSE, TEXT
 from rasa.shared.nlu.training_data.message import Message
@@ -14,13 +17,15 @@ from rasa.shared.nlu.training_data.message import Message
 
 def create_provider_component(
     model_name: Text = "en_core_web_md",
-) -> SpacyModelProvider:
-    component = SpacyModelProvider.create({"model": model_name}, None, None, None)
+) -> SpacyNLPGraphComponent:
+    component = SpacyNLPGraphComponent.create({"model": model_name}, None, None, None)
     return component
 
 
-def create_preprocessor(case_sensitive: Optional[bool] = None) -> SpacyPreprocessor:
-    preprocessor = SpacyPreprocessor.create(
+def create_preprocessor(
+    case_sensitive: Optional[bool] = None,
+) -> SpacyPreprocessorGraphComponent:
+    preprocessor = SpacyPreprocessorGraphComponent.create(
         {"case_sensitive": case_sensitive}, None, None, None
     )
     return preprocessor

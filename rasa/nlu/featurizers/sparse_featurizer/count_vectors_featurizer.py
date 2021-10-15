@@ -2,10 +2,12 @@ from __future__ import annotations
 import logging
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text, Tuple, Set
+from typing import Any, Dict, List, Optional, Text, Tuple, Set, Type
+from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
@@ -27,18 +29,15 @@ from rasa.shared.nlu.constants import (
     INTENT_RESPONSE_KEY,
     ACTION_NAME,
 )
-from rasa.nlu.featurizers.sparse_featurizer._count_vectors_featurizer import (
-    CountVectorsFeaturizer,
-)
-
-# TODO: remove after all references to old featurizer have been removed
-CountVectorsFeaturizer = CountVectorsFeaturizer
 
 BUFFER_SLOTS_PREFIX = "buf_"
 
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
 class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
@@ -49,6 +48,11 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     to use the idea of Subword Semantic Hashing
     from https://arxiv.org/abs/1810.07150.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -823,7 +827,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                 return ftr
 
         except (ValueError, FileNotFoundError, FileIOException):
-            logger.warning(
+            logger.debug(
                 f"Failed to load `{cls.__class__.__name__}` from model storage. "
                 f"Resource '{resource.name}' doesn't exist."
             )

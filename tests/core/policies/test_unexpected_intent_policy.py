@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Optional, List, Dict, Text, Type
 import tensorflow as tf
@@ -8,14 +9,10 @@ from _pytest.logging import LogCaptureFixture
 import logging
 
 from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.unexpected_intent_policy import (
@@ -518,9 +515,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         resource: Resource,
         execution_context: ExecutionContext,
         default_domain: Domain,
-        predicted_similarity,
-        threshold_value,
-        is_unlikely,
+        predicted_similarity: float,
+        threshold_value: float,
+        is_unlikely: bool,
         monkeypatch: MonkeyPatch,
         tmp_path: Path,
     ):
@@ -569,6 +566,8 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             # of the metadata is tested separately and
             # not as part of this test.
             assert prediction.action_metadata is not None
+            # Assert metadata is serializable
+            assert json.dumps(prediction.action_metadata)
 
     @pytest.mark.parametrize(
         "tracker_events, should_skip",

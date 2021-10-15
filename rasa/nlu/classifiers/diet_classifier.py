@@ -3,6 +3,7 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
+from rasa.nlu.featurizers.featurizer import Featurizer2
 
 import numpy as np
 import scipy.sparse
@@ -11,9 +12,11 @@ import tensorflow as tf
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.classifiers.classifier import IntentClassifier2
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
@@ -101,11 +104,6 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
 )
 
-from rasa.nlu.classifiers._diet_classifier import DIETClassifier
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-DIETClassifier = DIETClassifier
-
 logger = logging.getLogger(__name__)
 
 SPARSE = "sparse"
@@ -116,7 +114,12 @@ LABEL_SUB_KEY = IDS
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
 
-class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
+class DIETClassifierGraphComponent(
+    GraphComponent, IntentClassifier2, EntityExtractorMixin
+):
     """A multi-task model for intent classification and entity extraction.
 
     DIET is Dual Intent and Entity Transformer.
@@ -128,6 +131,11 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
     dot-product loss to maximize the similarity with the target label and minimize
     similarities with negative samples.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Featurizer2]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -309,15 +317,6 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
 
         self.finetune_mode = self._execution_context.is_finetuning
         self._sparse_feature_sizes = sparse_feature_sizes
-
-        if not self.model and self.finetune_mode:
-            raise rasa.shared.exceptions.InvalidParameterException(
-                f"{self.__class__.__name__} was instantiated "
-                f"with `model=None` and `finetune_mode=True`. "
-                f"This is not a valid combination as the component "
-                f"needs an already instantiated and trained model "
-                f"to continue training in finetune mode."
-            )
 
     # init helpers
     def _check_masked_lm(self) -> None:
@@ -841,6 +840,16 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
                 f"Skipping training of the classifier."
             )
             return self._resource
+
+        if not self.model and self.finetune_mode:
+            raise rasa.shared.exceptions.InvalidParameterException(
+                f"{self.__class__.__name__} was instantiated "
+                f"with `model=None` and `finetune_mode=True`. "
+                f"This is not a valid combination as the component "
+                f"needs an already instantiated and trained model "
+                f"to continue training in finetune mode."
+            )
+
         if self.component_config.get(INTENT_CLASSIFICATION):
             if not self._check_enough_labels(model_data):
                 logger.error(
@@ -1074,7 +1083,7 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
                     model_path, config, model_storage, resource, execution_context
                 )
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )

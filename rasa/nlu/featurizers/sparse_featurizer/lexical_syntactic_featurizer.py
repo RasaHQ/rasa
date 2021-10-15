@@ -13,17 +13,19 @@ from typing import (
     Callable,
     Set,
     Optional,
+    Type,
     Union,
 )
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.tokenizers.spacy_tokenizer import (
     POS_TAG_KEY,
     SpacyTokenizerGraphComponent,
 )
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -33,14 +35,8 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import InvalidConfigException
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.nlu.featurizers.sparse_featurizer._lexical_syntactic_featurizer import (
-    LexicalSyntacticFeaturizer,
-)
 
 logger = logging.getLogger(__name__)
-
-# TODO: remove after all references to old featurizer have been removed
-LexicalSyntacticFeaturizer = LexicalSyntacticFeaturizer
 
 
 END_OF_SENTENCE = "EOS"
@@ -49,6 +45,9 @@ BEGIN_OF_SENTENCE = "BOS"
 FEATURES = "features"
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
 class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Extracts and encodes lexical syntactic features.
 
@@ -125,6 +124,11 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         if feature_name == BEGIN_OF_SENTENCE:
             return str(token_position == 0)
         return str(cls._FUNCTION_DICT[feature_name](token))
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [TokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -512,7 +516,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                     feature_to_idx_dict=feature_to_idx_dict,
                 )
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load `{cls.__class__.__name__}` from model storage. "
                 f"Resource '{resource.name}' doesn't exist."
             )

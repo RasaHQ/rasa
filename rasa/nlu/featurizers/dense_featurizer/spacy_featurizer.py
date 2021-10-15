@@ -1,12 +1,15 @@
 import numpy as np
 import typing
 import logging
-from typing import Any, Text, Dict, List
+from typing import Any, Text, Dict, List, Type
 
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -16,19 +19,23 @@ from rasa.nlu.constants import (
 )
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
-from rasa.nlu.featurizers.dense_featurizer._spacy_featurizer import SpacyFeaturizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
-SpacyFeaturizer = SpacyFeaturizer
-
 logger = logging.getLogger(__name__)
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
 class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     """Featurize messages using SpaCy."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [SpacyTokenizerGraphComponent]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

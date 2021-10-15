@@ -9,6 +9,7 @@ import json
 from collections import defaultdict
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_RULES
@@ -57,13 +58,9 @@ from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
 import rasa.core.training.training
-from rasa.core.policies._rule_policy import RulePolicy
 
 logger = logging.getLogger(__name__)
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-RulePolicy = RulePolicy
 
 # These are Rasa Open Source default actions and overrule everything at any time.
 DEFAULT_ACTION_MAPPINGS = {
@@ -98,6 +95,9 @@ class InvalidRule(RasaException):
         )
 
 
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
 class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
     """Policy which handles all the rules."""
 
@@ -184,8 +184,8 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         ):
             raise InvalidDomain(
                 f"The fallback action '{fallback_action_name}' which was "
-                f"configured for the {RulePolicy.__name__} must be present in the "
-                f"domain."
+                f"configured for the {RulePolicyGraphComponent.__name__} must be "
+                f"present in the domain."
             )
 
     @staticmethod
@@ -692,7 +692,6 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
             rule_trackers: The list of the rule trackers.
             all_trackers: The list of all trackers.
             domain: The domain.
-            interpreter: Interpreter which can be used by the polices for featurization.
 
         Returns:
              Rules that are not present in the stories.
@@ -1095,7 +1094,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         domain: Domain,
         rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
-    ) -> "PolicyPrediction":
+    ) -> PolicyPrediction:
         """Predicts the next action (see parent class for more information)."""
         prediction, _ = self._predict(tracker, domain)
         return prediction
