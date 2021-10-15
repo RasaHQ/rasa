@@ -83,6 +83,11 @@ class Message:
         )
 
     def add_features(self, features: Optional["Features"]) -> None:
+        """Adds the given features to the message.
+
+        Args:
+            features: the features to be added
+        """
         if features is not None:
             self.features.append(features)
 
