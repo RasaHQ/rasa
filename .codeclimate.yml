@@ -15,9 +15,9 @@ exclude_patterns:
 - bandit.yml
 - binder/
 - changelog/
-- data/         # double-check this
-- docs/         # double-check this
-- examples/     # double-check this
+- data/        
+- docs/
+- examples/
 - poetry.lock
 - pyproject.toml
 - pytest.ini
