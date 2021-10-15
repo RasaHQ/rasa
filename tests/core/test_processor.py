@@ -38,7 +38,7 @@ from rasa.core.channels.channel import (
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ActionLimitReached
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
@@ -1324,10 +1324,11 @@ def test_predict_next_action_raises_limit_reached_exception(
         default_processor.predict_next_with_tracker_if_should(tracker)
 
 
-async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
+async def test_processor_logs_text_tokens_in_tracker(
+    mood_agent: Agent, whitespace_tokenizer: WhitespaceTokenizerGraphComponent
+):
     text = "Hello there"
-    tokenizer = WhitespaceTokenizer()
-    tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
+    tokens = whitespace_tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [(t.start, t.end) for t in tokens]
 
     message = UserMessage(text)

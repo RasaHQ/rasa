@@ -13,14 +13,9 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.message import Message
 
-from rasa.nlu.tokenizers._jieba_tokenizer import JiebaTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
-
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-JiebaTokenizer = JiebaTokenizer
 
 
 @DefaultV1Recipe.register(

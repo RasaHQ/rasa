@@ -7,13 +7,10 @@ import tarfile
 from tarsafe import TarSafe
 import tempfile
 import warnings
-import zipfile
 import re
 from asyncio import AbstractEventLoop
-from io import BytesIO as IOReader
 from pathlib import Path
 from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING, Pattern
-from tarsafe import TarSafe
 
 import rasa.shared.constants
 import rasa.shared.utils.io
@@ -84,28 +81,8 @@ def pickle_load(filename: Union[Text, Path]) -> Any:
         return pickle.load(f)
 
 
-def unarchive(byte_array: bytes, directory: Text) -> Text:
-    """Tries to unpack a byte array interpreting it as an archive.
-
-    Tries to use tar first to unpack, if that fails, zip will be used."""
-
-    try:
-        tar = TarSafe.open(fileobj=IOReader(byte_array))
-        tar.extractall(directory)
-        tar.close()
-        return directory
-    except tarfile.TarError:
-        zip_ref = zipfile.ZipFile(IOReader(byte_array))
-        zip_ref.extractall(directory)
-        zip_ref.close()
-        return directory
-
-
 def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
-    """Creates a tempfile.NamedTemporaryFile object for data.
-
-    mode defines NamedTemporaryFile's  mode parameter in py3."""
-
+    """Creates a tempfile.NamedTemporaryFile object for data."""
     encoding = None if "b" in mode else rasa.shared.utils.io.DEFAULT_ENCODING
     f = tempfile.NamedTemporaryFile(
         mode=mode, suffix=suffix, delete=False, encoding=encoding

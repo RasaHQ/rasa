@@ -13,7 +13,7 @@ from moto import mock_dynamodb2
 from pymongo.errors import OperationFailure
 
 from rasa.core.agent import Agent
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
@@ -885,7 +885,9 @@ async def prepare_token_serialisation(
     tracker_store: TrackerStore, response_selector_agent: Agent, sender_id: Text,
 ):
     text = "Good morning"
-    tokenizer = WhitespaceTokenizer()
+    tokenizer = WhitespaceTokenizerGraphComponent(
+        WhitespaceTokenizerGraphComponent.get_default_config()
+    )
     tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [[t.start, t.end] for t in tokens]
 

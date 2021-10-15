@@ -58,7 +58,6 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.classifiers import fallback_classifier
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -1105,9 +1104,11 @@ def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
     if extractors is None:
         return False
 
-    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+    from rasa.nlu.extractors.crf_entity_extractor import (
+        CRFEntityExtractorGraphComponent,
+    )
 
-    return CRFEntityExtractor.name not in extractors
+    return CRFEntityExtractorGraphComponent.__name__ not in extractors
 
 
 def align_entity_predictions(
@@ -1552,7 +1553,7 @@ def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> boo
 async def cross_validate(
     data: TrainingData,
     n_folds: int,
-    nlu_config: Union[RasaNLUModelConfig, Text, Dict],
+    nlu_config: Union[Text, Dict],
     output: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,

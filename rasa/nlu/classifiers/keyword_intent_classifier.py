@@ -14,11 +14,6 @@ import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 
-from rasa.nlu.classifiers._keyword_intent_classifier import KeywordIntentClassifier
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-KeywordIntentClassifier = KeywordIntentClassifier
-
 logger = logging.getLogger(__name__)
 
 

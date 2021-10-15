@@ -9,7 +9,6 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
-from rasa.nlu.featurizers.dense_featurizer._spacy_featurizer import SpacyFeaturizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
@@ -23,8 +22,6 @@ from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
-
-SpacyFeaturizer = SpacyFeaturizer
 
 logger = logging.getLogger(__name__)
 

@@ -25,12 +25,8 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
 )
 from rasa.utils import train_utils
-from rasa.nlu.featurizers.dense_featurizer._lm_featurizer import LanguageModelFeaturizer
 
 logger = logging.getLogger(__name__)
-
-# TODO: remove after all references to old featurizer have been removed
-LanguageModelFeaturizer = LanguageModelFeaturizer
 
 MAX_SEQUENCE_LENGTHS = {
     "bert": 512,
