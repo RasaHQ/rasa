@@ -51,9 +51,16 @@ def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
         required_slots = []
         for slot_name, mappings in form_data.items():
             slot_properties = slots.get(slot_name)
-            slot_properties.update({"mappings": mappings})
+            existing_mappings = slot_properties.get("mappings", [])
+            new_mappings = [
+                mapping for mapping in mappings if mapping not in existing_mappings
+            ]
+            existing_mappings.extend(new_mappings)
+            slot_properties.update({"mappings": existing_mappings})
             slots[slot_name] = slot_properties
+
             required_slots.append(slot_name)
+
         new_forms[form_name] = {
             IGNORED_INTENTS: ignored_intents,
             REQUIRED_SLOTS_KEY: required_slots,

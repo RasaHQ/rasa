@@ -378,3 +378,53 @@ def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file:
         "influence_conversation": False,
         "mappings": [{"type": "custom"}],
     }
+
+
+def test_migrate_domain_format_duplicated_slots_in_forms(
+    tmp_path: Path, domain_out_file: Path
+):
+    existing_domain_file = prepare_domain_path(
+        tmp_path,
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - affirm
+        - inform
+        slots:
+          name:
+            type: text
+            influence_conversation: false
+        forms:
+           form_one:
+               required_slots:
+                 name:
+                 - type: from_text
+                   intent: inform
+           form_two:
+               required_slots:
+                 name:
+                 - type: from_text
+                   intent: inform
+                 - type: from_intent
+                   intent: deny
+                   value: demo
+        """,
+        "domain.yml",
+    )
+    rasa.core.migrate.migrate_domain_format(existing_domain_file, domain_out_file)
+
+    domain = Domain.from_path(domain_out_file)
+    assert domain
+
+    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_slots = migrated_domain.get("slots")
+    test_slot = migrated_slots.get("name")
+    assert test_slot == {
+        "type": "text",
+        "influence_conversation": False,
+        "mappings": [
+            {"type": "from_text", "intent": "inform"},
+            {"type": "from_intent", "intent": "deny", "value": "demo"},
+        ],
+    }
