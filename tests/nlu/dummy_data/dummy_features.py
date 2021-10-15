@@ -1,6 +1,12 @@
 import random
+import sys
 from dataclasses import dataclass, field
-from typing import Dict, Set, Text, List, Optional, TypedDict
+from typing import Dict, Set, Text, List, Optional
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 import numpy as np
 import scipy.sparse
