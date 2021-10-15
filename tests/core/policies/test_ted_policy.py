@@ -294,11 +294,14 @@ class TestTEDPolicy(PolicyTestCollection):
         monkeypatch: MonkeyPatch,
     ):
         precomputations = None
-        # first check the output is what we expect
         prediction = trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations,
         )
+
+        # first check the output is what we expect
         assert not prediction.is_end_to_end_prediction
+
+        # check that ranking length is applied - without normalization
         if trained_policy.config[RANKING_LENGTH] == 0:
             assert sum(
                 [confidence for confidence in prediction.probabilities]
@@ -309,7 +312,6 @@ class TestTEDPolicy(PolicyTestCollection):
                 sum([confidence > 0 for confidence in prediction.probabilities])
                 == trained_policy.config[RANKING_LENGTH]
             )
-            # not re-normalized by default
             assert sum(
                 [confidence for confidence in prediction.probabilities]
             ) != pytest.approx(1)

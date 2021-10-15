@@ -2,8 +2,6 @@ from __future__ import annotations
 import logging
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.core.domain import Domain
 import shutil
 from pathlib import Path
 from collections import defaultdict
@@ -16,7 +14,6 @@ import tensorflow_addons as tfa
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 import rasa.core.actions.action
