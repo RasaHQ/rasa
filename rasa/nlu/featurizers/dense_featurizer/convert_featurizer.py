@@ -30,7 +30,6 @@ from rasa.shared.nlu.constants import (
 from rasa.exceptions import RasaException
 import rasa.nlu.utils
 import rasa.utils.train_utils as train_utils
-from rasa.nlu.featurizers.dense_featurizer._convert_featurizer import ConveRTFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +45,6 @@ RESTRICTED_ACCESS_URL = (
     "https://storage.googleapis.com/continuous-"
     "integration-model-storage/convert_tf2.tar.gz"
 )
-
-# TODO: remove this once all featurizers are migrated
-ConveRTFeaturizer = ConveRTFeaturizer
 
 
 @DefaultV1Recipe.register(

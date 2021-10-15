@@ -29,12 +29,6 @@ from rasa.shared.nlu.constants import (
     INTENT_RESPONSE_KEY,
     ACTION_NAME,
 )
-from rasa.nlu.featurizers.sparse_featurizer._count_vectors_featurizer import (
-    CountVectorsFeaturizer,
-)
-
-# TODO: remove after all references to old featurizer have been removed
-CountVectorsFeaturizer = CountVectorsFeaturizer
 
 BUFFER_SLOTS_PREFIX = "buf_"
 

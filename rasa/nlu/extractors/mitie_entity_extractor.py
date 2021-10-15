@@ -23,16 +23,12 @@ from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-from rasa.nlu.extractors._mitie_entity_extractor import MitieEntityExtractor
 from rasa.shared.exceptions import InvalidConfigException
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import mitie
-
-# TODO: remove when everything has been migrated
-MitieEntityExtractor = MitieEntityExtractor
 
 
 @DefaultV1Recipe.register(

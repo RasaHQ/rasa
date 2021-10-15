@@ -9,10 +9,6 @@ from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.message import Message
 
 from rasa.shared.utils.io import DEFAULT_ENCODING
-from rasa.nlu.tokenizers._mitie_tokenizer import MitieTokenizer
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-MitieTokenizer = MitieTokenizer
 
 
 @DefaultV1Recipe.register(

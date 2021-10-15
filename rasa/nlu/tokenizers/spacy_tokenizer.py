@@ -5,14 +5,10 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.nlu.utils.spacy_utils import SpacyPreprocessorGraphComponent
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.constants import SPACY_DOCS
-from rasa.nlu.tokenizers._spacy_tokenizer import SpacyTokenizer
 from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-SpacyTokenizer = SpacyTokenizer
 
 POS_TAG_KEY = "pos"
 

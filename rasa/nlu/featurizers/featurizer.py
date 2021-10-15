@@ -9,17 +9,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 
-# TODO: remove after all featurizers have been migrated
-from rasa.nlu.featurizers._featurizer import (
-    Featurizer,
-    SparseFeaturizer,
-    DenseFeaturizer,
-)
-
-Featurizer = Featurizer
-SparseFeaturizer = SparseFeaturizer
-DenseFeaturizer = DenseFeaturizer
-
 FeatureType = TypeVar("FeatureType")
 
 

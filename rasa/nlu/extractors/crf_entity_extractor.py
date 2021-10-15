@@ -35,11 +35,6 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.utils.tensorflow.constants import BILOU_FLAG
 
-from rasa.nlu.extractors._crf_entity_extractor import CRFEntityExtractor
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-CRFEntityExtractor = CRFEntityExtractor
-
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
