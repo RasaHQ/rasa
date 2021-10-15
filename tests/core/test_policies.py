@@ -27,13 +27,13 @@ from rasa.shared.core.events import (
 from rasa.core import training
 from rasa.core.constants import POLICY_MAX_HISTORY
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer,
+    IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer2 as SingleStateFeaturizer,
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    SingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.core.policies.policy import (
     SupportedData,
@@ -253,8 +253,7 @@ class PolicyTestCollection:
             (
                 [
                     {
-                        # TODO: remove "2" when migration of policies is done
-                        "name": "MaxHistoryTrackerFeaturizer2",
+                        "name": "MaxHistoryTrackerFeaturizer",
                         "max_history": 12,
                         "state_featurizer": [],
                     }
@@ -263,19 +262,17 @@ class PolicyTestCollection:
                 type(None),
             ),
             (
-                # TODO: remove "2" when migration of policies is done
-                [{"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12}],
+                [{"name": "MaxHistoryTrackerFeaturizer", "max_history": 12}],
                 MaxHistoryTrackerFeaturizer(max_history=12),
                 type(None),
             ),
             (
                 [
                     {
-                        # TODO: remove "2" when migration of policies is done
-                        "name": "IntentMaxHistoryTrackerFeaturizer2",
+                        "name": "IntentMaxHistoryTrackerFeaturizer",
                         "max_history": 12,
                         "state_featurizer": [
-                            {"name": "IntentTokenizerSingleStateFeaturizer2"}
+                            {"name": "IntentTokenizerSingleStateFeaturizer"}
                         ],
                     }
                 ],
@@ -320,18 +317,16 @@ class PolicyTestCollection:
         "featurizer_config",
         [
             [
-                # TODO: remove "2" when migration of policies is done
-                {"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12},
-                {"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12},
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
             ],
             [
                 {
-                    # TODO: remove "2" when migration of policies is done
-                    "name": "IntentMaxHistoryTrackerFeaturizer2",
+                    "name": "IntentMaxHistoryTrackerFeaturizer",
                     "max_history": 12,
                     "state_featurizer": [
-                        {"name": "IntentTokenizerSingleStateFeaturizer2"},
-                        {"name": "IntentTokenizerSingleStateFeaturizer2"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
                     ],
                 }
             ],

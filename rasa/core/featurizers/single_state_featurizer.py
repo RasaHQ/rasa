@@ -27,7 +27,7 @@ from rasa.utils.tensorflow import model_data_utils
 logger = logging.getLogger(__name__)
 
 
-class SingleStateFeaturizer2:
+class SingleStateFeaturizer:
     """Base class to transform the dialogue state into an ML format.
 
     Subclasses of SingleStateFeaturizer will decide how a bot will
@@ -363,7 +363,7 @@ class SingleStateFeaturizer2:
         ]
 
 
-class IntentTokenizerSingleStateFeaturizer2(SingleStateFeaturizer2):
+class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     """A SingleStateFeaturizer for use with policies that predict intent labels."""
 
     def _encode_intent(

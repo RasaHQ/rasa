@@ -20,12 +20,8 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityTagSpec, EntityExtractorMixin
 import rasa.core.actions.action
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
