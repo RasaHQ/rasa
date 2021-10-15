@@ -364,7 +364,8 @@ def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file:
         "domain.yml",
     )
 
-    rasa.core.migrate.migrate_domain_format(existing_domain_file, domain_out_file)
+    with pytest.warns(UserWarning, match="A custom mapping was added to slot 'name'."):
+        rasa.core.migrate.migrate_domain_format(existing_domain_file, domain_out_file)
 
     domain = Domain.from_path(domain_out_file)
     assert domain

@@ -76,6 +76,12 @@ def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
         if not properties.get("mappings"):
             properties.update({"mappings": [{"type": "custom"}]})
 
+            rasa.shared.utils.io.raise_warning(
+                f"A custom mapping was added to slot '{slot_name}'. "
+                f"Please double-check this is correct.",
+                UserWarning,
+            )
+
         new_slots[slot_name] = properties
 
     new_domain = {
