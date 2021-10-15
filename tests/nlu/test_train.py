@@ -5,8 +5,6 @@ from _pytest.tmpdir import TempPathFactory
 
 from rasa.core.agent import Agent
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.nlu import registry
-import rasa.nlu.train
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.tensorflow.constants import EPOCHS
 from typing import Any, Dict, List, Tuple, Text, Union, Optional
@@ -170,7 +168,7 @@ async def test_train_persist_load_parse(
 @pytest.mark.parametrize("language, pipeline", pipelines_for_non_windows_tests())
 @pytest.mark.skip_on_windows
 def test_train_persist_load_parse_non_windows(
-    language, pipeline, component_builder, tmp_path, nlu_as_json_path: Text
+    language, pipeline, tmp_path, nlu_as_json_path: Text
 ):
     test_train_persist_load_parse(language, pipeline, tmp_path, nlu_as_json_path)
 

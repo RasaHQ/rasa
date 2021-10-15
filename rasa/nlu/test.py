@@ -58,7 +58,6 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.classifiers import fallback_classifier
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -1552,7 +1551,7 @@ def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> boo
 async def cross_validate(
     data: TrainingData,
     n_folds: int,
-    nlu_config: Union[RasaNLUModelConfig, Text, Dict],
+    nlu_config: Union[Text, Dict],
     output: Optional[Text] = None,
     successes: bool = False,
     errors: bool = False,

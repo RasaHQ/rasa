@@ -77,7 +77,7 @@ class SupportedData(Enum):
     # TODO: Dump after the finished migration
     @staticmethod
     def trackers_for_policy(
-        policy: Union[Policy, Type[Policy]],
+        policy: Union[PolicyGraphComponent, Type[PolicyGraphComponent]],
         trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
     ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
         """Return trackers for a given policy.

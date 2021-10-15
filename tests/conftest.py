@@ -28,8 +28,6 @@ from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
 import rasa.shared.utils.io
-from rasa.nlu.components import ComponentBuilder
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa import server
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
@@ -540,22 +538,12 @@ def project() -> Text:
 
 
 @pytest.fixture(scope="session")
-def component_builder():
-    return ComponentBuilder()
-
-
-@pytest.fixture(scope="session")
 def spacy_nlp() -> Language:
     spacy_provider = SpacyNLPGraphComponent.create(
         {"model": "en_core_web_md"}, Mock(), Mock(), Mock()
     )
 
     return spacy_provider.provide().model
-
-
-@pytest.fixture(scope="session")
-def blank_config() -> RasaNLUModelConfig:
-    return RasaNLUModelConfig({"language": "en", "pipeline": []})
 
 
 @pytest.fixture(scope="session")

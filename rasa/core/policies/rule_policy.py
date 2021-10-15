@@ -184,8 +184,8 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         ):
             raise InvalidDomain(
                 f"The fallback action '{fallback_action_name}' which was "
-                f"configured for the {RulePolicy.__name__} must be present in the "
-                f"domain."
+                f"configured for the {RulePolicyGraphComponent.__name__} must be "
+                f"present in the domain."
             )
 
     @staticmethod

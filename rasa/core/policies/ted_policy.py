@@ -17,7 +17,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
+from rasa.nlu.extractors.extractor import EntityTagSpec, EntityExtractorMixin
 import rasa.core.actions.action
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.featurizers.tracker_featurizers import (
@@ -882,7 +882,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         else:
             parsed_message = Message(data={TEXT: text})
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
-        entities = EntityExtractor.convert_predictions_into_entities(
+        entities = EntityExtractorMixin.convert_predictions_into_entities(
             text,
             tokens,
             predicted_tags,
