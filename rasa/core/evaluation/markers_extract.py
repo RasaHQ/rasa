@@ -4,7 +4,8 @@ from rasa.shared.exceptions import RasaException
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 
 
-def extract_markers(tracker: DialogueStateTracker, marker_config: Dict):
+def extract_markers(tracker: DialogueStateTracker, marker_config: Dict) -> None:
+    """Extracts markers."""
     # TODO test this
     applied_events = get_relevant_events(tracker.applied_events())
     for marker_dict in marker_config:
@@ -17,13 +18,14 @@ def extract_markers(tracker: DialogueStateTracker, marker_config: Dict):
         # TODO output the marker to a file?
 
 
-def get_relevant_events(events) -> List[Event]:
-    """Get only relevant events.
+def get_relevant_events(events: List[Event]) -> List[Event]:
+    """Gets only relevant events.
 
     Reduce the applied events only to relevant events.
     Useful for when trackers are large, as we traverse them
-    for each marker separately."""
-    relevant_events = []
+    for each marker separately.
+    """
+    relevant_events: List[Event] = []
     for e in events:
         if isinstance(e, SlotSet):
             relevant_events.append(e)
@@ -35,7 +37,10 @@ def get_relevant_events(events) -> List[Event]:
 
 
 class Marker:
+    """Marker class."""
+
     def __init__(self, name: Text, operator: Text, condition: List[Dict[Text, List]]):
+        """Initialises Marker."""
         self.name = name
         self.operator = operator
         self.condition = condition
@@ -70,7 +75,7 @@ class Marker:
                 all_items.extend(item.get(atomic_condition))
         return list(set(all_items))  # return unique values
 
-    def does_marker_apply(self, events) -> bool:
+    def does_marker_apply(self, events: List[Event]) -> bool:
         """Checks if the marker applied."""
         if self.operator == "AND":
             return self.check_and(events)
@@ -87,57 +92,63 @@ class Marker:
                 options 'AND', 'OR', and 'SEQ' exist."
             )
 
-    def check_and(self, events):
-        """Checks that the AND condition applies"""
-        satisfied_pos = dict.fromkeys(
-            self.slot_set + self.action_executed + self.intent_detected, False
+    def check_and(self, events: List[Event]) -> bool:
+        """Checks that the AND condition applies."""
+        # whether each event occurred in positive conditions
+        occurred_pos = dict.fromkeys(
+            self.slot_set + self.action_executed + self.intent_detected, False,
         )
-        satisfied_neg = dict.fromkeys(
+        # whether each event occurred in negative conditions
+        occurred_neg = dict.fromkeys(
             self.slot_not_set + self.action_not_executed + self.intent_not_detected,
             False,
         )
+        # whether the marker condition was satisfied, at least once
         satisfied_at_least_once = False
+        # track the number of user turns so far
         user_turn_index = 0
 
         for e in events:
             if isinstance(e, SlotSet):
                 if e.key in self.slot_set and e.value:
-                    satisfied_pos[e.key] = True
+                    occurred_pos[e.key] = True
                 if e.key in self.slot_not_set and e.value:
-                    satisfied_neg[e.key] = True
+                    occurred_neg[e.key] = True
 
-                if self._check_all_conditions(satisfied_pos, satisfied_neg):
+                if self._check_all_conditions(occurred_pos, occurred_neg):
                     satisfied_at_least_once = True
                     self._mark_event(e.timestamp, user_turn_index)
 
-            if isinstance(e, ActionExecuted):
+            elif isinstance(e, ActionExecuted):
                 if e.action_name in self.action_executed:
-                    satisfied_pos[e.action_name] = True
+                    occurred_pos[e.action_name] = True
                 if e.action_name in self.action_not_executed:
-                    satisfied_neg[e.action_name] = True
+                    occurred_neg[e.action_name] = True
 
-                if self._check_all_conditions(satisfied_pos, satisfied_neg):
+                if self._check_all_conditions(occurred_pos, occurred_neg):
                     satisfied_at_least_once = True
                     self._mark_event(e.timestamp, user_turn_index)
 
-            if isinstance(e, UserUttered):
+            elif isinstance(e, UserUttered):
                 user_turn_index += 1
                 if e.intent.get("name") in self.intent_detected:
-                    satisfied_pos[e.intent.get("name")] = True
+                    occurred_pos[str(e.intent.get("name"))] = True
                 if e.intent.get("name") in self.intent_not_detected:
-                    satisfied_neg[e.intent.get("name")] = True
+                    occurred_neg[str(e.intent.get("name"))] = True
 
-                if self._check_all_conditions(satisfied_pos, satisfied_neg):
+                if self._check_all_conditions(occurred_pos, occurred_neg):
                     satisfied_at_least_once = True
                     self._mark_event(e.timestamp, user_turn_index)
 
         return satisfied_at_least_once
 
     @staticmethod
-    def _check_all_conditions(satisfied_pos, satisfied_neg):
+    def _check_all_conditions(
+        satisfied_pos: Dict[Text, bool], satisfied_neg: Dict[Text, bool]
+    ) -> bool:
         return all(satisfied_pos.values()) and not any(satisfied_neg.values())
 
-    def check_or(self, events):
+    def check_or(self, events: List[Event]) -> bool:
         """Checks that the OR condition applies."""
         satisfied = False
         user_turn_index = 0
@@ -188,10 +199,10 @@ class Marker:
 
         return satisfied
 
-    def check_seq(self, events):
+    def check_seq(self, events: List[Event]) -> bool:
         """Checks that the SEQ condition applies."""
         return False
 
-    def _mark_event(self, timestamp, user_turn_index):
+    def _mark_event(self, timestamp: float, user_turn_index: int) -> None:
         self.timestamps.append(timestamp)
         self.preceding_user_turns.append(user_turn_index)

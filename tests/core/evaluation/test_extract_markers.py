@@ -177,11 +177,11 @@ def test_markers_operator_or_combo():
     tracker.update(SlotSet("travel_departure", value=None), domain)
     tracker.update(SlotSet("travel_departure", value="edinburgh"), domain)
     tracker.update(SlotSet("travel_departure", value="london"), domain)
-    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)  # here
-    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)  # here
+    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)  # true
+    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)  # true
     tracker.update(ActionExecuted("action_disclaimer"), domain)
     tracker.update(UserUttered(intent={"name": "insult"}), domain)
-    tracker.update(UserUttered(intent={"name": "express_surprise"}), domain)  # here
+    tracker.update(UserUttered(intent={"name": "express_surprise"}), domain)  # true
     tracker.update(UserUttered(intent={"name": "insult"}), domain)
 
     # check marker condition was satisfied
@@ -251,7 +251,7 @@ def test_markers_operator_and():
                   - action_calculate_offsets
               - intent_not_detected:
                   - insult
-                  - vulgar           
+                  - vulgar
         """
     config = MarkerConfig.from_yaml(sample_yaml)
     marker_dict = config.get("markers")[0]
@@ -272,6 +272,7 @@ def test_markers_operator_and():
     tracker.update(SlotSet("travel_departure", value="berlin"), domain)  # true
     tracker.update(SlotSet("travel_destination", value="new york"), domain)  # true
     tracker.update(ActionExecuted("action_calculate_offsets"), domain)  # true
+    tracker.update(UserUttered(intent={"name": "insult"}), domain)
 
     assert marker.check_and(tracker.events)
 
