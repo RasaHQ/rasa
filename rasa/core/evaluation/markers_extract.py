@@ -8,7 +8,7 @@ from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 
 def extract_markers(tracker: DialogueStateTracker, marker_conditions: Dict):
     applied_events = tracker.applied_events()
-    
+
 
 
 class Marker:
@@ -98,41 +98,60 @@ class Marker:
 
     def check_or(self, events):
         """Checks that the OR condition applies."""
+        user_turn_index = 0
         slot_set = []
         action_executed = []
         intent_detected = []
+        satisfied = False
 
+        # check the presence of atomic conditions
         for e in events:
             if isinstance(e, SlotSet):
                 if e.key in self.slot_set and e.value:
-                    return True
+                    self.timestamps.append(e.timestamp)
+                    self.preceding_user_turns.append(user_turn_index)
+                    satisfied = True
                 if e.key in self.slot_not_set and e.value:
                     slot_set.append(e.key)
 
             if isinstance(e, ActionExecuted):
                 if e.action_name in self.action_executed:
-                    return True
+                    self.timestamps.append(e.timestamp)
+                    self.preceding_user_turns.append(user_turn_index)
+                    satisfied = True
                 if e.action_name in self.action_not_executed:
                     action_executed.append(e.action_name)
 
             if isinstance(e, UserUttered):
+                user_turn_index += 1
                 if e.intent.get("name") in self.intent_detected:
-                    return True
+                    self.timestamps.append(e.timestamp)
+                    self.preceding_user_turns.append(user_turn_index)
+                    satisfied = True
                 if e.intent.get("name") in self.intent_not_detected:
-                    intent_detected.append(e.intent)
+                    intent_detected.append(e.intent.get('name'))
 
-        # if we get here, none of the conditions were satisfied yet
+        e = events[-1]
+        # check the absence of atomic conditions (slot_not_set, action_not_executed, etc.)
         for slot in self.slot_not_set:
             if slot not in slot_set:
-                return True
+                self.timestamps.append(e.timestamp)
+                self.preceding_user_turns.append(user_turn_index)
+                satisfied = True
 
         for action in self.action_not_executed:
             if action not in action_executed:
-                return True
+                self.timestamps.append(e.timestamp)
+                self.preceding_user_turns.append(user_turn_index)
+                satisfied = True
 
         for intent in self.intent_not_detected:
-            if intent not in intent_detected is None:
-                return True
+            if intent not in intent_detected:
+                self.timestamps.append(e.timestamp)
+                self.preceding_user_turns.append(user_turn_index)
+                satisfied = True
+
+        return satisfied
 
     def check_seq(self, events):
         """Checks that the SEQ condition applies."""

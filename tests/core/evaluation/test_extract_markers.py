@@ -54,7 +54,14 @@ def test_markers_operator_or_slots():
     tracker.update(SlotSet("travel_departure", value="edinburgh"), domain)
     tracker.update(SlotSet("travel_departure", value="london"), domain)
 
+    # check marker condition was satisfied
     assert marker.check_or(tracker.events)
+
+    # check that it was only satisfied once at the end of the dialogue
+    assert len(marker.timestamps) == 1
+    assert marker.timestamps == [tracker.events[-1].timestamp]
+    assert len(marker.preceding_user_turns) == 1
+    assert marker.preceding_user_turns == [0]
 
 
 def test_markers_operator_or_actions():
@@ -81,9 +88,19 @@ def test_markers_operator_or_actions():
     tracker = DialogueStateTracker(sender_id="xyz", slots=None)
     tracker.update(ActionExecuted("action_analyse_travelplan"), domain)
     tracker.update(ActionExecuted("action_analyse_travelplan"), domain)
-    tracker.update(ActionExecuted("action_disclaimer"), domain)
+    tracker.update(ActionExecuted("thank"), domain)
 
+    # check marker condition was satisfied
     assert marker.check_or(tracker.events)
+
+    # check that it eas satisfied at in the 1st and 2nd events,
+    # then twice at the end for the two non executed actions
+    timestamps = [e.timestamp for e in tracker.events]
+    timestamps.append(tracker.events[-1].timestamp)
+    assert len(marker.timestamps) == 4
+    assert marker.timestamps == timestamps
+    assert len(marker.preceding_user_turns) == 4
+    assert marker.preceding_user_turns == [0, 0, 0, 0]
 
 
 def test_markers_operator_or_intents():
@@ -112,7 +129,14 @@ def test_markers_operator_or_intents():
     tracker.update(UserUttered(intent={"name": "express_surprise"}), domain)
     tracker.update(UserUttered(intent={"name": "insult"}), domain)
 
+    # check marker condition was satisfied
     assert marker.check_or(tracker.events)
+
+    # check that it was satisfied at the second event
+    assert len(marker.timestamps) == 1
+    assert marker.timestamps == [tracker.events[-2].timestamp]
+    assert len(marker.preceding_user_turns) == 1
+    assert marker.preceding_user_turns == [2]
 
 
 def test_markers_operator_or_combo():
@@ -123,16 +147,16 @@ def test_markers_operator_or_combo():
             condition:
               - slot_set:
                   - flight_class
+              - action_executed:
+                  - action_analyse_travelplan
+              - intent_detected:
+                  - express_surprise
               - slot_not_set:
                   - travel_departure
                   - travel_destination
-              - action_executed:
-                  - action_analyse_travelplan
               - action_not_executed:
                   - action_calculate_offsets
                   - action_disclaimer
-              - intent_detected:
-                  - express_surprise
               - intent_not_detected:
                   - insult
                   - vulgar
@@ -150,11 +174,25 @@ def test_markers_operator_or_combo():
     tracker.update(SlotSet("travel_departure", value=None), domain)
     tracker.update(SlotSet("travel_departure", value="edinburgh"), domain)
     tracker.update(SlotSet("travel_departure", value="london"), domain)
-    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)
-    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)
+    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)  # here
+    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)  # here
     tracker.update(ActionExecuted("action_disclaimer"), domain)
     tracker.update(UserUttered(intent={"name": "insult"}), domain)
-    tracker.update(UserUttered(intent={"name": "express_surprise"}), domain)
+    tracker.update(UserUttered(intent={"name": "express_surprise"}), domain)  # here
     tracker.update(UserUttered(intent={"name": "insult"}), domain)
 
+    # check marker condition was satisfied
     assert marker.check_or(tracker.events)
+
+    # check that it was satisfied at the second event
+    assert len(marker.timestamps) == 6
+    assert marker.timestamps == [
+        tracker.events[3].timestamp,
+        tracker.events[4].timestamp,
+        tracker.events[7].timestamp,
+        tracker.events[-1].timestamp,
+        tracker.events[-1].timestamp,
+        tracker.events[-1].timestamp,
+    ]
+    assert len(marker.preceding_user_turns) == 6
+    assert marker.preceding_user_turns == [0, 0, 2, 3, 3, 3]
