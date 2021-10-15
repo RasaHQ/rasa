@@ -264,9 +264,9 @@ class TestTEDPolicy(PolicyTestCollection):
         assert trained_policy.config[SIMILARITY_TYPE] == "inner"
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[RANKING_LENGTH] == 10
+        assert trained_policy.config[RANKING_LENGTH] == 0
 
-    def test_normalization(
+    def test_ranking_length_and_renormalization(
         self,
         trained_policy: TEDPolicy,
         tracker: DialogueStateTracker,
@@ -279,15 +279,20 @@ class TestTEDPolicy(PolicyTestCollection):
             tracker, default_domain, precomputations,
         )
         assert not prediction.is_end_to_end_prediction
-        # count number of non-zero confidences
-        assert (
-            sum([confidence > 0 for confidence in prediction.probabilities])
-            == trained_policy.config[RANKING_LENGTH]
-        )
-        # not re-normalized by default
-        assert sum(
-            [confidence for confidence in prediction.probabilities]
-        ) != pytest.approx(1)
+        if trained_policy.config[RANKING_LENGTH] == 0:
+            assert sum(
+                [confidence for confidence in prediction.probabilities]
+            ) == pytest.approx(1)
+            assert all(confidence > 0 for confidence in prediction.probabilities)
+        else:
+            assert (
+                sum([confidence > 0 for confidence in prediction.probabilities])
+                == trained_policy.config[RANKING_LENGTH]
+            )
+            # not re-normalized by default
+            assert sum(
+                [confidence for confidence in prediction.probabilities]
+            ) != pytest.approx(1)
 
     def test_label_data_assembly(
         self, trained_policy: TEDPolicy, default_domain: Domain
@@ -597,7 +602,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
     def test_confidence_type(self, trained_policy: TEDPolicy):
         assert trained_policy.config[MODEL_CONFIDENCE] == AUTO
 
-    def test_normalization(
+    def test_ranking_length_and_renormalization(
         self,
         trained_policy: Policy,
         tracker: DialogueStateTracker,
@@ -649,7 +654,7 @@ class TestTEDPolicyNormalization(TestTEDPolicy):
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 4
 
-    def test_normalization(
+    def test_ranking_length_and_renormalization(
         self,
         trained_policy: Policy,
         tracker: DialogueStateTracker,
@@ -692,34 +697,6 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicy):
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 11
-
-
-class TestTEDPolicyZeroRankingLength(TestTEDPolicy):
-    def _config(
-        self, config_override: Optional[Dict[Text, Any]] = None
-    ) -> Dict[Text, Any]:
-        config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            RANKING_LENGTH: 0,
-            **config_override,
-        }
-
-    def test_ranking_length(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[RANKING_LENGTH] == 0
-
-    def test_normalization(
-        self,
-        trained_policy: Policy,
-        tracker: DialogueStateTracker,
-        default_domain: Domain,
-    ):
-        precomputations = None
-        predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
-        ).probabilities
-        assert all(prob > 0 for prob in predicted_probabilities)
-        assert sum(predicted_probabilities) == pytest.approx(1)
 
 
 class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
