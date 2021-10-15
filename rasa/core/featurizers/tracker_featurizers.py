@@ -9,10 +9,7 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
 import numpy as np
 
-from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer,
-    SingleStateFeaturizer2,
-)
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer2
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
 import rasa.shared.core.trackers
@@ -29,21 +26,10 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
-from rasa.core.featurizers import _tracker_featurizers
 
 FEATURIZER_FILE = "featurizer.json"
 
 logger = logging.getLogger(__name__)
-
-# All code outside this module will continue to use the old `tracker_featurizer` module
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-TrackerFeaturizer = _tracker_featurizers.TrackerFeaturizer
-MaxHistoryTrackerFeaturizer = _tracker_featurizers.MaxHistoryTrackerFeaturizer
-IntentMaxHistoryTrackerFeaturizer = (
-    _tracker_featurizers.IntentMaxHistoryTrackerFeaturizer
-)
-FullDialogueTrackerFeaturizer = _tracker_featurizers.FullDialogueTrackerFeaturizer
 
 
 class InvalidStory(RasaException):
@@ -66,7 +52,7 @@ class TrackerFeaturizer2:
     """Base class for actual tracker featurizers."""
 
     def __init__(
-        self, state_featurizer: Optional[SingleStateFeaturizer] = None
+        self, state_featurizer: Optional[SingleStateFeaturizer2] = None
     ) -> None:
         """Initializes the tracker featurizer.
 
@@ -285,7 +271,7 @@ class TrackerFeaturizer2:
             raise InvalidTrackerFeaturizerUsageError(
                 f"Instance variable 'state_featurizer' is not set. "
                 f"During initialization set 'state_featurizer' to an instance of "
-                f"'{SingleStateFeaturizer.__class__.__name__}' class "
+                f"'{SingleStateFeaturizer2.__class__.__name__}' class "
                 f"to get numerical features for trackers."
             )
         self.state_featurizer.prepare_for_training(domain, bilou_tagging)

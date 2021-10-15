@@ -23,17 +23,8 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.tensorflow import model_data_utils
-from rasa.core.featurizers import _single_state_featurizer
 
 logger = logging.getLogger(__name__)
-
-# All code outside this module will continue to use the old `tracker_featurizer` module
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-SingleStateFeaturizer = _single_state_featurizer.SingleStateFeaturizer
-IntentTokenizerSingleStateFeaturizer = (
-    _single_state_featurizer.IntentTokenizerSingleStateFeaturizer
-)
 
 
 class SingleStateFeaturizer2:

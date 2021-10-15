@@ -83,23 +83,6 @@ def pickle_load(filename: Union[Text, Path]) -> Any:
         return pickle.load(f)
 
 
-def unarchive(byte_array: bytes, directory: Text) -> Text:
-    """Tries to unpack a byte array interpreting it as an archive.
-
-    Tries to use tar first to unpack, if that fails, zip will be used."""
-
-    try:
-        tar = TarSafe.open(fileobj=IOReader(byte_array))
-        tar.extractall(directory)
-        tar.close()
-        return directory
-    except tarfile.TarError:
-        zip_ref = zipfile.ZipFile(IOReader(byte_array))
-        zip_ref.extractall(directory)
-        zip_ref.close()
-        return directory
-
-
 def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
     """Creates a tempfile.NamedTemporaryFile object for data.
 
