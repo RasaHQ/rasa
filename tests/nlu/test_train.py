@@ -5,7 +5,6 @@ from _pytest.tmpdir import TempPathFactory
 
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyGraphComponent
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.tensorflow.constants import EPOCHS

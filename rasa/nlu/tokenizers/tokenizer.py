@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 class Token:
+    """Used by `Tokenizers` which split a single message into multiple `Token`s."""
+
     def __init__(
         self,
         text: Text,
@@ -30,6 +32,15 @@ class Token:
         data: Optional[Dict[Text, Any]] = None,
         lemma: Optional[Text] = None,
     ) -> None:
+        """Create a `Token`.
+
+        Args:
+            text: The token text.
+            start: The start index of the token within the entire message.
+            end: The end index of the token within the entire message.
+            data: Additional token data.
+            lemma: An optional lemmatized version of the token text.
+        """
         self.text = text
         self.start = start
         self.end = end if end else start + len(text)

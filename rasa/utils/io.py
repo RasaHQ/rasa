@@ -3,16 +3,12 @@ import filecmp
 import logging
 import os
 import pickle
-import tarfile
 import tempfile
 import warnings
-import zipfile
 import re
 from asyncio import AbstractEventLoop
-from io import BytesIO as IOReader
 from pathlib import Path
 from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING, Pattern
-from tarsafe import TarSafe
 
 import rasa.shared.constants
 import rasa.shared.utils.io
@@ -84,10 +80,7 @@ def pickle_load(filename: Union[Text, Path]) -> Any:
 
 
 def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
-    """Creates a tempfile.NamedTemporaryFile object for data.
-
-    mode defines NamedTemporaryFile's  mode parameter in py3."""
-
+    """Creates a tempfile.NamedTemporaryFile object for data."""
     encoding = None if "b" in mode else rasa.shared.utils.io.DEFAULT_ENCODING
     f = tempfile.NamedTemporaryFile(
         mode=mode, suffix=suffix, delete=False, encoding=encoding

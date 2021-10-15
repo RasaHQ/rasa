@@ -860,9 +860,7 @@ async def _predict_tracker_actions(
 
 
 def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
-    """Given a list of action items, returns the fraction of actions
-
-    that were predicted using one of the Memoization policies."""
+    """Given a list of actions, returns the fraction predicted by non ML policies."""
     import rasa.core.policies.ensemble
 
     in_training_data = [
