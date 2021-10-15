@@ -5,16 +5,33 @@ from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 
 
 def extract_markers(tracker: DialogueStateTracker, marker_config: Dict):
-    # TODO call the code below and test this
-    applied_events = tracker.applied_events()
+    # TODO test this
+    applied_events = get_relevant_events(tracker.applied_events())
     for marker_dict in marker_config:
         marker = Marker(
             name=marker_dict.get("marker"),
             operator=marker_dict.get("operator"),
             condition=marker_dict.get("condition"),
         )
-        Marker.does_marker_apply(applied_events)
-        # TODO save the marker to a file
+        marker.does_marker_apply(applied_events)
+        # TODO output the marker to a file?
+
+
+def get_relevant_events(events) -> List[Event]:
+    """Get only relevant events.
+
+    Reduce the applied events only to relevant events.
+    Useful for when trackers are large, as we traverse them
+    for each marker separately."""
+    relevant_events = []
+    for e in events:
+        if isinstance(e, SlotSet):
+            relevant_events.append(e)
+        elif isinstance(e, ActionExecuted):
+            relevant_events.append(e)
+        elif isinstance(e, UserUttered):
+            relevant_events.append(e)
+    return relevant_events
 
 
 class Marker:
@@ -70,35 +87,15 @@ class Marker:
                 options 'AND', 'OR', and 'SEQ' exist."
             )
 
-    def get_relevant_events(self, events) -> List[Event]:
-        """Get an ordered list of relevant events"""
-        relevant_events = []
-
-        for e in events:
-            if isinstance(e, SlotSet):
-                if e.key in self.slot_set or e.key in self.slot_not_set:
-                    relevant_events.append(e)
-
-            if isinstance(e, ActionExecuted):
-                if (
-                    e.action_name in self.action_executed
-                    or e.action_name in self.action_not_executed
-                ):
-                    relevant_events.append(e)
-
-            if isinstance(e, UserUttered):
-                if (
-                    e.intent in self.intent_detected
-                    or e.intent in self.intent_not_detected
-                ):
-                    relevant_events.append(e)
-
-        return relevant_events
-
     def check_and(self, events):
         """Checks that the AND condition applies"""
-        satisfied_pos = dict.fromkeys(self.slot_set + self.action_executed + self.intent_detected, False)
-        satisfied_neg = dict.fromkeys(self.slot_not_set + self.action_not_executed + self.intent_not_detected, False)
+        satisfied_pos = dict.fromkeys(
+            self.slot_set + self.action_executed + self.intent_detected, False
+        )
+        satisfied_neg = dict.fromkeys(
+            self.slot_not_set + self.action_not_executed + self.intent_not_detected,
+            False,
+        )
         satisfied_at_least_once = False
         user_turn_index = 0
 

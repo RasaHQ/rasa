@@ -263,18 +263,17 @@ def test_markers_operator_and():
 
     domain = Domain.empty()
     tracker = DialogueStateTracker(sender_id="xyz", slots=None)
-    tracker.update(SlotSet("flight_class", value='first'), domain)
-    tracker.update(SlotSet("travel_departure", value='edinburgh'), domain)
-    tracker.update(SlotSet("travel_destination", value='berlin'), domain)
+    tracker.update(SlotSet("flight_class", value="first"), domain)
+    tracker.update(SlotSet("travel_departure", value="edinburgh"), domain)
+    tracker.update(SlotSet("travel_destination", value="berlin"), domain)
     tracker.update(ActionExecuted("action_disclaimer"), domain)
     tracker.update(ActionExecuted("action_calculate_offsets"), domain)  # true
-    tracker.update(SlotSet("flight_class", value='business'), domain)  # true
-    tracker.update(SlotSet("travel_departure", value='berlin'), domain)  # true
-    tracker.update(SlotSet("travel_destination", value='new york'), domain)  # true
+    tracker.update(SlotSet("flight_class", value="business"), domain)  # true
+    tracker.update(SlotSet("travel_departure", value="berlin"), domain)  # true
+    tracker.update(SlotSet("travel_destination", value="new york"), domain)  # true
     tracker.update(ActionExecuted("action_calculate_offsets"), domain)  # true
 
     assert marker.check_and(tracker.events)
 
     assert len(marker.timestamps) == 5
     assert len(marker.preceding_user_turns) == 5
-
