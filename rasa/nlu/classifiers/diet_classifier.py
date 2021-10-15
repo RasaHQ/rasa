@@ -105,11 +105,6 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
 )
 
-from rasa.nlu.classifiers._diet_classifier import DIETClassifier
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-DIETClassifier = DIETClassifier
-
 logger = logging.getLogger(__name__)
 
 SPARSE = "sparse"

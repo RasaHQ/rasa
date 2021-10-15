@@ -22,12 +22,8 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.featurizers.sparse_featurizer._regex_featurizer import RegexFeaturizer
 
 logger = logging.getLogger(__name__)
-
-# TODO: remove after all references to old featurizer have been removed
-RegexFeaturizer = RegexFeaturizer
 
 
 @DefaultV1Recipe.register(

@@ -103,11 +103,6 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
 
-from rasa.nlu.selectors._response_selector import ResponseSelector
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-ResponseSelector = ResponseSelector
-
 logger = logging.getLogger(__name__)
 
 

@@ -7,15 +7,10 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-import rasa.nlu.utils._mitie_utils
 from rasa.shared.exceptions import InvalidConfigException
 
 if typing.TYPE_CHECKING:
     import mitie
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MitieNLP = rasa.nlu.utils._mitie_utils.MitieNLP
 
 
 class MitieModel:

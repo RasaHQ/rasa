@@ -10,15 +10,9 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 
 from rasa.core.constants import POLICY_MAX_HISTORY
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-)
-from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer2 as SingleStateFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.policies.policy import PolicyGraphComponent as Policy
 from rasa.core.policies.ted_policy import TEDPolicyGraphComponent as TEDPolicy
 from rasa.engine.graph import ExecutionContext

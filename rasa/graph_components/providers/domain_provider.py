@@ -4,8 +4,8 @@ from typing import Dict, Text, Any, Optional
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.config import InvalidConfigError
 from rasa.shared.core.domain import Domain
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.importer import TrainingDataImporter
 
 
@@ -63,7 +63,7 @@ class DomainProvider(GraphComponent):
         """Provides the domain during inference."""
         if self._domain is None:
             # This can't really happen but if it happens then we fail early
-            raise InvalidConfigError(
+            raise InvalidConfigException(
                 "No domain was found. This is required for "
                 "making model predictions. Please make sure to "
                 "provide a valid domain during training."

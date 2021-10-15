@@ -9,13 +9,9 @@ from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLPGraphComponent
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.extractors._spacy_entity_extractor import SpacyEntityExtractor
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-SpacyEntityExtractor = SpacyEntityExtractor
 
 
 @DefaultV1Recipe.register(

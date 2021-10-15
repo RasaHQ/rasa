@@ -10,10 +10,9 @@ from _pytest.tmpdir import TempPathFactory
 
 import rasa.shared.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
-from rasa.core.policies import Policy
+from rasa.core.policies.policy import PolicyGraphComponent
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.nlu.components import Component
 from rasa.shared.core.domain import Domain
 from rasa.model_training import (
     CODE_NEEDS_TO_BE_RETRAINED,
@@ -136,11 +135,11 @@ def test_train_no_domain_exists(
     _, metadata = LocalModelStorage.from_model_archive(tmp_path, model_file)
 
     assert not any(
-        issubclass(component.uses, Policy)
+        issubclass(component.uses, PolicyGraphComponent)
         for component in metadata.train_schema.nodes.values()
     )
     assert not any(
-        issubclass(component.uses, Policy)
+        issubclass(component.uses, PolicyGraphComponent)
         for component in metadata.predict_schema.nodes.values()
     )
 
@@ -379,11 +378,11 @@ def test_train_nlu(run_in_simple_project: Callable[..., RunResult], tmp_path: Pa
     _, metadata = LocalModelStorage.from_model_archive(tmp_path, model_file)
 
     assert not any(
-        issubclass(component.uses, Component)
+        issubclass(component.uses, PolicyGraphComponent)
         for component in metadata.train_schema.nodes.values()
     )
     assert not any(
-        issubclass(component.uses, Component)
+        issubclass(component.uses, PolicyGraphComponent)
         for component in metadata.predict_schema.nodes.values()
     )
 

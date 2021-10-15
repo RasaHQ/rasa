@@ -14,8 +14,7 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
 
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 
@@ -142,7 +141,6 @@ def find_story_conflicts(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int] = None,
-    nlu_config: Optional[RasaNLUModelConfig] = None,
 ) -> List[StoryConflict]:
     """Generates `StoryConflict` objects, describing conflicts in the given trackers.
 
@@ -150,7 +148,6 @@ def find_story_conflicts(
         trackers: Trackers in which to search for conflicts.
         domain: The domain.
         max_history: The maximum history length to be taken into account.
-        nlu_config: NLU config.
 
     Returns:
         StoryConflict objects.
@@ -183,7 +180,7 @@ def _find_conflicting_states(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int],
-    tokenizer: Optional[Tokenizer] = None,
+    tokenizer: Optional[TokenizerGraphComponent] = None,
 ) -> Dict[int, Optional[List[Text]]]:
     """Identifies all states from which different actions follow.
 
@@ -242,7 +239,7 @@ def _build_conflicts_from_states(
     domain: Domain,
     max_history: Optional[int],
     conflicting_state_action_mapping: Dict[int, Optional[List[Text]]],
-    tokenizer: Optional[Tokenizer] = None,
+    tokenizer: Optional[TokenizerGraphComponent] = None,
 ) -> List["StoryConflict"]:
     """Builds a list of `StoryConflict` objects for each given conflict.
 
@@ -285,7 +282,7 @@ def _sliced_states_iterator(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int],
-    tokenizer: Optional[Tokenizer],
+    tokenizer: Optional[TokenizerGraphComponent],
 ) -> Generator[TrackerEventStateTuple, None, None]:
     """Creates an iterator over sliced states.
 
@@ -318,7 +315,9 @@ def _sliced_states_iterator(
                 idx += 1
 
 
-def _apply_tokenizer_to_states(tokenizer: Tokenizer, states: List[State]) -> None:
+def _apply_tokenizer_to_states(
+    tokenizer: TokenizerGraphComponent, states: List[State]
+) -> None:
     """Split each user text into tokens and concatenate them again.
 
     Args:

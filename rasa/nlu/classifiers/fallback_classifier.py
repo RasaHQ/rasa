@@ -21,11 +21,6 @@ from rasa.shared.nlu.constants import (
     PREDICTED_CONFIDENCE_KEY,
 )
 
-from rasa.nlu.classifiers._fallback_classifier import FallbackClassifier
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-FallbackClassifier = FallbackClassifier
-
 THRESHOLD_KEY = "threshold"
 AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
 

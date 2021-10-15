@@ -298,7 +298,6 @@ async def perform_nlu_cross_validation(
         additional_arguments: Additional arguments which are passed to the
             cross-validation, like number of `disable_plotting`.
     """
-    import rasa.nlu.config
     from rasa.nlu.test import (
         drop_intents_below_freq,
         cross_validate,

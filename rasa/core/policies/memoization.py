@@ -17,12 +17,8 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 from rasa.shared.exceptions import FileIOException
 from rasa.core.policies.policy import (
@@ -39,15 +35,6 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
 )
-from rasa.core.policies._memoization import (
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy,
-)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MemoizationPolicy = MemoizationPolicy
-AugmentedMemoizationPolicy = AugmentedMemoizationPolicy
 
 logger = logging.getLogger(__name__)
 

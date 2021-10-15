@@ -20,11 +20,6 @@ from rasa.nlu.classifiers.classifier import IntentClassifier2
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 
-from rasa.nlu.classifiers._sklearn_intent_classifier import SklearnIntentClassifier
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-SklearnIntentClassifier = SklearnIntentClassifier
-
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:

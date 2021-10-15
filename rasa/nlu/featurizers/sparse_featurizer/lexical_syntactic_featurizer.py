@@ -35,14 +35,8 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import InvalidConfigException
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.nlu.featurizers.sparse_featurizer._lexical_syntactic_featurizer import (
-    LexicalSyntacticFeaturizer,
-)
 
 logger = logging.getLogger(__name__)
-
-# TODO: remove after all references to old featurizer have been removed
-LexicalSyntacticFeaturizer = LexicalSyntacticFeaturizer
 
 
 END_OF_SENTENCE = "EOS"

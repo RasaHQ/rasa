@@ -9,14 +9,10 @@ from _pytest.logging import LogCaptureFixture
 import logging
 
 from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.unexpected_intent_policy import (

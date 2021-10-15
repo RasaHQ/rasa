@@ -58,13 +58,9 @@ from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
 import rasa.core.training.training
-from rasa.core.policies._rule_policy import RulePolicy
 
 logger = logging.getLogger(__name__)
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-RulePolicy = RulePolicy
 
 # These are Rasa Open Source default actions and overrule everything at any time.
 DEFAULT_ACTION_MAPPINGS = {
@@ -188,8 +184,8 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         ):
             raise InvalidDomain(
                 f"The fallback action '{fallback_action_name}' which was "
-                f"configured for the {RulePolicy.__name__} must be present in the "
-                f"domain."
+                f"configured for the {RulePolicyGraphComponent.__name__} must be "
+                f"present in the domain."
             )
 
     @staticmethod

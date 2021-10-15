@@ -12,6 +12,14 @@ from rasa.core.channels import UserMessage
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
+
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractorGraphComponent
+from rasa.nlu.extractors.mitie_entity_extractor import (
+    MitieEntityExtractorGraphComponent,
+)
+from rasa.nlu.extractors.spacy_entity_extractor import (
+    SpacyEntityExtractorGraphComponent,
+)
 from tests.conftest import AsyncMock
 
 import rasa.nlu.test
@@ -196,7 +204,7 @@ def test_determine_token_labels_throws_error():
         determine_token_labels(
             CH_correct_segmentation[0],
             [CH_correct_entity, CH_wrong_entity],
-            {"CRFEntityExtractor"},
+            {CRFEntityExtractorGraphComponent.__name__},
         )
 
 
@@ -216,7 +224,10 @@ def test_determine_token_labels_with_extractors():
     label = determine_token_labels(
         CH_correct_segmentation[0],
         [CH_correct_entity, CH_wrong_entity],
-        {"SpacyEntityExtractor", "MitieEntityExtractor"},
+        {
+            SpacyEntityExtractorGraphComponent.__name__,
+            MitieEntityExtractorGraphComponent.__name__,
+        },
     )
     assert label == "direction"
 
