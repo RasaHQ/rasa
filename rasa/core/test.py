@@ -214,7 +214,7 @@ class EvaluationStore:
             entity_targets=other.entity_targets,
         )
 
-    def _has_entity_prediction_target_mismatch(self) -> bool:
+    def _check_entity_prediction_target_mismatch(self) -> bool:
         """Checks that same entities were expected and actually extracted.
 
         Possible duplicates or differences in order should not matter.
