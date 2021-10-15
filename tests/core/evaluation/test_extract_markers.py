@@ -133,10 +133,13 @@ def test_markers_operator_or_intents():
     assert marker.check_or(tracker.events)
 
     # check that it was satisfied at the second event
-    assert len(marker.timestamps) == 1
-    assert marker.timestamps == [tracker.events[-2].timestamp]
-    assert len(marker.preceding_user_turns) == 1
-    assert marker.preceding_user_turns == [2]
+    assert len(marker.timestamps) == 2
+    assert marker.timestamps == [
+        tracker.events[1].timestamp,
+        tracker.events[2].timestamp,
+    ]
+    assert len(marker.preceding_user_turns) == 2
+    assert marker.preceding_user_turns == [2, 3]
 
 
 def test_markers_operator_or_combo():
@@ -196,3 +199,40 @@ def test_markers_operator_or_combo():
     ]
     assert len(marker.preceding_user_turns) == 6
     assert marker.preceding_user_turns == [0, 0, 2, 3, 3, 3]
+
+
+def test_markers_operator_or_combo_none_found():
+    sample_yaml = """
+        markers:
+          - marker: marker_1
+            operator: OR
+            condition:
+              - slot_set:
+                  - flight_class
+              - action_executed:
+                  - action_analyse_travelplan
+              - intent_detected:
+                  - express_surprise
+        """
+    config = MarkerConfig.from_yaml(sample_yaml)
+    marker_dict = config.get("markers")[0]
+    marker = Marker(
+        name=marker_dict.get("marker"),
+        operator=marker_dict.get("operator"),
+        condition=marker_dict.get("condition"),
+    )
+
+    domain = Domain.empty()
+    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
+    tracker.update(SlotSet("travel_departure", value=None), domain)
+    tracker.update(ActionExecuted("action_disclaimer"), domain)
+    tracker.update(UserUttered(intent={"name": "insult"}), domain)
+
+    # check marker condition was satisfied
+    assert not marker.check_or(tracker.events)
+
+    # check that it was satisfied at the second event
+    assert len(marker.timestamps) == 0
+    assert marker.timestamps == []
+    assert len(marker.preceding_user_turns) == 0
+    assert marker.preceding_user_turns == []

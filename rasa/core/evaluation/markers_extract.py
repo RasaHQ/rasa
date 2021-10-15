@@ -3,12 +3,18 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 
-# by default check at the end of the dialogue?
 
-
-def extract_markers(tracker: DialogueStateTracker, marker_conditions: Dict):
+def extract_markers(tracker: DialogueStateTracker, marker_config: Dict):
+    # TODO call the code below and test this
     applied_events = tracker.applied_events()
-
+    for marker_dict in marker_config:
+        marker = Marker(
+            name=marker_dict.get("marker"),
+            operator=marker_dict.get("operator"),
+            condition=marker_dict.get("condition"),
+        )
+        Marker.does_marker_apply(applied_events)
+        # TODO save the marker to a file 
 
 
 class Marker:
@@ -104,20 +110,18 @@ class Marker:
         intent_detected = []
         satisfied = False
 
-        # check the presence of atomic conditions
+        # check the positive atomic conditions (slot_set, action_executed, etc.)
         for e in events:
             if isinstance(e, SlotSet):
                 if e.key in self.slot_set and e.value:
-                    self.timestamps.append(e.timestamp)
-                    self.preceding_user_turns.append(user_turn_index)
+                    self._mark_event(e.timestamp, user_turn_index)
                     satisfied = True
                 if e.key in self.slot_not_set and e.value:
                     slot_set.append(e.key)
 
             if isinstance(e, ActionExecuted):
                 if e.action_name in self.action_executed:
-                    self.timestamps.append(e.timestamp)
-                    self.preceding_user_turns.append(user_turn_index)
+                    self._mark_event(e.timestamp, user_turn_index)
                     satisfied = True
                 if e.action_name in self.action_not_executed:
                     action_executed.append(e.action_name)
@@ -125,30 +129,26 @@ class Marker:
             if isinstance(e, UserUttered):
                 user_turn_index += 1
                 if e.intent.get("name") in self.intent_detected:
-                    self.timestamps.append(e.timestamp)
-                    self.preceding_user_turns.append(user_turn_index)
+                    self._mark_event(e.timestamp, user_turn_index)
                     satisfied = True
                 if e.intent.get("name") in self.intent_not_detected:
-                    intent_detected.append(e.intent.get('name'))
+                    intent_detected.append(e.intent.get("name"))
 
+        # check the negative atomic conditions (slot_not_set, action_not_executed, etc.)
         e = events[-1]
-        # check the absence of atomic conditions (slot_not_set, action_not_executed, etc.)
         for slot in self.slot_not_set:
             if slot not in slot_set:
-                self.timestamps.append(e.timestamp)
-                self.preceding_user_turns.append(user_turn_index)
+                self._mark_event(e.timestamp, user_turn_index)
                 satisfied = True
 
         for action in self.action_not_executed:
             if action not in action_executed:
-                self.timestamps.append(e.timestamp)
-                self.preceding_user_turns.append(user_turn_index)
+                self._mark_event(e.timestamp, user_turn_index)
                 satisfied = True
 
         for intent in self.intent_not_detected:
             if intent not in intent_detected:
-                self.timestamps.append(e.timestamp)
-                self.preceding_user_turns.append(user_turn_index)
+                self._mark_event(e.timestamp, user_turn_index)
                 satisfied = True
 
         return satisfied
@@ -156,3 +156,7 @@ class Marker:
     def check_seq(self, events):
         """Checks that the SEQ condition applies."""
         return
+
+    def _mark_event(self, timestamp, user_turn_index):
+        self.timestamps.append(timestamp)
+        self.preceding_user_turns.append(user_turn_index)
