@@ -1104,9 +1104,11 @@ def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
     if extractors is None:
         return False
 
-    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+    from rasa.nlu.extractors.crf_entity_extractor import (
+        CRFEntityExtractorGraphComponent,
+    )
 
-    return CRFEntityExtractor.name not in extractors
+    return CRFEntityExtractorGraphComponent.__name__ not in extractors
 
 
 def align_entity_predictions(

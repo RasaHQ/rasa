@@ -37,7 +37,6 @@ from rasa.core.featurizers.single_state_featurizer import (
 )
 from rasa.core.policies.policy import (
     SupportedData,
-    Policy,
     InvalidPolicyConfig,
     PolicyGraphComponent,
 )
@@ -207,7 +206,7 @@ class PolicyTestCollection:
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(
-        self, trained_policy: Policy, default_domain: Domain
+        self, trained_policy: PolicyGraphComponent, default_domain: Domain
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
@@ -735,7 +734,9 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         (MemoizationPolicyGraphComponent, SupportedData.ML_DATA),
     ],
 )
-def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
+def test_supported_data(
+    policy: Type[PolicyGraphComponent], supported_data: SupportedData
+):
     assert policy.supported_data() == supported_data
 
 
