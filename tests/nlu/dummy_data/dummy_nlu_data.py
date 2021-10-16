@@ -65,21 +65,24 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
     The dummy featurization has the following properties:
     - 2 Sparse and 2 dense featurizers generate features.
     - Each featurizer is used to featurize the text and (if requested) the intents.
+    - Each featurizer produces sequence features and (if requested) sentence features.
     """
 
     def __init__(
         self, featurize_intents: bool, no_sentence_features: Optional[Set[Text]]
     ) -> None:
-        self.attributes_with_features = [TEXT]
-        if featurize_intents:
-            self.attributes_with_features.append(INTENT)
-        self.no_sentence_features = no_sentence_features
-
+        no_sentence_features = no_sentence_features or set()
+        attributes = {TEXT, INTENT} if featurize_intents else {TEXT}
         self.featurizers = [
-            FeaturizerDescription(name="1", dimension=2, is_sparse=True),
-            FeaturizerDescription(name="2", dimension=3, is_sparse=False),
-            FeaturizerDescription(name="3", dimension=4, is_sparse=True),
-            FeaturizerDescription(name="4", dimension=4, is_sparse=False),
+            FeaturizerDescription(
+                name=f"{idx}",
+                sequence_dim=idx,
+                sentence_dim=idx + 1,
+                sentence_attributes=attributes.difference(no_sentence_features),
+                sequence_attributes=attributes,
+                is_sparse=(idx in [1, 2]),
+            )
+            for idx in [1, 2, 3, 4]
         ]
         self._rand_featurizer = DummyFeatures(featurizer_descriptions=self.featurizers,)
         self._num_messages = len(self.create_messages())
@@ -206,14 +209,13 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
 
     def featurize_messages(self, messages: List[Message],) -> None:
         """Featurizes the given messages."""
-        self._rand_featurizer.featurize_messages(
-            messages,
-            attributes=self.attributes_with_features,
-            attributes_without_sentence_features=self.no_sentence_features,
-        )
+        self._rand_featurizer.apply_featurization(messages,)
 
     def create_and_concatenate_features(
-        self, messages: List[Message], used_featurizers: List[Text],
+        self,
+        messages: List[Message],
+        used_featurizers: List[Text],
+        attributes: Optional[Set[Text]] = None,
     ) -> Dict[Text, List[ConcatenatedFeaturizations]]:
         """Creates features for the given messages and concatenates them.
 
@@ -228,24 +230,25 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
                 featurizer are used to create the concatenated feature matrices
                 (this is application dependent and hence not part of the dummy
                 dataset definition)
+            attributes: attributes for which concatenated features should be computed;
+                set to `None` to collect concatenated features for all
+                featurized attributes
         Returns:
            a mapping from each attribute that is featurized to a list containing,
            for each message, the concatenated features (i.e. one matrix per
            per type and sparseness property)
         """
-
         if used_featurizers is not None:
             assert set(used_featurizers) <= set(
-                featurizer.name
-                for featurizer in self._rand_featurizer.featurizer_descriptions
+                featurizer.name for featurizer in self.featurizers
             )
+        attributes = attributes or set(
+            attribute for fd in self.featurizers for attribute in fd.attributes
+        )
         collected = {
             attribute: self._rand_featurizer.create_concatenated_features(
-                messages,
-                attribute=attribute,
-                used_featurizers=used_featurizers,
-                skip_sentence_features=(attribute in self.no_sentence_features),
+                messages, attribute=attribute, used_featurizers=used_featurizers,
             )
-            for attribute in self.attributes_with_features
+            for attribute in attributes
         }
         return collected
