@@ -12,6 +12,8 @@ import numpy as np
 import scipy.sparse
 from rasa.nlu.constants import TOKENS_NAMES
 
+# TODO: from rasa.nlu.constants import SENTENCE_FEATURES, SEQUENCE_FEATURES  (?)
+
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import (
@@ -27,19 +29,26 @@ class FeaturizerDescription:
 
     Args:
         name: featurizer name
-        dimension: feature dimension of sequence and sentence features
+        sequence_dim: feature dimension of sequence features
+        sentence_dim: feature dimension of sentence features
         is_sparse: determines whether it produces sparse features
+        sequence_attributes: the attributes for which it produced sequence features
+        sentence_attributes: the attributes for which it produces sentence features
     """
 
     name: Text = "featurizer"
-    dimension: int = 4
-    # TODO: do we have featurizer where sentence and sequence feature dimensions differ?
+    sequence_dim: int = 4
+    sentence_dim: int = 4
     is_sparse: bool = True
+    sequence_attributes: Set[Text] = field(default_factory=lambda: set())
+    sentence_attributes: Set[Text] = field(default_factory=lambda: set())
+
+    @property
+    def attributes(self):
+        return self.sequence_attributes.union(self.sentence_attributes)
 
 
-# Each featurizer should produce sequence and sentence features. However, if the
-# attribute to be featurized is not present, then no features are generated.
-# Moreover, not all featurizers always produce sentence features.
+# Each featurizer can produce sequence and/or sentence features.
 Featurization = TypedDict(
     "Featurization",
     {FEATURE_TYPE_SENTENCE: Features, FEATURE_TYPE_SEQUENCE: Features},
@@ -74,24 +83,13 @@ class DummyFeatures:
     This feature generator allows for imitating a featurization where ...
     1. each featurizer may produce sparse and/or dense features
     2. if a featurizer produces features of a certain kind (sparse/dense), then it
-       always produces sequence *and* sentence features of that kind and ...
-    3. ... those features always have the same (last) dimension (also denoted "units"
-       in other parts of the code base)
-    4. each featurizer can produces features for an attribute if and only if that
+        produces a single sequence and/or a single sentence features of that kind
+    3. each featurizer can produces features for an attribute if and only if that
        attribute has been tokenized (i.e. the list of tokens is not empty) and will
        produce sequence features with a sequence length that is equal to the number
        of tokens
-    5. featurizers are always applied exactly once to a message - in the exact same
+    4. featurizers are always applied exactly once to a message - in the exact same
        sequential order
-
-    Note that assumption 2. is violated e.g. by `LexicalSyntacticFeaturizer` and the
-    `CountVectorizer` (when applied to attributes that are not "dense featurizable").
-    To run tests with these assumptions, features need to be removed from the
-    dummy data by hand.
-
-    Note that 3. and 6. is are essential assumptions in the current code base
-    regarding the data prepartion for models and regarding the models themselves
-    which expect to be able to concatenate sentence and sequence features.
 
     Args:
         featurizer_descriptions: list of featurizer descriptions
@@ -110,15 +108,49 @@ class DummyFeatures:
         rng = random.Random("".join([f"{item}" for item in seed]))
         return rng.randint(0, DummyFeatures.SEED_RANGE)
 
-    def create_features(
+    @staticmethod
+    def generate_pseudo_random_feature(
+        attribute: Text,
+        tokens: List[Text],
+        origin: Text,
+        is_sparse: bool,
+        feature_type: Text,
+        feature_dim: int,
+    ) -> Features:
+        """Imitates the creation of a single `Features` by a featurizer."""
+        # determine the shape
+        seq_len = 1 if feature_type == FEATURE_TYPE_SENTENCE else len(tokens)
+        shape = (seq_len, feature_dim)
+        # create a unique seed value and initialise an rng
+        seed = DummyFeatures.generate_pseudo_random_value(
+            [attribute, tokens, origin, feature_type,]
+        )
+        rng = np.random.default_rng(seed)
+        # fill a sparse/dense matrix using the rng
+        if not is_sparse:
+            matrix = rng.random(shape)
+        else:
+            matrix = scipy.sparse.eye(m=shape[0], n=shape[1]) * rng.random()
+        # add it to the message if required
+        feature = Features(
+            features=matrix,
+            feature_type=feature_type,
+            attribute=attribute,
+            origin=origin,
+        )
+        return feature
+
+    def featurize_message(
         self,
         message: Message,
-        attribute: Text,
         featurizer_description: FeaturizerDescription,
         add_to_message: bool = True,
-        skip_sentence_features: bool = False,
-    ) -> Featurization:
-        """Imitates the application of a featurizer to a specific message attribute.
+    ) -> Dict[Text, Featurization]:
+        """Imitates the application of a featurizer.
+
+        Note that the order of features is not guaranteed - featurizers can add
+        sequence and sentenc features and also features for different attributes
+        in any order.
 
         Args:
             message: the message to be featurized
@@ -128,129 +160,122 @@ class DummyFeatures:
                should be imitated
             add_to_messages: determines whether the features should be added to the
                given message
-            skip_sentence_features: whether no sentence features should be created
         Returns:
-            a pseudo-random featurization that includes either sparse or dense
-            features (depending on the description of the featurizer) with sentence
-            features missing if `skip_sentence_features` is set to `True`
+            pseudo-random featurizations for each featurized attribute
         """
-        tokens = message.get(TOKENS_NAMES[attribute], [])
-        if not tokens:
-            return dict()
-        featurization = dict()
-        # order of sequence and sentence features is not guaranteed - featurizers
-        # can add them in any order
-        feature_types = [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]
-        random.shuffle(feature_types)
-        for feature_type in feature_types:
-            # skip sentence features if requested
-            if feature_type == FEATURE_TYPE_SENTENCE and skip_sentence_features:
+        # a featurizer will attempt to featurize all of the following but might
+        # skip a feature if the corresponding attribute has no tokens
+        potential_combinations = [
+            (feature_type, dim, attribute)
+            for feature_type, dim, attribute_list in [
+                (
+                    FEATURE_TYPE_SENTENCE,
+                    featurizer_description.sentence_dim,
+                    featurizer_description.sentence_attributes,
+                ),
+                (
+                    FEATURE_TYPE_SEQUENCE,
+                    featurizer_description.sequence_dim,
+                    featurizer_description.sequence_attributes,
+                ),
+            ]
+            for attribute in attribute_list
+        ]
+        # a featurizers can add these in any order they like, we imitate this by
+        # shuffling the order:
+        random.shuffle(potential_combinations)
+        # generate the features
+        featurizations: Dict[Text, Featurization] = dict()
+        for feature_type, feature_dim, attribute in potential_combinations:
+            tokens = message.get(TOKENS_NAMES[attribute], [])
+            if not tokens:
                 continue
-            # shape
-            seq_len = 1 if feature_type == FEATURE_TYPE_SENTENCE else len(tokens)
-            feat_dim = featurizer_description.dimension
-            shape = (seq_len, feat_dim)
-            # create a unique seed value and initialise an rng
-            seed = self.generate_pseudo_random_value(
-                [
-                    attribute,
-                    message.get(attribute, None),
-                    featurizer_description.name,
-                    feature_type,
-                ]
-            )
-            rng = np.random.default_rng(seed)
-            # fill a sparse/dense matrix using the rng
-            if not featurizer_description.is_sparse:
-                matrix = rng.random(shape)
-            else:
-                matrix = scipy.sparse.random(m=shape[0], n=shape[1], random_state=rng)
-            # add it to the message if required
-            feature = Features(
-                features=matrix,
-                feature_type=feature_type,
+            feature = self.generate_pseudo_random_feature(
                 attribute=attribute,
+                tokens=tokens,
                 origin=featurizer_description.name,
+                feature_type=feature_type,
+                feature_dim=feature_dim,
+                is_sparse=featurizer_description.is_sparse,
             )
             if add_to_message:
                 message.features.append(feature)
-            featurization[feature_type] = feature
-        return featurization
+            featurizations.setdefault(attribute, dict())[feature_type] = feature
+        return featurizations
 
-    def featurize_messages(
-        self,
-        messages: List[Message],
-        attributes: List[Text],
-        attributes_without_sentence_features: Set[Text],
-    ) -> None:
+    def apply_featurization(self, messages: List[Message],) -> None:
         """Imitates the application of a featurization pipeline to a list of messages.
+
+        Note that the order in which the featurizers are applied is fixed.
 
         Args:
             messages: some messages
-            attributes: a list of attributes for which we want to create features.
         """
         for message in messages:
-            for attribute in attributes:
-                # the order in which the featurizers are applied is fixed
-                skip_sentence_features = (
-                    attribute in attributes_without_sentence_features
+            for featurizer_description in self.featurizer_descriptions:
+                self.featurize_message(
+                    message=message,
+                    featurizer_description=featurizer_description,
+                    add_to_message=True,
                 )
-                for featurizer_description in self.featurizer_descriptions:
-                    self.create_features(
-                        message=message,
-                        attribute=attribute,
-                        featurizer_description=featurizer_description,
-                        add_to_message=True,
-                        skip_sentence_features=skip_sentence_features,
-                    )
 
     def create_concatenated_features(
-        self,
-        messages: List[Message],
-        attribute: Text,
-        used_featurizers: List[Text],
-        skip_sentence_features: bool,
+        self, messages: List[Message], attribute: Text, used_featurizers: List[Text],
     ) -> List[ConcatenatedFeaturizations]:
         """Imitates the concatenations of features of the same kind.
 
         For each message, all features that have been created using the
         `used_featurizers` and that have the same type and sparseness property are
         concatenated along the last dimension.
-        Their order is determined *not* determined by the `used_featurizers` list
+
+        Note that the order in which features are concatenated is *not* determined
+        by the `used_featurizers` list,
         but by the order they appear in the complete definition of the featurizers.
 
         Args:
+            messages: messages for which concatenated features should be created
+            attribute: the attribute for which concatenated features should be created
+            used_featurizers: the subset of the featurizers which should be used
+        Returns:
             list containing, for each message, the concatenated features (i.e. one
             matrix per per type and sparseness property)
         """
-
-        concatenation_order = [
+        used_featurizers_ordered = [
             featurizer_description
             for featurizer_description in self.featurizer_descriptions
             if (used_featurizers is None)
             or (featurizer_description.name in used_featurizers)
         ]
-
         collected: List[ConcatenatedFeaturizations] = []
         for message in messages:
             message_features: ConcatenatedFeaturizations = dict()
             for is_sparse in [True, False]:
-                featurizations = [
-                    self.create_features(
-                        message=message,
-                        attribute=attribute,
-                        featurizer_description=featurizer,
-                        add_to_message=False,
-                        skip_sentence_features=skip_sentence_features,
-                    )  # i.e. sequence and sentence features
-                    for featurizer in concatenation_order
-                    if featurizer.is_sparse == is_sparse
-                ]
                 for feature_type in [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]:
+                    sentences = feature_type == FEATURE_TYPE_SENTENCE
                     matrices = [
-                        featurization[feature_type].features
-                        for featurization in featurizations
-                        if feature_type in featurization
+                        self.generate_pseudo_random_feature(
+                            attribute=attribute,
+                            tokens=message.get(TOKENS_NAMES[attribute], []),
+                            origin=fd.name,
+                            is_sparse=fd.is_sparse,
+                            feature_type=feature_type,
+                            feature_dim=(
+                                fd.sentence_dim if sentences else fd.sequence_dim
+                            ),
+                        ).features
+                        # concatenated only the "used featurizers"
+                        for fd in used_featurizers_ordered
+                        # concatenate only those with same sparseness property
+                        if fd.is_sparse == is_sparse
+                        # ... if attributes the attribute was featurized
+                        and attribute
+                        in (
+                            fd.sentence_attributes
+                            if sentences
+                            else fd.sequence_attributes
+                        )
+                        # ... if the attribute is tokenized
+                        and message.get(TOKENS_NAMES[attribute], [])
                     ]
                     if matrices:
                         if is_sparse:
