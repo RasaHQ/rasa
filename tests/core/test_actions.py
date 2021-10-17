@@ -1263,3 +1263,50 @@ async def test_action_extract_slots_predefined_mappings(
         assert tracker.get_slot(slot_name) == updated_value
     else:
         assert updated_evts == [SlotSet(slot_name, updated_value)]
+
+
+async def test_action_extract_slots_with_from_trigger_mappings():
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            """
+            version: "2.0"
+            intents:
+            - greet
+            - inform
+            - register
+            slots:
+              email:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_text
+                  intent: inform
+                  not_intent: greet
+              existing_customer:
+                type: bool
+                influence_conversation: false
+                mappings:
+                - type: from_trigger_intent
+                  intent: register
+                  value: false
+                  conditions:
+                  - active_loop: registration_form
+            forms:
+              registration_form:
+                required_slots:
+                  - existing_customer
+                  - email"""
+        )
+    )
+
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+    user_event = UserUttered(text="I'd like to register", intent={"name": "register"})
+    tracker = DialogueStateTracker.from_events("sender", evts=[user_event])
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+
+    assert events == [SlotSet("existing_customer", False)]
