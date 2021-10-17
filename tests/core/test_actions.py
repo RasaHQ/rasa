@@ -1756,3 +1756,202 @@ async def test_action_extract_slots_from_entity(
     )
 
     assert slot_events == expected_slot_events
+
+
+@pytest.mark.parametrize(
+    "entities, expected_slot_values",
+    [
+        # Two entities were extracted for `ListSlot`
+        (
+            [
+                {"entity": "topping", "value": "mushrooms"},
+                {"entity": "topping", "value": "kebab"},
+            ],
+            ["mushrooms", "kebab"],
+        ),
+        # Only one entity was extracted for `ListSlot`
+        ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
+    ],
+)
+async def test_extract_other_list_slot_from_entity(
+    entities: List[Dict[Text, Any]], expected_slot_values: List[Text]
+):
+    form_name = "some_form"
+    slot_name = "toppings"
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+    version: "2.0"
+
+    slots:
+      {slot_name}:
+        type: list
+        influence_conversation: false
+        mappings:
+        - type: from_entity
+          entity: topping
+
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+          - {slot_name}
+    """
+        )
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some slot"),
+            UserUttered(
+                "bla", intent={"name": "greet", "confidence": 1.0}, entities=entities
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        slots=domain.slots,
+    )
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    slot_events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+
+    assert slot_events == [SlotSet(slot_name, expected_slot_values)]
+
+
+@pytest.mark.parametrize(
+    "trigger_slot_mapping, expected_value",
+    [
+        ({"type": "from_trigger_intent", "intent": "greet", "value": "ten"}, "ten"),
+        (
+            {
+                "type": "from_trigger_intent",
+                "intent": ["bye", "greet"],
+                "value": "tada",
+            },
+            "tada",
+        ),
+    ],
+)
+async def test_trigger_slot_mapping_applies(
+    trigger_slot_mapping: Dict, expected_value: Text
+):
+    form_name = "some_form"
+    entity_name = "some_slot"
+    slot_filled_by_trigger_mapping = "other_slot"
+
+    domain = Domain.from_dict(
+        {
+            "slots": {
+                entity_name: {
+                    "type": "text",
+                    "mappings": [
+                        {
+                            "type": "from_entity",
+                            "entity": entity_name,
+                            "intent": "some_intent",
+                        }
+                    ],
+                },
+                slot_filled_by_trigger_mapping: {
+                    "type": "text",
+                    "mappings": [trigger_slot_mapping],
+                },
+            },
+            "forms": {
+                form_name: {
+                    REQUIRED_SLOTS_KEY: [entity_name, slot_filled_by_trigger_mapping,]
+                }
+            },
+        }
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "bla",
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": entity_name, "value": "some_value"}],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    slot_events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+
+    assert slot_events == [SlotSet(slot_filled_by_trigger_mapping, expected_value)]
+
+
+@pytest.mark.parametrize(
+    "trigger_slot_mapping",
+    [
+        ({"type": "from_trigger_intent", "intent": "bye", "value": "ten"}),
+        ({"type": "from_trigger_intent", "not_intent": ["greet"], "value": "tada"}),
+    ],
+)
+async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
+    form_name = "some_form"
+    entity_name = "some_slot"
+    slot_filled_by_trigger_mapping = "other_slot"
+
+    domain = Domain.from_dict(
+        {
+            "slots": {
+                entity_name: {
+                    "type": "text",
+                    "mappings": [
+                        {
+                            "type": "from_entity",
+                            "entity": entity_name,
+                            "intent": "some_intent",
+                        }
+                    ],
+                },
+                slot_filled_by_trigger_mapping: {
+                    "type": "text",
+                    "mappings": [trigger_slot_mapping],
+                },
+            },
+            "forms": {
+                form_name: {
+                    REQUIRED_SLOTS_KEY: [entity_name, slot_filled_by_trigger_mapping,]
+                }
+            },
+        }
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "bla",
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": entity_name, "value": "some_value"}],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    slot_events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+
+    assert slot_events == []

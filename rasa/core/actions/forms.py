@@ -12,7 +12,6 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
-    ACTIVE_LOOP,
 )
 from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.events import (
@@ -205,88 +204,6 @@ class FormAction(LoopAction):
             return value[0]
 
         return value
-
-    def _matches_mapping_conditions(
-        self, mapping: Dict[Text, Any], slot_to_fill: Optional[Text]
-    ) -> bool:
-        slot_mapping_conditions = mapping.get("conditions")
-
-        # check if found mapping conditions matches form
-        if slot_mapping_conditions:
-            for i, condition in enumerate(slot_mapping_conditions):
-                active_loop = condition.get(ACTIVE_LOOP)
-
-                if active_loop == self.name():
-                    condition_requested_slot = condition.get(REQUESTED_SLOT)
-                    if (
-                        condition_requested_slot
-                        and condition_requested_slot != slot_to_fill
-                    ):
-                        return False
-                    return True
-                else:
-                    if i == len(slot_mapping_conditions) - 1:
-                        return False
-
-        return True
-
-    def extract_other_slots(
-        self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Dict[Text, Any]:
-        """Extract the values of the other slots.
-
-        if they are set by corresponding entities from the user input
-        else return `None`.
-        """
-        slot_to_fill = self.get_slot_to_fill(tracker)
-
-        slot_values = {}
-        for slot in self.required_slots(domain):
-            # look for other slots
-            if slot != slot_to_fill:
-                # list is used to cover the case of list slot type
-                slot_mappings = self.get_mappings_for_slot(slot, domain)
-
-                for slot_mapping in slot_mappings:
-                    if not self._matches_mapping_conditions(slot_mapping, slot_to_fill):
-                        continue
-
-                    # check whether the slot should be filled by an entity in the input
-                    entity_is_desired = SlotMapping.entity_is_desired(
-                        slot_mapping, tracker
-                    ) and self._entity_mapping_is_unique(slot_mapping, domain)
-                    should_fill_entity_slot = (
-                        slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
-                        and SlotMapping.intent_is_desired(slot_mapping, tracker, domain)
-                        and entity_is_desired
-                    )
-                    # check whether the slot should be
-                    # filled from trigger intent mapping
-                    should_fill_trigger_slot = (
-                        tracker.active_loop_name != self.name()
-                        and slot_mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
-                        and SlotMapping.intent_is_desired(slot_mapping, tracker, domain)
-                    )
-                    if should_fill_entity_slot:
-                        value = self.get_entity_value_for_slot(
-                            slot_mapping["entity"],
-                            tracker,
-                            slot,
-                            slot_mapping.get("role"),
-                            slot_mapping.get("group"),
-                        )
-                    elif should_fill_trigger_slot:
-                        value = slot_mapping.get("value")
-                    else:
-                        value = None
-
-                    if value is not None:
-                        logger.debug(f"Extracted '{value}' for extra slot '{slot}'.")
-                        slot_values[slot] = value
-                        # this slot is done, check  next
-                        break
-
-        return slot_values
 
     def get_slot_to_fill(self, tracker: "DialogueStateTracker") -> Optional[str]:
         """Gets the name of the slot which should be filled next.

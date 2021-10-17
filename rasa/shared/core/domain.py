@@ -1855,14 +1855,15 @@ class SlotMapping(Enum):
         mapping: Dict[Text, Any], domain: Domain, active_loop_name: Text,
     ) -> List[Text]:
         mapping_conditions = mapping.get("conditions")
-        active_loop_match = False
+        active_loop_match = True
         ignored_intents = []
 
         if mapping_conditions:
-            for condition in mapping_conditions:
-                if condition.get("active_loop") == active_loop_name:
-                    active_loop_match = True
-                    break
+            match_list = [
+                condition.get(ACTIVE_LOOP) == active_loop_name
+                for condition in mapping_conditions
+            ]
+            active_loop_match = any(match_list)
 
         if active_loop_match:
             form_ignored_intents = domain.forms[active_loop_name].get(
