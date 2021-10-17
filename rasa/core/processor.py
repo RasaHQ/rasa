@@ -99,6 +99,25 @@ class MessageProcessor:
         # preprocess message if necessary
         tracker = await self.log_message(message, should_save_tracker=False)
 
+        action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
+            ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
+        )
+        output_channel = (
+            message.output_channel
+            if message.output_channel
+            else CollectingOutputChannel()
+        )
+        extraction_events = await action_extract_slots.run(
+            output_channel, self.nlg, tracker, self.domain
+        )
+        tracker.update_with_events(extraction_events, self.domain)
+
+        events_as_str = "\n".join([str(e) for e in extraction_events])
+        logger.debug(
+            f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
+            f"resulting in {len(extraction_events)} events: {events_as_str}"
+        )
+
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -108,26 +127,6 @@ class MessageProcessor:
                 docs=DOCS_URL_POLICIES,
             )
             return None
-
-        if tracker.active_loop_name is None:
-            action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
-                ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
-            )
-            output_channel = (
-                message.output_channel
-                if message.output_channel
-                else CollectingOutputChannel()
-            )
-            extraction_events = await action_extract_slots.run(
-                output_channel, self.nlg, tracker, self.domain
-            )
-            tracker.update_with_events(extraction_events, self.domain)
-
-            events_as_str = "\n".join([str(e) for e in extraction_events])
-            logger.debug(
-                f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
-                f"resulting in {len(extraction_events)} events: {events_as_str}"
-            )
 
         await self._predict_and_execute_next_action(message.output_channel, tracker)
 
