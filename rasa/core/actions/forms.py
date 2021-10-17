@@ -2,7 +2,6 @@ from typing import Text, List, Optional, Union, Any, Dict, Set
 import logging
 import json
 
-import rasa.core.actions.action
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
@@ -304,56 +303,6 @@ class FormAction(LoopAction):
             else None
         )
 
-    def extract_requested_slot(
-        self, tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text,
-    ) -> Dict[Text, Any]:
-        """Extract the value of requested slot from a user input else return `None`.
-
-        Args:
-            tracker: a DialogueStateTracker instance
-            domain: the current domain
-            slot_to_fill: the name of the slot to fill
-
-        Returns:
-            a dictionary with one key being the name of the slot to fill
-            and its value being the slot value, or an empty dictionary
-            if no slot value was found or the slot mapping condition
-            did not match the form.
-        """
-        logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
-
-        # get mapping for requested slot
-        requested_slot_mappings = self.get_mappings_for_slot(slot_to_fill, domain)
-        for requested_slot_mapping in requested_slot_mappings:
-            logger.debug(f"Got mapping '{requested_slot_mapping}'")
-
-            if not SlotMapping.intent_is_desired(
-                requested_slot_mapping, tracker, domain
-            ):
-                continue
-
-            if not self._matches_mapping_conditions(
-                requested_slot_mapping, slot_to_fill
-            ):
-                continue
-
-            value = rasa.core.actions.action.extract_slot_value_from_predefined_mapping(
-                requested_slot_mapping, tracker
-            )
-
-            if value:
-                if not isinstance(tracker.slots.get(slot_to_fill), ListSlot):
-                    value = value[-1]
-
-                logger.debug(
-                    f"Successfully extracted '{value}' for requested slot "
-                    f"'{slot_to_fill}'"
-                )
-                return {slot_to_fill: value}
-
-        logger.debug(f"Failed to extract requested slot '{slot_to_fill}'")
-        return {}
-
     async def validate_slots(
         self,
         slot_candidates: Dict[Text, Any],
@@ -461,8 +410,7 @@ class FormAction(LoopAction):
             slot_mappings = self.get_mappings_for_slot(event.key, domain)
 
             for mapping in slot_mappings:
-                if self._matches_mapping_conditions(mapping, event.key):
-                    slot_values[event.key] = event.value
+                slot_values[event.key] = event.value
 
                 if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
                     continue

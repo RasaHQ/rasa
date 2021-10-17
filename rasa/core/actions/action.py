@@ -970,6 +970,30 @@ class ActionExtractSlots(Action):
         """Returns action_extract_slots name."""
         return ACTION_EXTRACT_SLOTS
 
+    def _matches_mapping_conditions(
+        self, mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+    ) -> bool:
+        slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
+
+        # check if found mapping conditions matches form
+        if slot_mapping_conditions:
+            for i, condition in enumerate(slot_mapping_conditions):
+                active_loop = condition.get(ACTIVE_LOOP)
+
+                if active_loop == tracker.active_loop_name:
+                    condition_requested_slot = condition.get(REQUESTED_SLOT)
+                    if (
+                        condition_requested_slot
+                        and condition_requested_slot != tracker.get_slot(REQUESTED_SLOT)
+                    ):
+                        return False
+                    return True
+                else:
+                    if i == len(slot_mapping_conditions) - 1:
+                        return False
+
+        return True
+
     async def _execute_custom_action(
         self,
         mapping: Dict[Text, Any],
@@ -1052,6 +1076,12 @@ class ActionExtractSlots(Action):
 
                 if not intent_is_desired:
                     continue
+
+                if mapping.get(MAPPING_CONDITIONS) and mapping.get("type") != str(
+                    SlotMapping.FROM_TRIGGER_INTENT
+                ):
+                    if not self._matches_mapping_conditions(mapping, tracker):
+                        continue
 
                 if mapping["type"] in predefined_mappings:
                     value = extract_slot_value_from_predefined_mapping(mapping, tracker)
