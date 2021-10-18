@@ -3,8 +3,6 @@ import filecmp
 import logging
 import os
 import pickle
-import tarfile
-from tarsafe import TarSafe
 import tempfile
 import warnings
 import re

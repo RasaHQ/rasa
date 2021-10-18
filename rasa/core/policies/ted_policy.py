@@ -10,7 +10,7 @@ from collections import defaultdict
 
 import numpy as np
 import tensorflow as tf
-from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING, Type
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
