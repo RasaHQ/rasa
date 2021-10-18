@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from rasa.nlu.featurizers.featurizer import Featurizer2
+from rasa.nlu.featurizers.featurizer import Featurizer
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
@@ -32,7 +32,7 @@ class MitieIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [MitieNLPGraphComponent, Featurizer2]
+        return [MitieNLPGraphComponent, Featurizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

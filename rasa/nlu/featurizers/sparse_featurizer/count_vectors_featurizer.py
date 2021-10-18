@@ -10,7 +10,7 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
-class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
+class CountVectorsFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
     All tokens which consist only of digits (e.g. 123 and 99
@@ -58,7 +58,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """Returns the component's default config."""
         return {
-            **SparseFeaturizer2.get_default_config(),
+            **SparseFeaturizer.get_default_config(),
             # whether to use a shared vocab
             "use_shared_vocab": False,
             # the parameters are taken from

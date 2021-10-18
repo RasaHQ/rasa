@@ -15,7 +15,7 @@ from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
 import rasa.core.utils
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -50,7 +50,7 @@ RESTRICTED_ACCESS_URL = (
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
 )
-class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
+class ConveRTFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
     """Featurizer using ConveRT model.
 
     Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
@@ -67,7 +67,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            **DenseFeaturizer2.get_default_config(),
+            **DenseFeaturizer.get_default_config(),
             # Remote URL/Local path to model files
             "model_url": None,
         }
