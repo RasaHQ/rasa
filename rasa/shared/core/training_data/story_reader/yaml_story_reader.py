@@ -314,6 +314,8 @@ class YAMLStoryReader(StoryReader):
         else:
             self._validate_that_utterance_is_in_domain(utterance)
 
+        self.current_step_builder.add_user_messages([utterance])
+
     def _parse_user_utterance_inside_or(self, step: Dict[Text, Any]) -> None:
         utterance = self._parse_raw_user_utterance(step)
 
