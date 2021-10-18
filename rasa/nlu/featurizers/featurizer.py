@@ -12,7 +12,7 @@ from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUEN
 FeatureType = TypeVar("FeatureType")
 
 
-class Featurizer2(Generic[FeatureType], ABC):
+class Featurizer(Generic[FeatureType], ABC):
     """Base class for all featurizers."""
 
     @staticmethod

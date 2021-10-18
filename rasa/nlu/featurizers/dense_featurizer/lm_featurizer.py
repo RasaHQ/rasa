@@ -8,7 +8,7 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -41,7 +41,7 @@ MAX_SEQUENCE_LENGTHS = {
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
 )
-class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
+class LanguageModelFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
     """A featurizer that uses transformer-based language models.
 
     This component loads a pre-trained language model
@@ -70,7 +70,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """Returns LanguageModelFeaturizer's default config."""
         return {
-            **DenseFeaturizer2.get_default_config(),
+            **DenseFeaturizer.get_default_config(),
             # name of the language model to load.
             "model_name": "bert",
             # Pre-Trained weights to be loaded(string)
