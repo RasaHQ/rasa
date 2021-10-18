@@ -11,6 +11,8 @@ from typing import (
     Any,
 )
 
+import randomname
+
 import rasa.engine.validation
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
@@ -274,7 +276,7 @@ def _determine_model_name(
         prefix = f"{training_type.model_type}-"
 
     time_format = "%Y%m%d-%H%M%S"
-    return f"{prefix}{time.strftime(time_format)}.tar.gz"
+    return f"{prefix}{time.strftime(time_format)}_{randomname.get_name()}.tar.gz"
 
 
 def train_core(
