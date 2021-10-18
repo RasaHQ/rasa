@@ -7,7 +7,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.features import Features
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
 )
-class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
+class SpacyFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
     """Featurize messages using SpaCy."""
 
     @classmethod
@@ -41,7 +41,7 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            **DenseFeaturizer2.get_default_config(),
+            **DenseFeaturizer.get_default_config(),
             # Specify what pooling operation should be used to calculate the vector of
             # the complete utterance. Available options: 'mean' and 'max'
             POOLING: MEAN_POOLING,
