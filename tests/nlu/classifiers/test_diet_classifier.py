@@ -430,12 +430,18 @@ async def test_set_random_seed(
 ):
     """test if train result is the same for two runs of tf embedding"""
 
-    parsed_message1 = create_train_load_and_process_diet({ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},)
+    parsed_message1 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+    )
 
-    parsed_message2 = create_train_load_and_process_diet({ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},)
+    parsed_message2 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+    )
 
     # Different random seed
-    parsed_message3 = create_train_load_and_process_diet({ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1},)
+    parsed_message3 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1},
+    )
 
     assert (
         parsed_message1.data["intent"]["confidence"]
