@@ -6,7 +6,7 @@ from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.nlu.featurizers.featurizer import Featurizer2
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.extractors.mitie_entity_extractor import (
     MitieEntityExtractorGraphComponent,
 )
@@ -374,7 +374,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         featurizers: List[SchemaNode] = [
             node
             for node_name, node in self._graph_schema.nodes.items()
-            if issubclass(node.uses, Featurizer2)
+            if issubclass(node.uses, Featurizer)
             # Featurizers are split in `train` and `process_training_data` -
             # we only need to look at the nodes which _add_ features.
             and node.fn == "process_training_data"
@@ -382,7 +382,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             and not node_name.startswith("e2e")
         ]
 
-        Featurizer2.raise_if_featurizer_configs_are_not_compatible(
+        Featurizer.raise_if_featurizer_configs_are_not_compatible(
             [schema_node.config for schema_node in featurizers]
         )
 

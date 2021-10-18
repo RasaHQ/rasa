@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
 import typing
 import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
@@ -35,7 +35,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [DenseFeaturizer2]
+        return [DenseFeaturizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
