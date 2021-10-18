@@ -99,6 +99,16 @@ class MessageProcessor:
         # preprocess message if necessary
         tracker = await self.log_message(message, should_save_tracker=False)
 
+        if not self.policy_ensemble or not self.domain:
+            # save tracker state to continue conversation from this state
+            self._save_tracker(tracker)
+            rasa.shared.utils.io.raise_warning(
+                "No policy ensemble or domain set. Skipping action prediction "
+                "and execution.",
+                docs=DOCS_URL_POLICIES,
+            )
+            return None
+
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
         )
@@ -117,16 +127,6 @@ class MessageProcessor:
             f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
             f"resulting in {len(extraction_events)} events: {events_as_str}"
         )
-
-        if not self.policy_ensemble or not self.domain:
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-            rasa.shared.utils.io.raise_warning(
-                "No policy ensemble or domain set. Skipping action prediction "
-                "and execution.",
-                docs=DOCS_URL_POLICIES,
-            )
-            return None
 
         await self._predict_and_execute_next_action(message.output_channel, tracker)
 
