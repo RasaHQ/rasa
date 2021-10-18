@@ -423,8 +423,8 @@ async def test_action_rejection():
             [{"event": "slot", "name": "requested_slot", "value": "is_outside"}],
             [
                 SlotSet(REQUESTED_SLOT, "is_outside"),
-                SlotSet("num_tables", 5),
                 SlotSet("num_people", "hi"),
+                SlotSet("num_tables", 5),
             ],
         ),
         # Validate function decides that no more slots should be requested
@@ -460,8 +460,8 @@ async def test_action_rejection():
             [{"event": "action_execution_rejected", "name": "my form"}],
             [
                 ActionExecutionRejected("my form"),
-                SlotSet("num_tables", 5),
                 SlotSet("num_people", "hi"),
+                SlotSet("num_tables", 5),
             ],
         ),
     ],
@@ -477,7 +477,6 @@ async def test_validate_slots(
         SlotSet(REQUESTED_SLOT, slot_name),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(slot_value, entities=[{"entity": "num_tables", "value": 5}]),
-        SlotSet("num_tables", 5),
     ]
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
 
@@ -501,6 +500,16 @@ async def test_validate_slots(
     - validate_{form_name}
     """
     domain = Domain.from_yaml(domain)
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    slot_events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(slot_events, domain)
+
     action_server_url = "http:/my-action-server:5055/webhook"
 
     with aioresponses() as mocked:
@@ -515,7 +524,7 @@ async def test_validate_slots(
             tracker,
             domain,
         )
-        print([str(e) for e in events])
+
         assert events == expected_events
 
 

@@ -975,24 +975,23 @@ class ActionExtractSlots(Action):
     ) -> bool:
         slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
 
+        if not slot_mapping_conditions:
+            return True
+
         # check if found mapping conditions matches form
-        if slot_mapping_conditions:
-            for i, condition in enumerate(slot_mapping_conditions):
-                active_loop = condition.get(ACTIVE_LOOP)
+        for condition in slot_mapping_conditions:
+            active_loop = condition.get(ACTIVE_LOOP)
 
-                if active_loop == tracker.active_loop_name:
-                    condition_requested_slot = condition.get(REQUESTED_SLOT)
-                    if (
-                        condition_requested_slot
-                        and condition_requested_slot != tracker.get_slot(REQUESTED_SLOT)
-                    ):
-                        return False
-                    return True
-                else:
-                    if i == len(slot_mapping_conditions) - 1:
-                        return False
+            if active_loop and active_loop == tracker.active_loop_name:
+                condition_requested_slot = condition.get(REQUESTED_SLOT)
+                if (
+                    condition_requested_slot
+                    and condition_requested_slot != tracker.get_slot(REQUESTED_SLOT)
+                ):
+                    return False
+                return True
 
-        return True
+        return False
 
     async def _execute_custom_action(
         self,

@@ -1289,8 +1289,6 @@ async def test_action_extract_slots_with_from_trigger_mappings():
                 - type: from_trigger_intent
                   intent: register
                   value: false
-                  conditions:
-                  - active_loop: registration_form
             forms:
               registration_form:
                 required_slots:
