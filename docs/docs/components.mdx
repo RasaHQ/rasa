@@ -2643,7 +2643,7 @@ Selectors predict a bot response from a set of candidate responses.
 
     Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
 
-  
+
   :::info New in 2.3
   `constrain_similarities` and `model_confidence` were added.
   :::
@@ -2731,9 +2731,11 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | "model_confidence=cosine",                                   |
 |                                 |                   | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| ranking_length                  | 10                | Number of top responses to normalize scores for. Applicable  |
-|                                 |                   | only with loss type 'cross_entropy' and 'softmax'            |
-|                                 |                   | confidences. Set to 0 to disable normalization.              |
+| ranking_length                  | 10                | Number of top responses to report. Set to 0 to report all    |
+|                                 |                   | responses.                                                   |
++---------------------------------+-------------------+--------------------------------------------------------------+
+| renormalize_confidences         | False             | Normalize the top responses. Applicable only with loss type  |
+|                                 |                   | 'cross_entropy' and 'softmax' confidences.                   |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | maximum_positive_similarity     | 0.8               | Indicates how similar the algorithm should try to make       |
 |                                 |                   | embedding vectors for correct labels.                        |
