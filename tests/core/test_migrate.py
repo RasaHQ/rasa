@@ -79,17 +79,35 @@ def test_migrate_domain_format_with_required_slots(
         "location": {
             "type": "text",
             "influence_conversation": False,
-            "mappings": [{"type": "from_entity", "entity": "city"}],
+            "mappings": [
+                {
+                    "type": "from_entity",
+                    "entity": "city",
+                    "conditions": [{"active_loop": "booking_form"}],
+                }
+            ],
         },
         "name": {
             "type": "text",
             "influence_conversation": False,
-            "mappings": [{"type": "from_entity", "entity": "surname"}],
+            "mappings": [
+                {
+                    "type": "from_entity",
+                    "entity": "surname",
+                    "conditions": [{"active_loop": "booking_form"}],
+                }
+            ],
         },
         "email": {
             "type": "text",
             "influence_conversation": False,
-            "mappings": [{"type": "from_text", "intent": "inform"}],
+            "mappings": [
+                {
+                    "type": "from_text",
+                    "intent": "inform",
+                    "conditions": [{"active_loop": "booking_form"}],
+                }
+            ],
         },
     }
     assert migrated_slots == expected_slots
@@ -162,17 +180,35 @@ def test_migrate_domain_form_without_required_slots(
         "location": {
             "type": "text",
             "influence_conversation": False,
-            "mappings": [{"type": "from_entity", "entity": "city"}],
+            "mappings": [
+                {
+                    "type": "from_entity",
+                    "entity": "city",
+                    "conditions": [{"active_loop": "booking_form"}],
+                }
+            ],
         },
         "name": {
             "type": "text",
             "influence_conversation": False,
-            "mappings": [{"type": "from_entity", "entity": "surname"}],
+            "mappings": [
+                {
+                    "type": "from_entity",
+                    "entity": "surname",
+                    "conditions": [{"active_loop": "booking_form"}],
+                }
+            ],
         },
         "email": {
             "type": "text",
             "influence_conversation": False,
-            "mappings": [{"type": "from_text", "intent": "inform"}],
+            "mappings": [
+                {
+                    "type": "from_text",
+                    "intent": "inform",
+                    "conditions": [{"active_loop": "booking_form"}],
+                }
+            ],
         },
     }
     assert migrated_slots == expected_slots
@@ -231,7 +267,14 @@ def test_migrate_domain_with_diff_slot_types(
         "outdoor_seating": {
             "type": slot_type,
             "influence_conversation": False,
-            "mappings": [{"type": "from_intent", "value": value, "intent": "confirm"}],
+            "mappings": [
+                {
+                    "type": "from_intent",
+                    "value": value,
+                    "intent": "confirm",
+                    "conditions": [{"active_loop": "reservation_form"}],
+                }
+            ],
         },
     }
     assert migrated_slots == expected_slots
@@ -424,7 +467,19 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
         "type": "text",
         "influence_conversation": False,
         "mappings": [
-            {"type": "from_text", "intent": "inform"},
-            {"type": "from_intent", "intent": "deny", "value": "demo"},
+            {
+                "type": "from_text",
+                "intent": "inform",
+                "conditions": [
+                    {"active_loop": "form_one"},
+                    {"active_loop": "form_two"},
+                ],
+            },
+            {
+                "type": "from_intent",
+                "intent": "deny",
+                "value": "demo",
+                "conditions": [{"active_loop": "form_two"}],
+            },
         ],
     }

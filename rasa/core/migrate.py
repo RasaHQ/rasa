@@ -1,7 +1,10 @@
+import copy
 from pathlib import Path
+from typing import List, Dict, Text, Any
 
 import rasa.shared.utils.io
 from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
+from rasa.shared.core.constants import ACTIVE_LOOP
 from rasa.shared.core.domain import (
     KEY_INTENTS,
     KEY_ENTITIES,
@@ -12,6 +15,35 @@ from rasa.shared.core.domain import (
     KEY_E2E_ACTIONS,
     SESSION_CONFIG_KEY,
 )
+
+
+def _get_updated_or_new_mappings(
+    existing_mappings: List[Dict[Text, Any]],
+    mappings: List[Dict[Text, Any]],
+    condition: Dict[Text, Text],
+) -> List[Dict[Text, Any]]:
+    updated_mappings = []
+
+    for mapping in existing_mappings:
+        mapping_copy = copy.deepcopy(mapping)
+
+        conditions = mapping.pop("conditions", [])
+        if conditions and mapping in mappings:
+            mappings.remove(mapping)
+            conditions.append(condition)
+            mapping.update({"conditions": conditions})
+            updated_mappings.append(mapping)
+        else:
+            updated_mappings.append(mapping_copy)
+
+    new_mappings = []
+    for mapping in mappings:
+        mapping.update({"conditions": [condition]})
+        new_mappings.append(mapping)
+
+    updated_mappings.extend(new_mappings)
+
+    return updated_mappings
 
 
 def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
@@ -49,14 +81,15 @@ def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
             form_data = form_data.get(REQUIRED_SLOTS_KEY, {})
 
         required_slots = []
+        condition = {ACTIVE_LOOP: form_name}
+
         for slot_name, mappings in form_data.items():
             slot_properties = slots.get(slot_name)
             existing_mappings = slot_properties.get("mappings", [])
-            new_mappings = [
-                mapping for mapping in mappings if mapping not in existing_mappings
-            ]
-            existing_mappings.extend(new_mappings)
-            slot_properties.update({"mappings": existing_mappings})
+            updated_mappings = _get_updated_or_new_mappings(
+                existing_mappings, mappings, condition
+            )
+            slot_properties.update({"mappings": updated_mappings})
             slots[slot_name] = slot_properties
 
             required_slots.append(slot_name)
