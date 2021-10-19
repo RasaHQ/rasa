@@ -129,12 +129,6 @@ word vectors in your pipeline.
   In addition to SpaCy's pretrained language models, you can also use this component to
   attach spaCy models that you've trained yourself.
 
-:::caution Changed in 2.5
-Rasa Open Source will try to fallback to a common model on your behalf if you don't pass a `model` setting. This is a
-temporary feature we've introduced as part of the spaCy 3.0 migration but the fallback will be removed in Rasa Open Source 3.0.0.
-:::
-
-
   ## Tokenizers
 
   Tokenizers split text into tokens.
@@ -480,16 +474,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 
 
-* **Requires**
-
-  `tokens`
-
-  :::caution Changed in 2.1
-  `ConveRTFeaturizer` no longer requires `ConveRTTokenizer`.
-  :::
-
-
-
 * **Type**
 
   Dense featurizer
@@ -544,17 +528,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   `dense_features` for user messages and responses
 
 
-
-* **Requires**
-
-  `tokens`.
-
-  :::caution Changed in 2.1
-  `LanguageModelFeaturizer` no longer requires `ConveRTTokenizer`.
-  :::
-
-
-
 * **Type**
 
   Dense featurizer
@@ -575,10 +548,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 
 * **Configuration**
-
-  :::caution Changed in 2.1
-  The `model_name`, `model_weights` and `cache_dir` parameters were added to the pipeline configuration file.
-  :::
 
   Include a [Tokenizer](./components.mdx#tokenizers) component before this component.
 
@@ -687,10 +656,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     # use match word boundaries for lookup table
     "use_word_boundaries": True
   ```
-
-  :::info New in 2.2
-  `use_word_boundaries` was added.
-  :::
 
   **Configuring for incremental training**
 
@@ -841,9 +806,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   **Configuring for incremental training**
 
-  :::info New in 2.2
-  Incremental training was added as an experimental feature.
-  :::
 
   To ensure that `sparse_features` are of fixed size during
   [incremental training](./command-line-interface.mdx#incremental-training), the
@@ -1346,10 +1308,6 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
     Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
 
-  :::info New in 2.3
-  `constrain_similarities` and `model_confidence` were added.
-  :::
-
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
@@ -1601,10 +1559,6 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
       the difference of the confidence scores for the two highest ranked intents is
       smaller than the `ambiguity_threshold`.
 
-
-:::caution Changed in 2.8
-`FallbackClassifier` used to set the confidence to 1.0 but now follows the fallback `threshold` config value.
-:::
 
 ## Entity Extractors
 
@@ -1894,10 +1848,6 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         email: True
   ```
 
-  :::info New in 2.1
-  `split_entities_by_comma` was added.
-  :::
-
   :::note
   If POS features are used (`pos` or `pos2`), you need to have `SpacyTokenizer` in your pipeline.
 
@@ -2087,10 +2037,6 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         # use match word boundaries for lookup table
         "use_word_boundaries": True
   ```
-
-  :::info New in 2.2
-  `use_word_boundaries` was added.
-  :::
 
 
 ### EntitySynonymMapper
@@ -2557,12 +2503,6 @@ Selectors predict a bot response from a set of candidate responses.
     }
     ```
 
-    :::caution Deprecated in 2.4
-    `template_name` and `response_templates` keys under `response` have been deprecated in favor of
-    `utter_action` and `responses` respectively and will be removed in Rasa Open Source 3.0.0.
-    :::
-
-
 * **Description**
 
   Response Selector component can be used to build a response retrieval model to directly predict a bot response from
@@ -2642,11 +2582,6 @@ Selectors predict a bot response from a set of candidate responses.
     * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
 
     Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
-
-  
-  :::info New in 2.3
-  `constrain_similarities` and `model_confidence` were added.
-  :::
 
   The component can also be configured to train a response selector for a particular retrieval intent.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.
