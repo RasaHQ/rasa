@@ -7,7 +7,7 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
     is_trainable=False,
     model_from="MitieNLPGraphComponent",
 )
-class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
+class MitieFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
     """A class that featurizes using Mitie."""
 
     @classmethod
@@ -44,7 +44,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """Returns the component's default config."""
         return {
-            **DenseFeaturizer2.get_default_config(),
+            **DenseFeaturizer.get_default_config(),
             # Specify what pooling operation should be used to calculate the vector of
             # the complete utterance. Available options: 'mean' and 'max'
             POOLING: MEAN_POOLING,
