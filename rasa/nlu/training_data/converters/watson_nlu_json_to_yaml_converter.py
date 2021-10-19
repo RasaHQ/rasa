@@ -51,7 +51,7 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
         training_data = self.get_training_data(js)
         RasaYAMLWriter().dump(output_nlu_path, training_data)
 
-    def _read_from_json(self, source_path) -> Dict[Text, Any]:
+    def _read_from_json(self, source_path: Path) -> Dict[Text, Any]:
         with open(source_path, "r", encoding="utf-8") as f:
             return json.load(f)
 
@@ -148,9 +148,10 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
         return entity_synonyms
 
     @staticmethod
-    def _check_watson_file(js):
+    def _check_watson_file(js: Dict[Text, Any]) -> bool:
         try:
             if js.get("metadata").get("api_version").get("major_version") == "v2":
                 return True
+            return False
         except Exception:
             return False
