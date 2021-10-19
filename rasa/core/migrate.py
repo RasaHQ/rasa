@@ -1,78 +1,63 @@
 import copy
+import logging
 from pathlib import Path
-from typing import List, Dict, Text, Any
+from typing import List, Dict, Text, Any, Tuple, Optional, Union
 
 import rasa.shared.utils.io
-from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
+from rasa.shared.constants import (
+    REQUIRED_SLOTS_KEY,
+    IGNORED_INTENTS,
+)
 from rasa.shared.core.constants import ACTIVE_LOOP
 from rasa.shared.core.domain import (
-    KEY_INTENTS,
     KEY_ENTITIES,
     KEY_SLOTS,
     KEY_FORMS,
-    KEY_RESPONSES,
-    KEY_ACTIONS,
-    KEY_E2E_ACTIONS,
-    SESSION_CONFIG_KEY,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _create_back_up(
+    domain_file: Path, backup_location: Path
+) -> Union[List[Any], Dict[Text, Any]]:
+    original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+    rasa.shared.utils.io.write_yaml(original_content, backup_location, True)
+    return original_content
 
 
 def _get_updated_or_new_mappings(
     existing_mappings: List[Dict[Text, Any]],
-    mappings: List[Dict[Text, Any]],
+    new_mappings: List[Dict[Text, Any]],
     condition: Dict[Text, Text],
 ) -> List[Dict[Text, Any]]:
     updated_mappings = []
 
-    for mapping in existing_mappings:
-        mapping_copy = copy.deepcopy(mapping)
+    for existing_mapping in existing_mappings:
+        mapping_copy = copy.deepcopy(existing_mapping)
 
-        conditions = mapping.pop("conditions", [])
-        if conditions and mapping in mappings:
-            mappings.remove(mapping)
+        conditions = existing_mapping.pop("conditions", [])
+        if existing_mapping in new_mappings:
+            new_mappings.remove(existing_mapping)
             conditions.append(condition)
-            mapping.update({"conditions": conditions})
-            updated_mappings.append(mapping)
+            existing_mapping.update({"conditions": conditions})
+            updated_mappings.append(existing_mapping)
         else:
             updated_mappings.append(mapping_copy)
 
-    new_mappings = []
-    for mapping in mappings:
+    for mapping in new_mappings:
         mapping.update({"conditions": [condition]})
-        new_mappings.append(mapping)
-
-    updated_mappings.extend(new_mappings)
+        updated_mappings.append(mapping)
 
     return updated_mappings
 
 
-def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
-    """Converts 2.0 domain to 3.0 format."""
-    current_dir = domain_file.parent
+def _migrate_form_slots(
+    domain: Dict[Text, Any]
+) -> Tuple[Dict[Any, Dict[str, Any]], Optional[Any]]:
+    slots = domain.get(KEY_SLOTS, {})
+    forms = domain.get(KEY_FORMS, {})
 
-    if domain_file.is_dir():
-        original_content = {}
-        backup = current_dir / "original_domain"
-        backup.mkdir()
-        for file in domain_file.iterdir():
-            file_content = rasa.shared.utils.io.read_yaml_file(file)
-            original_content.update(file_content)
-            rasa.shared.utils.io.write_yaml(file_content, backup / file.name, True)
-    else:
-        original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
-        backup = current_dir / "original_domain.yml"
-        rasa.shared.utils.io.write_yaml(original_content, backup, True)
-
-    intents = original_content.get(KEY_INTENTS, [])
-    entities = original_content.get(KEY_ENTITIES, [])
-    slots = original_content.get(KEY_SLOTS, {})
-    forms = original_content.get(KEY_FORMS, {})
-    responses = original_content.get(KEY_RESPONSES, {})
-    actions = original_content.get(KEY_ACTIONS, [])
-    e2e_actions = original_content.get(KEY_E2E_ACTIONS, [])
-    session_config = original_content.get(SESSION_CONFIG_KEY, {})
-
-    new_slots = {}
     new_forms = {}
 
     for form_name, form_data in forms.items():
@@ -98,6 +83,14 @@ def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
             IGNORED_INTENTS: ignored_intents,
             REQUIRED_SLOTS_KEY: required_slots,
         }
+    return new_forms, slots
+
+
+def _migrate_auto_fill_and_custom_slots(
+    domain: Dict[Text, Any], slots: Dict[Text, Any]
+) -> Dict[Text, Any]:
+    new_slots = {}
+    entities = domain.get(KEY_ENTITIES, [])
 
     for slot_name, properties in slots.items():
         if slot_name in entities and properties.get("auto_fill", True) is True:
@@ -123,17 +116,83 @@ def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
             )
 
         new_slots[slot_name] = properties
+    return new_slots
 
-    new_domain = {
-        "version": "2.0",
-        KEY_INTENTS: intents,
-        KEY_ENTITIES: entities,
-        KEY_SLOTS: new_slots,
-        KEY_RESPONSES: responses,
-        KEY_ACTIONS: actions,
-        KEY_E2E_ACTIONS: e2e_actions,
-        KEY_FORMS: new_forms,
-        SESSION_CONFIG_KEY: session_config,
-    }
 
-    rasa.shared.utils.io.write_yaml(new_domain, out_file, True)
+def _assemble_new_domain(
+    domain_file: Path, new_forms: Dict[Text, Any], new_slots: Dict[Text, Any]
+) -> Dict[Text, Any]:
+    original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+    new_domain = {}
+    for key, value in original_content.items():
+        if key == KEY_SLOTS:
+            new_domain.update({key: new_slots})
+        elif key == KEY_FORMS:
+            new_domain.update({key: new_forms})
+        else:
+            new_domain.update({key: value})
+    return new_domain
+
+
+def _write_final_domain(
+    domain_file: Path, new_forms: Dict, new_slots: Dict, out_file: Path,
+) -> None:
+    if domain_file.is_dir():
+        for file in domain_file.iterdir():
+            new_domain = _assemble_new_domain(file, new_forms, new_slots)
+            rasa.shared.utils.io.write_yaml(new_domain, out_file / file.name, True)
+    else:
+        new_domain = _assemble_new_domain(domain_file, new_forms, new_slots)
+        rasa.shared.utils.io.write_yaml(new_domain, out_file, True)
+
+
+def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
+    """Converts 2.0 domain to 3.0 format."""
+    current_dir = domain_file.parent
+
+    if domain_file.is_dir():
+        backup_dir = current_dir / "original_domain"
+        backup_dir.mkdir()
+
+        slots = {}
+        forms = {}
+        entities = []
+        original_domain = {}
+
+        if out_file.is_file():
+            logger.debug(
+                "The out path provided is not a directory, "
+                "creating a new directory for migrated domain files."
+            )
+            out_file = current_dir / "new_domain"
+            out_file.mkdir()
+
+        for file in domain_file.iterdir():
+            backup = backup_dir / file.name
+            original_content = _create_back_up(file, backup)
+
+            if KEY_SLOTS not in original_content or KEY_FORMS not in original_content:
+                rasa.shared.utils.io.write_yaml(
+                    original_content, out_file / file.name, True
+                )
+
+            if KEY_SLOTS in original_content:
+                slots.update(original_content.get(KEY_SLOTS))
+
+            if KEY_FORMS in original_content:
+                forms.update(original_content.get(KEY_FORMS))
+
+            if KEY_ENTITIES in original_content:
+                entities.extend(original_content.get(KEY_ENTITIES))
+
+        original_domain.update(
+            {KEY_SLOTS: slots, KEY_FORMS: forms, KEY_ENTITIES: entities}
+        )
+    else:
+        backup = current_dir / "original_domain.yml"
+        original_domain = _create_back_up(domain_file, backup)
+
+    new_forms, updated_slots = _migrate_form_slots(original_domain)
+    new_slots = _migrate_auto_fill_and_custom_slots(original_domain, updated_slots)
+
+    _write_final_domain(domain_file, new_forms, new_slots, out_file)

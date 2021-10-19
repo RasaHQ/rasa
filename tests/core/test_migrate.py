@@ -280,7 +280,7 @@ def test_migrate_domain_with_diff_slot_types(
     assert migrated_slots == expected_slots
 
 
-def test_migrate_domain_format_from_dir(tmp_path: Path, domain_out_file: Path):
+def test_migrate_domain_format_from_dir(tmp_path: Path):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
 
@@ -313,14 +313,20 @@ def test_migrate_domain_format_from_dir(tmp_path: Path, domain_out_file: Path):
         "forms.yml",
     )
 
-    rasa.core.migrate.migrate_domain_format(domain_dir, domain_out_file)
-    domain = Domain.from_path(domain_out_file)
+    domain_out_dir = tmp_path / "new_domain"
+    domain_out_dir.mkdir()
+
+    rasa.core.migrate.migrate_domain_format(domain_dir, domain_out_dir)
+    domain = Domain.from_directory(domain_out_dir)
     assert domain
 
     old_domain_path = tmp_path / "original_domain"
     assert old_domain_path
 
     for file in old_domain_path.iterdir():
+        assert file.name in ["slots.yml", "forms.yml"]
+
+    for file in domain_out_dir.iterdir():
         assert file.name in ["slots.yml", "forms.yml"]
 
 
@@ -434,16 +440,24 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
         - greet
         - affirm
         - inform
+        entities:
+        - city
         slots:
           name:
             type: text
             influence_conversation: false
+          location:
+             type: text
+             influence_conversation: false
         forms:
            form_one:
                required_slots:
                  name:
                  - type: from_text
                    intent: inform
+                 location:
+                 - type: from_text
+                   intent: greet
            form_two:
                required_slots:
                  name:
@@ -452,6 +466,9 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
                  - type: from_intent
                    intent: deny
                    value: demo
+                 location:
+                 - type: from_entity
+                   entity: city
         """,
         "domain.yml",
     )
@@ -462,8 +479,8 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
 
     migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
     migrated_slots = migrated_domain.get("slots")
-    test_slot = migrated_slots.get("name")
-    assert test_slot == {
+    slot_with_duplicate_mappings = migrated_slots.get("name")
+    assert slot_with_duplicate_mappings == {
         "type": "text",
         "influence_conversation": False,
         "mappings": [
@@ -483,3 +500,75 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
             },
         ],
     }
+    slot_with_different_mapping_conditions = migrated_slots.get("location")
+    assert slot_with_different_mapping_conditions == {
+        "type": "text",
+        "influence_conversation": False,
+        "mappings": [
+            {
+                "type": "from_text",
+                "intent": "greet",
+                "conditions": [{"active_loop": "form_one"},],
+            },
+            {
+                "type": "from_entity",
+                "entity": "city",
+                "conditions": [{"active_loop": "form_two"}],
+            },
+        ],
+    }
+
+
+def test_migrate_domain_dir_with_out_path_as_file(tmp_path: Path):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          outdoor_seating:
+           type: bool
+           influence_conversation: false
+        """,
+        "slots.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        forms:
+          reservation_form:
+            required_slots:
+               outdoor_seating:
+               - type: from_intent
+                 value: true
+                 intent: confirm
+        """,
+        "forms.yml",
+    )
+
+    domain_out = tmp_path / "domain.yml"
+    domain_out.touch()
+
+    assert domain_out.is_file()
+
+    rasa.core.migrate.migrate_domain_format(domain_dir, domain_out)
+
+    old_domain_path = tmp_path / "original_domain"
+    assert old_domain_path
+
+    for file in old_domain_path.iterdir():
+        assert file.name in ["slots.yml", "forms.yml"]
+
+    domain_out = tmp_path / "new_domain"
+
+    for file in domain_out.iterdir():
+        assert file.name in ["slots.yml", "forms.yml"]
+
+    domain = Domain.from_directory(domain_out)
+    assert domain
