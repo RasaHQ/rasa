@@ -60,6 +60,7 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     INTENT,
     INTENT_NAME_KEY,
+    METADATA_MODEL_ID,
     PREDICTED_CONFIDENCE_KEY,
     TEXT,
 )
@@ -910,6 +911,11 @@ class MessageProcessor:
         return has_expired
 
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
+        last_saved_tracker = self.get_tracker(tracker.sender_id)
+        new_events = list(tracker.events)[len(last_saved_tracker.events) :]
+
+        for e in new_events:
+            e.metadata = {**e.metadata, METADATA_MODEL_ID: self.model_metadata.model_id}
         self.tracker_store.save(tracker)
 
     def _predict_next_with_tracker(
