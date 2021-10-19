@@ -8,13 +8,13 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
     TOKENS_NAMES,
 )
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
@@ -30,15 +30,15 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER,
     is_trainable=False,
-    model_from="MitieNLPGraphComponent",
+    model_from="MitieNLP",
 )
-class MitieFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
+class MitieFeaturizer(DenseFeaturizer, GraphComponent):
     """A class that featurizes using Mitie."""
 
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [MitieNLPGraphComponent, TokenizerGraphComponent]
+        return [MitieNLP, Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -58,7 +58,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
     def __init__(
         self, config: Dict[Text, Any], execution_context: ExecutionContext,
     ) -> None:
-        """Instantiates a new `MitieFeaturizerGraphComponent` instance."""
+        """Instantiates a new `MitieFeaturizer` instance."""
         super().__init__(execution_context.node_name, config)
         self.pooling_operation = self._config[POOLING]
 
@@ -69,7 +69,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "MitieFeaturizerGraphComponent":
+    ) -> "MitieFeaturizer":
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, execution_context)
 

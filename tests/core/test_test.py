@@ -24,7 +24,7 @@ from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.domain import Domain
 
-from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import State
 from rasa.core.policies.policy import SupportedData
 from rasa.shared.utils.io import read_file, read_yaml
@@ -74,7 +74,7 @@ def _probabilities_with_action_unlikely_intent_for(
 def _custom_prediction_states_for_rules(
     ignore_action_unlikely_intent: bool = False,
 ) -> Callable[
-    [RulePolicyGraphComponent, DialogueStateTracker, Domain, bool], List[State],
+    [RulePolicy, DialogueStateTracker, Domain, bool], List[State],
 ]:
     """Creates prediction states for `RulePolicy`.
 
@@ -90,7 +90,7 @@ def _custom_prediction_states_for_rules(
     """
 
     def _prediction_states(
-        self: RulePolicyGraphComponent,
+        self: RulePolicy,
         tracker: DialogueStateTracker,
         domain: Domain,
         use_text_for_last_user_input: bool = False,
@@ -228,7 +228,7 @@ async def _train_rule_based_agent(
         )
 
         monkeypatch.setattr(
-            RulePolicyGraphComponent,
+            RulePolicy,
             "_prediction_states",
             _custom_prediction_states_for_rules(ignore_action_unlikely_intent),
         )

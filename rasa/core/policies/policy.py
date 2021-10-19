@@ -91,7 +91,7 @@ class SupportedData(Enum):
         return trackers
 
 
-class PolicyGraphComponent(GraphComponent):
+class Policy(GraphComponent):
     """Common parent class for all dialogue policies."""
 
     @staticmethod
@@ -134,7 +134,7 @@ class PolicyGraphComponent(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> PolicyGraphComponent:
+    ) -> Policy:
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -404,7 +404,7 @@ class PolicyGraphComponent(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "PolicyGraphComponent":
+    ) -> "Policy":
         """Loads a trained policy (see parent class for full docstring)."""
         featurizer = None
 

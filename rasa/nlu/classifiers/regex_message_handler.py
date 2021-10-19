@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
 )
-class RegexMessageHandlerGraphComponent(GraphComponent, EntityExtractorMixin):
+class RegexMessageHandler(GraphComponent, EntityExtractorMixin):
     """Handles hardcoded NLU predictions from messages starting with a `/`."""
 
     @classmethod
@@ -29,7 +29,7 @@ class RegexMessageHandlerGraphComponent(GraphComponent, EntityExtractorMixin):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> RegexMessageHandlerGraphComponent:
+    ) -> RegexMessageHandler:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls()
 

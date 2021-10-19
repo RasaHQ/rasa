@@ -6,7 +6,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.constants import ENTITIES, TEXT
-from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLPGraphComponent
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.message import Message
 
@@ -17,15 +17,15 @@ if typing.TYPE_CHECKING:
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
     is_trainable=False,
-    model_from="SpacyNLPGraphComponent",
+    model_from="SpacyNLP",
 )
-class SpacyEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+class SpacyEntityExtractor(GraphComponent, EntityExtractorMixin):
     """Entity extractor which uses SpaCy."""
 
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [SpacyNLPGraphComponent]
+        return [SpacyNLP]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -38,7 +38,7 @@ class SpacyEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         }
 
     def __init__(self, config: Dict[Text, Any]) -> None:
-        """Initialize SpacyEntityExtractorGraphComponent."""
+        """Initialize SpacyEntityExtractor."""
         self._config = config
 
     @classmethod

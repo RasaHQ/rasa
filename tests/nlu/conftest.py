@@ -6,11 +6,9 @@ import pytest
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
-    SpacyFeaturizerGraphComponent,
-)
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -87,22 +85,17 @@ def process_message(default_model_storage: ModelStorage,) -> Callable[..., Messa
 
 
 @pytest.fixture()
-def spacy_tokenizer() -> SpacyTokenizerGraphComponent:
-    return SpacyTokenizerGraphComponent(
-        SpacyTokenizerGraphComponent.get_default_config()
+def spacy_tokenizer() -> SpacyTokenizer:
+    return SpacyTokenizer(SpacyTokenizer.get_default_config())
+
+
+@pytest.fixture()
+def spacy_featurizer() -> SpacyFeaturizer:
+    return SpacyFeaturizer(
+        SpacyFeaturizer.get_default_config(), name="SpacyFeaturizer",
     )
 
 
 @pytest.fixture()
-def spacy_featurizer() -> SpacyFeaturizerGraphComponent:
-    return SpacyFeaturizerGraphComponent(
-        SpacyFeaturizerGraphComponent.get_default_config(),
-        name="SpacyFeaturizerGraphComponent",
-    )
-
-
-@pytest.fixture()
-def mitie_tokenizer() -> MitieTokenizerGraphComponent:
-    return MitieTokenizerGraphComponent(
-        MitieTokenizerGraphComponent.get_default_config()
-    )
+def mitie_tokenizer() -> MitieTokenizer:
+    return MitieTokenizer(MitieTokenizer.get_default_config())

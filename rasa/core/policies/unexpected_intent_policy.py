@@ -39,7 +39,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
     LABEL_SUB_KEY,
-    TEDPolicyGraphComponent as TEDPolicy,
+    TEDPolicy as TEDPolicy,
     TED,
     SEQUENCE_LENGTH,
     SEQUENCE,
@@ -138,7 +138,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
 )
-class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
+class UnexpecTEDIntentPolicy(TEDPolicy):
     """`UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
 
     The difference is at a task level.
@@ -895,7 +895,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         featurizer: TrackerFeaturizer,
         model: "IntentTED",
         model_utilities: Dict[Text, Any],
-    ) -> "UnexpecTEDIntentPolicyGraphComponent":
+    ) -> "UnexpecTEDIntentPolicy":
         return cls(
             config,
             model_storage,

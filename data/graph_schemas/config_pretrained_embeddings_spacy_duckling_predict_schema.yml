@@ -12,7 +12,7 @@ nodes:
     resource: null
   run_SpacyNLP0:
     needs: {}
-    uses: rasa.nlu.utils.spacy_utils.SpacyNLPGraphComponent
+    uses: rasa.nlu.utils.spacy_utils.SpacyNLP
     constructor_name: load
     fn: provide
     config:
@@ -25,7 +25,7 @@ nodes:
     needs:
       messages: nlu_message_converter
       model: run_SpacyNLP0
-    uses: rasa.nlu.utils.spacy_utils.SpacyPreprocessorGraphComponent
+    uses: rasa.nlu.utils.spacy_utils.SpacyPreprocessor
     constructor_name: load
     fn: process
     config: {}
@@ -36,7 +36,7 @@ nodes:
   run_SpacyTokenizer2:
     needs:
       messages: run_SpacyPreprocessor1
-    uses: rasa.nlu.tokenizers.spacy_tokenizer.SpacyTokenizerGraphComponent
+    uses: rasa.nlu.tokenizers.spacy_tokenizer.SpacyTokenizer
     constructor_name: load
     fn: process
     config: {}
@@ -47,7 +47,7 @@ nodes:
   run_RegexFeaturizer3:
     needs:
       messages: run_SpacyTokenizer2
-    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizerGraphComponent
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
     constructor_name: load
     fn: process
     config: {}
@@ -59,7 +59,7 @@ nodes:
   run_SpacyFeaturizer4:
     needs:
       messages: run_RegexFeaturizer3
-    uses: rasa.nlu.featurizers.dense_featurizer.spacy_featurizer.SpacyFeaturizerGraphComponent
+    uses: rasa.nlu.featurizers.dense_featurizer.spacy_featurizer.SpacyFeaturizer
     constructor_name: load
     fn: process
     config: {}
@@ -70,7 +70,7 @@ nodes:
   run_CRFEntityExtractor5:
     needs:
       messages: run_SpacyFeaturizer4
-    uses: rasa.nlu.extractors.crf_entity_extractor.CRFEntityExtractorGraphComponent
+    uses: rasa.nlu.extractors.crf_entity_extractor.CRFEntityExtractor
     constructor_name: load
     fn: process
     config: {}
@@ -82,7 +82,7 @@ nodes:
   run_EntitySynonymMapper6:
     needs:
       messages: run_CRFEntityExtractor5
-    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapperGraphComponent
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
     constructor_name: load
     fn: process
     config: {}
@@ -94,7 +94,7 @@ nodes:
   run_SklearnIntentClassifier7:
     needs:
       messages: run_EntitySynonymMapper6
-    uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifierGraphComponent
+    uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifier
     constructor_name: load
     fn: process
     config: {}
@@ -106,7 +106,7 @@ nodes:
   run_DucklingEntityExtractor8:
     needs:
       messages: run_SklearnIntentClassifier7
-    uses: rasa.nlu.extractors.duckling_entity_extractor.DucklingEntityExtractorGraphComponent
+    uses: rasa.nlu.extractors.duckling_entity_extractor.DucklingEntityExtractor
     constructor_name: load
     fn: process
     config:
@@ -115,10 +115,10 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-  run_RegexMessageHandlerGraphComponent:
+  run_RegexMessageHandler:
     needs:
       messages: run_DucklingEntityExtractor8
-    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandlerGraphComponent
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
     constructor_name: load
     fn: process
     config: {}

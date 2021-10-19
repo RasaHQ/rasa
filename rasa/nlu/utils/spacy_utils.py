@@ -25,7 +25,7 @@ if typing.TYPE_CHECKING:
 
 @dataclasses.dataclass
 class SpacyModel:
-    """Wraps `SpacyNLPGraphComponent` output to make it fingerprintable."""
+    """Wraps `SpacyNLP` output to make it fingerprintable."""
 
     model: Language
     model_name: Text
@@ -45,7 +45,7 @@ class SpacyModel:
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MODEL_LOADER, is_trainable=False
 )
-class SpacyNLPGraphComponent(GraphComponent):
+class SpacyNLP(GraphComponent):
     """Component which provides the common loaded SpaCy model to others.
 
     This is used to avoid loading the SpaCy model multiple times. Instead the Spacy
@@ -53,7 +53,7 @@ class SpacyNLPGraphComponent(GraphComponent):
     """
 
     def __init__(self, model: SpacyModel) -> None:
-        """Initializes a `SpacyNLPGraphComponent`."""
+        """Initializes a `SpacyNLP`."""
         self._model = model
 
     @staticmethod
@@ -94,7 +94,7 @@ class SpacyNLPGraphComponent(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> SpacyNLPGraphComponent:
+    ) -> SpacyNLP:
         """Creates component (see parent class for full docstring)."""
         spacy_model_name = config.get("model")
 
@@ -137,9 +137,9 @@ class SpacyNLPGraphComponent(GraphComponent):
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER,
     is_trainable=False,
-    model_from="SpacyNLPGraphComponent",
+    model_from="SpacyNLP",
 )
-class SpacyPreprocessorGraphComponent(GraphComponent):
+class SpacyPreprocessor(GraphComponent):
     """Processes messages using SpaCy for use by SpacyTokenizer and SpacyFeaturizer."""
 
     @staticmethod
@@ -170,7 +170,7 @@ class SpacyPreprocessorGraphComponent(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> SpacyPreprocessorGraphComponent:
+    ) -> SpacyPreprocessor:
         """Creates component for training see parent class for full docstring)."""
         return cls(config)
 

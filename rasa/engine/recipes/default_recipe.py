@@ -134,10 +134,6 @@ class DefaultV1Recipe(Recipe):
         # Importing all the default Rasa components will automatically register them
         from rasa.engine.recipes.default_components import DEFAULT_COMPONENTS  # noqa
 
-        # TODO: Hack until we've deleted the old components
-        if not name.endswith("GraphComponent"):
-            name = f"{name}GraphComponent"
-
         if name in cls._registered_components:
             return cls._registered_components[name]
 
@@ -192,9 +188,7 @@ class DefaultV1Recipe(Recipe):
 
         core_target = "select_prediction" if self._use_core else None
 
-        from rasa.nlu.classifiers.regex_message_handler import (
-            RegexMessageHandlerGraphComponent,
-        )
+        from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandler
 
         return GraphModelConfiguration(
             train_schema=GraphSchema(train_nodes),
@@ -202,7 +196,7 @@ class DefaultV1Recipe(Recipe):
             training_type=training_type,
             language=config.get("language"),
             core_target=core_target,
-            nlu_target=f"run_{RegexMessageHandlerGraphComponent.__name__}",
+            nlu_target=f"run_{RegexMessageHandler.__name__}",
         )
 
     def _create_train_nodes(
@@ -347,20 +341,16 @@ class DefaultV1Recipe(Recipe):
         component: Type[GraphComponent],
         component_config: Dict[Text, Any],
     ) -> Dict[Text, Any]:
-        from rasa.nlu.classifiers.mitie_intent_classifier import (
-            MitieIntentClassifierGraphComponent,
-        )
-        from rasa.nlu.extractors.mitie_entity_extractor import (
-            MitieEntityExtractorGraphComponent,
-        )
+        from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
+        from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
         from rasa.nlu.classifiers.sklearn_intent_classifier import (
-            SklearnIntentClassifierGraphComponent,
+            SklearnIntentClassifier,
         )
 
         cli_args_mapping: Dict[Type[GraphComponent], List[Text]] = {
-            MitieIntentClassifierGraphComponent: ["num_threads"],
-            MitieEntityExtractorGraphComponent: ["num_threads"],
-            SklearnIntentClassifierGraphComponent: ["num_threads"],
+            MitieIntentClassifier: ["num_threads"],
+            MitieEntityExtractor: ["num_threads"],
+            SklearnIntentClassifier: ["num_threads"],
         }
 
         config_from_cli = {
@@ -565,9 +555,7 @@ class DefaultV1Recipe(Recipe):
         predict_config = copy.deepcopy(config)
         predict_nodes = {}
 
-        from rasa.nlu.classifiers.regex_message_handler import (
-            RegexMessageHandlerGraphComponent,
-        )
+        from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandler
 
         predict_nodes["nlu_message_converter"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
@@ -588,11 +576,11 @@ class DefaultV1Recipe(Recipe):
         if self._use_core:
             domain_needs["domain"] = "domain_provider"
 
-        regex_handler_node_name = f"run_{RegexMessageHandlerGraphComponent.__name__}"
+        regex_handler_node_name = f"run_{RegexMessageHandler.__name__}"
         predict_nodes[regex_handler_node_name] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
             needs={"messages": last_run_nlu_node, **domain_needs},
-            uses=RegexMessageHandlerGraphComponent,
+            uses=RegexMessageHandler,
             fn="process",
             config={},
         )
@@ -741,12 +729,9 @@ class DefaultV1Recipe(Recipe):
             train_node_name = f"train_{component_name}{idx}"
             node_name = f"run_{component_name}{idx}"
 
-            from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+            from rasa.core.policies.rule_policy import RulePolicy
 
-            if (
-                issubclass(component.clazz, RulePolicyGraphComponent)
-                and not rule_policy_resource
-            ):
+            if issubclass(component.clazz, RulePolicy) and not rule_policy_resource:
                 rule_policy_resource = train_node_name
 
             predict_nodes[node_name] = dataclasses.replace(

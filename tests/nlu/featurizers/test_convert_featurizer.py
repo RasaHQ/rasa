@@ -5,7 +5,7 @@ from pathlib import Path
 import os
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -15,7 +15,7 @@ from rasa.nlu.constants import (
 )
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import (
-    ConveRTFeaturizerGraphComponent,
+    ConveRTFeaturizer,
     RESTRICTED_ACCESS_URL,
     ORIGINAL_TF_HUB_MODULE_URL,
 )
@@ -28,14 +28,14 @@ from rasa.engine.storage.resource import Resource
 @pytest.fixture
 def create_or_load_convert_featurizer(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
-) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizerGraphComponent]:
+) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizer]:
     def inner(
         config: Dict[Text, Any], load: bool = False
-    ) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizerGraphComponent]:
+    ) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizer]:
         if load:
-            constructor = ConveRTFeaturizerGraphComponent.load
+            constructor = ConveRTFeaturizer.load
         else:
-            constructor = ConveRTFeaturizerGraphComponent.create
+            constructor = ConveRTFeaturizer.create
         return constructor(
             config,
             model_storage=default_model_storage,
@@ -48,17 +48,13 @@ def create_or_load_convert_featurizer(
 
 @pytest.mark.skip_on_windows
 def test_convert_featurizer_process(
-    create_or_load_convert_featurizer: Callable[
-        [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
-    ],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     monkeypatch: MonkeyPatch,
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
 
     monkeypatch.setattr(
-        ConveRTFeaturizerGraphComponent,
-        "_validate_model_url",
-        lambda _: RESTRICTED_ACCESS_URL,
+        ConveRTFeaturizer, "_validate_model_url", lambda _: RESTRICTED_ACCESS_URL,
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -92,16 +88,14 @@ def test_convert_featurizer_process(
 @pytest.mark.skip_on_windows
 @pytest.mark.parametrize("load", [True, False])
 def test_convert_featurizer_train(
-    create_or_load_convert_featurizer: Callable[
-        [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
-    ],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     monkeypatch: MonkeyPatch,
     load: bool,
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
 
     monkeypatch.setattr(
-        ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
+        ConveRTFeaturizer, "_validate_model_url", lambda _: None,
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -164,17 +158,15 @@ def test_convert_featurizer_train(
     ],
 )
 def test_convert_featurizer_tokens_to_text(
-    create_or_load_convert_featurizer: Callable[
-        [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
-    ],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     sentence: Text,
     expected_text: Text,
     monkeypatch: MonkeyPatch,
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
 
     monkeypatch.setattr(
-        ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
+        ConveRTFeaturizer, "_validate_model_url", lambda _: None,
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -186,7 +178,7 @@ def test_convert_featurizer_tokens_to_text(
     whitespace_tokenizer.process_training_data(td)
     tokens = featurizer.tokenize(message, attribute=TEXT)
 
-    actual_text = ConveRTFeaturizerGraphComponent._tokens_to_text([tokens])[0]
+    actual_text = ConveRTFeaturizer._tokens_to_text([tokens])[0]
 
     assert expected_text == actual_text
 
@@ -208,18 +200,16 @@ def test_convert_featurizer_tokens_to_text(
     ],
 )
 def test_convert_featurizer_token_edge_cases(
-    create_or_load_convert_featurizer: Callable[
-        [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
-    ],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     text: Text,
     expected_tokens: List[Text],
     expected_indices: List[Tuple[int]],
     monkeypatch: MonkeyPatch,
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
 
     monkeypatch.setattr(
-        ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
+        ConveRTFeaturizer, "_validate_model_url", lambda _: None,
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -242,17 +232,15 @@ def test_convert_featurizer_token_edge_cases(
     [("Aarhus is a city", [2, 1, 1, 1]), ("sentence embeddings", [1, 3])],
 )
 def test_convert_featurizer_number_of_sub_tokens(
-    create_or_load_convert_featurizer: Callable[
-        [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
-    ],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     text: Text,
     expected_number_of_sub_tokens: List[int],
     monkeypatch: MonkeyPatch,
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
 
     monkeypatch.setattr(
-        ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
+        ConveRTFeaturizer, "_validate_model_url", lambda _: None,
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -285,9 +273,7 @@ def test_convert_featurizer_number_of_sub_tokens(
     ],
 )
 def test_raise_invalid_urls(
-    create_or_load_convert_featurizer: Callable[
-        [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
-    ],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     model_url: Optional[Text],
     exception_phrase: Text,
 ):
@@ -301,9 +287,7 @@ def test_raise_invalid_urls(
 
 @pytest.mark.skip_on_windows
 def test_raise_wrong_model_directory(
-    create_or_load_convert_featurizer: Callable[
-        [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
-    ],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     tmp_path: Path,
 ):
 
@@ -317,9 +301,7 @@ def test_raise_wrong_model_directory(
 
 @pytest.mark.skip_on_windows
 def test_raise_wrong_model_file(
-    create_or_load_convert_featurizer: Callable[
-        [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
-    ],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
     tmp_path: Path,
 ):
 
@@ -337,9 +319,7 @@ def test_raise_wrong_model_file(
 
 @pytest.mark.skip_on_windows
 def test_raise_invalid_path(
-    create_or_load_convert_featurizer: Callable[
-        [Dict[Text, Any]], ConveRTFeaturizerGraphComponent
-    ],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
 ):
 
     component_config = {FEATURIZER_CLASS_ALIAS: "alias", "model_url": "saved_model.pb"}

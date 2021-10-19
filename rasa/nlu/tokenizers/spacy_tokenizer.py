@@ -2,8 +2,8 @@ import typing
 from typing import Dict, Text, List, Any, Optional, Type
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.nlu.utils.spacy_utils import SpacyPreprocessorGraphComponent
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.utils.spacy_utils import SpacyPreprocessor
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.training_data.message import Message
 
@@ -16,13 +16,13 @@ POS_TAG_KEY = "pos"
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
 )
-class SpacyTokenizerGraphComponent(TokenizerGraphComponent):
+class SpacyTokenizer(Tokenizer):
     """Tokenizer that uses SpaCy."""
 
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [SpacyPreprocessorGraphComponent]
+        return [SpacyPreprocessor]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

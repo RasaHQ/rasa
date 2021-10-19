@@ -7,16 +7,14 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.utils.spacy_utils import (
-    SpacyNLPGraphComponent,
-    SpacyPreprocessorGraphComponent,
+    SpacyNLP,
+    SpacyPreprocessor,
 )
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.nlu.training_data import loading
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
-    SpacyFeaturizerGraphComponent,
-)
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 
@@ -25,7 +23,7 @@ from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 def spacy_model(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ) -> SpacyModel:
-    return SpacyNLPGraphComponent.create(
+    return SpacyNLP.create(
         {"model": "en_core_web_md"},
         default_model_storage,
         Resource("spacy_model_provider"),
@@ -33,10 +31,9 @@ def spacy_model(
     ).provide()
 
 
-def create_spacy_featurizer(config: Dict[Text, Any]) -> SpacyFeaturizerGraphComponent:
-    return SpacyFeaturizerGraphComponent(
-        {**SpacyFeaturizerGraphComponent.get_default_config(), **config},
-        "spacy_featurizer",
+def create_spacy_featurizer(config: Dict[Text, Any]) -> SpacyFeaturizer:
+    return SpacyFeaturizer(
+        {**SpacyFeaturizer.get_default_config(), **config}, "spacy_featurizer",
     )
 
 
@@ -84,7 +81,7 @@ def test_spacy_training_sample_alignment(spacy_model: SpacyModel):
     m3 = Message.build(text="I am the last message", intent="feeling")
     td = TrainingData(training_examples=[m1, m2, m3])
 
-    attribute_docs = SpacyPreprocessorGraphComponent({})._docs_for_training_data(
+    attribute_docs = SpacyPreprocessor({})._docs_for_training_data(
         spacy_model.model, td
     )
 
@@ -105,7 +102,7 @@ def test_spacy_training_sample_alignment(spacy_model: SpacyModel):
 
 def test_spacy_intent_featurizer(spacy_model: SpacyModel):
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
-    SpacyPreprocessorGraphComponent({}).process_training_data(td, spacy_model)
+    SpacyPreprocessor({}).process_training_data(td, spacy_model)
     spacy_featurizer = create_spacy_featurizer({})
     spacy_featurizer.process_training_data(td)
 

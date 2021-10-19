@@ -3,7 +3,7 @@ from pathlib import Path
 import rasa.shared.utils.io
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperGraphComponent
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from typing import Dict, List, Optional, Set, Text, Any, Tuple, Type
 import re
 
@@ -19,26 +19,22 @@ from rasa.graph_components.validators.default_recipe_validator import (
     _types_to_str,
 )
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
-from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
-from rasa.nlu.extractors.regex_entity_extractor import (
-    RegexEntityExtractorGraphComponent,
-)
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 from rasa.nlu.extractors.crf_entity_extractor import (
-    CRFEntityExtractorGraphComponent,
+    CRFEntityExtractor,
     CRFEntityExtractorOptions,
 )
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
-    LexicalSyntacticFeaturizerGraphComponent,
+    LexicalSyntacticFeaturizer,
 )
-from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
-    RegexFeaturizerGraphComponent,
-)
-from rasa.nlu.selectors.response_selector import ResponseSelectorGraphComponent
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
-from rasa.core.policies.memoization import MemoizationPolicyGraphComponent
-from rasa.core.policies.rule_policy import RulePolicyGraphComponent
-from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
-from rasa.core.policies.policy import PolicyGraphComponent
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.policy import Policy
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
 from rasa.shared.exceptions import InvalidConfigException
@@ -119,7 +115,7 @@ def _test_validation_warnings_with_default_configs(
 
 
 @pytest.mark.parametrize(
-    "component_type, warns", [(ResponseSelectorGraphComponent, False,), (None, True)]
+    "component_type, warns", [(ResponseSelector, False,), (None, True)]
 )
 def test_nlu_warn_if_training_examples_with_intent_response_key_are_unused(
     component_type: Type[GraphComponent], warns: bool,
@@ -154,7 +150,7 @@ def test_nlu_warn_if_training_examples_with_intent_response_key_are_unused(
         if warns
         else None
     )
-    component_types = [WhitespaceTokenizerGraphComponent]
+    component_types = [WhitespaceTokenizer]
     if component_type:
         component_types.append(component_type)
     _test_validation_warnings_with_default_configs(
@@ -192,7 +188,7 @@ def test_nlu_warn_if_training_examples_with_entities_are_unused(
         if warns
         else None
     )
-    component_types = [WhitespaceTokenizerGraphComponent]
+    component_types = [WhitespaceTokenizer]
     if component_type:
         component_types.append(component_type)
     _test_validation_warnings_with_default_configs(
@@ -206,8 +202,7 @@ def test_nlu_warn_if_training_examples_with_entities_are_unused(
         (
             extractor,
             role_instead_of_group,
-            extractor
-            not in {DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent},
+            extractor not in {DIETClassifier, CRFEntityExtractor},
         )
         for extractor in TRAINABLE_EXTRACTORS
         for role_instead_of_group in [True, False]
@@ -244,7 +239,7 @@ def test_nlu_warn_if_training_examples_with_entity_roles_are_unused(
         if warns
         else []
     )
-    component_types = [WhitespaceTokenizerGraphComponent]
+    component_types = [WhitespaceTokenizer]
     if component_type:
         component_types.append(component_type)
     _test_validation_warnings_with_default_configs(
@@ -254,11 +249,7 @@ def test_nlu_warn_if_training_examples_with_entity_roles_are_unused(
 
 @pytest.mark.parametrize(
     "component_type, warns",
-    [
-        (RegexFeaturizerGraphComponent, False),
-        (RegexEntityExtractorGraphComponent, False),
-        (None, True),
-    ],
+    [(RegexFeaturizer, False), (RegexEntityExtractor, False), (None, True),],
 )
 def test_nlu_warn_if_regex_features_are_not_used(
     component_type: Type[GraphComponent], warns: bool
@@ -267,7 +258,7 @@ def test_nlu_warn_if_regex_features_are_not_used(
         training_examples=[Message({TEXT: "hi"}), Message({TEXT: "hi hi"})],
         regex_features=[{"name": "dummy", "pattern": "dummy"}],
     )
-    component_types = [WhitespaceTokenizerGraphComponent]
+    component_types = [WhitespaceTokenizer]
     if component_type:
         component_types.append(component_type)
     warnings = (
@@ -280,22 +271,16 @@ def test_nlu_warn_if_regex_features_are_not_used(
 
 @pytest.mark.parametrize(
     "featurizer, consumer, warns_featurizer, warns_consumer",
-    [
-        (None, consumer, True, False)
-        for consumer in [DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent]
-    ]
+    [(None, consumer, True, False) for consumer in [DIETClassifier, CRFEntityExtractor]]
     + [
-        (RegexFeaturizerGraphComponent, None, False, True),
-        # (None, RegexEntityExtractorGraphComponent, False, False), # does not work
-        (None, RegexEntityExtractorGraphComponent, False, True),  # instead we get this
+        (RegexFeaturizer, None, False, True),
+        # (None, RegexEntityExtractor, False, False), # does not work
+        (None, RegexEntityExtractor, False, True),  # instead we get this
     ]
     + [
         (featurizer, consumer, False, False)
-        for consumer in [DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent]
-        for featurizer in [
-            RegexFeaturizerGraphComponent,
-            RegexEntityExtractorGraphComponent,
-        ]
+        for consumer in [DIETClassifier, CRFEntityExtractor]
+        for featurizer in [RegexFeaturizer, RegexEntityExtractor,]
     ],
 )
 def test_nlu_warn_if_lookup_table_is_not_used(
@@ -309,7 +294,7 @@ def test_nlu_warn_if_lookup_table_is_not_used(
         lookup_tables=[{"elements": "this-is-no-file-and-that-does-not-matter"}],
     )
     assert training_data.lookup_tables is not None
-    component_types = [WhitespaceTokenizerGraphComponent, featurizer, consumer]
+    component_types = [WhitespaceTokenizer, featurizer, consumer]
     component_types = [type for type in component_types if type is not None]
 
     expected_warnings = []
@@ -339,25 +324,19 @@ def test_nlu_warn_if_lookup_table_is_not_used(
     [
         (
             [
-                SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-                SchemaNode({}, RegexFeaturizerGraphComponent, "", "", {}),
-                SchemaNode(
-                    {},
-                    CRFEntityExtractorGraphComponent,
-                    "",
-                    "",
-                    {"features": [["pos"]]},
-                ),
+                SchemaNode({}, WhitespaceTokenizer, "", "", {}),
+                SchemaNode({}, RegexFeaturizer, "", "", {}),
+                SchemaNode({}, CRFEntityExtractor, "", "", {"features": [["pos"]]},),
             ],
             True,
         ),
         (
             [
-                SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-                SchemaNode({}, RegexFeaturizerGraphComponent, "", "", {}),
+                SchemaNode({}, WhitespaceTokenizer, "", "", {}),
+                SchemaNode({}, RegexFeaturizer, "", "", {}),
                 SchemaNode(
                     {},
-                    CRFEntityExtractorGraphComponent,
+                    CRFEntityExtractor,
                     "",
                     "",
                     {"features": [["suffix1", "pattern"], ["pos"]]},
@@ -367,18 +346,12 @@ def test_nlu_warn_if_lookup_table_is_not_used(
         ),
         (
             [
-                SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-                SchemaNode({}, RegexFeaturizerGraphComponent, "", "", {}),
+                SchemaNode({}, WhitespaceTokenizer, "", "", {}),
+                SchemaNode({}, RegexFeaturizer, "", "", {}),
+                SchemaNode({}, CRFEntityExtractor, "", "", {"features": [["pos"]]},),
                 SchemaNode(
                     {},
-                    CRFEntityExtractorGraphComponent,
-                    "",
-                    "",
-                    {"features": [["pos"]]},
-                ),
-                SchemaNode(
-                    {},
-                    CRFEntityExtractorGraphComponent,
+                    CRFEntityExtractor,
                     "",
                     "",
                     {"features": [["suffix1", "pattern"], ["pos"]]},
@@ -405,7 +378,7 @@ def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch(
         match = (
             f"You have defined training data consisting of lookup tables, "
             f"but your NLU configuration's "
-            f"'{CRFEntityExtractorGraphComponent.__name__}' does not include the "
+            f"'{CRFEntityExtractor.__name__}' does not include the "
             f"'{CRFEntityExtractorOptions.PATTERN}' feature"
         )
 
@@ -420,15 +393,8 @@ def test_nlu_warn_if_lookup_table_and_crf_extractor_pattern_feature_mismatch(
 @pytest.mark.parametrize(
     "components, warns",
     [
-        ([WhitespaceTokenizerGraphComponent, CRFEntityExtractorGraphComponent,], True,),
-        (
-            [
-                WhitespaceTokenizerGraphComponent,
-                CRFEntityExtractorGraphComponent,
-                EntitySynonymMapperGraphComponent,
-            ],
-            False,
-        ),
+        ([WhitespaceTokenizer, CRFEntityExtractor,], True,),
+        ([WhitespaceTokenizer, CRFEntityExtractor, EntitySynonymMapper,], False,),
     ],
 )
 def test_nlu_warn_if_entity_synonyms_unused(
@@ -453,7 +419,7 @@ def test_nlu_warn_if_entity_synonyms_unused(
         match = (
             f"You have defined synonyms in your training data, but "
             f"your NLU configuration does not include an "
-            f"'{EntitySynonymMapperGraphComponent.__name__}'. "
+            f"'{EntitySynonymMapper.__name__}'. "
         )
 
         with pytest.warns(UserWarning, match=match):
@@ -470,13 +436,13 @@ def test_nlu_warn_if_entity_synonyms_unused(
         {
             # With end-to-end the tokenizer appears twice due to the Core featurization
             "end_to_end": SchemaNode({}, CoreFeaturizationInputConverter, "", "", {}),
-            "a": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-            "b": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-            "c": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+            "a": SchemaNode({}, WhitespaceTokenizer, "", "", {}),
+            "b": SchemaNode({}, WhitespaceTokenizer, "", "", {}),
+            "c": SchemaNode({}, WhitespaceTokenizer, "", "", {}),
         },
         {
-            "a": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-            "b": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
+            "a": SchemaNode({}, WhitespaceTokenizer, "", "", {}),
+            "b": SchemaNode({}, WhitespaceTokenizer, "", "", {}),
         },
     ],
 )
@@ -521,21 +487,14 @@ def test_nlu_do_not_raise_if_trainable_tokenizer():
     [
         (
             [
-                WhitespaceTokenizerGraphComponent,
-                LexicalSyntacticFeaturizerGraphComponent,
-                CRFEntityExtractorGraphComponent,
-                DIETClassifierGraphComponent,
+                WhitespaceTokenizer,
+                LexicalSyntacticFeaturizer,
+                CRFEntityExtractor,
+                DIETClassifier,
             ],
             True,
         ),
-        (
-            [
-                WhitespaceTokenizerGraphComponent,
-                LexicalSyntacticFeaturizerGraphComponent,
-                DIETClassifierGraphComponent,
-            ],
-            False,
-        ),
+        ([WhitespaceTokenizer, LexicalSyntacticFeaturizer, DIETClassifier,], False,),
     ],
 )
 def test_nlu_warn_of_competing_extractors(
@@ -563,38 +522,30 @@ def test_nlu_warn_of_competing_extractors(
     [
         (
             [
-                WhitespaceTokenizerGraphComponent,
-                LexicalSyntacticFeaturizerGraphComponent,
-                RegexEntityExtractorGraphComponent,
-                DIETClassifierGraphComponent,
+                WhitespaceTokenizer,
+                LexicalSyntacticFeaturizer,
+                RegexEntityExtractor,
+                DIETClassifier,
             ],
             "data/test/overlapping_regex_entities.yml",
             True,
         ),
         (
-            [
-                WhitespaceTokenizerGraphComponent,
-                LexicalSyntacticFeaturizerGraphComponent,
-                RegexEntityExtractorGraphComponent,
-            ],
+            [WhitespaceTokenizer, LexicalSyntacticFeaturizer, RegexEntityExtractor,],
+            "data/test/overlapping_regex_entities.yml",
+            False,
+        ),
+        (
+            [WhitespaceTokenizer, LexicalSyntacticFeaturizer, DIETClassifier,],
             "data/test/overlapping_regex_entities.yml",
             False,
         ),
         (
             [
-                WhitespaceTokenizerGraphComponent,
-                LexicalSyntacticFeaturizerGraphComponent,
-                DIETClassifierGraphComponent,
-            ],
-            "data/test/overlapping_regex_entities.yml",
-            False,
-        ),
-        (
-            [
-                WhitespaceTokenizerGraphComponent,
-                LexicalSyntacticFeaturizerGraphComponent,
-                RegexEntityExtractorGraphComponent,
-                DIETClassifierGraphComponent,
+                WhitespaceTokenizer,
+                LexicalSyntacticFeaturizer,
+                RegexEntityExtractor,
+                DIETClassifier,
             ],
             "data/examples/rasa/demo-rasa.yml",
             False,
@@ -627,7 +578,7 @@ def test_nlu_warn_of_competition_with_regex_extractor(
             UserWarning,
             match=(
                 f"You have an overlap between the "
-                f"'{RegexEntityExtractorGraphComponent.__name__}' and the statistical"
+                f"'{RegexEntityExtractor.__name__}' and the statistical"
             ),
         ):
             validator.validate(importer)
@@ -644,13 +595,13 @@ def test_nlu_warn_of_competition_with_regex_extractor(
             [
                 (
                     "1",
-                    LexicalSyntacticFeaturizerGraphComponent,
+                    LexicalSyntacticFeaturizer,
                     {FEATURIZER_CLASS_ALIAS: "different-class-same-name"},
                     "process_training_data",
                 ),
                 (
                     "2",
-                    RegexFeaturizerGraphComponent,
+                    RegexFeaturizer,
                     {FEATURIZER_CLASS_ALIAS: "different-class-same-name"},
                     "process_training_data",
                 ),
@@ -661,13 +612,13 @@ def test_nlu_warn_of_competition_with_regex_extractor(
             [
                 (
                     "1",
-                    RegexFeaturizerGraphComponent,
+                    RegexFeaturizer,
                     {FEATURIZER_CLASS_ALIAS: "same-class-other-name"},
                     "process_training_data",
                 ),
                 (
                     "2",
-                    RegexFeaturizerGraphComponent,
+                    RegexFeaturizer,
                     {FEATURIZER_CLASS_ALIAS: "same-class-different-name"},
                     "process_training_data",
                 ),
@@ -678,13 +629,13 @@ def test_nlu_warn_of_competition_with_regex_extractor(
             [
                 (
                     "1",
-                    RegexFeaturizerGraphComponent,
+                    RegexFeaturizer,
                     {FEATURIZER_CLASS_ALIAS: "same-class-same-name"},
                     "process_training_data",
                 ),
                 (
                     "2",
-                    RegexFeaturizerGraphComponent,
+                    RegexFeaturizer,
                     {FEATURIZER_CLASS_ALIAS: "same-class-same-name"},
                     "train",
                 ),
@@ -695,13 +646,13 @@ def test_nlu_warn_of_competition_with_regex_extractor(
             [
                 (
                     "1",
-                    RegexFeaturizerGraphComponent,
+                    RegexFeaturizer,
                     {FEATURIZER_CLASS_ALIAS: "same-class-same-name"},
                     "process_training_data",
                 ),
                 (
                     "e2e_1",
-                    RegexFeaturizerGraphComponent,
+                    RegexFeaturizer,
                     {FEATURIZER_CLASS_ALIAS: "same-class-same-name"},
                     "process_training_data",
                 ),
@@ -710,8 +661,8 @@ def test_nlu_warn_of_competition_with_regex_extractor(
         ),
         (
             [
-                ("1", RegexFeaturizerGraphComponent, {}, "process_training_data"),
-                ("2", RegexFeaturizerGraphComponent, {}, "process_training_data"),
+                ("1", RegexFeaturizer, {}, "process_training_data"),
+                ("2", RegexFeaturizer, {}, "process_training_data"),
             ],
             False,
         ),
@@ -739,15 +690,10 @@ def test_nlu_raise_if_featurizers_are_not_compatible(
 
 
 @pytest.mark.parametrize(
-    "policy_type",
-    [
-        TEDPolicyGraphComponent,
-        RulePolicyGraphComponent,
-        MemoizationPolicyGraphComponent,
-    ],
+    "policy_type", [TEDPolicy, RulePolicy, MemoizationPolicy,],
 )
 def test_core_warn_if_data_but_no_policy(
-    monkeypatch: MonkeyPatch, policy_type: Optional[Type[PolicyGraphComponent]]
+    monkeypatch: MonkeyPatch, policy_type: Optional[Type[Policy]]
 ):
 
     importer = TrainingDataImporter.load_from_dict(
@@ -759,8 +705,8 @@ def test_core_warn_if_data_but_no_policy(
     )
 
     nodes = {
-        "tokenizer": SchemaNode({}, WhitespaceTokenizerGraphComponent, "", "", {}),
-        "nlu-component": SchemaNode({}, DIETClassifierGraphComponent, "", "", {}),
+        "tokenizer": SchemaNode({}, WhitespaceTokenizer, "", "", {}),
+        "nlu-component": SchemaNode({}, DIETClassifier, "", "", {}),
     }
     if policy_type is not None:
         nodes["some-policy"] = SchemaNode({}, policy_type, "", "", {})
@@ -794,15 +740,13 @@ def test_core_warn_if_data_but_no_policy(
 @pytest.mark.parametrize(
     "policy_types, should_warn",
     [
-        ([TEDPolicyGraphComponent], True),
-        ([RulePolicyGraphComponent], False),
-        ([MemoizationPolicyGraphComponent, RulePolicyGraphComponent], False),
+        ([TEDPolicy], True),
+        ([RulePolicy], False),
+        ([MemoizationPolicy, RulePolicy], False),
     ],
 )
 def test_core_warn_if_no_rule_policy(
-    monkeypatch: MonkeyPatch,
-    policy_types: List[Type[PolicyGraphComponent]],
-    should_warn: bool,
+    monkeypatch: MonkeyPatch, policy_types: List[Type[Policy]], should_warn: bool,
 ):
     graph_schema = GraphSchema(
         {
@@ -826,10 +770,7 @@ def test_core_warn_if_no_rule_policy(
     if should_warn:
         with pytest.warns(
             UserWarning,
-            match=(
-                f"'{RulePolicyGraphComponent.__name__}' is not "
-                "included in the model's "
-            ),
+            match=(f"'{RulePolicy.__name__}' is not " "included in the model's "),
         ) as records:
             validator.validate(importer)
     else:
@@ -841,15 +782,13 @@ def test_core_warn_if_no_rule_policy(
 @pytest.mark.parametrize(
     "policy_types, should_raise",
     [
-        ([TEDPolicyGraphComponent], True),
-        ([RulePolicyGraphComponent], False),
-        ([MemoizationPolicyGraphComponent, RulePolicyGraphComponent], False),
+        ([TEDPolicy], True),
+        ([RulePolicy], False),
+        ([MemoizationPolicy, RulePolicy], False),
     ],
 )
 def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
-    monkeypatch: MonkeyPatch,
-    policy_types: List[Type[PolicyGraphComponent]],
-    should_raise: bool,
+    monkeypatch: MonkeyPatch, policy_types: List[Type[Policy]], should_raise: bool,
 ):
     domain_with_form = Domain.from_dict({KEY_FORMS: {"some-form": {}}})
     importer = DummyImporter(domain=domain_with_form)
@@ -893,13 +832,11 @@ def test_core_raise_if_a_rule_policy_is_incompatible_with_domain(
             unique_name = f"{feature_type.__name__}-{idx}"
             unique_config = {unique_name: None}
             nodes[unique_name] = SchemaNode({}, feature_type, "", "", unique_config)
-        if feature_type == RulePolicyGraphComponent:
+        if feature_type == RulePolicy:
             configs_for_rule_policies.append(unique_config)
 
     mock = Mock()
-    monkeypatch.setattr(
-        RulePolicyGraphComponent, "raise_if_incompatible_with_domain", mock
-    )
+    monkeypatch.setattr(RulePolicy, "raise_if_incompatible_with_domain", mock)
 
     validator = DefaultV1RecipeValidator(graph_schema=GraphSchema(nodes))
     monkeypatch.setattr(
@@ -926,7 +863,7 @@ def test_core_raise_if_a_rule_policy_is_incompatible_with_domain(
 )
 def test_core_warn_if_policy_priorities_are_not_unique(
     monkeypatch: MonkeyPatch,
-    policy_types: Set[Type[PolicyGraphComponent]],
+    policy_types: Set[Type[Policy]],
     num_duplicates: bool,
     priority: int,
 ):
@@ -972,10 +909,8 @@ def test_core_warn_if_policy_priorities_are_not_unique(
         assert len(records) == 0
 
 
-@pytest.mark.parametrize("policy_type_consuming_rule_data", [RulePolicyGraphComponent])
-def test_core_warn_if_rule_data_missing(
-    policy_type_consuming_rule_data: Type[PolicyGraphComponent],
-):
+@pytest.mark.parametrize("policy_type_consuming_rule_data", [RulePolicy])
+def test_core_warn_if_rule_data_missing(policy_type_consuming_rule_data: Type[Policy],):
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path="data/test_e2ebot/domain.yml",
@@ -1001,11 +936,10 @@ def test_core_warn_if_rule_data_missing(
 
 
 @pytest.mark.parametrize(
-    "policy_type_not_consuming_rule_data",
-    [TEDPolicyGraphComponent, MemoizationPolicyGraphComponent,],
+    "policy_type_not_consuming_rule_data", [TEDPolicy, MemoizationPolicy,],
 )
 def test_core_warn_if_rule_data_unused(
-    policy_type_not_consuming_rule_data: Type[PolicyGraphComponent],
+    policy_type_not_consuming_rule_data: Type[Policy],
 ):
 
     importer = TrainingDataImporter.load_from_dict(

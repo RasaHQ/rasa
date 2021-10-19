@@ -3,7 +3,7 @@ from typing import Text, Dict, Any
 import pytest
 
 import rasa.shared.utils.io
-from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import GraphSchema, GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import (
     DefaultV1Recipe,
@@ -15,15 +15,9 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.validators.default_recipe_validator import (
     DefaultV1RecipeValidator,
 )
-from rasa.nlu.classifiers.mitie_intent_classifier import (
-    MitieIntentClassifierGraphComponent,
-)
-from rasa.nlu.classifiers.sklearn_intent_classifier import (
-    SklearnIntentClassifierGraphComponent,
-)
-from rasa.nlu.extractors.mitie_entity_extractor import (
-    MitieEntityExtractorGraphComponent,
-)
+from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
+from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.autoconfig import TrainingType
 import rasa.engine.validation
@@ -245,11 +239,7 @@ def test_num_threads_interpolation():
     for node_name, node in expected_train_schema.nodes.items():
         if issubclass(
             node.uses,
-            (
-                SklearnIntentClassifierGraphComponent,
-                MitieEntityExtractorGraphComponent,
-                MitieIntentClassifierGraphComponent,
-            ),
+            (SklearnIntentClassifier, MitieEntityExtractor, MitieIntentClassifier,),
         ) and node_name.startswith("train_"):
             node.config["num_threads"] = 20
 
@@ -344,28 +334,24 @@ def test_retrieve_not_registered_class():
 
 def test_retrieve_via_module_path():
     model_config = DefaultV1Recipe().graph_config_for_recipe(
-        {
-            "policies": [
-                {"name": "rasa.core.policies.ted_policy.TEDPolicyGraphComponent"}
-            ]
-        },
+        {"policies": [{"name": "rasa.core.policies.ted_policy.TEDPolicy"}]},
         {},
         TrainingType.CORE,
     )
 
     assert any(
-        issubclass(node.uses, TEDPolicyGraphComponent)
+        issubclass(node.uses, TEDPolicy)
         for node in model_config.train_schema.nodes.values()
     )
     assert any(
-        issubclass(node.uses, TEDPolicyGraphComponent)
+        issubclass(node.uses, TEDPolicy)
         for node in model_config.predict_schema.nodes.values()
     )
 
 
 def test_retrieve_via_invalid_module_path():
     with pytest.raises(ImportError):
-        path = "rasa.core.policies.ted_policy.TEDPolicyGraphComponent1000"
+        path = "rasa.core.policies.ted_policy.TEDPolicy1000"
         DefaultV1Recipe().graph_config_for_recipe(
             {"policies": [{"name": path}]}, {}, TrainingType.CORE,
         )
