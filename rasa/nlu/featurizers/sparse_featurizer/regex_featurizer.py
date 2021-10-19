@@ -14,7 +14,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.shared.nlu.constants import (
     TEXT,
     RESPONSE,
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
-class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
+class RegexFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
     """Adds message features based on regex expressions."""
 
     @classmethod
@@ -41,7 +41,7 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """Returns the component's default config."""
         return {
-            **SparseFeaturizer2.get_default_config(),
+            **SparseFeaturizer.get_default_config(),
             # text will be processed with case sensitive as default
             "case_sensitive": True,
             # use lookup tables to generate features

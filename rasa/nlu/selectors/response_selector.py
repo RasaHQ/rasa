@@ -1,7 +1,7 @@
 from __future__ import annotations
 import copy
 import logging
-from rasa.nlu.featurizers.featurizer import Featurizer2
+from rasa.nlu.featurizers.featurizer import Featurizer
 
 import numpy as np
 import tensorflow as tf
@@ -134,7 +134,7 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [Featurizer2]
+        return [Featurizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
