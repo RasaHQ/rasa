@@ -972,7 +972,22 @@ stories:
 
 You actually want to teach your policy to **ignore** the dialogue history
 when it isn't relevant and to respond with the same action no matter
-what happened before.
+what happened before. To achieve this, individual stories are
+concatenated into longer stories. From the example above, data augmentation
+might produce a story by combining `thank` with `say goodbye` and then `thank` again,
+equivalent to:
+
+```yaml-rasa
+stories:
+  - story: thank -> say goodbye -> thank
+    steps:
+    - intent: thankyou
+    - action: utter_youarewelcome
+    - intent: goodbye
+    - action: utter_goodbye
+    - intent: thankyou
+    - action: utter_youarewelcome
+```
 
 You can alter this behavior with the `--augmentation` flag,
 which allows you to set the `augmentation_factor`.
