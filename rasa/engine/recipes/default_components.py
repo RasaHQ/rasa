@@ -50,10 +50,7 @@ from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 from rasa.nlu.utils.mitie_utils import MitieNLPGraphComponent
-from rasa.nlu.utils.spacy_utils import (
-    SpacyNLPGraphComponent,
-    SpacyPreprocessorGraphComponent,
-)
+from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent
 
 from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
 from rasa.core.policies.memoization import (
@@ -97,7 +94,6 @@ DEFAULT_COMPONENTS = [
     # Language Model Providers
     MitieNLPGraphComponent,
     SpacyNLPGraphComponent,
-    SpacyPreprocessorGraphComponent,
     # Dialogue Management Policies
     TEDPolicyGraphComponent,
     UnexpecTEDIntentPolicyGraphComponent,
