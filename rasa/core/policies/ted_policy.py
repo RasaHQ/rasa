@@ -109,7 +109,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
 )
-from rasa.shared.core.events import EntitiesAdded, Event
+from rasa.shared.core.events import EntitiesAdded, Event, UserUttered
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils import io as shared_io_utils
 
@@ -731,7 +731,11 @@ class TEDPolicy(Policy):
         return tracker_state_features
 
     def _pick_confidence(
-        self, confidences: np.ndarray, similarities: np.ndarray, domain: Domain
+        self,
+        confidences: np.ndarray,
+        similarities: np.ndarray,
+        domain: Domain,
+        last_intent,
     ) -> Tuple[np.ndarray, bool]:
         # the confidences and similarities have shape (batch-size x number of actions)
         # batch-size can only be 1 or 2;
@@ -750,12 +754,26 @@ class TEDPolicy(Policy):
                 np.argmax(confidences[0])
             ]
             logger.debug(
-                f"User intent lead to '{non_e2e_action_name}' with {np.max(confidences[0])} similarity value."
+                f"User intent lead to '{non_e2e_action_name}' with {np.max(similarities[0])} similarity"
+                f" and {np.max(confidences[0])} confidence."
             )
             e2e_action_name = domain.action_names_or_texts[np.argmax(confidences[1])]
             logger.debug(
-                f"User text lead to '{e2e_action_name}' with {np.max(confidences[1])} similarity value."
+                f"User text lead to '{e2e_action_name}' with {np.max(similarities[1])} similarity"
+                f" and {np.max(confidences[1])} confidence."
             )
+            if (
+                last_intent == "nlu_fallback"
+                and np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
+            ):
+                logger.debug(
+                    f"Last intent was nlu_fallback and User text lead "
+                    f"to a sufficiently high confidence prediction. Hence using "
+                    f"user text for prediction."
+                )
+                logger.debug(f"TED predicted '{e2e_action_name}' based on user text.")
+                return confidences[1], True
+
             if (
                 np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
                 # TODO maybe compare confidences is better
@@ -808,9 +826,14 @@ class TEDPolicy(Policy):
         # take the last prediction in the sequence
         similarities = outputs["similarities"][:, -1, :]
         confidences = outputs["scores"][:, -1, :]
+
+        last_intent = None
+        last_user_event = tracker.get_last_event_for(UserUttered)
+        if last_user_event:
+            last_intent = last_user_event.intent.get("name")
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
-            confidences, similarities, domain
+            confidences, similarities, domain, last_intent
         )
 
         if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
