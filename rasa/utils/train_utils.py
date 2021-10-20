@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
 def rank_and_mask(
     confidences: np.ndarray, ranking_length: int = 0, renormalize: bool = False
-) -> Tuple[List[int], np.ndarray]:
+) -> Tuple[List[int], List[float]]:
     """Computes a ranking of the given confidences.
 
     First, it computes a list containing the indices that would sort all the given
@@ -82,7 +82,9 @@ def rank_and_mask(
 
         indices = indices[:ranking_length]
 
-    return indices, confidences
+    # Note that ndarray.tolist() converts the entries to the nearest compatible builtin
+    # Python type which avoids serialisation issues downstream
+    return indices.tolist(), confidences.tolist()
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
