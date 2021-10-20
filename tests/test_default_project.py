@@ -12,7 +12,7 @@ import rasa.cli.scaffold
 import rasa.cli.train
 import rasa.cli.shell
 import rasa.shared.utils.io
-from rasa.utils.common import IGNORED_WARNINGS
+from rasa.utils.common import EXPECTED_WARNINGS
 
 
 @pytest.mark.timeout(300, func_only=True)
@@ -42,6 +42,6 @@ def test_default_project_has_no_warnings(
         if not any(
             type(warning.message) == warning_type
             and re.match(warning_message, str(warning.message))
-            for warning_type, warning_message in IGNORED_WARNINGS
+            for warning_type, warning_message in EXPECTED_WARNINGS
         )
     ]
