@@ -31,11 +31,6 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 EXPECTED_WARNINGS = [
-    # TODO (issue #9932)
-    (
-        np.VisibleDeprecationWarning,
-        "Creating an ndarray from ragged nested sequences.*",
-    ),
     # cf. https://github.com/tensorflow/tensorflow/issues/38168
     (
         UserWarning,

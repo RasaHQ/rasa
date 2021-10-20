@@ -1,9 +1,10 @@
-from typing import Any, Text, Optional, Dict, List
+from typing import Any, Text, Optional, Dict, List, Tuple, Union
 
 import pytest
 import scipy.sparse
 import numpy as np
 import copy
+import itertools
 
 from spacy import Language
 
@@ -11,7 +12,12 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.extractors.extractor import EntityTagSpec
-from rasa.nlu.constants import SPACY_DOCS
+from rasa.nlu.constants import (
+    ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+    SENTENCE_FEATURES,
+    SEQUENCE_FEATURES,
+    SPACY_DOCS,
+)
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
     SpacyFeaturizerGraphComponent,
 )
@@ -23,16 +29,19 @@ from rasa.utils.tensorflow import model_data_utils
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
     TEXT,
     INTENT,
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
 )
-from rasa.utils.tensorflow.constants import SENTENCE
+from rasa.utils.tensorflow.constants import MASK, SENTENCE, SEQUENCE
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
+from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN, convert_to_data_format
 
 shape = 100
 
@@ -272,10 +281,10 @@ def test_convert_training_examples(
     # features in the list
     assert len(output[0][TEXT]) == 4
     if INTENT in attributes:
-        # we will just have space sentence features
+        # we will just have sparse sentence features
         assert len(output[0][INTENT]) == 1
     if ENTITIES in attributes:
-        # we will just have space sentence features
+        # we will just have sparse sentence features
         assert len(output[0][ENTITIES]) == len(entity_tag_spec)
     # check that it calculates sparse_feature_sizes correctly
     assert sparse_feature_sizes == real_sparse_feature_sizes
@@ -373,3 +382,139 @@ def test_filter_features(
         assert expected_feature.origin == actual_feature.origin
         assert expected_feature.type == actual_feature.type
         assert expected_feature.attribute == actual_feature.attribute
+
+
+def _create_dummy_features(
+    is_sequence: bool,
+    is_sparse: bool,
+    num_records: int = 10,
+    feature_dim: int = 3,
+    message_attribute: Text = "attribute_featurized_only_once",
+    feature_attribute: Text = "attribute_featurized_only_once",
+    feature_origin: Text = "the-only-featurizer",
+    seed: int = 1234,
+) -> Tuple[List[Dict[Text, List[Features]]], List[int]]:
+    """Creates some dummy data containing a single feature for each record.
+
+    We generate features such that:
+    1. The features for the `i`-th record is a matrix filled with `i` if is a
+       dense feature, and `i` on the diagonal otherwise
+    2. We generate features with sequence lengths `1,..,num_records` (in randomized
+       order) if we generate sequence features
+    """
+    feature_type = SEQUENCE_FEATURES if is_sequence else SENTENCE_FEATURES
+    rng = np.random.default_rng(seed)
+    features_per_record = []
+    sequence_lengths = (
+        rng.permutation(num_records) if is_sequence else np.ones(num_records)
+    )
+    for record_idx in range(num_records):
+        seq_len = int(sequence_lengths[record_idx])
+        if is_sparse:
+            matrix = scipy.sparse.eye(m=seq_len, n=feature_dim) * record_idx
+        else:
+            matrix = np.full(shape=(seq_len, feature_dim), fill_value=record_idx)
+        features = Features(
+            features=matrix,
+            attribute=feature_attribute,
+            origin=feature_origin,
+            feature_type=feature_type,
+        )
+        features_per_record.append({message_attribute: [features]})
+    return features_per_record, sequence_lengths
+
+
+@pytest.mark.parametrize(
+    "is_sparse, is_sequence, attribute, feature_attribute",
+    [
+        (is_sparse, is_sequence, message_attribute, feature_attribute)
+        for is_sparse in [True, False]
+        for is_sequence in [True, False]
+        for message_attribute, feature_attribute in [
+            ("something-new", "something-new"),
+            (TEXT, TEXT),
+            (INTENT, INTENT),
+            (ENTITIES, "something-new"),
+            (ENTITIES, ENTITY_ATTRIBUTE_TYPE),
+            (ENTITIES, ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,),
+            (ENTITIES, ENTITY_ATTRIBUTE_ROLE),
+        ]
+    ],
+)
+def test_convert_to_data_format_without_fake_features_for_single_feature(
+    is_sparse: bool,
+    is_sequence: bool,
+    message_attribute: Text,
+    feature_attribute: Text,
+):
+    feature_dim = 3
+    num_records = 10
+    featurizer_name = "featurizer1"
+    features, sequence_lengths = _create_dummy_features(
+        message_attribute=message_attribute,
+        feature_dim=feature_dim,
+        feature_attribute=feature_attribute,
+        feature_origin=featurizer_name,
+        is_sparse=is_sparse,
+        is_sequence=is_sequence,
+        num_records=10,
+    )
+
+    # with pytest.warns(None) as warnings_recorder:
+    converted_features, fake_features = convert_to_data_format(
+        features,
+        fake_features=None,
+        consider_dialogue_dimension=False,
+        featurizers=None,
+    )
+
+    # convert to a regular dict to not add entries by accident
+    converted_features = dict(converted_features)
+
+    feature_type = SEQUENCE_FEATURES if is_sequence else SENTENCE_FEATURES
+
+    # One fake feature will be created for the message attribute
+    assert list(fake_features.keys()) == [message_attribute]
+    assert len(fake_features[message_attribute]) == 1
+    assert fake_features[message_attribute][0].features.shape == (0, feature_dim)
+    assert fake_features[message_attribute][0].attribute == feature_attribute
+    assert fake_features[message_attribute][0].origin == featurizer_name
+    assert fake_features[message_attribute][0].type == feature_type
+
+    # Several real features could be extracted. Here, we just extract features from
+    # a dataset with 1 feature. Hence, we only consider one sub-key here:
+    if message_attribute == ENTITIES and feature_attribute in [
+        ENTITY_ATTRIBUTE_GROUP,
+        ENTITY_ATTRIBUTE_ROLE,
+        ENTITY_ATTRIBUTE_TYPE,
+    ]:
+        # If the message attribute is entities, then all features will be collected
+        # under a key that is equal to the attribute stored in the respective `Feature`:
+        expected_sub_key = feature_attribute
+    else:
+        # For all other message attributes, the features are collected by type:
+        expected_sub_key = feature_type
+    assert set(converted_features[message_attribute].keys()) == {MASK, expected_sub_key}
+
+    # There is exactly one feature array stored under the `expected_sub_key`
+    assert len(converted_features[message_attribute][expected_sub_key]) == 1
+    feature_array = converted_features[message_attribute][expected_sub_key][0]
+    assert len(feature_array) == num_records
+    for idx, feature_values in enumerate(feature_array):
+        try:
+            assert feature_values.shape == (sequence_lengths[idx], feature_dim)
+        except:
+            breakpoint()
+        if not is_sparse:
+            # cast is necessary because that slice is a feature array
+            assert np.all(np.array(feature_values) == idx)
+        else:
+            # no cast necessary, this is a sparse scipy matrix
+            assert np.all(feature_values.data == idx)
+
+    # In addition to the feature extraction, a mask is constructed for the
+    # message attribute:
+    assert len(converted_features[message_attribute][MASK]) == 1
+    mask_feature_array = converted_features[message_attribute][MASK][0]
+    assert mask_feature_array.shape == (num_records, 1, 1)
+    assert np.all(np.array(mask_feature_array) == 1)
