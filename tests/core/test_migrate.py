@@ -7,6 +7,7 @@ import pytest
 import rasa.shared.utils.io
 import rasa.core.migrate
 from rasa.shared.core.domain import Domain
+from rasa.shared.exceptions import RasaException
 
 
 def prepare_domain_path(tmp_path: Path, domain_content: Text, file_name: Text) -> Path:
@@ -321,7 +322,7 @@ def test_migrate_domain_format_from_dir(tmp_path: Path):
     assert domain
 
     old_domain_path = tmp_path / "original_domain"
-    assert old_domain_path
+    assert old_domain_path.exists()
 
     for file in old_domain_path.iterdir():
         assert file.name in ["slots.yml", "forms.yml"]
@@ -553,22 +554,143 @@ def test_migrate_domain_dir_with_out_path_as_file(tmp_path: Path):
     )
 
     domain_out = tmp_path / "domain.yml"
-    domain_out.touch()
-
-    assert domain_out.is_file()
 
     rasa.core.migrate.migrate_domain_format(domain_dir, domain_out)
 
-    old_domain_path = tmp_path / "original_domain"
-    assert old_domain_path
-
-    for file in old_domain_path.iterdir():
-        assert file.name in ["slots.yml", "forms.yml"]
-
     domain_out = tmp_path / "new_domain"
+    assert domain_out.exists()
 
     for file in domain_out.iterdir():
         assert file.name in ["slots.yml", "forms.yml"]
 
     domain = Domain.from_directory(domain_out)
     assert domain
+
+
+def test_migrate_domain_format_multiple_files_with_duplicate_slots_sections(
+    tmp_path: Path,
+):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          outdoor_seating:
+           type: bool
+           influence_conversation: false
+        """,
+        "slots_one.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          cuisine:
+           type: text
+           influence_conversation: false
+        """,
+        "slots_two.yml",
+    )
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+
+
+def test_migrate_domain_with_multiple_files_with_forms_sections(tmp_path: Path):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        forms:
+          reservation_form:
+            required_slots:
+               outdoor_seating:
+               - type: from_intent
+                 value: true
+                 intent: confirm
+        """,
+        "forms_one.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        forms:
+          reservation_form:
+            required_slots:
+               cuisine:
+               - type: from_entity
+                 entity: cuisine
+        """,
+        "forms_two.yml",
+    )
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'forms' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+
+
+def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+    domain_file_one = "domain_one.yml"
+    domain_file_two = "domain_two.yml"
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+        - outdoor
+        slots:
+          outdoor_seating:
+           type: bool
+           influence_conversation: false
+        """,
+        domain_file_one,
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        intents:
+        - greet
+        forms:
+          reservation_form:
+            required_slots:
+               outdoor_seating:
+               - type: from_intent
+                 value: true
+                 intent: confirm
+        """,
+        domain_file_two,
+    )
+    rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+    domain = Domain.from_directory(domain_dir)
+    assert domain
+
+    for file in domain_dir.iterdir():
+        migrated = rasa.shared.utils.io.read_yaml_file(file)
+        if file.stem == domain_file_one:
+            assert migrated.get("entities") == ["outdoor"]
+        elif file.stem == domain_file_two:
+            assert migrated.get("intents") == ["greet"]

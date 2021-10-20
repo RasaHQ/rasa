@@ -1,5 +1,4 @@
 import copy
-import logging
 from pathlib import Path
 from typing import List, Dict, Text, Any, Tuple, Optional, Union
 
@@ -13,9 +12,10 @@ from rasa.shared.core.domain import (
     KEY_ENTITIES,
     KEY_SLOTS,
     KEY_FORMS,
+    SlotMapping,
+    Domain,
 )
-
-logger = logging.getLogger(__name__)
+from rasa.shared.exceptions import RasaException
 
 
 def _create_back_up(
@@ -55,7 +55,7 @@ def _get_updated_or_new_mappings(
 def _migrate_form_slots(
     domain: Dict[Text, Any]
 ) -> Tuple[Dict[Any, Dict[str, Any]], Optional[Any]]:
-    slots = domain.get(KEY_SLOTS, {})
+    updated_slots = domain.get(KEY_SLOTS, {})
     forms = domain.get(KEY_FORMS, {})
 
     new_forms = {}
@@ -69,13 +69,13 @@ def _migrate_form_slots(
         condition = {ACTIVE_LOOP: form_name}
 
         for slot_name, mappings in form_data.items():
-            slot_properties = slots.get(slot_name)
+            slot_properties = updated_slots.get(slot_name)
             existing_mappings = slot_properties.get("mappings", [])
             updated_mappings = _get_updated_or_new_mappings(
                 existing_mappings, mappings, condition
             )
             slot_properties.update({"mappings": updated_mappings})
-            slots[slot_name] = slot_properties
+            updated_slots[slot_name] = slot_properties
 
             required_slots.append(slot_name)
 
@@ -83,7 +83,7 @@ def _migrate_form_slots(
             IGNORED_INTENTS: ignored_intents,
             REQUIRED_SLOTS_KEY: required_slots,
         }
-    return new_forms, slots
+    return new_forms, updated_slots
 
 
 def _migrate_auto_fill_and_custom_slots(
@@ -95,7 +95,7 @@ def _migrate_auto_fill_and_custom_slots(
     for slot_name, properties in slots.items():
         if slot_name in entities and properties.get("auto_fill", True) is True:
             from_entity_mapping = {
-                "type": "from_entity",
+                "type": str(SlotMapping.FROM_ENTITY),
                 "entity": slot_name,
             }
             mappings = properties.get("mappings", [])
@@ -159,31 +159,49 @@ def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
         entities = []
         original_domain = {}
 
-        if out_file.is_file():
-            logger.debug(
-                "The out path provided is not a directory, "
-                "creating a new directory for migrated domain files."
-            )
+        if out_file.is_file() or not out_file.exists():
             out_file = current_dir / "new_domain"
             out_file.mkdir()
+            rasa.shared.utils.io.raise_warning(
+                f"The out path provided is not a directory, "
+                f"creating a new directory '{str(out_file)}' "
+                f"for migrated domain files."
+            )
 
         for file in domain_file.iterdir():
+            if not Domain.is_domain_file(file):
+                raise RasaException(
+                    f"The file '{file}' could not be validated as a "
+                    f"domain file. Only domain yaml files can be migrated. "
+                )
+
             backup = backup_dir / file.name
             original_content = _create_back_up(file, backup)
 
-            if KEY_SLOTS not in original_content or KEY_FORMS not in original_content:
+            if KEY_SLOTS not in original_content and KEY_FORMS not in original_content:
+                # this is done so that the other domain files can be moved
+                # in the migrated directory
                 rasa.shared.utils.io.write_yaml(
                     original_content, out_file / file.name, True
                 )
+            elif KEY_SLOTS in original_content and slots:
+                raise RasaException(
+                    f"Domain files with multiple '{KEY_SLOTS}' "
+                    f"sections were provided. Please group these sections "
+                    f"in one file only to prevent content duplication across "
+                    f"multiple files. "
+                )
+            elif KEY_FORMS in original_content and forms:
+                raise RasaException(
+                    f"Domain files with multiple '{KEY_FORMS}' "
+                    f"sections were provided. Please group these sections "
+                    f"in one file only to prevent content duplication across "
+                    f"multiple files. "
+                )
 
-            if KEY_SLOTS in original_content:
-                slots.update(original_content.get(KEY_SLOTS))
-
-            if KEY_FORMS in original_content:
-                forms.update(original_content.get(KEY_FORMS))
-
-            if KEY_ENTITIES in original_content:
-                entities.extend(original_content.get(KEY_ENTITIES))
+            slots.update(original_content.get(KEY_SLOTS, {}))
+            forms.update(original_content.get(KEY_FORMS, {}))
+            entities.extend(original_content.get(KEY_ENTITIES, {}))
 
         original_domain.update(
             {KEY_SLOTS: slots, KEY_FORMS: forms, KEY_ENTITIES: entities}
