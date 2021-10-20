@@ -4,13 +4,12 @@ from typing import Callable, List, Text, Tuple
 
 import pytest
 from _pytest.logging import LogCaptureFixture
-from spacy import Language
 
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
     SpacyFeaturizerGraphComponent,
 )
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
-from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyPreprocessorGraphComponent
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLPGraphComponent
 import rasa.shared.nlu.training_data.loading
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
@@ -44,10 +43,10 @@ def test_persist_and_load(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
-    spacy_nlp: Language,
+    spacy_nlp_component: SpacyNLPGraphComponent,
+    spacy_model: SpacyModel,
 ):
-    spacy_model = SpacyModel(model=spacy_nlp, model_name="en_core_web_md")
-    training_data = SpacyPreprocessorGraphComponent({}).process_training_data(
+    training_data = spacy_nlp_component.process_training_data(
         training_data, spacy_model
     )
 

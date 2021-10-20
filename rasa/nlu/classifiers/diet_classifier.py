@@ -115,7 +115,11 @@ POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_
 
 
 @DefaultV1Recipe.register(
-    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+    [
+        DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+        DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    ],
+    is_trainable=True,
 )
 class DIETClassifierGraphComponent(
     GraphComponent, IntentClassifier2, EntityExtractorMixin
