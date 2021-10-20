@@ -957,7 +957,7 @@ class DIETClassifierGraphComponent(
         )
 
         # construct the label and ranking
-        casted_message_sim: List[float] = message_sim.list()  # casts np.float to float
+        casted_message_sim: List[float] = message_sim.tolist()  # np.float to float
         top_label_idx = ranked_label_indices[0]
         label = {
             "id": hash(self.index_label_id_mapping[top_label_idx]),
