@@ -18,7 +18,17 @@ def add_subparser(
         subparsers: subparser we are going to attach to
         parents: Parent parsers, needed to ensure tree structure in argparse
     """
-    marker_parser = subparsers.add_parser(
+    evaluate_parser = subparsers.add_parser(
+        "evaluate",
+        parents=parents,
+        conflict_handler="resolve",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help="Tools for evaluating models.",
+    )
+
+    evaluate_subparsers = evaluate_parser.add_subparsers()
+
+    marker_parser = evaluate_subparsers.add_parser(
         "marker",
         parents=parents,
         conflict_handler="resolve",
@@ -29,26 +39,35 @@ def add_subparser(
     markers_arguments.set_markers_arguments(marker_parser)
 
     markers_subparser = marker_parser.add_subparsers()
-    marker_extract_parser = markers_subparser.add_parser(
-        "extract",
+
+    markers_first_n_subparser = markers_subparser.add_parser(
+        "by_first_n",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Extract markers from trackers in a tracker store.",
+        help="Tests Rasa models using your test NLU data and stories.",
     )
-    markers_arguments.set_markers_extract_arguments(marker_extract_parser)
+    markers_arguments.set_markers_first_n_arguments(markers_first_n_subparser)
 
-    marker_extract_parser.set_defaults(func=_run_extract)
-
-    marker_stats_parser = markers_subparser.add_parser(
-        "stats",
+    markers_sample_subparser = markers_subparser.add_parser(
+        "by_sample",
         parents=parents,
+        conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Compute stats from previously extracted markers.",
+        help="Tests Rasa models using your test NLU data and stories.",
     )
-    markers_arguments.set_markers_stats_arguments(marker_stats_parser)
+    markers_arguments.set_markers_sample_arguments(markers_sample_subparser)
 
-    marker_stats_parser.set_defaults(func=_run_stats)
+    markers_all_subparser = markers_subparser.add_parser(
+        "by_all",
+        parents=parents,
+        conflict_handler="resolve",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help="Tests Rasa models using your test NLU data and stories.",
+    )
+    markers_arguments.set_markers_all_arguments(markers_all_subparser)
+
+    marker_parser.set_defaults(func=_run_extract)
 
 
 def _run_extract(args: argparse.Namespace):
@@ -62,12 +81,6 @@ def _run_extract(args: argparse.Namespace):
     # markers.to_file(args.output_filename)
     # if args.stats:
     #     _stats(None, args.stats)
-    pass
-
-
-def _run_stats(args: argparse.Namespace):
-    # markers = ConversationMarkers.from_file(args.input_filename)
-    # _stats(markers, args.output_filename)
     pass
 
 
