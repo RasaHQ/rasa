@@ -841,7 +841,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         )
 
         return self._prediction(
-            confidence,
+            confidence.tolist(),
             is_end_to_end_prediction=is_e2e_prediction,
             optional_events=optional_events,
             diagnostic_data=outputs.get(DIAGNOSTIC_DATA),
