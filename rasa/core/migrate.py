@@ -146,8 +146,16 @@ def _write_final_domain(
         rasa.shared.utils.io.write_yaml(new_domain, out_file, True)
 
 
-def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
+def migrate_domain_format(
+    domain_file: Union[Text, Path], out_file: Union[Text, Path]
+) -> None:
     """Converts 2.0 domain to 3.0 format."""
+    if isinstance(domain_file, str):
+        domain_file = Path(domain_file)
+
+    if isinstance(out_file, str):
+        out_file = Path(out_file)
+
     current_dir = domain_file.parent
 
     if domain_file.is_dir():
@@ -207,6 +215,12 @@ def migrate_domain_format(domain_file: Path, out_file: Path) -> None:
             {KEY_SLOTS: slots, KEY_FORMS: forms, KEY_ENTITIES: entities}
         )
     else:
+        if not Domain.is_domain_file(domain_file):
+            raise RasaException(
+                f"The file '{domain_file}' could not be validated as a "
+                f"domain file. Only domain yaml files can be migrated. "
+            )
+
         backup = current_dir / "original_domain.yml"
         original_domain = _create_back_up(domain_file, backup)
 

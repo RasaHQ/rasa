@@ -75,5 +75,5 @@ def set_migrate_arguments(parser: argparse.ArgumentParser) -> None:
     add_out_param(
         parser,
         default=DEFAULT_DOMAIN_PATH,
-        help_text="Existing path (for `yaml`) where to save domain in Rasa format.",
+        help_text="Path (for `yaml`) where to save migrated domain in Rasa 3.0 format.",
     )
