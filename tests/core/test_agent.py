@@ -26,7 +26,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     UserUttered,
 )
-from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 import rasa.shared.utils.common
 import rasa.utils.io
 from rasa.core import jobs
@@ -35,6 +35,7 @@ from rasa.core.channels.channel import UserMessage
 from rasa.shared.core.domain import Domain
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.utils.endpoints import EndpointConfig
+from tests.conftest import with_model_ids
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
@@ -231,41 +232,30 @@ async def test_agent_handle_message_full_model(default_agent: Agent):
     message = UserMessage("hello", sender_id=sender_id)
     await default_agent.handle_message(message)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
-    expected_events = [
-        ActionExecuted(
-            action_name="action_session_start", metadata={METADATA_MODEL_ID: model_id}
-        ),
-        SessionStarted(metadata={METADATA_MODEL_ID: model_id}),
-        ActionExecuted(
-            action_name="action_listen", metadata={METADATA_MODEL_ID: model_id}
-        ),
-        UserUttered(
-            text="hello",
-            intent={"name": "greet"},
-            metadata={METADATA_MODEL_ID: model_id},
-        ),
-        DefinePrevUserUtteredFeaturization(
-            False, metadata={METADATA_MODEL_ID: model_id}
-        ),
-        ActionExecuted(
-            action_name="utter_greet", metadata={METADATA_MODEL_ID: model_id}
-        ),
-        BotUttered(
-            "hey there None!",
-            {
-                "elements": None,
-                "quick_replies": None,
-                "buttons": None,
-                "attachment": None,
-                "image": None,
-                "custom": None,
-            },
-            {"utter_action": "utter_greet", METADATA_MODEL_ID: model_id},
-        ),
-        ActionExecuted(
-            action_name="action_listen", metadata={METADATA_MODEL_ID: model_id}
-        ),
-    ]
+    expected_events = with_model_ids(
+        [
+            ActionExecuted(action_name="action_session_start"),
+            SessionStarted(),
+            ActionExecuted(action_name="action_listen"),
+            UserUttered(text="hello", intent={"name": "greet"},),
+            DefinePrevUserUtteredFeaturization(False),
+            ActionExecuted(action_name="utter_greet"),
+            BotUttered(
+                "hey there None!",
+                {
+                    "elements": None,
+                    "quick_replies": None,
+                    "buttons": None,
+                    "attachment": None,
+                    "image": None,
+                    "custom": None,
+                },
+                {"utter_action": "utter_greet"},
+            ),
+            ActionExecuted(action_name="action_listen"),
+        ],
+        model_id,
+    )
     assert len(tracker.events) == len(expected_events)
     for e1, e2 in zip(tracker.events, expected_events):
         assert e1 == e2
@@ -278,20 +268,15 @@ async def test_agent_handle_message_only_nlu(trained_nlu_model: Text):
     message = UserMessage("hello", sender_id=sender_id)
     await agent.handle_message(message)
     tracker = agent.tracker_store.get_or_create_tracker(sender_id)
-    expected_events = [
-        ActionExecuted(
-            action_name="action_session_start", metadata={METADATA_MODEL_ID: model_id}
-        ),
-        SessionStarted(metadata={METADATA_MODEL_ID: model_id}),
-        ActionExecuted(
-            action_name="action_listen", metadata={METADATA_MODEL_ID: model_id}
-        ),
-        UserUttered(
-            text="hello",
-            intent={"name": "greet"},
-            metadata={METADATA_MODEL_ID: model_id},
-        ),
-    ]
+    expected_events = with_model_ids(
+        [
+            ActionExecuted(action_name="action_session_start"),
+            SessionStarted(),
+            ActionExecuted(action_name="action_listen"),
+            UserUttered(text="hello", intent={"name": "greet"},),
+        ],
+        model_id,
+    )
     assert len(tracker.events) == len(expected_events)
     for e1, e2 in zip(tracker.events, expected_events):
         assert e1 == e2
@@ -304,41 +289,30 @@ async def test_agent_handle_message_only_core(trained_core_model: Text):
     message = UserMessage("/greet", sender_id=sender_id)
     await agent.handle_message(message)
     tracker = agent.tracker_store.get_or_create_tracker(sender_id)
-    expected_events = [
-        ActionExecuted(
-            action_name="action_session_start", metadata={METADATA_MODEL_ID: model_id}
-        ),
-        SessionStarted(metadata={METADATA_MODEL_ID: model_id}),
-        ActionExecuted(
-            action_name="action_listen", metadata={METADATA_MODEL_ID: model_id}
-        ),
-        UserUttered(
-            text="/greet",
-            intent={"name": "greet"},
-            metadata={METADATA_MODEL_ID: model_id},
-        ),
-        DefinePrevUserUtteredFeaturization(
-            False, metadata={METADATA_MODEL_ID: model_id}
-        ),
-        ActionExecuted(
-            action_name="utter_greet", metadata={METADATA_MODEL_ID: model_id}
-        ),
-        BotUttered(
-            "hey there None!",
-            {
-                "elements": None,
-                "quick_replies": None,
-                "buttons": None,
-                "attachment": None,
-                "image": None,
-                "custom": None,
-            },
-            {"utter_action": "utter_greet", METADATA_MODEL_ID: model_id},
-        ),
-        ActionExecuted(
-            action_name="action_listen", metadata={METADATA_MODEL_ID: model_id}
-        ),
-    ]
+    expected_events = with_model_ids(
+        [
+            ActionExecuted(action_name="action_session_start"),
+            SessionStarted(),
+            ActionExecuted(action_name="action_listen"),
+            UserUttered(text="/greet", intent={"name": "greet"},),
+            DefinePrevUserUtteredFeaturization(False),
+            ActionExecuted(action_name="utter_greet"),
+            BotUttered(
+                "hey there None!",
+                {
+                    "elements": None,
+                    "quick_replies": None,
+                    "buttons": None,
+                    "attachment": None,
+                    "image": None,
+                    "custom": None,
+                },
+                {"utter_action": "utter_greet"},
+            ),
+            ActionExecuted(action_name="action_listen"),
+        ],
+        model_id,
+    )
     assert len(tracker.events) == len(expected_events)
     for e1, e2 in zip(tracker.events, expected_events):
         assert e1 == e2

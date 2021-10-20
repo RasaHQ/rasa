@@ -27,6 +27,7 @@ from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
+from rasa.shared.nlu.constants import METADATA_MODEL_ID
 import rasa.shared.utils.io
 from rasa import server
 from rasa.core.agent import Agent, load_agent
@@ -37,7 +38,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphCom
 from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import Event, UserUttered
 from rasa.core.exporter import Exporter
 
 import rasa.core.run
@@ -765,3 +766,13 @@ def whitespace_tokenizer() -> WhitespaceTokenizerGraphComponent:
     return WhitespaceTokenizerGraphComponent(
         WhitespaceTokenizerGraphComponent.get_default_config()
     )
+
+
+def with_model_ids(events: List[Event], model_id: Text) -> List[Event]:
+    return [with_model_id(event, model_id) for event in events]
+
+
+def with_model_id(event: Event, model_id: Text) -> Event:
+    new_event = copy.deepcopy(event)
+    new_event.metadata[METADATA_MODEL_ID] = model_id
+    return new_event

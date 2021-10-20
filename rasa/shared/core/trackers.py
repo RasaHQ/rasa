@@ -31,6 +31,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     ENTITIES,
+    METADATA_MODEL_ID,
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -220,6 +221,9 @@ class DialogueStateTracker:
         self.latest_bot_utterance = None
         self._reset()
         self.active_loop: "TrackerActiveLoop" = {}
+
+        # Optional model_id to add to all events.
+        self.model_id: Optional[Text] = None
 
     ###
     # Public tracker interface
@@ -640,6 +644,9 @@ class DialogueStateTracker:
         """Modify the state of the tracker according to an ``Event``. """
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
+
+        if self.model_id:
+            event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
 
         self.events.append(event)
         event.apply_to(self)
