@@ -19,6 +19,8 @@ from typing import (
     Set,
 )
 
+import numpy as np
+
 import rasa.utils.io
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
@@ -27,6 +29,20 @@ import rasa.shared.utils.io
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+IGNORED_WARNINGS = [
+    # TODO (issue #9932)
+    (
+        np.VisibleDeprecationWarning,
+        "Creating an ndarray from ragged nested sequences.*",
+    ),
+    # cf. https://github.com/tensorflow/tensorflow/issues/38168
+    (
+        UserWarning,
+        "Converting sparse IndexedSlices.* to a dense Tensor of unknown "
+        "shape. This may consume a large amount of memory.",
+    ),
+]
 
 
 class TempDirectoryPath(str, ContextManager):
@@ -64,11 +80,22 @@ def read_global_config(path: Text) -> Dict[Text, Any]:
         return {}
 
 
-def set_log_level(log_level: Optional[int] = None) -> None:
-    """Set log level of Rasa and Tensorflow either to the provided log level or
-    to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
-    a default log level will be used."""
+def configure_logging_and_warnings(
+    log_level: Optional[int] = None,
+    warn_only_once: bool = True,
+    filter_repeated_logs: bool = True,
+) -> None:
+    """Sets log levels of various loggers and sets up filters for warnings and logs.
 
+    Args:
+        log_level: The lo level to be used for the 'Rasa' logger. Pass `None` to use
+            either the environment variable 'LOG_LEVEL' if it is specified, or the
+            default log level otherwise.
+        warn_only_once: determines whether user warnings should be filtered by the
+            `warnings` module to appear only "once"
+        filter_repeated_logs: determines whether `RepeatedLogFilter`s are added to
+            the handlers of the root logger
+    """
     if not log_level:
         log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
         log_level = logging.getLevelName(log_level)
@@ -83,8 +110,22 @@ def set_log_level(log_level: Optional[int] = None) -> None:
 
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
 
+    if filter_repeated_logs:
+        for handler in logging.getLogger().handlers:
+            handler.addFilter(RepeatedLogFilter())
+
+    if warn_only_once:
+        warnings.filterwarnings("once", category=UserWarning)
+
+    if not log_level or log_level > logging.DEBUG:
+        for warning_type, warning_message in IGNORED_WARNINGS:
+            warnings.filterwarnings(
+                "ignore", message=f".*{warning_message}", category=warning_type
+            )
+
 
 def update_apscheduler_log_level() -> None:
+    """Configures the log level of `apscheduler.*` loggers."""
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
     apscheduler_loggers = [
@@ -165,18 +206,6 @@ def update_matplotlib_log_level() -> None:
     logging.getLogger("matplotlib.colorbar").setLevel(log_level)
     logging.getLogger("matplotlib.font_manager").setLevel(log_level)
     logging.getLogger("matplotlib.ticker").setLevel(log_level)
-
-
-def set_log_and_warnings_filters() -> None:
-    """
-    Set log filters on the root logger, and duplicate filters for warnings.
-
-    Filters only propagate on handlers, not loggers.
-    """
-    for handler in logging.getLogger().handlers:
-        handler.addFilter(RepeatedLogFilter())
-
-    warnings.filterwarnings("once", category=UserWarning)
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
