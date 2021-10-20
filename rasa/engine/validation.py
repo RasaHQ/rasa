@@ -545,8 +545,8 @@ def _recursively_check_required_components(
         ) = _recursively_check_required_components(
             node_name=parent_node_name, schema=schema
         )
-        for type, nodes in unmet_requirements_of_ancestors.items():
-            unmet_requirements.setdefault(type, set()).update(nodes)
+        for _type, nodes in unmet_requirements_of_ancestors.items():
+            unmet_requirements.setdefault(_type, set()).update(nodes)
         component_types.update(ancestor_types)
 
     # check which requirements of the `schema_node` are not fulfilled by
