@@ -654,8 +654,16 @@ def test_core_warn_if_data_but_no_policy(
             validator.validate(importer)
         assert len(records) == 1
     else:
-        with pytest.warns(UserWarning, match="Slot auto-fill has been removed in 3.0"):
+        with pytest.warns(
+            UserWarning, match="Slot auto-fill has been removed in 3.0"
+        ) as records:
             validator.validate(importer)
+        assert all(
+            [
+                warn.message.args[0].startswith("Slot auto-fill has been removed")
+                for warn in records.list
+            ]
+        )
 
 
 @pytest.mark.parametrize(
