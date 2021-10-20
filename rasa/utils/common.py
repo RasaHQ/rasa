@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-IGNORED_WARNINGS = [
+EXPECTED_WARNINGS = [
     # TODO (issue #9932)
     (
         np.VisibleDeprecationWarning,
@@ -114,11 +114,22 @@ def configure_logging_and_warnings(
         for handler in logging.getLogger().handlers:
             handler.addFilter(RepeatedLogFilter())
 
+    _filter_warnings(log_level=log_level, warn_only_once=warn_only_once)
+
+
+def _filter_warnings(log_level: Optional[int], warn_only_once: bool = True) -> None:
+    """Sets up filters for warnings.
+
+    Args:
+        log_level: the current log level. Certain warnings will only be filtered out
+            if we're not in debug mode.
+        warn_only_once: determines whether user warnings should be filtered by the
+            `warnings` module to appear only "once"
+    """
     if warn_only_once:
         warnings.filterwarnings("once", category=UserWarning)
-
-    if not log_level or log_level > logging.DEBUG:
-        for warning_type, warning_message in IGNORED_WARNINGS:
+    if log_level and log_level > logging.DEBUG:
+        for warning_type, warning_message in EXPECTED_WARNINGS:
             warnings.filterwarnings(
                 "ignore", message=f".*{warning_message}", category=warning_type
             )
@@ -192,15 +203,19 @@ def update_sanic_log_level(log_file: Optional[Text] = None) -> None:
 
 
 def update_asyncio_log_level() -> None:
-    """Set the log level of asyncio to the log level specified in the environment
-    variable 'LOG_LEVEL_LIBRARIES'."""
+    """Set the log level of asyncio to the log level.
+
+    Uses the log level specified in the environment variable 'LOG_LEVEL_LIBRARIES'.
+    """
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
     logging.getLogger("asyncio").setLevel(log_level)
 
 
 def update_matplotlib_log_level() -> None:
-    """Set the log level of matplotlib to the log level specified in the environment
-    variable 'LOG_LEVEL_LIBRARIES'."""
+    """Set the log level of matplotlib to the log level.
+
+    Uses the log level specified in the environment variable 'LOG_LEVEL_LIBRARIES'.
+    """
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
     logging.getLogger("matplotlib.backends.backend_pdf").setLevel(log_level)
     logging.getLogger("matplotlib.colorbar").setLevel(log_level)
