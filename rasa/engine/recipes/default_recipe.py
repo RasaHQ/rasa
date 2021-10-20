@@ -5,7 +5,7 @@ import enum
 import logging
 import math
 from enum import Enum
-from typing import Dict, Text, Any, Tuple, Type, Optional, List, Callable
+from typing import Dict, Text, Any, Tuple, Type, Optional, List, Callable, Set, Union
 
 import dataclasses
 
@@ -89,21 +89,21 @@ class DefaultV1Recipe(Recipe):
         """Describes a graph component which was registered with the decorator."""
 
         clazz: Type[GraphComponent]
-        type: DefaultV1Recipe.ComponentType
+        types: Set[DefaultV1Recipe.ComponentType]
         is_trainable: bool
         model_from: Optional[Text]
 
     @classmethod
     def register(
         cls,
-        component_type: ComponentType,
+        component_types: Union[ComponentType, List[ComponentType]],
         is_trainable: bool,
         model_from: Optional[Text] = None,
     ) -> Callable[[Type[GraphComponent]], Type[GraphComponent]]:
         """This decorator can be used to register classes with the recipe.
 
         Args:
-            component_type: Describes the type of the component which is then used
+            component_types: Describes the types of a component which are then used
                 to place the component in the graph.
             is_trainable: `True` if the component requires training.
             model_from: Can be used if this component requires a pre-loaded model
@@ -120,10 +120,16 @@ class DefaultV1Recipe(Recipe):
                     f"the recipe '{cls.name}'. The class has to be of type "
                     f"'{GraphComponent.__name__}'."
                 )
+
+            if isinstance(component_types, cls.ComponentType):
+                unique_types = {component_types}
+            else:
+                unique_types = set(component_types)
+
             cls._registered_components[
                 registered_class.__name__
             ] = cls.RegisteredComponent(
-                registered_class, component_type, is_trainable, model_from
+                registered_class, unique_types, is_trainable, model_from
             )
             return registered_class
 
@@ -272,8 +278,8 @@ class DefaultV1Recipe(Recipe):
             component = self._from_registry(component_name)
             component_name = f"{component_name}{idx}"
 
-            if component.type == self.ComponentType.MODEL_LOADER:
-                node_name = f"run_{component_name}"
+            if self.ComponentType.MODEL_LOADER in component.types:
+                node_name = f"provide_{component_name}"
                 train_nodes[node_name] = SchemaNode(
                     needs={},
                     uses=component.clazz,
@@ -281,34 +287,35 @@ class DefaultV1Recipe(Recipe):
                     fn="provide",
                     config=config,
                 )
-                # TODO: Spacy preprocessor
-            else:
-                from_resource = None
-                if component.is_trainable:
-                    from_resource = self._add_nlu_train_node(
-                        train_nodes,
-                        component.clazz,
-                        component_name,
-                        last_run_node,
-                        config,
-                        cli_parameters,
-                    )
 
-                if component.type in [
+            from_resource = None
+            if component.is_trainable:
+                from_resource = self._add_nlu_train_node(
+                    train_nodes,
+                    component.clazz,
+                    component_name,
+                    last_run_node,
+                    config,
+                    cli_parameters,
+                )
+
+            if component.types.intersection(
+                {
                     self.ComponentType.MESSAGE_TOKENIZER,
                     self.ComponentType.MESSAGE_FEATURIZER,
-                ]:
-                    last_run_node = self._add_nlu_process_node(
-                        train_nodes,
-                        component.clazz,
-                        component_name,
-                        last_run_node,
-                        config,
-                        from_resource=from_resource,
-                    )
+                }
+            ):
+                last_run_node = self._add_nlu_process_node(
+                    train_nodes,
+                    component.clazz,
+                    component_name,
+                    last_run_node,
+                    config,
+                    from_resource=from_resource,
+                )
 
-                    # Remember for End-to-End-Featurization
-                    preprocessors.append(last_run_node)
+                # Remember for End-to-End-Featurization
+                preprocessors.append(last_run_node)
 
         return preprocessors
 
@@ -486,7 +493,7 @@ class DefaultV1Recipe(Recipe):
             )
 
             requires_end_to_end_data = self._use_end_to_end and (
-                component.type == self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT
+                self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT in component.types
             )
             policy_with_end_to_end_support_used = (
                 policy_with_end_to_end_support_used or requires_end_to_end_data
@@ -603,18 +610,21 @@ class DefaultV1Recipe(Recipe):
             component_name = config.pop("name")
             component = self._from_registry(component_name)
             component_name = f"{component_name}{idx}"
-            if component.type == self.ComponentType.MODEL_LOADER:
-                predict_nodes[f"run_{component_name}"] = SchemaNode(
+            if self.ComponentType.MODEL_LOADER in component.types:
+                predict_nodes[f"provide_{component_name}"] = SchemaNode(
                     **DEFAULT_PREDICT_KWARGS,
                     needs={},
                     uses=component.clazz,
                     fn="provide",
                     config=config,
                 )
-            elif component.type in [
-                self.ComponentType.MESSAGE_TOKENIZER,
-                self.ComponentType.MESSAGE_FEATURIZER,
-            ]:
+
+            if component.types.intersection(
+                {
+                    self.ComponentType.MESSAGE_TOKENIZER,
+                    self.ComponentType.MESSAGE_FEATURIZER,
+                }
+            ):
                 last_run_node = self._add_nlu_predict_node_from_train(
                     predict_nodes,
                     component_name,
@@ -623,10 +633,12 @@ class DefaultV1Recipe(Recipe):
                     config,
                     from_resource=component.is_trainable,
                 )
-            elif component.type in [
-                self.ComponentType.INTENT_CLASSIFIER,
-                self.ComponentType.ENTITY_EXTRACTOR,
-            ]:
+            elif component.types.intersection(
+                {
+                    self.ComponentType.INTENT_CLASSIFIER,
+                    self.ComponentType.ENTITY_EXTRACTOR,
+                }
+            ):
                 if component.is_trainable:
                     last_run_node = self._add_nlu_predict_node_from_train(
                         predict_nodes,
@@ -741,8 +753,8 @@ class DefaultV1Recipe(Recipe):
                     "domain": "domain_provider",
                     **(
                         {"precomputations": node_with_e2e_features}
-                        if component.type
-                        == self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT
+                        if self.ComponentType.POLICY_WITH_END_TO_END_SUPPORT
+                        in component.types
                         and node_with_e2e_features
                         else {}
                     ),

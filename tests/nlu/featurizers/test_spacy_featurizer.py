@@ -3,32 +3,13 @@ from typing import Any, Dict, Text
 import numpy as np
 import pytest
 
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.utils.spacy_utils import (
-    SpacyNLP,
-    SpacyPreprocessor,
-)
-from rasa.nlu.utils.spacy_utils import SpacyModel
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.shared.nlu.training_data import loading
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
-
-
-@pytest.fixture()
-def spacy_model(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-) -> SpacyModel:
-    return SpacyNLP.create(
-        {"model": "en_core_web_md"},
-        default_model_storage,
-        Resource("spacy_model_provider"),
-        default_execution_context,
-    ).provide()
 
 
 def create_spacy_featurizer(config: Dict[Text, Any]) -> SpacyFeaturizer:
@@ -73,7 +54,9 @@ def test_spacy_featurizer(sentence, spacy_nlp):
     assert np.allclose(vecs, expected, atol=1e-5)
 
 
-def test_spacy_training_sample_alignment(spacy_model: SpacyModel):
+def test_spacy_training_sample_alignment(
+    spacy_nlp_component: SpacyNLP, spacy_model: SpacyModel
+):
     from spacy.tokens import Doc
 
     m1 = Message.build(text="I have a feeling", intent="feeling")
@@ -81,9 +64,7 @@ def test_spacy_training_sample_alignment(spacy_model: SpacyModel):
     m3 = Message.build(text="I am the last message", intent="feeling")
     td = TrainingData(training_examples=[m1, m2, m3])
 
-    attribute_docs = SpacyPreprocessor({})._docs_for_training_data(
-        spacy_model.model, td
-    )
+    attribute_docs = spacy_nlp_component._docs_for_training_data(spacy_model.model, td)
 
     assert isinstance(attribute_docs["text"][0], Doc)
     assert isinstance(attribute_docs["text"][1], Doc)
@@ -100,9 +81,11 @@ def test_spacy_training_sample_alignment(spacy_model: SpacyModel):
     ]
 
 
-def test_spacy_intent_featurizer(spacy_model: SpacyModel):
+def test_spacy_intent_featurizer(
+    spacy_nlp_component: SpacyNLP, spacy_model: SpacyModel
+):
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
-    SpacyPreprocessor({}).process_training_data(td, spacy_model)
+    spacy_nlp_component.process_training_data(td, spacy_model)
     spacy_featurizer = create_spacy_featurizer({})
     spacy_featurizer.process_training_data(td)
 

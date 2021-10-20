@@ -2,7 +2,7 @@ import typing
 from typing import Dict, Text, List, Any, Optional, Type
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.nlu.utils.spacy_utils import SpacyPreprocessor
+from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.training_data.message import Message
@@ -22,7 +22,7 @@ class SpacyTokenizer(Tokenizer):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [SpacyPreprocessor]
+        return [SpacyNLP]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:

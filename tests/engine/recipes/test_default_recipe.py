@@ -306,7 +306,41 @@ def test_register_component():
         MyClassGraphComponent.__name__
     ) == DefaultV1Recipe.RegisteredComponent(
         MyClassGraphComponent,
-        DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER,
+        {DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER},
+        True,
+        "Herman",
+    )
+    assert MyClassGraphComponent()
+
+
+def test_register_component_with_multiple_types():
+    @DefaultV1Recipe.register(
+        [
+            DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER,
+            DefaultV1Recipe.ComponentType.MODEL_LOADER,
+        ],
+        is_trainable=True,
+        model_from="Herman",
+    )
+    class MyClassGraphComponent(GraphComponent):
+        @classmethod
+        def create(
+            cls,
+            config: Dict[Text, Any],
+            model_storage: ModelStorage,
+            resource: Resource,
+            execution_context: ExecutionContext,
+        ) -> GraphComponent:
+            return cls()
+
+    assert DefaultV1Recipe._from_registry(
+        MyClassGraphComponent.__name__
+    ) == DefaultV1Recipe.RegisteredComponent(
+        MyClassGraphComponent,
+        {
+            DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER,
+            DefaultV1Recipe.ComponentType.MODEL_LOADER,
+        },
         True,
         "Herman",
     )

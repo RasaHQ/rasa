@@ -26,10 +26,8 @@ from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.nlu.utils.spacy_utils import (
-    SpacyNLP,
-    SpacyPreprocessor,
-)
+from rasa.nlu.utils.spacy_utils import SpacyNLP
+
 
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import (
@@ -71,7 +69,6 @@ DEFAULT_COMPONENTS = [
     # Language Model Providers
     MitieNLP,
     SpacyNLP,
-    SpacyPreprocessor,
     # Dialogue Management Policies
     TEDPolicy,
     UnexpecTEDIntentPolicy,
