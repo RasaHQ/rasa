@@ -598,6 +598,7 @@ responses:
  utter_greet:
  - text: Hi
 
+recipe: default.v1
 language: en
 
 policies:
@@ -637,6 +638,7 @@ rules: []
 intents: []
 nlu: []
 responses: {}
+recipe: default.v1
 language: en
 policies: []
 pipeline: []
