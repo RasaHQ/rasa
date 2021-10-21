@@ -417,7 +417,7 @@ def test_duplicated_entity_predictions_tolerated():
     assert not evaluation_with_duplicated_prediction.check_prediction_target_mismatch()
 
     evaluation_with_duplicated_target = EvaluationStore(
-        entity_predictions=[entity, entity], entity_targets=[entity]
+        entity_predictions=[entity], entity_targets=[entity, entity]
     )
     assert not evaluation_with_duplicated_target.check_prediction_target_mismatch()
 
