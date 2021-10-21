@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 import logging
 import typing
@@ -69,7 +70,7 @@ class MitieFeaturizer(DenseFeaturizer, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "MitieFeaturizer":
+    ) -> MitieFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, execution_context)
 

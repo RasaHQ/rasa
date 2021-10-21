@@ -404,7 +404,7 @@ class Policy(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "Policy":
+    ) -> Policy:
         """Loads a trained policy (see parent class for full docstring)."""
         featurizer = None
 

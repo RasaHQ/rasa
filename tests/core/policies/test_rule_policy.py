@@ -44,7 +44,7 @@ from rasa.shared.core.events import (
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.rule_policy import (
-    RulePolicy as RulePolicy,
+    RulePolicy,
     InvalidRule,
     RULES,
 )

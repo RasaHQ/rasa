@@ -50,7 +50,7 @@ nodes:
   train_RegexFeaturizer1:
     needs:
       training_data: run_WhitespaceTokenizer0
-    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
     constructor_name: load
     fn: train
     config: {}
@@ -62,7 +62,7 @@ nodes:
     needs:
       training_data: run_WhitespaceTokenizer0
       resource: train_RegexFeaturizer1
-    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
     constructor_name: load
     fn: process_training_data
     config: {}

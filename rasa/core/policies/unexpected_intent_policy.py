@@ -39,7 +39,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
     LABEL_SUB_KEY,
-    TEDPolicy as TEDPolicy,
+    TEDPolicy,
     TED,
     SEQUENCE_LENGTH,
     SEQUENCE,
