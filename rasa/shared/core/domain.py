@@ -1722,7 +1722,7 @@ class Domain:
         return self.as_dict() == Domain.empty().as_dict()
 
     @staticmethod
-    def is_domain_file(filename: Text) -> bool:
+    def is_domain_file(filename: Union[Text, Path]) -> bool:
         """Checks whether the given file path is a Rasa domain file.
 
         Args:
@@ -1970,13 +1970,6 @@ def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> 
                 f"as list. Please see {DOCS_URL_FORMS} "
                 f"for more information."
             )
-
-        for slot in form_slots:
-            if slot not in domain_slots:
-                raise InvalidDomain(
-                    f"The slot '{slot}' in form '{form_name}' is not "
-                    f"mapped in domain slots."
-                )
 
         all_form_slots = [
             required_slots[REQUIRED_SLOTS_KEY] for required_slots in forms.values()

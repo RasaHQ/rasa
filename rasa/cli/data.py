@@ -49,6 +49,7 @@ def add_subparser(
     _add_data_convert_parsers(data_subparsers, parents)
     _add_data_split_parsers(data_subparsers, parents)
     _add_data_validate_parsers(data_subparsers, parents)
+    _add_data_migrate_parsers(data_subparsers, parents)
 
 
 def _add_data_convert_parsers(
@@ -235,3 +236,23 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
             "Could not recognize output format. Supported output formats: 'json' "
             "and 'yaml'. Specify the desired output format with '--format'."
         )
+
+
+def _add_data_migrate_parsers(
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
+) -> None:
+    migrate_parser = data_subparsers.add_parser(
+        "migrate",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Converts Rasa domain 2.0 format to required format for 3.0.",
+    )
+    migrate_parser.set_defaults(func=_migrate_domain)
+
+    arguments.set_migrate_arguments(migrate_parser)
+
+
+def _migrate_domain(args: argparse.Namespace) -> None:
+    import rasa.core.migrate
+
+    rasa.core.migrate.migrate_domain_format(args.domain, args.out)

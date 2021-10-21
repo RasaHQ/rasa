@@ -654,9 +654,16 @@ def test_core_warn_if_data_but_no_policy(
             validator.validate(importer)
         assert len(records) == 1
     else:
-        with pytest.warns(None) as records:
+        with pytest.warns(
+            UserWarning, match="Slot auto-fill has been removed in 3.0"
+        ) as records:
             validator.validate(importer)
-        assert len(records) == 0, [warn.message for warn in records.list]
+        assert all(
+            [
+                warn.message.args[0].startswith("Slot auto-fill has been removed")
+                for warn in records.list
+            ]
+        )
 
 
 @pytest.mark.parametrize(
@@ -719,7 +726,9 @@ def test_core_raise_if_domain_contains_form_names_but_no_rule_policy_given(
     policy_types: List[Type[PolicyGraphComponent]],
     should_raise: bool,
 ):
-    domain_with_form = Domain.from_dict({KEY_FORMS: {"some-form": {}}})
+    domain_with_form = Domain.from_dict(
+        {KEY_FORMS: {"some-form": {"required_slots": []}}}
+    )
     importer = DummyImporter(domain=domain_with_form)
     graph_schema = GraphSchema(
         {

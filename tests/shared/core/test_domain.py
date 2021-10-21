@@ -1268,8 +1268,6 @@ def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
         {KEY_FORMS: {"my_form": {"required_slots": {"slot1": {}}}}},
         # ignored_intent in forms, but no required_slots
         {KEY_FORMS: {"my_form": {"ignored_intents": ["greet"]}}},
-        # slot not specified in domain, but present in forms
-        {KEY_FORMS: {"my_form": {"required_slots": ["slot1"]}}},
     ],
 )
 def test_form_invalid_mappings(domain_as_dict: Dict[Text, Any]):
