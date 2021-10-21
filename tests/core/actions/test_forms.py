@@ -957,7 +957,7 @@ async def test_extract_requested_slot_default():
             [{"entity": "some_entity", "value": "some_value"}],
             "some_intent",
             # other slot should not be extracted because slot mapping is not unique
-            [],
+            [SlotSet("some_slot", "some_value")],
         ),
     ],
 )
@@ -971,9 +971,6 @@ async def test_extract_other_slots_with_entity(
     """Test extraction of other not requested slots values from entities."""
     form_name = "some_form"
     form = FormAction(form_name, None)
-    some_other_slot_mapping_entity_is_unique = (
-        some_other_slot_mapping != some_slot_mapping
-    )
 
     domain = Domain.from_dict(
         {
@@ -1012,14 +1009,13 @@ async def test_extract_other_slots_with_entity(
     )
     tracker.update_with_events(slot_events, domain)
 
-    if slot_events and some_other_slot_mapping_entity_is_unique:
+    if slot_events:
         slot_values = await form.validate(
             tracker,
             domain,
             CollectingOutputChannel(),
             TemplatedNaturalLanguageGenerator(domain.responses),
         )
-        # check that the value was extracted for non requested slot
         assert slot_values == expected_slot_events
     else:
         with pytest.raises(ActionExecutionRejection):

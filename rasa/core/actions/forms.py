@@ -332,6 +332,9 @@ class FormAction(LoopAction):
                 if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
                     continue
 
+                if self.get_slot_to_fill(tracker) == event.key:
+                    continue
+
                 if not self._entity_mapping_is_unique(mapping, domain):
                     del slot_values[event.key]
 
