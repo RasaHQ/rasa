@@ -53,7 +53,6 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
     ActionExecutionRejected,
     LoopInterrupted,
-    ActiveLoop,
 )
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -76,7 +75,6 @@ from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
     SESSION_START_METADATA_SLOT,
-    ACTION_EXTRACT_SLOTS,
 )
 
 import logging
@@ -1401,42 +1399,3 @@ async def test_processor_valid_slot_setting(form_bot_agent: Agent,):
     await processor.handle_message(message)
     tracker = processor.get_tracker("test")
     assert SlotSet("outdoor_seating", True) in tracker.events
-
-
-async def test_processor_does_not_run_action_extract_slots_if_active_loop(
-    form_bot_agent: Agent, caplog: LogCaptureFixture,
-):
-    tracker_store = InMemoryTrackerStore(form_bot_agent.domain)
-    lock_store = InMemoryLockStore()
-    processor = MessageProcessor(
-        form_bot_agent.interpreter,
-        form_bot_agent.policy_ensemble,
-        form_bot_agent.domain,
-        tracker_store,
-        lock_store,
-        TemplatedNaturalLanguageGenerator(form_bot_agent.domain.responses),
-    )
-    initial_msg = UserMessage("Hi", CollectingOutputChannel(), "test-id")
-    tracker = await processor.log_message(initial_msg)
-    tracker.update(ActiveLoop("restaurant_form"), form_bot_agent.domain)
-    assert tracker.active_loop_name
-    processor.tracker_store.save(tracker)
-
-    message = UserMessage(
-        "I'm searching for Thai restaurants.",
-        CollectingOutputChannel(),
-        "test-id",
-        parse_data={
-            "intent": {"name": "request_restaurant"},
-            "entities": [{"entity": "cuisine", "value": "Thai"}],
-        },
-    )
-    with caplog.at_level(logging.DEBUG):
-        await processor.handle_message(message)
-
-    assert all(
-        [
-            f"Default action '{ACTION_EXTRACT_SLOTS}' was executed," not in m
-            for m in caplog.messages
-        ]
-    )
