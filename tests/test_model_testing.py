@@ -25,6 +25,13 @@ import rasa.model
 import rasa.cli.utils
 from rasa.nlu.test import NO_ENTITY
 import rasa.core
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_TEXT,
+)
 
 
 def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
@@ -387,3 +394,61 @@ rules:
     test_trackers = generator.generate_story_trackers()
     assert len(test_trackers) == 1
     assert test_trackers[0].sender_id == test_name
+
+
+def test_duplicated_entity_predictions_tolerated():
+    """Same entity extracted multiple times shouldn't be flagged as prediction error.
+
+    This can happen when multiple entity extractors extract the same entity but a test
+    story only lists the entity once. For completeness, the other case (entity listed
+    twice in test story and extracted once) is also tested here because it should work
+    the same way.
+    """
+    entity = {
+        ENTITY_ATTRIBUTE_TEXT: "Algeria",
+        ENTITY_ATTRIBUTE_START: 0,
+        ENTITY_ATTRIBUTE_END: 7,
+        ENTITY_ATTRIBUTE_VALUE: "Algeria",
+        ENTITY_ATTRIBUTE_TYPE: "country",
+    }
+    evaluation_with_duplicated_prediction = EvaluationStore(
+        entity_predictions=[entity, entity], entity_targets=[entity]
+    )
+    assert not evaluation_with_duplicated_prediction.check_prediction_target_mismatch()
+
+    evaluation_with_duplicated_target = EvaluationStore(
+        entity_predictions=[entity], entity_targets=[entity, entity]
+    )
+    assert not evaluation_with_duplicated_target.check_prediction_target_mismatch()
+
+
+def test_differently_ordered_entity_predictions_tolerated():
+    """The order in which entities were extracted shouldn't matter.
+
+    Let's have an utterance like this: "[Researcher](job_name) from [Germany](country)."
+    and imagine we use different entity extractors for the two entities. Then, the order
+    in which entities are extracted from the utterance depends on the order in which the
+    extractors are listed in the NLU pipeline. However, the expected order is given by
+    where the entities are found in the utterance, i.e. "Researcher" comes before
+    "Germany". Hence, it's reasonable for the expected and extracted order to not match
+    and it shouldn't be flagged as a prediction error.
+
+    """
+    entity1 = {
+        ENTITY_ATTRIBUTE_TEXT: "Algeria and Albania",
+        ENTITY_ATTRIBUTE_START: 0,
+        ENTITY_ATTRIBUTE_END: 7,
+        ENTITY_ATTRIBUTE_VALUE: "Algeria",
+        ENTITY_ATTRIBUTE_TYPE: "country",
+    }
+    entity2 = {
+        ENTITY_ATTRIBUTE_TEXT: "Algeria and Albania",
+        ENTITY_ATTRIBUTE_START: 12,
+        ENTITY_ATTRIBUTE_END: 19,
+        ENTITY_ATTRIBUTE_VALUE: "Albania",
+        ENTITY_ATTRIBUTE_TYPE: "country",
+    }
+    evaluation = EvaluationStore(
+        entity_predictions=[entity1, entity2], entity_targets=[entity2, entity1]
+    )
+    assert not evaluation.check_prediction_target_mismatch()
