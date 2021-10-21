@@ -2,6 +2,8 @@
 
 The docs are built using [Docusaurus 2](https://v2.docusaurus.io/).
 
+## Useful commands
+
 ### Installation
 
 ```
@@ -27,3 +29,10 @@ This command generates static content into the `build` directory and can be serv
 ### Deployment
 
 Deployment is handled by Netlify: it is setup for listening to changes on the `documentation` branch.
+
+
+## Manual steps after a new version
+
+When a new docs version has been released, we'll need to do the following manual steps:
+- Update the wording and links of the top banner, configured in `docusaurus.config.js` in `announcementBar`.
+- Update Netlify redirects in `netflify.toml`, under `# Redirects for latest version permalinks`

@@ -338,6 +338,10 @@ start the release process (in case anything is missing).
 4. **You may now do the release by following the instructions outlined in the
 [Rasa Open Source README](#steps-to-release-a-new-version) !**
 
+#### After a Major release
+
+After a Major release has been completed, please follow [these instructions to complete the documentation update](./docs/README.md#manual-steps-after-a-new-version).
+
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
 
