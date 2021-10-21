@@ -16,6 +16,21 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.12] - 2021-10-21
+### Bugfixes
+- [#9771](https://github.com/rasahq/rasa/issues/9771): Fixed a bug where `rasa test --fail-on-prediction-errors` would raise a 
+  `WrongPredictionException` for entities which were actually predicted correctly.
+
+  This happened in two ways:
+  1. if for a user message some entities were extracted multiple times (by multiple entity
+  extractors) but listed only once in the test story,
+  2. if the order in which entities from a message were extracted didn't match the order
+  in which they were listed in the test story.
+
+### Improved Documentation
+- [#9691](https://github.com/rasahq/rasa/issues/9691): Improve the documentation for training `TEDPolicy` with data augmentation.
+
+
 ## [2.8.11] - 2021-10-20
 ### Bugfixes
 - [#9858](https://github.com/rasahq/rasa/issues/9858): Updates dependency on `sanic-jwt` (1.5.0 -> ">=1.6.0, <1.7.0")
