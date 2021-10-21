@@ -736,6 +736,7 @@ class TEDPolicy(Policy):
         similarities: np.ndarray,
         domain: Domain,
         last_intent,
+        last_text,
     ) -> Tuple[np.ndarray, bool]:
         # the confidences and similarities have shape (batch-size x number of actions)
         # batch-size can only be 1 or 2;
@@ -762,6 +763,11 @@ class TEDPolicy(Policy):
                 f"User text lead to '{e2e_action_name}' with {np.max(similarities[1])} similarity"
                 f" and {np.max(confidences[1])} confidence."
             )
+            if last_text.startswith("/"):
+                logger.debug(
+                    f"TED predicted '{non_e2e_action_name}' based on user intent."
+                )
+                return confidences[0], False
             if (
                 last_intent == "nlu_fallback"
                 and np.max(confidences[1]) > self.config[E2E_CONFIDENCE_THRESHOLD]
@@ -828,12 +834,14 @@ class TEDPolicy(Policy):
         confidences = outputs["scores"][:, -1, :]
 
         last_intent = None
+        last_text = None
         last_user_event = tracker.get_last_event_for(UserUttered)
         if last_user_event:
             last_intent = last_user_event.intent.get("name")
+            last_text = last_user_event.text
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
-            confidences, similarities, domain, last_intent
+            confidences, similarities, domain, last_intent, last_text
         )
 
         if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
