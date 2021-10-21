@@ -423,7 +423,7 @@ def test_duplicated_entity_predictions_tolerated():
 
 
 def test_differently_ordered_entity_predictions_tolerated():
-    """Order in which entities were extracted shouldn't matter.
+    """The order in which entities were extracted shouldn't matter.
 
     Let's have an utterance like this: "[Researcher](job_name) from [Germany](country)."
     and imagine we use different entity extractors for the two entities. Then, the order
