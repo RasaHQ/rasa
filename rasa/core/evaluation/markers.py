@@ -201,44 +201,16 @@ class Marker(ABC):
             if any(operator in config.keys() for operator in ["and", "or", "not"]):
 
                 operator = next(iter(config.keys()))
-
-                sub_markers = []
-                for sub_marker, sub_marker_config in config[operator].items():
-                    for setting in sub_marker_config:  # list of e.g. action names
-                        sub_markers.append(cls.from_config({sub_marker: setting}))
-
-                operator_to_compound: Dict[Text, Type[CompoundMarker]] = {
-                    "and": AndMarker,
-                    "not": NotAnyMarker,
-                    "or": OrMarker,
-                }
-                compound_marker_type = operator_to_compound.get(operator, None)
-                if not compound_marker_type:
-                    raise RuntimeError("Unknown combination of markers: ")
-
-                return compound_marker_type(markers=sub_markers, name=name)
+                return CompoundMarker.from_config(
+                    operator=operator, sub_marker_configs=config[operator]
+                )
 
             else:
 
                 marker_name = next(iter(config.keys()))
-                text = config[marker_name]
-
-                str_to_marker_type = {
-                    "action_executed": ActionExecutedMarker,
-                    "intent_detected": IntentDetectedMarker,
-                    "slot_set": SlotSetMarker,
-                }
-
-                marker_type = str_to_marker_type.get(
-                    marker_name.replace("_not_", "_"), None
+                return EventMarker.from_config(
+                    marker_name=marker_name, marker_text=config[marker_name], name=name
                 )
-                if not marker_type:
-                    raise RuntimeError(f"Unknown kind of marker: {marker_name}")
-
-                marker = marker_type(text)
-                if "_not_" in marker_name:
-                    marker = NotAnyMarker([marker], name=name)
-                return marker
 
         else:
             raise RuntimeError(f"Unknown config format: {config}")
@@ -248,9 +220,6 @@ class CompoundMarker(Marker, ABC):
     def __init__(self, markers: List[Marker], name: Optional[Text] = None):
         super().__init__(name=name)
         self.markers: List[Marker] = markers
-
-    def flatten(self) -> List[Marker]:
-        return [self] + super().flatten()
 
     def evaluate(self, event: Event) -> None:
         # FIXME: DAG
@@ -262,6 +231,35 @@ class CompoundMarker(Marker, ABC):
         return [self] + [
             sub_marker for marker in self.markers for sub_marker in marker.flatten()
         ]
+
+    @classmethod
+    def from_config(
+        cls,
+        operator: Text,
+        sub_marker_configs: Dict[Text, List[Text]],
+        name: Optional[Text] = None,
+    ) -> CompoundMarker:
+
+        sub_markers = []
+        for sub_marker, sub_marker_config in sub_marker_configs.items():
+
+            # FIXME: this assumes that the sub_marker_config contains only
+            # atomic event markers - to enable recursion we need to check by type
+            for setting in sub_marker_config:  # list of e.g. action name
+                sub_markers.append(
+                    EventMarker.from_config(marker_name=sub_marker, marker_text=setting)
+                )
+
+        operator_to_compound: Dict[Text, Type[CompoundMarker]] = {
+            "and": AndMarker,
+            "not": NotAnyMarker,
+            "or": OrMarker,
+        }
+        compound_marker_type = operator_to_compound.get(operator, None)
+        if not compound_marker_type:
+            raise RuntimeError("Unknown combination of markers: ")
+
+        return compound_marker_type(markers=sub_markers, name=name)
 
 
 class AndMarker(CompoundMarker):
@@ -295,6 +293,25 @@ class EventMarker(Marker, ABC):
 
     def flatten(self) -> List[Marker]:
         return [self]
+
+    @classmethod
+    def from_config(
+        cls, marker_name: Text, marker_text: Text, name: Optional[Text] = None
+    ) -> EventMarker:
+        str_to_marker_type = {
+            "action_executed": ActionExecutedMarker,
+            "intent_detected": IntentDetectedMarker,
+            "slot_set": SlotSetMarker,
+        }
+
+        marker_type = str_to_marker_type.get(marker_name.replace("_not_", "_"), None)
+        if not marker_type:
+            raise RuntimeError(f"Unknown kind of marker: {marker_name}")
+
+        marker = marker_type(marker_text)
+        if "_not_" in marker_name:
+            marker = NotAnyMarker([marker], name=name)
+        return marker
 
 
 class ActionExecutedMarker(EventMarker):
