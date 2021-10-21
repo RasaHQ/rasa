@@ -11,7 +11,7 @@ from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, Sch
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.validators.finetuning_validator import FinetuningValidator
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -323,7 +323,7 @@ def test_validate_after_replacing_something_in_schema(
     schema2 = copy.deepcopy(schema1)
     schema_node = schema2.nodes["node-0"]
     if what == "uses":
-        schema_node.uses = WhitespaceTokenizerGraphComponent
+        schema_node.uses = WhitespaceTokenizer
     elif what == "fn":
         schema_node.fn = "a-new-function"
     elif what == "needs":

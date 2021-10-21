@@ -12,7 +12,7 @@ nodes:
     resource: null
   provide_MitieNLP0:
     needs: {}
-    uses: rasa.nlu.utils.mitie_utils.MitieNLPGraphComponent
+    uses: rasa.nlu.utils.mitie_utils.MitieNLP
     constructor_name: load
     fn: provide
     config:
@@ -24,7 +24,7 @@ nodes:
   run_MitieTokenizer1:
     needs:
       messages: nlu_message_converter
-    uses: rasa.nlu.tokenizers.mitie_tokenizer.MitieTokenizerGraphComponent
+    uses: rasa.nlu.tokenizers.mitie_tokenizer.MitieTokenizer
     constructor_name: load
     fn: process
     config: {}
@@ -36,7 +36,7 @@ nodes:
     needs:
       messages: run_MitieTokenizer1
       model: provide_MitieNLP0
-    uses: rasa.nlu.extractors.mitie_entity_extractor.MitieEntityExtractorGraphComponent
+    uses: rasa.nlu.extractors.mitie_entity_extractor.MitieEntityExtractor
     constructor_name: load
     fn: process
     config: {}
@@ -48,7 +48,7 @@ nodes:
   run_EntitySynonymMapper3:
     needs:
       messages: run_MitieEntityExtractor2
-    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapperGraphComponent
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
     constructor_name: load
     fn: process
     config: {}
@@ -60,7 +60,7 @@ nodes:
   run_RegexFeaturizer4:
     needs:
       messages: run_EntitySynonymMapper3
-    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizerGraphComponent
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
     constructor_name: load
     fn: process
     config: {}
@@ -73,7 +73,7 @@ nodes:
     needs:
       messages: run_RegexFeaturizer4
       model: provide_MitieNLP0
-    uses: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer.MitieFeaturizerGraphComponent
+    uses: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer.MitieFeaturizer
     constructor_name: load
     fn: process
     config: {}
@@ -84,7 +84,7 @@ nodes:
   run_SklearnIntentClassifier6:
     needs:
       messages: run_MitieFeaturizer5
-    uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifierGraphComponent
+    uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifier
     constructor_name: load
     fn: process
     config: {}
@@ -93,10 +93,10 @@ nodes:
     is_input: false
     resource:
       name: train_SklearnIntentClassifier6
-  run_RegexMessageHandlerGraphComponent:
+  run_RegexMessageHandler:
     needs:
       messages: run_SklearnIntentClassifier6
-    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandlerGraphComponent
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
     constructor_name: load
     fn: process
     config: {}

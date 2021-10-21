@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+class RegexEntityExtractor(GraphComponent, EntityExtractorMixin):
     """Extracts entities via lookup tables and regexes defined in the training data."""
 
     REGEX_FILE_NAME = "regex.json"
@@ -53,7 +53,7 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> RegexEntityExtractorGraphComponent:
+    ) -> RegexEntityExtractor:
         """Creates a new `GraphComponent`.
 
         Args:
@@ -191,7 +191,7 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> RegexEntityExtractorGraphComponent:
+    ) -> RegexEntityExtractor:
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:

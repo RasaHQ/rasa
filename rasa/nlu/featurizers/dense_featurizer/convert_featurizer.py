@@ -14,7 +14,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
 import rasa.core.utils
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -50,7 +50,7 @@ RESTRICTED_ACCESS_URL = (
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
 )
-class ConveRTFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
+class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
     """Featurizer using ConveRT model.
 
     Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
@@ -61,7 +61,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [TokenizerGraphComponent]
+        return [Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -92,7 +92,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> ConveRTFeaturizerGraphComponent:
+    ) -> ConveRTFeaturizer:
         """Creates a new component (see parent class for full docstring)."""
         return cls(name=execution_context.node_name, config=config)
 
@@ -168,7 +168,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
         if not model_url:
             raise RasaException(
                 f"Parameter 'model_url' was not specified in the configuration "
-                f"of '{ConveRTFeaturizerGraphComponent.__name__}'. "
+                f"of '{ConveRTFeaturizer.__name__}'. "
                 f"It is mandatory to pass a value for this parameter. "
                 f"You can either use a community hosted URL of the model "
                 f"or if you have a local copy of the model, pass the "
@@ -179,7 +179,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
             # Can't use the originally hosted URL
             raise RasaException(
                 f"Parameter 'model_url' of "
-                f"'{ConveRTFeaturizerGraphComponent.__name__}' was "
+                f"'{ConveRTFeaturizer.__name__}' was "
                 f"set to '{model_url}' which does not contain the model any longer. "
                 f"You can either use a community hosted URL or if you have a "
                 f"local copy of the model, pass the path to the directory "
@@ -190,7 +190,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
             # Can't use the URL that is reserved for tests only
             raise RasaException(
                 f"Parameter 'model_url' of "
-                f"'{ConveRTFeaturizerGraphComponent.__name__}' was "
+                f"'{ConveRTFeaturizer.__name__}' was "
                 f"set to '{model_url}' which is strictly reserved for pytests of "
                 f"Rasa Open Source only. Due to licensing issues you are "
                 f"not allowed to use the model from this URL. "
@@ -203,7 +203,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
             # Definitely invalid since the specified path should be a directory
             raise RasaException(
                 f"Parameter 'model_url' of "
-                f"'{ConveRTFeaturizerGraphComponent.__name__}' was "
+                f"'{ConveRTFeaturizer.__name__}' was "
                 f"set to the path of a file which is invalid. You "
                 f"can either use a community hosted URL or if you have a "
                 f"local copy of the model, pass the path to the directory "
@@ -228,7 +228,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
         """Retrieve a signature from a (hopefully loaded) TF model."""
         if not module:
             raise Exception(
-                f"{ConveRTFeaturizerGraphComponent.__name__} needs "
+                f"{ConveRTFeaturizer.__name__} needs "
                 f"a proper loaded tensorflow module when used. "
                 f"Make sure to pass a module when training and using the component."
             )

@@ -3,22 +3,18 @@ from typing import Any, Dict, Text
 import numpy as np
 import pytest
 
-from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent
-from rasa.nlu.utils.spacy_utils import SpacyModel
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.shared.nlu.training_data import loading
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
-    SpacyFeaturizerGraphComponent,
-)
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 
 
-def create_spacy_featurizer(config: Dict[Text, Any]) -> SpacyFeaturizerGraphComponent:
-    return SpacyFeaturizerGraphComponent(
-        {**SpacyFeaturizerGraphComponent.get_default_config(), **config},
-        "spacy_featurizer",
+def create_spacy_featurizer(config: Dict[Text, Any]) -> SpacyFeaturizer:
+    return SpacyFeaturizer(
+        {**SpacyFeaturizer.get_default_config(), **config}, "spacy_featurizer",
     )
 
 
@@ -59,7 +55,7 @@ def test_spacy_featurizer(sentence, spacy_nlp):
 
 
 def test_spacy_training_sample_alignment(
-    spacy_nlp_component: SpacyNLPGraphComponent, spacy_model: SpacyModel
+    spacy_nlp_component: SpacyNLP, spacy_model: SpacyModel
 ):
     from spacy.tokens import Doc
 
@@ -86,7 +82,7 @@ def test_spacy_training_sample_alignment(
 
 
 def test_spacy_intent_featurizer(
-    spacy_nlp_component: SpacyNLPGraphComponent, spacy_model: SpacyModel
+    spacy_nlp_component: SpacyNLP, spacy_model: SpacyModel
 ):
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
     spacy_nlp_component.process_training_data(td, spacy_model)
