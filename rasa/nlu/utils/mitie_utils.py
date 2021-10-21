@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
 
 
 class MitieModel:
-    """Wraps `MitieNLPGraphComponent` output to make it fingerprintable."""
+    """Wraps `MitieNLP` output to make it fingerprintable."""
 
     def __init__(
         self,
@@ -44,7 +44,7 @@ class MitieModel:
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MODEL_LOADER, is_trainable=False
 )
-class MitieNLPGraphComponent(GraphComponent):
+class MitieNLP(GraphComponent):
     """Component which provides the common configuration and loaded model to others.
 
     This is used to avoid loading the Mitie model multiple times. Instead the Mitie
@@ -81,7 +81,7 @@ class MitieNLPGraphComponent(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> MitieNLPGraphComponent:
+    ) -> MitieNLP:
         """Creates component (see parent class for full docstring)."""
         import mitie
 

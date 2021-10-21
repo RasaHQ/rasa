@@ -16,9 +16,9 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 
 import rasa
-from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+from rasa.core.policies.rule_policy import RulePolicy
 
-from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
+from rasa.core.policies.ted_policy import TEDPolicy
 import rasa.model
 import rasa.model_training
 import rasa.core
@@ -29,7 +29,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.training.graph_trainer import GraphTrainer
 
-from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.shared.importers.autoconfig as autoconfig
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
@@ -393,12 +393,10 @@ class TestE2e:
             model_configuration.predict_schema,
         ]:
             assert any(
-                issubclass(node.uses, DIETClassifierGraphComponent)
-                for node in schema.nodes.values()
+                issubclass(node.uses, DIETClassifier) for node in schema.nodes.values()
             )
             assert any(
-                issubclass(node.uses, TEDPolicyGraphComponent)
-                for node in schema.nodes.values()
+                issubclass(node.uses, TEDPolicy) for node in schema.nodes.values()
             )
 
     def test_new_nlu_data_retrains_core_if_there_are_e2e_stories(
@@ -987,16 +985,16 @@ def test_invalid_graph_schema(
 def test_fingerprint_changes_if_module_changes(
     tmp_path: Path, domain_path: Text, stories_path: Text, monkeypatch: MonkeyPatch
 ):
-    rule_policy_path = inspect.getfile(RulePolicyGraphComponent)
+    rule_policy_path = inspect.getfile(RulePolicy)
     module_name = "custom_rule_policy"
-    new_class_name = "CustomRulePolicyGraphComponent"
+    new_class_name = "CustomRulePolicy"
 
     custom_module_path = Path(tmp_path, f"{module_name}.py")
     shutil.copy2(rule_policy_path, custom_module_path)
 
     # Rename class as the class name has to be unique
     source_code = custom_module_path.read_text()
-    source_code = source_code.replace("RulePolicyGraphComponent", new_class_name)
+    source_code = source_code.replace("RulePolicy", new_class_name)
     custom_module_path.write_text(source_code)
 
     config = textwrap.dedent(

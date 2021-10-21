@@ -6,16 +6,12 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_TEXT, ACTION_NAME
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
-def create_whitespace_tokenizer(
-    config: Optional[Dict] = None,
-) -> WhitespaceTokenizerGraphComponent:
+def create_whitespace_tokenizer(config: Optional[Dict] = None,) -> WhitespaceTokenizer:
     config = config if config else {}
-    return WhitespaceTokenizerGraphComponent(
-        {**WhitespaceTokenizerGraphComponent.get_default_config(), **config},
-    )
+    return WhitespaceTokenizer({**WhitespaceTokenizer.get_default_config(), **config},)
 
 
 @pytest.mark.parametrize(
@@ -180,7 +176,7 @@ def test_whitespace_does_not_throw_error():
 @pytest.mark.parametrize("language, is_not_supported", [("en", False), ("zh", True)])
 def test_whitespace_language_support(language, is_not_supported):
     assert (
-        language in WhitespaceTokenizerGraphComponent.not_supported_languages()
+        language in WhitespaceTokenizer.not_supported_languages()
     ) == is_not_supported
 
 

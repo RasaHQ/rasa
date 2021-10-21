@@ -5,7 +5,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.message import Message
 
 from rasa.shared.utils.io import DEFAULT_ENCODING
@@ -14,7 +14,7 @@ from rasa.shared.utils.io import DEFAULT_ENCODING
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
 )
-class MitieTokenizerGraphComponent(TokenizerGraphComponent):
+class MitieTokenizer(Tokenizer):
     """Tokenizes messages using the `mitie` library.."""
 
     @staticmethod
@@ -41,7 +41,7 @@ class MitieTokenizerGraphComponent(TokenizerGraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> MitieTokenizerGraphComponent:
+    ) -> MitieTokenizer:
         """Creates a new component (see parent class for full docstring)."""
         return cls(config)
 

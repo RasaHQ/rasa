@@ -18,22 +18,18 @@ from rasa.shared.nlu.constants import (
     INTENT,
     EXTRACTOR,
 )
-from rasa.nlu.extractors.regex_entity_extractor import (
-    RegexEntityExtractorGraphComponent,
-)
+from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 
 
 @pytest.fixture()
 def create_or_load_extractor(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-) -> Callable[..., RegexEntityExtractorGraphComponent]:
-    def inner(
-        config: Dict[Text, Any], load: bool = False
-    ) -> RegexEntityExtractorGraphComponent:
+) -> Callable[..., RegexEntityExtractor]:
+    def inner(config: Dict[Text, Any], load: bool = False) -> RegexEntityExtractor:
         if load:
-            constructor = RegexEntityExtractorGraphComponent.load
+            constructor = RegexEntityExtractor.load
         else:
-            constructor = RegexEntityExtractorGraphComponent.create
+            constructor = RegexEntityExtractor.create
         return constructor(
             config=config,
             model_storage=default_model_storage,
@@ -63,14 +59,14 @@ def create_or_load_extractor(
                     ENTITY_ATTRIBUTE_VALUE: "Berlin",
                     ENTITY_ATTRIBUTE_START: 0,
                     ENTITY_ATTRIBUTE_END: 6,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
                     ENTITY_ATTRIBUTE_TYPE: "city",
                     ENTITY_ATTRIBUTE_VALUE: "London",
                     ENTITY_ATTRIBUTE_START: 11,
                     ENTITY_ATTRIBUTE_END: 17,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
             True,  # test loading
@@ -91,14 +87,14 @@ def create_or_load_extractor(
                     ENTITY_ATTRIBUTE_VALUE: "Berlin",
                     ENTITY_ATTRIBUTE_START: 29,
                     ENTITY_ATTRIBUTE_END: 35,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
                     ENTITY_ATTRIBUTE_TYPE: "person",
                     ENTITY_ATTRIBUTE_VALUE: "Sophie",
                     ENTITY_ATTRIBUTE_START: 0,
                     ENTITY_ATTRIBUTE_END: 6,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
             False,
@@ -127,14 +123,14 @@ def create_or_load_extractor(
                     ENTITY_ATTRIBUTE_VALUE: "北京",
                     ENTITY_ATTRIBUTE_START: 0,
                     ENTITY_ATTRIBUTE_END: 2,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
                     ENTITY_ATTRIBUTE_TYPE: "city",
                     ENTITY_ATTRIBUTE_VALUE: "上海",
                     ENTITY_ATTRIBUTE_START: 3,
                     ENTITY_ATTRIBUTE_END: 5,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
             True,  # test loading
@@ -152,14 +148,14 @@ def create_or_load_extractor(
                     ENTITY_ATTRIBUTE_VALUE: "北京",
                     ENTITY_ATTRIBUTE_START: 5,
                     ENTITY_ATTRIBUTE_END: 7,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
                     ENTITY_ATTRIBUTE_TYPE: "person",
                     ENTITY_ATTRIBUTE_VALUE: "小明",
                     ENTITY_ATTRIBUTE_START: 0,
                     ENTITY_ATTRIBUTE_END: 2,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
             True,
@@ -190,7 +186,7 @@ def create_or_load_extractor(
                     ENTITY_ATTRIBUTE_VALUE: "London",
                     ENTITY_ATTRIBUTE_START: 11,
                     ENTITY_ATTRIBUTE_END: 17,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 }
             ],
             True,
@@ -210,14 +206,14 @@ def create_or_load_extractor(
                     ENTITY_ATTRIBUTE_VALUE: "berlin",
                     ENTITY_ATTRIBUTE_START: 0,
                     ENTITY_ATTRIBUTE_END: 6,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
                     ENTITY_ATTRIBUTE_TYPE: "city",
                     ENTITY_ATTRIBUTE_VALUE: "London",
                     ENTITY_ATTRIBUTE_START: 11,
                     ENTITY_ATTRIBUTE_END: 17,
-                    EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
             False,
@@ -225,7 +221,7 @@ def create_or_load_extractor(
     ],
 )
 def test_train_and_process(
-    create_or_load_extractor: Callable[..., RegexEntityExtractorGraphComponent],
+    create_or_load_extractor: Callable[..., RegexEntityExtractor],
     config: Dict[Text, Any],
     text: Text,
     lookup: List[Dict[Text, List[Text]]],
@@ -268,7 +264,7 @@ def test_train_and_process(
 
 
 def test_train_process_and_load_with_empty_model(
-    create_or_load_extractor: Callable[..., RegexEntityExtractorGraphComponent],
+    create_or_load_extractor: Callable[..., RegexEntityExtractor],
 ):
     extractor = create_or_load_extractor({})
     with pytest.warns(UserWarning):
@@ -280,7 +276,7 @@ def test_train_process_and_load_with_empty_model(
 
 
 def test_process_does_not_overwrite_any_entities(
-    create_or_load_extractor: Callable[..., RegexEntityExtractorGraphComponent],
+    create_or_load_extractor: Callable[..., RegexEntityExtractor],
 ):
 
     pre_existing_entity = {
@@ -330,6 +326,6 @@ def test_process_does_not_overwrite_any_entities(
             ENTITY_ATTRIBUTE_VALUE: "Berlin",
             ENTITY_ATTRIBUTE_START: 13,
             ENTITY_ATTRIBUTE_END: 19,
-            EXTRACTOR: RegexEntityExtractorGraphComponent.__name__,
+            EXTRACTOR: RegexEntityExtractor.__name__,
         },
     ]
