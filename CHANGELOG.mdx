@@ -16,6 +16,14 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.11] - 2021-10-20
+### Bugfixes
+- [#9858](https://github.com/rasahq/rasa/issues/9858): Updates dependency on `sanic-jwt` (1.5.0 -> ">=1.6.0, <1.7.0")
+
+  This removes the need to pin the version of `pyjwt` as the newer version of `sanic-jwt`
+  manages this properly.
+
+
 ## [2.8.10] - 2021-10-14
 ### Bugfixes
 - [#5657](https://github.com/rasahq/rasa/issues/5657): Add List handling in the `send_custom_json` method on `channels/facebook.py`.
