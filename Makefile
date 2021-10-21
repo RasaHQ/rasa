@@ -237,15 +237,18 @@ build-docker:
 build-docker-full:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
-	docker buildx bake -f docker/docker-bake.hcl base-images && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-mitie && \
 	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl full
 
 build-docker-mitie-en:
 	export IMAGE_NAME=rasa && \
 	docker buildx use default && \
-	docker buildx bake -f docker/docker-bake.hcl base-images && \
-	docker buildx bake -f docker/docker-bake.hcl base-builder && \
+	docker buildx bake -f docker/docker-bake.hcl base && \
+	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
+	docker buildx bake -f docker/docker-bake.hcl base-mitie && \
 	docker buildx bake -f docker/docker-bake.hcl mitie-en
 
 build-docker-spacy-en:
