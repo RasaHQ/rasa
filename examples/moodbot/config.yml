@@ -4,7 +4,6 @@ language: en
 pipeline:
   - name: "SpacyNLP"
     model: "en_core_web_md"
-  - name: "SpacyPreprocessor"
   - name: "SpacyTokenizer"
   - name: "SpacyFeaturizer"
   - name: "DIETClassifier"
