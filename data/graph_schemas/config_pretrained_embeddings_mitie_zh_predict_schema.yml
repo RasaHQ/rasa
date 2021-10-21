@@ -10,7 +10,7 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-  run_MitieNLP0:
+  provide_MitieNLP0:
     needs: {}
     uses: rasa.nlu.utils.mitie_utils.MitieNLPGraphComponent
     constructor_name: load
@@ -36,7 +36,7 @@ nodes:
   run_MitieEntityExtractor2:
     needs:
       messages: run_JiebaTokenizer1
-      model: run_MitieNLP0
+      model: provide_MitieNLP0
     uses: rasa.nlu.extractors.mitie_entity_extractor.MitieEntityExtractorGraphComponent
     constructor_name: load
     fn: process
@@ -73,7 +73,7 @@ nodes:
   run_MitieFeaturizer5:
     needs:
       messages: run_RegexFeaturizer4
-      model: run_MitieNLP0
+      model: provide_MitieNLP0
     uses: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer.MitieFeaturizerGraphComponent
     constructor_name: load
     fn: process

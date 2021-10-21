@@ -10,7 +10,7 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-  run_SpacyNLP0:
+  provide_SpacyNLP0:
     needs: {}
     uses: rasa.nlu.utils.spacy_utils.SpacyNLPGraphComponent
     constructor_name: load
@@ -21,21 +21,22 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-  run_SpacyPreprocessor1:
+  run_SpacyNLP0:
     needs:
       messages: nlu_message_converter
-      model: run_SpacyNLP0
-    uses: rasa.nlu.utils.spacy_utils.SpacyPreprocessorGraphComponent
+      model: provide_SpacyNLP0
+    uses: rasa.nlu.utils.spacy_utils.SpacyNLPGraphComponent
     constructor_name: load
     fn: process
-    config: {}
+    config:
+      model: en_core_web_md
     eager: true
     is_target: false
     is_input: false
     resource: null
-  run_SpacyTokenizer2:
+  run_SpacyTokenizer1:
     needs:
-      messages: run_SpacyPreprocessor1
+      messages: run_SpacyNLP0
     uses: rasa.nlu.tokenizers.spacy_tokenizer.SpacyTokenizerGraphComponent
     constructor_name: load
     fn: process
@@ -44,9 +45,9 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-  run_RegexFeaturizer3:
+  run_RegexFeaturizer2:
     needs:
-      messages: run_SpacyTokenizer2
+      messages: run_SpacyTokenizer1
     uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizerGraphComponent
     constructor_name: load
     fn: process
@@ -55,10 +56,10 @@ nodes:
     is_target: false
     is_input: false
     resource:
-      name: train_RegexFeaturizer3
-  run_SpacyFeaturizer4:
+      name: train_RegexFeaturizer2
+  run_SpacyFeaturizer3:
     needs:
-      messages: run_RegexFeaturizer3
+      messages: run_RegexFeaturizer2
     uses: rasa.nlu.featurizers.dense_featurizer.spacy_featurizer.SpacyFeaturizerGraphComponent
     constructor_name: load
     fn: process
@@ -67,9 +68,9 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-  run_CRFEntityExtractor5:
+  run_CRFEntityExtractor4:
     needs:
-      messages: run_SpacyFeaturizer4
+      messages: run_SpacyFeaturizer3
     uses: rasa.nlu.extractors.crf_entity_extractor.CRFEntityExtractorGraphComponent
     constructor_name: load
     fn: process
@@ -78,10 +79,10 @@ nodes:
     is_target: false
     is_input: false
     resource:
-      name: train_CRFEntityExtractor5
-  run_EntitySynonymMapper6:
+      name: train_CRFEntityExtractor4
+  run_EntitySynonymMapper5:
     needs:
-      messages: run_CRFEntityExtractor5
+      messages: run_CRFEntityExtractor4
     uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapperGraphComponent
     constructor_name: load
     fn: process
@@ -90,10 +91,10 @@ nodes:
     is_target: false
     is_input: false
     resource:
-      name: train_EntitySynonymMapper6
-  run_SklearnIntentClassifier7:
+      name: train_EntitySynonymMapper5
+  run_SklearnIntentClassifier6:
     needs:
-      messages: run_EntitySynonymMapper6
+      messages: run_EntitySynonymMapper5
     uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifierGraphComponent
     constructor_name: load
     fn: process
@@ -102,10 +103,10 @@ nodes:
     is_target: false
     is_input: false
     resource:
-      name: train_SklearnIntentClassifier7
-  run_DucklingEntityExtractor8:
+      name: train_SklearnIntentClassifier6
+  run_DucklingEntityExtractor7:
     needs:
-      messages: run_SklearnIntentClassifier7
+      messages: run_SklearnIntentClassifier6
     uses: rasa.nlu.extractors.duckling_entity_extractor.DucklingEntityExtractorGraphComponent
     constructor_name: load
     fn: process
@@ -117,7 +118,7 @@ nodes:
     resource: null
   run_RegexMessageHandlerGraphComponent:
     needs:
-      messages: run_DucklingEntityExtractor8
+      messages: run_DucklingEntityExtractor7
     uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandlerGraphComponent
     constructor_name: load
     fn: process
