@@ -365,16 +365,15 @@ def test_verify_form_slots_invalid_domain(tmp_path: Path):
         """
     )
     importer = RasaFileImporter(domain_path=domain)
-    with pytest.warns(UserWarning) as warning:
-        Validator.from_importer(importer)
+    validator = Validator.from_importer(importer)
+    with pytest.warns(UserWarning) as w:
+        validity = validator.verify_form_slots()
+        assert validity is False
 
-    assert any(
-        [
-            f"Loading domain from '{domain}' failed. Using empty domain. "
-            f"Error: 'The slot 'last_nam' in form 'name_form' is "
-            f"not mapped in domain slots.'" == record.message.args[0]
-            for record in warning
-        ]
+    assert (
+        w[0].message.args[0] == "The form slot 'last_nam' in form 'name_form' "
+        "is not present in the domain slots."
+        "Please add the correct slot or check for typos."
     )
 
 
