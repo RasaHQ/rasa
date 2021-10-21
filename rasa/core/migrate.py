@@ -70,7 +70,7 @@ def _migrate_form_slots(
         condition = {ACTIVE_LOOP: form_name}
 
         for slot_name, mappings in form_data.items():
-            slot_properties = updated_slots.get(slot_name)
+            slot_properties = updated_slots.get(slot_name, {})
             existing_mappings = slot_properties.get("mappings", [])
             updated_mappings = _get_updated_or_new_mappings(
                 existing_mappings, mappings, condition
@@ -206,6 +206,13 @@ def migrate_domain_format(
             forms.update(original_content.get(KEY_FORMS, {}))
             entities.extend(original_content.get(KEY_ENTITIES, {}))
 
+        if not slots or not forms:
+            raise RasaException(
+                f"The files you have provided in {domain_file} are missing slots "
+                f"or forms. Please make sure to include these for a "
+                f"successful migration."
+            )
+
         original_domain.update(
             {KEY_SLOTS: slots, KEY_FORMS: forms, KEY_ENTITIES: entities}
         )
@@ -225,5 +232,5 @@ def migrate_domain_format(
     _write_final_domain(domain_file, new_forms, new_slots, out_file)
 
     rasa.shared.utils.cli.print_success(
-        f"Your domain was successfully migrated! " f"It's location is {out_file}."
+        f"Your domain was successfully migrated! It's location is {out_file}."
     )
