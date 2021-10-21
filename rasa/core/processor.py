@@ -112,13 +112,8 @@ class MessageProcessor:
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
         )
-        output_channel = (
-            message.output_channel
-            if message.output_channel
-            else CollectingOutputChannel()
-        )
         extraction_events = await action_extract_slots.run(
-            output_channel, self.nlg, tracker, self.domain
+            message.output_channel, self.nlg, tracker, self.domain
         )
         tracker.update_with_events(extraction_events, self.domain)
 
