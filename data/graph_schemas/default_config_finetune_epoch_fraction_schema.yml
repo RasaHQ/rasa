@@ -39,7 +39,7 @@ nodes:
   run_WhitespaceTokenizer0:
     needs:
       training_data: nlu_training_data_provider
-    uses: rasa.nlu.tokenizers.whitespace_tokenizer.WhitespaceTokenizer3
+    uses: rasa.nlu.tokenizers.whitespace_tokenizer.WhitespaceTokenizer
     constructor_name: load
     fn: process_training_data
     config: {}
@@ -73,7 +73,7 @@ nodes:
   train_LexicalSyntacticFeaturizer2:
     needs:
       training_data: run_RegexFeaturizer1
-    uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizer
     constructor_name: load
     fn: train
     config: {}
@@ -85,7 +85,7 @@ nodes:
     needs:
       training_data: run_RegexFeaturizer1
       resource: train_LexicalSyntacticFeaturizer2
-    uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizer
     constructor_name: load
     fn: process_training_data
     config: {}
@@ -96,7 +96,7 @@ nodes:
   train_CountVectorsFeaturizer3:
     needs:
       training_data: run_LexicalSyntacticFeaturizer2
-    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
     constructor_name: load
     fn: train
     config: {}
@@ -108,7 +108,7 @@ nodes:
     needs:
       training_data: run_LexicalSyntacticFeaturizer2
       resource: train_CountVectorsFeaturizer3
-    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
     constructor_name: load
     fn: process_training_data
     config: {}
@@ -119,7 +119,7 @@ nodes:
   train_CountVectorsFeaturizer4:
     needs:
       training_data: run_CountVectorsFeaturizer3
-    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
     constructor_name: load
     fn: train
     config:
@@ -134,7 +134,7 @@ nodes:
     needs:
       training_data: run_CountVectorsFeaturizer3
       resource: train_CountVectorsFeaturizer4
-    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
     constructor_name: load
     fn: process_training_data
     config:
@@ -148,7 +148,7 @@ nodes:
   train_DIETClassifier5:
     needs:
       training_data: run_CountVectorsFeaturizer4
-    uses: rasa.nlu.classifiers.diet_classifier.DIETClassifier3
+    uses: rasa.nlu.classifiers.diet_classifier.DIETClassifier
     constructor_name: load
     fn: train
     config:
@@ -161,7 +161,7 @@ nodes:
   train_EntitySynonymMapper6:
     needs:
       training_data: run_CountVectorsFeaturizer4
-    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper3
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
     constructor_name: load
     fn: train
     config: {}
@@ -172,7 +172,7 @@ nodes:
   train_ResponseSelector7:
     needs:
       training_data: run_CountVectorsFeaturizer4
-    uses: rasa.nlu.selectors.response_selector.ResponseSelector3
+    uses: rasa.nlu.selectors.response_selector.ResponseSelector
     constructor_name: load
     fn: train
     config:
@@ -232,7 +232,7 @@ nodes:
     needs:
       training_trackers: training_tracker_provider
       domain: domain_without_responses_provider
-    uses: rasa.core.policies.memoization.MemoizationPolicy3
+    uses: rasa.core.policies.memoization.MemoizationPolicy
     constructor_name: load
     fn: train
     config: {}
@@ -244,7 +244,7 @@ nodes:
     needs:
       training_trackers: training_tracker_provider
       domain: domain_without_responses_provider
-    uses: rasa.core.policies.rule_policy.RulePolicy3
+    uses: rasa.core.policies.rule_policy.RulePolicy
     constructor_name: load
     fn: train
     config: {}
@@ -256,7 +256,7 @@ nodes:
     needs:
       training_trackers: training_tracker_provider
       domain: domain_without_responses_provider
-    uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicy3
+    uses: rasa.core.policies.unexpected_intent_policy.UnexpecTEDIntentPolicy
     constructor_name: load
     fn: train
     config:
@@ -270,7 +270,7 @@ nodes:
     needs:
       training_trackers: training_tracker_provider
       domain: domain_without_responses_provider
-    uses: rasa.core.policies.ted_policy.TEDPolicy3
+    uses: rasa.core.policies.ted_policy.TEDPolicy
     constructor_name: load
     fn: train
     config:
