@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Dict, Text, Any, Tuple, Optional, Union
 
 import rasa.shared.utils.io
+import rasa.shared.utils.cli
 from rasa.shared.constants import (
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
@@ -150,11 +151,8 @@ def migrate_domain_format(
     domain_file: Union[Text, Path], out_file: Union[Text, Path]
 ) -> None:
     """Converts 2.0 domain to 3.0 format."""
-    if isinstance(domain_file, str):
-        domain_file = Path(domain_file)
-
-    if isinstance(out_file, str):
-        out_file = Path(out_file)
+    domain_file = Path(domain_file)
+    out_file = Path(out_file)
 
     current_dir = domain_file.parent
 
@@ -178,10 +176,7 @@ def migrate_domain_format(
 
         for file in domain_file.iterdir():
             if not Domain.is_domain_file(file):
-                raise RasaException(
-                    f"The file '{file}' could not be validated as a "
-                    f"domain file. Only domain yaml files can be migrated. "
-                )
+                continue
 
             backup = backup_dir / file.name
             original_content = _create_back_up(file, backup)
@@ -228,3 +223,7 @@ def migrate_domain_format(
     new_slots = _migrate_auto_fill_and_custom_slots(original_domain, updated_slots)
 
     _write_final_domain(domain_file, new_forms, new_slots, out_file)
+
+    rasa.shared.utils.cli.print_success(
+        f"Your domain was successfully migrated! " f"It's location is {out_file}."
+    )
