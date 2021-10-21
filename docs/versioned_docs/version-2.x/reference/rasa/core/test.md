@@ -113,6 +113,14 @@ Add items or lists of items to the store.
 
 Add the contents of other to self.
 
+#### check\_prediction\_target\_mismatch
+
+```python
+ | check_prediction_target_mismatch() -> bool
+```
+
+Checks if intent, entity or action predictions don&#x27;t match expected ones.
+
 #### serialise
 
 ```python
