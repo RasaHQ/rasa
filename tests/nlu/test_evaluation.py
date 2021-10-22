@@ -511,7 +511,7 @@ async def test_run_cv_evaluation_no_entities():
 
 
 @pytest.mark.timeout(
-    200, func_only=True
+    240, func_only=True
 )  # these can take a longer time than the default timeout
 async def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
