@@ -2,7 +2,7 @@ import argparse
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Union, List, Text, TYPE_CHECKING
+from typing import Union, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
