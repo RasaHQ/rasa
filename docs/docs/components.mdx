@@ -1413,9 +1413,11 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | "model_confidence=cosine",                                   |
 |                                 |                  | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| ranking_length                  | 10               | Number of top intents to normalize scores for. Applicable    |
-|                                 |                  | only with loss type 'cross_entropy' and 'softmax'            |
-|                                 |                  | confidences. Set to 0 to disable normalization.              |
+| ranking_length                  | 10               | Number of top intents to report. Set to 0 to report all      |
+|                                 |                  | intents.                                                     |
++---------------------------------+------------------+--------------------------------------------------------------+
+| renormalize_confidences         | False            | Normalize the reported top intents. Applicable only with loss|
+|                                 |                  | type 'cross_entropy' and 'softmax' confidences.              |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
 |                                 |                  | embedding vectors for correct labels.                        |
@@ -2356,8 +2358,11 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   |                                 |                  | "model_confidence=cosine",                                   |
   |                                 |                  | which is deprecated (see changelog for 2.3.4).               |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
-  |                                 |                  | 'cross_entropy'. Set to 0 to turn off normalization.         |
+  | ranking_length                  | 10               | Number of top intents  to report. Set to 0 to report all     |
+  |                                 |                  | intents.                                                     |
+  +---------------------------------+------------------+--------------------------------------------------------------+
+  | renormalize_confidences         | False            | Normalize the reported top intents. Applicable only with loss|
+  |                                 |                  | type 'cross_entropy' and 'softmax' confidences.              |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
   |                                 |                  | embedding vectors for correct labels.                        |
