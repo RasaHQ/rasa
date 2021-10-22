@@ -32,9 +32,9 @@ from rasa import server
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
-from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent
+from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
@@ -539,12 +539,18 @@ def project() -> Text:
 
 
 @pytest.fixture(scope="session")
-def spacy_nlp() -> Language:
-    spacy_provider = SpacyNLPGraphComponent.create(
-        {"model": "en_core_web_md"}, Mock(), Mock(), Mock()
-    )
+def spacy_nlp_component() -> SpacyNLP:
+    return SpacyNLP.create({"model": "en_core_web_md"}, Mock(), Mock(), Mock())
 
-    return spacy_provider.provide().model
+
+@pytest.fixture(scope="session")
+def spacy_model(spacy_nlp_component: SpacyNLP) -> SpacyModel:
+    return spacy_nlp_component.provide()
+
+
+@pytest.fixture(scope="session")
+def spacy_nlp(spacy_model: SpacyModel) -> Language:
+    return spacy_model.model
 
 
 @pytest.fixture(scope="session")
@@ -760,7 +766,5 @@ def enable_cache(cache_dir: Path):
 
 
 @pytest.fixture()
-def whitespace_tokenizer() -> WhitespaceTokenizerGraphComponent:
-    return WhitespaceTokenizerGraphComponent(
-        WhitespaceTokenizerGraphComponent.get_default_config()
-    )
+def whitespace_tokenizer() -> WhitespaceTokenizer:
+    return WhitespaceTokenizer(WhitespaceTokenizer.get_default_config())

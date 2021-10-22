@@ -886,16 +886,12 @@ def evaluate_entities(
             report_as_dict,
             exclude_label=NO_ENTITY,
         )
-        # TODO: Remove once we've removed all old components and the new components
-        # lost their `GraphComponent` suffix
-        actual_extractor = extractor.replace("GraphComponent", "")
-
         if output_directory:
 
-            _dump_report(output_directory, f"{actual_extractor}_report.json", report)
+            _dump_report(output_directory, f"{extractor}_report.json", report)
 
         if successes:
-            successes_filename = f"{actual_extractor}_successes.json"
+            successes_filename = f"{extractor}_successes.json"
             if output_directory:
                 successes_filename = os.path.join(output_directory, successes_filename)
             # save classified samples to file for debugging
@@ -907,14 +903,12 @@ def evaluate_entities(
             entity_results, merged_predictions, merged_targets
         )
         if errors and output_directory:
-            errors_filename = os.path.join(
-                output_directory, f"{actual_extractor}_errors.json"
-            )
+            errors_filename = os.path.join(output_directory, f"{extractor}_errors.json")
 
             _write_errors(entity_errors, errors_filename, "entity")
 
         if not disable_plotting:
-            confusion_matrix_filename = f"{actual_extractor}_confusion_matrix.png"
+            confusion_matrix_filename = f"{extractor}_confusion_matrix.png"
             if output_directory:
                 confusion_matrix_filename = os.path.join(
                     output_directory, confusion_matrix_filename
@@ -926,9 +920,9 @@ def evaluate_entities(
                 output_file=confusion_matrix_filename,
             )
 
-            if actual_extractor in EXTRACTORS_WITH_CONFIDENCES:
+            if extractor in EXTRACTORS_WITH_CONFIDENCES:
                 merged_confidences = merge_confidences(aligned_predictions, extractor)
-                histogram_filename = f"{actual_extractor}_histogram.png"
+                histogram_filename = f"{extractor}_histogram.png"
                 if output_directory:
                     histogram_filename = os.path.join(
                         output_directory, histogram_filename
@@ -1104,11 +1098,9 @@ def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
     if extractors is None:
         return False
 
-    from rasa.nlu.extractors.crf_entity_extractor import (
-        CRFEntityExtractorGraphComponent,
-    )
+    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
-    return CRFEntityExtractorGraphComponent.__name__ not in extractors
+    return CRFEntityExtractor.__name__ not in extractors
 
 
 def align_entity_predictions(

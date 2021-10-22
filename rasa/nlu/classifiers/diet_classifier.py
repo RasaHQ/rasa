@@ -16,7 +16,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.nlu.classifiers.classifier import IntentClassifier2
+from rasa.nlu.classifiers.classifier import IntentClassifier
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
@@ -115,11 +115,13 @@ POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_
 
 
 @DefaultV1Recipe.register(
-    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+    [
+        DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+        DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    ],
+    is_trainable=True,
 )
-class DIETClassifierGraphComponent(
-    GraphComponent, IntentClassifier2, EntityExtractorMixin
-):
+class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     """A multi-task model for intent classification and entity extraction.
 
     DIET is Dual Intent and Entity Transformer.
@@ -375,7 +377,7 @@ class DIETClassifierGraphComponent(
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> DIETClassifierGraphComponent:
+    ) -> DIETClassifier:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -1075,7 +1077,7 @@ class DIETClassifierGraphComponent(
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> DIETClassifierGraphComponent:
+    ) -> DIETClassifier:
         """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
@@ -1097,7 +1099,7 @@ class DIETClassifierGraphComponent(
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "DIETClassifierGraphComponent":
+    ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
         (
             index_label_id_mapping,

@@ -4,7 +4,7 @@ import re
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 import scipy.sparse
-from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -29,13 +29,13 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
-class RegexFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
+class RegexFeaturizer(SparseFeaturizer, GraphComponent):
     """Adds message features based on regex expressions."""
 
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [TokenizerGraphComponent]
+        return [Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -87,7 +87,7 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> RegexFeaturizerGraphComponent:
+    ) -> RegexFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -239,7 +239,7 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> RegexFeaturizerGraphComponent:
+    ) -> RegexFeaturizer:
         """Loads trained component (see parent class for full docstring)."""
         known_patterns = None
 

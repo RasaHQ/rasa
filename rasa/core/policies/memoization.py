@@ -23,7 +23,7 @@ from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 from rasa.shared.exceptions import FileIOException
 from rasa.core.policies.policy import (
     PolicyPrediction,
-    PolicyGraphComponent,
+    Policy,
     SupportedData,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
 )
-class MemoizationPolicyGraphComponent(PolicyGraphComponent):
+class MemoizationPolicy(Policy):
     """A policy that follows exact examples of `max_history` turns in training stories.
 
     Since `slots` that are set some time in the past are
@@ -289,7 +289,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> MemoizationPolicyGraphComponent:
+    ) -> MemoizationPolicy:
         """Loads a trained policy (see parent class for full docstring)."""
         featurizer = None
         lookup = None
@@ -322,7 +322,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
 )
-class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
+class AugmentedMemoizationPolicy(MemoizationPolicy):
     """The policy that remembers examples from training stories for `max_history` turns.
 
     If it is needed to recall turns from training dialogues
