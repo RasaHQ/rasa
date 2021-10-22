@@ -1,7 +1,7 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING
+from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING, Union
 
 import aiohttp
 import rasa.core
@@ -50,6 +50,7 @@ from rasa.shared.core.events import (
     SessionStarted,
 )
 from rasa.shared.core.slots import ListSlot
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
@@ -63,7 +64,6 @@ import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 if TYPE_CHECKING:
-    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
     from rasa.shared.core.events import IntentPrediction
@@ -993,29 +993,15 @@ class ActionExtractSlots(Action):
 
         return False
 
-    async def _execute_custom_action(
+    async def _run_custom_action(
         self,
-        mapping: Dict[Text, Any],
+        custom_action: Text,
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        custom_action = mapping.get("action")
         slot_events: List[Event] = []
-
-        if not custom_action:
-            # find if there is any validation action in the domain
-            custom_action = next(
-                filter(
-                    lambda x: x == "validate_global_slot_mappings", domain.user_actions,
-                ),
-                None,
-            )
-
-        if not custom_action:
-            return []
-
         remote_action = RemoteAction(custom_action, self.action_endpoint)
         disallowed_types = set()
 
@@ -1045,6 +1031,61 @@ class ActionExtractSlots(Action):
             )
 
         return slot_events
+
+    async def _execute_custom_action(
+        self,
+        mapping: Dict[Text, Any],
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        custom_action = mapping.get("action")
+
+        if not custom_action:
+            return []
+
+        slot_events = await self._run_custom_action(
+            custom_action, output_channel, nlg, tracker, domain,
+        )
+
+        return slot_events
+
+    async def _execute_validation_action(
+        self,
+        extraction_events: List[Event],
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        slot_events: List[Union[Event, SlotSet]] = [
+            event for event in extraction_events if isinstance(event, SlotSet)
+        ]
+
+        slot_candidates = "\n".join([e.key for e in slot_events])
+        logger.debug(f"Validating extracted slots: {slot_candidates}")
+
+        validate_name = "validate_global_slot_mappings"
+
+        if validate_name not in domain.user_actions:
+            return slot_events
+
+        _tracker = DialogueStateTracker.from_events(
+            tracker.sender_id,
+            tracker.events_after_latest_restart() + slot_events,
+            slots=domain.slots,
+        )
+        validate_events = await self._run_custom_action(
+            validate_name, output_channel, nlg, _tracker, domain
+        )
+        validated_slot_names = [
+            event.key for event in validate_events if isinstance(event, SlotSet)
+        ]
+
+        return validate_events + [
+            event for event in slot_events if event.key not in validated_slot_names
+        ]
 
     async def run(
         self,
@@ -1102,7 +1143,11 @@ class ActionExtractSlots(Action):
                     )
                     slot_events.extend(custom_evts)
 
-        return slot_events
+        validated_events = await self._execute_validation_action(
+            slot_events, output_channel, nlg, tracker, domain
+        )
+
+        return validated_events
 
 
 def extract_slot_value_from_predefined_mapping(

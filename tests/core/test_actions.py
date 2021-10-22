@@ -1953,3 +1953,100 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
     )
 
     assert slot_events == []
+
+
+@pytest.mark.parametrize(
+    "event, validate_return_events, expected_events",
+    [
+        (
+            UserUttered(
+                intent={"name": "inform"},
+                entities=[{"entity": "city", "value": "london"}],
+            ),
+            [{"event": "slot", "name": "from_entity_slot", "value": "London"}],
+            [SlotSet("from_entity_slot", "London")],
+        ),
+        (
+            UserUttered("hi", intent={"name": "greet"}),
+            [{"event": "slot", "name": "from_text_slot", "value": "Hi"}],
+            [SlotSet("from_text_slot", "Hi")],
+        ),
+        (
+            UserUttered(intent={"name": "affirm"}),
+            [{"event": "slot", "name": "from_intent_slot", "value": True}],
+            [SlotSet("from_intent_slot", True)],
+        ),
+        (
+            UserUttered(intent={"name": "chitchat"}),
+            [{"event": "slot", "name": "custom_slot", "value": True}],
+            [SlotSet("custom_slot", True)],
+        ),
+        (UserUttered("bla"), [], [],),
+    ],
+)
+async def test_action_extract_slots_execute_validation_action(
+    event: Event,
+    validate_return_events: List[Dict[Text, Any]],
+    expected_events: List[Event],
+):
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        intents:
+        - greet
+        - inform
+        - affirm
+        - chitchat
+
+        entities:
+        - city
+
+        slots:
+          from_entity_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: city
+          from_text_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_text
+              intent: greet
+          from_intent_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_intent
+              intent: affirm
+              value: True
+          custom_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+
+        actions:
+        - validate_global_slot_mappings
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(action_server_url, payload={"events": validate_return_events})
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        slot_events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert slot_events == expected_events
