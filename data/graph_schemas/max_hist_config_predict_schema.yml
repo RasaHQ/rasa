@@ -15,7 +15,7 @@ nodes:
       domain: domain_provider
       rule_only_data: rule_only_data_provider
       tracker: __tracker__
-    uses: rasa.core.policies.memoization.MemoizationPolicyGraphComponent
+    uses: rasa.core.policies.memoization.MemoizationPolicy
     constructor_name: load
     fn: predict_action_probabilities
     config:
@@ -30,7 +30,7 @@ nodes:
       domain: domain_provider
       rule_only_data: rule_only_data_provider
       tracker: __tracker__
-    uses: rasa.core.policies.rule_policy.RulePolicyGraphComponent
+    uses: rasa.core.policies.rule_policy.RulePolicy
     constructor_name: load
     fn: predict_action_probabilities
     config: {}
@@ -44,7 +44,7 @@ nodes:
       domain: domain_provider
       rule_only_data: rule_only_data_provider
       tracker: __tracker__
-    uses: rasa.core.policies.ted_policy.TEDPolicyGraphComponent
+    uses: rasa.core.policies.ted_policy.TEDPolicy
     constructor_name: load
     fn: predict_action_probabilities
     config:
@@ -91,11 +91,11 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-  run_RegexMessageHandlerGraphComponent:
+  run_RegexMessageHandler:
     needs:
       messages: nlu_message_converter
       domain: domain_provider
-    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandlerGraphComponent
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
     constructor_name: load
     fn: process
     config: {}

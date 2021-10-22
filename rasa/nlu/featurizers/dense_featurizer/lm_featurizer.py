@@ -9,7 +9,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -41,7 +41,7 @@ MAX_SEQUENCE_LENGTHS = {
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
 )
-class LanguageModelFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
+class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
     """A featurizer that uses transformer-based language models.
 
     This component loads a pre-trained language model
@@ -54,13 +54,13 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [TokenizerGraphComponent]
+        return [Tokenizer]
 
     def __init__(
         self, config: Dict[Text, Any], execution_context: ExecutionContext,
     ) -> None:
         """Initializes the featurizer with the model in the config."""
-        super(LanguageModelFeaturizerGraphComponent, self).__init__(
+        super(LanguageModelFeaturizer, self).__init__(
             execution_context.node_name, config
         )
         self._load_model_metadata()
@@ -92,7 +92,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> LanguageModelFeaturizerGraphComponent:
+    ) -> LanguageModelFeaturizer:
         """Creates a LanguageModelFeaturizer.
 
         Loads the model specified in the config.

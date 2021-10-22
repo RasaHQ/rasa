@@ -24,7 +24,7 @@ from rasa.nlu.classifiers.diet_classifier import (
     LABEL_SUB_KEY,
     SENTENCE,
     SEQUENCE,
-    DIETClassifierGraphComponent,
+    DIETClassifier,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.utils.tensorflow import rasa_layers
@@ -108,7 +108,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
-class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
+class ResponseSelector(DIETClassifier):
     """Response selector using supervised embeddings.
 
     The response selector embeds user inputs
@@ -139,7 +139,7 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            **DIETClassifierGraphComponent.get_default_config(),
+            **DIETClassifier.get_default_config(),
             # ## Architecture of the used neural network
             # Hidden layer sizes for layers before the embedding layers for user message
             # and labels.
@@ -659,9 +659,9 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> ResponseSelectorGraphComponent:
+    ) -> ResponseSelector:
         """Loads the trained model from the provided directory."""
-        model: ResponseSelectorGraphComponent = super().load(
+        model: ResponseSelector = super().load(
             config, model_storage, resource, execution_context, **kwargs
         )
 

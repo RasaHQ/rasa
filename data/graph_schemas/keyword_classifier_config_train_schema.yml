@@ -39,7 +39,7 @@ nodes:
   train_KeywordIntentClassifier0:
     needs:
       training_data: nlu_training_data_provider
-    uses: rasa.nlu.classifiers.keyword_intent_classifier.KeywordIntentClassifierGraphComponent
+    uses: rasa.nlu.classifiers.keyword_intent_classifier.KeywordIntentClassifier
     constructor_name: create
     fn: train
     config: {}

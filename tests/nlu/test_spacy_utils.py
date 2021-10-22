@@ -6,7 +6,7 @@ import spacy.tokens.doc
 
 from rasa.nlu.constants import DENSE_FEATURIZABLE_ATTRIBUTES, SPACY_DOCS
 from rasa.nlu.model import InvalidModelError
-from rasa.nlu.utils.spacy_utils import SpacyNLPGraphComponent, SpacyModel
+from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, RESPONSE, TEXT
 from rasa.shared.nlu.training_data.message import Message
@@ -14,8 +14,8 @@ from rasa.shared.nlu.training_data.message import Message
 
 def create_spacy_nlp_component(
     model_name: Text = "en_core_web_md", case_sensitive: Optional[bool] = None,
-) -> SpacyNLPGraphComponent:
-    component = SpacyNLPGraphComponent.create(
+) -> SpacyNLP:
+    component = SpacyNLP.create(
         {"model": model_name, "case_sensitive": case_sensitive}, None, None, None
     )
     return component
@@ -70,7 +70,7 @@ def test_spacy_preprocessor_adds_attributes_when_processing(
 
 
 def test_spacy_preprocessor_process_training_data(
-    spacy_nlp_component: SpacyNLPGraphComponent, spacy_model: SpacyModel
+    spacy_nlp_component: SpacyNLP, spacy_model: SpacyModel
 ):
     training_data = TrainingDataImporter.load_from_dict(
         training_data_paths=[

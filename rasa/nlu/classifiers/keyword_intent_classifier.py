@@ -8,7 +8,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu.classifiers.classifier import IntentClassifier2
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
-class KeywordIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
+class KeywordIntentClassifier(GraphComponent, IntentClassifier):
     """Intent classifier using simple keyword matching.
 
     The classifier takes a list of keywords and associated intents as an input.
@@ -56,7 +56,7 @@ class KeywordIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> KeywordIntentClassifierGraphComponent:
+    ) -> KeywordIntentClassifier:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -162,7 +162,7 @@ class KeywordIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> KeywordIntentClassifierGraphComponent:
+    ) -> KeywordIntentClassifier:
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_dir:
