@@ -168,3 +168,8 @@ def test_compound_marker_nested_track():
     evaluation = marker.evaluate_events(events)
 
     assert evaluation["marker_name"]["preceeding_user_turns"] == [3, 5]
+
+
+def test_atomic_markers_repr_not():
+    marker = NotAnyMarker([IntentDetectedMarker("intent1")])
+    assert str(marker) == "(intent_not_detected: intent1)"

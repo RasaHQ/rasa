@@ -26,7 +26,7 @@ import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.data import is_likely_yaml_file
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 
 import logging
@@ -34,17 +34,47 @@ import logging
 logger = logging.getLogger(__name__)
 
 ANY_MARKER = "<any_marker>"
+NOT = "_not_"
 
 
 class AtomicMarkerOptions(str, Enum):
-    """Constants that can be used in configs to describe atomic markers."""
+    """Names of atomic markers.
 
+    As a shortcut, you can use negated versions of these atomic marker options (instead
+    of creating a compound marker that negates a single atomic marker).
+    Just replace the first "_" by "_not_".
+    """
+
+    # Reminder: The atomic marker names must not include the substring "_not_".
     ACTION_EXECUTED = "action_executed"
-    ACTION_NOT_EXECUTED = "action_not_executed"
     INTENT_DETECTED = "intent_detected"
-    INTENT_NOT_DETECTED = "intent_not_detected"
     SLOT_SET = "slot_set"
-    SLOT_NOT_SET = "slot_not_set"
+
+
+def _is_negated_atomic_marker_name(
+    marker_name: Union[Text, AtomicMarkerOptions]
+) -> bool:
+    """Checks wether the given name is a negated atomic marker name."""
+    return NOT in str(marker_name) and any(
+        marker_name == _negate_atomic_marker_name(marker_name)
+        for marker_name in AtomicMarkerOptions
+    )
+
+
+def _negate_atomic_marker_name(atomic_marker: Union[Text, AtomicMarkerOptions]) -> Text:
+    """Returns the negated version of an atomic marker option."""
+    if _is_negated_atomic_marker_name(atomic_marker):
+        return str(atomic_marker).replace(NOT, "_", 1)
+    else:
+        return str(atomic_marker).replace("_", NOT, 1)
+
+
+ATOMIC_MARKERS_AND_NEGATIONS = set().union(
+    *[
+        {atomic_marker, _negate_atomic_marker_name(atomic_marker)}
+        for atomic_marker in AtomicMarkerOptions
+    ]
+)
 
 
 class CompoundOptions(str, Enum):
@@ -53,6 +83,7 @@ class CompoundOptions(str, Enum):
     AND = "and"
     OR = "or"
     NOT = "not"
+    SEQUENCE = "seq"
 
 
 EvaluationResult = TypedDict(
@@ -138,7 +169,6 @@ class Marker(ABC):
 
         results: Dict[Text, EvaluationResult] = dict()
         for sub_marker in self:
-            # FIXME: filter out submarkers that we're interested in ... (later?)
             if len(sub_marker.history) != len(timestamps):
                 raise RuntimeError("We forgot to update some marker.")
 
@@ -155,11 +185,11 @@ class Marker(ABC):
                     for applies, timestamp in zip(sub_marker.history, timestamps)
                     if applies
                 ]
-                # FIXME: map names back
                 results[str(sub_marker)] = {
                     "preceeding_user_turns": marker_user_turns,
                     "timestamp": marker_timestamps,
                 }
+        # TODO: filter results?
         return results
 
     @classmethod
@@ -260,7 +290,7 @@ class Marker(ABC):
                 f"Expected a list as sub-marker configuration of {key} but "
                 f"received {sub_marker_configs}"
             )
-        if any(operator in config.keys() for operator in ["and", "or", "not"]):
+        if any(operator in config.keys() for operator in CompoundOptions):
             return CompoundMarker.from_config(
                 operator=key, sub_marker_configs=sub_marker_configs, name=name
             )
@@ -341,6 +371,7 @@ class CompoundMarker(Marker, ABC):
             CompoundOptions.AND: AndMarker,
             CompoundOptions.OR: OrMarker,
             CompoundOptions.NOT: NotAnyMarker,
+            CompoundOptions.SEQUENCE: SequenceMarker,
         }
 
         sub_markers = []
@@ -382,9 +413,13 @@ class NotAnyMarker(CompoundMarker):
     """Checks that none of the sub-markers applies."""
 
     def __repr__(self) -> Text:
-        return "not-any({})".format(
-            " or ".join(str(marker) for marker in self.sub_markers)
-        )
+        if len(self.sub_markers) > 1:
+            sub_markers_str = " or ".join(str(marker) for marker in self.sub_markers)
+            return f"{CompoundOptions.NOT}({sub_markers_str})"
+        else:
+            # it must be an AtomicMarker then and by design there is a way
+            # to map that AtomicMarker name to a negated one
+            return _negate_atomic_marker_name(repr(self.sub_markers[0]))
 
     def _track(self, event: Event) -> bool:
         return not any(marker.history[-1] for marker in self.sub_markers)
@@ -394,7 +429,8 @@ class SequenceMarker(CompoundMarker):
     """Checks the sub-markers applied in the given order."""
 
     def __repr__(self) -> Text:
-        return "sequence".join(str(marker) for marker in self.sub_markers)
+        sub_markers_str = " > ".join(str(marker) for marker in self.sub_markers)
+        return f"{CompoundOptions.SEQUENCE}({sub_markers_str})"
 
     def _track(self, event: Event) -> bool:
         # Note: the sub-markers have been updated before this tracker
@@ -428,7 +464,7 @@ class AtomicMarker(Marker, ABC):
     @classmethod
     def from_config(
         cls,
-        marker_name: AtomicMarkerOptions,
+        marker_name: Text,
         sub_marker_configs: List[Text],
         name: Optional[Text] = None,
     ) -> Marker:
@@ -450,15 +486,15 @@ class AtomicMarker(Marker, ABC):
             AtomicMarkerOptions.SLOT_SET: SlotSetMarker,
         }
 
+        if marker_name not in ATOMIC_MARKERS_AND_NEGATIONS:
+            raise InvalidConfigException(f"Unknown atomic marker name {marker_name}.")
         marker_type_str = marker_name.replace("_not_", "_")
         marker_type = str_to_marker_type.get(marker_type_str, None)
-        if not marker_type:
-            raise RuntimeError(f"Unknown kind of marker: {marker_name}")
 
         markers = []
         for marker_text in sub_marker_configs:
             marker = marker_type(marker_text)
-            if "_not_" in marker_name:
+            if _is_negated_atomic_marker_name(marker_name):
                 marker = NotAnyMarker([marker], name=name)
             markers.append(marker)
 
@@ -474,7 +510,7 @@ class ActionExecutedMarker(AtomicMarker):
     """Checks whether an action is executed at the current step."""
 
     def __repr__(self) -> Text:
-        return f"(Action {self.text} executed)"
+        return f"({AtomicMarkerOptions.ACTION_EXECUTED}: {self.text})"
 
     def _track(self, event: Event) -> bool:
         return isinstance(event, ActionExecuted) and event.action_name == self.text
@@ -484,7 +520,7 @@ class IntentDetectedMarker(AtomicMarker):
     """Checks whether an intent is expressed at the current step."""
 
     def __repr__(self) -> Text:
-        return f"(user expressed intent {self.text})"
+        return f"({AtomicMarkerOptions.INTENT_DETECTED}: {self.text})"
 
     def _track(self, event: Event) -> bool:
         return (
@@ -500,7 +536,7 @@ class SlotSetMarker(AtomicMarker):
     """
 
     def __repr__(self) -> Text:
-        return f"({self.text} set)"
+        return f"({AtomicMarkerOptions.ACTION_EXECUTED}: {self.text})"
 
     def _track(self, event: Event) -> bool:
         if isinstance(event, SlotSet) and event.key == self.text:
