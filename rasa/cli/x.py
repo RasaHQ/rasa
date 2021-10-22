@@ -78,7 +78,7 @@ def _rasa_service(
     from rasa.core.run import serve_application
 
     # needs separate logging configuration as it is started in its own process
-    rasa.utils.common.set_log_level_and_filter_warnings(args.loglevel)
+    rasa.utils.common.configure_logging_and_warnings(args.loglevel)
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
     if not credentials_path:
