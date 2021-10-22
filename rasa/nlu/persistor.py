@@ -2,7 +2,6 @@ import abc
 import logging
 import os
 import shutil
-from tarsafe import TarSafe
 from typing import Optional, Text, Tuple, TYPE_CHECKING
 
 import rasa.shared.utils.common
