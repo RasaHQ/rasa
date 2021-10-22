@@ -23,18 +23,16 @@ COMPOUND_MARKERS = [AndMarker, OrMarker, NotAnyMarker]
 
 def test_marker_from_config():
 
-    config = [
-        {
-            "marker_1": {
-                "and": [
-                    {"slot_set": ["s1"]},
-                    {"or": [{"intent_detected": ["4"]}, {"intent_detected": ["6"]},]},
-                ]
-            }
+    config = {
+        "marker_1": {
+            "and": [
+                {"slot_set": ["s1"]},
+                {"or": [{"intent_detected": ["4"]}, {"intent_detected": ["6"]},]},
+            ]
         }
-    ]
+    }
 
-    marker = Marker.from_config(config)
+    marker = Marker.from_config_dict(config)
 
     assert marker.name == "marker_1"
     assert isinstance(marker, AndMarker)
@@ -88,9 +86,9 @@ def test_atomic_marker_evaluate_events(atomic_marker_type: Type[AtomicMarker]):
 
     assert "marker_name" in evaluation
     if atomic_marker_type == IntentDetectedMarker:
-        expected = (1, 3, 5)
+        expected = [1, 3, 5]
     else:
-        expected = (2, 4, 6)
+        expected = [2, 4, 6]
     assert evaluation["marker_name"]["preceeding_user_turns"] == expected
 
 
@@ -169,4 +167,4 @@ def test_compound_marker_nested_track():
 
     evaluation = marker.evaluate_events(events)
 
-    assert evaluation["marker_name"]["preceeding_user_turns"] == (3, 5)
+    assert evaluation["marker_name"]["preceeding_user_turns"] == [3, 5]

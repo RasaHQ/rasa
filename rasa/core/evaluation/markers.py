@@ -1,26 +1,25 @@
 from __future__ import annotations
+import os
+import sys
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import (
     Dict,
-    Iterable,
     Iterator,
     Optional,
     Text,
     List,
-    Tuple,
     Type,
-    TypedDict,
     Union,
 )
-import os
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 from pathlib import Path
 
-from ruamel.yaml.parser import ParserError
-
 import rasa.shared.core.constants
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import RasaException, YamlSyntaxException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -33,6 +32,8 @@ from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 import logging
 
 logger = logging.getLogger(__name__)
+
+ANY_MARKER = "<any_marker>"
 
 
 class AtomicMarkerOptions(str, Enum):
@@ -55,7 +56,7 @@ class CompoundOptions(str, Enum):
 
 
 EvaluationResult = TypedDict(
-    "EvaluationResult", {"preceeding_user_turns": Tuple[int], "timestamp": Tuple[int]}
+    "EvaluationResult", {"preceeding_user_turns": List[int], "timestamp": List[int]}
 )
 
 
@@ -83,6 +84,13 @@ class Marker(ABC):
             name: a custom name that can be used to replace the default string
                 conversion of this marker
         """
+        if name == ANY_MARKER:
+            raise InvalidMarkerConfig(
+                f"You must not use the special marker name {ANY_MARKER}. This is "
+                f"to avoid confusion when you generate a marker from a list of "
+                f"marker configurations, which will lead to all markers to be "
+                f"combined under one common `ORMarker` named {ANY_MARKER}."
+            )
         self.name = name
         self.history: List[bool] = []
 
@@ -134,15 +142,19 @@ class Marker(ABC):
             if len(sub_marker.history) != len(timestamps):
                 raise RuntimeError("We forgot to update some marker.")
 
-            sub_marker_results: List[Tuple[int, int]] = [
-                (num_user_turns, timestamp)
-                for applies, timestamp, num_user_turns in zip(
-                    sub_marker.history, timestamps, preceeding_user_turns
+            marker_user_turns = [
+                num_user_turns
+                for applies, num_user_turns in zip(
+                    sub_marker.history, preceeding_user_turns
                 )
                 if applies
             ]
-            if sub_marker_results:
-                marker_user_turns, marker_timestamps = zip(*sub_marker_results)
+            if marker_user_turns:
+                marker_timestamps: List[int] = [
+                    timestamp
+                    for applies, timestamp in zip(sub_marker.history, timestamps)
+                    if applies
+                ]
                 # FIXME: map names back
                 results[str(sub_marker)] = {
                     "preceeding_user_turns": marker_user_turns,
@@ -151,46 +163,45 @@ class Marker(ABC):
         return results
 
     @classmethod
-    def from_path(cls, path: Union[Text, Path]) -> Marker:
-        """Loads the config from a file or directory.
+    def from_config_file(cls, path: Union[Text, Path]) -> Marker:
+        """Loads markers from a single config file and combines them into one Marker.
 
-        If loaded from a directory
+        Args:
+            path:
         """
         path = os.path.abspath(path)
-        if os.path.isdir(path):
-            config = cls._load_config_from_directory(path)
-        else:
-            config = cls._load_config_from_yaml(path)
+        config = rasa.shared.io.read_yaml_file(path)
         return cls.from_config(config)
 
     @classmethod
-    def _load_config_from_yaml(cls, yaml: Text, filename: Text = "") -> Dict:
-        """Loads the config from YAML text after validating it."""
-        try:
-            config = rasa.shared.utils.io.read_yaml(yaml)
-            return config
+    def from_all_config_files_in_directory_tree(cls, path: Union[Text, Path]) -> Marker:
+        """Loads and appends multiple configs from a directory tree.
 
-        except ParserError as e:
-            e.filename = filename
-            raise YamlSyntaxException(filename, e)
-
-    @classmethod
-    def _load_config_from_directory(cls, path: Text) -> Dict:
-        """Loads and appends multiple configs from a directory tree."""
-        combined_configs = cls.empty_config()
+        Args:
+            path:
+        """
+        combined_configs = {}
+        path = os.path.abspath(path)
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
                 if is_likely_yaml_file(full_path):
-                    config = cls.from_yaml(full_path)
-                    if cls.is_marker_config(config):
-                        combined_configs.extend(config["markers"])
-        return combined_configs
-
-    @classmethod
-    def is_marker_config(cls, config: Dict) -> bool:
-        """Merges multiple marker configs."""
-        return "markers" in config.keys()
+                    config = rasa.shared.io.read_yaml_file(full_path)
+                    cls.validate_config(config)
+                    if set(config.keys()).intersection(combined_configs.keys()):
+                        raise InvalidMarkerConfig(
+                            f"The names of markers defined in {full_path} "
+                            f"({sorted(config.keys())}) "
+                            f"overlap with the names of markers loaded so far "
+                            f"({sorted(combined_configs.keys())})."
+                        )
+                    combined_configs.extend(config)
+                    logging.info(f"Added markers from {full_path}")
+        if not config:
+            raise InvalidMarkerConfig(
+                f"Could not load any markers from the directory tree rooted at {path}."
+            )
+        return cls.from_config(config)
 
     @classmethod
     def validate_config(cls, config: Dict) -> None:
@@ -200,10 +211,38 @@ class Marker(ABC):
             config: a configuration used to instantiate markers via `Marker.from_config`
         """
         # TODO
+        # if not self._is_marker_config() .... / schema
         ...
 
     @classmethod
-    def from_config(cls, config: MarkerConfig, name: Optional[Text] = None) -> Marker:
+    def from_config_dict(cls, config: Dict[Text, MarkerConfig]) -> Marker:
+        """Creates markers from a dictionary of marker configurations.
+
+        If there is more than one marker, then all markers will be combined into one
+        top level marker ('or') which will be evaluated as `ANY_MARKER`.
+
+        Args:
+            config: mapping custom marker names to marker configurations
+        Returns:
+            all configured markers, combined into one marker
+        """
+        cls.validate_config(config)
+
+        markers = [
+            cls.from_config(marker_config, name=marker_name)
+            for marker_name, marker_config in config.items()
+        ]
+        if len(markers) > 1:
+            marker = OrMarker(markers=markers)
+            marker.name = ANY_MARKER
+        else:
+            marker = markers[0]
+        return marker
+
+    @classmethod
+    def from_config(
+        cls, config: Dict[Text, List[MarkerConfig]], name: Optional[Text] = None
+    ) -> Marker:
         """Creates a marker from the given config.
 
         Args:
@@ -213,55 +252,22 @@ class Marker(ABC):
         Returns:
             the configured marker
         """
-        cls.validate_config(config)
-
-        if isinstance(config, list):
-
-            for sub_config in config:
-                if any(operator in sub_config for operator in CompoundOptions) or any(
-                    event_marker_name in sub_config
-                    for event_marker_name in AtomicMarkerOptions
-                ):
-                    raise RuntimeError(
-                        "Expected top level config to contain custom marker names"
-                    )
-
-            markers = [
-                cls.from_config(marker_config, name=marker_name)
-                for sub_config in config
-                for marker_name, marker_config in sub_config.items()
-            ]
-            if len(markers) > 1:
-                return OrMarker(markers=markers, name=name)
-            else:
-                marker = markers[0]
-                if name is not None:
-                    marker.name = name
-                return marker
-
-        elif isinstance(config, dict):
-
-            assert len(config) == 1
-
-            key = next(iter(config.keys()))
-            sub_marker_configs = config[key]
-            if not isinstance(sub_marker_configs, list):
-                raise RuntimeError("This should be a list")
-
-            if any(operator in config.keys() for operator in ["and", "or", "not"]):
-
-                return CompoundMarker.from_config(
-                    operator=key, sub_marker_configs=sub_marker_configs, name=name
-                )
-
-            else:
-
-                return AtomicMarker.from_config(
-                    marker_name=key, sub_marker_configs=sub_marker_configs, name=name
-                )
-
+        assert len(config) == 1  # FIXME: should just be a tuple
+        key = next(iter(config.keys()))
+        sub_marker_configs = config[key]
+        if not isinstance(sub_marker_configs, list):
+            raise InvalidMarkerConfig(
+                f"Expected a list as sub-marker configuration of {key} but "
+                f"received {sub_marker_configs}"
+            )
+        if any(operator in config.keys() for operator in ["and", "or", "not"]):
+            return CompoundMarker.from_config(
+                operator=key, sub_marker_configs=sub_marker_configs, name=name
+            )
         else:
-            raise RuntimeError(f"Unknown config format: {config}")
+            return AtomicMarker.from_config(
+                marker_name=key, sub_marker_configs=sub_marker_configs, name=name
+            )
 
 
 class CompoundMarker(Marker, ABC):
@@ -438,7 +444,7 @@ class AtomicMarker(Marker, ABC):
             an `AtomicMarker` in case the `sub_marker_configs` list contains only
             one text and an `OrMarker` otherwise
         """
-        str_to_marker_type = {
+        str_to_marker_type: Dict[Text, Type[AtomicMarker]] = {
             AtomicMarkerOptions.ACTION_EXECUTED: ActionExecutedMarker,
             AtomicMarkerOptions.INTENT_DETECTED: IntentDetectedMarker,
             AtomicMarkerOptions.SLOT_SET: SlotSetMarker,
