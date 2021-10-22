@@ -16,6 +16,75 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.12] - 2021-10-21
+### Bugfixes
+- [#9771](https://github.com/rasahq/rasa/issues/9771): Fixed a bug where `rasa test --fail-on-prediction-errors` would raise a 
+  `WrongPredictionException` for entities which were actually predicted correctly.
+
+  This happened in two ways:
+  1. if for a user message some entities were extracted multiple times (by multiple entity
+  extractors) but listed only once in the test story,
+  2. if the order in which entities from a message were extracted didn't match the order
+  in which they were listed in the test story.
+
+### Improved Documentation
+- [#9691](https://github.com/rasahq/rasa/issues/9691): Improve the documentation for training `TEDPolicy` with data augmentation.
+
+
+## [2.8.11] - 2021-10-20
+### Bugfixes
+- [#9858](https://github.com/rasahq/rasa/issues/9858): Updates dependency on `sanic-jwt` (1.5.0 -> ">=1.6.0, <1.7.0")
+
+  This removes the need to pin the version of `pyjwt` as the newer version of `sanic-jwt`
+  manages this properly.
+
+
+## [2.8.10] - 2021-10-14
+### Bugfixes
+- [#5657](https://github.com/rasahq/rasa/issues/5657): Add List handling in the `send_custom_json` method on `channels/facebook.py`.
+  Bellow are some examples that could cause en error before.
+
+  Example 1: when the whole json is a List
+  ```
+  [
+      {
+          "blocks": {
+              "type": "progression_bar",
+              "text": {"text": "progression 1", "level": "1"},
+          }
+      },
+      {"sender": {"id": "example_id"}},
+  ]
+  ```
+
+  Example 2: instead of being a Dict, *blocks* is a List when there are 2 *type*
+  keys under it
+  ```
+  {
+      "blocks": [
+          {"type": "title", "text": {"text": "Conversation progress"}},
+          {
+              "type": "progression_bar",
+              "text": {"text": "Look how far we are...", "level": "1"},
+          },
+      ]
+  }
+  ```
+- [#7676](https://github.com/rasahq/rasa/issues/7676): Fixed bug when using wit.ai training data to train.
+  Training failed with an error similarly to this:
+
+  ```bash
+    File "./venv/lib/python3.8/site-packages/rasa/nlu/classifiers/diet_classifier.py", line 803, in train
+      self.check_correct_entity_annotations(training_data)
+    File "./venv/lib/python3.8/site-packages/rasa/nlu/extractors/extractor.py", line 418, in check_correct_entity_annotations
+      entities_repr = [
+    File "./venv/lib/python3.8/site-packages/rasa/nlu/extractors/extractor.py", line 422, in <listcomp>
+      entity[ENTITY_ATTRIBUTE_VALUE],
+  KeyError: 'value'
+  ```
+- [#9851](https://github.com/rasahq/rasa/issues/9851): Fix CVE-2021-41127
+
+
 ## [2.8.9] - 2021-10-08
 ### Improvements
 - [#7619](https://github.com/rasahq/rasa/issues/7619): Bump TensorFlow version to 2.6.
