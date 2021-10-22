@@ -269,7 +269,7 @@ class DIETClassifierGraphComponent(
             # Model confidence to be returned during inference. Currently, the only
             # possible value is `softmax`.
             MODEL_CONFIDENCE: SOFTMAX,
-            # Determines wether the confidences of the chosen top intents should be
+            # Determines whether the confidences of the chosen top intents should be
             # renormalized so that they sum up to 1. By default, we do not renormalize
             # and return the confidences for the top intents as is.
             # Note that renormalization only makes sense if confidences are generated
