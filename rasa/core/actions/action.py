@@ -1,7 +1,7 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING, Union
+from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING, Union, Tuple, Set
 
 import aiohttp
 import rasa.core
@@ -1035,21 +1035,24 @@ class ActionExtractSlots(Action):
     async def _execute_custom_action(
         self,
         mapping: Dict[Text, Any],
+        executed_custom_actions: Set[Text],
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
-    ) -> List[Event]:
+    ) -> Tuple[List[Event], Set[Text]]:
         custom_action = mapping.get("action")
 
-        if not custom_action:
-            return []
+        if not custom_action or custom_action in executed_custom_actions:
+            return [], executed_custom_actions
 
         slot_events = await self._run_custom_action(
             custom_action, output_channel, nlg, tracker, domain,
         )
 
-        return slot_events
+        executed_custom_actions.add(custom_action)
+
+        return slot_events, executed_custom_actions
 
     async def _execute_validation_action(
         self,
@@ -1096,6 +1099,7 @@ class ActionExtractSlots(Action):
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         slot_events: List[Event] = []
+        executed_custom_actions = set()
 
         user_slots = [
             slot for slot in domain.slots if slot.name not in DEFAULT_SLOT_NAMES
@@ -1138,8 +1142,16 @@ class ActionExtractSlots(Action):
                 should_fill_custom_slot = mapping["type"] == str(SlotMapping.CUSTOM)
 
                 if should_fill_custom_slot:
-                    custom_evts = await self._execute_custom_action(
-                        mapping, output_channel, nlg, tracker, domain
+                    (
+                        custom_evts,
+                        executed_custom_actions,
+                    ) = await self._execute_custom_action(
+                        mapping,
+                        executed_custom_actions,
+                        output_channel,
+                        nlg,
+                        tracker,
+                        domain,
                     )
                     slot_events.extend(custom_evts)
 

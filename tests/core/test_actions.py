@@ -2117,3 +2117,72 @@ async def test_action_extract_slots_custom_action_and_predefined_slot_validation
             SlotSet("location", "London"),
             SlotSet("custom_slot", "test"),
         ]
+
+
+async def test_action_extract_slots_with_duplicate_custom_actions():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        intents:
+        - inform
+
+        entities:
+        - city
+
+        slots:
+          custom_slot_one:
+            type: float
+            influence_conversation: false
+            mappings:
+            - type: custom
+              action: action_test
+          custom_slot_two:
+            type: float
+            influence_conversation: false
+            mappings:
+            - type: custom
+              action: action_test
+
+        actions:
+        - action_test
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": "custom_slot_one", "value": 1},
+                    {"event": "slot", "name": "custom_slot_two", "value": 2},
+                ]
+            },
+        )
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": "custom_slot_one", "value": 1},
+                    {"event": "slot", "name": "custom_slot_two", "value": 2},
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        slot_events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert len(slot_events) == 2
+        assert SlotSet("custom_slot_two", 2) in slot_events
+        assert SlotSet("custom_slot_one", 1) in slot_events
