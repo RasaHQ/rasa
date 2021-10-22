@@ -15,7 +15,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE,
 )
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 @pytest.mark.parametrize(
@@ -385,7 +385,7 @@ def test_add_diagnostic_data_with_repeated_component_raises_warning():
 
 
 def test_message_fingerprint_includes_data_and_features(
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     message = Message(data={TEXT: "This is a test sentence."})
     fp1 = message.fingerprint()

@@ -16,7 +16,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import TEXT
-from rasa.nlu.classifiers.classifier import IntentClassifier2
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 
@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
-class SklearnIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
+class SklearnIntentClassifier(GraphComponent, IntentClassifier):
     """Intent classifier using the sklearn framework."""
 
     @classmethod
@@ -85,7 +85,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> SklearnIntentClassifierGraphComponent:
+    ) -> SklearnIntentClassifier:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
@@ -268,7 +268,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> SklearnIntentClassifierGraphComponent:
+    ) -> SklearnIntentClassifier:
         """Loads trained component (see parent class for full docstring)."""
         from sklearn.preprocessing import LabelEncoder
 

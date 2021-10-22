@@ -21,10 +21,8 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.convert import convert_training_data
-from rasa.nlu.extractors.mitie_entity_extractor import (
-    MitieEntityExtractorGraphComponent,
-)
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -418,9 +416,7 @@ def test_data_merging(files):
     assert td.regex_features == td_reference.regex_features
 
 
-def test_repeated_entities(
-    tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizerGraphComponent
-):
+def test_repeated_entities(tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizer):
     data = """
 {
   "rasa_nlu_data": {
@@ -448,16 +444,14 @@ def test_repeated_entities(
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = whitespace_tokenizer.tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractorGraphComponent.find_entity(
+    start, end = MitieEntityExtractor.find_entity(
         entities[0], example.get(TEXT), tokens
     )
     assert start == 9
     assert end == 10
 
 
-def test_multiword_entities(
-    tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizerGraphComponent
-):
+def test_multiword_entities(tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizer):
     data = """
 {
   "rasa_nlu_data": {
@@ -485,7 +479,7 @@ def test_multiword_entities(
     entities = example.get("entities")
     assert len(entities) == 1
     tokens = whitespace_tokenizer.tokenize(example, attribute=TEXT)
-    start, end = MitieEntityExtractorGraphComponent.find_entity(
+    start, end = MitieEntityExtractor.find_entity(
         entities[0], example.get(TEXT), tokens
     )
     assert start == 4
@@ -835,7 +829,7 @@ def test_label_fingerprints(message: Message):
 
 
 def test_training_data_fingerprint_incorporates_tokens(
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     from rasa.shared.importers.utils import training_data_from_paths
 

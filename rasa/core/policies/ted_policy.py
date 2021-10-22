@@ -36,7 +36,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.core.policies.policy import (
     PolicyPrediction,
-    PolicyGraphComponent,
+    Policy,
     SupportedData,
 )
 from rasa.core.constants import (
@@ -148,7 +148,7 @@ PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIAL
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
 )
-class TEDPolicyGraphComponent(PolicyGraphComponent):
+class TEDPolicy(Policy):
     """Transformer Embedding Dialogue (TED) Policy.
 
     The model architecture is described in
@@ -1016,7 +1016,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> TEDPolicyGraphComponent:
+    ) -> TEDPolicy:
         """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
@@ -1038,7 +1038,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> TEDPolicyGraphComponent:
+    ) -> TEDPolicy:
         featurizer = TrackerFeaturizer.load(model_path)
 
         if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
@@ -1089,7 +1089,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         featurizer: TrackerFeaturizer,
         model: TED,
         model_utilities: Dict[Text, Any],
-    ) -> TEDPolicyGraphComponent:
+    ) -> TEDPolicy:
         return cls(
             config,
             model_storage,

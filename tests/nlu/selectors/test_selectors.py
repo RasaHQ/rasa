@@ -6,15 +6,13 @@ from typing import List, Dict, Text, Any, Optional, Tuple, Union, Callable
 
 import rasa.model
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
-    CountVectorsFeaturizerGraphComponent,
+    CountVectorsFeaturizer,
 )
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
-    LexicalSyntacticFeaturizerGraphComponent,
+    LexicalSyntacticFeaturizer,
 )
-from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
-    RegexFeaturizerGraphComponent,
-)
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -47,7 +45,7 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.nlu.selectors.response_selector import ResponseSelectorGraphComponent
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
@@ -76,10 +74,10 @@ def create_response_selector(
     default_model_storage: ModelStorage,
     default_response_selector_resource: Resource,
     default_execution_context: ExecutionContext,
-) -> Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent]:
-    def inner(config_params: Dict[Text, Any]) -> ResponseSelectorGraphComponent:
-        return ResponseSelectorGraphComponent.create(
-            {**ResponseSelectorGraphComponent.get_default_config(), **config_params},
+) -> Callable[[Dict[Text, Any]], ResponseSelector]:
+    def inner(config_params: Dict[Text, Any]) -> ResponseSelector:
+        return ResponseSelector.create(
+            {**ResponseSelector.get_default_config(), **config_params},
             default_model_storage,
             default_response_selector_resource,
             default_execution_context,
@@ -93,10 +91,10 @@ def load_response_selector(
     default_model_storage: ModelStorage,
     default_response_selector_resource: Resource,
     default_execution_context: ExecutionContext,
-) -> Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent]:
-    def inner(config_params: Dict[Text, Any]) -> ResponseSelectorGraphComponent:
-        return ResponseSelectorGraphComponent.load(
-            {**ResponseSelectorGraphComponent.get_default_config(), **config_params},
+) -> Callable[[Dict[Text, Any]], ResponseSelector]:
+    def inner(config_params: Dict[Text, Any]) -> ResponseSelector:
+        return ResponseSelector.load(
+            {**ResponseSelector.get_default_config(), **config_params},
             default_model_storage,
             default_response_selector_resource,
             default_execution_context,
@@ -107,10 +105,8 @@ def load_response_selector(
 
 @pytest.fixture()
 def train_persist_load_with_different_settings(
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     default_execution_context: ExecutionContext,
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
@@ -157,16 +153,14 @@ def train_persist_load_with_different_settings(
 def test_train_selector(
     response_selector_training_data: TrainingData,
     config_params: Dict[Text, Any],
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     default_model_storage: ModelStorage,
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
 ):
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
     response_selector_training_data, loaded_pipeline = train_and_preprocess(
         pipeline, response_selector_training_data
@@ -213,9 +207,7 @@ def test_train_selector(
 
 def test_preprocess_selector_multiple_retrieval_intents(
     response_selector_training_data: TrainingData,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
 
     training_data_extra_intent = TrainingData(
@@ -246,9 +238,7 @@ def test_ground_truth_for_training(
     use_text_as_label,
     label_values,
     response_selector_training_data: TrainingData,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     response_selector = create_response_selector(
         {"use_text_as_label": use_text_as_label},
@@ -273,9 +263,7 @@ def test_resolve_intent_response_key_from_label(
     train_on_text: bool,
     resolved_intent_response_key: Text,
     response_selector_training_data: TrainingData,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
 
     response_selector = create_response_selector({"use_text_as_label": train_on_text},)
@@ -296,16 +284,14 @@ def test_resolve_intent_response_key_from_label(
 
 
 def test_train_model_checkpointing(
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     default_model_storage: ModelStorage,
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
 ):
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
+        {"component": WhitespaceTokenizer},
         {
-            "component": CountVectorsFeaturizerGraphComponent,
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 3,
             "max_ngram": 17,
@@ -346,17 +332,15 @@ def test_train_model_checkpointing(
 
 @pytest.mark.skip_on_windows
 def test_train_persist_load(
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     default_execution_context: ExecutionContext,
     train_persist_load_with_different_settings,
 ):
 
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
     config_params = {EPOCHS: 1}
 
@@ -371,16 +355,14 @@ def test_train_persist_load(
 
 async def test_process_gives_diagnostic_data(
     default_execution_context: ExecutionContext,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
 ):
     """Tests if processing a message returns attention weights as numpy array."""
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
     config_params = {EPOCHS: 1}
 
@@ -425,15 +407,13 @@ async def test_process_gives_diagnostic_data(
 )
 async def test_margin_loss_is_not_normalized(
     classifier_params: Dict[Text, int],
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
 ):
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
     training_data, loaded_pipeline = train_and_preprocess(
         pipeline, "data/test_selectors"
@@ -470,10 +450,14 @@ async def test_margin_loss_is_not_normalized(
 async def test_softmax_ranking(
     classifier_params: Dict[Text, int],
     output_length: int,
+<<<<<<< HEAD
     sums_up_to_1: bool,
     create_response_selector: Callable[
         [Dict[Text, Any]], ResponseSelectorGraphComponent
     ],
+=======
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+>>>>>>> main
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
 ):
@@ -481,8 +465,8 @@ async def test_softmax_ranking(
     classifier_params[EPOCHS] = 1
 
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
     training_data, loaded_pipeline = train_and_preprocess(
         pipeline, "data/test_selectors"
@@ -551,9 +535,7 @@ async def test_softmax_ranking(
 def test_warning_when_transformer_and_hidden_layers_enabled(
     config: Dict[Text, Union[int, Dict[Text, List[int]]]],
     should_raise_warning: bool,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     """ResponseSelector recommends disabling hidden layers if transformer is enabled."""
     with pytest.warns(UserWarning) as records:
@@ -597,9 +579,7 @@ def test_warning_when_transformer_and_hidden_layers_enabled(
 def test_sets_integer_transformer_size_when_needed(
     config: Dict[Text, Optional[int]],
     should_set_default_transformer_size: bool,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     """ResponseSelector ensures sensible transformer size when transformer enabled."""
     default_transformer_size = 256
@@ -625,10 +605,8 @@ def test_sets_integer_transformer_size_when_needed(
 
 @pytest.mark.timeout(120)
 async def test_adjusting_layers_incremental_training(
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
 ):
@@ -643,12 +621,12 @@ async def test_adjusting_layers_incremental_training(
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
-        {"component": LexicalSyntacticFeaturizerGraphComponent},
-        {"component": RegexFeaturizerGraphComponent},
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": WhitespaceTokenizer},
+        {"component": LexicalSyntacticFeaturizer},
+        {"component": RegexFeaturizer},
+        {"component": CountVectorsFeaturizer},
         {
-            "component": CountVectorsFeaturizerGraphComponent,
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
@@ -806,21 +784,19 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     iter1_path: Text,
     iter2_path: Text,
     should_raise_exception: bool,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     default_execution_context: ExecutionContext,
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
 ):
     pipeline = [
-        {"component": WhitespaceTokenizerGraphComponent},
-        {"component": LexicalSyntacticFeaturizerGraphComponent},
-        {"component": RegexFeaturizerGraphComponent},
-        {"component": CountVectorsFeaturizerGraphComponent},
+        {"component": WhitespaceTokenizer},
+        {"component": LexicalSyntacticFeaturizer},
+        {"component": RegexFeaturizer},
+        {"component": CountVectorsFeaturizer},
         {
-            "component": CountVectorsFeaturizerGraphComponent,
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,

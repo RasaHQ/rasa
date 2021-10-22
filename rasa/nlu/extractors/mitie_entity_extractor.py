@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
@@ -18,7 +18,7 @@ from rasa.shared.nlu.constants import (
     TEXT,
     ENTITIES,
 )
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -34,9 +34,9 @@ if typing.TYPE_CHECKING:
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
     is_trainable=True,
-    model_from="MitieNLPGraphComponent",
+    model_from="MitieNLP",
 )
-class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+class MitieEntityExtractor(GraphComponent, EntityExtractorMixin):
     """A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`)."""
 
     MITIE_RESOURCE_FILE = "mitie_ner.dat"
@@ -44,7 +44,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [MitieNLPGraphComponent, TokenizerGraphComponent]
+        return [MitieNLP, Tokenizer]
 
     @staticmethod
     def required_packages() -> List[Text]:
@@ -102,7 +102,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> GraphComponent:
-        """Creates a new `MitieEntityExtractorGraphComponent`.
+        """Creates a new `MitieEntityExtractor`.
 
         Args:
             config: This config overrides the `default_config`.
@@ -112,7 +112,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 and load itself from the `model_storage`.
             execution_context: Information about the current graph run. Unused.
 
-        Returns: An instantiated `MitieEntityExtractorGraphComponent`.
+        Returns: An instantiated `MitieEntityExtractor`.
         """
         return cls(config, model_storage, resource)
 
@@ -169,9 +169,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         for ent in training_example.get(ENTITIES, []):
             try:
                 # if the token is not aligned an exception will be raised
-                start, end = MitieEntityExtractorGraphComponent.find_entity(
-                    ent, text, tokens
-                )
+                start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
                 rasa.shared.utils.io.raise_warning(
                     f"Failed to use example '{text}' to train MITIE "
@@ -262,7 +260,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> MitieEntityExtractorGraphComponent:
+    ) -> MitieEntityExtractor:
         """Loads trained component (see parent class for full docstring)."""
         import mitie
 

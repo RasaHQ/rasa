@@ -38,14 +38,13 @@ from rasa.core.featurizers.single_state_featurizer import (
 from rasa.core.policies.policy import (
     SupportedData,
     InvalidPolicyConfig,
-    PolicyGraphComponent,
+    Policy,
 )
-from rasa.core.policies.rule_policy import RulePolicyGraphComponent
-from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import (
-    AugmentedMemoizationPolicyGraphComponent as AugmentedMemoizationPolicy,
-    MemoizationPolicyGraphComponent as MemoizationPolicy,
-    MemoizationPolicyGraphComponent,
+    AugmentedMemoizationPolicy,
+    MemoizationPolicy,
 )
 
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -75,7 +74,7 @@ class PolicyTestCollection:
     Each policy can declare further tests on its own."""
 
     @staticmethod
-    def _policy_class_to_test() -> Type[PolicyGraphComponent]:
+    def _policy_class_to_test() -> Type[Policy]:
         raise NotImplementedError
 
     max_history = 3  # this is the amount of history we test on
@@ -106,7 +105,7 @@ class PolicyTestCollection:
         resource: Resource,
         execution_context: ExecutionContext,
         config: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyGraphComponent:
+    ) -> Policy:
         return self._policy_class_to_test()(
             config=self._config(config),
             model_storage=model_storage,
@@ -139,7 +138,7 @@ class PolicyTestCollection:
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> PolicyGraphComponent:
+    ) -> Policy:
         policy = self.create_policy(
             featurizer, model_storage, resource, execution_context
         )
@@ -151,7 +150,7 @@ class PolicyTestCollection:
 
     def test_featurizer(
         self,
-        trained_policy: PolicyGraphComponent,
+        trained_policy: Policy,
         resource: Resource,
         model_storage: ModelStorage,
         tmp_path: Path,
@@ -177,7 +176,7 @@ class PolicyTestCollection:
     @pytest.mark.parametrize("should_finetune", [False, True])
     def test_persist_and_load(
         self,
-        trained_policy: PolicyGraphComponent,
+        trained_policy: Policy,
         default_domain: Domain,
         should_finetune: bool,
         stories_path: Text,
@@ -206,7 +205,7 @@ class PolicyTestCollection:
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(
-        self, trained_policy: PolicyGraphComponent, default_domain: Domain
+        self, trained_policy: Policy, default_domain: Domain
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
@@ -239,9 +238,7 @@ class PolicyTestCollection:
         assert loaded is not None
 
     @staticmethod
-    def _get_next_action(
-        policy: PolicyGraphComponent, events: List[Event], domain: Domain
-    ) -> Text:
+    def _get_next_action(policy: Policy, events: List[Event], domain: Domain) -> Text:
         tracker = get_tracker(events)
         scores = policy.predict_action_probabilities(tracker, domain,).probabilities
         index = scores.index(max(scores))
@@ -334,7 +331,7 @@ class PolicyTestCollection:
     )
     def test_different_invalid_featurizer_configs(
         self,
-        trained_policy: PolicyGraphComponent,
+        trained_policy: Policy,
         featurizer_config: Optional[Dict[Text, Any]],
         model_storage: ModelStorage,
         resource: Resource,
@@ -352,7 +349,7 @@ class PolicyTestCollection:
 
 class TestMemoizationPolicy(PolicyTestCollection):
     @staticmethod
-    def _policy_class_to_test() -> Type[PolicyGraphComponent]:
+    def _policy_class_to_test() -> Type[Policy]:
         return MemoizationPolicy
 
     @pytest.fixture(scope="class")
@@ -362,7 +359,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
     def test_featurizer(
         self,
-        trained_policy: PolicyGraphComponent,
+        trained_policy: Policy,
         resource: Resource,
         model_storage: ModelStorage,
         tmp_path: Path,
@@ -641,7 +638,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
     """Test suite for AugmentedMemoizationPolicy."""
 
     @staticmethod
-    def _policy_class_to_test() -> Type[PolicyGraphComponent]:
+    def _policy_class_to_test() -> Type[Policy]:
         return AugmentedMemoizationPolicy
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
@@ -724,14 +721,12 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
 @pytest.mark.parametrize(
     "policy,supported_data",
     [
-        (TEDPolicyGraphComponent, SupportedData.ML_DATA),
-        (RulePolicyGraphComponent, SupportedData.ML_AND_RULE_DATA),
-        (MemoizationPolicyGraphComponent, SupportedData.ML_DATA),
+        (TEDPolicy, SupportedData.ML_DATA),
+        (RulePolicy, SupportedData.ML_AND_RULE_DATA),
+        (MemoizationPolicy, SupportedData.ML_DATA),
     ],
 )
-def test_supported_data(
-    policy: Type[PolicyGraphComponent], supported_data: SupportedData
-):
+def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
     assert policy.supported_data() == supported_data
 
 
