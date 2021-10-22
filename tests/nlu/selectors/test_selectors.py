@@ -450,14 +450,8 @@ async def test_margin_loss_is_not_normalized(
 async def test_softmax_ranking(
     classifier_params: Dict[Text, int],
     output_length: int,
-<<<<<<< HEAD
     sums_up_to_1: bool,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-=======
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
->>>>>>> main
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
 ):
