@@ -13,9 +13,6 @@ from typing import (
     Union,
 )
 
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
     from typing_extensions import TypedDict
 from pathlib import Path
 
