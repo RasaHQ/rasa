@@ -38,9 +38,9 @@ def test_marker_from_config():
 
     assert marker.name == "marker_1"
     assert isinstance(marker, AndMarker)
-    assert isinstance(marker.markers[0], SlotSetMarker)
-    assert isinstance(marker.markers[1], OrMarker)
-    for sub_marker in marker.markers[1].markers:
+    assert isinstance(marker.sub_markers[0], SlotSetMarker)
+    assert isinstance(marker.sub_markers[1], OrMarker)
+    for sub_marker in marker.sub_markers[1].sub_markers:
         assert isinstance(sub_marker, AtomicMarker)
 
 

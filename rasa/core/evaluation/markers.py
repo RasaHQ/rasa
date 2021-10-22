@@ -59,8 +59,8 @@ EvaluationResult = TypedDict(
 )
 
 
-class InvalidMarkersConfig(RasaException):
-    """Exception that can be raised when markers config is not valid."""
+class InvalidMarkerConfig(RasaException):
+    """Exception that can be raised when the config for a marker is not valid."""
 
 
 MarkerConfig = Union[
@@ -281,7 +281,7 @@ class CompoundMarker(Marker, ABC):
                 conversion of this marker
         """
         super().__init__(name=name)
-        self.markers: List[Marker] = markers
+        self.sub_markers: List[Marker] = markers
 
     def track(self, event: Event) -> None:
         """Updates the marker according to the given event.
@@ -291,7 +291,7 @@ class CompoundMarker(Marker, ABC):
         Args:
             event: the next event of the conversation
         """
-        for marker in self.markers:
+        for marker in self.sub_markers:
             marker.track(event)
         marker_applies = self._track(event)
         self.history.append(marker_applies)
@@ -303,7 +303,7 @@ class CompoundMarker(Marker, ABC):
             a list of all markers that this marker consists of, which should be
             updated and evaluated
         """
-        for marker in self.markers:
+        for marker in self.sub_markers:
             for sub_marker in marker:
                 yield sub_marker
         yield self
@@ -314,7 +314,7 @@ class CompoundMarker(Marker, ABC):
         Args:
             event: the next event of the conversation
         """
-        for marker in self.markers:
+        for marker in self.sub_markers:
             marker.reset()
         super().reset()
 
@@ -361,45 +361,47 @@ class AndMarker(CompoundMarker):
     """Checks that all sub-markers apply."""
 
     def __repr__(self) -> Text:
-        return "({})".format(" and ".join(str(marker) for marker in self.markers))
+        return "({})".format(" and ".join(str(marker) for marker in self.sub_markers))
 
     def _track(self, event: Event) -> bool:
-        return all(marker.history[-1] for marker in self.markers)
+        return all(marker.history[-1] for marker in self.sub_markers)
 
 
 class OrMarker(CompoundMarker):
     """Checks that one sub-markers is applies."""
 
     def __repr__(self) -> Text:
-        return "({})".format(" or ".join(str(marker) for marker in self.markers))
+        return "({})".format(" or ".join(str(marker) for marker in self.sub_markers))
 
     def _track(self, event: Event) -> bool:
-        return any(marker.history[-1] for marker in self.markers)
+        return any(marker.history[-1] for marker in self.sub_markers)
 
 
 class NotAnyMarker(CompoundMarker):
     """Checks that none of the sub-markers applies."""
 
     def __repr__(self) -> Text:
-        return "not-any({})".format(" or ".join(str(marker) for marker in self.markers))
+        return "not-any({})".format(
+            " or ".join(str(marker) for marker in self.sub_markers)
+        )
 
     def _track(self, event: Event) -> bool:
-        return not any(marker.history[-1] for marker in self.markers)
+        return not any(marker.history[-1] for marker in self.sub_markers)
 
 
 class SequenceMarker(CompoundMarker):
     """Checks the sub-markers applied in the given order."""
 
     def __repr__(self) -> Text:
-        return "sequence".join(str(marker) for marker in self.markers)
+        return "sequence".join(str(marker) for marker in self.sub_markers)
 
     def _track(self, event: Event) -> bool:
         # Note: the sub-markers have been updated before this tracker
-        if len(self.history) < len(self.markers) - 1:
+        if len(self.history) < len(self.sub_markers) - 1:
             return False
         return all(
             marker.history[-idx - 1]
-            for idx, marker in enumerate(reversed(self.markers))
+            for idx, marker in enumerate(reversed(self.sub_markers))
         )
 
 
