@@ -22,18 +22,18 @@ def test_markers_operator_and():
     config = [
         {
             "marker_1": {
-                "and": {
-                    "slot_set": ["flight_class", "travel_departure"],
-                    "action_executed": ["action_calculate_offsets"],
-                    "intent_not_detected": ["insult", "vulgar"],
-                }
+                "and": [
+                    {"slot_set": ["flight_class", "travel_departure"]},
+                    {"action_executed": ["action_calculate_offsets"]},
+                    {"intent_not_detected": ["insult", "vulgar"]},
+                ]
             }
         }
     ]
 
     marker = Marker.from_config(config)
 
-    evaluation = marker.evaluate_all(tracker.events)
+    evaluation = marker.evaluate_events(tracker.events)
 
     # FIXME
 
@@ -42,6 +42,37 @@ def test_markers_operator_and():
 
 
 # FIXME: fix texts, separate config resolution and actual marker functions
+
+
+def test_nested():
+
+    domain = Domain.empty()
+    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
+    tracker.update(UserUttered(intent={"name": "1"}), domain)
+    tracker.update(UserUttered(intent={"name": "2"}), domain)
+    tracker.update(UserUttered(intent={"name": "3"}), domain)
+    tracker.update(SlotSet("flight_class", value="first"), domain)
+    tracker.update(UserUttered(intent={"name": "4"}), domain)
+    tracker.update(UserUttered(intent={"name": "5"}), domain)
+    tracker.update(UserUttered(intent={"name": "6"}), domain)
+
+    config = [
+        {
+            "marker_1": {
+                "and": [
+                    {"slot_set": ["flight_class"]},
+                    {"or": [{"intent_detected": ["4"]}, {"intent_detected": ["6"]},]},
+                ]
+            }
+        }
+    ]
+
+    marker = Marker.from_config(config)
+
+    evaluation = marker.evaluate_events(tracker.events)
+
+    assert evaluation["marker_1"]["preceeding_user_turns"] == (3, 5)
+
 
 '''
 def test_marker_initializer():

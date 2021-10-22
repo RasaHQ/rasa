@@ -1,12 +1,24 @@
 from __future__ import annotations
-from abc import ABC
-from typing import Dict, Optional, Text, List, Type, Union
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Text,
+    List,
+    Type,
+    TypedDict,
+    Union,
+)
 import os
 from pathlib import Path
 
 from ruamel.yaml.parser import ParserError
 
 import rasa.shared.core.constants
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException, YamlSyntaxException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
@@ -17,12 +29,35 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.exceptions import RasaException
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 
+import logging
 
-# from rasa.shared.utils.schemas.markers import MARKERS_SCHEMA
+logger = logging.getLogger(__name__)
+
+
+class EventMarkerOptions(str, Enum):
+    ACTION_EXECUTED = "action_executed"
+    INTENT_DETECTED = "intent_detected"
+    SLOT_SET = "slot_set"
+
+
+class CompoundOptions(str, Enum):
+    AND = "and"
+    OR = "or"
+    NOT = "not"
+
+
+class EvaluationResult(TypedDict):
+    preceeding_user_turns: List[int]
+    timestamp: List[int]
 
 
 class InvalidMarkersConfig(RasaException):
     """Exception that can be raised when markers config is not valid."""
+
+
+MarkerConfig = Union[
+    List["MarkerConfig"], Dict[Text, "MarkerConfig"], Dict[Text, List[Text]]
+]
 
 
 class Marker(ABC):
@@ -40,16 +75,7 @@ class Marker(ABC):
     def __str__(self):
         return self.name or repr(self)
 
-    def evaluate(self, event: Event) -> None:
-        """Evaluate this marker given the next event.
-
-        Args:
-            event: the next event of the conversation
-        """
-        marker_applies = self._evaluate(event)
-        self.history.append(marker_applies)
-
-    def _evaluate(self, event: Event) -> bool:
+    def track(self, event: Event) -> None:
         """Evaluate this marker given the next event.
 
         Args:
@@ -57,14 +83,15 @@ class Marker(ABC):
         """
         ...
 
-    def clear(self):
+    def reset(self):
         """Clears the history of the marker.
 
         """
-        self.history = []
+        ...
 
-    def flatten(self) -> List[Marker]:
-        """Returns all Markers that are part of this Marker.
+    @abstractmethod
+    def __iter__(self) -> Iterator[Marker]:
+        """Returns all Markers that are part of this Marker (including itself).
 
         Returns:
             a list of all markers that this marker consists of, which should be
@@ -72,28 +99,38 @@ class Marker(ABC):
         """
         ...
 
-    def evaluate_all(
-        self, events: List[Event], clear_history: bool = True
+    def evaluate_tracker(
+        self, tracker: DialogueStateTracker,
     ) -> Dict[Text, Dict[Text, List[float]]]:
-        """Tracks all given events and collects the results.
+        """Resets the marker, tracks all events from the tracker, and collects results.
 
         Args:
-            clear_history:
+            tracker: the dialogue state tracker of a conversation
+        Returns:
 
         """
-        if clear_history:
-            self.clear()
+        return self.evaluate_events(tracker.events)
+
+    def evaluate_events(
+        self, events: List[Event]
+    ) -> Dict[Text, Dict[Text, List[float]]]:
+        """Resets the marker, tracks all events, and collects results.
+
+        Args:
+            events: a list of events describing a conversation
+        """
+        self.reset()
         timestamps = []
         preceeding_user_turns = [0]
         for _, event in enumerate(events):
             is_user_turn = isinstance(event, UserUttered)
             preceeding_user_turns.append(preceeding_user_turns[-1] + is_user_turn)
             timestamps.append(event.timestamp)
-            self.evaluate(event=event)
+            self.track(event=event)
         preceeding_user_turns = preceeding_user_turns[:-1]  # drop last
 
-        results = dict()
-        for sub_marker in self.flatten():
+        results: Dict[Text, EvaluationResult] = dict()
+        for sub_marker in self:
             # FIXME: filter out submarkers that we're interested in ... (later?)
             if len(sub_marker.history) != len(timestamps):
                 raise RuntimeError("We forgot to update some marker.")
@@ -116,7 +153,10 @@ class Marker(ABC):
 
     @classmethod
     def from_path(cls, path: Union[Text, Path]) -> Marker:
-        """Loads the config from a file or directory."""  # FIXME: this should tell me things get merged
+        """Loads the config from a file or directory.
+
+        If loaded from a directory
+        """
         path = os.path.abspath(path)
         if os.path.isfile(path):
             config = cls._load_config_from_yaml(path)
@@ -151,7 +191,6 @@ class Marker(ABC):
                     config = cls.from_yaml(full_path)
                     if cls.is_marker_config(config):
                         combined_configs.extend(config["markers"])
-                # FIXME: and if not, then I'll never know this won't be merged
         return combined_configs
 
     @classmethod
@@ -161,27 +200,24 @@ class Marker(ABC):
 
     @classmethod
     def validate_config(cls, config: Dict, filename: Text = "") -> None:
+        # TODO
         return True
-        # """Validates the markers config according to the schema."""
-        # try:
-        #     validate(config, MARKERS_SCHEMA)
-        # except ValidationError as e:
-        #     e.message += (
-        #         f". The file {filename} is invalid according to the markers schema."
-        #     )
-        #     raise e
 
     @classmethod
-    def from_config(
-        cls, config: Union[List[Dict], Dict], name: Optional[Text] = None
-    ) -> Marker:
+    def from_config(cls, config: MarkerConfig, name: Optional[Text] = None) -> Marker:
         cls.validate_config(config)
 
-        # FIXME: DAG
-        # FIXME: schema -> nested
-        # FIXME: constants
-
         if isinstance(config, list):
+
+            for sub_config in config:
+                if any(operator in sub_config for operator in CompoundOptions) or any(
+                    event_marker_name in sub_config
+                    for event_marker_name in EventMarkerOptions
+                ):
+                    raise RuntimeError(
+                        "Expected top level config to contain custom marker names"
+                    )
+
             markers = [
                 cls.from_config(marker_config, name=marker_name)
                 for sub_config in config
@@ -191,25 +227,29 @@ class Marker(ABC):
                 return OrMarker(markers=markers, name=name)
             else:
                 marker = markers[0]
-                marker.name = name
+                if name is not None:
+                    marker.name = name
                 return marker
 
         elif isinstance(config, dict):
 
             assert len(config) == 1
 
+            key = next(iter(config.keys()))
+            sub_marker_configs = config[key]
+            if not isinstance(sub_marker_configs, list):
+                raise RuntimeError("This should be a list")
+
             if any(operator in config.keys() for operator in ["and", "or", "not"]):
 
-                operator = next(iter(config.keys()))
                 return CompoundMarker.from_config(
-                    operator=operator, sub_marker_configs=config[operator]
+                    operator=key, sub_marker_configs=sub_marker_configs, name=name
                 )
 
             else:
 
-                marker_name = next(iter(config.keys()))
                 return EventMarker.from_config(
-                    marker_name=marker_name, marker_text=config[marker_name], name=name
+                    marker_name=key, sub_marker_configs=sub_marker_configs, name=name
                 )
 
         else:
@@ -221,40 +261,53 @@ class CompoundMarker(Marker, ABC):
         super().__init__(name=name)
         self.markers: List[Marker] = markers
 
-    def evaluate(self, event: Event) -> None:
-        # FIXME: DAG
+    def track(self, event: Event) -> None:
+        # track all sub markers first
         for marker in self.markers:
-            marker.evaluate(event)
-        super().evaluate(event=event)
+            marker.track(event)
+        # then update the compound marker
+        marker_applies = self._track(event)
+        self.history.append(marker_applies)
 
-    def flatten(self) -> List[Marker]:
-        return [self] + [
-            sub_marker for marker in self.markers for sub_marker in marker.flatten()
-        ]
+    def __iter__(self) -> Iterator[Marker]:
+        for marker in self.markers:
+            for sub_marker in marker:
+                yield sub_marker
+        yield self
+
+    def reset(self):
+        for marker in self.markers:
+            marker.reset()
+        super().reset()
 
     @classmethod
     def from_config(
         cls,
         operator: Text,
-        sub_marker_configs: Dict[Text, List[Text]],
+        sub_marker_configs: List[MarkerConfig],
         name: Optional[Text] = None,
-    ) -> CompoundMarker:
+    ) -> Marker:
+        """
 
-        sub_markers = []
-        for sub_marker, sub_marker_config in sub_marker_configs.items():
-
-            # FIXME: this assumes that the sub_marker_config contains only
-            # atomic event markers - to enable recursion we need to check by type
-            for setting in sub_marker_config:  # list of e.g. action name
-                sub_markers.append(
-                    EventMarker.from_config(marker_name=sub_marker, marker_text=setting)
-                )
+        Returns:
+           a compound marker if there are markers to combine - and just an event
+           marker if there is only a single marker
+        """
 
         operator_to_compound: Dict[Text, Type[CompoundMarker]] = {
-            "and": AndMarker,
-            "not": NotAnyMarker,
-            "or": OrMarker,
+            CompoundOptions.AND: AndMarker,
+            CompoundOptions.OR: OrMarker,
+            CompoundOptions.NOT: NotAnyMarker,
         }
+
+        sub_markers = []
+        for sub_marker_config in sub_marker_configs:
+            sub_marker = Marker.from_config(sub_marker_config)
+            sub_markers.append(sub_marker)
+
+        if len(sub_markers) == 1:
+            return sub_markers[0]
+
         compound_marker_type = operator_to_compound.get(operator, None)
         if not compound_marker_type:
             raise RuntimeError("Unknown combination of markers: ")
@@ -266,7 +319,7 @@ class AndMarker(CompoundMarker):
     def __repr__(self) -> Text:
         return "({})".format(" and ".join(str(marker) for marker in self.markers))
 
-    def _evaluate(self, event: Event) -> bool:
+    def _track(self, event: Event) -> bool:
         return all(marker.history[-1] for marker in self.markers)
 
 
@@ -274,15 +327,15 @@ class OrMarker(CompoundMarker):
     def __repr__(self) -> Text:
         return "({})".format(" or ".join(str(marker) for marker in self.markers))
 
-    def _evaluate(self, event: Event) -> bool:
-        return all(marker.history[-1] for marker in self.markers)
+    def _track(self, event: Event) -> bool:
+        return any(marker.history[-1] for marker in self.markers)
 
 
 class NotAnyMarker(CompoundMarker):
     def __repr__(self) -> Text:
         return "none of".join(str(marker) for marker in self.markers)
 
-    def _evaluate(self, event: Event) -> bool:
+    def _track(self, event: Event) -> bool:
         return not any(marker.history[-1] for marker in self.markers)
 
 
@@ -291,34 +344,50 @@ class EventMarker(Marker, ABC):
         super().__init__(name=name)
         self.text = text
 
-    def flatten(self) -> List[Marker]:
-        return [self]
+    def track(self, event: Event):
+        marker_applies = self._track(event)
+        self.history.append(marker_applies)
+
+    def __iter__(self) -> Iterator[Marker]:
+        yield self
 
     @classmethod
     def from_config(
-        cls, marker_name: Text, marker_text: Text, name: Optional[Text] = None
+        cls,
+        marker_name: Text,
+        sub_marker_configs: List[Text],
+        name: Optional[Text] = None,
     ) -> EventMarker:
         str_to_marker_type = {
-            "action_executed": ActionExecutedMarker,
-            "intent_detected": IntentDetectedMarker,
-            "slot_set": SlotSetMarker,
+            EventMarkerOptions.ACTION_EXECUTED: ActionExecutedMarker,
+            EventMarkerOptions.INTENT_DETECTED: IntentDetectedMarker,
+            EventMarkerOptions.SLOT_SET: SlotSetMarker,
         }
 
         marker_type = str_to_marker_type.get(marker_name.replace("_not_", "_"), None)
         if not marker_type:
             raise RuntimeError(f"Unknown kind of marker: {marker_name}")
 
-        marker = marker_type(marker_text)
-        if "_not_" in marker_name:
-            marker = NotAnyMarker([marker], name=name)
-        return marker
+        markers = []
+        for marker_text in sub_marker_configs:
+            marker = marker_type(marker_text)
+            if "_not_" in marker_name:
+                marker = NotAnyMarker([marker], name=name)
+            markers.append(marker)
+
+        if len(markers) > 1:
+            final_marker = AndMarker(markers=markers, name=name)
+        else:
+            final_marker = markers[0]
+
+        return final_marker
 
 
 class ActionExecutedMarker(EventMarker):
     def __repr__(self) -> Text:
         return f"(Action {self.text} executed)"
 
-    def _evaluate(self, event: Event) -> bool:
+    def _track(self, event: Event) -> bool:
         return isinstance(event, ActionExecuted) and event.action_name == self.text
 
 
@@ -326,7 +395,7 @@ class IntentDetectedMarker(EventMarker):
     def __repr__(self) -> Text:
         return f"(user expressed intent {self.text})"
 
-    def _evaluate(self, event: Event) -> bool:
+    def _track(self, event: Event) -> bool:
         return (
             isinstance(event, UserUttered)
             and event.intent.get(INTENT_NAME_KEY) == self.text
@@ -337,7 +406,7 @@ class SlotSetMarker(EventMarker):
     def __repr__(self) -> Text:
         return f"({self.text} set)"
 
-    def _evaluate(self, event: Event) -> bool:
+    def _track(self, event: Event) -> bool:
         if isinstance(event, SlotSet) and event.key == self.text:
             # it might be un-set
             return event.value is not None
