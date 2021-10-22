@@ -157,15 +157,10 @@ class Marker(ABC):
         If loaded from a directory
         """
         path = os.path.abspath(path)
-        if os.path.isfile(path):
-            config = cls._load_config_from_yaml(path)
-        elif os.path.isdir(path):
+        if os.path.isdir(path):
             config = cls._load_config_from_directory(path)
         else:
-            raise InvalidMarkersConfig(
-                "Failed to load markers configuration from '{}'. "
-                "File not found!".format(os.path.abspath(path))
-            )
+            config = cls._load_config_from_yaml(path)
         return cls.from_config(config)
 
     @classmethod
