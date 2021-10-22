@@ -719,7 +719,7 @@ def pytest_collection_modifyitems(items: List[Function]) -> None:
 
 
 def create_test_file_with_size(directory: Path, size_in_mb: float) -> Path:
-    file_path = directory / f"{uuid.uuid4().hex}"
+    file_path = directory / uuid.uuid4().hex
     with open(file_path, mode="wb") as f:
         f.seek(int(1024 * 1024 * size_in_mb))
         f.write(b"\0")
