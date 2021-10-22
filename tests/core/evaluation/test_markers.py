@@ -1,66 +1,33 @@
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.domain import Domain
+from typing import Type
+
+import pytest
+
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
-from rasa.core.evaluation.markers import Marker
+from rasa.core.evaluation.markers import (
+    ActionExecutedMarker,
+    AndMarker,
+    AtomicMarker,
+    IntentDetectedMarker,
+    Marker,
+    NotAnyMarker,
+    OrMarker,
+    SequenceMarker,
+    SlotSetMarker,
+)
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 
-def test_markers_operator_and():
-
-    domain = Domain.empty()
-    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
-    tracker.update(SlotSet("flight_class", value="first"), domain)
-    tracker.update(SlotSet("travel_departure", value="edinburgh"), domain)
-    tracker.update(SlotSet("travel_destination", value="berlin"), domain)
-    tracker.update(ActionExecuted("action_disclaimer"), domain)
-    tracker.update(ActionExecuted("action_calculate_offsets"), domain)  # true
-    tracker.update(SlotSet("flight_class", value="business"), domain)  # true
-    tracker.update(SlotSet("travel_departure", value="berlin"), domain)  # true
-    tracker.update(SlotSet("travel_destination", value="new york"), domain)  # true
-    tracker.update(ActionExecuted("action_calculate_offsets"), domain)  # true
-    tracker.update(UserUttered(intent={"name": "insult"}), domain)
-
-    config = [
-        {
-            "marker_1": {
-                "and": [
-                    {"slot_set": ["flight_class", "travel_departure"]},
-                    {"action_executed": ["action_calculate_offsets"]},
-                    {"intent_not_detected": ["insult", "vulgar"]},
-                ]
-            }
-        }
-    ]
-
-    marker = Marker.from_config(config)
-
-    evaluation = marker.evaluate_events(tracker.events)
-
-    # FIXME
-
-    # assert len(marker.history) == 5
-    # assert len(marker.preceding_user_turns) == 5
+EVENT_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
+COMPOUND_MARKERS = [AndMarker, OrMarker, NotAnyMarker]
 
 
-# FIXME: fix texts, separate config resolution and actual marker functions
-
-
-def test_nested():
-
-    domain = Domain.empty()
-    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
-    tracker.update(UserUttered(intent={"name": "1"}), domain)
-    tracker.update(UserUttered(intent={"name": "2"}), domain)
-    tracker.update(UserUttered(intent={"name": "3"}), domain)
-    tracker.update(SlotSet("flight_class", value="first"), domain)
-    tracker.update(UserUttered(intent={"name": "4"}), domain)
-    tracker.update(UserUttered(intent={"name": "5"}), domain)
-    tracker.update(UserUttered(intent={"name": "6"}), domain)
+def test_marker_from_config():
 
     config = [
         {
             "marker_1": {
                 "and": [
-                    {"slot_set": ["flight_class"]},
+                    {"slot_set": ["s1"]},
                     {"or": [{"intent_detected": ["4"]}, {"intent_detected": ["6"]},]},
                 ]
             }
@@ -69,283 +36,137 @@ def test_nested():
 
     marker = Marker.from_config(config)
 
-    evaluation = marker.evaluate_events(tracker.events)
-
-    assert evaluation["marker_1"]["preceeding_user_turns"] == (3, 5)
-
-
-'''
-def test_marker_initializer():
-    sample_yaml = """
-    markers:
-      - marker: no_restart
-        operator: AND
-        condition:
-          - slot_set:
-              - flight_class
-          - slot_set:
-              - travel_departure
-              - travel_destination
-    """
-    config = MarkerConfig.from_yaml(sample_yaml)
-    marker_dict = config.get("markers")[0]
-    marker = Marker(
-        name=marker_dict.get("marker"),
-        operator=marker_dict.get("operator"),
-        condition=marker_dict.get("condition"),
-    )
-    x = ["flight_class", "travel_departure", "travel_destination"]
-    assert set(i for i in marker.slot_set) == set(i for i in x)
+    assert marker.name == "marker_1"
+    assert isinstance(marker, AndMarker)
+    assert isinstance(marker.markers[0], SlotSetMarker)
+    assert isinstance(marker.markers[1], OrMarker)
+    for sub_marker in marker.markers[1].markers:
+        assert isinstance(sub_marker, AtomicMarker)
 
 
-def test_markers_operator_or_slots():
-    sample_yaml = """
-        markers:
-          - marker: marker_1
-            operator: OR
-            condition:
-              - slot_set:
-                  - flight_class
-              - slot_not_set:
-                  - travel_departure
-                  - travel_destination
-        """
-    config = MarkerConfig.from_yaml(sample_yaml)
-    marker_dict = config.get("markers")[0]
-    marker = Marker(
-        name=marker_dict.get("marker"),
-        operator=marker_dict.get("operator"),
-        condition=marker_dict.get("condition"),
-    )
+@pytest.mark.parametrize("atomic_marker_type", EVENT_MARKERS)
+def test_atomic_marker_track(atomic_marker_type: Type[AtomicMarker]):
+    """Each marker applies an exact number of times (slots are immediately un-set)."""
 
-    domain = Domain.empty()
-    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
-    tracker.update(SlotSet("travel_departure", value=None), domain)
-    tracker.update(SlotSet("travel_departure", value="edinburgh"), domain)
-    tracker.update(SlotSet("travel_departure", value="london"), domain)
+    marker = atomic_marker_type(text="same-text", name="marker_name")
 
-    # check marker condition was satisfied
-    assert marker.check_or(tracker.events)
-
-    # check that it was only satisfied once at the end of the dialogue
-    assert len(marker.timestamps) == 1
-    assert marker.timestamps == [tracker.events[-1].timestamp]
-    assert len(marker.preceding_user_turns) == 1
-    assert marker.preceding_user_turns == [0]
-
-
-def test_markers_operator_or_actions():
-    sample_yaml = """
-        markers:
-          - marker: marker_1
-            operator: OR
-            condition:
-              - action_executed:
-                  - action_analyse_travelplan
-              - action_not_executed:
-                  - action_calculate_offsets
-                  - action_disclaimer
-        """
-    config = MarkerConfig.from_yaml(sample_yaml)
-    marker_dict = config.get("markers")[0]
-    marker = Marker(
-        name=marker_dict.get("marker"),
-        operator=marker_dict.get("operator"),
-        condition=marker_dict.get("condition"),
-    )
-
-    domain = Domain.empty()
-    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
-    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)
-    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)
-    tracker.update(ActionExecuted("thank"), domain)
-
-    # check marker condition was satisfied
-    assert marker.check_or(tracker.events)
-
-    # check that it eas satisfied at in the 1st and 2nd events,
-    # then twice at the end for the two non executed actions
-    timestamps = [e.timestamp for e in tracker.events]
-    timestamps.append(tracker.events[-1].timestamp)
-    assert len(marker.timestamps) == 4
-    assert marker.timestamps == timestamps
-    assert len(marker.preceding_user_turns) == 4
-    assert marker.preceding_user_turns == [0, 0, 0, 0]
-
-
-def test_markers_operator_or_intents():
-    sample_yaml = """
-        markers:
-          - marker: marker_1
-            operator: OR
-            condition:
-              - intent_detected:
-                  - express_surprise
-              - intent_not_detected:
-                  - insult
-                  - vulgar
-        """
-    config = MarkerConfig.from_yaml(sample_yaml)
-    marker_dict = config.get("markers")[0]
-    marker = Marker(
-        name=marker_dict.get("marker"),
-        operator=marker_dict.get("operator"),
-        condition=marker_dict.get("condition"),
-    )
-
-    domain = Domain.empty()
-    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
-    tracker.update(UserUttered(intent={"name": "insult"}), domain)
-    tracker.update(UserUttered(intent={"name": "express_surprise"}), domain)
-    tracker.update(UserUttered(intent={"name": "insult"}), domain)
-
-    # check marker condition was satisfied
-    assert marker.check_or(tracker.events)
-
-    # check that it was satisfied at the second event
-    assert len(marker.timestamps) == 2
-    assert marker.timestamps == [
-        tracker.events[1].timestamp,
-        tracker.events[2].timestamp,
+    events = [
+        UserUttered(intent={"name": "1"}),
+        UserUttered(intent={"name": "same-text"}),
+        SlotSet("same-text", value="any"),
+        SlotSet("same-text", value=None),
+        ActionExecuted(action_name="same-text"),
     ]
-    assert len(marker.preceding_user_turns) == 2
-    assert marker.preceding_user_turns == [2, 3]
+
+    num_applies = 3
+    events = events * num_applies
+
+    for event in events:
+        marker.track(event)
+
+    assert len(marker.history) == len(events)
+    assert sum(marker.history) == num_applies
 
 
-def test_markers_operator_or_combo():
-    sample_yaml = """
-        markers:
-          - marker: marker_1
-            operator: OR
-            condition:
-              - slot_set:
-                  - flight_class
-              - action_executed:
-                  - action_analyse_travelplan
-              - intent_detected:
-                  - express_surprise
-              - slot_not_set:
-                  - travel_departure
-                  - travel_destination
-              - action_not_executed:
-                  - action_calculate_offsets
-                  - action_disclaimer
-              - intent_not_detected:
-                  - insult
-                  - vulgar
-        """
-    config = MarkerConfig.from_yaml(sample_yaml)
-    marker_dict = config.get("markers")[0]
-    marker = Marker(
-        name=marker_dict.get("marker"),
-        operator=marker_dict.get("operator"),
-        condition=marker_dict.get("condition"),
-    )
+@pytest.mark.parametrize("atomic_marker_type", EVENT_MARKERS)
+def test_atomic_marker_evaluate_events(atomic_marker_type: Type[AtomicMarker]):
+    """Each marker applies an exact number of times (slots are immediately un-set)."""
 
-    domain = Domain.empty()
-    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
-    tracker.update(SlotSet("travel_departure", value=None), domain)
-    tracker.update(SlotSet("travel_departure", value="edinburgh"), domain)
-    tracker.update(SlotSet("travel_departure", value="london"), domain)
-    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)  # true
-    tracker.update(ActionExecuted("action_analyse_travelplan"), domain)  # true
-    tracker.update(ActionExecuted("action_disclaimer"), domain)
-    tracker.update(UserUttered(intent={"name": "insult"}), domain)
-    tracker.update(UserUttered(intent={"name": "express_surprise"}), domain)  # true
-    tracker.update(UserUttered(intent={"name": "insult"}), domain)
-
-    # check marker condition was satisfied
-    assert marker.check_or(tracker.events)
-
-    # check that it was satisfied at the second event
-    assert len(marker.timestamps) == 6
-    assert marker.timestamps == [
-        tracker.events[3].timestamp,
-        tracker.events[4].timestamp,
-        tracker.events[7].timestamp,
-        tracker.events[-1].timestamp,
-        tracker.events[-1].timestamp,
-        tracker.events[-1].timestamp,
+    events = [
+        UserUttered(intent={INTENT_NAME_KEY: "1"}),
+        UserUttered(intent={INTENT_NAME_KEY: "same-text"}),
+        SlotSet("same-text", value="any"),
+        SlotSet("same-text", value=None),
+        ActionExecuted(action_name="same-text"),
     ]
-    assert len(marker.preceding_user_turns) == 6
-    assert marker.preceding_user_turns == [0, 0, 2, 3, 3, 3]
+
+    num_applies = 3
+    events = events * num_applies
+
+    marker = atomic_marker_type(text="same-text", name="marker_name")
+    evaluation = marker.evaluate_events(events)
+
+    assert "marker_name" in evaluation
+    if atomic_marker_type == IntentDetectedMarker:
+        expected = (1, 3, 5)
+    else:
+        expected = (2, 4, 6)
+    assert evaluation["marker_name"]["preceeding_user_turns"] == expected
 
 
-def test_markers_operator_or_combo_none_found():
-    sample_yaml = """
-        markers:
-          - marker: marker_1
-            operator: OR
-            condition:
-              - slot_set:
-                  - flight_class
-              - action_executed:
-                  - action_analyse_travelplan
-              - intent_detected:
-                  - express_surprise
-        """
-    config = MarkerConfig.from_yaml(sample_yaml)
-    marker_dict = config.get("markers")[0]
-    marker = Marker(
-        name=marker_dict.get("marker"),
-        operator=marker_dict.get("operator"),
-        condition=marker_dict.get("condition"),
+def test_compound_marker_or_track():
+
+    sub_markers = [IntentDetectedMarker("1"), IntentDetectedMarker("2")]
+    marker = OrMarker(sub_markers, name="marker_name")
+
+    marker.track(UserUttered(intent={INTENT_NAME_KEY: "1"}))
+    marker.track(UserUttered(intent={INTENT_NAME_KEY: "unknown"}))
+    marker.track(UserUttered(intent={INTENT_NAME_KEY: "2"}))
+    marker.track(UserUttered(intent={INTENT_NAME_KEY: "unknown"}))
+
+    assert marker.history == [True, False, True, False]
+
+
+def test_compound_marker_and_track():
+
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (SlotSet("2", value="bla"), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), True),
+        (SlotSet("2", value=None), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (SlotSet("2", value="bla"), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+    ]
+    events, expected = zip(*events_expected)
+
+    sub_markers = [IntentDetectedMarker("1"), SlotSetMarker("2")]
+    marker = AndMarker(sub_markers, name="marker_name")
+    for event in events:
+        marker.track(event)
+
+    assert marker.history == list(expected)
+
+
+def test_compound_marker_seq_track():
+
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "3"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
+    ]
+    events, expected = zip(*events_expected)
+
+    sub_markers = [IntentDetectedMarker("1"), IntentDetectedMarker("2")]
+    marker = SequenceMarker(sub_markers, name="marker_name")
+    for event in events:
+        marker.track(event)
+
+    assert marker.history == list(expected)
+
+
+def test_compound_marker_nested_track():
+
+    events = [
+        UserUttered(intent={"name": "1"}),
+        UserUttered(intent={"name": "2"}),
+        UserUttered(intent={"name": "3"}),
+        SlotSet("s1", value="any"),
+        UserUttered(intent={"name": "4"}),
+        UserUttered(intent={"name": "5"}),
+        UserUttered(intent={"name": "6"}),
+    ]
+
+    marker = AndMarker(
+        markers=[
+            SlotSetMarker("s1"),
+            OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6"),]),
+        ],
+        name="marker_name",
     )
 
-    domain = Domain.empty()
-    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
-    tracker.update(SlotSet("travel_departure", value=None), domain)
-    tracker.update(ActionExecuted("action_disclaimer"), domain)
-    tracker.update(UserUttered(intent={"name": "insult"}), domain)
+    evaluation = marker.evaluate_events(events)
 
-    # check marker condition was satisfied
-    assert not marker.check_or(tracker.events)
-
-    # check that it was satisfied at the second event
-    assert len(marker.timestamps) == 0
-    assert marker.timestamps == []
-    assert len(marker.preceding_user_turns) == 0
-    assert marker.preceding_user_turns == []
-
-
-def test_markers_operator_and():
-    sample_yaml = """
-        markers:
-          - marker: marker_1
-            operator: AND
-            condition:
-              - slot_set:
-                  - flight_class
-                  - travel_departure
-              - action_executed:
-                  - action_calculate_offsets
-              - intent_not_detected:
-                  - insult
-                  - vulgar
-        """
-    config = MarkerConfig.from_yaml(sample_yaml)
-    marker_dict = config.get("markers")[0]
-    marker = Marker(
-        name=marker_dict.get("marker"),
-        operator=marker_dict.get("operator"),
-        condition=marker_dict.get("condition"),
-    )
-
-    domain = Domain.empty()
-    tracker = DialogueStateTracker(sender_id="xyz", slots=None)
-    tracker.update(SlotSet("flight_class", value="first"), domain)
-    tracker.update(SlotSet("travel_departure", value="edinburgh"), domain)
-    tracker.update(SlotSet("travel_destination", value="berlin"), domain)
-    tracker.update(ActionExecuted("action_disclaimer"), domain)
-    tracker.update(ActionExecuted("action_calculate_offsets"), domain)  # true
-    tracker.update(SlotSet("flight_class", value="business"), domain)  # true
-    tracker.update(SlotSet("travel_departure", value="berlin"), domain)  # true
-    tracker.update(SlotSet("travel_destination", value="new york"), domain)  # true
-    tracker.update(ActionExecuted("action_calculate_offsets"), domain)  # true
-    tracker.update(UserUttered(intent={"name": "insult"}), domain)
-
-    assert marker.check_and(tracker.events)
-
-    assert len(marker.timestamps) == 5
-    assert len(marker.preceding_user_turns) == 5
-'''
+    assert evaluation["marker_name"]["preceeding_user_turns"] == (3, 5)
