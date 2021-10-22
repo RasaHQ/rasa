@@ -195,7 +195,7 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
             # Number of top actions for which confidences should be predicted.
             # Set to 0 if confidences for all intents should be reported.
             RANKING_LENGTH: 10,
-            # Determines wether the confidences of the chosen top actions should be
+            # Determines whether the confidences of the chosen top actions should be
             # renormalized so that they sum up to 1. By default, we do not renormalize
             # and return the confidences for the top actions as is.
             # Note that renormalization only makes sense if confidences are generated
