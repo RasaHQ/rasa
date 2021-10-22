@@ -1,70 +1,65 @@
 import argparse
-from rasa.cli.arguments.default_arguments import add_endpoint_param
+from rasa.cli.arguments.default_arguments import add_endpoint_param, add_domain_param
 
 
 def set_markers_arguments(parser: argparse.ArgumentParser):
-    """Specifies arguments for `rasa markers extract`"""
-    parser.add_argument(
-        "--by",
-        choices=["first-n", "sample", "all"],
-        required=True,
-        dest="strategy",
-        help="The strategy used to select trackers for marker extraction",
-    )
-
-    parser.add_subparsers()
-
+    """Specifies arguments for `rasa evaluate markers`"""
     parser.add_argument(
         "output_filename",
-        type=argparse.FileType("w"),
+        type=str,
         help="The filename to write the extracted markers to",
+    )
+
+    parser.add_argument(
+        "--config",
+        default="markers.yml",
+        type=str,
+        help="The config file(s) containing marker definitions. This can be a single "
+        "YAML file, or a directory that contains several files with domain "
+        "specifications in it. The content of these files will be read and merged "
+        "together.",
     )
 
     stats = parser.add_mutually_exclusive_group()
 
     stats.add_argument(
         "--no-stats",
-        default=True,
-        action="store_false",
+        default=False,
+        action="store_true",
         dest="stats",
-        help="Do not compute summary statistics",
+        help="Do not compute summary statistics.",
     )
 
     stats.add_argument(
         "--stats-file",
-        type=argparse.FileType("w"),
-        help="Che filename to write out computed summary statistics",
+        default="stats.json",
+        type=str,
+        help="The filename to write out computed summary statistics.",
     )
 
-    first_n_arguments = parser.add_argument_group("Arguments for strategy 'by_first_n'")
-    set_markers_first_n_arguments(first_n_arguments)
+    add_endpoint_param(
+        parser,
+        help_text="Configuration file for the model server and the connectors as a "
+        "yml file.",
+    )
 
-    sample_arguments = parser.add_argument_group("Arguments for strategy 'by_sample'")
-    set_markers_sample_arguments(sample_arguments)
-
-    add_endpoint_param(parser)
+    add_domain_param(parser)
 
 
 def set_markers_first_n_arguments(parser: argparse.ArgumentParser):
-    """Specifies arguments for `rasa markers by_first_n`"""
+    """Specifies arguments for `rasa evaluate markers by_first_n`"""
     parser.add_argument(
-        "--num-trackers",
-        type=int,
-        dest="count",
-        help="The number of trackers to extract markers from",
+        "count", type=int, help="The number of trackers to extract markers from",
     )
 
 
 def set_markers_sample_arguments(parser: argparse.ArgumentParser):
-    """Specifies arguments for `rasa markers by_sample"""
+    """Specifies arguments for `rasa evaluate markers by_sample"""
     parser.add_argument(
         "--seed", type=int, help="Seed to use if selecting trackers by 'sample'"
     )
     parser.add_argument(
-        "--num-trackers",
-        type=int,
-        dest="count",
-        help="The number of trackers to extract markers from",
+        "count", type=int, help="The number of trackers to extract markers from",
     )
 
 
