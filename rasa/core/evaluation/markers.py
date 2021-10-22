@@ -13,7 +13,7 @@ from typing import (
     Union,
 )
 
-    from typing_extensions import TypedDict
+from typing_extensions import TypedDict
 from pathlib import Path
 
 import rasa.shared.core.constants
