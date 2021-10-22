@@ -2050,3 +2050,70 @@ async def test_action_extract_slots_execute_validation_action(
             domain,
         )
         assert slot_events == expected_events
+
+
+async def test_action_extract_slots_custom_action_and_predefined_slot_validation():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        intents:
+        - inform
+
+        entities:
+        - city
+
+        slots:
+          location:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: city
+          custom_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+              action: action_test
+
+        actions:
+        - validate_global_slot_mappings
+        - action_test
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered(
+        intent={"name": "inform"}, entities=[{"entity": "city", "value": "london"}],
+    )
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [{"event": "slot", "name": "custom_slot", "value": "test"}]
+            },
+        )
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [{"event": "slot", "name": "location", "value": "London"}]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        slot_events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert slot_events == [
+            SlotSet("location", "London"),
+            SlotSet("custom_slot", "test"),
+        ]
