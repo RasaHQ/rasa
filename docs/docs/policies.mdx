@@ -103,7 +103,7 @@ TED Policy architecture comprises the following steps:
    - previous system actions or bot utterances processed through a bot sequence transformer encoder,
    - slots and active forms
 
-   for each time step into an input vector to the embedding layer that precedes the 
+   for each time step into an input vector to the embedding layer that precedes the
    dialogue transformer.
 
 2. Feed the embedding of the input vector into the dialogue transformer encoder.
@@ -204,6 +204,12 @@ If you want to fine-tune your model, start by modifying the following parameters
   This helps in keeping similarities between input and negative labels to smaller values.
   This should help in better generalization of the model to real world test sets.
 
+* `model_confidence`:
+  This parameter allows the user to configure how confidences are computed during inference. It can take two values:
+  * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
+  * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
+
+  Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to [handle actions predicted with low confidence](./fallback-handoff.mdx#handling-low-action-confidence).
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
@@ -281,9 +287,12 @@ However, additional parameters exist that can be adapted.
 | loss_type                             | "cross_entropy"        | The type of the loss function, either 'cross_entropy'        |
 |                                       |                        | or 'margin'.                                                 |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
-| ranking_length                        | 10                     | Number of top actions to normalize scores for. Applicable    |
-|                                       |                        | only with loss type 'cross_entropy' and 'softmax'            |
-|                                       |                        | confidences. Set to 0 to disable normalization.              |
+| ranking_length                        | 0                      | Number of top actions to include in prediction. Confidences  |
+|                                       |                        | of all other actions will be set to 0. Set to 0 to let the   |
+|                                       |                        | prediction include confidences for all actions.              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| renormalize_confidences               | False                  | Normalize the top predictions. Applicable only with loss     |
+|                                       |                        | type 'cross_entropy' and 'softmax' confidences.              |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | maximum_positive_similarity           | 0.8                    | Indicates how similar the algorithm should try to make       |
 |                                       |                        | embedding vectors for correct labels.                        |
@@ -394,7 +403,7 @@ for details.
 
 ### UnexpecTED Intent Policy
 
-:::caution
+:::caution New in 2.8
 This feature is experimental.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.

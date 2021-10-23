@@ -5,13 +5,13 @@ from typing import Text, Optional, Dict, Any, List, Callable, Coroutine
 import pytest
 import rasa.core.test
 import rasa.shared.utils.io
-from rasa.core.policies.ensemble import SimplePolicyEnsemble
+from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.events import UserUttered
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
-from rasa.core.agent import Agent
+from rasa.core.agent import Agent, load_agent
 from rasa.utils.tensorflow.constants import (
     QUERY_INTENT_KEY,
     NAME,
@@ -23,7 +23,6 @@ from rasa.core.constants import STORIES_WITH_WARNINGS_FILE
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.domain import Domain
-from rasa.shared.nlu.interpreter import RegexInterpreter
 
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import State
@@ -35,17 +34,13 @@ def _probabilities_with_action_unlikely_intent_for(
     intent_names: List[Text],
     metadata_for_intent: Optional[Dict[Text, Dict[Text, Any]]] = None,
 ) -> Callable[
-    [SimplePolicyEnsemble, DialogueStateTracker, Domain, RegexInterpreter, Any],
+    [DefaultPolicyPredictionEnsemble, DialogueStateTracker, Domain, Any],
     PolicyPrediction,
 ]:
-    _original = SimplePolicyEnsemble.probabilities_using_best_policy
+    _original = DefaultPolicyPredictionEnsemble.combine_predictions_from_kwargs
 
-    def probabilities_using_best_policy(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: RegexInterpreter,
-        **kwargs: Any,
+    def combine_predictions_from_kwargs(
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> PolicyPrediction:
         latest_event = tracker.events[-1]
         if (
@@ -71,9 +66,9 @@ def _probabilities_with_action_unlikely_intent_for(
                 else None,
             )
 
-        return _original(self, tracker, domain, interpreter, **kwargs)
+        return _original(self, tracker, domain, **kwargs)
 
-    return probabilities_using_best_policy
+    return combine_predictions_from_kwargs
 
 
 def _custom_prediction_states_for_rules(
@@ -117,9 +112,12 @@ async def test_testing_warns_if_action_unknown(
     capsys: CaptureFixture,
     e2e_bot_agent: Agent,
     e2e_bot_test_stories_with_unknown_bot_utterances: Path,
+    tmp_path: Path,
 ):
     await rasa.core.test.test(
-        e2e_bot_test_stories_with_unknown_bot_utterances, e2e_bot_agent
+        e2e_bot_test_stories_with_unknown_bot_utterances,
+        e2e_bot_agent,
+        out_directory=str(tmp_path),
     )
     output = capsys.readouterr().out
     assert "Test story" in output
@@ -130,20 +128,17 @@ async def test_testing_warns_if_action_unknown(
 async def test_testing_with_utilizing_retrieval_intents(
     response_selector_agent: Agent,
     response_selector_test_stories: Path,
-    response_selector_results: Path,
+    tmp_path: Path,
 ):
-    if not response_selector_results.exists():
-        response_selector_results.mkdir()
-
     result = await rasa.core.test.test(
         stories=response_selector_test_stories,
         agent=response_selector_agent,
         e2e=True,
-        out_directory=response_selector_results,
+        out_directory=str(tmp_path),
         disable_plotting=True,
         warnings=False,
     )
-    failed_stories_path = response_selector_results / "failed_test_stories.yml"
+    failed_stories_path = tmp_path / "failed_test_stories.yml"
     failed_stories = read_yaml(read_file(failed_stories_path, "utf-8"))
     # check that the intent is shown correctly in the failed test stories file
     target_intents = {
@@ -171,10 +166,12 @@ async def test_testing_with_utilizing_retrieval_intents(
 
 
 async def test_testing_does_not_warn_if_intent_in_domain(
-    default_agent: Agent, stories_path: Text,
+    default_agent: Agent, stories_path: Text, tmp_path: Path
 ):
     with pytest.warns(UserWarning) as record:
-        await rasa.core.test.test(Path(stories_path), default_agent)
+        await rasa.core.test.test(
+            Path(stories_path), default_agent, out_directory=str(tmp_path)
+        )
 
     assert not any("Found intent" in r.message.args[0] for r in record)
     assert all(
@@ -183,9 +180,11 @@ async def test_testing_does_not_warn_if_intent_in_domain(
     )
 
 
-async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
+async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent, tmp_path: Path):
     result = await rasa.core.test.test(
-        "data/test_yaml_stories/test_stories_entity_annotations.yml", core_agent
+        "data/test_yaml_stories/test_stories_entity_annotations.yml",
+        core_agent,
+        out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
 
@@ -234,7 +233,7 @@ async def _train_rule_based_agent(
             _custom_prediction_states_for_rules(ignore_action_unlikely_intent),
         )
 
-        return Agent.load_local_model(model_path)
+        return await load_agent(model_path)
 
     return inner
 
@@ -245,8 +244,8 @@ async def test_action_unlikely_intent_warning(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
@@ -294,8 +293,8 @@ async def test_action_unlikely_intent_correctly_predicted(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
@@ -339,8 +338,8 @@ async def test_wrong_action_after_action_unlikely_intent(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["greet", "mood_great"]),
     )
 
@@ -475,8 +474,8 @@ async def test_action_unlikely_intent_warning_and_story_error(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["greet"]),
     )
 
@@ -542,8 +541,8 @@ async def test_fail_on_prediction_errors(
     _train_rule_based_agent: Callable[[Path, bool], Coroutine],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
@@ -650,8 +649,8 @@ async def test_multiple_warnings_sorted_on_severity(
     story_order: List[Text],
 ):
     monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
+        DefaultPolicyPredictionEnsemble,
+        "combine_predictions_from_kwargs",
         _probabilities_with_action_unlikely_intent_for(
             list(metadata_for_intents.keys()), metadata_for_intents
         ),

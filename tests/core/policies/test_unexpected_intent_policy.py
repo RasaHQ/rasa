@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Optional, List, Dict, Text, Type
 import tensorflow as tf
@@ -8,19 +9,14 @@ from _pytest.logging import LogCaptureFixture
 import logging
 
 from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
-from rasa.core.policies.unexpected_intent_policy import (
-    UnexpecTEDIntentPolicyGraphComponent as UnexpecTEDIntentPolicy,
-)
+from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -81,17 +77,24 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             trained_policy.config, model_storage, resource, execution_context
         )
 
-    @pytest.mark.skip
-    def test_normalization(
+    def test_ranking_length(self, trained_policy: UnexpecTEDIntentPolicy):
+        assert trained_policy.config[RANKING_LENGTH] == LABEL_RANKING_LENGTH
+
+    def test_ranking_length_and_renormalization(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         tracker: DialogueStateTracker,
         default_domain: Domain,
-        monkeypatch: MonkeyPatch,
     ):
-        # No normalization is done for UnexpecTEDIntentPolicy and
-        # hence this test is overridden to do nothing.
-        assert True
+        precomputations = None
+        prediction_metadata = trained_policy.predict_action_probabilities(
+            tracker, default_domain, precomputations,
+        ).action_metadata
+        assert (
+            prediction_metadata is None
+            or len(prediction_metadata[RANKING_KEY])
+            == trained_policy.config[RANKING_LENGTH]
+        )
 
     def test_label_data_assembly(
         self, trained_policy: UnexpecTEDIntentPolicy, default_domain: Domain
@@ -518,9 +521,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         resource: Resource,
         execution_context: ExecutionContext,
         default_domain: Domain,
-        predicted_similarity,
-        threshold_value,
-        is_unlikely,
+        predicted_similarity: float,
+        threshold_value: float,
+        is_unlikely: bool,
         monkeypatch: MonkeyPatch,
         tmp_path: Path,
     ):
@@ -569,6 +572,8 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             # of the metadata is tested separately and
             # not as part of this test.
             assert prediction.action_metadata is not None
+            # Assert metadata is serializable
+            assert json.dumps(prediction.action_metadata)
 
     @pytest.mark.parametrize(
         "tracker_events, should_skip",

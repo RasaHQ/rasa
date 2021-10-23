@@ -1,24 +1,31 @@
 import typing
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.constants import ENTITIES, TEXT
-from rasa.nlu.utils.spacy_utils import SpacyModel
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.extractors._spacy_entity_extractor import SpacyEntityExtractor
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc
 
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-SpacyEntityExtractor = SpacyEntityExtractor
 
-
-class SpacyEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    is_trainable=False,
+    model_from="SpacyNLP",
+)
+class SpacyEntityExtractor(GraphComponent, EntityExtractorMixin):
     """Entity extractor which uses SpaCy."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [SpacyNLP]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -31,7 +38,7 @@ class SpacyEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         }
 
     def __init__(self, config: Dict[Text, Any]) -> None:
-        """Initialize SpacyEntityExtractorGraphComponent."""
+        """Initialize SpacyEntityExtractor."""
         self._config = config
 
     @classmethod

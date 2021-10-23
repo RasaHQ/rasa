@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
 from unittest.mock import Mock, ANY
 
+from _pytest.tmpdir import TempPathFactory
 import pytest
 import requests
 from _pytest import pathlib
@@ -26,6 +27,7 @@ from sanic.testing import SanicASGITestClient
 import rasa
 import rasa.constants
 import rasa.core.jobs
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 import rasa.nlu
 import rasa.server
 import rasa.shared.constants
@@ -42,7 +44,6 @@ from rasa.core.channels import (
 )
 from rasa.core.channels.slack import SlackBot
 from rasa.core.tracker_store import InMemoryTrackerStore
-from rasa.model import unpack_model
 import rasa.nlu.test
 from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.core import events
@@ -65,6 +66,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
+from tests.conftest import AsyncMock
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -172,8 +174,7 @@ async def test_status(rasa_app: SanicASGITestClient, trained_rasa_model: Text):
     model_file = response.json()["model_file"]
     assert response.status == HTTPStatus.OK
     assert "fingerprint" in response.json()
-    assert os.path.isfile(model_file)
-    assert model_file == trained_rasa_model
+    assert model_file == Path(trained_rasa_model).name
 
 
 async def test_status_nlu_only(
@@ -184,7 +185,7 @@ async def test_status_nlu_only(
     assert response.status == HTTPStatus.OK
     assert "fingerprint" in response.json()
     assert "model_file" in response.json()
-    assert model_file == trained_nlu_model
+    assert model_file == Path(trained_nlu_model).name
 
 
 async def test_status_secured(rasa_secured_app: SanicASGITestClient):
@@ -216,7 +217,7 @@ def background_server(
     # Fake training function which blocks until we tell it to stop blocking
     # If we can send a status request while this is blocking, we can be sure that the
     # actual training is also not blocking
-    async def mocked_training_function(*_, **__) -> TrainingResult:
+    def mocked_training_function(*_, **__) -> TrainingResult:
         # Tell the others that we are now blocking
         shared_statuses["started_training"] = True
         # Block until somebody tells us to not block anymore
@@ -229,7 +230,7 @@ def background_server(
         import sys
 
         monkeypatch.setattr(
-            sys.modules["rasa.model_training"], "train_async", mocked_training_function,
+            sys.modules["rasa.model_training"], "train", mocked_training_function,
         )
 
         from rasa import __main__
@@ -433,10 +434,8 @@ async def test_parse_without_nlu_model(rasa_app_core: SanicASGITestClient):
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
-async def test_parse_on_invalid_emulation_mode(
-    rasa_non_trained_app: SanicASGITestClient,
-):
-    _, response = await rasa_non_trained_app.post(
+async def test_parse_on_invalid_emulation_mode(rasa_app: SanicASGITestClient,):
+    _, response = await rasa_app.post(
         "/model/parse?emulation_mode=ANYTHING", json={"text": "hello"}
     )
     assert response.status == HTTPStatus.BAD_REQUEST
@@ -447,7 +446,7 @@ async def test_train_nlu_success(
     stack_config_path: Text,
     nlu_data_path: Text,
     domain_path: Text,
-    tmp_path: Path,
+    tmp_path_factory: TempPathFactory,
 ):
     domain_data = rasa.shared.utils.io.read_yaml_file(domain_path)
     config_data = rasa.shared.utils.io.read_yaml_file(stack_config_path)
@@ -469,13 +468,15 @@ async def test_train_nlu_success(
     assert response.status == HTTPStatus.OK
 
     # save model to temporary file
-    model_path = str(tmp_path / "model.tar.gz")
+    model_path = str(Path(tmp_path_factory.mktemp("model_dir")) / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response.body)
 
-    # unpack model and ensure fingerprint is present
-    model_path = unpack_model(model_path)
-    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
+    storage_path = tmp_path_factory.mktemp("storage_path")
+    model_storage, model_metadata = LocalModelStorage.from_model_archive(
+        storage_path, model_path
+    )
+    assert model_metadata.model_id
 
 
 async def test_train_core_success_with(
@@ -483,7 +484,7 @@ async def test_train_core_success_with(
     stack_config_path: Text,
     stories_path: Text,
     domain_path: Text,
-    tmp_path: Path,
+    tmp_path_factory: TempPathFactory,
 ):
     payload = f"""
 {Path(domain_path).read_text()}
@@ -499,19 +500,25 @@ async def test_train_core_success_with(
     assert response.status == HTTPStatus.OK
 
     # save model to temporary file
-    model_path = str(tmp_path / "model.tar.gz")
+    model_path = str(Path(tmp_path_factory.mktemp("model_dir")) / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response.body)
 
-    # unpack model and ensure fingerprint is present
-    model_path = unpack_model(model_path)
-    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
+    storage_path = tmp_path_factory.mktemp("storage_path")
+    model_storage, model_metadata = LocalModelStorage.from_model_archive(
+        storage_path, model_path
+    )
+    assert model_metadata.model_id
 
 
 async def test_train_with_retrieval_events_success(
-    rasa_app: SanicASGITestClient, stack_config_path: Text, tmp_path: Path
+    rasa_app: SanicASGITestClient,
+    stack_config_path: Text,
+    tmp_path_factory: TempPathFactory,
 ):
     payload = {}
+
+    tmp_path = tmp_path_factory.mktemp("tmp")
 
     for file in [
         "data/test_domains/default_retrieval_intents.yml",
@@ -540,21 +547,29 @@ async def test_train_with_retrieval_events_success(
         headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
     )
     assert response.status == HTTPStatus.OK
-    assert_trained_model(response.body, tmp_path)
+
+    assert_trained_model(response.body, tmp_path_factory)
 
 
-def assert_trained_model(response_body: bytes, tmp_path: Path) -> None:
+def assert_trained_model(
+    response_body: bytes, tmp_path_factory: TempPathFactory,
+) -> None:
     # save model to temporary file
-    model_path = str(tmp_path / "model.tar.gz")
+
+    model_path = str(Path(tmp_path_factory.mktemp("model_dir")) / "model.tar.gz")
     with open(model_path, "wb") as f:
         f.write(response_body)
 
-    # unpack model and ensure fingerprint is present
-    model_path = unpack_model(model_path)
-    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
+    storage_path = tmp_path_factory.mktemp("storage_path")
+    model_storage, model_metadata = LocalModelStorage.from_model_archive(
+        storage_path, model_path
+    )
+    assert model_metadata.model_id
 
 
-async def test_train_with_yaml(rasa_app: SanicASGITestClient, tmp_path: Path):
+async def test_train_with_yaml(
+    rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory,
+):
     training_data = """
 version: "2.0"
 
@@ -598,7 +613,7 @@ pipeline:
     )
 
     assert response.status == HTTPStatus.OK
-    assert_trained_model(response.body, tmp_path)
+    assert_trained_model(response.body, tmp_path_factory)
 
 
 @pytest.mark.parametrize(
@@ -613,10 +628,8 @@ async def test_train_with_yaml_with_params(
     fake_model = Path(tmp_path) / "fake_model.tar.gz"
     fake_model.touch()
     fake_model_path = str(fake_model)
-    future = asyncio.Future()
-    future.set_result(TrainingResult(model=fake_model_path))
-    mock_train = Mock(return_value=future)
-    monkeypatch.setattr(rasa.model_training, "train_async", mock_train)
+    mock_train = Mock(return_value=TrainingResult(model=fake_model_path))
+    monkeypatch.setattr(rasa.model_training, "train", mock_train)
 
     training_data = """
 stories: []
@@ -699,7 +712,7 @@ def test_training_payload_from_yaml_save_to_default_model_directory(
     assert payload.get("output") == expected
 
 
-async def test_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Text):
+async def xtest_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Text):
     stories = rasa.shared.utils.io.read_file(stories_path)
 
     _, response = await rasa_app.post(
@@ -868,13 +881,13 @@ async def test_evaluate_intent_with_model_server(
         mocked.get(
             production_model_server_url,
             body=Path(trained_rasa_model).read_bytes(),
-            headers={"ETag": "production"},
+            headers={"ETag": "production", "filename": "prod_model.tar.gz"},
         )
         # Mock retrieving the test model from the model server
         mocked.get(
             test_model_server_url,
             body=Path(trained_rasa_model).read_bytes(),
-            headers={"ETag": "test"},
+            headers={"ETag": "test", "filename": "test_model.tar.gz"},
         )
 
         agent_with_model_server = await load_agent(
@@ -948,7 +961,7 @@ async def test_cross_validation_with_callback_success(
     with aioresponses() as mocked:
         mocked.post(callback_url, payload={})
 
-        mocked_cross_validation = Mock(
+        mocked_cross_validation = AsyncMock(
             return_value=(
                 CVEvaluationResult({}, {}, {}),
                 CVEvaluationResult({}, {}, {}),
@@ -1492,6 +1505,10 @@ async def test_load_model_from_model_server(
             mocked.get(
                 "https://example.com/model/trained_core_model",
                 content_type="application/x-tar",
+                headers={
+                    "filename": "some_model_name.tar.gz",
+                    "ETag": "new_fingerprint",
+                },
                 body=f.read(),
             )
             data = {"model_server": {"url": endpoint.url}}
@@ -1860,6 +1877,7 @@ async def test_get_story(
     tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
 
     url = f"/conversations/{conversation_id}/story?"
 
@@ -1900,7 +1918,7 @@ async def test_get_story_does_not_update_conversation_session(
         session_expiration_time=1 / 60, carry_over_slots=True
     )
 
-    monkeypatch.setattr(rasa_app.app.agent, "domain", domain)
+    monkeypatch.setattr(rasa_app.app.agent.processor, "domain", domain)
 
     # conversation contains one session that has expired
     now = time.time()
@@ -1914,13 +1932,14 @@ async def test_get_story_does_not_update_conversation_session(
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
     # the conversation session has expired
-    assert rasa_app.app.agent.create_processor()._has_session_expired(tracker)
+    assert rasa_app.app.agent.processor._has_session_expired(tracker)
 
     tracker_store = InMemoryTrackerStore(domain)
 
     tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
 
@@ -2005,6 +2024,7 @@ async def test_update_conversation_with_events(
     domain = Domain.empty()
     tracker_store = InMemoryTrackerStore(domain)
     monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
 
     if initial_tracker_events:
         tracker = DialogueStateTracker.from_events(
@@ -2013,7 +2033,7 @@ async def test_update_conversation_with_events(
         tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(
-        conversation_id, rasa_app.app.agent.create_processor(), domain, events_to_append
+        conversation_id, rasa_app.app.agent.processor, domain, events_to_append
     )
 
     assert list(fetched_tracker.events) == expected_events

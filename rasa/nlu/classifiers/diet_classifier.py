@@ -3,6 +3,7 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
+from rasa.nlu.featurizers.featurizer import Featurizer
 
 import numpy as np
 import scipy.sparse
@@ -11,9 +12,11 @@ import tensorflow as tf
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.classifiers.classifier import IntentClassifier
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
@@ -48,6 +51,7 @@ from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
     HIDDEN_LAYERS_SIZES,
+    RENORMALIZE_CONFIDENCES,
     SHARE_HIDDEN_LAYERS,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
@@ -101,11 +105,6 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
 )
 
-from rasa.nlu.classifiers._diet_classifier import DIETClassifier
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-DIETClassifier = DIETClassifier
-
 logger = logging.getLogger(__name__)
 
 SPARSE = "sparse"
@@ -116,7 +115,14 @@ LABEL_SUB_KEY = IDS
 POSSIBLE_TAGS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
 
-class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
+@DefaultV1Recipe.register(
+    [
+        DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+        DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    ],
+    is_trainable=True,
+)
+class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     """A multi-task model for intent classification and entity extraction.
 
     DIET is Dual Intent and Entity Transformer.
@@ -128,6 +134,11 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
     dot-product loss to maximize the similarity with the target label and minimize
     similarities with negative samples.
     """
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Featurizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -184,10 +195,9 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             SIMILARITY_TYPE: AUTO,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
-            # Number of top intents to normalize scores for. Applicable with
-            # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-            # to turn off normalization.
-            RANKING_LENGTH: 10,
+            # Number of top intents for which confidences should be reported.
+            # Set to 0 if confidences for all intents should be reported.
+            RANKING_LENGTH: LABEL_RANKING_LENGTH,
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
             # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -261,6 +271,12 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             # Model confidence to be returned during inference. Currently, the only
             # possible value is `softmax`.
             MODEL_CONFIDENCE: SOFTMAX,
+            # Determines whether the confidences of the chosen top intents should be
+            # renormalized so that they sum up to 1. By default, we do not renormalize
+            # and return the confidences for the top intents as is.
+            # Note that renormalization only makes sense if confidences are generated
+            # via `softmax`.
+            RENORMALIZE_CONFIDENCES: False,
         }
 
     def __init__(
@@ -309,15 +325,6 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
 
         self.finetune_mode = self._execution_context.is_finetuning
         self._sparse_feature_sizes = sparse_feature_sizes
-
-        if not self.model and self.finetune_mode:
-            raise rasa.shared.exceptions.InvalidParameterException(
-                f"{self.__class__.__name__} was instantiated "
-                f"with `model=None` and `finetune_mode=True`. "
-                f"This is not a valid combination as the component "
-                f"needs an already instantiated and trained model "
-                f"to continue training in finetune mode."
-            )
 
     # init helpers
     def _check_masked_lm(self) -> None:
@@ -376,7 +383,7 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> DIETClassifierGraphComponent:
+    ) -> DIETClassifier:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -841,6 +848,16 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
                 f"Skipping training of the classifier."
             )
             return self._resource
+
+        if not self.model and self.finetune_mode:
+            raise rasa.shared.exceptions.InvalidParameterException(
+                f"{self.__class__.__name__} was instantiated "
+                f"with `model=None` and `finetune_mode=True`. "
+                f"This is not a valid combination as the component "
+                f"needs an already instantiated and trained model "
+                f"to continue training in finetune mode."
+            )
+
         if self.component_config.get(INTENT_CLASSIFICATION):
             if not self._check_enough_labels(model_data):
                 logger.error(
@@ -925,49 +942,40 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             return label, label_ranking
 
         message_sim = predict_out["i_scores"]
-
         message_sim = message_sim.flatten()  # sim is a matrix
 
-        label_ids = message_sim.argsort()[::-1]
-
-        if (
-            self.component_config[RANKING_LENGTH] > 0
-            and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
-        ):
-            # TODO: This should be removed in 3.0 when softmax as
-            #  model confidence and normalization is completely deprecated.
-            message_sim = train_utils.normalize(
-                message_sim, self.component_config[RANKING_LENGTH]
-            )
-        message_sim[::-1].sort()
-        message_sim = message_sim.tolist()
-
         # if X contains all zeros do not predict some label
-        if label_ids.size > 0:
-            label = {
-                "id": hash(self.index_label_id_mapping[label_ids[0]]),
-                "name": self.index_label_id_mapping[label_ids[0]],
-                "confidence": message_sim[0],
+        if message_sim.size == 0:
+            return label, label_ranking
+
+        # rank the confidences
+        ranking_length = self.component_config[RANKING_LENGTH]
+        renormalize = (
+            self.component_config[RENORMALIZE_CONFIDENCES]
+            and self.component_config[MODEL_CONFIDENCE] == SOFTMAX
+        )
+        ranked_label_indices, message_sim = train_utils.rank_and_mask(
+            message_sim, ranking_length=ranking_length, renormalize=renormalize
+        )
+
+        # construct the label and ranking
+        casted_message_sim: List[float] = message_sim.tolist()  # np.float to float
+        top_label_idx = ranked_label_indices[0]
+        label = {
+            "id": hash(self.index_label_id_mapping[top_label_idx]),
+            "name": self.index_label_id_mapping[top_label_idx],
+            "confidence": casted_message_sim[top_label_idx],
+        }
+
+        ranking = [(idx, casted_message_sim[idx]) for idx in ranked_label_indices]
+        label_ranking = [
+            {
+                "id": hash(self.index_label_id_mapping[label_idx]),
+                "name": self.index_label_id_mapping[label_idx],
+                "confidence": score,
             }
-
-            if (
-                self.component_config[RANKING_LENGTH]
-                and 0 < self.component_config[RANKING_LENGTH] < LABEL_RANKING_LENGTH
-            ):
-                output_length = self.component_config[RANKING_LENGTH]
-            else:
-                output_length = LABEL_RANKING_LENGTH
-
-            ranking = list(zip(list(label_ids), message_sim))
-            ranking = ranking[:output_length]
-            label_ranking = [
-                {
-                    "id": hash(self.index_label_id_mapping[label_idx]),
-                    "name": self.index_label_id_mapping[label_idx],
-                    "confidence": score,
-                }
-                for label_idx, score in ranking
-            ]
+            for label_idx, score in ranking
+        ]
 
         return label, label_ranking
 
@@ -1066,7 +1074,7 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> DIETClassifierGraphComponent:
+    ) -> DIETClassifier:
         """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
@@ -1074,7 +1082,7 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
                     model_path, config, model_storage, resource, execution_context
                 )
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
@@ -1088,7 +1096,7 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "DIETClassifierGraphComponent":
+    ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
         (
             index_label_id_mapping,

@@ -1,26 +1,24 @@
 from __future__ import annotations
 import logging
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
 import typing
 import warnings
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
 import numpy as np
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import TEXT
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-
-from rasa.nlu.classifiers._sklearn_intent_classifier import SklearnIntentClassifier
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-SklearnIntentClassifier = SklearnIntentClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +26,16 @@ if typing.TYPE_CHECKING:
     import sklearn
 
 
-class SklearnIntentClassifierGraphComponent(GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
+class SklearnIntentClassifier(GraphComponent, IntentClassifier):
     """Intent classifier using the sklearn framework."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [DenseFeaturizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -79,7 +85,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> SklearnIntentClassifierGraphComponent:
+    ) -> SklearnIntentClassifier:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
@@ -262,7 +268,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> SklearnIntentClassifierGraphComponent:
+    ) -> SklearnIntentClassifier:
         """Loads trained component (see parent class for full docstring)."""
         from sklearn.preprocessing import LabelEncoder
 
@@ -281,7 +287,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
 
                     return cls(config, model_storage, resource, classifier, encoder,)
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load '{cls.__name__}' from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )

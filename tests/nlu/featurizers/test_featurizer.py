@@ -1,12 +1,12 @@
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.nlu.featurizers.featurizer import Featurizer2
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from typing import List, Dict, Any, Text
 
 import numpy as np
 import pytest
 
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
 
 
 @pytest.mark.parametrize(
@@ -44,7 +44,7 @@ from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturiz
     ],
 )
 def test_calculate_cls_vector(pooling, features, only_non_zero_vectors, expected):
-    actual = DenseFeaturizer2.aggregate_sequence_features(
+    actual = DenseFeaturizer.aggregate_sequence_features(
         features, pooling_operation=pooling, only_non_zero_vectors=only_non_zero_vectors
     )
     assert np.all(actual == expected)
@@ -70,11 +70,13 @@ def test_calculate_cls_vector(pooling, features, only_non_zero_vectors, expected
         ),
     ],
 )
-def test_validate_configs_compatible(
+def test_raise_if_featurizer_configs_are_not_compatible(
     featurizer_configs: List[Dict[Text, Any]], passes: bool
 ):
     if passes:
-        Featurizer2.validate_configs_compatible(featurizer_configs)
+        Featurizer.raise_if_featurizer_configs_are_not_compatible(featurizer_configs)
     else:
         with pytest.raises(InvalidConfigException):
-            Featurizer2.validate_configs_compatible(featurizer_configs)
+            Featurizer.raise_if_featurizer_configs_are_not_compatible(
+                featurizer_configs
+            )

@@ -124,36 +124,6 @@ def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
     assert not validator.verify_story_structure(ignore_warnings=False)
 
 
-def test_verify_bad_e2e_story_structure_when_text_differs_by_whitespace(
-    tmp_path: Path,
-):
-    story_file_name = tmp_path / "stories.yml"
-    story_file_name.write_text(
-        """
-        version: "2.0"
-        stories:
-        - story: path 1
-          steps:
-          - user: |
-              truly amazing!
-          - action: utter_happy
-        - story: path 2 (should always conflict path 1)
-          steps:
-          - user: |
-              truly  amazing!
-          - action: utter_cheer_up
-        """
-    )
-    importer = RasaFileImporter(
-        config_file="data/test_config/config_defaults.yml",
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=[story_file_name],
-        training_type=TrainingType.NLU,
-    )
-    validator = Validator.from_importer(importer)
-    assert not validator.verify_story_structure(ignore_warnings=False)
-
-
 def test_verify_correct_e2e_story_structure(tmp_path: Path):
     story_file_name = tmp_path / "stories.yml"
     with open(story_file_name, "w") as file:

@@ -17,6 +17,7 @@ from typing import (
 
 import dataclasses
 
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.training.fingerprinting import Fingerprintable
 import rasa.utils.common
 import typing_utils
@@ -27,11 +28,13 @@ from rasa.engine.graph import (
     GraphComponent,
     SchemaNode,
     ExecutionContext,
+    GraphModelConfiguration,
 )
+from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import RasaException
-
+from rasa.shared.nlu.training_data.message import Message
 
 TypeAnnotation = Union[TypeVar, Text, Type]
 
@@ -54,9 +57,7 @@ KEYWORDS_EXPECTED_TYPES: Dict[Text, TypeAnnotation] = {
 }
 
 
-def validate(
-    schema: GraphSchema, language: Optional[Text], is_train_graph: bool
-) -> None:
+def validate(model_configuration: GraphModelConfiguration) -> None:
     """Validates a graph schema.
 
     This tries to validate that the graph structure is correct (e.g. all nodes pass the
@@ -64,15 +65,24 @@ def validate(
     components.
 
     Args:
-        schema: The schema which needs validating.
-        language: Used to validate if all components support the language the assistant
-            is used in. If the language is `None`, all components are assumed to be
-            compatible.
-        is_train_graph: Whether the graph is used for training.
+        model_configuration: The model configuration (schemas, language, etc.)
 
     Raises:
         GraphSchemaValidationException: If the validation failed.
     """
+    _validate(model_configuration.train_schema, True, model_configuration.language)
+    _validate(model_configuration.predict_schema, False, model_configuration.language)
+
+    _validate_prediction_targets(
+        model_configuration.predict_schema,
+        core_target=model_configuration.core_target,
+        nlu_target=model_configuration.nlu_target,
+    )
+
+
+def _validate(
+    schema: GraphSchema, is_train_graph: bool, language: Optional[Text]
+) -> None:
     _validate_cycle(schema)
 
     for node_name, node in schema.nodes.items():
@@ -96,6 +106,53 @@ def validate(
             node_name, node, schema, create_fn_params, run_fn_params,
         )
 
+    _validate_required_components(schema)
+
+
+def _validate_prediction_targets(
+    schema: GraphSchema, core_target: Optional[Text], nlu_target: Text
+) -> None:
+    if not nlu_target:
+        raise GraphSchemaValidationException(
+            "Graph schema specifies no target for the 'nlu_target'. It is required "
+            "for a prediction graph to specify this. Please choose a valid node "
+            "name for this."
+        )
+
+    _validate_target(nlu_target, "NLU", List[Message], schema)
+
+    if core_target:
+        _validate_target(core_target, "Core", PolicyPrediction, schema)
+
+
+def _validate_target(
+    target_name: Text, target_type: Text, expected_type: Type, schema: GraphSchema,
+) -> None:
+    if target_name not in schema.nodes:
+        raise GraphSchemaValidationException(
+            f"Graph schema specifies invalid {target_type} target '{target_name}'. "
+            f"Please make sure specify a valid node name as target."
+        )
+
+    if any(target_name in node.needs.values() for node in schema.nodes.values()):
+        raise GraphSchemaValidationException(
+            f"One graph node uses the {target_type} target '{target_name}' as input. "
+            f"This is not allowed as NLU prediction and Core prediction are run "
+            f"separately."
+        )
+
+    target_node = schema.nodes[target_name]
+    _, target_return_type = _get_parameter_information(
+        target_name, target_node.uses, target_node.fn
+    )
+
+    if not typing_utils.issubtype(target_return_type, expected_type):
+        raise GraphSchemaValidationException(
+            f"The {target_type} target '{target_name}' returns an invalid return "
+            f"type '{target_return_type}'. This is not allowed. The {target_type} "
+            f"target is expected to have a return type of '{expected_type}'."
+        )
+
 
 def _validate_cycle(schema: GraphSchema) -> None:
     for target_name in schema.target_names:
@@ -117,7 +174,14 @@ def _walk_and_check_for_cycles(
 
     parents = schema.nodes[node_name].needs.values()
     for parent_name in parents:
-        _walk_and_check_for_cycles([*visited_so_far, node_name], parent_name, schema)
+        if not _is_placeholder_input(parent_name):
+            _walk_and_check_for_cycles(
+                [*visited_so_far, node_name], parent_name, schema
+            )
+
+
+def _is_placeholder_input(name: Text) -> bool:
+    return name in RESERVED_PLACEHOLDERS
 
 
 def _validate_interface_usage(node_name: Text, node: SchemaNode) -> None:
@@ -280,6 +344,10 @@ def _validate_run_fn_return_type(
             f"components to validate the graph's structure."
         )
 
+    # TODO: Handle forward references here
+    if typing_utils.issubtype(return_type, typing.List):
+        return_type = typing_utils.get_args(return_type)[0]
+
     if is_training and not isinstance(return_type, Fingerprintable):
         raise GraphSchemaValidationException(
             f"Node '{node_name}' uses a component '{node.uses.__name__}' whose method "
@@ -355,14 +423,20 @@ def _validate_needs(
                 f"correctly specified."
             )
 
-        parent = graph.nodes[parent_name]
-
         required_type = available_args.get(param_name)
         needs_passed_to_kwargs = has_kwargs and required_type is None
 
         if not needs_passed_to_kwargs:
+            if _is_placeholder_input(parent_name):
+                parent_return_type = RESERVED_PLACEHOLDERS[parent_name]
+            else:
+                parent = graph.nodes[parent_name]
+                _, parent_return_type = _get_parameter_information(
+                    parent_name, parent.uses, parent.fn
+                )
+
             _validate_parent_return_type(
-                node_name, node, parent_name, parent, required_type.type_annotation
+                node_name, node, parent_return_type, required_type.type_annotation
             )
 
 
@@ -386,16 +460,95 @@ def _get_available_args(
 def _validate_parent_return_type(
     node_name: Text,
     node: SchemaNode,
-    parent_name: Text,
-    parent: SchemaNode,
+    parent_return_type: TypeAnnotation,
     required_type: TypeAnnotation,
 ) -> None:
-    _, parent_return_type = _get_parameter_information(
-        parent_name, parent.uses, parent.fn
-    )
+
     if not typing_utils.issubtype(parent_return_type, required_type):
         raise GraphSchemaValidationException(
             f"Parent of node '{node_name}' returns type "
             f"'{parent_return_type}' but type '{required_type}' "
             f"was expected by component '{node.uses.__name__}'."
         )
+
+
+def _validate_required_components(schema: GraphSchema,) -> None:
+    unmet_requirements: Dict[Type, Set[Text]] = dict()
+    for target_name in schema.target_names:
+        unmet_requirements_for_target, _ = _recursively_check_required_components(
+            node_name=target_name, schema=schema,
+        )
+        for component_type, node_names in unmet_requirements_for_target.items():
+            unmet_requirements.setdefault(component_type, set()).update(node_names)
+    if unmet_requirements:
+        errors = "\n".join(
+            [
+                f"The following components require a {component_type.__name__}: "
+                f"{', '.join(sorted(required_by))}. "
+                for component_type, required_by in unmet_requirements.items()
+            ]
+        )
+        num_nodes = len(
+            set(
+                node_name
+                for required_by in unmet_requirements.values()
+                for node_name in required_by
+            )
+        )
+        raise GraphSchemaValidationException(
+            f"{num_nodes} nodes are missing required components:\n"
+            f"{errors}"
+            f"Please add the required components to the graph."
+        )
+
+
+def _recursively_check_required_components(
+    node_name: Text, schema: GraphSchema,
+) -> Tuple[Dict[Type, Set[Text]], Set[Type]]:
+    """Collects unmet requirements and types used in the subtree rooted at `node_name`.
+
+    Args:
+        schema: the graph schema
+        node_name: the name of the root of the subtree
+    Returns:
+       unmet requirements, i.e. a mapping from component types to names of nodes that
+       are contained in the subtree rooted at `schema_node` that require that component
+       type but can't find it in their respective subtrees and
+       a set containing all component types of nodes that are ancestors of the
+       `schema_node` (or of the`schema_node` itself)
+    """
+    schema_node = schema.nodes[node_name]
+
+    unmet_requirements: Dict[Type, Set[Text]] = dict()
+    component_types = set()
+
+    # collect all component types used by ancestors and their unmet requirements
+    for parent_node_name in schema_node.needs.values():
+        if _is_placeholder_input(parent_node_name):
+            continue
+        (
+            unmet_requirements_of_ancestors,
+            ancestor_types,
+        ) = _recursively_check_required_components(
+            node_name=parent_node_name, schema=schema
+        )
+        for type, nodes in unmet_requirements_of_ancestors.items():
+            unmet_requirements.setdefault(type, set()).update(nodes)
+        component_types.update(ancestor_types)
+
+    # check which requirements of the `schema_node` are not fulfilled by
+    # comparing its requirements with the types found so far among the ancestor nodes
+    unmet_requirements_of_current_node = set(
+        required
+        for required in schema_node.uses.required_components()
+        if not any(
+            issubclass(used_subtype, required) for used_subtype in component_types
+        )
+    )
+
+    # add the unmet requirements and the type of the `schema_node`
+    for component_type in unmet_requirements_of_current_node:
+        unmet_requirements.setdefault(component_type, set()).add(node_name)
+    component_types.add(schema_node.uses)
+
+    return unmet_requirements, component_types

@@ -1,0 +1,1 @@
+some other file that should not be processed by the config reader.

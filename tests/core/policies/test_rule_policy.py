@@ -44,7 +44,7 @@ from rasa.shared.core.events import (
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.rule_policy import (
-    RulePolicyGraphComponent as RulePolicy,
+    RulePolicy,
     InvalidRule,
     RULES,
 )
@@ -3044,3 +3044,9 @@ def test_invalid_fallback_action_name(policy_with_config: Callable[..., RulePoli
 
     with pytest.raises(InvalidDomain):
         policy.train([], Domain.empty())
+
+
+def test_raise_if_incompatible_with_domain():
+    config = {"core_fallback_action_name": "bla bla"}
+    with pytest.raises(InvalidDomain):
+        RulePolicy.raise_if_incompatible_with_domain(config, Domain.empty())

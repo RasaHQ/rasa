@@ -1,10 +1,12 @@
 from typing import Text
 
+import pytest
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.domain_provider import DomainProvider
 from rasa.shared.core.domain import Domain
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.importer import TrainingDataImporter
 
 
@@ -43,3 +45,17 @@ def test_domain_provider_provides_and_persists_domain(
 
     assert isinstance(inference_domain, Domain)
     assert domain.fingerprint() == inference_domain.fingerprint()
+
+
+def test_provide_without_domain(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+):
+    component = DomainProvider.create(
+        DomainProvider.get_default_config(),
+        default_model_storage,
+        Resource("some resource"),
+        default_execution_context,
+    )
+
+    with pytest.raises(InvalidConfigException):
+        component.provide_inference()
