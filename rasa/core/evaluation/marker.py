@@ -1,18 +1,26 @@
-from typing import Text
+from typing import Optional, Text
 from rasa.core.evaluation.marker_base import (
     CompoundMarker,
     AtomicMarker,
-    configurable_via,
+    configurable_marker,
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
-# TODO: constants?
 
-
-@configurable_via(tag="and", negated_tag="one_not")
+@configurable_marker
 class AndMarker(CompoundMarker):
     """Checks that all sub-markers apply."""
+
+    @classmethod
+    def tag(cls) -> Text:
+        """Returns the tag to be used in a config file."""
+        return "and"
+
+    @classmethod
+    def negated_tag(cls) -> Text:
+        """Returns the tag to be used in a config file for the negated version."""
+        return "at_least_one_not"
 
     def _to_str_with(self, tag: Text) -> Text:
         marker_str = f" {tag} ".join(str(marker) for marker in self.sub_markers)
@@ -22,9 +30,19 @@ class AndMarker(CompoundMarker):
         return all(marker.history[-1] for marker in self.sub_markers)
 
 
-@configurable_via(tag="or", negated_tag="not")
+@configurable_marker
 class OrMarker(CompoundMarker):
     """Checks that at least one sub-marker applies."""
+
+    @classmethod
+    def tag(cls) -> Text:
+        """Returns the tag to be used in a config file."""
+        return "or"
+
+    @classmethod
+    def negated_tag(cls) -> Optional[Text]:
+        """Returns the tag to be used in a config file for the negated version."""
+        return "not"
 
     def _to_str_with(self, tag: Text) -> Text:
         marker_str = f" {tag} ".join(str(marker) for marker in self.sub_markers)
@@ -34,9 +52,14 @@ class OrMarker(CompoundMarker):
         return any(marker.history[-1] for marker in self.sub_markers)
 
 
-@configurable_via(tag="seq")
+@configurable_marker
 class SequenceMarker(CompoundMarker):
-    """Checks the sub-markers applied in the given order."""
+    """Checks that all sub-markers applied in the specified order."""
+
+    @classmethod
+    def tag(cls) -> Text:
+        """Returns the tag to be used in a config file."""
+        return "seq"
 
     def _to_str_with(self, tag: Text) -> Text:
         sub_markers_str = " -> ".join(str(marker) for marker in self.sub_markers)
@@ -52,17 +75,37 @@ class SequenceMarker(CompoundMarker):
         )
 
 
-@configurable_via(tag="action_executed", negated_tag="action_not_executed")
+@configurable_marker
 class ActionExecutedMarker(AtomicMarker):
     """Checks whether an action is executed at the current step."""
+
+    @classmethod
+    def tag(cls) -> Text:
+        """Returns the tag to be used in a config file."""
+        return "action_executed"
+
+    @classmethod
+    def negated_tag(cls) -> Optional[Text]:
+        """Returns the tag to be used in a config file for the negated version."""
+        return "action_not_executed"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return isinstance(event, ActionExecuted) and event.action_name == self.text
 
 
-@configurable_via(tag="intent_detected", negated_tag="intent_not_detected")
+@configurable_marker
 class IntentDetectedMarker(AtomicMarker):
     """Checks whether an intent is expressed at the current step."""
+
+    @classmethod
+    def tag(cls) -> Text:
+        """Returns the tag to be used in a config file."""
+        return "intent_detected"
+
+    @classmethod
+    def negated_tag(cls) -> Optional[Text]:
+        """Returns the tag to be used in a config file for the negated version."""
+        return "intent_not_detected"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return (
@@ -71,12 +114,22 @@ class IntentDetectedMarker(AtomicMarker):
         )
 
 
-@configurable_via(tag="slot_set", negated_tag="slot_not_set")
+@configurable_marker
 class SlotSetMarker(AtomicMarker):
     """Checks whether a slot is set at the current step.
 
     The actual `SlotSet` event might have happened at an earlier step.
     """
+
+    @classmethod
+    def tag(cls) -> Text:
+        """Returns the tag to be used in a config file."""
+        return "slot_was_set"
+
+    @classmethod
+    def negated_tag(cls) -> Optional[Text]:
+        """Returns the tag to be used in a config file for the negated version."""
+        return "slot_is_not_set"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         if isinstance(event, SlotSet) and event.key == self.text:

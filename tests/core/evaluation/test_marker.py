@@ -25,9 +25,14 @@ def test_marker_from_config_dict_single_and():
 
     config = {
         "marker_1": {
-            "and": [
-                {"slot_set": ["s1"]},
-                {"or": [{"intent_detected": ["4"]}, {"intent_detected": ["6"]},]},
+            AndMarker.tag(): [
+                {SlotSetMarker.tag(): ["s1"]},
+                {
+                    OrMarker.tag(): [
+                        {IntentDetectedMarker.tag(): ["4"]},
+                        {IntentDetectedMarker.negated_tag(): ["6"]},
+                    ]
+                },
             ]
         }
     }
@@ -45,8 +50,13 @@ def test_marker_from_config_dict_single_and():
 def test_marker_from_config_list_inserts_and_marker():
 
     config = [
-        {"slot_set": ["s1"]},
-        {"or": [{"intent_detected": ["4"]}, {"intent_detected": ["6"]},]},
+        {SlotSetMarker.tag(): ["s1"]},
+        {
+            OrMarker.tag(): [
+                {IntentDetectedMarker.tag(): ["4"]},
+                {IntentDetectedMarker.negated_tag(): ["6"]},
+            ]
+        },
     ]
 
     marker = Marker.from_config(config)
@@ -62,9 +72,9 @@ def test_marker_from_config_unwraps_grouped_conditions_under_compound():
 
     config = [
         {
-            "or": [
-                {"intent_detected": ["1", "2"]},
-                {"intent_detected": ["3", "4", "5"]},
+            OrMarker.tag(): [
+                {IntentDetectedMarker.tag(): ["1", "2"]},
+                {IntentDetectedMarker.negated_tag(): ["3", "4", "5"]},
             ]
         },
     ]

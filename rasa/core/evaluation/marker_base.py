@@ -2,7 +2,6 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 from typing import (
-    Callable,
     Dict,
     Iterator,
     Optional,
@@ -49,52 +48,43 @@ CONDITION_TAGS: Set[Text] = set()
 OPERATOR_TAGS: Set[Text] = set()
 
 
-def configurable_via(
-    tag: Text, negated_tag: Optional[Text] = None
-) -> Callable[[Type[Marker]], Type[Marker]]:
+def configurable_marker(marker_class: Type[Marker]) -> Type[Marker]:
     """Registers a marker that can be used in config files.
 
     Args:
-        tag: the string to be used in the config file to invoke this marker
-        negated_tag: the sting to be used in the config file to invoke the negated
-           version of this marker
+        marker_class: the marker class to be made available via config files
     Returns:
-        a decorator
+        the registered marker class
     """
-
-    def inner(marker_class: Type[Marker]) -> Type[Marker]:
-        if not issubclass(marker_class, Marker):
-            raise RuntimeError("Can only register marker classes as configurable.")
-        # to simplify things:
-        specified_tags = {tag}
-        if negated_tag is not None:
-            specified_tags.add(negated_tag)
-        # tags should be unique
-        for tag_ in specified_tags:
-            if tag_ in TAGS:
-                raise RuntimeError(
-                    "Expected the tags of all configurable markers to be "
-                    "identifyable by their tag."
-                )
-            TAGS.add(tag_)
-        # (non-negated) tag <-> class
-        TAG_TO_MARKER_CLASS[tag] = marker_class
-        MARKER_CLASS_TO_TAG[marker_class] = tag
-        # (non-negated) tag <-> negated tag
-        if negated_tag is not None:
-            NEGATED_TAG_TO_TAG[negated_tag] = tag
-            TAG_TO_NEGATED_TAG[tag] = negated_tag
-        # condition or operator?
-        for type, collection in [
-            (AtomicMarker, CONDITION_TAGS),
-            (CompoundMarker, OPERATOR_TAGS),
-        ]:
-            if issubclass(marker_class, type):
-                for tag_ in specified_tags:
-                    collection.add(tag)
-        return marker_class
-
-    return inner
+    if not issubclass(marker_class, Marker):
+        raise RuntimeError("Can only register marker classes as configurable.")
+    # to simplify things:
+    tag = marker_class.tag()
+    negated_tag = marker_class.negated_tag()
+    specified_tags = {tag}
+    if negated_tag is not None:
+        specified_tags.add(negated_tag)
+    # tags should be unique
+    for tag_ in specified_tags:
+        if tag_ in TAGS:
+            raise RuntimeError(
+                "Expected the tags of all configurable markers to be "
+                "identifyable by their tag."
+            )
+        TAGS.add(tag_)
+    # (non-negated) tag <-> class
+    TAG_TO_MARKER_CLASS[tag] = marker_class
+    MARKER_CLASS_TO_TAG[marker_class] = tag
+    # (non-negated) tag <-> negated tag
+    if negated_tag is not None:
+        NEGATED_TAG_TO_TAG[negated_tag] = tag
+        TAG_TO_NEGATED_TAG[tag] = negated_tag
+    # condition or operator?
+    if issubclass(marker_class, AtomicMarker):
+        CONDITION_TAGS.update(specified_tags)
+    else:
+        OPERATOR_TAGS.update(specified_tags)
+    return marker_class
 
 
 def inspect_tag(tag: Text) -> Tuple[Text, bool]:
@@ -113,12 +103,12 @@ def inspect_tag(tag: Text) -> Tuple[Text, bool]:
 
 # We allow multiple atomic markers to be grouped under the same tag e.g.
 # 'slot_set: ["slot_a", "slot_b"]' (see `AtomicMarkers` / `CompoundMarkers`),
-# which is why this config maps to a list:
-ConditionConfigList = Dict[Text, List[Text]]
+# which is why this config maps to a list of texts or just one text:
+ConditionConfigList = Dict[Text, Union[Text, List[Text]]]
 # Compound markers can be nested:
 OperatorConfig = Dict[Text, List[Union["OperatorConfig", ConditionConfigList]]]
 # In case no compound operator is defined, "and" is used by default. Hence,
-# a marker config can also just consist of an atomic marker config list.
+# a marker config can also just consist of the config for a condition:
 MarkerConfig = Union[ConditionConfigList, OperatorConfig]
 
 
@@ -171,6 +161,17 @@ class Marker(ABC):
         if self.negated:
             tag = TAG_TO_NEGATED_TAG.get(tag)
         return self._to_str_with(tag)
+
+    @classmethod
+    @abstractmethod
+    def tag(cls) -> Text:
+        """Returns the tag to be used in a config file."""
+        ...
+
+    @classmethod
+    def negated_tag(cls) -> Optional[Text]:
+        """Returns the tag to be used in a config file for the negated version."""
+        return None
 
     @abstractmethod
     def _to_str_with(self, tag: Text) -> Text:
@@ -428,7 +429,7 @@ class Marker(ABC):
             else:
                 sub_markers = AtomicMarker.from_config(
                     marker_name=marker_name,
-                    sub_marker_configs=sub_marker_config,
+                    sub_marker_config=sub_marker_config,
                     name=name,
                 )
             collected_sub_markers.extend(sub_markers)
@@ -527,7 +528,7 @@ class CompoundMarker(Marker, ABC):
                 # Here, we do *not* create a new `AndMarker` but add the single
                 # atomic markers to this compound marker.
                 next_sub_markers = AtomicMarker.from_config(
-                    marker_name=sub_marker_name, sub_marker_configs=sub_marker_config
+                    marker_name=sub_marker_name, sub_marker_config=sub_marker_config
                 )
             else:
                 next_sub_markers = [
@@ -574,26 +575,29 @@ class AtomicMarker(Marker, ABC):
     def from_config(
         cls,
         marker_name: Text,
-        sub_marker_configs: List[Text],
+        sub_marker_config: Union[Text, List[Text]],
         name: Optional[Text] = None,
     ) -> List[Marker]:
         """Creates an atomic marker from the given config.
 
-        # TODO: describe expected config
-
         Args:
             marker_name: string identifying an atomic marker type
-            sub_marker_configs: a list of text parameter passed to the atomic markers
+            sub_marker_config: a list of texts or just one text which should be
+               used to instantiate the condition marker(s)
             name: a custom name for this marker
         Returns:
             the configured `AtomicMarker`s
         """
         if marker_name not in CONDITION_TAGS:
             raise InvalidConfigException(f"Unknown condition '{marker_name}'.")
+        if isinstance(sub_marker_config, Text):
+            sub_marker_config_list = [sub_marker_config]
+        else:
+            sub_marker_config_list = sub_marker_config
         positive_version, is_negation = inspect_tag(marker_name)
         marker_class = TAG_TO_MARKER_CLASS[positive_version]
         markers = []
-        for marker_text in sub_marker_configs:
+        for marker_text in sub_marker_config_list:
             marker = marker_class(marker_text, negated=is_negation)
             marker.name = name
             markers.append(marker)
