@@ -6,7 +6,6 @@ from rasa.core.evaluation.marker import (
     ActionExecutedMarker,
     AndMarker,
     IntentDetectedMarker,
-    NotAnyMarker,
     OrMarker,
     SlotSetMarker,
     SequenceMarker,
@@ -19,7 +18,7 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 
 EVENT_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
-COMPOUND_MARKERS = [AndMarker, OrMarker, NotAnyMarker]
+COMPOUND_MARKERS = [AndMarker, OrMarker, SequenceMarker]
 
 
 def test_marker_from_config_dict_single_and():
@@ -131,10 +130,7 @@ def test_atomic_marker_evaluate_events(atomic_marker_type: Type[AtomicMarker]):
     else:
         expected = [2, 4, 6]
 
-    try:
-        assert evaluation["marker_name"]["preceeding_user_turns"] == expected
-    except:
-        breakpoint()
+    assert evaluation["marker_name"]["preceeding_user_turns"] == expected
 
 
 def test_compound_marker_or_track():

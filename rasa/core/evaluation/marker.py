@@ -7,7 +7,7 @@ from rasa.core.evaluation.marker_base import (
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
-# TODO: constants
+# TODO: constants?
 
 
 @configurable_via(tag="and", negated_tag="one_not")
@@ -22,9 +22,9 @@ class AndMarker(CompoundMarker):
         return all(marker.history[-1] for marker in self.sub_markers)
 
 
-@configurable_via(tag="or", negated_tag="not_any")
+@configurable_via(tag="or", negated_tag="not")
 class OrMarker(CompoundMarker):
-    """Checks that one sub-markers is applies."""
+    """Checks that at least one sub-marker applies."""
 
     def _to_str_with(self, tag: Text) -> Text:
         marker_str = f" {tag} ".join(str(marker) for marker in self.sub_markers)
@@ -32,18 +32,6 @@ class OrMarker(CompoundMarker):
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return any(marker.history[-1] for marker in self.sub_markers)
-
-
-@configurable_via(tag="not")
-class NotAnyMarker(CompoundMarker):
-    """Checks that none of the sub-markers applies."""
-
-    def _to_str_with(self, tag: Text) -> Text:
-        sub_markers_str = " or ".join(str(marker) for marker in self.sub_markers)
-        return f"{tag}({sub_markers_str})"
-
-    def _non_negated_version_applies_at(self, event: Event) -> bool:
-        return not any(marker.history[-1] for marker in self.sub_markers)
 
 
 @configurable_via(tag="seq")

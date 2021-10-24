@@ -52,38 +52,46 @@ OPERATOR_TAGS: Set[Text] = set()
 def configurable_via(
     tag: Text, negated_tag: Optional[Text] = None
 ) -> Callable[[Type[Marker]], Type[Marker]]:
-    def inner(marker_class: Type[Marker]) -> Type[Marker]:
-        """Registers a marker that can be used in config files.
+    """Registers a marker that can be used in config files.
 
-        Args:
-            marker_class: a marker class that users can create from a config file
-        Returns:
-            the marker class
-        """
-        if any(
-            (tag_ is not None and (tag_ in TAGS or tag_ == ANY_MARKER))
-            for tag_ in [tag, negated_tag]
-        ):
-            raise RuntimeError(
-                "Expected the tags of all configurable markers to be "
-                "identifyable by their tag."
-            )
+    Args:
+        tag: the string to be used in the config file to invoke this marker
+        negated_tag: the sting to be used in the config file to invoke the negated
+           version of this marker
+    Returns:
+        a decorator
+    """
+
+    def inner(marker_class: Type[Marker]) -> Type[Marker]:
         if not issubclass(marker_class, Marker):
             raise RuntimeError("Can only register marker classes as configurable.")
+        # to simplify things:
+        specified_tags = {tag}
+        if negated_tag is not None:
+            specified_tags.add(negated_tag)
+        # tags should be unique
+        for tag_ in specified_tags:
+            if tag_ in TAGS:
+                raise RuntimeError(
+                    "Expected the tags of all configurable markers to be "
+                    "identifyable by their tag."
+                )
+            TAGS.add(tag_)
+        # (non-negated) tag <-> class
         TAG_TO_MARKER_CLASS[tag] = marker_class
         MARKER_CLASS_TO_TAG[marker_class] = tag
+        # (non-negated) tag <-> negated tag
         if negated_tag is not None:
             NEGATED_TAG_TO_TAG[negated_tag] = tag
             TAG_TO_NEGATED_TAG[tag] = negated_tag
+        # condition or operator?
         for type, collection in [
             (AtomicMarker, CONDITION_TAGS),
             (CompoundMarker, OPERATOR_TAGS),
         ]:
             if issubclass(marker_class, type):
-                for tag_ in [tag, negated_tag]:
-                    if tag_ is not None:
-                        collection.add(tag)
-                break  # a marker can only be either a condition or an operator
+                for tag_ in specified_tags:
+                    collection.add(tag)
         return marker_class
 
     return inner
@@ -191,9 +199,7 @@ class Marker(ABC):
         ...
 
     def reset(self) -> None:
-        """Clears the history of the marker.
-
-        """
+        """Clears the history of the marker."""
         self.history = []
 
     @abstractmethod
@@ -238,16 +244,7 @@ class Marker(ABC):
         meta_data = self._track_all_and_collect_meta_data(events=events)
 
         # for each marker, keep meta data only for those timesteps where it applies
-        results: Dict[Text, MetaData] = dict()
-        for marker in markers_to_be_evaluated:
-            marker_results = {
-                key: self._applies_at(meta_data_per_event)
-                for key, meta_data_per_event in meta_data.items()
-            }
-            if marker_results:
-                results[str(marker)] = marker_results
-
-        return results
+        return self._filter_all(markers=markers_to_be_evaluated, meta_data=meta_data)
 
     def _track_all_and_collect_meta_data(self, events: List[Event]) -> MetaData:
         """Resets the marker, tracks all events, and collects metadata.
@@ -262,7 +259,7 @@ class Marker(ABC):
         preceeding_user_turns: List[int] = [0]
         for event in events:
             is_user_turn = isinstance(event, UserUttered)
-            preceeding_user_turns.append(preceeding_user_turns[-1] + is_user_turn)
+            preceeding_user_turns.append(preceeding_user_turns[-1] + int(is_user_turn))
             timestamps.append(event.timestamp)
             self.track(event=event)
         preceeding_user_turns = preceeding_user_turns[:-1]  # drop last
@@ -271,25 +268,48 @@ class Marker(ABC):
             "timestamp": timestamps,
         }
 
-    def _applies_at(self, meta_data: List[T]) -> List[T]:
-        """Returns the meta data for the points in time where the marker applies.
+    @classmethod
+    def _filter_all(
+        cls, markers: List[Marker], meta_data: MetaData,
+    ) -> Dict[Text, MetaData]:
+        """Filters the given meta data according to where the respective marker applies.
+
+        Args:
+            markers: the markers that we want to use for filtering the meta data
+            meta_data: some meta data with one item per event that was tracked by
+                each of the given markers
+        Returns:
+            a dictionary mapping the string respresentation of the respective marker
+            to the filtered meta data
+        """
+        results: Dict[Text, MetaData] = dict()
+        for marker in markers:
+            marker_results = {
+                key: marker._filter(meta_data_per_event)
+                for key, meta_data_per_event in meta_data.items()
+            }
+            results[str(marker)] = marker_results
+        return results
+
+    def _filter(self, items: List[T]) -> List[T]:
+        """Returns the items for the points in time where the marker applies.
 
         Args:
             marker: a marker that has tracked some events
-            meta_data: a list of meta data items for each tracked event
+            items: a list of items for each tracked event
         Returns:
             a dictionary mapping all applied filters to a list containing meta data
             for the i-th event if the respective marker applies after the i-th tracked
             event
         """
-        if len(self.history) != len(meta_data):
+        if len(self.history) != len(items):
             raise RuntimeError(
-                f"Expected the marker to have tracked {len(meta_data)} many events "
+                f"Expected the marker to have tracked {len(items)} many events "
                 f"but only found {len(self.history)}"
             )
         return [
             meta_data_for_event
-            for applies, meta_data_for_event in zip(self.history, meta_data)
+            for applies, meta_data_for_event in zip(self.history, items)
             if applies
         ]
 
@@ -380,6 +400,7 @@ class Marker(ABC):
             config: the configuration of a single or multiple markers
             name: a custom name that will be used for the top-level marker (if and
                 only if there is only one top-level marker)
+
         Returns:
             the configured marker
         """
@@ -481,18 +502,14 @@ class CompoundMarker(Marker, ABC):
     ) -> Marker:
         """Creates a compound marker from the given config.
 
-        # TODO: describe expected config
-
         Args:
             operator: a text identifying a compound marker type
-            sub_marker_config: a list of configs defining sub-markers
+            sub_marker_configs: a list of configs defining sub-markers
             name: an optional custom name to be attached to the resulting marker
         Returns:
            a compound marker if there are markers to combine - and just an event
            marker if there is only a single marker
         """
-        from rasa.core.evaluation.marker import NotAnyMarker
-
         if operator not in OPERATOR_TAGS:
             raise InvalidConfigException(f"Unknown operator '{operator}'.")
 
@@ -521,9 +538,7 @@ class CompoundMarker(Marker, ABC):
             collected_sub_markers.extend(next_sub_markers)
 
         operator_class: Type[CompoundMarker] = TAG_TO_MARKER_CLASS[positive_version]
-        marker = operator_class(markers=collected_sub_markers)
-        if is_negation:
-            marker = NotAnyMarker([marker])
+        marker = operator_class(markers=collected_sub_markers, negated=is_negation)
         marker.name = name
         return marker
 
