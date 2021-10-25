@@ -16,8 +16,8 @@ Tokenizes messages using the `mitie` library..
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Returns default config (see parent class for full docstring).
@@ -25,8 +25,8 @@ Returns default config (see parent class for full docstring).
 #### required\_packages
 
 ```python
-@staticmethod
-def required_packages() -> List[Text]
+ | @staticmethod
+ | required_packages() -> List[Text]
 ```
 
 Any extra python dependencies required for this component to run.
@@ -34,8 +34,8 @@ Any extra python dependencies required for this component to run.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieTokenizer
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieTokenizer
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -43,7 +43,7 @@ Creates a new component (see parent class for full docstring).
 #### tokenize
 
 ```python
-def tokenize(message: Message, attribute: Text) -> List[Token]
+ | tokenize(message: Message, attribute: Text) -> List[Token]
 ```
 
 Tokenizes the text of the provided attribute of the incoming message.

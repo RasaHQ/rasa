@@ -16,8 +16,8 @@ Featurize messages using SpaCy.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -25,8 +25,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -34,7 +34,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], name: Text) -> None
+ | __init__(config: Dict[Text, Any], name: Text) -> None
 ```
 
 Initializes SpacyFeaturizer.
@@ -42,8 +42,8 @@ Initializes SpacyFeaturizer.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -51,7 +51,7 @@ Creates a new component (see parent class for full docstring).
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Processes incoming messages and computes and sets features.
@@ -59,7 +59,7 @@ Processes incoming messages and computes and sets features.
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData) -> TrainingData
+ | process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Processes the training examples in the given training data in-place.
@@ -76,8 +76,8 @@ Processes the training examples in the given training data in-place.
 #### validate\_config
 
 ```python
-@classmethod
-def validate_config(cls, config: Dict[Text, Any]) -> None
+ | @classmethod
+ | validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
 Validates that the component is configured properly.

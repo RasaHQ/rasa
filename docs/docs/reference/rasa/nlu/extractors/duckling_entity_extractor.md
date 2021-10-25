@@ -16,8 +16,8 @@ Searches for structured entities, e.g. dates, using a duckling server.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -25,7 +25,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any]) -> None
+ | __init__(config: Dict[Text, Any]) -> None
 ```
 
 Creates the extractor.
@@ -37,8 +37,8 @@ Creates the extractor.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DucklingEntityExtractor
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DucklingEntityExtractor
 ```
 
 Creates component (see parent class for full docstring).
@@ -46,7 +46,7 @@ Creates component (see parent class for full docstring).
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Augments the message with potentially extracted entities.

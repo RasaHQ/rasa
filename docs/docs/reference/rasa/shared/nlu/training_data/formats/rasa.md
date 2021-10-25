@@ -11,7 +11,7 @@ class RasaReader(JsonTrainingDataReader)
 #### read\_from\_json
 
 ```python
-def read_from_json(js: Dict[Text, Any], **_: Any) -> "TrainingData"
+ | read_from_json(js: Dict[Text, Any], **_: Any) -> "TrainingData"
 ```
 
 Loads training data stored in the rasa NLU data format.
@@ -25,7 +25,7 @@ class RasaWriter(TrainingDataWriter)
 #### dumps
 
 ```python
-def dumps(training_data: "TrainingData", **kwargs: Any) -> Text
+ | dumps(training_data: "TrainingData", **kwargs: Any) -> Text
 ```
 
 Writes Training Data to a string in json format.

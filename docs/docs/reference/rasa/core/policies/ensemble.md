@@ -5,7 +5,7 @@ title: rasa.core.policies.ensemble
 #### is\_not\_in\_training\_data
 
 ```python
-def is_not_in_training_data(policy_name: Optional[Text], max_confidence: Optional[float] = None) -> bool
+is_not_in_training_data(policy_name: Optional[Text], max_confidence: Optional[float] = None) -> bool
 ```
 
 Checks whether the prediction is empty or by a policy which did not memoize data.
@@ -56,7 +56,7 @@ be passed on.
 #### combine\_predictions\_from\_kwargs
 
 ```python
-def combine_predictions_from_kwargs(tracker: DialogueStateTracker, domain: Domain, **kwargs: Any) -> PolicyPrediction
+ | combine_predictions_from_kwargs(tracker: DialogueStateTracker, domain: Domain, **kwargs: Any) -> PolicyPrediction
 ```
 
 Derives a single prediction from predictions given as kwargs.
@@ -77,8 +77,8 @@ Derives a single prediction from predictions given as kwargs.
 #### combine\_predictions
 
 ```python
-@abstractmethod
-def combine_predictions(predictions: List[PolicyPrediction], tracker: DialogueStateTracker, domain: Domain) -> PolicyPrediction
+ | @abstractmethod
+ | combine_predictions(predictions: List[PolicyPrediction], tracker: DialogueStateTracker, domain: Domain) -> PolicyPrediction
 ```
 
 Derives a single prediction from the given list of predictions.
@@ -132,8 +132,8 @@ prediction was made for a sequence of events ending with a user utterance).
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DefaultPolicyPredictionEnsemble
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DefaultPolicyPredictionEnsemble
 ```
 
 Creates a new instance (see parent class for full docstring).
@@ -141,7 +141,7 @@ Creates a new instance (see parent class for full docstring).
 #### combine\_predictions
 
 ```python
-def combine_predictions(predictions: List[PolicyPrediction], tracker: DialogueStateTracker, domain: Domain) -> PolicyPrediction
+ | combine_predictions(predictions: List[PolicyPrediction], tracker: DialogueStateTracker, domain: Domain) -> PolicyPrediction
 ```
 
 Derives a single prediction from the given list of predictions.

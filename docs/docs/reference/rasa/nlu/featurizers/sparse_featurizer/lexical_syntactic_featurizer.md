@@ -40,8 +40,8 @@ It will then combine all these features into one feature for position `t`.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -49,8 +49,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Returns the component&#x27;s default config.
@@ -58,7 +58,7 @@ Returns the component&#x27;s default config.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, feature_to_idx_dict: Optional[Dict[Tuple[int, Text], Dict[Text, int]]] = None) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, feature_to_idx_dict: Optional[Dict[Tuple[int, Text], Dict[Text, int]]] = None) -> None
 ```
 
 Instantiates a new `LexicalSyntacticFeaturizer` instance.
@@ -66,8 +66,8 @@ Instantiates a new `LexicalSyntacticFeaturizer` instance.
 #### validate\_config
 
 ```python
-@classmethod
-def validate_config(cls, config: Dict[Text, Any]) -> None
+ | @classmethod
+ | validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
 Validates that the component is configured properly.
@@ -75,7 +75,7 @@ Validates that the component is configured properly.
 #### train
 
 ```python
-def train(training_data: TrainingData) -> Resource
+ | train(training_data: TrainingData) -> Resource
 ```
 
 Trains the featurizer.
@@ -92,7 +92,7 @@ Trains the featurizer.
 #### warn\_if\_pos\_features\_cannot\_be\_computed
 
 ```python
-def warn_if_pos_features_cannot_be_computed(training_data: TrainingData) -> None
+ | warn_if_pos_features_cannot_be_computed(training_data: TrainingData) -> None
 ```
 
 Warn if part-of-speech features are needed but not given.
@@ -100,7 +100,7 @@ Warn if part-of-speech features are needed but not given.
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Featurizes all given messages in-place.
@@ -117,7 +117,7 @@ Featurizes all given messages in-place.
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData) -> TrainingData
+ | process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Processes the training examples in the given training data in-place.
@@ -134,8 +134,8 @@ Processes the training examples in the given training data in-place.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> LexicalSyntacticFeaturizer
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> LexicalSyntacticFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -143,8 +143,8 @@ Creates a new untrained component (see parent class for full docstring).
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> LexicalSyntacticFeaturizer
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> LexicalSyntacticFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -152,7 +152,7 @@ Loads trained component (see parent class for full docstring).
 #### persist
 
 ```python
-def persist() -> None
+ | persist() -> None
 ```
 
 Persist this model (see parent class for full docstring).

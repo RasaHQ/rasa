@@ -13,7 +13,7 @@ Common exception to handle failing API requests.
 #### \_\_init\_\_
 
 ```python
-def __init__(status: Union[int, HTTPStatus], reason: Text, message: Text, details: Any = None, help_url: Optional[Text] = None) -> None
+ | __init__(status: Union[int, HTTPStatus], reason: Text, message: Text, details: Any = None, help_url: Optional[Text] = None) -> None
 ```
 
 Creates error.
@@ -29,7 +29,7 @@ Creates error.
 #### ensure\_loaded\_agent
 
 ```python
-def ensure_loaded_agent(app: Sanic, require_core_is_ready: bool = False) -> Callable[[Callable], Callable[..., Any]]
+ensure_loaded_agent(app: Sanic, require_core_is_ready: bool = False) -> Callable[[Callable], Callable[..., Any]]
 ```
 
 Wraps a request handler ensuring there is a loaded and usable agent.
@@ -40,7 +40,7 @@ Require the agent to have a loaded Core model if `require_core_is_ready` is
 #### ensure\_conversation\_exists
 
 ```python
-def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]
+ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]
 ```
 
 Wraps a request handler ensuring the conversation exists.
@@ -48,7 +48,7 @@ Wraps a request handler ensuring the conversation exists.
 #### requires\_auth
 
 ```python
-def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[["SanicView"], "SanicView"]
+requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[["SanicView"], "SanicView"]
 ```
 
 Wraps a request handler with token authentication.
@@ -56,7 +56,7 @@ Wraps a request handler with token authentication.
 #### event\_verbosity\_parameter
 
 ```python
-def event_verbosity_parameter(request: Request, default_verbosity: EventVerbosity) -> EventVerbosity
+event_verbosity_parameter(request: Request, default_verbosity: EventVerbosity) -> EventVerbosity
 ```
 
 Create `EventVerbosity` object using request params if present.
@@ -64,7 +64,7 @@ Create `EventVerbosity` object using request params if present.
 #### get\_test\_stories
 
 ```python
-def get_test_stories(processor: "MessageProcessor", conversation_id: Text, until_time: Optional[float], fetch_all_sessions: bool = False) -> Text
+get_test_stories(processor: "MessageProcessor", conversation_id: Text, until_time: Optional[float], fetch_all_sessions: bool = False) -> Text
 ```
 
 Retrieves test stories from `processor` for all conversation sessions for
@@ -86,7 +86,7 @@ Retrieves test stories from `processor` for all conversation sessions for
 #### update\_conversation\_with\_events
 
 ```python
-async def update_conversation_with_events(conversation_id: Text, processor: "MessageProcessor", domain: Domain, events: List[Event]) -> DialogueStateTracker
+async update_conversation_with_events(conversation_id: Text, processor: "MessageProcessor", domain: Domain, events: List[Event]) -> DialogueStateTracker
 ```
 
 Fetches or creates a tracker for `conversation_id` and appends `events` to it.
@@ -106,7 +106,7 @@ Fetches or creates a tracker for `conversation_id` and appends `events` to it.
 #### validate\_request\_body
 
 ```python
-def validate_request_body(request: Request, error_message: Text) -> None
+validate_request_body(request: Request, error_message: Text) -> None
 ```
 
 Check if `request` has a body.
@@ -114,7 +114,7 @@ Check if `request` has a body.
 #### validate\_events\_in\_request\_body
 
 ```python
-def validate_events_in_request_body(request: Request) -> None
+validate_events_in_request_body(request: Request) -> None
 ```
 
 Validates events format in request body.
@@ -122,7 +122,7 @@ Validates events format in request body.
 #### authenticate
 
 ```python
-async def authenticate(_: Request) -> NoReturn
+async authenticate(_: Request) -> NoReturn
 ```
 
 Callback for authentication failed.
@@ -130,7 +130,7 @@ Callback for authentication failed.
 #### create\_ssl\_context
 
 ```python
-def create_ssl_context(ssl_certificate: Optional[Text], ssl_keyfile: Optional[Text], ssl_ca_file: Optional[Text] = None, ssl_password: Optional[Text] = None) -> Optional["SSLContext"]
+create_ssl_context(ssl_certificate: Optional[Text], ssl_keyfile: Optional[Text], ssl_ca_file: Optional[Text] = None, ssl_password: Optional[Text] = None) -> Optional["SSLContext"]
 ```
 
 Create an SSL context if a proper certificate is passed.
@@ -150,7 +150,7 @@ Create an SSL context if a proper certificate is passed.
 #### configure\_cors
 
 ```python
-def configure_cors(app: Sanic, cors_origins: Union[Text, List[Text], None] = "") -> None
+configure_cors(app: Sanic, cors_origins: Union[Text, List[Text], None] = "") -> None
 ```
 
 Configure CORS origins for the given app.
@@ -158,7 +158,7 @@ Configure CORS origins for the given app.
 #### add\_root\_route
 
 ```python
-def add_root_route(app: Sanic) -> None
+add_root_route(app: Sanic) -> None
 ```
 
 Add &#x27;/&#x27; route to return hello.
@@ -166,7 +166,7 @@ Add &#x27;/&#x27; route to return hello.
 #### async\_if\_callback\_url
 
 ```python
-def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable
+async_if_callback_url(f: Callable[..., Coroutine]) -> Callable
 ```
 
 Decorator to enable async request handling.
@@ -188,7 +188,7 @@ be sent to the `callback_url`.
 #### run\_in\_thread
 
 ```python
-def run_in_thread(f: Callable[..., Coroutine]) -> Callable
+run_in_thread(f: Callable[..., Coroutine]) -> Callable
 ```
 
 Decorator which runs request on a separate thread.
@@ -210,7 +210,7 @@ to avoid blocking the processing of incoming requests.
 #### inject\_temp\_dir
 
 ```python
-def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable
+inject_temp_dir(f: Callable[..., Coroutine]) -> Callable
 ```
 
 Decorator to inject a temporary directory before a request and clean up after.
@@ -227,7 +227,7 @@ Decorator to inject a temporary directory before a request and clean up after.
 #### create\_app
 
 ```python
-def create_app(agent: Optional["Agent"] = None, cors_origins: Union[Text, List[Text], None] = "*", auth_token: Optional[Text] = None, response_timeout: int = DEFAULT_RESPONSE_TIMEOUT, jwt_secret: Optional[Text] = None, jwt_method: Text = "HS256", endpoints: Optional[AvailableEndpoints] = None) -> Sanic
+create_app(agent: Optional["Agent"] = None, cors_origins: Union[Text, List[Text], None] = "*", auth_token: Optional[Text] = None, response_timeout: int = DEFAULT_RESPONSE_TIMEOUT, jwt_secret: Optional[Text] = None, jwt_method: Text = "HS256", endpoints: Optional[AvailableEndpoints] = None) -> Sanic
 ```
 
 Class representing a Rasa HTTP server.

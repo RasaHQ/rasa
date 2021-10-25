@@ -11,8 +11,8 @@ class TrainingType(Enum)
 #### model\_type
 
 ```python
-@property
-def model_type() -> Text
+ | @property
+ | model_type() -> Text
 ```
 
 Returns the type of model which this training yields.
@@ -20,7 +20,7 @@ Returns the type of model which this training yields.
 #### get\_configuration
 
 ```python
-def get_configuration(config_file_path: Optional[Text], training_type: Optional[TrainingType] = TrainingType.BOTH) -> Dict[Text, Any]
+get_configuration(config_file_path: Optional[Text], training_type: Optional[TrainingType] = TrainingType.BOTH) -> Dict[Text, Any]
 ```
 
 Determine configuration from a configuration file.

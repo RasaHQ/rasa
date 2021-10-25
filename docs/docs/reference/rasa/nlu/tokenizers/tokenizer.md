@@ -13,7 +13,7 @@ Used by `Tokenizers` which split a single message into multiple `Token`s.
 #### \_\_init\_\_
 
 ```python
-def __init__(text: Text, start: int, end: Optional[int] = None, data: Optional[Dict[Text, Any]] = None, lemma: Optional[Text] = None) -> None
+ | __init__(text: Text, start: int, end: Optional[int] = None, data: Optional[Dict[Text, Any]] = None, lemma: Optional[Text] = None) -> None
 ```
 
 Create a `Token`.
@@ -29,7 +29,7 @@ Create a `Token`.
 #### set
 
 ```python
-def set(prop: Text, info: Any) -> None
+ | set(prop: Text, info: Any) -> None
 ```
 
 Set property value.
@@ -37,7 +37,7 @@ Set property value.
 #### get
 
 ```python
-def get(prop: Text, default: Optional[Any] = None) -> Any
+ | get(prop: Text, default: Optional[Any] = None) -> Any
 ```
 
 Returns token value.
@@ -45,7 +45,7 @@ Returns token value.
 #### fingerprint
 
 ```python
-def fingerprint() -> Text
+ | fingerprint() -> Text
 ```
 
 Returns a stable hash for this Token.
@@ -61,7 +61,7 @@ Base class for tokenizers.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any]) -> None
+ | __init__(config: Dict[Text, Any]) -> None
 ```
 
 Construct a new tokenizer.
@@ -69,8 +69,8 @@ Construct a new tokenizer.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -78,8 +78,8 @@ Creates a new component (see parent class for full docstring).
 #### tokenize
 
 ```python
-@abc.abstractmethod
-def tokenize(message: Message, attribute: Text) -> List[Token]
+ | @abc.abstractmethod
+ | tokenize(message: Message, attribute: Text) -> List[Token]
 ```
 
 Tokenizes the text of the provided attribute of the incoming message.
@@ -87,7 +87,7 @@ Tokenizes the text of the provided attribute of the incoming message.
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData) -> TrainingData
+ | process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Tokenize all training data.
@@ -95,7 +95,7 @@ Tokenize all training data.
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Tokenize the incoming messages.

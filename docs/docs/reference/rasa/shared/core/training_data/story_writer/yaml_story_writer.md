@@ -13,7 +13,7 @@ Writes Core training data into a file in a YAML format.
 #### dumps
 
 ```python
-def dumps(story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False) -> Text
+ | dumps(story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False) -> Text
 ```
 
 Turns Story steps into an YAML string.
@@ -34,7 +34,7 @@ Turns Story steps into an YAML string.
 #### dump
 
 ```python
-def dump(target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False) -> None
+ | dump(target: Union[Text, Path, yaml.StringIO], story_steps: List[StoryStep], is_appendable: bool = False, is_test_story: bool = False) -> None
 ```
 
 Writes Story steps into a target file/stream.
@@ -52,7 +52,7 @@ Writes Story steps into a target file/stream.
 #### stories\_to\_yaml
 
 ```python
-def stories_to_yaml(story_steps: List[StoryStep], is_test_story: bool = False) -> Dict[Text, Any]
+ | stories_to_yaml(story_steps: List[StoryStep], is_test_story: bool = False) -> Dict[Text, Any]
 ```
 
 Converts a sequence of story steps into yaml format.
@@ -65,7 +65,7 @@ Converts a sequence of story steps into yaml format.
 #### process\_story\_step
 
 ```python
-def process_story_step(story_step: StoryStep) -> OrderedDict
+ | process_story_step(story_step: StoryStep) -> OrderedDict
 ```
 
 Converts a single story step into an ordered dict.
@@ -82,8 +82,8 @@ Converts a single story step into an ordered dict.
 #### stories\_contain\_loops
 
 ```python
-@staticmethod
-def stories_contain_loops(stories: List[StoryStep]) -> bool
+ | @staticmethod
+ | stories_contain_loops(stories: List[StoryStep]) -> bool
 ```
 
 Checks if the stories contain at least one active loop.
@@ -101,8 +101,8 @@ Checks if the stories contain at least one active loop.
 #### process\_user\_utterance
 
 ```python
-@staticmethod
-def process_user_utterance(user_utterance: UserUttered, is_test_story: bool = False) -> OrderedDict
+ | @staticmethod
+ | process_user_utterance(user_utterance: UserUttered, is_test_story: bool = False) -> OrderedDict
 ```
 
 Converts a single user utterance into an ordered dict.
@@ -121,8 +121,8 @@ Converts a single user utterance into an ordered dict.
 #### process\_action
 
 ```python
-@staticmethod
-def process_action(action: ActionExecuted) -> Optional[OrderedDict]
+ | @staticmethod
+ | process_action(action: ActionExecuted) -> Optional[OrderedDict]
 ```
 
 Converts a single action into an ordered dict.
@@ -139,8 +139,8 @@ Converts a single action into an ordered dict.
 #### process\_slot
 
 ```python
-@staticmethod
-def process_slot(event: SlotSet) -> OrderedDict
+ | @staticmethod
+ | process_slot(event: SlotSet) -> OrderedDict
 ```
 
 Converts a single `SlotSet` event into an ordered dict.
@@ -157,8 +157,8 @@ Converts a single `SlotSet` event into an ordered dict.
 #### process\_checkpoints
 
 ```python
-@staticmethod
-def process_checkpoints(checkpoints: List[Checkpoint]) -> List[OrderedDict]
+ | @staticmethod
+ | process_checkpoints(checkpoints: List[Checkpoint]) -> List[OrderedDict]
 ```
 
 Converts checkpoints event into an ordered dict.
@@ -175,7 +175,7 @@ Converts checkpoints event into an ordered dict.
 #### process\_or\_utterances
 
 ```python
-def process_or_utterances(utterances: List[UserUttered]) -> OrderedDict
+ | process_or_utterances(utterances: List[UserUttered]) -> OrderedDict
 ```
 
 Converts user utterance containing the `OR` statement.
@@ -192,8 +192,8 @@ Converts user utterance containing the `OR` statement.
 #### process\_active\_loop
 
 ```python
-@staticmethod
-def process_active_loop(event: ActiveLoop) -> OrderedDict
+ | @staticmethod
+ | process_active_loop(event: ActiveLoop) -> OrderedDict
 ```
 
 Converts ActiveLoop event into an ordered dict.
@@ -210,7 +210,7 @@ Converts ActiveLoop event into an ordered dict.
 #### process\_rule\_step
 
 ```python
-def process_rule_step(rule_step: RuleStep) -> OrderedDict
+ | process_rule_step(rule_step: RuleStep) -> OrderedDict
 ```
 
 Converts a RuleStep into an ordered dict.

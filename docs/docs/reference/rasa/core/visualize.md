@@ -5,7 +5,7 @@ title: rasa.core.visualize
 #### visualize
 
 ```python
-def visualize(domain_path: Text, stories_path: Text, nlu_data_path: Text, output_path: Text, max_history: int) -> None
+visualize(domain_path: Text, stories_path: Text, nlu_data_path: Text, output_path: Text, max_history: int) -> None
 ```
 
 Visualizes stories as graph.

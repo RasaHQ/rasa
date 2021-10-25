@@ -5,7 +5,7 @@ title: rasa.shared.data
 #### yaml\_file\_extension
 
 ```python
-def yaml_file_extension() -> Text
+yaml_file_extension() -> Text
 ```
 
 Return YAML file extension.
@@ -13,7 +13,7 @@ Return YAML file extension.
 #### is\_likely\_yaml\_file
 
 ```python
-def is_likely_yaml_file(file_path: Union[Text, Path]) -> bool
+is_likely_yaml_file(file_path: Union[Text, Path]) -> bool
 ```
 
 Check if a file likely contains yaml.
@@ -30,7 +30,7 @@ Check if a file likely contains yaml.
 #### is\_likely\_json\_file
 
 ```python
-def is_likely_json_file(file_path: Text) -> bool
+is_likely_json_file(file_path: Text) -> bool
 ```
 
 Check if a file likely contains json.
@@ -47,7 +47,7 @@ Check if a file likely contains json.
 #### get\_core\_directory
 
 ```python
-def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
+get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
 ```
 
 Recursively collects all Core training files from a list of paths.
@@ -64,7 +64,7 @@ Recursively collects all Core training files from a list of paths.
 #### get\_nlu\_directory
 
 ```python
-def get_nlu_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
+get_nlu_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
 ```
 
 Recursively collects all NLU training files from a list of paths.
@@ -81,7 +81,7 @@ Recursively collects all NLU training files from a list of paths.
 #### get\_data\_files
 
 ```python
-def get_data_files(paths: Optional[Union[Text, List[Text]]], filter_predicate: Callable[[Text], bool]) -> List[Text]
+get_data_files(paths: Optional[Union[Text, List[Text]]], filter_predicate: Callable[[Text], bool]) -> List[Text]
 ```
 
 Recursively collects all training files from a list of paths.
@@ -99,7 +99,7 @@ Recursively collects all training files from a list of paths.
 #### is\_valid\_filetype
 
 ```python
-def is_valid_filetype(path: Union[Path, Text]) -> bool
+is_valid_filetype(path: Union[Path, Text]) -> bool
 ```
 
 Checks if given file has a supported extension.
@@ -116,7 +116,7 @@ Checks if given file has a supported extension.
 #### is\_nlu\_file
 
 ```python
-def is_nlu_file(file_path: Text) -> bool
+is_nlu_file(file_path: Text) -> bool
 ```
 
 Checks if a file is a Rasa compatible nlu file.
@@ -133,7 +133,7 @@ Checks if a file is a Rasa compatible nlu file.
 #### is\_config\_file
 
 ```python
-def is_config_file(file_path: Text) -> bool
+is_config_file(file_path: Text) -> bool
 ```
 
 Checks whether the given file path is a Rasa config file.

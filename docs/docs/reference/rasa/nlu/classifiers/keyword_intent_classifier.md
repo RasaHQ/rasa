@@ -19,8 +19,8 @@ An input sentence is checked for the keywords and the intent is returned.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -28,7 +28,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, intent_keyword_map: Optional[Dict] = None) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, intent_keyword_map: Optional[Dict] = None) -> None
 ```
 
 Creates classifier.
@@ -36,8 +36,8 @@ Creates classifier.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> KeywordIntentClassifier
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> KeywordIntentClassifier
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -45,7 +45,7 @@ Creates a new untrained component (see parent class for full docstring).
 #### train
 
 ```python
-def train(training_data: TrainingData) -> Resource
+ | train(training_data: TrainingData) -> Resource
 ```
 
 Trains the intent classifier on a data set.
@@ -53,7 +53,7 @@ Trains the intent classifier on a data set.
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Set the message intent and add it to the output if it exists.
@@ -61,7 +61,7 @@ Set the message intent and add it to the output if it exists.
 #### persist
 
 ```python
-def persist() -> None
+ | persist() -> None
 ```
 
 Persist this model into the passed directory.
@@ -69,8 +69,8 @@ Persist this model into the passed directory.
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> KeywordIntentClassifier
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> KeywordIntentClassifier
 ```
 
 Loads trained component (see parent class for full docstring).

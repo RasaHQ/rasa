@@ -23,8 +23,8 @@ from https://arxiv.org/abs/1810.07150.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -32,8 +32,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Returns the component&#x27;s default config.
@@ -41,8 +41,8 @@ Returns the component&#x27;s default config.
 #### required\_packages
 
 ```python
-@staticmethod
-def required_packages() -> List[Text]
+ | @staticmethod
+ | required_packages() -> List[Text]
 ```
 
 Any extra python dependencies required for this component to run.
@@ -50,7 +50,7 @@ Any extra python dependencies required for this component to run.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None, oov_token: Optional[Text] = None, oov_words: Optional[List[Text]] = None) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None, oov_token: Optional[Text] = None, oov_words: Optional[List[Text]] = None) -> None
 ```
 
 Constructs a new count vectorizer using the sklearn framework.
@@ -58,8 +58,8 @@ Constructs a new count vectorizer using the sklearn framework.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CountVectorsFeaturizer
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CountVectorsFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -67,7 +67,7 @@ Creates a new untrained component (see parent class for full docstring).
 #### train
 
 ```python
-def train(training_data: TrainingData, spacy_nlp: Optional[SpacyModel] = None) -> Resource
+ | train(training_data: TrainingData, spacy_nlp: Optional[SpacyModel] = None) -> Resource
 ```
 
 Trains the featurizer.
@@ -78,7 +78,7 @@ construct a new count vectorizer using the sklearn framework.
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData) -> TrainingData
+ | process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Processes the training examples in the given training data in-place.
@@ -95,7 +95,7 @@ Processes the training examples in the given training data in-place.
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Processes incoming message and compute and set features.
@@ -103,7 +103,7 @@ Processes incoming message and compute and set features.
 #### persist
 
 ```python
-def persist() -> None
+ | persist() -> None
 ```
 
 Persist this model into the passed directory.
@@ -113,8 +113,8 @@ Returns the metadata necessary to load the model again.
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CountVectorsFeaturizer
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CountVectorsFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -122,8 +122,8 @@ Loads trained component (see parent class for full docstring).
 #### validate\_config
 
 ```python
-@classmethod
-def validate_config(cls, config: Dict[Text, Any]) -> None
+ | @classmethod
+ | validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
 Validates that the component is configured properly.

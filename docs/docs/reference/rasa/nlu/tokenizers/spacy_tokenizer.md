@@ -16,8 +16,8 @@ Tokenizer that uses SpaCy.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -25,8 +25,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -34,8 +34,8 @@ The component&#x27;s default config (see parent class for full docstring).
 #### required\_packages
 
 ```python
-@staticmethod
-def required_packages() -> List[Text]
+ | @staticmethod
+ | required_packages() -> List[Text]
 ```
 
 Any extra python dependencies required for this component to run.
@@ -43,7 +43,7 @@ Any extra python dependencies required for this component to run.
 #### tokenize
 
 ```python
-def tokenize(message: Message, attribute: Text) -> List[Token]
+ | tokenize(message: Message, attribute: Text) -> List[Token]
 ```
 
 Tokenizes the text of the provided attribute of the incoming message.

@@ -21,7 +21,7 @@ which helps prevent overfitting.
 #### call
 
 ```python
-def call(inputs: tf.SparseTensor, training: Optional[Union[tf.Tensor, bool]] = None) -> tf.SparseTensor
+ | call(inputs: tf.SparseTensor, training: Optional[Union[tf.Tensor, bool]] = None) -> tf.SparseTensor
 ```
 
 Apply dropout to sparse inputs.
@@ -92,7 +92,7 @@ it is flattened prior to the initial dot product with `kernel`.
 #### get\_units
 
 ```python
-def get_units() -> int
+ | get_units() -> int
 ```
 
 Returns number of output units.
@@ -100,7 +100,7 @@ Returns number of output units.
 #### get\_kernel
 
 ```python
-def get_kernel() -> tf.Tensor
+ | get_kernel() -> tf.Tensor
 ```
 
 Returns kernel tensor.
@@ -108,7 +108,7 @@ Returns kernel tensor.
 #### get\_bias
 
 ```python
-def get_bias() -> Union[tf.Tensor, None]
+ | get_bias() -> Union[tf.Tensor, None]
 ```
 
 Returns bias tensor.
@@ -116,7 +116,7 @@ Returns bias tensor.
 #### get\_feature\_type
 
 ```python
-def get_feature_type() -> Union[Text, None]
+ | get_feature_type() -> Union[Text, None]
 ```
 
 Returns a feature type of the data that&#x27;s fed to the layer.
@@ -133,7 +133,7 @@ and `FEATURE_TYPE_SEQUENCE`.
 #### get\_attribute
 
 ```python
-def get_attribute() -> Union[Text, None]
+ | get_attribute() -> Union[Text, None]
 ```
 
 Returns the attribute for which this layer was constructed.
@@ -151,7 +151,7 @@ f&quot;sparse_to_dense.{attribute}_{feature_type}&quot;.
 #### call
 
 ```python
-def call(inputs: tf.SparseTensor) -> tf.Tensor
+ | call(inputs: tf.SparseTensor) -> tf.Tensor
 ```
 
 Apply dense layer to sparse inputs.
@@ -209,7 +209,7 @@ the output would have shape `(batch_size, units)`.
 #### \_\_init\_\_
 
 ```python
-def __init__(density: float = 0.2, **kwargs: Any) -> None
+ | __init__(density: float = 0.2, **kwargs: Any) -> None
 ```
 
 Declares instance variables with default values.
@@ -236,7 +236,7 @@ Declares instance variables with default values.
 #### build
 
 ```python
-def build(input_shape: tf.TensorShape) -> None
+ | build(input_shape: tf.TensorShape) -> None
 ```
 
 Prepares the kernel mask.
@@ -248,7 +248,7 @@ Prepares the kernel mask.
 #### call
 
 ```python
-def call(inputs: tf.Tensor) -> tf.Tensor
+ | call(inputs: tf.Tensor) -> tf.Tensor
 ```
 
 Processes the given inputs.
@@ -288,6 +288,14 @@ Feed-forward network layer.
   For instance, for a 2D input with shape `(batch_size, input_dim)`,
   the output would have shape `(batch_size, layer_sizes[-1])`.
 
+#### call
+
+```python
+ | call(x: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None) -> tf.Tensor
+```
+
+Apply feed-forward network layer.
+
 ## Embed Objects
 
 ```python
@@ -309,7 +317,7 @@ Output shape:
 #### \_\_init\_\_
 
 ```python
-def __init__(embed_dim: int, reg_lambda: float, layer_name_suffix: Text) -> None
+ | __init__(embed_dim: int, reg_lambda: float, layer_name_suffix: Text) -> None
 ```
 
 Initialize layer.
@@ -323,7 +331,7 @@ Initialize layer.
 #### call
 
 ```python
-def call(x: tf.Tensor) -> tf.Tensor
+ | call(x: tf.Tensor) -> tf.Tensor
 ```
 
 Apply dense layer.
@@ -349,7 +357,7 @@ Output shape:
 #### call
 
 ```python
-def call(x: tf.Tensor, mask: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None) -> Tuple[tf.Tensor, tf.Tensor]
+ | call(x: tf.Tensor, mask: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Randomly mask input sequences.
@@ -384,7 +392,7 @@ CRF layer.
 #### call
 
 ```python
-def call(logits: tf.Tensor, sequence_lengths: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]
+ | call(logits: tf.Tensor, sequence_lengths: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Decodes the highest scoring sequence of tags.
@@ -406,7 +414,7 @@ Decodes the highest scoring sequence of tags.
 #### loss
 
 ```python
-def loss(logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor
+ | loss(logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor
 ```
 
 Computes the log-likelihood of tag sequences in a CRF.
@@ -428,7 +436,7 @@ Computes the log-likelihood of tag sequences in a CRF.
 #### f1\_score
 
 ```python
-def f1_score(tag_ids: tf.Tensor, pred_ids: tf.Tensor, mask: tf.Tensor) -> tf.Tensor
+ | f1_score(tag_ids: tf.Tensor, pred_ids: tf.Tensor, mask: tf.Tensor) -> tf.Tensor
 ```
 
 Calculates f1 score for train predictions
@@ -454,7 +462,7 @@ classes.
 #### \_\_init\_\_
 
 ```python
-def __init__(num_candidates: int, scale_loss: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX, similarity_type: Text = INNER, name: Optional[Text] = None, **kwargs: Any, ,)
+ | __init__(num_candidates: int, scale_loss: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX, similarity_type: Text = INNER, name: Optional[Text] = None, **kwargs: Any, ,)
 ```
 
 Declares instance variables with default values.
@@ -485,7 +493,7 @@ Declares instance variables with default values.
 #### sim
 
 ```python
-def sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor
+ | sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor
 ```
 
 Calculates similarity between `a` and `b`.
@@ -512,7 +520,7 @@ product `a . b`. When the similarity type is `COSINE`, we compute
 #### get\_similarities\_and\_confidences\_from\_embeddings
 
 ```python
-def get_similarities_and_confidences_from_embeddings(input_embeddings: tf.Tensor, label_embeddings: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
+ | get_similarities_and_confidences_from_embeddings(input_embeddings: tf.Tensor, label_embeddings: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Computes similary between input and label embeddings and model&#x27;s confidence.
@@ -536,7 +544,7 @@ function if needed to get the confidence.
 #### call
 
 ```python
-def call(*args: Any, **kwargs: Any) -> Tuple[tf.Tensor, tf.Tensor]
+ | call(*args: Any, **kwargs: Any) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Layer&#x27;s logic - to be implemented in child class.
@@ -544,7 +552,7 @@ Layer&#x27;s logic - to be implemented in child class.
 #### apply\_mask\_and\_scaling
 
 ```python
-def apply_mask_and_scaling(loss: tf.Tensor, mask: Optional[tf.Tensor]) -> tf.Tensor
+ | apply_mask_and_scaling(loss: tf.Tensor, mask: Optional[tf.Tensor]) -> tf.Tensor
 ```
 
 Scales the loss and applies the mask if necessary.
@@ -573,7 +581,7 @@ This loss layer assumes that only one output (label) is correct for any given in
 #### \_\_init\_\_
 
 ```python
-def __init__(num_candidates: int, scale_loss: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX, similarity_type: Text = INNER, name: Optional[Text] = None, loss_type: Text = CROSS_ENTROPY, mu_pos: float = 0.8, mu_neg: float = -0.2, use_max_sim_neg: bool = True, neg_lambda: float = 0.5, same_sampling: bool = False, **kwargs: Any, ,) -> None
+ | __init__(num_candidates: int, scale_loss: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX, similarity_type: Text = INNER, name: Optional[Text] = None, loss_type: Text = CROSS_ENTROPY, mu_pos: float = 0.8, mu_neg: float = -0.2, use_max_sim_neg: bool = True, neg_lambda: float = 0.5, same_sampling: bool = False, **kwargs: Any, ,) -> None
 ```
 
 Declares instance variables with default values.
@@ -610,7 +618,7 @@ Declares instance variables with default values.
 #### call
 
 ```python
-def call(inputs_embed: tf.Tensor, labels_embed: tf.Tensor, labels: tf.Tensor, all_labels_embed: tf.Tensor, all_labels: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
+ | call(inputs_embed: tf.Tensor, labels_embed: tf.Tensor, labels: tf.Tensor, all_labels_embed: tf.Tensor, all_labels: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Calculate loss and accuracy.
@@ -648,7 +656,7 @@ input. To accomodate for this, we use a sigmoid cross-entropy loss here.
 #### \_\_init\_\_
 
 ```python
-def __init__(num_candidates: int, scale_loss: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX, similarity_type: Text = INNER, name: Optional[Text] = None, **kwargs: Any, ,) -> None
+ | __init__(num_candidates: int, scale_loss: bool = False, constrain_similarities: bool = True, model_confidence: Text = SOFTMAX, similarity_type: Text = INNER, name: Optional[Text] = None, **kwargs: Any, ,) -> None
 ```
 
 Declares instance variables with default values.
@@ -670,7 +678,7 @@ Declares instance variables with default values.
 #### call
 
 ```python
-def call(batch_inputs_embed: tf.Tensor, batch_labels_embed: tf.Tensor, batch_labels_ids: tf.Tensor, all_labels_embed: tf.Tensor, all_labels_ids: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
+ | call(batch_inputs_embed: tf.Tensor, batch_labels_embed: tf.Tensor, batch_labels_ids: tf.Tensor, all_labels_embed: tf.Tensor, all_labels_ids: tf.Tensor, mask: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Calculates loss and accuracy.

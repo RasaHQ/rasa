@@ -21,8 +21,8 @@ Base class for `Recipe`s which convert configs to graph schemas.
 #### recipe\_for\_name
 
 ```python
-@staticmethod
-def recipe_for_name(name: Optional[Text]) -> Recipe
+ | @staticmethod
+ | recipe_for_name(name: Optional[Text]) -> Recipe
 ```
 
 Returns `Recipe` based on an optional recipe identifier.
@@ -41,8 +41,8 @@ Returns `Recipe` based on an optional recipe identifier.
 #### graph\_config\_for\_recipe
 
 ```python
-@abc.abstractmethod
-def graph_config_for_recipe(config: Dict, cli_parameters: Dict[Text, Any], training_type: TrainingType = TrainingType.BOTH, is_finetuning: bool = False) -> GraphModelConfiguration
+ | @abc.abstractmethod
+ | graph_config_for_recipe(config: Dict, cli_parameters: Dict[Text, Any], training_type: TrainingType = TrainingType.BOTH, is_finetuning: bool = False) -> GraphModelConfiguration
 ```
 
 Converts a config to a graph compatible model configuration.

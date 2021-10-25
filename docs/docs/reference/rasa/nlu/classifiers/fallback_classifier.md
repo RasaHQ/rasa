@@ -16,8 +16,8 @@ Handles incoming messages with low NLU confidence.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -25,8 +25,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -34,7 +34,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any]) -> None
+ | __init__(config: Dict[Text, Any]) -> None
 ```
 
 Constructs a new fallback classifier.
@@ -42,8 +42,8 @@ Constructs a new fallback classifier.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FallbackClassifier
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FallbackClassifier
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -51,7 +51,7 @@ Creates a new component (see parent class for full docstring).
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Process a list of incoming messages.
@@ -73,7 +73,7 @@ of components previous to this one.
 #### is\_fallback\_classifier\_prediction
 
 ```python
-def is_fallback_classifier_prediction(prediction: Dict[Text, Any]) -> bool
+is_fallback_classifier_prediction(prediction: Dict[Text, Any]) -> bool
 ```
 
 Checks if the intent was predicted by the `FallbackClassifier`.
@@ -90,7 +90,7 @@ Checks if the intent was predicted by the `FallbackClassifier`.
 #### undo\_fallback\_prediction
 
 ```python
-def undo_fallback_prediction(prediction: Dict[Text, Any]) -> Dict[Text, Any]
+undo_fallback_prediction(prediction: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Undo the prediction of the fallback intent.

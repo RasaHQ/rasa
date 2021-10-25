@@ -5,7 +5,7 @@ title: rasa.nlu.convert
 #### convert\_training\_data
 
 ```python
-def convert_training_data(data_file: Union[list, Text], out_file: Text, output_format: Text, language: Text) -> None
+convert_training_data(data_file: Union[list, Text], out_file: Text, output_format: Text, language: Text) -> None
 ```
 
 Convert training data.

@@ -5,7 +5,7 @@ title: rasa.cli.data
 #### add\_subparser
 
 ```python
-def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all data parsers.
@@ -18,7 +18,7 @@ Add all data parsers.
 #### split\_nlu\_data
 
 ```python
-def split_nlu_data(args: argparse.Namespace) -> None
+split_nlu_data(args: argparse.Namespace) -> None
 ```
 
 Load data from a file path and split the NLU data into test and train examples.
@@ -30,7 +30,7 @@ Load data from a file path and split the NLU data into test and train examples.
 #### validate\_files
 
 ```python
-def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
+validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
 ```
 
 Validates either the story structure or the entire project.
@@ -43,7 +43,7 @@ Validates either the story structure or the entire project.
 #### validate\_stories
 
 ```python
-def validate_stories(args: argparse.Namespace) -> None
+validate_stories(args: argparse.Namespace) -> None
 ```
 
 Validates that training data file content conforms to training data spec.

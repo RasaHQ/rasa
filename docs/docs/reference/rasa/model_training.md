@@ -13,7 +13,7 @@ Holds information about the results of training.
 #### train
 
 ```python
-def train(domain: Text, config: Text, training_files: Optional[Union[Text, List[Text]]], output: Text = rasa.shared.constants.DEFAULT_MODELS_PATH, dry_run: bool = False, force_training: bool = False, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, core_additional_arguments: Optional[Dict] = None, nlu_additional_arguments: Optional[Dict] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> TrainingResult
+train(domain: Text, config: Text, training_files: Optional[Union[Text, List[Text]]], output: Text = rasa.shared.constants.DEFAULT_MODELS_PATH, dry_run: bool = False, force_training: bool = False, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, core_additional_arguments: Optional[Dict] = None, nlu_additional_arguments: Optional[Dict] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> TrainingResult
 ```
 
 Trains a Rasa model (Core and NLU).
@@ -46,7 +46,7 @@ Trains a Rasa model (Core and NLU).
 #### train\_core
 
 ```python
-def train_core(domain: Union[Domain, Text], config: Text, stories: Text, output: Text, fixed_model_name: Optional[Text] = None, additional_arguments: Optional[Dict] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> Optional[Text]
+train_core(domain: Union[Domain, Text], config: Text, stories: Text, output: Text, fixed_model_name: Optional[Text] = None, additional_arguments: Optional[Dict] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> Optional[Text]
 ```
 
 Trains a Core model.
@@ -72,7 +72,7 @@ Trains a Core model.
 #### train\_nlu
 
 ```python
-def train_nlu(config: Text, nlu_data: Optional[Text], output: Text, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, additional_arguments: Optional[Dict] = None, domain: Optional[Union[Domain, Text]] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> Optional[Text]
+train_nlu(config: Text, nlu_data: Optional[Text], output: Text, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, additional_arguments: Optional[Dict] = None, domain: Optional[Union[Domain, Text]] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> Optional[Text]
 ```
 
 Trains an NLU model.

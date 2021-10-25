@@ -11,7 +11,7 @@ class Ticket()
 #### dumps
 
 ```python
-def dumps() -> Text
+ | dumps() -> Text
 ```
 
 Return json dump of `Ticket` as dictionary.
@@ -19,8 +19,8 @@ Return json dump of `Ticket` as dictionary.
 #### from\_dict
 
 ```python
-@classmethod
-def from_dict(cls, data: Dict[Text, Union[int, float]]) -> "Ticket"
+ | @classmethod
+ | from_dict(cls, data: Dict[Text, Union[int, float]]) -> "Ticket"
 ```
 
 Creates `Ticket` from dictionary.
@@ -40,8 +40,8 @@ http://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks.pdf#page=13
 #### from\_dict
 
 ```python
-@classmethod
-def from_dict(cls, data: Dict[Text, Any]) -> "TicketLock"
+ | @classmethod
+ | from_dict(cls, data: Dict[Text, Any]) -> "TicketLock"
 ```
 
 Create `TicketLock` from dictionary.
@@ -49,7 +49,7 @@ Create `TicketLock` from dictionary.
 #### dumps
 
 ```python
-def dumps() -> Text
+ | dumps() -> Text
 ```
 
 Return json dump of `TicketLock`.
@@ -57,7 +57,7 @@ Return json dump of `TicketLock`.
 #### is\_locked
 
 ```python
-def is_locked(ticket_number: int) -> bool
+ | is_locked(ticket_number: int) -> bool
 ```
 
 Return whether `ticket_number` is locked.
@@ -69,7 +69,7 @@ Return whether `ticket_number` is locked.
 #### issue\_ticket
 
 ```python
-def issue_ticket(lifetime: float) -> int
+ | issue_ticket(lifetime: float) -> int
 ```
 
 Issue a new ticket and return its number.
@@ -77,7 +77,7 @@ Issue a new ticket and return its number.
 #### remove\_expired\_tickets
 
 ```python
-def remove_expired_tickets() -> None
+ | remove_expired_tickets() -> None
 ```
 
 Remove expired tickets.
@@ -85,8 +85,8 @@ Remove expired tickets.
 #### last\_issued
 
 ```python
-@property
-def last_issued() -> int
+ | @property
+ | last_issued() -> int
 ```
 
 Return number of the ticket that was last added.
@@ -99,8 +99,8 @@ Return number of the ticket that was last added.
 #### now\_serving
 
 ```python
-@property
-def now_serving() -> Optional[int]
+ | @property
+ | now_serving() -> Optional[int]
 ```
 
 Get number of the ticket to be served next.
@@ -112,7 +112,7 @@ Get number of the ticket to be served next.
 #### is\_someone\_waiting
 
 ```python
-def is_someone_waiting() -> bool
+ | is_someone_waiting() -> bool
 ```
 
 Return whether someone is waiting for the lock to become available.
@@ -124,7 +124,7 @@ Return whether someone is waiting for the lock to become available.
 #### remove\_ticket\_for
 
 ```python
-def remove_ticket_for(ticket_number: int) -> None
+ | remove_ticket_for(ticket_number: int) -> None
 ```
 
 Remove `Ticket` for `ticket_number.

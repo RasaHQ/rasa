@@ -15,7 +15,7 @@ When used as a context manager, it erases the contents of the directory on exit.
 #### read\_global\_config
 
 ```python
-def read_global_config(path: Text) -> Dict[Text, Any]
+read_global_config(path: Text) -> Dict[Text, Any]
 ```
 
 Read global Rasa configuration.
@@ -28,20 +28,36 @@ Read global Rasa configuration.
 
   The global configuration
 
-#### set\_log\_level
+#### configure\_logging\_and\_warnings
 
 ```python
-def set_log_level(log_level: Optional[int] = None) -> None
+configure_logging_and_warnings(log_level: Optional[int] = None, warn_only_once: bool = True, filter_repeated_logs: bool = True) -> None
 ```
 
-Set log level of Rasa and Tensorflow either to the provided log level or
-to the log level specified in the environment variable &#x27;LOG_LEVEL&#x27;. If none is set
-a default log level will be used.
+Sets log levels of various loggers and sets up filters for warnings and logs.
+
+**Arguments**:
+
+- `log_level` - The lo level to be used for the &#x27;Rasa&#x27; logger. Pass `None` to use
+  either the environment variable &#x27;LOG_LEVEL&#x27; if it is specified, or the
+  default log level otherwise.
+- `warn_only_once` - determines whether user warnings should be filtered by the
+  `warnings` module to appear only &quot;once&quot;
+- `filter_repeated_logs` - determines whether `RepeatedLogFilter`s are added to
+  the handlers of the root logger
+
+#### update\_apscheduler\_log\_level
+
+```python
+update_apscheduler_log_level() -> None
+```
+
+Configures the log level of `apscheduler.*` loggers.
 
 #### update\_tensorflow\_log\_level
 
 ```python
-def update_tensorflow_log_level() -> None
+update_tensorflow_log_level() -> None
 ```
 
 Sets Tensorflow log level based on env variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
@@ -49,7 +65,7 @@ Sets Tensorflow log level based on env variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
 #### update\_sanic\_log\_level
 
 ```python
-def update_sanic_log_level(log_file: Optional[Text] = None) -> None
+update_sanic_log_level(log_file: Optional[Text] = None) -> None
 ```
 
 Set the log level of sanic loggers to the log level specified in the environment
@@ -58,35 +74,27 @@ variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
 #### update\_asyncio\_log\_level
 
 ```python
-def update_asyncio_log_level() -> None
+update_asyncio_log_level() -> None
 ```
 
-Set the log level of asyncio to the log level specified in the environment
-variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
+Set the log level of asyncio to the log level.
+
+Uses the log level specified in the environment variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
 
 #### update\_matplotlib\_log\_level
 
 ```python
-def update_matplotlib_log_level() -> None
+update_matplotlib_log_level() -> None
 ```
 
-Set the log level of matplotlib to the log level specified in the environment
-variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
+Set the log level of matplotlib to the log level.
 
-#### set\_log\_and\_warnings\_filters
-
-```python
-def set_log_and_warnings_filters() -> None
-```
-
-Set log filters on the root logger, and duplicate filters for warnings.
-
-Filters only propagate on handlers, not loggers.
+Uses the log level specified in the environment variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
 
 #### sort\_list\_of\_dicts\_by\_first\_key
 
 ```python
-def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]
+sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]
 ```
 
 Sorts a list of dictionaries by their first key.
@@ -94,7 +102,7 @@ Sorts a list of dictionaries by their first key.
 #### write\_global\_config\_value
 
 ```python
-def write_global_config_value(name: Text, value: Any) -> bool
+write_global_config_value(name: Text, value: Any) -> bool
 ```
 
 Read global Rasa configuration.
@@ -112,7 +120,7 @@ Read global Rasa configuration.
 #### read\_global\_config\_value
 
 ```python
-def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any
+read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any
 ```
 
 Read a value from the global Rasa configuration.
@@ -120,7 +128,7 @@ Read a value from the global Rasa configuration.
 #### update\_existing\_keys
 
 ```python
-def update_existing_keys(original: Dict[Any, Any], updates: Dict[Any, Any]) -> Dict[Any, Any]
+update_existing_keys(original: Dict[Any, Any], updates: Dict[Any, Any]) -> Dict[Any, Any]
 ```
 
 Iterate through all the updates and update a value in the original dictionary.
@@ -139,7 +147,7 @@ Filter repeated log records.
 #### filter
 
 ```python
-def filter(record: logging.LogRecord) -> bool
+ | filter(record: logging.LogRecord) -> bool
 ```
 
 Determines whether current log is different to last log.
@@ -147,7 +155,7 @@ Determines whether current log is different to last log.
 #### call\_potential\_coroutine
 
 ```python
-async def call_potential_coroutine(coroutine_or_return_value: Union[Any, Coroutine]) -> Any
+async call_potential_coroutine(coroutine_or_return_value: Union[Any, Coroutine]) -> Any
 ```
 
 Awaits coroutine or returns value directly if it&#x27;s not a coroutine.
@@ -165,7 +173,7 @@ Awaits coroutine or returns value directly if it&#x27;s not a coroutine.
 #### directory\_size\_in\_mb
 
 ```python
-def directory_size_in_mb(path: Path, filenames_to_exclude: Optional[List[Text]] = None) -> float
+directory_size_in_mb(path: Path, filenames_to_exclude: Optional[List[Text]] = None) -> float
 ```
 
 Calculates the size of a directory.
@@ -183,7 +191,7 @@ Calculates the size of a directory.
 #### copy\_directory
 
 ```python
-def copy_directory(source: Path, destination: Path) -> None
+copy_directory(source: Path, destination: Path) -> None
 ```
 
 Copies the content of one directory into another.
@@ -206,7 +214,7 @@ Unlike `shutil.copytree` this doesn&#x27;t raise if `destination` already exists
 #### find\_unavailable\_packages
 
 ```python
-def find_unavailable_packages(package_names: List[Text]) -> Set[Text]
+find_unavailable_packages(package_names: List[Text]) -> Set[Text]
 ```
 
 Tries to import all package names and returns the packages where it failed.
@@ -223,7 +231,7 @@ Tries to import all package names and returns the packages where it failed.
 #### module\_path\_from\_class
 
 ```python
-def module_path_from_class(clazz: Type) -> Text
+module_path_from_class(clazz: Type) -> Text
 ```
 
 Return the module path of an instance&#x27;s class.

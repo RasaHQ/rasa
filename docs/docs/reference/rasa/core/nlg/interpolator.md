@@ -5,7 +5,7 @@ title: rasa.core.nlg.interpolator
 #### interpolate\_text
 
 ```python
-def interpolate_text(response: Text, values: Dict[Text, Text]) -> Text
+interpolate_text(response: Text, values: Dict[Text, Text]) -> Text
 ```
 
 Interpolate values into responses with placeholders.
@@ -30,7 +30,7 @@ Block characters, making sure not to allow:
 #### interpolate
 
 ```python
-def interpolate(response: Union[List[Any], Dict[Text, Any], Text], values: Dict[Text, Text]) -> Union[List[Any], Dict[Text, Any], Text]
+interpolate(response: Union[List[Any], Dict[Text, Any], Text], values: Dict[Text, Text]) -> Union[List[Any], Dict[Text, Any], Text]
 ```
 
 Recursively process response and interpolate any text keys.

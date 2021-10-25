@@ -13,7 +13,7 @@ Attributes of an entity defined in markdown data.
 #### find\_entities\_in\_training\_example
 
 ```python
-def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]
+find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]
 ```
 
 Extracts entities from an intent example.
@@ -30,7 +30,7 @@ Extracts entities from an intent example.
 #### extract\_entity\_attributes
 
 ```python
-def extract_entity_attributes(match: Match) -> EntityAttributes
+extract_entity_attributes(match: Match) -> EntityAttributes
 ```
 
 Extract the entity attributes, i.e. type, value, etc., from the
@@ -48,7 +48,7 @@ regex match.
 #### extract\_entity\_attributes\_from\_dict
 
 ```python
-def extract_entity_attributes_from_dict(entity_text: Text, match: Match) -> EntityAttributes
+extract_entity_attributes_from_dict(entity_text: Text, match: Match) -> EntityAttributes
 ```
 
 Extract entity attributes from dict format.
@@ -66,7 +66,7 @@ Extract entity attributes from dict format.
 #### get\_validated\_dict
 
 ```python
-def get_validated_dict(json_str: Text) -> Dict[Text, Text]
+get_validated_dict(json_str: Text) -> Dict[Text, Text]
 ```
 
 Converts the provided `json_str` to a valid dict containing the entity
@@ -93,7 +93,7 @@ Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
 #### replace\_entities
 
 ```python
-def replace_entities(training_example: Text) -> Text
+replace_entities(training_example: Text) -> Text
 ```
 
 Replace special symbols related to the entities in the provided
@@ -111,7 +111,7 @@ training example.
 #### parse\_training\_example
 
 ```python
-def parse_training_example(example: Text, intent: Optional[Text] = None) -> "Message"
+parse_training_example(example: Text, intent: Optional[Text] = None) -> "Message"
 ```
 
 Extract entities and synonyms, and convert to plain text.

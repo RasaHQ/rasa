@@ -18,8 +18,8 @@ Intent classifier which uses the `mitie` library.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -27,8 +27,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Returns default config (see parent class for full docstring).
@@ -36,7 +36,7 @@ Returns default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, clf: Optional["mitie.text_categorizer"] = None) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, clf: Optional["mitie.text_categorizer"] = None) -> None
 ```
 
 Constructs a new intent classifier using the MITIE framework.
@@ -44,8 +44,8 @@ Constructs a new intent classifier using the MITIE framework.
 #### required\_packages
 
 ```python
-@classmethod
-def required_packages(cls) -> List[Text]
+ | @classmethod
+ | required_packages(cls) -> List[Text]
 ```
 
 Lists required dependencies (see parent class for full docstring).
@@ -53,7 +53,7 @@ Lists required dependencies (see parent class for full docstring).
 #### train
 
 ```python
-def train(training_data: TrainingData, model: MitieModel) -> Resource
+ | train(training_data: TrainingData, model: MitieModel) -> Resource
 ```
 
 Trains classifier.
@@ -71,7 +71,7 @@ Trains classifier.
 #### process
 
 ```python
-def process(messages: List[Message], model: MitieModel) -> List[Message]
+ | process(messages: List[Message], model: MitieModel) -> List[Message]
 ```
 
 Make intent predictions using `mitie`.
@@ -84,8 +84,8 @@ Make intent predictions using `mitie`.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieIntentClassifier
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieIntentClassifier
 ```
 
 Creates component for training see parent class for full docstring).
@@ -93,8 +93,8 @@ Creates component for training see parent class for full docstring).
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieIntentClassifier
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieIntentClassifier
 ```
 
 Loads component for inference see parent class for full docstring).

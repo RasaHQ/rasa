@@ -13,7 +13,7 @@ Callback for logging the status of training.
 #### \_\_init\_\_
 
 ```python
-def __init__(epochs: int, silent: bool) -> None
+ | __init__(epochs: int, silent: bool) -> None
 ```
 
 Initializes the callback.
@@ -26,7 +26,7 @@ Initializes the callback.
 #### on\_epoch\_end
 
 ```python
-def on_epoch_end(epoch: int, logs: Optional[Dict[Text, Any]] = None) -> None
+ | on_epoch_end(epoch: int, logs: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Updates the logging output on every epoch end.
@@ -39,7 +39,7 @@ Updates the logging output on every epoch end.
 #### on\_train\_end
 
 ```python
-def on_train_end(logs: Optional[Dict[Text, Any]] = None) -> None
+ | on_train_end(logs: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Closes the progress bar after training.
@@ -59,7 +59,7 @@ Callback for saving intermediate model checkpoints.
 #### \_\_init\_\_
 
 ```python
-def __init__(checkpoint_dir: Path) -> None
+ | __init__(checkpoint_dir: Path) -> None
 ```
 
 Initializes the callback.
@@ -71,7 +71,7 @@ Initializes the callback.
 #### on\_epoch\_end
 
 ```python
-def on_epoch_end(epoch: int, logs: Optional[Dict[Text, Any]] = None) -> None
+ | on_epoch_end(epoch: int, logs: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Save the model on epoch end if the model has improved.

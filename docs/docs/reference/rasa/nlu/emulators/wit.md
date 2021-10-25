@@ -16,7 +16,7 @@ https://wit.ai/docs/http/20200513/#get__message_link
 #### normalise\_response\_json
 
 ```python
-def normalise_response_json(data: Dict[Text, Any]) -> Dict[Text, Any]
+ | normalise_response_json(data: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Transform response JSON to wit.ai format.

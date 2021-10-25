@@ -16,7 +16,7 @@ the same dialogue state, which most policies cannot learn.
 #### \_\_init\_\_
 
 ```python
-def __init__(sliced_states: List[State]) -> None
+ | __init__(sliced_states: List[State]) -> None
 ```
 
 Creates a `StoryConflict` from a given state.
@@ -28,7 +28,7 @@ Creates a `StoryConflict` from a given state.
 #### add\_conflicting\_action
 
 ```python
-def add_conflicting_action(action: Text, story_name: Text) -> None
+ | add_conflicting_action(action: Text, story_name: Text) -> None
 ```
 
 Adds another action that follows from the same state.
@@ -41,8 +41,8 @@ Adds another action that follows from the same state.
 #### conflicting\_actions
 
 ```python
-@property
-def conflicting_actions() -> List[Text]
+ | @property
+ | conflicting_actions() -> List[Text]
 ```
 
 List of conflicting actions.
@@ -54,8 +54,8 @@ List of conflicting actions.
 #### conflict\_has\_prior\_events
 
 ```python
-@property
-def conflict_has_prior_events() -> bool
+ | @property
+ | conflict_has_prior_events() -> bool
 ```
 
 Checks if prior events exist.
@@ -75,8 +75,8 @@ Holds a tracker, an event, and sliced states associated with those.
 #### sliced\_states\_hash
 
 ```python
-@property
-def sliced_states_hash() -> int
+ | @property
+ | sliced_states_hash() -> int
 ```
 
 Returns the hash of the sliced states.
@@ -84,7 +84,7 @@ Returns the hash of the sliced states.
 #### find\_story\_conflicts
 
 ```python
-def find_story_conflicts(trackers: List[TrackerWithCachedStates], domain: Domain, max_history: Optional[int] = None) -> List[StoryConflict]
+find_story_conflicts(trackers: List[TrackerWithCachedStates], domain: Domain, max_history: Optional[int] = None) -> List[StoryConflict]
 ```
 
 Generates `StoryConflict` objects, describing conflicts in the given trackers.

@@ -5,7 +5,7 @@ title: rasa.shared.nlu.training_data.util
 #### transform\_entity\_synonyms
 
 ```python
-def transform_entity_synonyms(synonyms: List[Dict[Text, Any]], known_synonyms: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
+transform_entity_synonyms(synonyms: List[Dict[Text, Any]], known_synonyms: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
 ```
 
 Transforms the entity synonyms into a text-&gt;value dictionary
@@ -13,7 +13,7 @@ Transforms the entity synonyms into a text-&gt;value dictionary
 #### get\_file\_format\_extension
 
 ```python
-def get_file_format_extension(resource_name: Text) -> Text
+get_file_format_extension(resource_name: Text) -> Text
 ```
 
 Get the file extension based on training data format. It supports both a folder and
@@ -35,7 +35,7 @@ same known format, return it&#x27;s extension
 #### remove\_untrainable\_entities\_from
 
 ```python
-def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None
+remove_untrainable_entities_from(example: Dict[Text, Any]) -> None
 ```
 
 Remove untrainable entities from serialised training example `example`.
@@ -50,7 +50,7 @@ are defined in `rasa.nlu.constants.PRETRAINED_EXTRACTORS`.
 #### intent\_response\_key\_to\_template\_key
 
 ```python
-def intent_response_key_to_template_key(intent_response_key: Text) -> Text
+intent_response_key_to_template_key(intent_response_key: Text) -> Text
 ```
 
 Resolve the response template key for a given intent response key.
@@ -64,7 +64,7 @@ Resolve the response template key for a given intent response key.
 #### template\_key\_to\_intent\_response\_key
 
 ```python
-def template_key_to_intent_response_key(template_key: Text) -> Text
+template_key_to_intent_response_key(template_key: Text) -> Text
 ```
 
 Resolve the intent response key for the given response template.
@@ -78,7 +78,7 @@ Resolve the intent response key for the given response template.
 #### has\_string\_escape\_chars
 
 ```python
-def has_string_escape_chars(s: Text) -> bool
+has_string_escape_chars(s: Text) -> bool
 ```
 
 Checks whether there are any of the escape characters in the string.
@@ -86,7 +86,7 @@ Checks whether there are any of the escape characters in the string.
 #### encode\_string
 
 ```python
-def encode_string(s: Text) -> Text
+encode_string(s: Text) -> Text
 ```
 
 Return an encoded python string.
@@ -94,7 +94,7 @@ Return an encoded python string.
 #### decode\_string
 
 ```python
-def decode_string(s: Text) -> Text
+decode_string(s: Text) -> Text
 ```
 
 Return a decoded python string.
@@ -102,7 +102,7 @@ Return a decoded python string.
 #### build\_entity
 
 ```python
-def build_entity(start: int, end: int, value: Text, entity_type: Text, role: Optional[Text] = None, group: Optional[Text] = None, **kwargs: Any, ,) -> Dict[Text, Any]
+build_entity(start: int, end: int, value: Text, entity_type: Text, role: Optional[Text] = None, group: Optional[Text] = None, **kwargs: Any, ,) -> Dict[Text, Any]
 ```
 
 Builds a standard entity dictionary.
@@ -127,7 +127,7 @@ Adds additional keyword parameters.
 #### sparse\_matrix\_to\_string
 
 ```python
-def sparse_matrix_to_string(m: scipy.sparse.spmatrix) -> Text
+sparse_matrix_to_string(m: scipy.sparse.spmatrix) -> Text
 ```
 
 Turns a sparse matrix into a string.

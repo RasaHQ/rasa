@@ -5,7 +5,7 @@ title: rasa.jupyter
 #### pprint
 
 ```python
-def pprint(obj: Any) -> None
+pprint(obj: Any) -> None
 ```
 
 Prints JSONs with indent.
@@ -13,7 +13,7 @@ Prints JSONs with indent.
 #### chat
 
 ```python
-def chat(model_path: Optional[Text] = None, endpoints: Optional[Text] = None, agent: Optional["Agent"] = None) -> None
+chat(model_path: Optional[Text] = None, endpoints: Optional[Text] = None, agent: Optional["Agent"] = None) -> None
 ```
 
 Chat to the bot within a Jupyter notebook.

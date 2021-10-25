@@ -13,7 +13,7 @@ Reads YAML training data and creates a TrainingData object.
 #### validate
 
 ```python
-def validate(string: Text) -> None
+ | validate(string: Text) -> None
 ```
 
 Check if the string adheres to the NLU yaml data schema.
@@ -23,7 +23,7 @@ If the string is not in the right format, an exception will be raised.
 #### reads
 
 ```python
-def reads(string: Text, **kwargs: Any) -> "TrainingData"
+ | reads(string: Text, **kwargs: Any) -> "TrainingData"
 ```
 
 Reads TrainingData in YAML format from a string.
@@ -41,8 +41,8 @@ Reads TrainingData in YAML format from a string.
 #### is\_yaml\_nlu\_file
 
 ```python
-@staticmethod
-def is_yaml_nlu_file(filename: Union[Text, Path]) -> bool
+ | @staticmethod
+ | is_yaml_nlu_file(filename: Union[Text, Path]) -> bool
 ```
 
 Checks if the specified file possibly contains NLU training data in YAML.
@@ -74,7 +74,7 @@ Writes training data into a file in a YAML format.
 #### dumps
 
 ```python
-def dumps(training_data: "TrainingData") -> Text
+ | dumps(training_data: "TrainingData") -> Text
 ```
 
 Turns TrainingData into a string.
@@ -82,7 +82,7 @@ Turns TrainingData into a string.
 #### dump
 
 ```python
-def dump(target: Union[Text, Path, StringIO], training_data: "TrainingData") -> None
+ | dump(target: Union[Text, Path, StringIO], training_data: "TrainingData") -> None
 ```
 
 Writes training data into a file in a YAML format.
@@ -95,8 +95,8 @@ Writes training data into a file in a YAML format.
 #### training\_data\_to\_dict
 
 ```python
-@classmethod
-def training_data_to_dict(cls, training_data: "TrainingData") -> Optional[OrderedDict]
+ | @classmethod
+ | training_data_to_dict(cls, training_data: "TrainingData") -> Optional[OrderedDict]
 ```
 
 Represents NLU training data to a dict/list structure ready to be
@@ -114,8 +114,8 @@ serialized as YAML.
 #### process\_lookup\_tables
 
 ```python
-@classmethod
-def process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]
+ | @classmethod
+ | process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]
 ```
 
 Serializes the look up tables.
@@ -132,8 +132,8 @@ Serializes the look up tables.
 #### process\_training\_examples\_by\_key
 
 ```python
-@staticmethod
-def process_training_examples_by_key(training_examples: Dict[Text, List[Union[Dict, Text]]], key_name: Text, key_examples: Text, example_extraction_predicate: Callable[[Dict[Text, Any]], Text]) -> List[OrderedDict]
+ | @staticmethod
+ | process_training_examples_by_key(training_examples: Dict[Text, List[Union[Dict, Text]]], key_name: Text, key_examples: Text, example_extraction_predicate: Callable[[Dict[Text, Any]], Text]) -> List[OrderedDict]
 ```
 
 Prepares training examples  to be written to YAML.

@@ -13,7 +13,7 @@ Allows for an HTTP endpoint to be used to parse messages.
 #### \_\_init\_\_
 
 ```python
-def __init__(endpoint_config: Optional[EndpointConfig] = None) -> None
+ | __init__(endpoint_config: Optional[EndpointConfig] = None) -> None
 ```
 
 Initializes a `RasaNLUHttpInterpreter`.
@@ -21,7 +21,7 @@ Initializes a `RasaNLUHttpInterpreter`.
 #### parse
 
 ```python
-async def parse(message: UserMessage) -> Dict[Text, Any]
+ | async parse(message: UserMessage) -> Dict[Text, Any]
 ```
 
 Parse a text message.

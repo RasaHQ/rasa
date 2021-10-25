@@ -21,7 +21,7 @@ Kafka event broker.
 #### \_\_init\_\_
 
 ```python
-def __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, partition_by_sender: bool = False, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, sasl_mechanism: Optional[Text] = "PLAIN", ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", loglevel: Union[int, Text] = logging.ERROR, convert_intent_id_to_string: bool = False, **kwargs: Any, ,) -> None
+ | __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, partition_by_sender: bool = False, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, sasl_mechanism: Optional[Text] = "PLAIN", ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", loglevel: Union[int, Text] = logging.ERROR, convert_intent_id_to_string: bool = False, **kwargs: Any, ,) -> None
 ```
 
 Kafka event broker.
@@ -63,8 +63,8 @@ Kafka event broker.
 #### from\_endpoint\_config
 
 ```python
-@classmethod
-async def from_endpoint_config(cls, broker_config: EndpointConfig, event_loop: Optional[AbstractEventLoop] = None) -> Optional["KafkaEventBroker"]
+ | @classmethod
+ | async from_endpoint_config(cls, broker_config: EndpointConfig, event_loop: Optional[AbstractEventLoop] = None) -> Optional["KafkaEventBroker"]
 ```
 
 Creates broker. See the parent class for more information.
@@ -72,7 +72,7 @@ Creates broker. See the parent class for more information.
 #### publish
 
 ```python
-def publish(event: Dict[Text, Any], retries: int = 60, retry_delay_in_seconds: float = 5) -> None
+ | publish(event: Dict[Text, Any], retries: int = 60, retry_delay_in_seconds: float = 5) -> None
 ```
 
 Publishes events.

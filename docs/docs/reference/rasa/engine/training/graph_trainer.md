@@ -13,7 +13,7 @@ Trains a model using a graph schema.
 #### \_\_init\_\_
 
 ```python
-def __init__(model_storage: ModelStorage, cache: TrainingCache, graph_runner_class: Type[GraphRunner]) -> None
+ | __init__(model_storage: ModelStorage, cache: TrainingCache, graph_runner_class: Type[GraphRunner]) -> None
 ```
 
 Initializes a `GraphTrainer`.
@@ -28,7 +28,7 @@ Initializes a `GraphTrainer`.
 #### train
 
 ```python
-def train(model_configuration: GraphModelConfiguration, importer: TrainingDataImporter, output_filename: Path, force_retraining: bool = False, is_finetuning: bool = False) -> ModelMetadata
+ | train(model_configuration: GraphModelConfiguration, importer: TrainingDataImporter, output_filename: Path, force_retraining: bool = False, is_finetuning: bool = False) -> ModelMetadata
 ```
 
 Trains and packages a model and returns the prediction graph runner.
@@ -49,7 +49,7 @@ Trains and packages a model and returns the prediction graph runner.
 #### fingerprint
 
 ```python
-def fingerprint(train_schema: GraphSchema, importer: TrainingDataImporter, is_finetuning: bool = False) -> Dict[Text, Union[FingerprintStatus, Any]]
+ | fingerprint(train_schema: GraphSchema, importer: TrainingDataImporter, is_finetuning: bool = False) -> Dict[Text, Union[FingerprintStatus, Any]]
 ```
 
 Runs the graph using fingerprints to determine which nodes need to re-run.

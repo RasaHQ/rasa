@@ -28,7 +28,7 @@ from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_error
-from rasa.utils.common import set_log_and_warnings_filters, set_log_level
+from rasa.utils.common import configure_logging_and_warnings
 
 logger = logging.getLogger(__name__)
 
@@ -101,9 +101,12 @@ def main() -> None:
     log_level = (
         cmdline_arguments.loglevel if hasattr(cmdline_arguments, "loglevel") else None
     )
-    set_log_level(log_level)
+    configure_logging_and_warnings(
+        log_level, warn_only_once=True, filter_repeated_logs=True
+    )
 
     tf_env.setup_tf_environment()
+    tf_env.check_deterministic_ops()
 
     # insert current path in syspath so custom modules are found
     sys.path.insert(1, os.getcwd())
@@ -111,7 +114,6 @@ def main() -> None:
     try:
         if hasattr(cmdline_arguments, "func"):
             rasa.utils.io.configure_colored_logging(log_level)
-            set_log_and_warnings_filters()
             rasa.telemetry.initialize_telemetry()
             rasa.telemetry.initialize_error_reporting()
             cmdline_arguments.func(cmdline_arguments)

@@ -5,7 +5,7 @@ title: rasa.cli.interactive
 #### add\_subparser
 
 ```python
-def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all interactive cli parsers.
@@ -18,7 +18,7 @@ Add all interactive cli parsers.
 #### perform\_interactive\_learning
 
 ```python
-def perform_interactive_learning(args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter) -> None
+perform_interactive_learning(args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter) -> None
 ```
 
 Performs interactive learning.
@@ -32,7 +32,7 @@ Performs interactive learning.
 #### get\_provided\_model
 
 ```python
-def get_provided_model(arg_model: Text) -> Optional[Text]
+get_provided_model(arg_model: Text) -> Optional[Text]
 ```
 
 Checks model path input and selects model from it.

@@ -13,7 +13,7 @@ Reader for NLU training data.
 #### \_\_init\_\_
 
 ```python
-def __init__() -> None
+ | __init__() -> None
 ```
 
 Creates reader instance.
@@ -21,7 +21,7 @@ Creates reader instance.
 #### read
 
 ```python
-def read(filename: Union[Text, Path], **kwargs: Any) -> "TrainingData"
+ | read(filename: Union[Text, Path], **kwargs: Any) -> "TrainingData"
 ```
 
 Reads TrainingData from a file.
@@ -29,8 +29,8 @@ Reads TrainingData from a file.
 #### reads
 
 ```python
-@abc.abstractmethod
-def reads(s: Text, **kwargs: Any) -> "TrainingData"
+ | @abc.abstractmethod
+ | reads(s: Text, **kwargs: Any) -> "TrainingData"
 ```
 
 Reads TrainingData from a string.
@@ -46,7 +46,7 @@ A class for writing training data to a file.
 #### dump
 
 ```python
-def dump(filename: Text, training_data: "TrainingData") -> None
+ | dump(filename: Text, training_data: "TrainingData") -> None
 ```
 
 Writes a TrainingData object to a file.
@@ -54,7 +54,7 @@ Writes a TrainingData object to a file.
 #### dumps
 
 ```python
-def dumps(training_data: "TrainingData") -> Text
+ | dumps(training_data: "TrainingData") -> Text
 ```
 
 Turns TrainingData into a string.
@@ -62,8 +62,8 @@ Turns TrainingData into a string.
 #### prepare\_training\_examples
 
 ```python
-@staticmethod
-def prepare_training_examples(training_data: "TrainingData") -> OrderedDict
+ | @staticmethod
+ | prepare_training_examples(training_data: "TrainingData") -> OrderedDict
 ```
 
 Pre-processes training data examples by removing not trainable entities.
@@ -71,8 +71,8 @@ Pre-processes training data examples by removing not trainable entities.
 #### generate\_list\_item
 
 ```python
-@staticmethod
-def generate_list_item(text: Text) -> Text
+ | @staticmethod
+ | generate_list_item(text: Text) -> Text
 ```
 
 Generates text for a list item.
@@ -80,8 +80,8 @@ Generates text for a list item.
 #### generate\_message
 
 ```python
-@staticmethod
-def generate_message(message: Dict[Text, Any]) -> Text
+ | @staticmethod
+ | generate_message(message: Dict[Text, Any]) -> Text
 ```
 
 Generates text for a message object.
@@ -89,8 +89,8 @@ Generates text for a message object.
 #### generate\_entity
 
 ```python
-@staticmethod
-def generate_entity(text: Text, entity: Dict[Text, Any]) -> Text
+ | @staticmethod
+ | generate_entity(text: Text, entity: Dict[Text, Any]) -> Text
 ```
 
 Generates text for an entity object.
@@ -104,7 +104,7 @@ class JsonTrainingDataReader(TrainingDataReader)
 #### reads
 
 ```python
-def reads(s: Text, **kwargs: Any) -> "TrainingData"
+ | reads(s: Text, **kwargs: Any) -> "TrainingData"
 ```
 
 Transforms string into json object and passes it on.
@@ -112,7 +112,7 @@ Transforms string into json object and passes it on.
 #### read\_from\_json
 
 ```python
-def read_from_json(js: Dict[Text, Any], **kwargs: Any) -> "TrainingData"
+ | read_from_json(js: Dict[Text, Any], **kwargs: Any) -> "TrainingData"
 ```
 
 Reads TrainingData from a json object.

@@ -279,7 +279,7 @@ def test_model_data_signature_with_entities(
 
 
 @pytest.mark.skip_on_windows
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(240, func_only=True)
 async def test_train_persist_load_with_different_settings_non_windows(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
@@ -297,7 +297,7 @@ async def test_train_persist_load_with_different_settings_non_windows(
     create_diet(config, load=True, finetune=True)
 
 
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(240, func_only=True)
 async def test_train_persist_load_with_different_settings(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
@@ -307,7 +307,7 @@ async def test_train_persist_load_with_different_settings(
     create_diet(config, load=True, finetune=True)
 
 
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(210, func_only=True)
 async def test_train_persist_load_with_only_entity_recognition(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
@@ -435,12 +435,18 @@ async def test_set_random_seed(
 ):
     """test if train result is the same for two runs of tf embedding"""
 
-    parsed_message1 = create_train_load_and_process_diet({RANDOM_SEED: 1, EPOCHS: 1},)
+    parsed_message1 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+    )
 
-    parsed_message2 = create_train_load_and_process_diet({RANDOM_SEED: 1, EPOCHS: 1},)
+    parsed_message2 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+    )
 
     # Different random seed
-    parsed_message3 = create_train_load_and_process_diet({RANDOM_SEED: 2, EPOCHS: 1},)
+    parsed_message3 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1},
+    )
 
     assert (
         parsed_message1.data["intent"]["confidence"]
@@ -591,7 +597,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(300, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params: Dict[Text, Any],
     create_train_load_and_process_diet: Callable[..., Message],

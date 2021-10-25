@@ -5,7 +5,7 @@ title: rasa.cli.export
 #### add\_subparser
 
 ```python
-def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add subparser for `rasa export`.
@@ -20,7 +20,7 @@ Add subparser for `rasa export`.
 #### export\_trackers
 
 ```python
-def export_trackers(args: argparse.Namespace) -> None
+export_trackers(args: argparse.Namespace) -> None
 ```
 
 Export events for a connected tracker store using an event broker.

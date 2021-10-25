@@ -13,8 +13,8 @@ Interface for any training data format conversion.
 #### filter
 
 ```python
-@classmethod
-def filter(cls, source_path: Path) -> bool
+ | @classmethod
+ | filter(cls, source_path: Path) -> bool
 ```
 
 Checks if the concrete implementation of TrainingDataConverter can convert
@@ -32,8 +32,8 @@ training data file.
 #### convert\_and\_write
 
 ```python
-@classmethod
-async def convert_and_write(cls, source_path: Path, output_path: Path) -> None
+ | @classmethod
+ | async convert_and_write(cls, source_path: Path, output_path: Path) -> None
 ```
 
 Converts the given training data file and saves it to the output directory.
@@ -46,8 +46,8 @@ Converts the given training data file and saves it to the output directory.
 #### generate\_path\_for\_converted\_training\_data\_file
 
 ```python
-@classmethod
-def generate_path_for_converted_training_data_file(cls, source_file_path: Path, output_directory: Path) -> Path
+ | @classmethod
+ | generate_path_for_converted_training_data_file(cls, source_file_path: Path, output_directory: Path) -> Path
 ```
 
 Generates path for a training data file converted to YAML format.
@@ -65,8 +65,8 @@ Generates path for a training data file converted to YAML format.
 #### converted\_file\_suffix
 
 ```python
-@classmethod
-def converted_file_suffix(cls) -> Text
+ | @classmethod
+ | converted_file_suffix(cls) -> Text
 ```
 
 Returns suffix that should be appended to the converted

@@ -29,7 +29,7 @@ Key-value store for storing information during a conversation.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = True) -> None
+ | __init__(name: Text, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = True) -> None
 ```
 
 Create a Slot.
@@ -48,7 +48,7 @@ Create a Slot.
 #### feature\_dimensionality
 
 ```python
-def feature_dimensionality() -> int
+ | feature_dimensionality() -> int
 ```
 
 How many features this single slot creates.
@@ -61,7 +61,7 @@ How many features this single slot creates.
 #### has\_features
 
 ```python
-def has_features() -> bool
+ | has_features() -> bool
 ```
 
 Indicate if the slot creates any features.
@@ -69,7 +69,7 @@ Indicate if the slot creates any features.
 #### value\_reset\_delay
 
 ```python
-def value_reset_delay() -> Optional[int]
+ | value_reset_delay() -> Optional[int]
 ```
 
 After how many turns the slot should be reset to the initial_value.
@@ -79,7 +79,7 @@ If the delay is set to `None`, the slot will keep its value forever.
 #### reset
 
 ```python
-def reset() -> None
+ | reset() -> None
 ```
 
 Resets the slot&#x27;s value to the initial value.
@@ -87,8 +87,8 @@ Resets the slot&#x27;s value to the initial value.
 #### value
 
 ```python
-@property
-def value() -> Any
+ | @property
+ | value() -> Any
 ```
 
 Gets the slot&#x27;s value.
@@ -96,8 +96,8 @@ Gets the slot&#x27;s value.
 #### value
 
 ```python
-@value.setter
-def value(value: Any) -> None
+ | @value.setter
+ | value(value: Any) -> None
 ```
 
 Sets the slot&#x27;s value.
@@ -105,8 +105,8 @@ Sets the slot&#x27;s value.
 #### has\_been\_set
 
 ```python
-@property
-def has_been_set() -> bool
+ | @property
+ | has_been_set() -> bool
 ```
 
 Indicates if the slot&#x27;s value has been set.
@@ -114,8 +114,8 @@ Indicates if the slot&#x27;s value has been set.
 #### resolve\_by\_type
 
 ```python
-@staticmethod
-def resolve_by_type(type_name: Text) -> Type["Slot"]
+ | @staticmethod
+ | resolve_by_type(type_name: Text) -> Type["Slot"]
 ```
 
 Returns a slots class by its type name.
@@ -123,7 +123,7 @@ Returns a slots class by its type name.
 #### fingerprint
 
 ```python
-def fingerprint() -> Text
+ | fingerprint() -> Text
 ```
 
 Returns a unique hash for the slot which is stable across python runs.
@@ -143,7 +143,7 @@ A slot storing a float value.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, initial_value: Optional[float] = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, max_value: float = 1.0, min_value: float = 0.0, influence_conversation: bool = True) -> None
+ | __init__(name: Text, initial_value: Optional[float] = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, max_value: float = 1.0, min_value: float = 0.0, influence_conversation: bool = True) -> None
 ```
 
 Creates a FloatSlot.
@@ -156,7 +156,7 @@ Creates a FloatSlot.
 #### persistence\_info
 
 ```python
-def persistence_info() -> Dict[Text, Any]
+ | persistence_info() -> Dict[Text, Any]
 ```
 
 Returns relevant information to persist this slot.
@@ -172,7 +172,7 @@ A slot storing a truth value.
 #### bool\_from\_any
 
 ```python
-def bool_from_any(x: Any) -> bool
+bool_from_any(x: Any) -> bool
 ```
 
 Converts bool/float/int/str to bool or raises error
@@ -186,8 +186,8 @@ class ListSlot(Slot)
 #### value
 
 ```python
-@Slot.value.setter
-def value(value: Any) -> None
+ | @Slot.value.setter
+ | value(value: Any) -> None
 ```
 
 Sets the slot&#x27;s value.
@@ -203,7 +203,7 @@ Slot type which can be used to branch conversations based on its value.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, values: Optional[List[Any]] = None, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = True) -> None
+ | __init__(name: Text, values: Optional[List[Any]] = None, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = True) -> None
 ```
 
 Creates a `Categorical  Slot` (see parent class for detailed docstring).
@@ -211,7 +211,7 @@ Creates a `Categorical  Slot` (see parent class for detailed docstring).
 #### add\_default\_value
 
 ```python
-def add_default_value() -> None
+ | add_default_value() -> None
 ```
 
 Adds the special default value to the list of possible values.
@@ -219,7 +219,7 @@ Adds the special default value to the list of possible values.
 #### persistence\_info
 
 ```python
-def persistence_info() -> Dict[Text, Any]
+ | persistence_info() -> Dict[Text, Any]
 ```
 
 Returns serialized slot.
@@ -236,7 +236,7 @@ Slot which can be used to store any value. Users need to create a subclass of
 #### \_\_eq\_\_
 
 ```python
-def __eq__(other: Any) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.

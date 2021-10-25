@@ -5,7 +5,7 @@ title: rasa.utils.tensorflow.model_data_utils
 #### featurize\_training\_examples
 
 ```python
-def featurize_training_examples(training_examples: List[Message], attributes: List[Text], entity_tag_specs: Optional[List["EntityTagSpec"]] = None, featurizers: Optional[List[Text]] = None, bilou_tagging: bool = False) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]
+featurize_training_examples(training_examples: List[Message], attributes: List[Text], entity_tag_specs: Optional[List["EntityTagSpec"]] = None, featurizers: Optional[List[Text]] = None, bilou_tagging: bool = False) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]
 ```
 
 Converts training data into a list of attribute to features.
@@ -32,7 +32,7 @@ Also returns sparse feature sizes for each attribute. It could look like this:
 #### get\_tag\_ids
 
 ```python
-def get_tag_ids(example: Message, tag_spec: "EntityTagSpec", bilou_tagging: bool) -> "Features"
+get_tag_ids(example: Message, tag_spec: "EntityTagSpec", bilou_tagging: bool) -> "Features"
 ```
 
 Creates a feature array containing the entity tag ids of the given example.
@@ -51,7 +51,7 @@ Creates a feature array containing the entity tag ids of the given example.
 #### convert\_to\_data\_format
 
 ```python
-def convert_to_data_format(features: Union[
+convert_to_data_format(features: Union[
         List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
     ], fake_features: Optional[Dict[Text, List["Features"]]] = None, consider_dialogue_dimension: bool = True, featurizers: Optional[List[Text]] = None) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]
 ```

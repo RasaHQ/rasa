@@ -19,7 +19,7 @@ featurized into a list of `rasa.utils.features.Features`.
 #### \_\_init\_\_
 
 ```python
-def __init__() -> None
+ | __init__() -> None
 ```
 
 Initialize the single state featurizer.
@@ -27,7 +27,7 @@ Initialize the single state featurizer.
 #### prepare\_for\_training
 
 ```python
-def prepare_for_training(domain: Domain, bilou_tagging: bool = False) -> None
+ | prepare_for_training(domain: Domain, bilou_tagging: bool = False) -> None
 ```
 
 Gets necessary information for featurization from domain.
@@ -40,7 +40,7 @@ Gets necessary information for featurization from domain.
 #### encode\_state
 
 ```python
-def encode_state(state: State, precomputations: Optional[MessageContainerForCoreFeaturization]) -> Dict[Text, List[Features]]
+ | encode_state(state: State, precomputations: Optional[MessageContainerForCoreFeaturization]) -> Dict[Text, List[Features]]
 ```
 
 Encode the given state.
@@ -58,7 +58,7 @@ Encode the given state.
 #### encode\_entities
 
 ```python
-def encode_entities(entity_data: Dict[Text, Any], precomputations: Optional[MessageContainerForCoreFeaturization], bilou_tagging: bool = False) -> Dict[Text, List[Features]]
+ | encode_entities(entity_data: Dict[Text, Any], precomputations: Optional[MessageContainerForCoreFeaturization], bilou_tagging: bool = False) -> Dict[Text, List[Features]]
 ```
 
 Encode the given entity data.
@@ -79,7 +79,7 @@ Produce numeric entity tags for tokens.
 #### encode\_all\_labels
 
 ```python
-def encode_all_labels(domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization]) -> List[Dict[Text, List[Features]]]
+ | encode_all_labels(domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization]) -> List[Dict[Text, List[Features]]]
 ```
 
 Encode all action from the domain.
@@ -105,7 +105,7 @@ A SingleStateFeaturizer for use with policies that predict intent labels.
 #### encode\_all\_labels
 
 ```python
-def encode_all_labels(domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization]) -> List[Dict[Text, List[Features]]]
+ | encode_all_labels(domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization]) -> List[Dict[Text, List[Features]]]
 ```
 
 Encodes all relevant labels from the domain using the given precomputations.

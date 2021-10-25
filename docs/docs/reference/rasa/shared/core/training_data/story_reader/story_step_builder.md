@@ -11,7 +11,7 @@ class StoryStepBuilder()
 #### add\_user\_messages
 
 ```python
-def add_user_messages(messages: List[UserUttered]) -> None
+ | add_user_messages(messages: List[UserUttered]) -> None
 ```
 
 Adds next story steps with the user&#x27;s utterances.
@@ -23,7 +23,7 @@ Adds next story steps with the user&#x27;s utterances.
 #### add\_events
 
 ```python
-def add_events(events: List[Event]) -> None
+ | add_events(events: List[Event]) -> None
 ```
 
 Adds next story steps with the specified list of events.

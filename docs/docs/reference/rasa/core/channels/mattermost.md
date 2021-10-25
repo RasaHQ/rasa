@@ -13,8 +13,8 @@ A Mattermost communication channel
 #### token\_from\_login
 
 ```python
-@classmethod
-def token_from_login(cls, url: Text, user: Text, password: Text) -> Optional[Text]
+ | @classmethod
+ | token_from_login(cls, url: Text, user: Text, password: Text) -> Optional[Text]
 ```
 
 Retrieve access token for mattermost user.
@@ -22,7 +22,7 @@ Retrieve access token for mattermost user.
 #### send\_image\_url
 
 ```python
-async def send_image_url(recipient_id: Text, image: Text, **kwargs: Any) -> None
+ | async send_image_url(recipient_id: Text, image: Text, **kwargs: Any) -> None
 ```
 
 Sends an image.
@@ -30,7 +30,7 @@ Sends an image.
 #### send\_text\_with\_buttons
 
 ```python
-async def send_text_with_buttons(recipient_id: Text, text: Text, buttons: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
+ | async send_text_with_buttons(recipient_id: Text, text: Text, buttons: List[Dict[Text, Any]], **kwargs: Any, ,) -> None
 ```
 
 Sends buttons to the output.
@@ -46,7 +46,7 @@ Mattermost input channel implemenation.
 #### \_\_init\_\_
 
 ```python
-def __init__(url: Text, token: Text, webhook_url: Text) -> None
+ | __init__(url: Text, token: Text, webhook_url: Text) -> None
 ```
 
 Create a Mattermost input channel.

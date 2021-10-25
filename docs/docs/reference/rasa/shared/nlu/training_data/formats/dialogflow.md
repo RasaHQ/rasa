@@ -11,7 +11,7 @@ class DialogflowReader(TrainingDataReader)
 #### read
 
 ```python
-def read(fn: Text, **kwargs: Any) -> "TrainingData"
+ | read(fn: Text, **kwargs: Any) -> "TrainingData"
 ```
 
 Loads training data stored in the Dialogflow data format.

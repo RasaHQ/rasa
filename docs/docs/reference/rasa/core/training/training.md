@@ -5,7 +5,7 @@ title: rasa.core.training.training
 #### create\_action\_fingerprints
 
 ```python
-def create_action_fingerprints(trackers: List["DialogueStateTracker"], domain: "Domain") -> Dict[Text, Dict[Text, List[Text]]]
+create_action_fingerprints(trackers: List["DialogueStateTracker"], domain: "Domain") -> Dict[Text, Dict[Text, List[Text]]]
 ```
 
 Fingerprint each action using the events it created during train.

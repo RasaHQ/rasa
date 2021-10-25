@@ -30,7 +30,7 @@ Enum to categorize and place custom components correctly in the graph.
 #### \_\_init\_\_
 
 ```python
-def __init__() -> None
+ | __init__() -> None
 ```
 
 Creates recipe.
@@ -47,8 +47,8 @@ Describes a graph component which was registered with the decorator.
 #### register
 
 ```python
-@classmethod
-def register(cls, component_types: Union[ComponentType, List[ComponentType]], is_trainable: bool, model_from: Optional[Text] = None) -> Callable[[Type[GraphComponent]], Type[GraphComponent]]
+ | @classmethod
+ | register(cls, component_types: Union[ComponentType, List[ComponentType]], is_trainable: bool, model_from: Optional[Text] = None) -> Callable[[Type[GraphComponent]], Type[GraphComponent]]
 ```
 
 This decorator can be used to register classes with the recipe.
@@ -69,7 +69,7 @@ This decorator can be used to register classes with the recipe.
 #### graph\_config\_for\_recipe
 
 ```python
-def graph_config_for_recipe(config: Dict, cli_parameters: Dict[Text, Any], training_type: TrainingType = TrainingType.BOTH, is_finetuning: bool = False) -> GraphModelConfiguration
+ | graph_config_for_recipe(config: Dict, cli_parameters: Dict[Text, Any], training_type: TrainingType = TrainingType.BOTH, is_finetuning: bool = False) -> GraphModelConfiguration
 ```
 
 Converts the default config to graphs (see interface for full docstring).

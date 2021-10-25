@@ -13,7 +13,7 @@ A tracker wrapper that caches the state creation of the tracker.
 #### past\_states\_for\_hashing
 
 ```python
-def past_states_for_hashing(domain: Domain, omit_unset_slots: bool = False) -> Deque[FrozenState]
+ | past_states_for_hashing(domain: Domain, omit_unset_slots: bool = False) -> Deque[FrozenState]
 ```
 
 Generates and caches the past states of this tracker based on the history.
@@ -31,7 +31,7 @@ Generates and caches the past states of this tracker based on the history.
 #### past\_states
 
 ```python
-def past_states(domain: Domain, omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
+ | past_states(domain: Domain, omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
 ```
 
 Generates the past states of this tracker based on the history.
@@ -53,7 +53,7 @@ Generates the past states of this tracker based on the history.
 #### clear\_states
 
 ```python
-def clear_states() -> None
+ | clear_states() -> None
 ```
 
 Reset the states.
@@ -61,7 +61,7 @@ Reset the states.
 #### init\_copy
 
 ```python
-def init_copy() -> "TrackerWithCachedStates"
+ | init_copy() -> "TrackerWithCachedStates"
 ```
 
 Create a new state tracker with the same initial values.
@@ -69,7 +69,7 @@ Create a new state tracker with the same initial values.
 #### copy
 
 ```python
-def copy(sender_id: Text = "", sender_source: Text = "") -> "TrackerWithCachedStates"
+ | copy(sender_id: Text = "", sender_source: Text = "") -> "TrackerWithCachedStates"
 ```
 
 Creates a duplicate of this tracker.
@@ -80,7 +80,7 @@ will be replayed.
 #### update
 
 ```python
-def update(event: Event, skip_states: bool = False) -> None
+ | update(event: Event, skip_states: bool = False) -> None
 ```
 
 Modify the state of the tracker according to an ``Event``.
@@ -96,7 +96,7 @@ Generates trackers from training data.
 #### \_\_init\_\_
 
 ```python
-def __init__(story_graph: StoryGraph, domain: Domain, remove_duplicates: bool = True, unique_last_num_states: Optional[int] = None, augmentation_factor: int = 50, tracker_limit: Optional[int] = None, use_story_concatenation: bool = True, debug_plots: bool = False)
+ | __init__(story_graph: StoryGraph, domain: Domain, remove_duplicates: bool = True, unique_last_num_states: Optional[int] = None, augmentation_factor: int = 50, tracker_limit: Optional[int] = None, use_story_concatenation: bool = True, debug_plots: bool = False)
 ```
 
 Given a set of story parts, generates all stories that are possible.
@@ -109,7 +109,7 @@ removed and the data is augmented (if augmentation is enabled).
 #### generate
 
 ```python
-def generate() -> List[TrackerWithCachedStates]
+ | generate() -> List[TrackerWithCachedStates]
 ```
 
 Generate trackers from stories and rules.
@@ -121,7 +121,7 @@ Generate trackers from stories and rules.
 #### generate\_story\_trackers
 
 ```python
-def generate_story_trackers() -> List[TrackerWithCachedStates]
+ | generate_story_trackers() -> List[TrackerWithCachedStates]
 ```
 
 Generate trackers from stories (exclude rule trackers).

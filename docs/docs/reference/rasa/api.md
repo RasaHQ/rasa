@@ -5,7 +5,7 @@ title: rasa.api
 #### run
 
 ```python
-def run(model: "Text", endpoints: "Text", connector: "Text" = None, credentials: "Text" = None, **kwargs: "Dict[Text, Any]", ,) -> "NoReturn"
+run(model: "Text", endpoints: "Text", connector: "Text" = None, credentials: "Text" = None, **kwargs: "Dict[Text, Any]", ,) -> "NoReturn"
 ```
 
 Runs a Rasa model.
@@ -23,7 +23,7 @@ Runs a Rasa model.
 #### train
 
 ```python
-def train(domain: "Text", config: "Text", training_files: "Union[Text, List[Text]]", output: "Text" = rasa.shared.constants.DEFAULT_MODELS_PATH, dry_run: bool = False, force_training: bool = False, fixed_model_name: "Optional[Text]" = None, persist_nlu_training_data: bool = False, core_additional_arguments: "Optional[Dict]" = None, nlu_additional_arguments: "Optional[Dict]" = None, model_to_finetune: "Optional[Text]" = None, finetuning_epoch_fraction: float = 1.0) -> "TrainingResult"
+train(domain: "Text", config: "Text", training_files: "Union[Text, List[Text]]", output: "Text" = rasa.shared.constants.DEFAULT_MODELS_PATH, dry_run: bool = False, force_training: bool = False, fixed_model_name: "Optional[Text]" = None, persist_nlu_training_data: bool = False, core_additional_arguments: "Optional[Dict]" = None, nlu_additional_arguments: "Optional[Dict]" = None, model_to_finetune: "Optional[Text]" = None, finetuning_epoch_fraction: float = 1.0) -> "TrainingResult"
 ```
 
 Runs Rasa Core and NLU training in `async` loop.
@@ -56,7 +56,7 @@ Runs Rasa Core and NLU training in `async` loop.
 #### test
 
 ```python
-def test(model: "Text", stories: "Text", nlu_data: "Text", output: "Text" = rasa.shared.constants.DEFAULT_RESULTS_PATH, additional_arguments: "Optional[Dict]" = None) -> None
+test(model: "Text", stories: "Text", nlu_data: "Text", output: "Text" = rasa.shared.constants.DEFAULT_RESULTS_PATH, additional_arguments: "Optional[Dict]" = None) -> None
 ```
 
 Test a Rasa model against a set of test data.

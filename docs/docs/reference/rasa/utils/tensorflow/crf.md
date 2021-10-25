@@ -13,8 +13,8 @@ Computes the forward decoding in a linear-chain CRF.
 #### \_\_init\_\_
 
 ```python
-@typechecked
-def __init__(transition_params: TensorLike, **kwargs: Any) -> None
+ | @typechecked
+ | __init__(transition_params: TensorLike, **kwargs: Any) -> None
 ```
 
 Initialize the CrfDecodeForwardRnnCell.
@@ -29,8 +29,8 @@ Initialize the CrfDecodeForwardRnnCell.
 #### output\_size
 
 ```python
-@property
-def output_size() -> int
+ | @property
+ | output_size() -> int
 ```
 
 Returns count of tags.
@@ -38,7 +38,7 @@ Returns count of tags.
 #### build
 
 ```python
-def build(input_shape: Union[TensorShape, List[TensorShape]]) -> None
+ | build(input_shape: Union[TensorShape, List[TensorShape]]) -> None
 ```
 
 Creates the variables of the layer.
@@ -46,7 +46,7 @@ Creates the variables of the layer.
 #### call
 
 ```python
-def call(inputs: TensorLike, state: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
+ | call(inputs: TensorLike, state: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Build the CrfDecodeForwardRnnCell.
@@ -66,7 +66,7 @@ Build the CrfDecodeForwardRnnCell.
 #### crf\_decode\_forward
 
 ```python
-def crf_decode_forward(inputs: TensorLike, state: TensorLike, transition_params: TensorLike, sequence_lengths: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
+crf_decode_forward(inputs: TensorLike, state: TensorLike, transition_params: TensorLike, sequence_lengths: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Computes forward decoding in a linear-chain CRF.
@@ -88,7 +88,7 @@ Computes forward decoding in a linear-chain CRF.
 #### crf\_decode\_backward
 
 ```python
-def crf_decode_backward(backpointers: TensorLike, scores: TensorLike, state: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
+crf_decode_backward(backpointers: TensorLike, scores: TensorLike, state: TensorLike) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Computes backward decoding in a linear-chain CRF.
@@ -109,7 +109,7 @@ Computes backward decoding in a linear-chain CRF.
 #### crf\_decode
 
 ```python
-def crf_decode(potentials: TensorLike, transition_params: TensorLike, sequence_length: TensorLike) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]
+crf_decode(potentials: TensorLike, transition_params: TensorLike, sequence_length: TensorLike) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]
 ```
 
 Decode the highest scoring sequence of tags.

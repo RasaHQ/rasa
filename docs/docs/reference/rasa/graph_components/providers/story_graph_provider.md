@@ -13,7 +13,7 @@ Provides the training data from stories.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any]) -> None
+ | __init__(config: Dict[Text, Any]) -> None
 ```
 
 Creates provider from config.
@@ -21,8 +21,8 @@ Creates provider from config.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Returns default configuration (see parent class for full docstring).
@@ -30,8 +30,8 @@ Returns default configuration (see parent class for full docstring).
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> StoryGraphProvider
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> StoryGraphProvider
 ```
 
 Creates component (see parent class for full docstring).
@@ -39,7 +39,7 @@ Creates component (see parent class for full docstring).
 #### provide
 
 ```python
-def provide(importer: TrainingDataImporter) -> StoryGraph
+ | provide(importer: TrainingDataImporter) -> StoryGraph
 ```
 
 Provides the story graph from the training data.

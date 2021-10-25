@@ -20,8 +20,8 @@ for dense featurizable attributes of each message object.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -29,8 +29,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -38,8 +38,8 @@ The component&#x27;s default config (see parent class for full docstring).
 #### required\_packages
 
 ```python
-@staticmethod
-def required_packages() -> List[Text]
+ | @staticmethod
+ | required_packages() -> List[Text]
 ```
 
 Packages needed to be installed.
@@ -47,8 +47,8 @@ Packages needed to be installed.
 #### supported\_languages
 
 ```python
-@staticmethod
-def supported_languages() -> Optional[List[Text]]
+ | @staticmethod
+ | supported_languages() -> Optional[List[Text]]
 ```
 
 Determines which languages this component can work with.
@@ -58,8 +58,8 @@ Returns: A list of supported languages, or `None` to signify all are supported.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> ConveRTFeaturizer
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> ConveRTFeaturizer
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -67,7 +67,7 @@ Creates a new component (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, config: Dict[Text, Any]) -> None
+ | __init__(name: Text, config: Dict[Text, Any]) -> None
 ```
 
 Initializes a `ConveRTFeaturizer`.
@@ -80,8 +80,8 @@ Initializes a `ConveRTFeaturizer`.
 #### validate\_config
 
 ```python
-@classmethod
-def validate_config(cls, config: Dict[Text, Any]) -> None
+ | @classmethod
+ | validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
 Validates that the component is configured properly.
@@ -89,7 +89,7 @@ Validates that the component is configured properly.
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData) -> TrainingData
+ | process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Featurize all message attributes in the training data with the ConveRT model.
@@ -106,7 +106,7 @@ Featurize all message attributes in the training data with the ConveRT model.
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Featurize an incoming message with the ConveRT model.
@@ -118,7 +118,7 @@ Featurize an incoming message with the ConveRT model.
 #### tokenize
 
 ```python
-def tokenize(message: Message, attribute: Text) -> List[Token]
+ | tokenize(message: Message, attribute: Text) -> List[Token]
 ```
 
 Tokenize the text using the ConveRT model.

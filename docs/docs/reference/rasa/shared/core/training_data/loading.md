@@ -5,7 +5,7 @@ title: rasa.shared.core.training_data.loading
 #### load\_data\_from\_resource
 
 ```python
-def load_data_from_resource(resource: Union[Text], domain: Domain, exclusion_percentage: Optional[int] = None) -> List["StoryStep"]
+load_data_from_resource(resource: Union[Text], domain: Domain, exclusion_percentage: Optional[int] = None) -> List["StoryStep"]
 ```
 
 Loads core training data from the specified folder.
@@ -25,7 +25,7 @@ Loads core training data from the specified folder.
 #### load\_data\_from\_files
 
 ```python
-def load_data_from_files(story_files: List[Text], domain: Domain, exclusion_percentage: Optional[int] = None) -> List["StoryStep"]
+load_data_from_files(story_files: List[Text], domain: Domain, exclusion_percentage: Optional[int] = None) -> List["StoryStep"]
 ```
 
 Loads core training data from the specified files.

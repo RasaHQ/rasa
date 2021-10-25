@@ -13,8 +13,8 @@ Base class for all featurizers.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Returns the component&#x27;s default config.
@@ -22,7 +22,7 @@ Returns the component&#x27;s default config.
 #### \_\_init\_\_
 
 ```python
-def __init__(name: Text, config: Dict[Text, Any]) -> None
+ | __init__(name: Text, config: Dict[Text, Any]) -> None
 ```
 
 Instantiates a new featurizer.
@@ -36,9 +36,9 @@ Instantiates a new featurizer.
 #### validate\_config
 
 ```python
-@classmethod
-@abstractmethod
-def validate_config(cls, config: Dict[Text, Any]) -> None
+ | @classmethod
+ | @abstractmethod
+ | validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
 Validates that the component is configured properly.
@@ -46,7 +46,7 @@ Validates that the component is configured properly.
 #### add\_features\_to\_message
 
 ```python
-def add_features_to_message(sequence: FeatureType, sentence: Optional[FeatureType], attribute: Text, message: Message) -> None
+ | add_features_to_message(sequence: FeatureType, sentence: Optional[FeatureType], attribute: Text, message: Message) -> None
 ```
 
 Adds sequence and sentence features for the attribute to the given message.
@@ -61,8 +61,8 @@ Adds sequence and sentence features for the attribute to the given message.
 #### raise\_if\_featurizer\_configs\_are\_not\_compatible
 
 ```python
-@staticmethod
-def raise_if_featurizer_configs_are_not_compatible(featurizer_configs: Iterable[Dict[Text, Any]]) -> None
+ | @staticmethod
+ | raise_if_featurizer_configs_are_not_compatible(featurizer_configs: Iterable[Dict[Text, Any]]) -> None
 ```
 
 Validates that the given configurations of featurizers can be used together.

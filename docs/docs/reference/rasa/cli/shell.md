@@ -5,7 +5,7 @@ title: rasa.cli.shell
 #### add\_subparser
 
 ```python
-def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all shell parsers.
@@ -18,7 +18,7 @@ Add all shell parsers.
 #### shell\_nlu
 
 ```python
-def shell_nlu(args: argparse.Namespace) -> None
+shell_nlu(args: argparse.Namespace) -> None
 ```
 
 Talk with an NLU only bot though the command line.
@@ -26,7 +26,7 @@ Talk with an NLU only bot though the command line.
 #### shell
 
 ```python
-def shell(args: argparse.Namespace) -> None
+shell(args: argparse.Namespace) -> None
 ```
 
 Talk with a bot though the command line.

@@ -21,7 +21,7 @@ Slack input channel implementation. Based on the HTTPInputChannel.
 #### \_\_init\_\_
 
 ```python
-def __init__(slack_token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None, slack_retry_reason_header: Optional[Text] = None, slack_retry_number_header: Optional[Text] = None, errors_ignore_retry: Optional[List[Text]] = None, use_threads: Optional[bool] = False, slack_signing_secret: Text = "") -> None
+ | __init__(slack_token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None, slack_retry_reason_header: Optional[Text] = None, slack_retry_number_header: Optional[Text] = None, errors_ignore_retry: Optional[List[Text]] = None, use_threads: Optional[bool] = False, slack_signing_secret: Text = "") -> None
 ```
 
 Create a Slack input channel.
@@ -59,7 +59,7 @@ https://github.com/slackapi/python-slackclient
 #### process\_message
 
 ```python
-async def process_message(request: Request, on_new_message: Callable[[UserMessage], Awaitable[Any]], text: Text, sender_id: Optional[Text], metadata: Optional[Dict]) -> Any
+ | async process_message(request: Request, on_new_message: Callable[[UserMessage], Awaitable[Any]], text: Text, sender_id: Optional[Text], metadata: Optional[Dict]) -> Any
 ```
 
 Slack retries to post messages up to 3 times based on
@@ -69,7 +69,7 @@ https://api.slack.com/events-api#failure_conditions
 #### get\_metadata
 
 ```python
-def get_metadata(request: Request) -> Dict[Text, Any]
+ | get_metadata(request: Request) -> Dict[Text, Any]
 ```
 
 Extracts the metadata from a slack API event.
@@ -89,7 +89,7 @@ Slack Documentation: https://api.slack.com/types/event
 #### is\_request\_from\_slack\_authentic
 
 ```python
-def is_request_from_slack_authentic(request: Request) -> bool
+ | is_request_from_slack_authentic(request: Request) -> bool
 ```
 
 Validate a request from Slack for its authenticity.

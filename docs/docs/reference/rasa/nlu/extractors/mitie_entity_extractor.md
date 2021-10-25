@@ -18,8 +18,8 @@ A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`).
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -27,8 +27,8 @@ Components that should be included in the pipeline before this component.
 #### required\_packages
 
 ```python
-@staticmethod
-def required_packages() -> List[Text]
+ | @staticmethod
+ | required_packages() -> List[Text]
 ```
 
 Any extra python dependencies required for this component to run.
@@ -36,8 +36,8 @@ Any extra python dependencies required for this component to run.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -45,7 +45,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, ner: Optional["mitie.named_entity_extractor"] = None) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, ner: Optional["mitie.named_entity_extractor"] = None) -> None
 ```
 
 Creates a new instance.
@@ -62,7 +62,7 @@ Creates a new instance.
 #### validate\_config
 
 ```python
-def validate_config(cls, config: Dict[Text, Any]) -> None
+ | validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
 Checks whether the given configuration is valid.
@@ -74,8 +74,8 @@ Checks whether the given configuration is valid.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
 ```
 
 Creates a new `MitieEntityExtractor`.
@@ -94,7 +94,7 @@ Creates a new `MitieEntityExtractor`.
 #### train
 
 ```python
-def train(training_data: TrainingData, model: MitieModel) -> Resource
+ | train(training_data: TrainingData, model: MitieModel) -> Resource
 ```
 
 Trains a MITIE named entity recognizer.
@@ -111,7 +111,7 @@ Trains a MITIE named entity recognizer.
 #### process
 
 ```python
-def process(messages: List[Message], model: MitieModel) -> List[Message]
+ | process(messages: List[Message], model: MitieModel) -> List[Message]
 ```
 
 Extracts entities from messages and appends them to the attribute.
@@ -131,8 +131,8 @@ exists yet, then an `ENTITIES` attribute will be created.
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieEntityExtractor
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieEntityExtractor
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -140,7 +140,7 @@ Loads trained component (see parent class for full docstring).
 #### persist
 
 ```python
-def persist() -> None
+ | persist() -> None
 ```
 
 Persist this model.

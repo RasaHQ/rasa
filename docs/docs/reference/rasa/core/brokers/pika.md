@@ -13,9 +13,9 @@ Pika-based event broker for publishing messages to RabbitMQ.
 #### \_\_init\_\_
 
 ```python
-def __init__(host: Text, username: Text, password: Text, port: Union[int, Text] = 5672, queues: Union[List[Text], Tuple[Text], Text, None] = None, should_keep_unpublished_messages: bool = True, raise_on_failure: bool = False, log_level: Union[Text, int] = os.environ.get(
-            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
-        ), event_loop: Optional[AbstractEventLoop] = None, connection_attempts: int = 20, retry_delay_in_seconds: float = 5, exchange_name: Text = RABBITMQ_EXCHANGE, **kwargs: Any, ,)
+ | __init__(host: Text, username: Text, password: Text, port: Union[int, Text] = 5672, queues: Union[List[Text], Tuple[Text], Text, None] = None, should_keep_unpublished_messages: bool = True, raise_on_failure: bool = False, log_level: Union[Text, int] = os.environ.get(
+ |             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
+ |         ), event_loop: Optional[AbstractEventLoop] = None, connection_attempts: int = 20, retry_delay_in_seconds: float = 5, exchange_name: Text = RABBITMQ_EXCHANGE, **kwargs: Any, ,)
 ```
 
 Initialise RabbitMQ event broker.
@@ -44,8 +44,8 @@ Initialise RabbitMQ event broker.
 #### from\_endpoint\_config
 
 ```python
-@classmethod
-async def from_endpoint_config(cls, broker_config: Optional["EndpointConfig"], event_loop: Optional[AbstractEventLoop] = None) -> Optional["PikaEventBroker"]
+ | @classmethod
+ | async from_endpoint_config(cls, broker_config: Optional["EndpointConfig"], event_loop: Optional[AbstractEventLoop] = None) -> Optional["PikaEventBroker"]
 ```
 
 Creates broker. See the parent class for more information.
@@ -53,7 +53,7 @@ Creates broker. See the parent class for more information.
 #### connect
 
 ```python
-async def connect() -> None
+ | async connect() -> None
 ```
 
 Connects to RabbitMQ.
@@ -61,7 +61,7 @@ Connects to RabbitMQ.
 #### close
 
 ```python
-async def close() -> None
+ | async close() -> None
 ```
 
 Closes connection to RabbitMQ.
@@ -69,7 +69,7 @@ Closes connection to RabbitMQ.
 #### is\_ready
 
 ```python
-def is_ready() -> bool
+ | is_ready() -> bool
 ```
 
 Return `True` if a connection was established.
@@ -77,7 +77,7 @@ Return `True` if a connection was established.
 #### publish
 
 ```python
-def publish(event: Dict[Text, Any], headers: Optional[Dict[Text, Text]] = None) -> None
+ | publish(event: Dict[Text, Any], headers: Optional[Dict[Text, Text]] = None) -> None
 ```
 
 Publishes `event` to Pika queues.
@@ -92,8 +92,8 @@ Publishes `event` to Pika queues.
 #### rasa\_environment
 
 ```python
-@rasa.shared.utils.common.lazy_property
-def rasa_environment() -> Optional[Text]
+ | @rasa.shared.utils.common.lazy_property
+ | rasa_environment() -> Optional[Text]
 ```
 
 Get value of the `RASA_ENVIRONMENT` environment variable.

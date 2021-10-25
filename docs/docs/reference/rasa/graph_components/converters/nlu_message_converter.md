@@ -13,8 +13,8 @@ Converts the user message into a NLU Message object.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> NLUMessageConverter
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> NLUMessageConverter
 ```
 
 Creates component (see parent class for full docstring).
@@ -22,7 +22,7 @@ Creates component (see parent class for full docstring).
 #### convert\_user\_message
 
 ```python
-def convert_user_message(messages: List[UserMessage]) -> List[Message]
+ | convert_user_message(messages: List[UserMessage]) -> List[Message]
 ```
 
 Converts user message into Message object.

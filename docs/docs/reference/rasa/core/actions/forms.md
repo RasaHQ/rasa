@@ -13,7 +13,7 @@ Action which implements and executes the form logic.
 #### \_\_init\_\_
 
 ```python
-def __init__(form_name: Text, action_endpoint: Optional[EndpointConfig]) -> None
+ | __init__(form_name: Text, action_endpoint: Optional[EndpointConfig]) -> None
 ```
 
 Creates a `FormAction`.
@@ -26,7 +26,7 @@ Creates a `FormAction`.
 #### name
 
 ```python
-def name() -> Text
+ | name() -> Text
 ```
 
 Return the form name.
@@ -34,7 +34,7 @@ Return the form name.
 #### required\_slots
 
 ```python
-def required_slots(domain: Domain) -> List[Text]
+ | required_slots(domain: Domain) -> List[Text]
 ```
 
 A list of required slots that the form has to fill.
@@ -46,7 +46,7 @@ A list of required slots that the form has to fill.
 #### from\_entity
 
 ```python
-def from_entity(entity: Text, intent: Optional[Union[Text, List[Text]]] = None, not_intent: Optional[Union[Text, List[Text]]] = None, role: Optional[Text] = None, group: Optional[Text] = None) -> Dict[Text, Any]
+ | from_entity(entity: Text, intent: Optional[Union[Text, List[Text]]] = None, not_intent: Optional[Union[Text, List[Text]]] = None, role: Optional[Text] = None, group: Optional[Text] = None) -> Dict[Text, Any]
 ```
 
 A dictionary for slot mapping to extract slot value.
@@ -63,7 +63,7 @@ From:
 #### get\_mappings\_for\_slot
 
 ```python
-def get_mappings_for_slot(slot_to_fill: Text, domain: Domain) -> List[Dict[Text, Any]]
+ | get_mappings_for_slot(slot_to_fill: Text, domain: Domain) -> List[Dict[Text, Any]]
 ```
 
 Get mappings for requested slot.
@@ -73,7 +73,7 @@ If None, map requested slot to an entity with the same name
 #### get\_ignored\_intents
 
 ```python
-def get_ignored_intents(domain: Domain) -> List[Text]
+ | get_ignored_intents(domain: Domain) -> List[Text]
 ```
 
 Returns a list of ignored intents.
@@ -91,7 +91,7 @@ Returns a list of ignored intents.
 #### intent\_is\_desired
 
 ```python
-def intent_is_desired(requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain) -> bool
+ | intent_is_desired(requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain) -> bool
 ```
 
 Check whether user intent matches intent conditions.
@@ -99,7 +99,7 @@ Check whether user intent matches intent conditions.
 #### entity\_is\_desired
 
 ```python
-def entity_is_desired(slot_mapping: Dict[Text, Any], slot: Text, entity_type_of_slot_to_fill: Optional[Text], tracker: DialogueStateTracker, domain: Domain) -> bool
+ | entity_is_desired(slot_mapping: Dict[Text, Any], slot: Text, entity_type_of_slot_to_fill: Optional[Text], tracker: DialogueStateTracker, domain: Domain) -> bool
 ```
 
 Check whether slot should be filled by an entity in the input or not.
@@ -120,8 +120,8 @@ Check whether slot should be filled by an entity in the input or not.
 #### get\_entity\_value\_for\_slot
 
 ```python
-@staticmethod
-def get_entity_value_for_slot(name: Text, tracker: "DialogueStateTracker", slot_to_be_filled: Text, role: Optional[Text] = None, group: Optional[Text] = None) -> Any
+ | @staticmethod
+ | get_entity_value_for_slot(name: Text, tracker: "DialogueStateTracker", slot_to_be_filled: Text, role: Optional[Text] = None, group: Optional[Text] = None) -> Any
 ```
 
 Extract entities for given name and optional role and group.
@@ -142,7 +142,7 @@ Extract entities for given name and optional role and group.
 #### extract\_other\_slots
 
 ```python
-def extract_other_slots(tracker: DialogueStateTracker, domain: Domain) -> Dict[Text, Any]
+ | extract_other_slots(tracker: DialogueStateTracker, domain: Domain) -> Dict[Text, Any]
 ```
 
 Extract the values of the other slots
@@ -152,7 +152,7 @@ else return `None`.
 #### get\_slot\_to\_fill
 
 ```python
-def get_slot_to_fill(tracker: "DialogueStateTracker") -> Optional[str]
+ | get_slot_to_fill(tracker: "DialogueStateTracker") -> Optional[str]
 ```
 
 Gets the name of the slot which should be filled next.
@@ -167,7 +167,7 @@ previous form and must be ignored.
 #### extract\_requested\_slot
 
 ```python
-def extract_requested_slot(tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text) -> Dict[Text, Any]
+ | extract_requested_slot(tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text) -> Dict[Text, Any]
 ```
 
 Extract the value of requested slot from a user input else return `None`.
@@ -188,7 +188,7 @@ Extract the value of requested slot from a user input else return `None`.
 #### validate\_slots
 
 ```python
-async def validate_slots(slot_candidates: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
+ | async validate_slots(slot_candidates: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
 ```
 
 Validate the extracted slots.
@@ -215,7 +215,7 @@ them. Otherwise there is no validation.
 #### validate
 
 ```python
-async def validate(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
+ | async validate(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
 ```
 
 Extract and validate value of requested slot.
@@ -226,7 +226,7 @@ Subclass this method to add custom validation and rejection logic
 #### request\_next\_slot
 
 ```python
-async def request_next_slot(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, events_so_far: List[Event]) -> List[Union[SlotSet, Event]]
+ | async request_next_slot(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, events_so_far: List[Event]) -> List[Union[SlotSet, Event]]
 ```
 
 Request the next slot and response if needed, else return `None`.
@@ -234,7 +234,7 @@ Request the next slot and response if needed, else return `None`.
 #### activate
 
 ```python
-async def activate(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+ | async activate(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
 ```
 
 Activate form if the form is called for the first time.

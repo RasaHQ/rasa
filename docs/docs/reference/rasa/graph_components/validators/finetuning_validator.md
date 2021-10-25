@@ -32,8 +32,8 @@ condition 1. always covers both parts, i.e. NLU and Core.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Default config for ProjectProvider.
@@ -41,7 +41,7 @@ Default config for ProjectProvider.
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, fingerprints: Optional[Dict[Text, Text]] = None) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, fingerprints: Optional[Dict[Text, Text]] = None) -> None
 ```
 
 Instantiates a `FineTuningValidator`.
@@ -59,7 +59,7 @@ Instantiates a `FineTuningValidator`.
 #### validate
 
 ```python
-def validate(importer: TrainingDataImporter) -> TrainingDataImporter
+ | validate(importer: TrainingDataImporter) -> TrainingDataImporter
 ```
 
 Validates whether we can finetune Core and NLU when finetuning is enabled.
@@ -81,8 +81,8 @@ Validates whether we can finetune Core and NLU when finetuning is enabled.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FinetuningValidator
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FinetuningValidator
 ```
 
 Creates a new `FineTuningValidator` (see parent class for full docstring).
@@ -90,7 +90,7 @@ Creates a new `FineTuningValidator` (see parent class for full docstring).
 #### persist
 
 ```python
-def persist() -> None
+ | persist() -> None
 ```
 
 Persists this `FineTuningValidator`.
@@ -98,8 +98,8 @@ Persists this `FineTuningValidator`.
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
 ```
 
 Loads a `FineTuningValidator` (see parent class for full docstring).

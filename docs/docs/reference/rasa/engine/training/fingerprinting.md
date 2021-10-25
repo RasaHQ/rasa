@@ -14,7 +14,7 @@ Interface that enforces training data can be fingerprinted.
 #### fingerprint
 
 ```python
-def fingerprint() -> Text
+ | fingerprint() -> Text
 ```
 
 Returns a unique stable fingerprint of the data.
@@ -22,7 +22,7 @@ Returns a unique stable fingerprint of the data.
 #### calculate\_fingerprint\_key
 
 ```python
-def calculate_fingerprint_key(graph_component_class: Type, config: Dict[Text, Any], inputs: Dict[Text, Fingerprintable]) -> Text
+calculate_fingerprint_key(graph_component_class: Type, config: Dict[Text, Any], inputs: Dict[Text, Fingerprintable]) -> Text
 ```
 
 Calculates a fingerprint key that uniquely represents a single node&#x27;s execution.

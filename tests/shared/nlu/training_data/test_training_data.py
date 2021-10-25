@@ -56,7 +56,96 @@ def test_luis_data():
 def test_wit_data():
     td = load_data("data/examples/wit/demo-flights.json")
     assert not td.is_empty()
-    assert len(td.entity_examples) == 4
+    assert td.entity_examples == [
+        Message(
+            {
+                "intent": "flight_booking",
+                "entities": [
+                    {
+                        "entity": "location",
+                        "start": 19,
+                        "end": 25,
+                        "entities": [],
+                        "role": "from",
+                        "value": "london",
+                    }
+                ],
+                "text": "i want to fly from london",
+            }
+        ),
+        Message(
+            {
+                "intent": "flight_booking",
+                "entities": [
+                    {
+                        "entity": "location",
+                        "start": 17,
+                        "end": 23,
+                        "entities": [],
+                        "role": "to",
+                        "value": "berlin",
+                    }
+                ],
+                "text": "i want to fly to berlin",
+            }
+        ),
+        Message(
+            {
+                "intent": "flight_booking",
+                "entities": [
+                    {
+                        "entity": "location",
+                        "start": 18,
+                        "end": 24,
+                        "entities": [],
+                        "role": "from",
+                        "value": "berlin",
+                    },
+                    {
+                        "entity": "location",
+                        "start": 28,
+                        "end": 33,
+                        "entities": [],
+                        "role": "to",
+                        "value": "tokyo",
+                    },
+                ],
+                "text": "i want to go from berlin to tokyo tomorrow",
+            }
+        ),
+        Message(
+            {
+                "intent": "flight_booking",
+                "entities": [
+                    {
+                        "entity": "location",
+                        "start": 30,
+                        "end": 36,
+                        "entities": [],
+                        "role": "from",
+                        "value": "london",
+                    },
+                    {
+                        "entity": "wit$datetime",
+                        "start": 50,
+                        "end": 61,
+                        "entities": [],
+                        "role": "datetime",
+                        "value": "next monday",
+                    },
+                    {
+                        "entity": "location",
+                        "start": 40,
+                        "end": 49,
+                        "entities": [],
+                        "role": "to",
+                        "value": "amsterdam",
+                    },
+                ],
+                "text": "i'm looking for a flight from london to amsterdam next monday",
+            }
+        ),
+    ]
     assert len(td.intent_examples) == 5
     assert len(td.training_examples) == 5
     assert td.entity_synonyms == {}
@@ -112,15 +201,13 @@ def test_composite_entities_data():
     td = load_data("data/test/demo-rasa-composite-entities.yml")
     assert not td.is_empty()
     assert len(td.entity_examples) == 11
-    assert len(td.intent_examples) == 45
-    assert len(td.training_examples) == 45
+    assert len(td.intent_examples) == 29
+    assert len(td.training_examples) == 29
     assert td.entity_synonyms == {"SF": "San Fransisco"}
     assert td.intents == {
         "order_pizza",
         "book_flight",
         "chitchat",
-        "greet",
-        "goodbye",
         "affirm",
     }
     assert td.entities == {"location", "topping", "size"}

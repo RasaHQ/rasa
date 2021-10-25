@@ -13,7 +13,7 @@ Wraps `MitieNLP` output to make it fingerprintable.
 #### \_\_init\_\_
 
 ```python
-def __init__(model_path: Path, word_feature_extractor: Optional["mitie.total_word_feature_extractor"] = None) -> None
+ | __init__(model_path: Path, word_feature_extractor: Optional["mitie.total_word_feature_extractor"] = None) -> None
 ```
 
 Initializing MitieModel.
@@ -21,7 +21,7 @@ Initializing MitieModel.
 #### fingerprint
 
 ```python
-def fingerprint() -> Text
+ | fingerprint() -> Text
 ```
 
 Fingerprints the model path.
@@ -50,8 +50,8 @@ model is only loaded once and then shared by depending components.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Returns default config (see parent class for full docstring).
@@ -59,7 +59,7 @@ Returns default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(path_to_model_file: Path, extractor: Optional["mitie.total_word_feature_extractor"] = None) -> None
+ | __init__(path_to_model_file: Path, extractor: Optional["mitie.total_word_feature_extractor"] = None) -> None
 ```
 
 Constructs a new language model from the MITIE framework.
@@ -67,8 +67,8 @@ Constructs a new language model from the MITIE framework.
 #### required\_packages
 
 ```python
-@classmethod
-def required_packages(cls) -> List[Text]
+ | @classmethod
+ | required_packages(cls) -> List[Text]
 ```
 
 Lists required dependencies (see parent class for full docstring).
@@ -76,8 +76,8 @@ Lists required dependencies (see parent class for full docstring).
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieNLP
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieNLP
 ```
 
 Creates component (see parent class for full docstring).
@@ -85,7 +85,7 @@ Creates component (see parent class for full docstring).
 #### provide
 
 ```python
-def provide() -> MitieModel
+ | provide() -> MitieModel
 ```
 
 Provides loaded `MitieModel` and path during training and inference.

@@ -23,7 +23,7 @@ Represents a graph for training a model or making predictions.
 #### as\_dict
 
 ```python
-def as_dict() -> Dict[Text, Any]
+ | as_dict() -> Dict[Text, Any]
 ```
 
 Returns graph schema in a serializable format.
@@ -35,8 +35,8 @@ Returns graph schema in a serializable format.
 #### from\_dict
 
 ```python
-@classmethod
-def from_dict(cls, serialized_graph_schema: Dict[Text, Any]) -> GraphSchema
+ | @classmethod
+ | from_dict(cls, serialized_graph_schema: Dict[Text, Any]) -> GraphSchema
 ```
 
 Loads a graph schema which has been serialized using `schema.as_dict()`.
@@ -59,8 +59,8 @@ Loads a graph schema which has been serialized using `schema.as_dict()`.
 #### target\_names
 
 ```python
-@property
-def target_names() -> List[Text]
+ | @property
+ | target_names() -> List[Text]
 ```
 
 Returns the names of all target nodes.
@@ -68,7 +68,7 @@ Returns the names of all target nodes.
 #### minimal\_graph\_schema
 
 ```python
-def minimal_graph_schema(targets: Optional[List[Text]] = None) -> GraphSchema
+ | minimal_graph_schema(targets: Optional[List[Text]] = None) -> GraphSchema
 ```
 
 Returns a new schema where all nodes are a descendant of a target.
@@ -84,8 +84,8 @@ Interface for any component which will run in a graph.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -93,9 +93,9 @@ Components that should be included in the pipeline before this component.
 #### create
 
 ```python
-@classmethod
-@abstractmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+ | @classmethod
+ | @abstractmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
 ```
 
 Creates a new `GraphComponent`.
@@ -114,8 +114,8 @@ Creates a new `GraphComponent`.
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
 ```
 
 Creates a component using a persisted version of itself.
@@ -141,8 +141,8 @@ If not overridden this method merely calls `create`.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 Returns the component&#x27;s default config.
@@ -157,8 +157,8 @@ config is passed to the `create` and `load` method of the component.
 #### supported\_languages
 
 ```python
-@staticmethod
-def supported_languages() -> Optional[List[Text]]
+ | @staticmethod
+ | supported_languages() -> Optional[List[Text]]
 ```
 
 Determines which languages this component can work with.
@@ -168,8 +168,8 @@ Returns: A list of supported languages, or `None` to signify all are supported.
 #### not\_supported\_languages
 
 ```python
-@staticmethod
-def not_supported_languages() -> Optional[List[Text]]
+ | @staticmethod
+ | not_supported_languages() -> Optional[List[Text]]
 ```
 
 Determines which languages this component cannot work with.
@@ -180,8 +180,8 @@ Returns: A list of not supported languages, or
 #### required\_packages
 
 ```python
-@staticmethod
-def required_packages() -> List[Text]
+ | @staticmethod
+ | required_packages() -> List[Text]
 ```
 
 Any extra python dependencies required for this component to run.
@@ -197,8 +197,8 @@ Holds functionality to be run before and after a `GraphNode`.
 #### on\_before\_node
 
 ```python
-@abstractmethod
-def on_before_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], received_inputs: Dict[Text, Any]) -> Dict
+ | @abstractmethod
+ | on_before_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], received_inputs: Dict[Text, Any]) -> Dict
 ```
 
 Runs before the `GraphNode` executes.
@@ -218,8 +218,8 @@ Runs before the `GraphNode` executes.
 #### on\_after\_node
 
 ```python
-@abstractmethod
-def on_after_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], output: Any, input_hook_data: Dict) -> None
+ | @abstractmethod
+ | on_after_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], output: Any, input_hook_data: Dict) -> None
 ```
 
 Runs after the `GraphNode` as executed.
@@ -257,7 +257,7 @@ of the component and passing the output onwards.
 #### \_\_init\_\_
 
 ```python
-def __init__(node_name: Text, component_class: Type[GraphComponent], constructor_name: Text, component_config: Dict[Text, Any], fn_name: Text, inputs: Dict[Text, Text], eager: bool, model_storage: ModelStorage, resource: Optional[Resource], execution_context: ExecutionContext, hooks: Optional[List[GraphNodeHook]] = None) -> None
+ | __init__(node_name: Text, component_class: Type[GraphComponent], constructor_name: Text, component_config: Dict[Text, Any], fn_name: Text, inputs: Dict[Text, Text], eager: bool, model_storage: ModelStorage, resource: Optional[Resource], execution_context: ExecutionContext, hooks: Optional[List[GraphNodeHook]] = None) -> None
 ```
 
 Initializes `GraphNode`.
@@ -283,7 +283,7 @@ Initializes `GraphNode`.
 #### \_\_call\_\_
 
 ```python
-def __call__(*inputs_from_previous_nodes: Tuple[Text, Any]) -> Tuple[Text, Any]
+ | __call__(*inputs_from_previous_nodes: Tuple[Text, Any]) -> Tuple[Text, Any]
 ```
 
 Calls the `GraphComponent` run method when the node executes in the graph.
@@ -301,8 +301,8 @@ Calls the `GraphComponent` run method when the node executes in the graph.
 #### from\_schema\_node
 
 ```python
-@classmethod
-def from_schema_node(cls, node_name: Text, schema_node: SchemaNode, model_storage: ModelStorage, execution_context: ExecutionContext, hooks: Optional[List[GraphNodeHook]] = None) -> GraphNode
+ | @classmethod
+ | from_schema_node(cls, node_name: Text, schema_node: SchemaNode, model_storage: ModelStorage, execution_context: ExecutionContext, hooks: Optional[List[GraphNodeHook]] = None) -> GraphNode
 ```
 
 Creates a `GraphNode` from a `SchemaNode`.

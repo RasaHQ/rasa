@@ -5,7 +5,7 @@ title: rasa.model
 #### get\_local\_model
 
 ```python
-def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text
+get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text
 ```
 
 Returns verified path to local model archive.
@@ -29,7 +29,7 @@ Returns verified path to local model archive.
 #### get\_latest\_model
 
 ```python
-def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]
+get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]
 ```
 
 Get the latest model from a path.
@@ -46,7 +46,7 @@ Get the latest model from a path.
 #### get\_model\_for\_finetuning
 
 ```python
-def get_model_for_finetuning(previous_model_file: Union[Path, Text]) -> Optional[Path]
+get_model_for_finetuning(previous_model_file: Union[Path, Text]) -> Optional[Path]
 ```
 
 Gets validated path for model to finetune.
@@ -64,7 +64,7 @@ Gets validated path for model to finetune.
 #### project\_fingerprint
 
 ```python
-def project_fingerprint() -> Optional[Text]
+project_fingerprint() -> Optional[Text]
 ```
 
 Create a hash for the project in the current working directory.

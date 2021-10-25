@@ -17,7 +17,7 @@ Raised when a model is too old to be loaded.
 #### \_\_init\_\_
 
 ```python
-def __init__(message: Text, model_version: Optional[Text] = None) -> None
+ | __init__(message: Text, model_version: Optional[Text] = None) -> None
 ```
 
 Initialize message and model_version attributes.
@@ -37,7 +37,7 @@ will be thrown.
 #### \_\_init\_\_
 
 ```python
-def __init__(message: Text) -> None
+ | __init__(message: Text) -> None
 ```
 
 Initialize message attribute.

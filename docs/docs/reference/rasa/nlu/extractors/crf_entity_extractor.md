@@ -24,8 +24,8 @@ Implements conditional random fields (CRF) to do named entity recognition.
 #### required\_components
 
 ```python
-@classmethod
-def required_components(cls) -> List[Type]
+ | @classmethod
+ | required_components(cls) -> List[Type]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -33,8 +33,8 @@ Components that should be included in the pipeline before this component.
 #### get\_default\_config
 
 ```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -42,7 +42,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
-def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, entity_taggers: Optional[Dict[Text, "CRF"]] = None) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, entity_taggers: Optional[Dict[Text, "CRF"]] = None) -> None
 ```
 
 Creates an instance of entity extractor.
@@ -50,8 +50,8 @@ Creates an instance of entity extractor.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CRFEntityExtractor
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CRFEntityExtractor
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -59,8 +59,8 @@ Creates a new untrained component (see parent class for full docstring).
 #### required\_packages
 
 ```python
-@staticmethod
-def required_packages() -> List[Text]
+ | @staticmethod
+ | required_packages() -> List[Text]
 ```
 
 Any extra python dependencies required for this component to run.
@@ -68,7 +68,7 @@ Any extra python dependencies required for this component to run.
 #### train
 
 ```python
-def train(training_data: TrainingData) -> Resource
+ | train(training_data: TrainingData) -> Resource
 ```
 
 Trains the extractor on a data set.
@@ -76,7 +76,7 @@ Trains the extractor on a data set.
 #### process
 
 ```python
-def process(messages: List[Message]) -> List[Message]
+ | process(messages: List[Message]) -> List[Message]
 ```
 
 Augments messages with entities.
@@ -84,7 +84,7 @@ Augments messages with entities.
 #### extract\_entities
 
 ```python
-def extract_entities(message: Message) -> List[Dict[Text, Any]]
+ | extract_entities(message: Message) -> List[Dict[Text, Any]]
 ```
 
 Extract entities from the given message using the trained model(s).
@@ -92,8 +92,8 @@ Extract entities from the given message using the trained model(s).
 #### load
 
 ```python
-@classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CRFEntityExtractor
+ | @classmethod
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CRFEntityExtractor
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -101,7 +101,7 @@ Loads trained component (see parent class for full docstring).
 #### persist
 
 ```python
-def persist() -> None
+ | persist() -> None
 ```
 
 Persist this model into the passed directory.

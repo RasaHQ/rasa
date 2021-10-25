@@ -21,7 +21,7 @@ Cannot be used as tf.keras.Model.
 #### \_\_init\_\_
 
 ```python
-def __init__(random_seed: Optional[int] = None, **kwargs: Any) -> None
+ | __init__(random_seed: Optional[int] = None, **kwargs: Any) -> None
 ```
 
 Initialize the RasaModel.
@@ -33,7 +33,7 @@ Initialize the RasaModel.
 #### batch\_loss
 
 ```python
-def batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
 ```
 
 Calculates the loss for the given batch.
@@ -50,7 +50,7 @@ Calculates the loss for the given batch.
 #### prepare\_for\_predict
 
 ```python
-def prepare_for_predict() -> None
+ | prepare_for_predict() -> None
 ```
 
 Prepares tf graph fpr prediction.
@@ -62,7 +62,7 @@ For example, pre calculation of `self.all_labels_embed`.
 #### batch\_predict
 
 ```python
-def batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.
@@ -79,7 +79,7 @@ Predicts the output of the given batch.
 #### train\_step
 
 ```python
-def train_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, float]
+ | train_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, float]
 ```
 
 Performs a train step using the given batch.
@@ -96,7 +96,7 @@ Performs a train step using the given batch.
 #### test\_step
 
 ```python
-def test_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, float]
+ | test_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, float]
 ```
 
 Tests the model using the given batch.
@@ -115,7 +115,7 @@ This method is used during validation.
 #### predict\_step
 
 ```python
-def predict_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+ | predict_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
 ```
 
 Predicts the output for the given batch.
@@ -132,7 +132,7 @@ Predicts the output for the given batch.
 #### run\_inference
 
 ```python
-def run_inference(model_data: RasaModelData, batch_size: Union[int, List[int]] = 1, output_keys_expected: Optional[List[Text]] = None) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
+ | run_inference(model_data: RasaModelData, batch_size: Union[int, List[int]] = 1, output_keys_expected: Optional[List[Text]] = None) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
 ```
 
 Implements bulk inferencing through the model.
@@ -153,7 +153,7 @@ Implements bulk inferencing through the model.
 #### save
 
 ```python
-def save(model_file_name: Text, overwrite: bool = True) -> None
+ | save(model_file_name: Text, overwrite: bool = True) -> None
 ```
 
 Save the model to the given file.
@@ -167,8 +167,8 @@ Save the model to the given file.
 #### load
 
 ```python
-@classmethod
-def load(cls, model_file_name: Text, model_data_example: RasaModelData, predict_data_example: Optional[RasaModelData] = None, finetune_mode: bool = False, *args: Any, **kwargs: Any, *, ,) -> "RasaModel"
+ | @classmethod
+ | load(cls, model_file_name: Text, model_data_example: RasaModelData, predict_data_example: Optional[RasaModelData] = None, finetune_mode: bool = False, *args: Any, **kwargs: Any, *, ,) -> "RasaModel"
 ```
 
 Loads a model from the given weights.
@@ -191,8 +191,8 @@ Loads a model from the given weights.
 #### batch\_to\_model\_data\_format
 
 ```python
-@staticmethod
-def batch_to_model_data_format(batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]], data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]]) -> Dict[Text, Dict[Text, List[tf.Tensor]]]
+ | @staticmethod
+ | batch_to_model_data_format(batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]], data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]]) -> Dict[Text, Dict[Text, List[tf.Tensor]]]
 ```
 
 Convert input batch tensors into batch data format.
@@ -205,7 +205,7 @@ data is kept.
 #### call
 
 ```python
-def call(inputs: Union[tf.Tensor, List[tf.Tensor]], training: Optional[tf.Tensor] = None, mask: Optional[tf.Tensor] = None) -> Union[tf.Tensor, List[tf.Tensor]]
+ | call(inputs: Union[tf.Tensor, List[tf.Tensor]], training: Optional[tf.Tensor] = None, mask: Optional[tf.Tensor] = None) -> Union[tf.Tensor, List[tf.Tensor]]
 ```
 
 Calls the model on new inputs.
@@ -233,7 +233,7 @@ class TransformerRasaModel(RasaModel)
 #### adjust\_for\_incremental\_training
 
 ```python
-def adjust_for_incremental_training(data_example: Dict[Text, Dict[Text, List[FeatureArray]]], new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]], old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]) -> None
+ | adjust_for_incremental_training(data_example: Dict[Text, Dict[Text, List[FeatureArray]]], new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]], old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]) -> None
 ```
 
 Adjusts the model for incremental training.
@@ -257,8 +257,8 @@ New and old sparse feature sizes could look like this:
 #### dot\_product\_loss\_layer
 
 ```python
-@property
-def dot_product_loss_layer() -> tf.keras.layers.Layer
+ | @property
+ | dot_product_loss_layer() -> tf.keras.layers.Layer
 ```
 
 Returns the dot-product loss layer to use.
@@ -270,7 +270,7 @@ Returns the dot-product loss layer to use.
 #### batch\_loss
 
 ```python
-def batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
 ```
 
 Calculates the loss for the given batch.
@@ -287,7 +287,7 @@ Calculates the loss for the given batch.
 #### batch\_predict
 
 ```python
-def batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.

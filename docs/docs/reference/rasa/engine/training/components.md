@@ -17,7 +17,7 @@ Pre-computed values can either be
 #### \_\_init\_\_
 
 ```python
-def __init__(output: Cacheable)
+ | __init__(output: Cacheable)
 ```
 
 Initializes a `PrecomputedValueProvider`.
@@ -29,8 +29,8 @@ Initializes a `PrecomputedValueProvider`.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> PrecomputedValueProvider
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> PrecomputedValueProvider
 ```
 
 Creates instance (see parent class for full docstring).
@@ -38,7 +38,7 @@ Creates instance (see parent class for full docstring).
 #### get\_value
 
 ```python
-def get_value() -> Cacheable
+ | get_value() -> Cacheable
 ```
 
 Returns the precomputed output.
@@ -46,8 +46,8 @@ Returns the precomputed output.
 #### replace\_schema\_node
 
 ```python
-@classmethod
-def replace_schema_node(cls, node: SchemaNode, output: Any) -> None
+ | @classmethod
+ | replace_schema_node(cls, node: SchemaNode, output: Any) -> None
 ```
 
 Updates a `SchemaNode` to use a `PrecomputedValueProvider`.
@@ -80,7 +80,7 @@ Holds the output of a `FingerprintComponent` and is used to prune the graph.
 #### fingerprint
 
 ```python
-def fingerprint() -> Text
+ | fingerprint() -> Text
 ```
 
 Returns the internal fingerprint.
@@ -98,7 +98,7 @@ Replaces non-input nodes during a fingerprint run.
 #### \_\_init\_\_
 
 ```python
-def __init__(cache: TrainingCache, config_of_replaced_component: Dict[Text, Any], class_of_replaced_component: Type) -> None
+ | __init__(cache: TrainingCache, config_of_replaced_component: Dict[Text, Any], class_of_replaced_component: Type) -> None
 ```
 
 Initializes a `FingerprintComponent`.
@@ -112,8 +112,8 @@ Initializes a `FingerprintComponent`.
 #### create
 
 ```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FingerprintComponent
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FingerprintComponent
 ```
 
 Creates a `FingerprintComponent` (see parent class for full docstring).
@@ -121,7 +121,7 @@ Creates a `FingerprintComponent` (see parent class for full docstring).
 #### run
 
 ```python
-def run(**kwargs: Any) -> FingerprintStatus
+ | run(**kwargs: Any) -> FingerprintStatus
 ```
 
 Calculates the fingerprint key to determine if cached output can be used.
@@ -144,8 +144,8 @@ from the schema, or replace it with a cached value before the next graph run.
 #### replace\_schema\_node
 
 ```python
-@classmethod
-def replace_schema_node(cls, node: SchemaNode, cache: TrainingCache) -> None
+ | @classmethod
+ | replace_schema_node(cls, node: SchemaNode, cache: TrainingCache) -> None
 ```
 
 Updates a `SchemaNode` to use a `FingerprintComponent`.
