@@ -82,7 +82,6 @@ class SpacyFeaturizer(DenseFeaturizer, GraphComponent):
 
         Args:
           training_data: Training data.
-          model: A Mitie model.
 
         Returns:
           Same training data after processing.
