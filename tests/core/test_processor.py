@@ -1344,22 +1344,13 @@ async def test_processor_logs_text_tokens_in_tracker(
     assert event_tokens == indices
 
 
-async def test_processor_valid_slot_setting(form_bot_agent: Agent,):
-    tracker_store = InMemoryTrackerStore(form_bot_agent.domain)
-    lock_store = InMemoryLockStore()
-    processor = MessageProcessor(
-        form_bot_agent.interpreter,
-        form_bot_agent.policy_ensemble,
-        form_bot_agent.domain,
-        tracker_store,
-        lock_store,
-        TemplatedNaturalLanguageGenerator(form_bot_agent.domain.responses),
-    )
+async def test_processor_valid_slot_setting(form_bot_agent: Agent):
+    processor = form_bot_agent.processor
     message = UserMessage(
         "that's correct",
         CollectingOutputChannel(),
         "test",
-        parse_data={"intent": {"name": "affirm"}, "entities": [],},
+        parse_data={"intent": {"name": "affirm"}, "entities": []},
     )
     await processor.handle_message(message)
     tracker = processor.get_tracker("test")

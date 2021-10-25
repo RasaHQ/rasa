@@ -145,7 +145,6 @@ class MessageProcessor:
             f"resulting in {len(extraction_events)} events: {events_as_str}"
         )
 
-
         await self._run_prediction_loop(message.output_channel, tracker)
 
         self._save_tracker(tracker)
