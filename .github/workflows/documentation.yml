@@ -22,7 +22,7 @@ env:
   DOCS_BRANCH: documentation
   TAG_NAME: ${GITHUB_REF#refs/tags/}
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
-  IS_MASTER_BRANCH: ${{ github.ref == 'refs/heads/main' }}
+  IS_MAIN_BRANCH: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
   evaluate_release_tag:
@@ -67,14 +67,14 @@ jobs:
     # - the latest major (when 3.0 is out, the latest major is 3.0)
     # - the previous major (when 3.0 is out, the previous major is 2.0, the latest minor on this version being 2.8)
     - name: Check if it's a micro tag for the latest minor
-      if: env.IS_TAG_BUILD == 'true'
+      if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
       id: check_tag
       run: |
         IS_LATEST_VERSION=${{ steps.rasa_get_version.outputs.is_latest_version }}
 
         # the latest major (when 3.0 is out, the latest major is 3.0)
         # build docs on push to the main branch
-        if [[ "${IS_LATEST_VERSION}" == "true" || "${IS_MASTER_BRANCH}" == "true" ]]; then
+        if [[ "${IS_LATEST_VERSION}" == "true" || "${IS_MAIN_BRANCH}" == "true" ]]; then
           echo "::set-output name=build_docs::true"
           exit 0
         fi
