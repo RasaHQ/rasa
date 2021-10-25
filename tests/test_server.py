@@ -66,7 +66,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
-from tests.conftest import AsyncMock
+from tests.conftest import AsyncMock, with_model_id, with_model_ids
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -1158,6 +1158,7 @@ async def test_replace_events_empty_request_body(rasa_app: SanicASGITestClient):
 
 @freeze_time("2018-01-01")
 async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
+    model_id = rasa_app.app.agent.model_id
     _, response = await rasa_app.get("/conversations/madeupid/tracker")
     content = response.json()
     assert response.status == HTTPStatus.OK
@@ -1177,8 +1178,13 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "timestamp": 1514764800,
             "action_text": None,
             "hide_rule_turn": False,
+            "metadata": {"model_id": model_id},
         },
-        {"event": "session_started", "timestamp": 1514764800},
+        {
+            "event": "session_started",
+            "timestamp": 1514764800,
+            "metadata": {"model_id": model_id},
+        },
         {
             "event": "action",
             INTENT_NAME_KEY: "action_listen",
@@ -1187,6 +1193,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
             "timestamp": 1514764800,
             "action_text": None,
             "hide_rule_turn": False,
+            "metadata": {"model_id": model_id},
         },
     ]
     assert content["latest_message"] == {
@@ -1200,6 +1207,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
 
 @pytest.mark.parametrize("event", test_events)
 async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
+    model_id = rasa_app.app.agent.model_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1228,13 +1236,42 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
     deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
 
     # there is an initial session start sequence at the beginning of the tracker
-    assert deserialized_events[:3] == session_start_sequence
 
-    assert deserialized_events[3] == event
+    assert deserialized_events[:3] == with_model_ids(session_start_sequence, model_id)
+
+    assert deserialized_events[3] == with_model_id(event, model_id)
     assert deserialized_events[3].timestamp > time_before_adding_events
 
 
+async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClient):
+    model_id = rasa_app.app.agent.model_id
+    sender_id = str(uuid.uuid1())
+    conversation = f"/conversations/{sender_id}"
+
+    existing_model_id = "some_old_id"
+    assert existing_model_id != model_id
+    event = with_model_id(BotUttered("hello!"), existing_model_id)
+    serialized_event = event.as_dict()
+
+    # Wait a bit so that the server-generated timestamp is strictly greater
+    # than time_before_adding_events
+    _, response = await rasa_app.post(
+        f"{conversation}/tracker/events",
+        json=serialized_event,
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+    _, tracker_response = await rasa_app.get(f"/conversations/{sender_id}/tracker")
+    tracker = tracker_response.json()
+
+    deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
+
+    # there is an initial session start sequence at the beginning of the tracker
+    received_event = deserialized_events[3]
+    assert received_event == with_model_id(event, existing_model_id)
+
+
 async def test_push_multiple_events(rasa_app: SanicASGITestClient):
+    model_id = rasa_app.app.agent.model_id
     conversation_id = str(uuid.uuid1())
     conversation = f"/conversations/{conversation_id}"
 
@@ -1256,7 +1293,7 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
     # there is an initial session start sequence at the beginning
     assert [
         Event.from_parameters(event) for event in tracker.get("events")
-    ] == session_start_sequence + test_events
+    ] == with_model_ids(session_start_sequence + test_events, model_id)
 
 
 @pytest.mark.parametrize(
@@ -1296,6 +1333,7 @@ async def test_pushing_event_while_executing_side_effects(
 
 
 async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
+    model_id = rasa_app.app.agent.model_id
     conversation_id = str(uuid.uuid1())
     id_len = len(conversation_id) // 2
     conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
@@ -1319,7 +1357,7 @@ async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
     # there is a session start sequence at the start
     assert [
         Event.from_parameters(event) for event in tracker.get("events")
-    ] == session_start_sequence + test_events
+    ] == with_model_ids(session_start_sequence + test_events, model_id)
 
 
 async def test_put_tracker(rasa_app: SanicASGITestClient):
@@ -2021,19 +2059,17 @@ async def test_update_conversation_with_events(
     expected_events: List[Event],
 ):
     conversation_id = "some-conversation-ID"
-    domain = Domain.empty()
-    tracker_store = InMemoryTrackerStore(domain)
-    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
-    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
+    agent = rasa_app.app.agent
+    tracker_store = agent.tracker_store
+    domain = agent.domain
+    model_id = agent.model_id
 
     if initial_tracker_events:
-        tracker = DialogueStateTracker.from_events(
-            conversation_id, initial_tracker_events
-        )
+        tracker = agent.processor.get_tracker(conversation_id)
+        tracker.update_with_events(initial_tracker_events, domain)
         tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(
-        conversation_id, rasa_app.app.agent.processor, domain, events_to_append
+        conversation_id, agent.processor, domain, events_to_append
     )
-
-    assert list(fetched_tracker.events) == expected_events
+    assert list(fetched_tracker.events) == with_model_ids(expected_events, model_id)
