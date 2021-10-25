@@ -11,6 +11,11 @@ module.exports = function() {
       return path.resolve(__dirname, './theme');
     },
 
+    // FIXME: this needs to be fixed in the theme, see https://github.com/RasaHQ/docusaurus-tabula/issues/11
+    getClientModules() {
+      return [require.resolve('./alerts.css')];
+    },
+
     configureWebpack() {
       return {
         resolve: {

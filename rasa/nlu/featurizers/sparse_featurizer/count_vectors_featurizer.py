@@ -3,7 +3,7 @@ import logging
 import re
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Tuple, Set, Type
-from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
-class CountVectorsFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
+class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
     All tokens which consist only of digits (e.g. 123 and 99
@@ -52,7 +52,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [TokenizerGraphComponent]
+        return [Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -234,7 +234,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> CountVectorsFeaturizerGraphComponent:
+    ) -> CountVectorsFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -788,7 +788,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> CountVectorsFeaturizerGraphComponent:
+    ) -> CountVectorsFeaturizer:
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_dir:

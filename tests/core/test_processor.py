@@ -39,7 +39,7 @@ from rasa.core.channels.channel import (
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ActionLimitReached
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
@@ -867,7 +867,7 @@ async def test_handle_message_with_session_start(
                         "start": 6,
                         "end": 22,
                         "value": "Core",
-                        "extractor": "RegexMessageHandlerGraphComponent",
+                        "extractor": "RegexMessageHandler",
                     }
                 ],
             ),
@@ -890,7 +890,7 @@ async def test_handle_message_with_session_start(
                         "start": 6,
                         "end": 42,
                         "value": "post-session start hello",
-                        "extractor": "RegexMessageHandlerGraphComponent",
+                        "extractor": "RegexMessageHandler",
                     }
                 ],
             ),
@@ -993,7 +993,7 @@ async def test_restart_triggers_session_start(
                         "start": 6,
                         "end": 23,
                         "value": "name1",
-                        "extractor": "RegexMessageHandlerGraphComponent",
+                        "extractor": "RegexMessageHandler",
                     }
                 ],
             ),
@@ -1364,7 +1364,7 @@ def test_predict_next_action_raises_limit_reached_exception(
 
 
 async def test_processor_logs_text_tokens_in_tracker(
-    mood_agent: Agent, whitespace_tokenizer: WhitespaceTokenizerGraphComponent
+    mood_agent: Agent, whitespace_tokenizer: WhitespaceTokenizer
 ):
     text = "Hello there"
     tokens = whitespace_tokenizer.tokenize(Message(data={"text": text}), "text")
@@ -1440,7 +1440,7 @@ def test_predict_next_with_tracker_core_only(trained_core_model: Text):
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
     result = processor.predict_next_with_tracker(tracker)
-    assert result["policy"] == "MemoizationPolicyGraphComponent"
+    assert result["policy"] == "MemoizationPolicy"
 
 
 def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
@@ -1448,7 +1448,7 @@ def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
     result = processor.predict_next_with_tracker(tracker)
-    assert result["policy"] == "MemoizationPolicyGraphComponent"
+    assert result["policy"] == "MemoizationPolicy"
 
 
 def test_get_tracker_adds_model_id(default_processor: MessageProcessor):

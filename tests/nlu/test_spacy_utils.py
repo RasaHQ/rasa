@@ -6,29 +6,19 @@ import spacy.tokens.doc
 
 from rasa.nlu.constants import DENSE_FEATURIZABLE_ATTRIBUTES, SPACY_DOCS
 from rasa.nlu.model import InvalidModelError
-from rasa.nlu.utils.spacy_utils import (
-    SpacyNLPGraphComponent,
-    SpacyPreprocessorGraphComponent,
-)
+from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, RESPONSE, TEXT
 from rasa.shared.nlu.training_data.message import Message
 
 
-def create_provider_component(
-    model_name: Text = "en_core_web_md",
-) -> SpacyNLPGraphComponent:
-    component = SpacyNLPGraphComponent.create({"model": model_name}, None, None, None)
-    return component
-
-
-def create_preprocessor(
-    case_sensitive: Optional[bool] = None,
-) -> SpacyPreprocessorGraphComponent:
-    preprocessor = SpacyPreprocessorGraphComponent.create(
-        {"case_sensitive": case_sensitive}, None, None, None
+def create_spacy_nlp_component(
+    model_name: Text = "en_core_web_md", case_sensitive: Optional[bool] = None,
+) -> SpacyNLP:
+    component = SpacyNLP.create(
+        {"model": model_name, "case_sensitive": case_sensitive}, None, None, None
     )
-    return preprocessor
+    return component
 
 
 @pytest.mark.parametrize(
@@ -44,22 +34,22 @@ def create_preprocessor(
 def test_model_raises_error_not_exist(model_name, msg):
     """It should throw a direct error when a bad model setting goes in."""
     with pytest.raises(InvalidModelError) as err:
-        create_provider_component(model_name)
+        create_spacy_nlp_component(model_name)
     assert msg in str(err.value)
 
 
 def test_spacy_spacy_model_provider():
-    provider_component = create_provider_component()
+    provider_component = create_spacy_nlp_component()
     spacy_model = provider_component.provide()
     assert spacy_model.model
     assert spacy_model.model_name == "en_core_web_md"
 
 
 @pytest.mark.parametrize("case_sensitive", [True, False])
-def test_spacy_preprocessor_adds_attributes_when_processing(case_sensitive: bool):
-    provider_component = create_provider_component()
-    spacy_model = provider_component.provide()
-    preprocessor = create_preprocessor(case_sensitive)
+def test_spacy_preprocessor_adds_attributes_when_processing(
+    case_sensitive: bool, spacy_model: SpacyModel
+):
+    preprocessor = create_spacy_nlp_component(case_sensitive=case_sensitive)
     message_data = {
         TEXT: "Hello my name is Joe",
         RESPONSE: "Some response",
@@ -79,7 +69,9 @@ def test_spacy_preprocessor_adds_attributes_when_processing(case_sensitive: bool
             assert doc.text == text.lower()
 
 
-def test_spacy_preprocessor_process_training_data():
+def test_spacy_preprocessor_process_training_data(
+    spacy_nlp_component: SpacyNLP, spacy_model: SpacyModel
+):
     training_data = TrainingDataImporter.load_from_dict(
         training_data_paths=[
             "data/test_e2ebot/data/nlu.yml",
@@ -87,10 +79,7 @@ def test_spacy_preprocessor_process_training_data():
         ]
     ).get_nlu_data()
 
-    provider_component = create_provider_component()
-    spacy_model = provider_component.provide()
-    preprocessor = create_preprocessor()
-    preprocessor.process_training_data(training_data, spacy_model)
+    spacy_nlp_component.process_training_data(training_data, spacy_model)
 
     for message in training_data.training_examples:
         for attr in DENSE_FEATURIZABLE_ATTRIBUTES:

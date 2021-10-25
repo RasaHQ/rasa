@@ -98,7 +98,7 @@ async def test_agent_train(default_agent: Agent):
                         "start": 6,
                         "end": 21,
                         "value": "Rasa",
-                        "extractor": "RegexMessageHandlerGraphComponent",
+                        "extractor": "RegexMessageHandler",
                     }
                 ],
             },

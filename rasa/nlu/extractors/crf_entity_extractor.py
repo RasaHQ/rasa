@@ -18,7 +18,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES
@@ -85,7 +85,7 @@ class CRFEntityExtractorOptions(str, Enum):
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
     """Implements conditional random fields (CRF) to do named entity recognition."""
 
     CONFIG_FEATURES = "features"
@@ -108,7 +108,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         CRFEntityExtractorOptions.DIGIT: lambda crf_token: crf_token.text.isdigit(),
         CRFEntityExtractorOptions.PATTERN: lambda crf_token: crf_token.pattern,
         CRFEntityExtractorOptions.TEXT_DENSE_FEATURES: (
-            lambda crf_token: CRFEntityExtractorGraphComponent._convert_dense_features_for_crfsuite(  # noqa: E501
+            lambda crf_token: CRFEntityExtractor._convert_dense_features_for_crfsuite(  # noqa: E501
                 crf_token
             )
         ),
@@ -118,7 +118,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [TokenizerGraphComponent]
+        return [Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -137,7 +137,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             # "is the preceding token in title case?"
             # POS features require SpacyTokenizer
             # pattern feature require RegexFeaturizer
-            CRFEntityExtractorGraphComponent.CONFIG_FEATURES: [
+            CRFEntityExtractor.CONFIG_FEATURES: [
                 [
                     CRFEntityExtractorOptions.LOW,
                     CRFEntityExtractorOptions.TITLE,
@@ -212,7 +212,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> CRFEntityExtractorGraphComponent:
+    ) -> CRFEntityExtractor:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
@@ -379,7 +379,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> CRFEntityExtractorGraphComponent:
+    ) -> CRFEntityExtractor:
         """Loads trained component (see parent class for full docstring)."""
         import joblib
 

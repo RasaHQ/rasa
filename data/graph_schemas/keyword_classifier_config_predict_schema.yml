@@ -13,7 +13,7 @@ nodes:
   run_KeywordIntentClassifier0:
     needs:
       messages: nlu_message_converter
-    uses: rasa.nlu.classifiers.keyword_intent_classifier.KeywordIntentClassifierGraphComponent
+    uses: rasa.nlu.classifiers.keyword_intent_classifier.KeywordIntentClassifier
     constructor_name: load
     fn: process
     config: {}
@@ -22,10 +22,10 @@ nodes:
     is_input: false
     resource:
       name: train_KeywordIntentClassifier0
-  run_RegexMessageHandlerGraphComponent:
+  run_RegexMessageHandler:
     needs:
       messages: run_KeywordIntentClassifier0
-    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandlerGraphComponent
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
     constructor_name: load
     fn: process
     config: {}

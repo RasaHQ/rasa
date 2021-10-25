@@ -10,7 +10,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.message import Message
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=True
 )
-class JiebaTokenizerGraphComponent(TokenizerGraphComponent):
+class JiebaTokenizer(Tokenizer):
     """This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba)."""
 
     @staticmethod
@@ -58,7 +58,7 @@ class JiebaTokenizerGraphComponent(TokenizerGraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> JiebaTokenizerGraphComponent:
+    ) -> JiebaTokenizer:
         """Creates a new component (see parent class for full docstring)."""
         # Path to the dictionaries on the local filesystem.
         dictionary_path = config["dictionary_path"]
@@ -111,7 +111,7 @@ class JiebaTokenizerGraphComponent(TokenizerGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> JiebaTokenizerGraphComponent:
+    ) -> JiebaTokenizer:
         """Loads a custom dictionary from model storage."""
         dictionary_path = config["dictionary_path"]
 
