@@ -5,17 +5,13 @@ title: rasa.nlu.classifiers.regex_message_handler
 ## RegexMessageHandler Objects
 
 ```python
-class RegexMessageHandler(GraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
+)
+class RegexMessageHandler(GraphComponent,  EntityExtractorMixin)
 ```
 
-Unpacks messages where `TEXT` contains an encoding of attributes.
-
-The `TEXT` attribute of such messages consists of the following sub-strings:
-1. special symbol &quot;/&quot; (mandatory)
-2. intent name (mandatory)
-3. &quot;@&lt;confidence value&gt;&quot; where the value can be any int or float (optional)
-4. string representation of a dictionary mapping entity types to entity
-   values (optional)
+Handles hardcoded NLU predictions from messages starting with a `/`.
 
 #### create
 
@@ -26,36 +22,23 @@ def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: 
 
 Creates a new untrained component (see parent class for full docstring).
 
-#### \_\_init\_\_
-
-```python
-def __init__() -> None
-```
-
-Creates a new instance.
-
 #### process
 
 ```python
-def process(messages: List[Message], domain: Domain) -> List[Message]
+def process(messages: List[Message], domain: Optional[Domain] = None) -> List[Message]
 ```
 
-Unpacks messages where `TEXT` contains an encoding of attributes.
-
-Note that this method returns a *new* message instance if there is
-something to unpack in the given message (and returns the given message
-otherwise). The new message is created on purpose to get rid of all attributes
-that NLU components might have added based on the `TEXT` attribute which
-does not contain real text but the regex we expect here.
+Adds hardcoded intents and entities for messages starting with &#x27;/&#x27;.
 
 **Arguments**:
 
-- `messages` - list of messages
-- `domain` - the domain
+- `messages` - The messages which should be handled.
+- `domain` - If given the domain is used to check whether the intent, entities
+  valid.
+  
 
 **Returns**:
 
-  list of messages where the i-th message is equal to the i-th input message
-  if that message does not need to be unpacked, and a new message with the
-  extracted attributes otherwise
+  The messages with potentially intent and entity prediction replaced
+  in case the message started with a `/`.
 

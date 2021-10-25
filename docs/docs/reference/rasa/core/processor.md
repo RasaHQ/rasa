@@ -8,6 +8,16 @@ title: rasa.core.processor
 class MessageProcessor()
 ```
 
+The message processor is interface for communicating with a bot model.
+
+#### \_\_init\_\_
+
+```python
+def __init__(model_path: Union[Text, Path], tracker_store: rasa.core.tracker_store.TrackerStore, lock_store: LockStore, generator: NaturalLanguageGenerator, action_endpoint: Optional[EndpointConfig] = None, max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS, on_circuit_break: Optional[LambdaType] = None, http_interpreter: Optional[RasaNLUHttpInterpreter] = None) -> None
+```
+
+Initializes a `MessageProcessor`.
+
 #### handle\_message
 
 ```python
@@ -16,13 +26,13 @@ async def handle_message(message: UserMessage) -> Optional[List[Dict[Text, Any]]
 
 Handle a single message with this processor.
 
-#### predict\_next
+#### predict\_next\_for\_sender\_id
 
 ```python
-async def predict_next(sender_id: Text) -> Optional[Dict[Text, Any]]
+async def predict_next_for_sender_id(sender_id: Text) -> Optional[Dict[Text, Any]]
 ```
 
-Predict the next action for the current conversation state.
+Predict the next action for the given sender_id.
 
 **Arguments**:
 
@@ -173,10 +183,10 @@ to execute certain behavior within a conversation (e.g. by using
 
   The new conversation state. Note that the new state is also persisted.
 
-#### predict\_next\_action
+#### predict\_next\_with\_tracker\_if\_should
 
 ```python
-def predict_next_action(tracker: DialogueStateTracker) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]
+def predict_next_with_tracker_if_should(tracker: DialogueStateTracker) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]
 ```
 
 Predicts the next action the bot should take after seeing x.
@@ -222,15 +232,16 @@ used, e.g., by a reminder or the trigger_intent endpoint).
 #### parse\_message
 
 ```python
-async def parse_message(message: UserMessage, tracker: Optional[DialogueStateTracker] = None) -> Dict[Text, Any]
+async def parse_message(message: UserMessage, only_output_properties: bool = True) -> Dict[Text, Any]
 ```
 
-Interprete the passed message using the NLU interpreter.
+Interprets the passed message.
 
 **Arguments**:
 
-- `message` - Message to handle
-- `tracker` - Dialogue context of the message
+- `message` - Message to handle.
+- `only_output_properties` - If `True`, restrict the output to
+  Message.only_output_properties.
   
 
 **Returns**:

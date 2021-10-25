@@ -44,6 +44,24 @@ Unpacks a model archive and initializes a `ModelStorage`.
 
   Initialized model storage, and metadata about the model.
 
+#### metadata\_from\_archive
+
+```python
+@classmethod
+def metadata_from_archive(cls, model_archive_path: Union[Text, Path]) -> ModelMetadata
+```
+
+Retrieves metadata from archive.
+
+**Arguments**:
+
+- `model_archive_path` - The path to the model archive.
+  
+
+**Returns**:
+
+  Metadata about the model.
+
 #### write\_to
 
 ```python
@@ -93,7 +111,7 @@ Provides the data of a persisted `Resource`.
 #### create\_model\_package
 
 ```python
-def create_model_package(model_archive_path: Union[Text, Path], train_schema: GraphSchema, predict_schema: GraphSchema, domain: Domain) -> ModelMetadata
+def create_model_package(model_archive_path: Union[Text, Path], model_configuration: GraphModelConfiguration, domain: Domain) -> ModelMetadata
 ```
 
 Creates a model archive containing all data to load and run the model.
@@ -101,8 +119,7 @@ Creates a model archive containing all data to load and run the model.
 **Arguments**:
 
 - `model_archive_path` - The path to the archive which should be created.
-- `train_schema` - The schema which was used to train the graph model.
-- `predict_schema` - The schema for running predictions with the trained model.
+- `model_configuration` - The model configuration (schemas, language, etc.)
 - `domain` - The `Domain` which was used to train the model.
   
 

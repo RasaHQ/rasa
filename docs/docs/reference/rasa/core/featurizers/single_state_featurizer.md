@@ -2,10 +2,10 @@
 sidebar_label: rasa.core.featurizers.single_state_featurizer
 title: rasa.core.featurizers.single_state_featurizer
 ---
-## SingleStateFeaturizer2 Objects
+## SingleStateFeaturizer Objects
 
 ```python
-class SingleStateFeaturizer2()
+class SingleStateFeaturizer()
 ```
 
 Base class to transform the dialogue state into an ML format.
@@ -94,10 +94,10 @@ Encode all action from the domain.
 
   A list of encoded actions.
 
-## IntentTokenizerSingleStateFeaturizer2 Objects
+## IntentTokenizerSingleStateFeaturizer Objects
 
 ```python
-class IntentTokenizerSingleStateFeaturizer2(SingleStateFeaturizer2)
+class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer)
 ```
 
 A SingleStateFeaturizer for use with policies that predict intent labels.
@@ -108,7 +108,7 @@ A SingleStateFeaturizer for use with policies that predict intent labels.
 def encode_all_labels(domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization]) -> List[Dict[Text, List[Features]]]
 ```
 
-Encodes all relevant labels from the domain using the given interpreter.
+Encodes all relevant labels from the domain using the given precomputations.
 
 **Arguments**:
 

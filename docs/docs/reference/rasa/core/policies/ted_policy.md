@@ -2,10 +2,13 @@
 sidebar_label: rasa.core.policies.ted_policy
 title: rasa.core.policies.ted_policy
 ---
-## TEDPolicyGraphComponent Objects
+## TEDPolicy Objects
 
 ```python
-class TEDPolicyGraphComponent(PolicyGraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+)
+class TEDPolicy(Policy)
 ```
 
 Transformer Embedding Dialogue (TED) Policy.
@@ -111,7 +114,7 @@ Persists model&#x27;s utility attributes like model weights, etc.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> TEDPolicyGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> TEDPolicy
 ```
 
 Loads a policy from the storage (see parent class for full docstring).

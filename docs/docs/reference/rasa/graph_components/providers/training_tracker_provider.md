@@ -36,10 +36,10 @@ def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: 
 
 Creates component (see parent class for full docstring).
 
-#### generate\_trackers
+#### provide
 
 ```python
-def generate_trackers(story_graph: StoryGraph, domain: Domain) -> List[TrackerWithCachedStates]
+def provide(story_graph: StoryGraph, domain: Domain) -> List[TrackerWithCachedStates]
 ```
 
 Generates the training trackers from the training data.

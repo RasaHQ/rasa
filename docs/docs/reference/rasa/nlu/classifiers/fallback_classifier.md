@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.classifiers.fallback_classifier
 title: rasa.nlu.classifiers.fallback_classifier
 ---
-## FallbackClassifierGraphComponent Objects
+## FallbackClassifier Objects
 
 ```python
-class FallbackClassifierGraphComponent(GraphComponent,  IntentClassifier2)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
+)
+class FallbackClassifier(GraphComponent,  IntentClassifier)
 ```
 
 Handles incoming messages with low NLU confidence.
@@ -40,7 +43,7 @@ Constructs a new fallback classifier.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FallbackClassifierGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FallbackClassifier
 ```
 
 Creates a new component (see parent class for full docstring).

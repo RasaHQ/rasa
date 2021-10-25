@@ -29,3 +29,11 @@ Performs interactive learning.
 - `zipped_model` - Path to zipped model.
 - `file_importer` - File importer which provides the training data and model config.
 
+#### get\_provided\_model
+
+```python
+def get_provided_model(arg_model: Text) -> Optional[Text]
+```
+
+Checks model path input and selects model from it.
+

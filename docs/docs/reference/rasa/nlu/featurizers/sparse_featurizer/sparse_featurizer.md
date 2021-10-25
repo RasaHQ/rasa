@@ -2,10 +2,10 @@
 sidebar_label: rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer
 ---
-## SparseFeaturizer2 Objects
+## SparseFeaturizer Objects
 
 ```python
-class SparseFeaturizer2(Featurizer2[scipy.sparse.spmatrix],  ABC)
+class SparseFeaturizer(Featurizer[scipy.sparse.spmatrix],  ABC)
 ```
 
 Base class for all sparse featurizers.

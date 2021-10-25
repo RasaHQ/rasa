@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.featurizers.dense_featurizer.convert_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.convert_featurizer
 ---
-## ConveRTFeaturizerGraphComponent Objects
+## ConveRTFeaturizer Objects
 
 ```python
-class ConveRTFeaturizerGraphComponent(DenseFeaturizer2,  GraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
+class ConveRTFeaturizer(DenseFeaturizer,  GraphComponent)
 ```
 
 Featurizer using ConveRT model.
@@ -56,7 +59,7 @@ Returns: A list of supported languages, or `None` to signify all are supported.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> ConveRTFeaturizerGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> ConveRTFeaturizer
 ```
 
 Creates a new component (see parent class for full docstring).

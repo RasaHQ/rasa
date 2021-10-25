@@ -29,16 +29,6 @@ Loads an object from a file.
   
 - `Returns` - the loaded object
 
-#### unarchive
-
-```python
-def unarchive(byte_array: bytes, directory: Text) -> Text
-```
-
-Tries to unpack a byte array interpreting it as an archive.
-
-Tries to use tar first to unpack, if that fails, zip will be used.
-
 #### create\_temporary\_file
 
 ```python
@@ -46,8 +36,6 @@ def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Te
 ```
 
 Creates a tempfile.NamedTemporaryFile object for data.
-
-mode defines NamedTemporaryFile&#x27;s  mode parameter in py3.
 
 #### create\_temporary\_directory
 
@@ -130,4 +118,25 @@ def get_emoji_regex() -> Pattern
 ```
 
 Returns regex to identify emojis.
+
+#### are\_directories\_equal
+
+```python
+def are_directories_equal(dir1: Path, dir2: Path) -> bool
+```
+
+Compares two directories recursively.
+
+Files in each directory are
+assumed to be equal if their names and contents are equal.
+
+**Arguments**:
+
+- `dir1` - The first directory.
+- `dir2` - The second directory.
+  
+
+**Returns**:
+
+  `True` if they are equal, `False` otherwise.
 

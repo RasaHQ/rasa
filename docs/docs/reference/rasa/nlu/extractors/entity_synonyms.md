@@ -2,22 +2,16 @@
 sidebar_label: rasa.nlu.extractors.entity_synonyms
 title: rasa.nlu.extractors.entity_synonyms
 ---
-## EntitySynonymMapperComponent Objects
+## EntitySynonymMapper Objects
 
 ```python
-class EntitySynonymMapperComponent(GraphComponent,  EntityExtractorMixin)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
+)
+class EntitySynonymMapper(GraphComponent,  EntityExtractorMixin)
 ```
 
 Maps entities to their synonyms if they appear in the training data.
-
-#### required\_components
-
-```python
-@classmethod
-def required_components(cls) -> List[Type]
-```
-
-Components that should be included in the pipeline before this component.
 
 #### \_\_init\_\_
 
@@ -40,7 +34,7 @@ Creates the mapper.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, synonyms: Optional[Dict[Text, Any]] = None) -> EntitySynonymMapperComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, synonyms: Optional[Dict[Text, Any]] = None) -> EntitySynonymMapper
 ```
 
 Creates component (see parent class for full docstring).
@@ -48,7 +42,7 @@ Creates component (see parent class for full docstring).
 #### train
 
 ```python
-def train(training_data: TrainingData) -> None
+def train(training_data: TrainingData) -> Resource
 ```
 
 Trains the synonym lookup table.
@@ -75,7 +69,7 @@ Modifies entities attached to message to resolve synonyms.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> EntitySynonymMapperComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> EntitySynonymMapper
 ```
 
 Loads trained component (see parent class for full docstring).

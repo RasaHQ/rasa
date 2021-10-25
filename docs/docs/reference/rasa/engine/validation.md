@@ -14,7 +14,7 @@ Stores metadata about a function parameter.
 #### validate
 
 ```python
-def validate(schema: GraphSchema, language: Optional[Text], is_train_graph: bool) -> None
+def validate(model_configuration: GraphModelConfiguration) -> None
 ```
 
 Validates a graph schema.
@@ -25,11 +25,7 @@ components.
 
 **Arguments**:
 
-- `schema` - The schema which needs validating.
-- `language` - Used to validate if all components support the language the assistant
-  is used in. If the language is `None`, all components are assumed to be
-  compatible.
-- `is_train_graph` - Whether the graph is used for training.
+- `model_configuration` - The model configuration (schemas, language, etc.)
   
 
 **Raises**:

@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer
 ---
-## LexicalSyntacticFeaturizerGraphComponent Objects
+## LexicalSyntacticFeaturizer Objects
 
 ```python
-class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2,  GraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
+class LexicalSyntacticFeaturizer(SparseFeaturizer,  GraphComponent)
 ```
 
 Extracts and encodes lexical syntactic features.
@@ -132,7 +135,7 @@ Processes the training examples in the given training data in-place.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> LexicalSyntacticFeaturizerGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> LexicalSyntacticFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -141,7 +144,7 @@ Creates a new untrained component (see parent class for full docstring).
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> LexicalSyntacticFeaturizerGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> LexicalSyntacticFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).

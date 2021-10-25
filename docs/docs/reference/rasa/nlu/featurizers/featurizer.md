@@ -2,10 +2,10 @@
 sidebar_label: rasa.nlu.featurizers.featurizer
 title: rasa.nlu.featurizers.featurizer
 ---
-## Featurizer2 Objects
+## Featurizer Objects
 
 ```python
-class Featurizer2(Generic[FeatureType],  ABC)
+class Featurizer(Generic[FeatureType],  ABC)
 ```
 
 Base class for all featurizers.

@@ -2,10 +2,15 @@
 sidebar_label: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer
 ---
-## MitieFeaturizerGraphComponent Objects
+## MitieFeaturizer Objects
 
 ```python
-class MitieFeaturizerGraphComponent(DenseFeaturizer2,  GraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER,
+    is_trainable=False,
+    model_from="MitieNLP",
+)
+class MitieFeaturizer(DenseFeaturizer,  GraphComponent)
 ```
 
 A class that featurizes using Mitie.
@@ -43,13 +48,13 @@ Any extra python dependencies required for this component to run.
 def __init__(config: Dict[Text, Any], execution_context: ExecutionContext) -> None
 ```
 
-Instantiates a new `MitieFeaturizerGraphComponent` instance.
+Instantiates a new `MitieFeaturizer` instance.
 
 #### create
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> "MitieFeaturizerGraphComponent"
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).

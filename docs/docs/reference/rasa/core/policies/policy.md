@@ -10,25 +10,6 @@ class SupportedData(Enum)
 
 Enumeration of a policy&#x27;s supported training data type.
 
-#### trackers\_for\_policy
-
-```python
-@staticmethod
-def trackers_for_policy(policy: Union[Policy, Type[Policy]], trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
-```
-
-Return trackers for a given policy.
-
-**Arguments**:
-
-- `policy` - Policy or policy type to return trackers for.
-- `trackers` - Trackers to split.
-  
-
-**Returns**:
-
-  Trackers from ML-based training data and/or rule-based data.
-
 #### trackers\_for\_supported\_data
 
 ```python
@@ -48,10 +29,10 @@ Return trackers for a given policy.
 
   Trackers from ML-based training data and/or rule-based data.
 
-## PolicyGraphComponent Objects
+## Policy Objects
 
 ```python
-class PolicyGraphComponent(GraphComponent)
+class Policy(GraphComponent)
 ```
 
 Common parent class for all dialogue policies.
@@ -84,7 +65,7 @@ Constructs a new Policy object.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> PolicyGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> Policy
 ```
 
 Creates a new untrained policy (see parent class for full docstring).
@@ -147,7 +128,7 @@ Predicts the next action the bot should take after seeing the tracker.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> "PolicyGraphComponent"
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> Policy
 ```
 
 Loads a trained policy (see parent class for full docstring).
@@ -169,6 +150,14 @@ Format tracker states to human readable format on debug log.
 **Returns**:
 
   the string of the states with user intents and actions
+
+#### \_\_repr\_\_
+
+```python
+def __repr__() -> Text
+```
+
+Returns text representation of object.
 
 ## PolicyPrediction Objects
 

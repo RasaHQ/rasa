@@ -26,7 +26,7 @@ from rasa.core.constants import (
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
 from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
-from rasa.core.agent import Agent
+from rasa.core.agent import Agent, load_agent
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.exceptions import RasaException
 
@@ -51,7 +51,7 @@ async def trained_restaurantbot(trained_async: Callable) -> Path:
 
 @pytest.fixture(scope="module")
 async def restaurantbot_agent(trained_restaurantbot: Path) -> Agent:
-    return Agent.load_local_model(str(trained_restaurantbot))
+    return await load_agent(str(trained_restaurantbot))
 
 
 async def test_evaluation_file_creation(
@@ -201,7 +201,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
         e2e_story_file_trips_circuit_breaker_path,
     )
 
-    agent = Agent.load_local_model(model_path)
+    agent = await load_agent(model_path)
     generator = _create_data_generator(
         e2e_story_file_trips_circuit_breaker_path,
         agent,
@@ -502,7 +502,7 @@ async def test_story_report_with_empty_stories(
         ["include_report", False,],
     ],
 )
-def test_log_evaluation_table(caplog, skip_field, skip_value):
+async def test_log_evaluation_table(caplog, skip_field, skip_value):
     """Check that _log_evaluation_table correctly omits/includes optional args."""
     arr = [1, 1, 1, 0]
     acc = 0.75

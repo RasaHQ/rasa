@@ -2,10 +2,10 @@
 sidebar_label: rasa.nlu.featurizers.dense_featurizer.dense_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.dense_featurizer
 ---
-## DenseFeaturizer2 Objects
+## DenseFeaturizer Objects
 
 ```python
-class DenseFeaturizer2(Featurizer2[np.ndarray],  ABC)
+class DenseFeaturizer(Featurizer[np.ndarray],  ABC)
 ```
 
 Base class for all dense featurizers.

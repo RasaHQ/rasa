@@ -621,6 +621,14 @@ or a list of them, where the first match will be picked
 
   The slot mapping or an empty dictionary in case no mapping was found.
 
+#### \_\_repr\_\_
+
+```python
+def __repr__() -> Text
+```
+
+Returns text representation of object.
+
 ## SlotMapping Objects
 
 ```python

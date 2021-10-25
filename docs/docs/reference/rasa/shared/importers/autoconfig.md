@@ -2,6 +2,21 @@
 sidebar_label: rasa.shared.importers.autoconfig
 title: rasa.shared.importers.autoconfig
 ---
+## TrainingType Objects
+
+```python
+class TrainingType(Enum)
+```
+
+#### model\_type
+
+```python
+@property
+def model_type() -> Text
+```
+
+Returns the type of model which this training yields.
+
 #### get\_configuration
 
 ```python

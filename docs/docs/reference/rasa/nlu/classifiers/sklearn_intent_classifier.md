@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.classifiers.sklearn_intent_classifier
 title: rasa.nlu.classifiers.sklearn_intent_classifier
 ---
-## SklearnIntentClassifierGraphComponent Objects
+## SklearnIntentClassifier Objects
 
 ```python
-class SklearnIntentClassifierGraphComponent(GraphComponent,  IntentClassifier2)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
+class SklearnIntentClassifier(GraphComponent,  IntentClassifier)
 ```
 
 Intent classifier using the sklearn framework.
@@ -40,7 +43,7 @@ Construct a new intent classifier using the sklearn framework.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> SklearnIntentClassifierGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> SklearnIntentClassifier
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -142,7 +145,7 @@ Persist this model into the passed directory.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> SklearnIntentClassifierGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> SklearnIntentClassifier
 ```
 
 Loads trained component (see parent class for full docstring).

@@ -3,13 +3,14 @@ import logging
 import re
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Tuple, Set, Type
-from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
@@ -28,19 +29,16 @@ from rasa.shared.nlu.constants import (
     INTENT_RESPONSE_KEY,
     ACTION_NAME,
 )
-from rasa.nlu.featurizers.sparse_featurizer._count_vectors_featurizer import (
-    CountVectorsFeaturizer,
-)
-
-# TODO: remove after all references to old featurizer have been removed
-CountVectorsFeaturizer = CountVectorsFeaturizer
 
 BUFFER_SLOTS_PREFIX = "buf_"
 
 logger = logging.getLogger(__name__)
 
 
-class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
+class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
     All tokens which consist only of digits (e.g. 123 and 99
@@ -54,13 +52,13 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [TokenizerGraphComponent]
+        return [Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """Returns the component's default config."""
         return {
-            **SparseFeaturizer2.get_default_config(),
+            **SparseFeaturizer.get_default_config(),
             # whether to use a shared vocab
             "use_shared_vocab": False,
             # the parameters are taken from
@@ -236,7 +234,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> CountVectorsFeaturizerGraphComponent:
+    ) -> CountVectorsFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -790,7 +788,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> CountVectorsFeaturizerGraphComponent:
+    ) -> CountVectorsFeaturizer:
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_dir:
@@ -829,7 +827,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                 return ftr
 
         except (ValueError, FileNotFoundError, FileIOException):
-            logger.warning(
+            logger.debug(
                 f"Failed to load `{cls.__class__.__name__}` from model storage. "
                 f"Resource '{resource.name}' doesn't exist."
             )

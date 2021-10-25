@@ -9,7 +9,7 @@ title: rasa.nlu.utils.spacy_utils
 class SpacyModel()
 ```
 
-Wraps `SpacyModelProvider` output to make it fingerprintable.
+Wraps `SpacyNLP` output to make it fingerprintable.
 
 #### fingerprint
 
@@ -26,10 +26,18 @@ changes and want to avoid investigating the model in greater detail for now.
 
   Fingerprint for model.
 
-## SpacyModelProvider Objects
+## SpacyNLP Objects
 
 ```python
-class SpacyModelProvider(GraphComponent)
+@DefaultV1Recipe.register(
+    [
+        DefaultV1Recipe.ComponentType.MODEL_LOADER,
+        DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER,
+    ],
+    is_trainable=False,
+    model_from="SpacyNLP",
+)
+class SpacyNLP(GraphComponent)
 ```
 
 Component which provides the common loaded SpaCy model to others.
@@ -40,10 +48,19 @@ model is only loaded once and then shared by depending components.
 #### \_\_init\_\_
 
 ```python
-def __init__(model: SpacyModel) -> None
+def __init__(model: SpacyModel, config: Dict[Text, Any]) -> None
 ```
 
-Initializes a `SpacyModelProvider`.
+Initializes a `SpacyNLP`.
+
+#### get\_default\_config
+
+```python
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
+```
+
+Default config.
 
 #### load\_model
 
@@ -67,7 +84,7 @@ Lists required dependencies (see parent class for full docstring).
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> SpacyModelProvider
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> SpacyNLP
 ```
 
 Creates component (see parent class for full docstring).
@@ -91,53 +108,10 @@ def provide() -> SpacyModel
 
 Provides the loaded SpaCy model.
 
-## SpacyPreprocessor Objects
-
-```python
-class SpacyPreprocessor(GraphComponent)
-```
-
-Processes messages using SpaCy for use by SpacyTokenizer and SpacyFeaturizer.
-
-#### get\_default\_config
-
-```python
-@staticmethod
-def get_default_config() -> Dict[Text, Any]
-```
-
-Default config for SpacyPreprocessor.
-
-#### \_\_init\_\_
-
-```python
-def __init__(config: Dict[Text, Any]) -> None
-```
-
-Initializes a `SpacyPreprocessor`.
-
-#### required\_packages
-
-```python
-@classmethod
-def required_packages(cls) -> List[Text]
-```
-
-Lists required dependencies (see parent class for full docstring).
-
-#### create
-
-```python
-@classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> SpacyPreprocessor
-```
-
-Creates component for training see parent class for full docstring).
-
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData, spacy_model: SpacyModel) -> TrainingData
+def process_training_data(training_data: TrainingData, model: SpacyModel) -> TrainingData
 ```
 
 Adds SpaCy tokens and features to training data messages.
@@ -145,7 +119,7 @@ Adds SpaCy tokens and features to training data messages.
 #### process
 
 ```python
-def process(messages: List[Message], spacy_model: SpacyModel) -> List[Message]
+def process(messages: List[Message], model: SpacyModel) -> List[Message]
 ```
 
 Adds SpaCy tokens and features to messages.

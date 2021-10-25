@@ -5,7 +5,7 @@ title: rasa.model_testing
 #### test\_core\_models\_in\_directory
 
 ```python
-def test_core_models_in_directory(model_directory: Text, stories: Text, output: Text, use_conversation_test_files: bool = False) -> None
+async def test_core_models_in_directory(model_directory: Text, stories: Text, output: Text, use_conversation_test_files: bool = False) -> None
 ```
 
 Evaluates a directory with multiple Core models using test data.
@@ -34,7 +34,7 @@ Plot core model comparison graph.
 #### test\_core\_models
 
 ```python
-def test_core_models(models: List[Text], stories: Text, output: Text, use_conversation_test_files: bool = False) -> None
+async def test_core_models(models: List[Text], stories: Text, output: Text, use_conversation_test_files: bool = False) -> None
 ```
 
 Compares multiple Core models based on test data.
@@ -50,7 +50,7 @@ Compares multiple Core models based on test data.
 #### test\_core
 
 ```python
-def test_core(model: Optional[Text] = None, stories: Optional[Text] = None, output: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None, use_conversation_test_files: bool = False) -> None
+async def test_core(model: Optional[Text] = None, stories: Optional[Text] = None, output: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None, use_conversation_test_files: bool = False) -> None
 ```
 
 Tests a trained Core model against a set of test stories.
@@ -58,7 +58,7 @@ Tests a trained Core model against a set of test stories.
 #### test\_nlu
 
 ```python
-def test_nlu(model: Optional[Text], nlu_data: Optional[Text], output_directory: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None) -> None
+async def test_nlu(model: Optional[Text], nlu_data: Optional[Text], output_directory: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None) -> None
 ```
 
 Tests the NLU Model.
@@ -87,7 +87,7 @@ Plot NLU model comparison graph.
 #### perform\_nlu\_cross\_validation
 
 ```python
-def perform_nlu_cross_validation(config: Dict[Text, Any], data: TrainingData, output: Text, additional_arguments: Optional[Dict[Text, Any]]) -> None
+async def perform_nlu_cross_validation(config: Dict[Text, Any], data: TrainingData, output: Text, additional_arguments: Optional[Dict[Text, Any]]) -> None
 ```
 
 Runs cross-validation on test data.

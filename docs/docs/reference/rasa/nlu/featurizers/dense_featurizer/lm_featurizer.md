@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.featurizers.dense_featurizer.lm_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.lm_featurizer
 ---
-## LanguageModelFeaturizerGraphComponent Objects
+## LanguageModelFeaturizer Objects
 
 ```python
-class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2,  GraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
+class LanguageModelFeaturizer(DenseFeaturizer,  GraphComponent)
 ```
 
 A featurizer that uses transformer-based language models.
@@ -55,7 +58,7 @@ Validates the configuration.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> LanguageModelFeaturizerGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> LanguageModelFeaturizer
 ```
 
 Creates a LanguageModelFeaturizer.
@@ -74,7 +77,7 @@ Returns the extra python dependencies required.
 #### process\_training\_data
 
 ```python
-def process_training_data(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> TrainingData
+def process_training_data(training_data: TrainingData) -> TrainingData
 ```
 
 Computes tokens and dense features for each message in training data.

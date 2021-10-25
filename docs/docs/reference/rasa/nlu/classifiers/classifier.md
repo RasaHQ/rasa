@@ -2,10 +2,10 @@
 sidebar_label: rasa.nlu.classifiers.classifier
 title: rasa.nlu.classifiers.classifier
 ---
-## IntentClassifier2 Objects
+## IntentClassifier Objects
 
 ```python
-class IntentClassifier2()
+class IntentClassifier()
 ```
 
 An intent classifier.

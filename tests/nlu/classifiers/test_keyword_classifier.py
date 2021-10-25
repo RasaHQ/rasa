@@ -6,9 +6,7 @@ import copy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.classifiers.keyword_intent_classifier import (
-    KeywordIntentClassifierGraphComponent,
-)
+from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.shared.nlu.constants import TEXT
 
 from rasa.shared.nlu.training_data.formats.rasa import RasaReader
@@ -26,8 +24,8 @@ def training_data(nlu_as_json_path: Text):
 def default_keyword_intent_classifier(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
 ):
-    return KeywordIntentClassifierGraphComponent.create(
-        KeywordIntentClassifierGraphComponent.get_default_config(),
+    return KeywordIntentClassifier.create(
+        KeywordIntentClassifier.get_default_config(),
         default_model_storage,
         Resource("keyword"),
         default_execution_context,
@@ -43,12 +41,12 @@ def test_persist_and_load(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
 ):
-    classifier = KeywordIntentClassifierGraphComponent.create(
+    classifier = KeywordIntentClassifier.create(
         config, default_model_storage, Resource("keyword"), default_execution_context,
     )
     classifier.train(training_data)
 
-    loaded_classifier = KeywordIntentClassifierGraphComponent.load(
+    loaded_classifier = KeywordIntentClassifier.load(
         config, default_model_storage, Resource("keyword"), default_execution_context,
     )
 
@@ -78,7 +76,7 @@ def test_classification(
     message: Text,
     intent: Text,
     training_data: TrainingData,
-    default_keyword_intent_classifier: KeywordIntentClassifierGraphComponent,
+    default_keyword_intent_classifier: KeywordIntentClassifier,
 ):
     text = Message(data={TEXT: message})
     default_keyword_intent_classifier.train(training_data)
@@ -87,9 +85,7 @@ def test_classification(
         assert m.get("intent").get("name", "NOT_CLASSIFIED") == intent
 
 
-def test_valid_data(
-    default_keyword_intent_classifier: KeywordIntentClassifierGraphComponent,
-):
+def test_valid_data(default_keyword_intent_classifier: KeywordIntentClassifier,):
     json_data = {
         "rasa_nlu_data": {
             "common_examples": [
@@ -110,9 +106,7 @@ def test_valid_data(
 
 
 @pytest.mark.filterwarnings("ignore:Keyword.* of keywords:UserWarning")
-def test_identical_data(
-    default_keyword_intent_classifier: KeywordIntentClassifierGraphComponent,
-):
+def test_identical_data(default_keyword_intent_classifier: KeywordIntentClassifier,):
     json_data = {
         "rasa_nlu_data": {
             "common_examples": [
@@ -134,9 +128,7 @@ def test_identical_data(
 
 
 @pytest.mark.filterwarnings("ignore:Keyword.* of keywords:UserWarning")
-def test_ambiguous_data(
-    default_keyword_intent_classifier: KeywordIntentClassifierGraphComponent,
-):
+def test_ambiguous_data(default_keyword_intent_classifier: KeywordIntentClassifier,):
     json_data = {
         "rasa_nlu_data": {
             "common_examples": [

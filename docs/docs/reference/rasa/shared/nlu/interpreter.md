@@ -2,34 +2,19 @@
 sidebar_label: rasa.shared.nlu.interpreter
 title: rasa.shared.nlu.interpreter
 ---
+## NaturalLanguageInterpreter Objects
+
+```python
+class NaturalLanguageInterpreter()
+```
+
+Remove once all old components are deleted.
+
 ## RegexInterpreter Objects
 
 ```python
-class RegexInterpreter(NaturalLanguageInterpreter)
+class RegexInterpreter()
 ```
 
-#### extract\_intent\_and\_entities
-
-```python
-@staticmethod
-def extract_intent_and_entities(user_input: Text) -> Tuple[Optional[Text], float, List[Dict[Text, Any]]]
-```
-
-Parse the user input using regexes to extract intent &amp; entities.
-
-#### parse
-
-```python
-async def parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
-```
-
-Parse a text message.
-
-#### synchronous\_parse
-
-```python
-def synchronous_parse(text: Text) -> Dict[Text, Any]
-```
-
-Parse a text message.
+Remove once all old components are deleted.
 

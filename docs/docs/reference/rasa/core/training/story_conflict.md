@@ -84,7 +84,7 @@ Returns the hash of the sliced states.
 #### find\_story\_conflicts
 
 ```python
-def find_story_conflicts(trackers: List[TrackerWithCachedStates], domain: Domain, max_history: Optional[int] = None, nlu_config: Optional[RasaNLUModelConfig] = None) -> List[StoryConflict]
+def find_story_conflicts(trackers: List[TrackerWithCachedStates], domain: Domain, max_history: Optional[int] = None) -> List[StoryConflict]
 ```
 
 Generates `StoryConflict` objects, describing conflicts in the given trackers.
@@ -94,7 +94,6 @@ Generates `StoryConflict` objects, describing conflicts in the given trackers.
 - `trackers` - Trackers in which to search for conflicts.
 - `domain` - The domain.
 - `max_history` - The maximum history length to be taken into account.
-- `nlu_config` - NLU config.
   
 
 **Returns**:

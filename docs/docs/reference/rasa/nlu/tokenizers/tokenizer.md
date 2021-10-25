@@ -2,10 +2,58 @@
 sidebar_label: rasa.nlu.tokenizers.tokenizer
 title: rasa.nlu.tokenizers.tokenizer
 ---
-## TokenizerGraphComponent Objects
+## Token Objects
 
 ```python
-class TokenizerGraphComponent(GraphComponent,  abc.ABC)
+class Token()
+```
+
+Used by `Tokenizers` which split a single message into multiple `Token`s.
+
+#### \_\_init\_\_
+
+```python
+def __init__(text: Text, start: int, end: Optional[int] = None, data: Optional[Dict[Text, Any]] = None, lemma: Optional[Text] = None) -> None
+```
+
+Create a `Token`.
+
+**Arguments**:
+
+- `text` - The token text.
+- `start` - The start index of the token within the entire message.
+- `end` - The end index of the token within the entire message.
+- `data` - Additional token data.
+- `lemma` - An optional lemmatized version of the token text.
+
+#### set
+
+```python
+def set(prop: Text, info: Any) -> None
+```
+
+Set property value.
+
+#### get
+
+```python
+def get(prop: Text, default: Optional[Any] = None) -> Any
+```
+
+Returns token value.
+
+#### fingerprint
+
+```python
+def fingerprint() -> Text
+```
+
+Returns a stable hash for this Token.
+
+## Tokenizer Objects
+
+```python
+class Tokenizer(GraphComponent,  abc.ABC)
 ```
 
 Base class for tokenizers.

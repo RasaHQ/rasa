@@ -10,10 +10,13 @@ class InvalidRule(RasaException)
 
 Exception that can be raised when rules are not valid.
 
-## RulePolicyGraphComponent Objects
+## RulePolicy Objects
 
 ```python
-class RulePolicyGraphComponent(MemoizationPolicyGraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
+class RulePolicy(MemoizationPolicy)
 ```
 
 Policy which handles all the rules.
@@ -87,7 +90,7 @@ Trains the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
-def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> "PolicyPrediction"
+def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action (see parent class for more information).

@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.selectors.response_selector
 title: rasa.nlu.selectors.response_selector
 ---
-## ResponseSelectorGraphComponent Objects
+## ResponseSelector Objects
 
 ```python
-class ResponseSelectorGraphComponent(DIETClassifierGraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
+class ResponseSelector(DIETClassifier)
 ```
 
 Response selector using supervised embeddings.
@@ -139,7 +142,7 @@ Persist this model into the passed directory.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> ResponseSelectorGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> ResponseSelector
 ```
 
 Loads the trained model from the provided directory.

@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer
 ---
-## CountVectorsFeaturizerGraphComponent Objects
+## CountVectorsFeaturizer Objects
 
 ```python
-class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2,  GraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
+class CountVectorsFeaturizer(SparseFeaturizer,  GraphComponent)
 ```
 
 Creates a sequence of token counts features based on sklearn&#x27;s `CountVectorizer`.
@@ -56,7 +59,7 @@ Constructs a new count vectorizer using the sklearn framework.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CountVectorsFeaturizerGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CountVectorsFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -111,7 +114,7 @@ Returns the metadata necessary to load the model again.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CountVectorsFeaturizerGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CountVectorsFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).

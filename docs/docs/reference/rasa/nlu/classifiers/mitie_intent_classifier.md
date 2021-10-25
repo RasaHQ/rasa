@@ -2,10 +2,15 @@
 sidebar_label: rasa.nlu.classifiers.mitie_intent_classifier
 title: rasa.nlu.classifiers.mitie_intent_classifier
 ---
-## MitieIntentClassifierGraphComponent Objects
+## MitieIntentClassifier Objects
 
 ```python
-class MitieIntentClassifierGraphComponent(GraphComponent,  IntentClassifier2)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+    is_trainable=True,
+    model_from="MitieNLP",
+)
+class MitieIntentClassifier(GraphComponent,  IntentClassifier)
 ```
 
 Intent classifier which uses the `mitie` library.
@@ -66,7 +71,7 @@ Trains classifier.
 #### process
 
 ```python
-def process(messages: List[Message], model: MitieModel) -> None
+def process(messages: List[Message], model: MitieModel) -> List[Message]
 ```
 
 Make intent predictions using `mitie`.
@@ -80,7 +85,7 @@ Make intent predictions using `mitie`.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieIntentClassifierGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieIntentClassifier
 ```
 
 Creates component for training see parent class for full docstring).
@@ -89,7 +94,7 @@ Creates component for training see parent class for full docstring).
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieIntentClassifierGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieIntentClassifier
 ```
 
 Loads component for inference see parent class for full docstring).

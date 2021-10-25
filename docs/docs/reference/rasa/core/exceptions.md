@@ -30,7 +30,7 @@ class AgentNotReady(RasaCoreException)
 
 Raised if someone tries to use an agent that is not ready.
 
-An agent might be created, e.g. without an interpreter attached. But
+An agent might be created, e.g. without an processor attached. But
 if someone tries to parse a message with that agent, this exception
 will be thrown.
 

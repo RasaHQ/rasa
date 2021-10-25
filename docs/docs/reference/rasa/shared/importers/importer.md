@@ -128,6 +128,14 @@ def fingerprint() -> Text
 
 Returns a random fingerprint as data shouldn&#x27;t be cached.
 
+#### \_\_repr\_\_
+
+```python
+def __repr__() -> Text
+```
+
+Returns text representation of object.
+
 ## NluDataImporter Objects
 
 ```python
@@ -333,7 +341,7 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
-def get_stories(interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(), exclusion_percentage: Optional[int] = None) -> StoryGraph
+def get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves the stories that should be used for training.

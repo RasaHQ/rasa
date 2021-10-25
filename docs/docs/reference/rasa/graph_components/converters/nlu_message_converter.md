@@ -22,11 +22,16 @@ Creates component (see parent class for full docstring).
 #### convert\_user\_message
 
 ```python
-@staticmethod
-def convert_user_message(message: Optional[UserMessage]) -> List[Message]
+def convert_user_message(messages: List[UserMessage]) -> List[Message]
 ```
 
 Converts user message into Message object.
+
+**Arguments**:
+
+- `messages` - The user messages which should be converted to be processed by
+  the NLU components.
+  
 
 **Returns**:
 

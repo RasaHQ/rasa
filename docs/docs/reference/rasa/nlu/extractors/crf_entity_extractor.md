@@ -10,10 +10,13 @@ class CRFEntityExtractorOptions(str,  Enum)
 
 Features that can be used for the &#x27;CRFEntityExtractor&#x27;.
 
-## CRFEntityExtractorGraphComponent Objects
+## CRFEntityExtractor Objects
 
 ```python
-class CRFEntityExtractorGraphComponent(GraphComponent,  EntityExtractorMixin)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
+)
+class CRFEntityExtractor(GraphComponent,  EntityExtractorMixin)
 ```
 
 Implements conditional random fields (CRF) to do named entity recognition.
@@ -48,7 +51,7 @@ Creates an instance of entity extractor.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CRFEntityExtractorGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> CRFEntityExtractor
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -90,7 +93,7 @@ Extract entities from the given message using the trained model(s).
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CRFEntityExtractorGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> CRFEntityExtractor
 ```
 
 Loads trained component (see parent class for full docstring).

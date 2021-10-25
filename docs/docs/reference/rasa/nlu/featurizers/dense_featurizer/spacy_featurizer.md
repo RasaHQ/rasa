@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.featurizers.dense_featurizer.spacy_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.spacy_featurizer
 ---
-## SpacyFeaturizerGraphComponent Objects
+## SpacyFeaturizer Objects
 
 ```python
-class SpacyFeaturizerGraphComponent(DenseFeaturizer2,  GraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
+class SpacyFeaturizer(DenseFeaturizer,  GraphComponent)
 ```
 
 Featurize messages using SpaCy.
@@ -34,7 +37,7 @@ The component&#x27;s default config (see parent class for full docstring).
 def __init__(config: Dict[Text, Any], name: Text) -> None
 ```
 
-Initializes SpacyFeaturizerGraphComponent.
+Initializes SpacyFeaturizer.
 
 #### create
 
@@ -64,7 +67,6 @@ Processes the training examples in the given training data in-place.
 **Arguments**:
 
 - `training_data` - Training data.
-- `model` - A Mitie model.
   
 
 **Returns**:

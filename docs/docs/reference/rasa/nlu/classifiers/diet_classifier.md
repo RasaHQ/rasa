@@ -2,11 +2,17 @@
 sidebar_label: rasa.nlu.classifiers.diet_classifier
 title: rasa.nlu.classifiers.diet_classifier
 ---
-## DIETClassifierGraphComponent Objects
+## DIETClassifier Objects
 
 ```python
-class DIETClassifierGraphComponent(
-    GraphComponent,  IntentClassifier2,  EntityExtractorMixin)
+@DefaultV1Recipe.register(
+    [
+        DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+        DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    ],
+    is_trainable=True,
+)
+class DIETClassifier(GraphComponent,  IntentClassifier,  EntityExtractorMixin)
 ```
 
 A multi-task model for intent classification and entity extraction.
@@ -50,7 +56,7 @@ Declare instance variables with default values.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DIETClassifierGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DIETClassifier
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -111,7 +117,7 @@ Persist this model into the passed directory.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> DIETClassifierGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> DIETClassifier
 ```
 
 Loads a policy from the storage (see parent class for full docstring).

@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.extractors.regex_entity_extractor
 title: rasa.nlu.extractors.regex_entity_extractor
 ---
-## RegexEntityExtractorGraphComponent Objects
+## RegexEntityExtractor Objects
 
 ```python
-class RegexEntityExtractorGraphComponent(GraphComponent,  EntityExtractorMixin)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
+)
+class RegexEntityExtractor(GraphComponent,  EntityExtractorMixin)
 ```
 
 Extracts entities via lookup tables and regexes defined in the training data.
@@ -23,7 +26,7 @@ The component&#x27;s default config (see parent class for full docstring).
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexEntityExtractor
 ```
 
 Creates a new `GraphComponent`.
@@ -92,7 +95,7 @@ exists yet, then an `ENTITIES` attribute will be created.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexEntityExtractorGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexEntityExtractor
 ```
 
 Loads trained component (see parent class for full docstring).

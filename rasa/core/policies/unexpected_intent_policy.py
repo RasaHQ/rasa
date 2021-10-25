@@ -6,8 +6,10 @@ from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, TYPE_CHECKING
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -22,28 +24,28 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
+from rasa.core.constants import (
+    DIALOGUE,
+    POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
+    UNLIKELY_INTENT_POLICY_PRIORITY,
+)
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
     LABEL_SUB_KEY,
-    TEDPolicyGraphComponent as TEDPolicy,
+    TEDPolicy,
     TED,
     SEQUENCE_LENGTH,
     SEQUENCE,
     PREDICTION_FEATURES,
 )
-from rasa.core.policies._unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.constants import (
@@ -133,12 +135,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-UnexpecTEDIntentPolicy = UnexpecTEDIntentPolicy
 
-
-class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+)
+class UnexpecTEDIntentPolicy(TEDPolicy):
     """`UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
 
     The difference is at a task level.
@@ -209,7 +210,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             NUM_NEG: 20,
             # Number of intents to store in ranking key of predicted action metadata.
             # Set this to `0` to include all intents.
-            RANKING_LENGTH: 10,
+            RANKING_LENGTH: LABEL_RANKING_LENGTH,
             # If 'True' scale loss inverse proportionally to the confidence
             # of the correct prediction
             SCALE_LOSS: True,
@@ -285,6 +286,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             BILOU_FLAG: False,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
+            # Determines the importance of policies, higher values take precedence
+            POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
         }
 
     def __init__(
@@ -893,7 +896,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         featurizer: TrackerFeaturizer,
         model: "IntentTED",
         model_utilities: Dict[Text, Any],
-    ) -> "UnexpecTEDIntentPolicyGraphComponent":
+    ) -> "UnexpecTEDIntentPolicy":
         return cls(
             config,
             model_storage,

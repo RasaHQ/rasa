@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.tokenizers.whitespace_tokenizer
 title: rasa.nlu.tokenizers.whitespace_tokenizer
 ---
-## WhitespaceTokenizerGraphComponent Objects
+## WhitespaceTokenizer Objects
 
 ```python
-class WhitespaceTokenizerGraphComponent(TokenizerGraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
+)
+class WhitespaceTokenizer(Tokenizer)
 ```
 
 Creates features for entity extraction.
@@ -40,7 +43,7 @@ Initialize the tokenizer.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> "WhitespaceTokenizerGraphComponent"
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> WhitespaceTokenizer
 ```
 
 Creates a new component (see parent class for full docstring).

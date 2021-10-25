@@ -2,10 +2,15 @@
 sidebar_label: rasa.nlu.extractors.mitie_entity_extractor
 title: rasa.nlu.extractors.mitie_entity_extractor
 ---
-## MitieEntityExtractorGraphComponent Objects
+## MitieEntityExtractor Objects
 
 ```python
-class MitieEntityExtractorGraphComponent(GraphComponent,  EntityExtractorMixin)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    is_trainable=True,
+    model_from="MitieNLP",
+)
+class MitieEntityExtractor(GraphComponent,  EntityExtractorMixin)
 ```
 
 A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`).
@@ -73,7 +78,7 @@ Checks whether the given configuration is valid.
 def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
 ```
 
-Creates a new `MitieEntityExtractorGraphComponent`.
+Creates a new `MitieEntityExtractor`.
 
 **Arguments**:
 
@@ -84,12 +89,12 @@ Creates a new `MitieEntityExtractorGraphComponent`.
   and load itself from the `model_storage`.
 - `execution_context` - Information about the current graph run. Unused.
   
-- `Returns` - An instantiated `MitieEntityExtractorGraphComponent`.
+- `Returns` - An instantiated `MitieEntityExtractor`.
 
 #### train
 
 ```python
-def train(training_data: TrainingData, mitie_model: MitieModel) -> Resource
+def train(training_data: TrainingData, model: MitieModel) -> Resource
 ```
 
 Trains a MITIE named entity recognizer.
@@ -97,7 +102,7 @@ Trains a MITIE named entity recognizer.
 **Arguments**:
 
 - `training_data` - the training data
-- `mitie_model` - a MitieModel
+- `model` - a MitieModel
 
 **Returns**:
 
@@ -106,7 +111,7 @@ Trains a MITIE named entity recognizer.
 #### process
 
 ```python
-def process(messages: List[Message], mitie_model: MitieModel) -> List[Message]
+def process(messages: List[Message], model: MitieModel) -> List[Message]
 ```
 
 Extracts entities from messages and appends them to the attribute.
@@ -127,7 +132,7 @@ exists yet, then an `ENTITIES` attribute will be created.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieEntityExtractorGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieEntityExtractor
 ```
 
 Loads trained component (see parent class for full docstring).

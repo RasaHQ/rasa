@@ -150,6 +150,10 @@ When using the `SASL_PLAINTEXT` and `SASL_SSL` protocols, the `sasl_mechanism` c
 optionally configured and is set to `PLAIN` by default. Valid values for `sasl_mechanism`
 are: `PLAIN`, `GSSAPI`, `OAUTHBEARER`, `SCRAM-SHA-256`, and `SCRAM-SHA-512`.
 
+If `GSSAPI` is used for the `sasl_mechanism`, you will need to additionally install
+[python-gssapi](https://pypi.org/project/python-gssapi/) and the necessary C library
+Kerberos dependencies.
+
 If the `ssl_check_hostname` parameter is enabled, the clients will verify
 if the broker's hostname matches the certificate. It's used on client's connections
 and inter-broker connections to prevent man-in-the-middle attacks.

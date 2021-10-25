@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.tokenizers.mitie_tokenizer
 title: rasa.nlu.tokenizers.mitie_tokenizer
 ---
-## MitieTokenizerGraphComponent Objects
+## MitieTokenizer Objects
 
 ```python
-class MitieTokenizerGraphComponent(TokenizerGraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
+)
+class MitieTokenizer(Tokenizer)
 ```
 
 Tokenizes messages using the `mitie` library..
@@ -32,7 +35,7 @@ Any extra python dependencies required for this component to run.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieTokenizerGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieTokenizer
 ```
 
 Creates a new component (see parent class for full docstring).

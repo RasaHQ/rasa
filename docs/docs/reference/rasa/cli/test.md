@@ -15,10 +15,10 @@ Add all test parsers.
 - `subparsers` - subparser we are going to attach to
 - `parents` - Parent parsers, needed to ensure tree structure in argparse
 
-#### run\_core\_test
+#### run\_core\_test\_async
 
 ```python
-def run_core_test(args: argparse.Namespace) -> None
+async def run_core_test_async(args: argparse.Namespace) -> None
 ```
 
 Run core tests.
@@ -58,6 +58,18 @@ Runs NLU tests.
 **Arguments**:
 
 - `args` - the parsed CLI arguments for &#x27;rasa test nlu&#x27;.
+
+#### run\_core\_test
+
+```python
+def run_core_test(args: argparse.Namespace) -> None
+```
+
+Runs Core tests.
+
+**Arguments**:
+
+- `args` - the parsed CLI arguments for &#x27;rasa test core&#x27;.
 
 #### test
 

@@ -8,7 +8,7 @@ title: rasa.nlu.utils.mitie_utils
 class MitieModel()
 ```
 
-Wraps `MitieNLPGraphComponent` output to make it fingerprintable.
+Wraps `MitieNLP` output to make it fingerprintable.
 
 #### \_\_init\_\_
 
@@ -33,10 +33,13 @@ changes and want to avoid investigating the model in greater detail for now.
 
   Fingerprint for model.
 
-## MitieNLPGraphComponent Objects
+## MitieNLP Objects
 
 ```python
-class MitieNLPGraphComponent(GraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MODEL_LOADER, is_trainable=False
+)
+class MitieNLP(GraphComponent)
 ```
 
 Component which provides the common configuration and loaded model to others.
@@ -74,7 +77,7 @@ Lists required dependencies (see parent class for full docstring).
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieNLPGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> MitieNLP
 ```
 
 Creates component (see parent class for full docstring).

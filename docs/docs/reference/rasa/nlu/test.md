@@ -458,7 +458,7 @@ using align_entity_predictions.
 #### get\_eval\_data
 
 ```python
-def get_eval_data(interpreter: Interpreter, test_data: TrainingData) -> Tuple[
+async def get_eval_data(processor: MessageProcessor, test_data: TrainingData) -> Tuple[
     List[IntentEvaluationResult],
     List[ResponseSelectionEvaluationResult],
     List[EntityEvaluationResult],
@@ -474,7 +474,7 @@ response targets and predictions) as well as entity results
 
 **Arguments**:
 
-- `interpreter` - the interpreter
+- `processor` - the processor
 - `test_data` - test data
   
 - `Returns` - intent, response, and entity evaluation results
@@ -482,7 +482,7 @@ response targets and predictions) as well as entity results
 #### run\_evaluation
 
 ```python
-def run_evaluation(data_path: Text, model_path: Text, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, component_builder: Optional[ComponentBuilder] = None, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
+async def run_evaluation(data_path: Text, processor: MessageProcessor, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Evaluate intent classification, response selection and entity extraction.
@@ -490,11 +490,10 @@ Evaluate intent classification, response selection and entity extraction.
 **Arguments**:
 
 - `data_path` - path to the test data
-- `model_path` - path to the model
+- `processor` - the processor used to process and predict
 - `output_directory` - path to folder where all output will be stored
 - `successes` - if true successful predictions are written to a file
 - `errors` - if true incorrect predictions are written to a file
-- `component_builder` - component builder
 - `disable_plotting` - if true confusion matrix and histogram will not be rendered
 - `report_as_dict` - `True` if the evaluation report should be returned as `dict`.
   If `False` the report is returned in a human-readable text format. If `None`
@@ -514,7 +513,7 @@ Generates n cross validation folds for given training data.
 #### combine\_result
 
 ```python
-def combine_result(intent_metrics: IntentMetrics, entity_metrics: EntityMetrics, response_selection_metrics: ResponseSelectionMetrics, interpreter: Interpreter, data: TrainingData, intent_results: Optional[List[IntentEvaluationResult]] = None, entity_results: Optional[List[EntityEvaluationResult]] = None, response_selection_results: Optional[
+async def combine_result(intent_metrics: IntentMetrics, entity_metrics: EntityMetrics, response_selection_metrics: ResponseSelectionMetrics, processor: MessageProcessor, data: TrainingData, intent_results: Optional[List[IntentEvaluationResult]] = None, entity_results: Optional[List[EntityEvaluationResult]] = None, response_selection_results: Optional[
         List[ResponseSelectionEvaluationResult]
     ] = None) -> Tuple[IntentMetrics, EntityMetrics, ResponseSelectionMetrics]
 ```
@@ -530,7 +529,7 @@ as a list, prediction results are also collected.
 - `intent_metrics` - intent metrics
 - `entity_metrics` - entity metrics
 - `response_selection_metrics` - response selection metrics
-- `interpreter` - the interpreter
+- `processor` - the processor
 - `data` - training data
 - `intent_results` - intent evaluation results
 - `entity_results` - entity evaluation results
@@ -541,7 +540,7 @@ as a list, prediction results are also collected.
 #### cross\_validate
 
 ```python
-def cross_validate(data: TrainingData, n_folds: int, nlu_config: Union[RasaNLUModelConfig, Text, Dict], output: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]
+async def cross_validate(data: TrainingData, n_folds: int, nlu_config: Union[Text, Dict], output: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]
 ```
 
 Stratified cross validation on data.
@@ -569,7 +568,7 @@ Stratified cross validation on data.
 #### compute\_metrics
 
 ```python
-def compute_metrics(interpreter: Interpreter, training_data: TrainingData) -> Tuple[
+async def compute_metrics(processor: MessageProcessor, training_data: TrainingData) -> Tuple[
     IntentMetrics,
     EntityMetrics,
     ResponseSelectionMetrics,
@@ -584,7 +583,7 @@ extraction.
 
 **Arguments**:
 
-- `interpreter` - the interpreter
+- `processor` - the processor
 - `training_data` - training data
   
 - `Returns` - intent, response selection and entity metrics, and prediction results.

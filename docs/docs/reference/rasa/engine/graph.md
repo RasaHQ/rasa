@@ -68,7 +68,7 @@ Returns the names of all target nodes.
 #### minimal\_graph\_schema
 
 ```python
-def minimal_graph_schema() -> GraphSchema
+def minimal_graph_schema(targets: Optional[List[Text]] = None) -> GraphSchema
 ```
 
 Returns a new schema where all nodes are a descendant of a target.
@@ -280,14 +280,6 @@ Initializes `GraphNode`.
 - `execution_context` - Information about the current graph run.
 - `hooks` - These are called before and after execution.
 
-#### parent\_node\_names
-
-```python
-def parent_node_names() -> List[Text]
-```
-
-The names of the parent nodes of this node.
-
 #### \_\_call\_\_
 
 ```python
@@ -314,4 +306,13 @@ def from_schema_node(cls, node_name: Text, schema_node: SchemaNode, model_storag
 ```
 
 Creates a `GraphNode` from a `SchemaNode`.
+
+## GraphModelConfiguration Objects
+
+```python
+@dataclass()
+class GraphModelConfiguration()
+```
+
+The model configuration to run as a graph during training and prediction.
 

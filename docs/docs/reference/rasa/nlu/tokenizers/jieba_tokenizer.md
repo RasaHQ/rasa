@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.tokenizers.jieba_tokenizer
 title: rasa.nlu.tokenizers.jieba_tokenizer
 ---
-## JiebaTokenizerGraphComponent Objects
+## JiebaTokenizer Objects
 
 ```python
-class JiebaTokenizerGraphComponent(TokenizerGraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=True
+)
+class JiebaTokenizer(Tokenizer)
 ```
 
 This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba).
@@ -40,7 +43,7 @@ Initialize the tokenizer.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> JiebaTokenizerGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> JiebaTokenizer
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -54,6 +57,14 @@ def required_packages(cls) -> List[Text]
 
 Any extra python dependencies required for this component to run.
 
+#### train
+
+```python
+def train(training_data: TrainingData) -> Resource
+```
+
+Copies the dictionary to the model storage.
+
 #### tokenize
 
 ```python
@@ -66,7 +77,7 @@ Tokenizes the text of the provided attribute of the incoming message.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> JiebaTokenizerGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> JiebaTokenizer
 ```
 
 Loads a custom dictionary from model storage.

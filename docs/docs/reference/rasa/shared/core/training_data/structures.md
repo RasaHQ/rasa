@@ -260,6 +260,14 @@ def is_empty() -> bool
 
 Checks if `StoryGraph` is empty.
 
+#### \_\_repr\_\_
+
+```python
+def __repr__() -> Text
+```
+
+Returns text representation of object.
+
 #### generate\_id
 
 ```python

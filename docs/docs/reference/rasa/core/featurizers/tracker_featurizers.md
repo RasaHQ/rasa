@@ -22,10 +22,10 @@ Creates an InvalidStory exception.
 
 - `message` - a custom exception message.
 
-## TrackerFeaturizer2 Objects
+## TrackerFeaturizer Objects
 
 ```python
-class TrackerFeaturizer2()
+class TrackerFeaturizer()
 ```
 
 Base class for actual tracker featurizers.
@@ -205,7 +205,7 @@ Persists the tracker featurizer to the given path.
 
 ```python
 @staticmethod
-def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer2]
+def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer]
 ```
 
 Loads the featurizer from file.
@@ -219,10 +219,10 @@ Loads the featurizer from file.
 
   The loaded tracker featurizer.
 
-## FullDialogueTrackerFeaturizer2 Objects
+## FullDialogueTrackerFeaturizer Objects
 
 ```python
-class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2)
+class FullDialogueTrackerFeaturizer(TrackerFeaturizer)
 ```
 
 Creates full dialogue training data for time distributed architectures.
@@ -278,10 +278,10 @@ Transforms trackers to states for prediction.
 
   Trackers as states for prediction.
 
-## MaxHistoryTrackerFeaturizer2 Objects
+## MaxHistoryTrackerFeaturizer Objects
 
 ```python
-class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2)
+class MaxHistoryTrackerFeaturizer(TrackerFeaturizer)
 ```
 
 Truncates the tracker history into `max_history` long sequences.
@@ -370,10 +370,10 @@ Transforms trackers to states for prediction.
 
   Trackers as states for prediction.
 
-## IntentMaxHistoryTrackerFeaturizer2 Objects
+## IntentMaxHistoryTrackerFeaturizer Objects
 
 ```python
-class IntentMaxHistoryTrackerFeaturizer2(MaxHistoryTrackerFeaturizer2)
+class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer)
 ```
 
 Truncates the tracker history into `max_history` long sequences.

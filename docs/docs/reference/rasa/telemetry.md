@@ -361,7 +361,7 @@ Track when a user starts an interactive learning session.
 def track_server_start(input_channels: List["InputChannel"], endpoints: Optional["AvailableEndpoints"], model_directory: Optional[Text], number_of_workers: int, is_api_enabled: bool) -> None
 ```
 
-Track when a user starts a rasa server.
+Tracks when a user starts a rasa server.
 
 **Arguments**:
 

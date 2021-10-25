@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
 ---
-## RegexFeaturizerGraphComponent Objects
+## RegexFeaturizer Objects
 
 ```python
-class RegexFeaturizerGraphComponent(SparseFeaturizer2,  GraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
+class RegexFeaturizer(SparseFeaturizer,  GraphComponent)
 ```
 
 Adds message features based on regex expressions.
@@ -50,7 +53,7 @@ Constructs new features for regexes and lookup table using regex expressions.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexFeaturizerGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RegexFeaturizer
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -87,7 +90,7 @@ Featurizes all given messages in-place.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexFeaturizerGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> RegexFeaturizer
 ```
 
 Loads trained component (see parent class for full docstring).

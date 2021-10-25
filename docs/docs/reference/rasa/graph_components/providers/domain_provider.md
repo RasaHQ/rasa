@@ -47,7 +47,7 @@ Provides domain from training data during training.
 #### provide\_inference
 
 ```python
-def provide_inference() -> Optional[Domain]
+def provide_inference() -> Domain
 ```
 
 Provides the domain during inference.

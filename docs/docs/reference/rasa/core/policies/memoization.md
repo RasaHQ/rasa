@@ -2,10 +2,13 @@
 sidebar_label: rasa.core.policies.memoization
 title: rasa.core.policies.memoization
 ---
-## MemoizationPolicyGraphComponent Objects
+## MemoizationPolicy Objects
 
 ```python
-class MemoizationPolicyGraphComponent(PolicyGraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
+class MemoizationPolicy(Policy)
 ```
 
 A policy that follows exact examples of `max_history` turns in training stories.
@@ -96,15 +99,18 @@ Persists the policy to storage.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MemoizationPolicyGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MemoizationPolicy
 ```
 
 Loads a trained policy (see parent class for full docstring).
 
-## AugmentedMemoizationPolicyGraphComponent Objects
+## AugmentedMemoizationPolicy Objects
 
 ```python
-class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
+)
+class AugmentedMemoizationPolicy(MemoizationPolicy)
 ```
 
 The policy that remembers examples from training stories for `max_history` turns.

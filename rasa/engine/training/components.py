@@ -135,7 +135,10 @@ class FingerprintComponent(GraphComponent):
         """
         fingerprint_key = fingerprinting.calculate_fingerprint_key(
             graph_component_class=self._class_of_replaced_component,
-            config=self._config_of_replaced_component,
+            config={
+                **self._class_of_replaced_component.get_default_config(),
+                **self._config_of_replaced_component,
+            },
             inputs=kwargs,
         )
 

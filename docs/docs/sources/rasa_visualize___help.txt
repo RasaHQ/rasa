@@ -1,6 +1,5 @@
 usage: rasa visualize [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-s STORIES]
-                      [-c CONFIG] [--out OUT] [--max-history MAX_HISTORY]
-                      [-u NLU]
+                      [--out OUT] [--max-history MAX_HISTORY] [-u NLU]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -12,9 +11,6 @@ optional arguments:
   -s STORIES, --stories STORIES
                         File or folder containing your training stories.
                         (default: data)
-  -c CONFIG, --config CONFIG
-                        The policy and NLU pipeline configuration of your bot.
-                        (default: config.yml)
   --out OUT             Filename of the output path, e.g. 'graph.html'.
                         (default: graph.html)
   --max-history MAX_HISTORY

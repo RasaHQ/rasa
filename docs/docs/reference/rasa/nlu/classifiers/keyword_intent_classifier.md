@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.classifiers.keyword_intent_classifier
 title: rasa.nlu.classifiers.keyword_intent_classifier
 ---
-## KeywordIntentClassifierGraphComponent Objects
+## KeywordIntentClassifier Objects
 
 ```python
-class KeywordIntentClassifierGraphComponent(GraphComponent,  IntentClassifier2)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
+class KeywordIntentClassifier(GraphComponent,  IntentClassifier)
 ```
 
 Intent classifier using simple keyword matching.
@@ -34,7 +37,7 @@ Creates classifier.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> KeywordIntentClassifierGraphComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> KeywordIntentClassifier
 ```
 
 Creates a new untrained component (see parent class for full docstring).
@@ -67,7 +70,7 @@ Persist this model into the passed directory.
 
 ```python
 @classmethod
-def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> KeywordIntentClassifierGraphComponent
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> KeywordIntentClassifier
 ```
 
 Loads trained component (see parent class for full docstring).

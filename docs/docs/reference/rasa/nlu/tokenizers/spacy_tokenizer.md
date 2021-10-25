@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.tokenizers.spacy_tokenizer
 title: rasa.nlu.tokenizers.spacy_tokenizer
 ---
-## SpacyTokenizerGraphComponent Objects
+## SpacyTokenizer Objects
 
 ```python
-class SpacyTokenizerGraphComponent(TokenizerGraphComponent)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
+)
+class SpacyTokenizer(Tokenizer)
 ```
 
 Tokenizer that uses SpaCy.

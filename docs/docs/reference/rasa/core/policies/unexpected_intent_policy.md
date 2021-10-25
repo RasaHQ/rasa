@@ -2,10 +2,13 @@
 sidebar_label: rasa.core.policies.unexpected_intent_policy
 title: rasa.core.policies.unexpected_intent_policy
 ---
-## UnexpecTEDIntentPolicyGraphComponent Objects
+## UnexpecTEDIntentPolicy Objects
 
 ```python
-class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+)
+class UnexpecTEDIntentPolicy(TEDPolicy)
 ```
 
 `UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.

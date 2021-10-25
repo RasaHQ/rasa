@@ -4,25 +4,23 @@ import re
 from typing import Any, Dict, Optional, Text, List
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu import utils
-from rasa.nlu.classifiers.classifier import IntentClassifier2
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.constants import INTENT, TEXT
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 
-from rasa.nlu.classifiers._keyword_intent_classifier import KeywordIntentClassifier
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-KeywordIntentClassifier = KeywordIntentClassifier
-
 logger = logging.getLogger(__name__)
 
 
-class KeywordIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
+class KeywordIntentClassifier(GraphComponent, IntentClassifier):
     """Intent classifier using simple keyword matching.
 
     The classifier takes a list of keywords and associated intents as an input.
@@ -58,7 +56,7 @@ class KeywordIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> KeywordIntentClassifierGraphComponent:
+    ) -> KeywordIntentClassifier:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -152,7 +150,9 @@ class KeywordIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
         with self._model_storage.write_to(self._resource) as model_dir:
             file_name = f"{self.__class__.__name__}.json"
             keyword_file = model_dir / file_name
-            utils.write_json_to_file(keyword_file.name, self.intent_keyword_map)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                keyword_file, self.intent_keyword_map
+            )
 
     @classmethod
     def load(
@@ -162,24 +162,12 @@ class KeywordIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> KeywordIntentClassifierGraphComponent:
+    ) -> KeywordIntentClassifier:
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_dir:
-                keyword_file = list(model_dir.glob("**/*.json"))
-
-                if keyword_file:
-                    assert len(keyword_file) == 1
-                    intent_keyword_map = rasa.shared.utils.io.read_json_file(
-                        keyword_file[0]
-                    )
-                else:
-                    rasa.shared.utils.io.raise_warning(
-                        f"Failed to load key word file for "
-                        f"`KeywordIntentClassifierGraphComponent`, "
-                        f"maybe {keyword_file} does not exist?"
-                    )
-                    intent_keyword_map = None
+                keyword_file = model_dir / f"{cls.__name__}.json"
+                intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
         except ValueError:
             logger.warning(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "

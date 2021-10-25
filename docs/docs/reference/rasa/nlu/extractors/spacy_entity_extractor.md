@@ -2,10 +2,15 @@
 sidebar_label: rasa.nlu.extractors.spacy_entity_extractor
 title: rasa.nlu.extractors.spacy_entity_extractor
 ---
-## SpacyEntityExtractorGraphComponent Objects
+## SpacyEntityExtractor Objects
 
 ```python
-class SpacyEntityExtractorGraphComponent(GraphComponent,  EntityExtractorMixin)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    is_trainable=False,
+    model_from="SpacyNLP",
+)
+class SpacyEntityExtractor(GraphComponent,  EntityExtractorMixin)
 ```
 
 Entity extractor which uses SpaCy.
@@ -34,7 +39,7 @@ The component&#x27;s default config (see parent class for full docstring).
 def __init__(config: Dict[Text, Any]) -> None
 ```
 
-Initialize SpacyEntityExtractorGraphComponent.
+Initialize SpacyEntityExtractor.
 
 #### create
 

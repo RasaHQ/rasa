@@ -17,7 +17,6 @@ from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -44,7 +43,6 @@ class Validator:
         self.domain = domain
         self.intents = intents
         self.story_graph = story_graph
-        self.nlu_config = RasaNLUModelConfig(config)
 
     @classmethod
     def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
@@ -281,7 +279,7 @@ class Validator:
 
         # Create a list of `StoryConflict` objects
         conflicts = rasa.core.training.story_conflict.find_story_conflicts(
-            trackers, self.domain, max_history, self.nlu_config
+            trackers, self.domain, max_history,
         )
 
         if not conflicts:

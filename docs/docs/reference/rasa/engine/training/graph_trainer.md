@@ -28,20 +28,44 @@ Initializes a `GraphTrainer`.
 #### train
 
 ```python
-def train(train_schema: GraphSchema, predict_schema: GraphSchema, domain_path: Path, output_filename: Path) -> GraphRunner
+def train(model_configuration: GraphModelConfiguration, importer: TrainingDataImporter, output_filename: Path, force_retraining: bool = False, is_finetuning: bool = False) -> ModelMetadata
 ```
 
 Trains and packages a model and returns the prediction graph runner.
 
 **Arguments**:
 
-- `train_schema` - The train graph schema.
-- `predict_schema` - The predict graph schema.
-- `domain_path` - The path to the domain file.
+- `model_configuration` - The model configuration (schemas, language, etc.)
+- `importer` - The importer which provides the training data for the training.
 - `output_filename` - The location to save the packaged model.
+- `force_retraining` - If `True` then the cache is skipped and all components
+  are retrained.
   
 
 **Returns**:
 
-  A graph runner loaded with the predict schema.
+  The metadata describing the trained model.
+
+#### fingerprint
+
+```python
+def fingerprint(train_schema: GraphSchema, importer: TrainingDataImporter, is_finetuning: bool = False) -> Dict[Text, Union[FingerprintStatus, Any]]
+```
+
+Runs the graph using fingerprints to determine which nodes need to re-run.
+
+Nodes which have a matching fingerprint key in the cache can either be removed
+entirely from the graph, or replaced with a cached value if their output is
+needed by descendent nodes.
+
+**Arguments**:
+
+- `train_schema` - The train graph schema that will be run in fingerprint mode.
+- `importer` - The importer which provides the training data for the training.
+- `is_finetuning` - `True` if we want to finetune the model.
+  
+
+**Returns**:
+
+  Mapping of node names to fingerprint results.
 

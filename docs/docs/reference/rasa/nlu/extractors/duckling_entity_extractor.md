@@ -2,10 +2,13 @@
 sidebar_label: rasa.nlu.extractors.duckling_entity_extractor
 title: rasa.nlu.extractors.duckling_entity_extractor
 ---
-## DucklingEntityExtractorComponent Objects
+## DucklingEntityExtractor Objects
 
 ```python
-class DucklingEntityExtractorComponent(GraphComponent,  EntityExtractorMixin)
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=False
+)
+class DucklingEntityExtractor(GraphComponent,  EntityExtractorMixin)
 ```
 
 Searches for structured entities, e.g. dates, using a duckling server.
@@ -35,7 +38,7 @@ Creates the extractor.
 
 ```python
 @classmethod
-def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DucklingEntityExtractorComponent
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DucklingEntityExtractor
 ```
 
 Creates component (see parent class for full docstring).

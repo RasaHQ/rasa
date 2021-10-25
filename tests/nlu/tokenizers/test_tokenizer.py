@@ -13,17 +13,14 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 def create_whitespace_tokenizer(
     config: Optional[Dict[Text, Any]] = None
-) -> WhitespaceTokenizerGraphComponent:
-    return WhitespaceTokenizerGraphComponent(
-        {
-            **WhitespaceTokenizerGraphComponent.get_default_config(),
-            **(config if config else {}),
-        }
+) -> WhitespaceTokenizer:
+    return WhitespaceTokenizer(
+        {**WhitespaceTokenizer.get_default_config(), **(config if config else {}),}
     )
 
 

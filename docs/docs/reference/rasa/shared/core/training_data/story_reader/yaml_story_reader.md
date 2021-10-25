@@ -126,6 +126,28 @@ Checks if a file is a test conversations file.
 
   `True` if it&#x27;s a conversation test file, otherwise `False`.
 
+#### unpack\_regex\_message
+
+```python
+@staticmethod
+def unpack_regex_message(message: Message, domain: Optional[Domain] = None, entity_extractor_name: Optional[Text] = None) -> Message
+```
+
+Unpacks the message if `TEXT` contains an encoding of attributes.
+
+**Arguments**:
+
+- `message` - some message
+- `domain` - the domain
+- `entity_extractor_name` - An extractor name which should be added for the
+  entities.
+  
+
+**Returns**:
+
+  the given message if that message does not need to be unpacked, and a new
+  message with the extracted attributes otherwise
+
 ## StoryParser Objects
 
 ```python

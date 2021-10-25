@@ -37,7 +37,7 @@ Trains a model.
 #### run\_core\_training
 
 ```python
-def run_core_training(args: argparse.Namespace, train_path: Optional[Text] = None) -> Optional[Text]
+def run_core_training(args: argparse.Namespace) -> Optional[Text]
 ```
 
 Trains a Rasa Core model only.
@@ -45,7 +45,6 @@ Trains a Rasa Core model only.
 **Arguments**:
 
 - `args` - Command-line arguments to configure training.
-- `train_path` - Path where trained model but not unzipped model should be stored.
   
 
 **Returns**:
@@ -55,7 +54,7 @@ Trains a Rasa Core model only.
 #### run\_nlu\_training
 
 ```python
-def run_nlu_training(args: argparse.Namespace, train_path: Optional[Text] = None) -> Optional[Text]
+def run_nlu_training(args: argparse.Namespace) -> Optional[Text]
 ```
 
 Trains an NLU model.
@@ -63,7 +62,6 @@ Trains an NLU model.
 **Arguments**:
 
 - `args` - Namespace arguments.
-- `train_path` - Directory where models should be stored.
   
 
 **Returns**:

@@ -2,15 +2,41 @@
 sidebar_label: rasa.utils.train_utils
 title: rasa.utils.train_utils
 ---
-#### normalize
+#### rank\_and\_mask
 
 ```python
-def normalize(values: np.ndarray, ranking_length: int = 0) -> np.ndarray
+def rank_and_mask(confidences: np.ndarray, ranking_length: int = 0, renormalize: bool = False) -> Tuple[np.array, np.array]
 ```
 
-Normalizes an array of positive numbers over the top `ranking_length` values.
+Computes a ranking of the given confidences.
 
-Other values will be set to 0.
+First, it computes a list containing the indices that would sort all the given
+confidences in decreasing order.
+If a `ranking_length` is specified, then only the indices for the `ranking_length`
+largest confidences will be returned and all other confidences (i.e. whose indices
+we do not return) will be masked by setting them to 0.
+Moreover, if `renormalize` is set to `True`, then the confidences will
+additionally be renormalised by dividing them by their sum.
+
+We assume that the given confidences sum up to 1 and, if the
+`ranking_length` is 0 or larger than the given number of confidences,
+we set the `ranking_length` to the number of confidences.
+Hence, in this case the confidences won&#x27;t be modified.
+
+**Arguments**:
+
+- `confidences` - a 1-d array of confidences that are non-negative and sum up to 1
+- `ranking_length` - the size of the ranking to be computed. If set to 0 or
+  something larger than the number of given confidences, then this is set
+  to the exact number of given confidences.
+- `renormalize` - determines whether the masked confidences should be renormalised.
+  return_indices:
+
+**Returns**:
+
+  indices of the top `ranking_length` confidences and an array of the same
+  shape as the given confidences that contains the possibly masked and
+  renormalized confidence values
 
 #### update\_similarity\_type
 

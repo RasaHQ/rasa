@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import copy
 from typing import Dict, Text, Any
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -31,6 +33,9 @@ class DomainWithoutResponsesProvider(GraphComponent):
             Domain that has been created from the same parameters as the given domain
             but with an empty set of responses.
         """
-        serialized_domain = domain.as_dict()
-        del serialized_domain[KEY_RESPONSES]
+        serialized_domain = copy.deepcopy(domain.as_dict())
+
+        for response_name in serialized_domain[KEY_RESPONSES]:
+            serialized_domain[KEY_RESPONSES][response_name] = []
+
         return Domain.from_dict(serialized_domain)
