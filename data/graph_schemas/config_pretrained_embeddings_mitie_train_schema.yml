@@ -38,7 +38,7 @@ nodes:
     resource: null
   provide_MitieNLP0:
     needs: {}
-    uses: rasa.nlu.utils.mitie_utils.MitieNLPGraphComponent
+    uses: rasa.nlu.utils.mitie_utils.MitieNLP
     constructor_name: create
     fn: provide
     config:
@@ -50,7 +50,7 @@ nodes:
   run_MitieTokenizer1:
     needs:
       training_data: nlu_training_data_provider
-    uses: rasa.nlu.tokenizers.mitie_tokenizer.MitieTokenizerGraphComponent
+    uses: rasa.nlu.tokenizers.mitie_tokenizer.MitieTokenizer
     constructor_name: load
     fn: process_training_data
     config: {}
@@ -62,7 +62,7 @@ nodes:
     needs:
       training_data: run_MitieTokenizer1
       model: provide_MitieNLP0
-    uses: rasa.nlu.extractors.mitie_entity_extractor.MitieEntityExtractorGraphComponent
+    uses: rasa.nlu.extractors.mitie_entity_extractor.MitieEntityExtractor
     constructor_name: create
     fn: train
     config: {}
@@ -73,7 +73,7 @@ nodes:
   train_EntitySynonymMapper3:
     needs:
       training_data: run_MitieTokenizer1
-    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapperGraphComponent
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
     constructor_name: create
     fn: train
     config: {}
@@ -84,7 +84,7 @@ nodes:
   train_RegexFeaturizer4:
     needs:
       training_data: run_MitieTokenizer1
-    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizerGraphComponent
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
     constructor_name: create
     fn: train
     config: {}
@@ -96,7 +96,7 @@ nodes:
     needs:
       training_data: run_MitieTokenizer1
       resource: train_RegexFeaturizer4
-    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizerGraphComponent
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
     constructor_name: load
     fn: process_training_data
     config: {}
@@ -108,7 +108,7 @@ nodes:
     needs:
       training_data: run_RegexFeaturizer4
       model: provide_MitieNLP0
-    uses: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer.MitieFeaturizerGraphComponent
+    uses: rasa.nlu.featurizers.dense_featurizer.mitie_featurizer.MitieFeaturizer
     constructor_name: load
     fn: process_training_data
     config: {}
@@ -119,7 +119,7 @@ nodes:
   train_SklearnIntentClassifier6:
     needs:
       training_data: run_MitieFeaturizer5
-    uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifierGraphComponent
+    uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifier
     constructor_name: create
     fn: train
     config: {}

@@ -87,7 +87,7 @@ class Token:
         )
 
 
-class TokenizerGraphComponent(GraphComponent, abc.ABC):
+class Tokenizer(GraphComponent, abc.ABC):
     """Base class for tokenizers."""
 
     def __init__(self, config: Dict[Text, Any]) -> None:

@@ -24,7 +24,7 @@ from rasa.nlu.classifiers.diet_classifier import (
     LABEL_SUB_KEY,
     SENTENCE,
     SEQUENCE,
-    DIETClassifierGraphComponent,
+    DIETClassifier,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.utils.tensorflow import rasa_layers
@@ -41,6 +41,7 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     LEARNING_RATE,
     RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     LOSS_TYPE,
     SIMILARITY_TYPE,
     NUM_NEG,
@@ -108,7 +109,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
-class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
+class ResponseSelector(DIETClassifier):
     """Response selector using supervised embeddings.
 
     The response selector embeds user inputs
@@ -139,7 +140,7 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            **DIETClassifierGraphComponent.get_default_config(),
+            **DIETClassifier.get_default_config(),
             # ## Architecture of the used neural network
             # Hidden layer sizes for layers before the embedding layers for user message
             # and labels.
@@ -191,10 +192,15 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
             SIMILARITY_TYPE: AUTO,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
-            # Number of top actions to normalize scores for. Applicable with
-            # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-            # to turn off normalization.
+            # Number of top actions for which confidences should be predicted.
+            # Set to 0 if confidences for all intents should be reported.
             RANKING_LENGTH: 10,
+            # Determines whether the confidences of the chosen top actions should be
+            # renormalized so that they sum up to 1. By default, we do not renormalize
+            # and return the confidences for the top actions as is.
+            # Note that renormalization only makes sense if confidences are generated
+            # via `softmax`.
+            RENORMALIZE_CONFIDENCES: False,
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
             # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -659,9 +665,9 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> ResponseSelectorGraphComponent:
+    ) -> ResponseSelector:
         """Loads the trained model from the provided directory."""
-        model: ResponseSelectorGraphComponent = super().load(
+        model: ResponseSelector = super().load(
             config, model_storage, resource, execution_context, **kwargs
         )
 

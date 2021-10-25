@@ -6,7 +6,7 @@ from _pytest.tmpdir import TempPathFactory
 
 from rasa.core import training
 
-from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -60,12 +60,12 @@ def test_does_model_improve(
 @pytest.fixture(scope="module")
 def trained_ted(
     tmp_path_factory: TempPathFactory, moodbot_domain_path: Path,
-) -> TEDPolicyGraphComponent:
+) -> TEDPolicy:
     training_files = "data/test_moodbot/data/stories.yml"
     domain = Domain.load(moodbot_domain_path)
     trackers = training.load_data(str(training_files), domain)
-    policy = TEDPolicyGraphComponent.create(
-        {**TEDPolicyGraphComponent.get_default_config(), EPOCHS: 1},
+    policy = TEDPolicy.create(
+        {**TEDPolicy.get_default_config(), EPOCHS: 1},
         LocalModelStorage.create(tmp_path_factory.mktemp("storage")),
         Resource("ted"),
         ExecutionContext(GraphSchema({})),
@@ -87,7 +87,7 @@ def test_on_epoch_end_saves_checkpoints_file(
     current_values: Dict[Text, float],
     improved: bool,
     tmp_path: Path,
-    trained_ted: TEDPolicyGraphComponent,
+    trained_ted: TEDPolicy,
 ):
     model_name = "checkpoint"
     best_model_file = tmp_path / model_name

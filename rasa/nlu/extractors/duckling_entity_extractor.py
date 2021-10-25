@@ -58,7 +58,7 @@ def convert_duckling_format_to_rasa(
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=False
 )
-class DucklingEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+class DucklingEntityExtractor(GraphComponent, EntityExtractorMixin):
     """Searches for structured entities, e.g. dates, using a duckling server."""
 
     @staticmethod
@@ -97,7 +97,7 @@ class DucklingEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> DucklingEntityExtractorGraphComponent:
+    ) -> DucklingEntityExtractor:
         """Creates component (see parent class for full docstring)."""
         return cls(config)
 

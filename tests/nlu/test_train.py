@@ -4,7 +4,7 @@ import pytest
 from _pytest.tmpdir import TempPathFactory
 
 from rasa.core.agent import Agent
-from rasa.core.policies.policy import PolicyGraphComponent
+from rasa.core.policies.policy import Policy
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.tensorflow.constants import EPOCHS
@@ -131,7 +131,7 @@ def test_all_components_are_in_at_least_one_test_pipeline():
         rasa.engine.recipes.default_components.DEFAULT_COMPONENTS
     )
     all_registered_nlu_components = [
-        c for c in all_registered_components if not issubclass(c, PolicyGraphComponent)
+        c for c in all_registered_components if not issubclass(c, Policy)
     ]
 
     for cls in all_registered_nlu_components:
@@ -141,12 +141,8 @@ def test_all_components_are_in_at_least_one_test_pipeline():
             #   publicly available anymore
             #   (see https://github.com/RasaHQ/rasa/issues/6806)
             continue
-        # If this fails, it means that we've dropped the `GraphComponent` suffix as
-        # part of the architecture revamp wrap up. This means it's safe to drop the
-        # following line as well as the `replace("GraphComponent", "")` part.
-        assert cls.__name__.endswith("GraphComponent")
         assert (
-            cls.__name__.replace("GraphComponent", "") in all_components
+            cls.__name__ in all_components
         ), "`all_components` template is missing component."
 
 
@@ -207,8 +203,7 @@ def test_handles_pipeline_with_non_existing_component(
     )
 
     with pytest.raises(
-        Exception,
-        match="Can't load class for name 'my_made_up_componentGraphComponent'",
+        Exception, match="Can't load class for name 'my_made_up_component'",
     ):
         rasa.model_training.train_nlu(
             str(config_file), nlu_as_json_path, output=str(tmp_path),

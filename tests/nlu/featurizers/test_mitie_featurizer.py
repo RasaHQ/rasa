@@ -11,24 +11,22 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
-from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import (
-    MitieFeaturizerGraphComponent,
-)
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 
 
 @pytest.fixture
 def resource() -> Resource:
-    return Resource("MitieFeaturizerGraphComponent")
+    return Resource("MitieFeaturizer")
 
 
 @pytest.fixture
 def mitie_model(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ) -> MitieModel:
-    component = MitieNLPGraphComponent.create(
-        MitieNLPGraphComponent.get_default_config(),
+    component = MitieNLP.create(
+        MitieNLP.get_default_config(),
         default_model_storage,
         Resource("mitie"),
         default_execution_context,
@@ -42,10 +40,10 @@ def create(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     resource: Resource,
-) -> Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent]:
+) -> Callable[[Dict[Text, Any]], MitieFeaturizer]:
     def inner(config: Dict[Text, Any]):
-        return MitieFeaturizerGraphComponent.create(
-            config={**MitieFeaturizerGraphComponent.get_default_config(), **config,},
+        return MitieFeaturizer.create(
+            config={**MitieFeaturizer.get_default_config(), **config,},
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=resource,
@@ -55,9 +53,9 @@ def create(
 
 
 def test_mitie_featurizer(
-    create: Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent],
+    create: Callable[[Dict[Text, Any]], MitieFeaturizer],
     mitie_model: MitieModel,
-    mitie_tokenizer: MitieTokenizerGraphComponent,
+    mitie_tokenizer: MitieTokenizer,
 ):
 
     featurizer = create({"alias": "mitie_featurizer"})
@@ -82,9 +80,9 @@ def test_mitie_featurizer(
 
 
 def test_mitie_featurizer_train(
-    create: Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent],
+    create: Callable[[Dict[Text, Any]], MitieFeaturizer],
     mitie_model: MitieModel,
-    mitie_tokenizer: MitieTokenizerGraphComponent,
+    mitie_tokenizer: MitieTokenizer,
 ):
 
     featurizer = create({"alias": "mitie_featurizer"})

@@ -21,7 +21,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.policies.memoization import MemoizationPolicyGraphComponent
+from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
@@ -98,7 +98,7 @@ class InvalidRule(RasaException):
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT, is_trainable=True
 )
-class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
+class RulePolicy(MemoizationPolicy):
     """Policy which handles all the rules."""
 
     # rules use explicit json strings
@@ -184,7 +184,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         ):
             raise InvalidDomain(
                 f"The fallback action '{fallback_action_name}' which was "
-                f"configured for the {RulePolicyGraphComponent.__name__} must be "
+                f"configured for the {RulePolicy.__name__} must be "
                 f"present in the domain."
             )
 
