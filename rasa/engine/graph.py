@@ -415,10 +415,6 @@ class GraphNode:
         # The component gets a chance to persist itself
         return Resource(self._node_name)
 
-    def parent_node_names(self) -> List[Text]:
-        """The names of the parent nodes of this node."""
-        return list(self._inputs.values())
-
     def __call__(
         self, *inputs_from_previous_nodes: Tuple[Text, Any]
     ) -> Tuple[Text, Any]:

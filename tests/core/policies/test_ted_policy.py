@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Optional, List, Type, Dict, Text, Any
 
-from unittest.mock import Mock
 import numpy as np
 import pytest
 from _pytest.tmpdir import TempPathFactory
@@ -33,13 +32,13 @@ from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.model_training import train_core
-from rasa.utils import train_utils
 from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     KEY_RELATIVE_ATTENTION,
     LOSS_TYPE,
     MAX_RELATIVE_POSITION,
     RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     SCALE_LOSS,
     SIMILARITY_TYPE,
     VALUE_RELATIVE_ATTENTION,
@@ -279,9 +278,9 @@ class TestTEDPolicy(PolicyTestCollection):
         assert trained_policy.config[SIMILARITY_TYPE] == "inner"
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[RANKING_LENGTH] == 10
+        assert trained_policy.config[RANKING_LENGTH] == 0
 
-    def test_normalization(
+    def test_ranking_length_and_renormalization(
         self,
         trained_policy: TEDPolicy,
         tracker: DialogueStateTracker,
@@ -289,27 +288,27 @@ class TestTEDPolicy(PolicyTestCollection):
         monkeypatch: MonkeyPatch,
     ):
         precomputations = None
-        # first check the output is what we expect
         prediction = trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations,
         )
+
+        # first check the output is what we expect
         assert not prediction.is_end_to_end_prediction
-        # count number of non-zero confidences
-        assert (
-            sum([confidence > 0 for confidence in prediction.probabilities])
-            == trained_policy.config[RANKING_LENGTH]
-        )
-        # check that the norm is still 1
-        assert sum(prediction.probabilities) == pytest.approx(1)
 
-        # also check our function is called
-        mock = Mock()
-        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
-        )
-
-        mock.normalize.assert_called_once()
+        # check that ranking length is applied - without normalization
+        if trained_policy.config[RANKING_LENGTH] == 0:
+            assert sum(
+                [confidence for confidence in prediction.probabilities]
+            ) == pytest.approx(1)
+            assert all(confidence > 0 for confidence in prediction.probabilities)
+        else:
+            assert (
+                sum([confidence > 0 for confidence in prediction.probabilities])
+                == trained_policy.config[RANKING_LENGTH]
+            )
+            assert sum(
+                [confidence for confidence in prediction.probabilities]
+            ) != pytest.approx(1)
 
     def test_label_data_assembly(
         self, trained_policy: TEDPolicy, default_domain: Domain
@@ -619,22 +618,16 @@ class TestTEDPolicyMargin(TestTEDPolicy):
     def test_confidence_type(self, trained_policy: TEDPolicy):
         assert trained_policy.config[MODEL_CONFIDENCE] == AUTO
 
-    def test_normalization(
+    def test_ranking_length_and_renormalization(
         self,
         trained_policy: Policy,
         tracker: DialogueStateTracker,
         default_domain: Domain,
-        monkeypatch: MonkeyPatch,
     ):
-        # Mock actual normalization method
-        mock = Mock()
-        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(
+        policy_prediction = trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations=None,
         )
-
-        # function should not get called for margin loss_type
-        mock.normalize.assert_not_called()
+        assert sum(policy_prediction.probabilities) != pytest.approx(1)
 
     def test_prediction_on_empty_tracker(
         self, trained_policy: Policy, default_domain: Domain
@@ -662,43 +655,34 @@ class TestTEDPolicyWithEval(TestTEDPolicy):
         }
 
 
-class TestTEDPolicyNoNormalization(TestTEDPolicy):
+class TestTEDPolicyNormalization(TestTEDPolicy):
     def _config(
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            RANKING_LENGTH: 0,
+            RANKING_LENGTH: 4,
+            RENORMALIZE_CONFIDENCES: True,
             **config_override,
         }
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
-        assert trained_policy.config[RANKING_LENGTH] == 0
+        assert trained_policy.config[RANKING_LENGTH] == 4
 
-    def test_normalization(
+    def test_ranking_length_and_renormalization(
         self,
         trained_policy: Policy,
         tracker: DialogueStateTracker,
         default_domain: Domain,
-        monkeypatch: MonkeyPatch,
     ):
         precomputations = None
-        # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations,
         ).probabilities
-        # there should be no normalization
-        assert all([confidence > 0 for confidence in predicted_probabilities])
-
-        # also check our function is not called
-        mock = Mock()
-        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-        trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
-        )
-
-        mock.normalize.assert_not_called()
+        assert all([confidence >= 0 for confidence in predicted_probabilities])
+        assert sum([confidence > 0 for confidence in predicted_probabilities]) == 4
+        assert sum(predicted_probabilities) == pytest.approx(1)
 
 
 class TestTEDPolicyLowRankingLength(TestTEDPolicy):
