@@ -32,6 +32,16 @@ class TrainingType(Enum):
     NLU = 1
     CORE = 2
     BOTH = 3
+    END_TO_END = 4
+
+    @property
+    def model_type(self) -> Text:
+        """Returns the type of model which this training yields."""
+        if self == TrainingType.NLU:
+            return "nlu"
+        if self == TrainingType.CORE:
+            return "core"
+        return "rasa"
 
 
 def get_configuration(
@@ -75,7 +85,7 @@ def _get_unspecified_autoconfigurable_keys(
     else:
         all_keys = rasa.shared.constants.CONFIG_AUTOCONFIGURABLE_KEYS
 
-    return {k for k in all_keys if not config.get(k)}
+    return {k for k in all_keys if config.get(k) is None}
 
 
 def _get_missing_config_keys(

@@ -8,9 +8,6 @@ from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
-from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore
-from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection, ActionExtractSlots
 from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
@@ -108,7 +105,7 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
-async def test_switch_forms_with_same_slot(empty_agent: Agent):
+async def test_switch_forms_with_same_slot(default_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
     Tests the fix for issue 7710"""
@@ -156,14 +153,8 @@ responses:
     domain = Domain.from_yaml(domain)
 
     # Driving it like rasa/core/processor
-    processor = MessageProcessor(
-        empty_agent.interpreter,
-        empty_agent.policy_ensemble,
-        domain,
-        InMemoryTrackerStore(domain),
-        InMemoryLockStore(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-    )
+    processor = default_agent.processor
+    processor.domain = domain
 
     # activate the first form
     tracker = DialogueStateTracker.from_events(

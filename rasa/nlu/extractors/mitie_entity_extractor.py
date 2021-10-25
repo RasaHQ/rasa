@@ -1,10 +1,11 @@
 from __future__ import annotations
 import logging
-from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
@@ -17,12 +18,11 @@ from rasa.shared.nlu.constants import (
     TEXT,
     ENTITIES,
 )
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-from rasa.nlu.extractors._mitie_entity_extractor import MitieEntityExtractor
 from rasa.shared.exceptions import InvalidConfigException
 
 logger = logging.getLogger(__name__)
@@ -30,11 +30,13 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     import mitie
 
-# TODO: remove when everything has been migrated
-MitieEntityExtractor = MitieEntityExtractor
 
-
-class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR,
+    is_trainable=True,
+    model_from="MitieNLP",
+)
+class MitieEntityExtractor(GraphComponent, EntityExtractorMixin):
     """A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`)."""
 
     MITIE_RESOURCE_FILE = "mitie_ner.dat"
@@ -42,7 +44,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [MitieNLPGraphComponent, TokenizerGraphComponent]
+        return [MitieNLP, Tokenizer]
 
     @staticmethod
     def required_packages() -> List[Text]:
@@ -100,7 +102,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> GraphComponent:
-        """Creates a new `MitieEntityExtractorGraphComponent`.
+        """Creates a new `MitieEntityExtractor`.
 
         Args:
             config: This config overrides the `default_config`.
@@ -110,22 +112,22 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 and load itself from the `model_storage`.
             execution_context: Information about the current graph run. Unused.
 
-        Returns: An instantiated `MitieEntityExtractorGraphComponent`.
+        Returns: An instantiated `MitieEntityExtractor`.
         """
         return cls(config, model_storage, resource)
 
-    def train(self, training_data: TrainingData, mitie_model: MitieModel) -> Resource:
+    def train(self, training_data: TrainingData, model: MitieModel) -> Resource:
         """Trains a MITIE named entity recognizer.
 
         Args:
             training_data: the training data
-            mitie_model: a MitieModel
+            model: a MitieModel
         Returns:
             resource for loading the trained model
         """
         import mitie
 
-        trainer = mitie.ner_trainer(str(mitie_model.model_path))
+        trainer = mitie.ner_trainer(str(model.model_path))
         trainer.num_threads = self._config["num_threads"]
 
         # check whether there are any (not pre-trained) entities in the training data
@@ -167,9 +169,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         for ent in training_example.get(ENTITIES, []):
             try:
                 # if the token is not aligned an exception will be raised
-                start, end = MitieEntityExtractorGraphComponent.find_entity(
-                    ent, text, tokens
-                )
+                start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
                 rasa.shared.utils.io.raise_warning(
                     f"Failed to use example '{text}' to train MITIE "
@@ -191,9 +191,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 continue
         return sample
 
-    def process(
-        self, messages: List[Message], mitie_model: MitieModel,
-    ) -> List[Message]:
+    def process(self, messages: List[Message], model: MitieModel,) -> List[Message]:
         """Extracts entities from messages and appends them to the attribute.
 
         If no patterns where found during training, then the given messages will not
@@ -211,7 +209,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             return messages
 
         for message in messages:
-            entities = self._extract_entities(message, mitie_model=mitie_model)
+            entities = self._extract_entities(message, mitie_model=model)
             extracted = self.add_extractor_name(entities)
             message.set(
                 ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True
@@ -262,7 +260,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> MitieEntityExtractorGraphComponent:
+    ) -> MitieEntityExtractor:
         """Loads trained component (see parent class for full docstring)."""
         import mitie
 
@@ -277,7 +275,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 return cls(config, model_storage, resource, ner=ner)
 
         except (FileNotFoundError, ValueError) as e:
-            rasa.shared.utils.io.raise_warning(
+            logger.debug(
                 f"Failed to load {cls.__name__} from model storage. "
                 f"This can happen if the model could not be trained because regexes "
                 f"could not be extracted from the given training data - and hence "

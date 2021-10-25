@@ -2,31 +2,26 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Iterable, List, Dict, Text, Any, Set, Type
 
+from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.nlu.featurizers.featurizer import Featurizer2
-from rasa.nlu.extractors.mitie_entity_extractor import (
-    MitieEntityExtractorGraphComponent,
-)
-from rasa.nlu.extractors.regex_entity_extractor import (
-    RegexEntityExtractorGraphComponent,
-)
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 from rasa.nlu.extractors.crf_entity_extractor import (
-    CRFEntityExtractorGraphComponent,
+    CRFEntityExtractor,
     CRFEntityExtractorOptions,
 )
-from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperComponent
-from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import (
-    RegexFeaturizerGraphComponent,
-)
-from rasa.nlu.classifiers.diet_classifier import DIETClassifierGraphComponent
-from rasa.nlu.selectors.response_selector import ResponseSelectorGraphComponent
-from rasa.nlu.tokenizers.tokenizer import TokenizerGraphComponent
-from rasa.core.policies.rule_policy import RulePolicyGraphComponent
-from rasa.core.policies.policy import PolicyGraphComponent, SupportedData
-from rasa.core.policies.memoization import MemoizationPolicyGraphComponent
-from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.policy import Policy, SupportedData
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -48,17 +43,17 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 
-# TODO: replace these once the Recipe is merged
+# TODO: Can we replace this with the registered types from the regitry?
 TRAINABLE_EXTRACTORS = [
-    MitieEntityExtractorGraphComponent,
-    CRFEntityExtractorGraphComponent,
-    DIETClassifierGraphComponent,
+    MitieEntityExtractor,
+    CRFEntityExtractor,
+    DIETClassifier,
 ]
 # TODO: replace these once the Recipe is merged (used in tests)
 POLICY_CLASSSES = {
-    TEDPolicyGraphComponent,
-    MemoizationPolicyGraphComponent,
-    RulePolicyGraphComponent,
+    TEDPolicy,
+    MemoizationPolicy,
+    RulePolicy,
 }
 
 
@@ -98,7 +93,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         self._policy_schema_nodes: List[SchemaNode] = [
             node
             for node in self._graph_schema.nodes.values()
-            if issubclass(node.uses, PolicyGraphComponent)
+            if issubclass(node.uses, Policy)
         ]
 
     def validate(self, importer: TrainingDataImporter) -> TrainingDataImporter:
@@ -123,6 +118,8 @@ class DefaultV1RecipeValidator(GraphComponent):
         Args:
            training_data: The training data for the NLU components.
         """
+        training_data.validate()
+
         self._raise_if_more_than_one_tokenizer()
         self._raise_if_featurizers_are_not_compatible()
         self._warn_of_competing_extractors()
@@ -143,14 +140,14 @@ class DefaultV1RecipeValidator(GraphComponent):
         """
         if (
             training_data.response_examples
-            and ResponseSelectorGraphComponent not in self._component_types
+            and ResponseSelector not in self._component_types
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data with examples for training a response "
                 f"selector, but your NLU configuration does not include a response "
                 f"selector component. "
                 f"To train a model on your response selector data, add a "
-                f"'{ResponseSelectorGraphComponent.__name__}' to your configuration.",
+                f"'{ResponseSelector.__name__}' to your configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
@@ -167,73 +164,71 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
         if training_data.entity_examples and self._component_types.isdisjoint(
-            {DIETClassifierGraphComponent, CRFEntityExtractorGraphComponent}
+            {DIETClassifier, CRFEntityExtractor}
         ):
             if training_data.entity_roles_groups_used():
                 rasa.shared.utils.io.raise_warning(
                     f"You have defined training data with entities that "
                     f"have roles/groups, but your NLU configuration does not "
-                    f"include a '{DIETClassifierGraphComponent.__name__}' "
-                    f"or a '{CRFEntityExtractorGraphComponent.__name__}'. "
+                    f"include a '{DIETClassifier.__name__}' "
+                    f"or a '{CRFEntityExtractor.__name__}'. "
                     f"To train entities that have roles/groups, "
-                    f"add either '{DIETClassifierGraphComponent.__name__}' "
-                    f"or '{CRFEntityExtractorGraphComponent.__name__}' to your "
+                    f"add either '{DIETClassifier.__name__}' "
+                    f"or '{CRFEntityExtractor.__name__}' to your "
                     f"configuration.",
                     docs=DOCS_URL_COMPONENTS,
                 )
 
         if training_data.regex_features and self._component_types.isdisjoint(
-            [RegexFeaturizerGraphComponent, RegexEntityExtractorGraphComponent],
+            [RegexFeaturizer, RegexEntityExtractor],
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data with regexes, but "
                 f"your NLU configuration does not include a 'RegexFeaturizer' "
                 f" or a "
                 f"'RegexEntityExtractor'. To use regexes, include either a "
-                f"'{RegexFeaturizerGraphComponent.__name__}' or a "
-                f"'{RegexEntityExtractorGraphComponent.__name__}' "
+                f"'{RegexFeaturizer.__name__}' or a "
+                f"'{RegexEntityExtractor.__name__}' "
                 f"in your configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
         if training_data.lookup_tables and self._component_types.isdisjoint(
-            [RegexFeaturizerGraphComponent, RegexEntityExtractorGraphComponent],
+            [RegexFeaturizer, RegexEntityExtractor],
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data consisting of lookup tables, but "
                 f"your NLU configuration does not include a featurizer "
                 f"or an entity extractor using the lookup table."
                 f"To use the lookup tables, include either a "
-                f"'{RegexFeaturizerGraphComponent.__name__}' "
-                f"or a '{RegexEntityExtractorGraphComponent.__name__}' "
+                f"'{RegexFeaturizer.__name__}' "
+                f"or a '{RegexEntityExtractor.__name__}' "
                 f"in your configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
         if training_data.lookup_tables:
 
-            if self._component_types.isdisjoint(
-                [CRFEntityExtractorGraphComponent, DIETClassifierGraphComponent]
-            ):
+            if self._component_types.isdisjoint([CRFEntityExtractor, DIETClassifier]):
                 rasa.shared.utils.io.raise_warning(
                     f"You have defined training data consisting of lookup tables, but "
                     f"your NLU configuration does not include any components "
                     f"that uses the features created from the lookup table. "
                     f"To make use of the features that are created with the "
                     f"help of the lookup tables, "
-                    f"add a '{DIETClassifierGraphComponent.__name__}' or a "
-                    f"'{CRFEntityExtractorGraphComponent.__name__}' "
+                    f"add a '{DIETClassifier.__name__}' or a "
+                    f"'{CRFEntityExtractor.__name__}' "
                     f"with the 'pattern' feature "
                     f"to your configuration.",
                     docs=DOCS_URL_COMPONENTS,
                 )
 
-            elif CRFEntityExtractorGraphComponent in self._component_types:
+            elif CRFEntityExtractor in self._component_types:
 
                 crf_schema_nodes = [
                     schema_node
                     for schema_node in self._graph_schema.nodes.values()
-                    if schema_node.uses == CRFEntityExtractorGraphComponent
+                    if schema_node.uses == CRFEntityExtractor
                 ]
                 has_pattern_feature = any(
                     CRFEntityExtractorOptions.PATTERN in feature_list
@@ -245,25 +240,26 @@ class DefaultV1RecipeValidator(GraphComponent):
                     rasa.shared.utils.io.raise_warning(
                         f"You have defined training data consisting of "
                         f"lookup tables, but your NLU configuration's "
-                        f"'{CRFEntityExtractorGraphComponent.__name__}' "
+                        f"'{CRFEntityExtractor.__name__}' "
                         f"does not include the "
                         f"'pattern' feature. To featurize lookup tables, "
                         f"add the 'pattern' feature to the "
-                        f"'{CRFEntityExtractorGraphComponent.__name__}' "
+                        f"'{CRFEntityExtractor.__name__}' "
                         "in your configuration.",
                         docs=DOCS_URL_COMPONENTS,
                     )
 
         if (
             training_data.entity_synonyms
-            and EntitySynonymMapperComponent not in self._component_types
+            and EntitySynonymMapper not in self._component_types
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined synonyms in your training data, but "
                 f"your NLU configuration does not include an "
-                f"'{EntitySynonymMapperComponent.__name__}'. "
+                f"'{EntitySynonymMapper.__name__}'. "
                 f"To map synonyms, add an "
-                f"'{EntitySynonymMapperComponent.__name__}' to your configuration.",
+                f"'{EntitySynonymMapper.__name__}' to your "
+                f"configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
@@ -280,10 +276,16 @@ class DefaultV1RecipeValidator(GraphComponent):
         types_of_tokenizer_schema_nodes = [
             schema_node.uses
             for schema_node in self._graph_schema.nodes.values()
-            if issubclass(schema_node.uses, TokenizerGraphComponent)
+            if issubclass(schema_node.uses, Tokenizer) and schema_node.fn != "train"
         ]
 
-        if len(types_of_tokenizer_schema_nodes) > 1:
+        is_end_to_end = any(
+            issubclass(schema_node.uses, CoreFeaturizationInputConverter)
+            for schema_node in self._graph_schema.nodes.values()
+        )
+
+        allowed_number_of_tokenizers = 2 if is_end_to_end else 1
+        if len(types_of_tokenizer_schema_nodes) > allowed_number_of_tokenizers:
             raise InvalidConfigException(
                 f"The configuration configuration contains more than one tokenizer, "
                 f"which is not possible at this time. You can only use one tokenizer. "
@@ -297,9 +299,6 @@ class DefaultV1RecipeValidator(GraphComponent):
         Competing extractors are e.g. `CRFEntityExtractor` and `DIETClassifier`.
         Both of these look for the same entities based on the same training data
         leading to ambiguity in the results.
-
-        Args:
-           node_names: names of all components
         """
         extractors_in_configuration: Set[
             Type[GraphComponent]
@@ -332,9 +331,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             TRAINABLE_EXTRACTORS
         )
         has_general_extractors = len(present_general_extractors) > 0
-        has_regex_extractor = (
-            RegexEntityExtractorGraphComponent in self._component_types
-        )
+        has_regex_extractor = RegexEntityExtractor in self._component_types
 
         regex_entity_types = {rf["name"] for rf in training_data.regex_features}
         overlap_between_types = training_data.entities.intersection(regex_entity_types)
@@ -343,7 +340,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         if has_general_extractors and has_regex_extractor and has_overlap:
             rasa.shared.utils.io.raise_warning(
                 f"You have an overlap between the "
-                f"'{RegexEntityExtractorGraphComponent.__name__}' and the "
+                f"'{RegexEntityExtractor.__name__}' and the "
                 f"statistical entity extractors "
                 f"{_types_to_str(present_general_extractors)} "
                 f"in your configuration. Specifically both types of extractors will "
@@ -351,7 +348,7 @@ class DefaultV1RecipeValidator(GraphComponent):
                 f"{', '.join(overlap_between_types)}. "
                 f"This can lead to multiple "
                 f"extraction of entities. Please read "
-                f"'{RegexEntityExtractorGraphComponent.__name__}''s "
+                f"'{RegexEntityExtractor.__name__}''s "
                 f"documentation section to make sure you understand the "
                 f"implications.",
                 docs=f"{DOCS_URL_COMPONENTS}#regexentityextractor",
@@ -365,10 +362,16 @@ class DefaultV1RecipeValidator(GraphComponent):
         """
         featurizers: List[SchemaNode] = [
             node
-            for node in self._graph_schema.nodes.values()
-            if issubclass(node.uses, Featurizer2)
+            for node_name, node in self._graph_schema.nodes.items()
+            if issubclass(node.uses, Featurizer)
+            # Featurizers are split in `train` and `process_training_data` -
+            # we only need to look at the nodes which _add_ features.
+            and node.fn == "process_training_data"
+            # Tokenizers are re-used in the Core part of the graph when using End-to-End
+            and not node_name.startswith("e2e")
         ]
-        Featurizer2.raise_if_featurizer_configs_are_not_compatible(
+
+        Featurizer.raise_if_featurizer_configs_are_not_compatible(
             [schema_node.config for schema_node in featurizers]
         )
 
@@ -394,11 +397,9 @@ class DefaultV1RecipeValidator(GraphComponent):
 
     def _warn_if_no_rule_policy_is_contained(self) -> None:
         """Warns if there is no rule policy among the given policies."""
-        if not any(
-            node.uses == RulePolicyGraphComponent for node in self._policy_schema_nodes
-        ):
+        if not any(node.uses == RulePolicy for node in self._policy_schema_nodes):
             rasa.shared.utils.io.raise_warning(
-                f"'{RulePolicyGraphComponent.__name__}' is not included in the model's "
+                f"'{RulePolicy.__name__}' is not included in the model's "
                 f"policy configuration. Default intents such as "
                 f"'{USER_INTENT_RESTART}' and '{USER_INTENT_BACK}' will "
                 f"not trigger actions '{ACTION_RESTART_NAME}' and "
@@ -417,15 +418,15 @@ class DefaultV1RecipeValidator(GraphComponent):
         contains_rule_policy = any(
             schema_node
             for schema_node in self._graph_schema.nodes.values()
-            if schema_node.uses == RulePolicyGraphComponent
+            if schema_node.uses == RulePolicy
         )
 
         if domain.form_names and not contains_rule_policy:
             raise InvalidDomain(
                 "You have defined a form action, but have not added the "
-                f"'{RulePolicyGraphComponent.__name__}' to your policy ensemble. "
+                f"'{RulePolicy.__name__}' to your policy ensemble. "
                 f"Either remove all forms from your domain or add the "
-                f"'{RulePolicyGraphComponent.__name__}' to your policy configuration."
+                f"'{RulePolicy.__name__}' to your policy configuration."
             )
 
     def _raise_if_a_rule_policy_is_incompatible_with_domain(
@@ -437,8 +438,8 @@ class DefaultV1RecipeValidator(GraphComponent):
             `InvalidDomain` if domain and rule policies do not match
         """
         for schema_node in self._graph_schema.nodes.values():
-            if schema_node.uses == RulePolicyGraphComponent:
-                RulePolicyGraphComponent.raise_if_incompatible_with_domain(
+            if schema_node.uses == RulePolicy:
+                RulePolicy.raise_if_incompatible_with_domain(
                     config=schema_node.config, domain=domain
                 )
 
@@ -487,14 +488,14 @@ class DefaultV1RecipeValidator(GraphComponent):
                 f"no rule-based training data. Please add rule-based "
                 f"stories to your training data or "
                 f"remove the rule-based policy "
-                f"(`{RulePolicyGraphComponent.__name__}`) from your "
+                f"(`{RulePolicy.__name__}`) from your "
                 f"your configuration.",
                 docs=DOCS_URL_RULES,
             )
         elif not consuming_rule_data and contains_rule_tracker:
             rasa.shared.utils.io.raise_warning(
                 f"Found rule-based training data but no policy supporting rule-based "
-                f"data. Please add `{RulePolicyGraphComponent.__name__}` "
+                f"data. Please add `{RulePolicy.__name__}` "
                 f"or another rule-supporting "
                 f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`.",
                 docs=DOCS_URL_RULES,

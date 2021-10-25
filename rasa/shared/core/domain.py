@@ -90,18 +90,6 @@ State = Dict[Text, SubState]
 logger = logging.getLogger(__name__)
 
 
-def _mark_conditional_response_variations_warning(
-    responses: Dict[Text, List[Dict[Text, Any]]]
-) -> None:
-    for response_variations in responses.values():
-        for variation in response_variations:
-            if RESPONSE_CONDITION in variation:
-                rasa.shared.utils.common.mark_as_experimental_feature(
-                    "conditional response variation feature"
-                )
-                break
-
-
 class InvalidDomain(RasaException):
     """Exception that can be raised when domain is not valid."""
 
@@ -614,8 +602,6 @@ class Domain:
         action_names += overridden_form_actions
 
         self.responses = responses
-        # if domain has conditions, logs experimental feature warning
-        _mark_conditional_response_variations_warning(self.responses)
 
         self.action_texts = action_texts or []
         self.session_config = session_config
@@ -1790,6 +1776,15 @@ class Domain:
                     conditional_mappings += 1
 
         return (total_mappings, custom_mappings, conditional_mappings)
+
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return (
+            f"{self.__class__.__name__}: {len(self.action_names_or_texts)} actions, "
+            f"{len(self.intent_properties)} intents, {len(self.responses)} responses, "
+            f"{len(self.slots)} slots, "
+            f"{len(self.entities)} entities, {len(self.form_names)} forms"
+        )
 
 
 class SlotMapping(Enum):

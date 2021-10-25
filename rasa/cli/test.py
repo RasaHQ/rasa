@@ -93,7 +93,7 @@ def _print_core_test_execution_info(args: argparse.Namespace) -> None:
         )
 
 
-def run_core_test(args: argparse.Namespace) -> None:
+async def run_core_test_async(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.model_testing import (
         test_core_models_in_directory,
@@ -127,11 +127,11 @@ def run_core_test(args: argparse.Namespace) -> None:
         )
 
         if args.evaluate_model_directory:
-            test_core_models_in_directory(
+            await test_core_models_in_directory(
                 args.model, stories, output, use_conversation_test_files=args.e2e
             )
         else:
-            test_core(
+            await test_core(
                 model=model_path,
                 stories=stories,
                 output=output,
@@ -140,7 +140,7 @@ def run_core_test(args: argparse.Namespace) -> None:
             )
 
     else:
-        test_core_models(
+        await test_core_models(
             args.model, stories, output, use_conversation_test_files=args.e2e
         )
 
@@ -228,13 +228,13 @@ async def run_nlu_test_async(
         config_importer = TrainingDataImporter.load_from_dict(config_path=config)
 
         config_dict = config_importer.get_config()
-        perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
+        await perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
     else:
         model_path = rasa.cli.utils.get_validated_path(
             models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        test_nlu(model_path, data_path, output, all_args)
+        await test_nlu(model_path, data_path, output, all_args)
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
@@ -256,6 +256,15 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             vars(args),
         )
     )
+
+
+def run_core_test(args: argparse.Namespace) -> None:
+    """Runs Core tests.
+
+    Args:
+        args: the parsed CLI arguments for 'rasa test core'.
+    """
+    asyncio.run(run_core_test_async(args))
 
 
 def test(args: argparse.Namespace) -> None:

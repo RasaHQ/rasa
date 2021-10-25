@@ -1,39 +1,38 @@
 from __future__ import annotations
 import logging
-from rasa.nlu.featurizers.featurizer import Featurizer2
+from rasa.nlu.featurizers.featurizer import Featurizer
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.classifiers.classifier import IntentClassifier2
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-import rasa.nlu.classifiers._mitie_intent_classifier
 
 if typing.TYPE_CHECKING:
     import mitie
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MitieIntentClassifier = (
-    rasa.nlu.classifiers._mitie_intent_classifier.MitieIntentClassifier
-)
-
 logger = logging.getLogger(__name__)
 
 
-class MitieIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER,
+    is_trainable=True,
+    model_from="MitieNLP",
+)
+class MitieIntentClassifier(GraphComponent, IntentClassifier):
     """Intent classifier which uses the `mitie` library."""
 
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [MitieNLPGraphComponent, Featurizer2]
+        return [MitieNLP, Featurizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -84,7 +83,7 @@ class MitieIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
 
         return self._resource
 
-    def process(self, messages: List[Message], model: MitieModel) -> None:
+    def process(self, messages: List[Message], model: MitieModel) -> List[Message]:
         """Make intent predictions using `mitie`.
 
         Args:
@@ -105,6 +104,8 @@ class MitieIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
                 "intent", {"name": intent, "confidence": confidence}, add_to_output=True
             )
 
+        return messages
+
     @staticmethod
     def _tokens_of_message(message: Message) -> List[Text]:
         return [token.text for token in message.get(TOKENS_NAMES[TEXT], [])]
@@ -116,7 +117,7 @@ class MitieIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> MitieIntentClassifierGraphComponent:
+    ) -> MitieIntentClassifier:
         """Creates component for training see parent class for full docstring)."""
         return cls(config, model_storage, resource)
 
@@ -128,7 +129,7 @@ class MitieIntentClassifierGraphComponent(GraphComponent, IntentClassifier2):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> MitieIntentClassifierGraphComponent:
+    ) -> MitieIntentClassifier:
         """Loads component for inference see parent class for full docstring)."""
         import mitie
 

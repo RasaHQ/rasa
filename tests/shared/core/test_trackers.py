@@ -11,6 +11,7 @@ import fakeredis
 import freezegun
 import pytest
 
+from rasa.core.training import load_data
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training
@@ -519,7 +520,7 @@ def _load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueState
 def test_dump_and_restore_as_json(
     default_agent: Agent, tmp_path: Path, stories_path: Text
 ):
-    trackers = default_agent.load_data(stories_path)
+    trackers = load_data(stories_path, default_agent.domain)
 
     for tracker in trackers:
         out_path = tmp_path / "dumped_tracker.json"

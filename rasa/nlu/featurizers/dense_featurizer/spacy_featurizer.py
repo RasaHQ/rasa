@@ -3,12 +3,12 @@ import typing
 import logging
 from typing import Any, Text, Dict, List, Type
 
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
-from rasa.nlu.featurizers.dense_featurizer._spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
@@ -23,31 +23,32 @@ from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
-SpacyFeaturizer = SpacyFeaturizer
-
 logger = logging.getLogger(__name__)
 
 
-class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
+class SpacyFeaturizer(DenseFeaturizer, GraphComponent):
     """Featurize messages using SpaCy."""
 
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [SpacyTokenizerGraphComponent]
+        return [SpacyTokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            **DenseFeaturizer2.get_default_config(),
+            **DenseFeaturizer.get_default_config(),
             # Specify what pooling operation should be used to calculate the vector of
             # the complete utterance. Available options: 'mean' and 'max'
             POOLING: MEAN_POOLING,
         }
 
     def __init__(self, config: Dict[Text, Any], name: Text,) -> None:
-        """Initializes SpacyFeaturizerGraphComponent."""
+        """Initializes SpacyFeaturizer."""
         super().__init__(name, config)
         self.pooling_operation = self._config[POOLING]
 
@@ -81,7 +82,6 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
         Args:
           training_data: Training data.
-          model: A Mitie model.
 
         Returns:
           Same training data after processing.

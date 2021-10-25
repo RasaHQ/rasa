@@ -24,7 +24,7 @@ class NLUTrainingDataProvider(GraphComponent):
     @classmethod
     def get_default_config(cls) -> Dict[Text, Any]:
         """Returns the default config for NLU training data provider."""
-        return {"persist": False}
+        return {"persist": False, "language": None}
 
     @classmethod
     def create(

@@ -3,24 +3,16 @@ from typing import Text, Dict, List, Optional
 import numpy as np
 import pytest
 
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer2 as SingleStateFeaturizer,
-)
-from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
+    TrackerFeaturizer as TrackerFeaturizer,
 )
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
-)
-from rasa.core.featurizers.tracker_featurizers import (
-    FullDialogueTrackerFeaturizer2 as FullDialogueTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import FullDialogueTrackerFeaturizer
 from rasa.shared.core.domain import Domain
 from tests.core.utilities import user_uttered
 from rasa.shared.nlu.training_data.features import Features

@@ -6,10 +6,12 @@ import sys
 
 from collections import Counter
 from pathlib import Path
-from typing import Text, List, Dict, Optional
+from typing import Any, Text, List, Dict, Optional
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
 
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 from rasa.shared.exceptions import (
     FileNotFoundException,
@@ -22,7 +24,10 @@ from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturize
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data import loading
@@ -32,8 +37,21 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     DEFAULT_VALUE_TEXT_SLOTS,
 )
 from rasa.shared.core.training_data.structures import StoryStep, RuleStep
-from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    FEATURE_TYPE_SENTENCE,
+    INTENT,
+    INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    TEXT,
+    EXTRACTOR,
+)
 
 
 @pytest.fixture()
@@ -723,7 +741,7 @@ def test_generate_training_data_with_cycles(domain: Domain):
     )
 
     _, label_ids, _ = featurizer.featurize_trackers(
-        training_trackers, domain, interpreter=RegexInterpreter()
+        training_trackers, domain, precomputations=None
     )
 
     # how many there are depends on the graph which is not created in a
@@ -803,7 +821,7 @@ def test_load_multi_file_training_data(domain: Domain):
     hashed = sorted(hashed, reverse=True)
 
     data, label_ids, _ = featurizer.featurize_trackers(
-        trackers, domain, interpreter=RegexInterpreter()
+        trackers, domain, precomputations=None
     )
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
@@ -821,7 +839,7 @@ def test_load_multi_file_training_data(domain: Domain):
     hashed_mul = sorted(hashed_mul, reverse=True)
 
     data_mul, label_ids_mul, _ = featurizer_mul.featurize_trackers(
-        trackers_mul, domain, interpreter=RegexInterpreter()
+        trackers_mul, domain, precomputations=None
     )
 
     assert hashed == hashed_mul
@@ -864,3 +882,231 @@ def test_yaml_slot_different_types(domain: Domain):
     assert tracker[0].events[3] == SlotSet(key="list_slot", value=["value1", "value2"])
     assert tracker[0].events[4] == SlotSet(key="bool_slot", value=True)
     assert tracker[0].events[5] == SlotSet(key="text_slot", value="some_text")
+
+
+@pytest.mark.parametrize(
+    "confidence,entities,expected_confidence,expected_entities,should_warn",
+    [
+        # easy examples - where entities or intents might be missing
+        (None, None, 1.0, [], False),
+        ("0.2134345", None, 0.2134345, [], False),
+        ("0", None, 0, [], False),
+        (
+            None,
+            json.dumps({"entity1": "entity_value1", "entity2": 2.0}),
+            1.0,
+            [
+                {
+                    ENTITY_ATTRIBUTE_TYPE: "entity1",
+                    ENTITY_ATTRIBUTE_VALUE: "entity_value1",
+                },
+                {ENTITY_ATTRIBUTE_TYPE: "entity2", ENTITY_ATTRIBUTE_VALUE: 2.0},
+            ],
+            False,
+        ),
+        # malformed confidences
+        (
+            "-2",
+            None,
+            1.0,
+            [],
+            True,
+        ),  # no confidence string; some unidentified part left
+        ("abc0.2134345", None, 1.0, [], True),  # same
+        ("123", None, 1.0, [], True),  # value extracted by > 1
+        ("123?", None, 1.0, [], True),  # value extracted by > 1
+        ("1.0.", None, 0.0, [], True),  # confidence string extracted but not a float
+        # malformed entities
+        (None, json.dumps({"entity1": "entity2"}), 1.0, [], True),
+        (None, '{"entity1","entity2":2.0}', 1.0, [], True),
+        # ... note: if the confidence is None, the following will raise an error!
+        (
+            "1.0",
+            json.dumps(["entity1"]),
+            1.0,
+            [],
+            True,
+        ),  # no entity string extracted; some unexpected string left
+    ],
+)
+def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
+    confidence: Optional[Text],
+    entities: Optional[Text],
+    expected_confidence: float,
+    expected_entities: Optional[List[Dict[Text, Any]]],
+    should_warn: bool,
+):
+    # dummy intent
+    expected_intent = "my-intent"
+
+    # construct text according to pattern
+    text = " \t  " + INTENT_MESSAGE_PREFIX + expected_intent
+    if confidence is not None:
+        text += f"@{confidence}"
+    if entities is not None:
+        text += entities
+    text += " \t "
+
+    # create a message with some dummy attributes and features
+    message = Message(
+        data={TEXT: text, INTENT: "extracted-from-the-pattern-text-via-nlu"},
+        features=[
+            Features(
+                features=np.zeros((1, 1)),
+                feature_type=FEATURE_TYPE_SENTENCE,
+                attribute=TEXT,
+                origin="nlu-pipeline",
+            )
+        ],
+    )
+
+    # construct domain from expected intent/entities
+    domain_entities = [item[ENTITY_ATTRIBUTE_TYPE] for item in expected_entities]
+    domain_intents = [expected_intent] if expected_intent is not None else []
+    domain = Domain(
+        intents=domain_intents,
+        entities=domain_entities,
+        slots=[],
+        responses={},
+        action_names=[],
+        forms={},
+    )
+
+    # extract information
+    if should_warn:
+        with pytest.warns(UserWarning):
+            unpacked_message = YAMLStoryReader.unpack_regex_message(message, domain)
+    else:
+        unpacked_message = YAMLStoryReader.unpack_regex_message(message, domain)
+
+    assert not unpacked_message.features
+
+    assert set(unpacked_message.data.keys()) == {
+        TEXT,
+        INTENT,
+        INTENT_RANKING_KEY,
+        ENTITIES,
+    }
+
+    assert unpacked_message.data[TEXT] == message.data[TEXT].strip()
+
+    assert set(unpacked_message.data[INTENT].keys()) == {
+        INTENT_NAME_KEY,
+        PREDICTED_CONFIDENCE_KEY,
+    }
+    assert unpacked_message.data[INTENT][INTENT_NAME_KEY] == expected_intent
+    assert (
+        unpacked_message.data[INTENT][PREDICTED_CONFIDENCE_KEY] == expected_confidence
+    )
+
+    intent_ranking = unpacked_message.data[INTENT_RANKING_KEY]
+    assert len(intent_ranking) == 1
+    assert intent_ranking[0] == {
+        INTENT_NAME_KEY: expected_intent,
+        PREDICTED_CONFIDENCE_KEY: expected_confidence,
+    }
+    if expected_entities:
+        entity_data: List[Dict[Text, Any]] = unpacked_message.data[ENTITIES]
+        assert all(
+            set(item.keys())
+            == {
+                ENTITY_ATTRIBUTE_VALUE,
+                ENTITY_ATTRIBUTE_TYPE,
+                ENTITY_ATTRIBUTE_START,
+                ENTITY_ATTRIBUTE_END,
+            }
+            for item in entity_data
+        )
+        assert set(
+            (item[ENTITY_ATTRIBUTE_TYPE], item[ENTITY_ATTRIBUTE_VALUE])
+            for item in expected_entities
+        ) == set(
+            (item[ENTITY_ATTRIBUTE_TYPE], item[ENTITY_ATTRIBUTE_VALUE])
+            for item in entity_data
+        )
+    else:
+        assert unpacked_message.data[ENTITIES] is not None
+        assert len(unpacked_message.data[ENTITIES]) == 0
+
+
+@pytest.mark.parametrize(
+    "intent,entities,expected_intent,domain_entities",
+    [
+        ("wrong_intent", {"entity": 1.0}, "other_intent", ["entity"]),
+        ("my_intent", {"wrong_entity": 1.0}, "my_intent", ["other-entity"]),
+        ("wrong_intent", {"wrong_entity": 1.0}, "other_intent", ["other-entity"]),
+        # Special case: text "my_intent['entity1']" will be interpreted as the intent.
+        # This is not caught via the regex at the moment (intent names can include
+        # anything except "{" and "@".)
+        ("wrong_entity", ["wrong_entity"], "wrong_entity", ["wrong_entity"]),
+    ],
+)
+def test_process_warns_if_intent_or_entities_not_in_domain(
+    intent: Text,
+    entities: Optional[Text],
+    expected_intent: Text,
+    domain_entities: List[Text],
+):
+    # construct text according to pattern
+    text = INTENT_MESSAGE_PREFIX + intent  # do not add a confidence value
+    if entities is not None:
+        text += json.dumps(entities)
+    message = Message(data={TEXT: text})
+
+    # construct domain from expected intent/entities
+    domain = Domain(
+        intents=[expected_intent],
+        entities=domain_entities,
+        slots=[],
+        responses={},
+        action_names=[],
+        forms={},
+    )
+
+    # expect a warning
+    with pytest.warns(UserWarning):
+        unpacked_message = YAMLStoryReader.unpack_regex_message(message, domain)
+
+    if "wrong" not in intent:
+        assert unpacked_message.data[INTENT][INTENT_NAME_KEY] == intent
+        if "wrong" in entities:
+            assert unpacked_message.data[ENTITIES] is not None
+            assert len(unpacked_message.data[ENTITIES]) == 0
+    else:
+        assert unpacked_message == message
+
+
+async def test_unpack_regex_message_has_correct_entity_start_and_end():
+    entity = "name"
+    slot_1 = {entity: "Core"}
+    text = f"/greet{json.dumps(slot_1)}"
+
+    message = Message(data={TEXT: text},)
+
+    domain = Domain(
+        intents=["greet"],
+        entities=[entity],
+        slots=[],
+        responses={},
+        action_names=[],
+        forms={},
+    )
+
+    message = YAMLStoryReader.unpack_regex_message(
+        message, domain, entity_extractor_name="RegexMessageHandler"
+    )
+
+    assert message.data == {
+        "text": '/greet{"name": "Core"}',
+        "intent": {"name": "greet", "confidence": 1.0},
+        "intent_ranking": [{"name": "greet", "confidence": 1.0}],
+        "entities": [
+            {
+                "entity": "name",
+                "value": "Core",
+                "start": 6,
+                "end": 22,
+                EXTRACTOR: "RegexMessageHandler",
+            }
+        ],
+    }

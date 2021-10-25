@@ -1,0 +1,138 @@
+nodes:
+  nlu_message_converter:
+    needs:
+      messages: __message__
+    uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
+    constructor_name: load
+    fn: convert_user_message
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_WhitespaceTokenizer0:
+    needs:
+      messages: nlu_message_converter
+    uses: rasa.nlu.tokenizers.whitespace_tokenizer.WhitespaceTokenizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_RegexFeaturizer1:
+    needs:
+      messages: run_WhitespaceTokenizer0
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_RegexFeaturizer1
+  run_LexicalSyntacticFeaturizer2:
+    needs:
+      messages: run_RegexFeaturizer1
+    uses: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer.LexicalSyntacticFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_LexicalSyntacticFeaturizer2
+  run_CountVectorsFeaturizer3:
+    needs:
+      messages: run_LexicalSyntacticFeaturizer2
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_CountVectorsFeaturizer3
+  run_CountVectorsFeaturizer4:
+    needs:
+      messages: run_CountVectorsFeaturizer3
+    uses: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer
+    constructor_name: load
+    fn: process
+    config:
+      analyzer: char_wb
+      min_ngram: 1
+      max_ngram: 4
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_CountVectorsFeaturizer4
+  run_DIETClassifier5:
+    needs:
+      messages: run_CountVectorsFeaturizer4
+    uses: rasa.nlu.classifiers.diet_classifier.DIETClassifier
+    constructor_name: load
+    fn: process
+    config:
+      epochs: 100
+      constrain_similarities: true
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_DIETClassifier5
+  run_EntitySynonymMapper6:
+    needs:
+      messages: run_DIETClassifier5
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_EntitySynonymMapper6
+  run_ResponseSelector7:
+    needs:
+      messages: run_EntitySynonymMapper6
+    uses: rasa.nlu.selectors.response_selector.ResponseSelector
+    constructor_name: load
+    fn: process
+    config:
+      epochs: 100
+      constrain_similarities: true
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_ResponseSelector7
+  run_FallbackClassifier8:
+    needs:
+      messages: run_ResponseSelector7
+    uses: rasa.nlu.classifiers.fallback_classifier.FallbackClassifier
+    constructor_name: load
+    fn: process
+    config:
+      threshold: 0.3
+      ambiguity_threshold: 0.1
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  run_RegexMessageHandler:
+    needs:
+      messages: run_FallbackClassifier8
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null

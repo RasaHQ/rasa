@@ -1,24 +1,17 @@
+import asyncio
 import logging
-import typing
-from typing import Optional, Text
+from typing import Text
 
+from rasa.core.agent import Agent
 from rasa.shared.utils.cli import print_info, print_success
-from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.nlu.model import Interpreter
 from rasa.shared.utils.io import json_to_string
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.components import ComponentBuilder
 
 logger = logging.getLogger(__name__)
 
 
-def run_cmdline(
-    model_path: Text, component_builder: Optional["ComponentBuilder"] = None
-) -> None:
-    interpreter = Interpreter.load(model_path, component_builder)
-    regex_interpreter = RegexInterpreter()
+def run_cmdline(model_path: Text) -> None:
+    """Loops over CLI input, passing each message to a loaded NLU model."""
+    agent = Agent.load(model_path)
 
     print_success("NLU model loaded. Type a message and press enter to parse it.")
     while True:
@@ -29,9 +22,6 @@ def run_cmdline(
             print_info("Wrapping up command line chat...")
             break
 
-        if message.startswith(INTENT_MESSAGE_PREFIX):
-            result = regex_interpreter.synchronous_parse(message)
-        else:
-            result = interpreter.parse(message)
+        result = asyncio.run(agent.parse_message(message))
 
         print(json_to_string(result))

@@ -1,12 +1,16 @@
+import logging
+
 import pytest
 from typing import Callable, Dict, Text, Any
 import re
 import copy
 
+from _pytest.logging import LogCaptureFixture
+
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.constants import EXTRACTOR, TOKENS_NAMES
 from rasa.shared.nlu.training_data.message import Message
@@ -21,9 +25,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
 )
-from rasa.nlu.extractors.mitie_entity_extractor import (
-    MitieEntityExtractorGraphComponent,
-)
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 
 
 @pytest.fixture
@@ -37,8 +39,8 @@ def mitie_model(
     default_execution_context: ExecutionContext,
     default_resource: Resource,
 ) -> MitieModel:
-    component = MitieNLPGraphComponent.create(
-        MitieNLPGraphComponent.get_default_config(),
+    component = MitieNLP.create(
+        MitieNLP.get_default_config(),
         default_model_storage,
         default_resource,
         default_execution_context,
@@ -49,22 +51,17 @@ def mitie_model(
 @pytest.fixture
 def create_or_load_mitie_extractor(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-) -> Callable[[Dict[Text, Any]], MitieEntityExtractorGraphComponent]:
-    def inner(
-        config: Dict[Text, Any], load: bool = False
-    ) -> MitieEntityExtractorGraphComponent:
+) -> Callable[[Dict[Text, Any]], MitieEntityExtractor]:
+    def inner(config: Dict[Text, Any], load: bool = False) -> MitieEntityExtractor:
         if load:
-            constructor = MitieEntityExtractorGraphComponent.load
+            constructor = MitieEntityExtractor.load
         else:
-            constructor = MitieEntityExtractorGraphComponent.create
+            constructor = MitieEntityExtractor.create
         return constructor(
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=Resource("MitieEntityExtractor"),
-            config={
-                **MitieEntityExtractorGraphComponent.get_default_config(),
-                **config,
-            },
+            config={**MitieEntityExtractor.get_default_config(), **config,},
         )
 
     return inner
@@ -72,9 +69,7 @@ def create_or_load_mitie_extractor(
 
 @pytest.mark.parametrize("with_trainable_examples", [(True, False)])
 def test_train_extract_load(
-    create_or_load_mitie_extractor: Callable[
-        [Dict[Text, Any]], MitieEntityExtractorGraphComponent
-    ],
+    create_or_load_mitie_extractor: Callable[[Dict[Text, Any]], MitieEntityExtractor],
     mitie_model: MitieModel,
     with_trainable_examples: bool,
 ):
@@ -113,7 +108,7 @@ def test_train_extract_load(
 
     # train the extractor
     mitie_entity_extractor = create_or_load_mitie_extractor(config={}, load=False)
-    mitie_entity_extractor.train(training_data, mitie_model=mitie_model)
+    mitie_entity_extractor.train(training_data, model=mitie_model)
 
     # create some messages "without entities" - for processing
     messages_without_entities = [
@@ -128,7 +123,7 @@ def test_train_extract_load(
 
     # process!
     mitie_entity_extractor.process(
-        messages=messages_without_entities, mitie_model=mitie_model
+        messages=messages_without_entities, model=mitie_model
     )
 
     # check that extractor added the expected entities to the messages
@@ -167,17 +162,18 @@ def test_train_extract_load(
         )
         for message in messages_with_entities
     ]
-    loaded_extractor.process(
-        messages=same_messages_without_entities, mitie_model=mitie_model
-    )
+    loaded_extractor.process(messages=same_messages_without_entities, model=mitie_model)
     assert same_messages_without_entities[0].data == messages_without_entities[0].data
 
 
 def test_load_without_training(
-    create_or_load_mitie_extractor: Callable[
-        [Dict[Text, Any]], MitieEntityExtractorGraphComponent
-    ],
+    create_or_load_mitie_extractor: Callable[[Dict[Text, Any]], MitieEntityExtractor],
+    caplog: LogCaptureFixture,
 ):
-    with pytest.warns(UserWarning):
-        extractor = create_or_load_mitie_extractor({}, load=True)
-    assert isinstance(extractor, MitieEntityExtractorGraphComponent)
+    with caplog.at_level(logging.DEBUG):
+        create_or_load_mitie_extractor({}, load=True)
+
+    assert any(
+        "Failed to load MitieEntityExtractor from model storage." in message
+        for message in caplog.messages
+    )

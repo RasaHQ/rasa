@@ -93,6 +93,39 @@ class TrainingDataImporter:
     # ...
 ```
 
+### Training
+
+#### `rasa train --dry-run`
+Due to changes in the model architecture the behavior of `rasa train --dry-run` changed.
+The exit codes now have the following meaning:
+
+* `0 means that the model does not require an expensive retraining. However, the
+  responses might still require updating by running `rasa train`
+* `1` means that one or multiple components require to be retrained.
+* `8` means that the `--force` flag was used and hence any cached results are ignored
+  and the entire model is retrained.
+
+### Machine Learning Components
+
+#### Normalization of Confidences in `DIETClassifier` and `ResponseSelector`
+
+`DIETClassifier` and `ResponseSelector` will no longer automatically report
+re-normalized confidences when `ranking_length` is set to a value greater than `0`.
+This change affects the reported confidences but does not influence the final
+predicted intent, which might be used by policies.
+However, since the reported confidences are affected you might have to tune the
+thresholds for fallback mechanisms again.
+The previous behavior can still be enforced by setting `renormalize_confidences=True`
+when using `model_confidence=softmax`.
+
+#### Normalization of confidences in `TEDPolicy`
+
+Predictions of `TEDPolicy` will no longer be modified by masking and renormalizing
+confidences. This change can affect the maximum confidence predicted by the
+`TEDPolicy` and thereby affect the final result of the policy ensemble.
+However, the previous behavior can still be enforced by setting
+`ranking_length=10` and `renormalize_confidences=True`.
+
 ## Rasa 2.7 to 2.8
 
 :::caution
@@ -226,13 +259,13 @@ forms:
 
 #### `DIET`, `TED`, and `ResponseSelector`
 
-The former `weight_sparsity` parameter of the `DIETClassifier`, `TEDPolicy`, and the `ResponseSelector`, 
+The former `weight_sparsity` parameter of the `DIETClassifier`, `TEDPolicy`, and the `ResponseSelector`,
 is now deprecated and superseded by the new `connection_density` parameter.
-The old `weight_sparsity` is roughly equivalent to `1 - connection_density`, except at very low densities 
-(high sparsities). 
+The old `weight_sparsity` is roughly equivalent to `1 - connection_density`, except at very low densities
+(high sparsities).
 
 To avoid deprecation issues, you should set `connection_density` to
-`1 - your former weight_sparsity setting` throughout the config file. (If you left 
+`1 - your former weight_sparsity setting` throughout the config file. (If you left
 `weight_sparsity` at its default setting, you don't need to do anything.)
 
 #### SpaCy 3.0
@@ -1186,7 +1219,7 @@ model before trying to use it with this improved version.
 
   See [DIETClassifier](./components.mdx#dietclassifier) for more information about the new component.
   Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, and results in
-  the same behaviour within the same Rasa version. 
+  the same behaviour within the same Rasa version.
 
 * `CRFEntityExtractor` is now deprecated and will be replaced by `DIETClassifier` in the future. If you want to
   get the same model behavior as the current `CRFEntityExtractor`, you can use the following configuration:
