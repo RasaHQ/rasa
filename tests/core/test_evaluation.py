@@ -116,7 +116,7 @@ async def test_end_to_end_evaluation_script(
     ]
 
     assert story_evaluation.evaluation_store.serialise()[0] == serialised_store
-    assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+    assert not story_evaluation.evaluation_store.check_prediction_target_mismatch()
     assert len(story_evaluation.failed_stories) == 0
     assert num_stories == 3
 
@@ -135,7 +135,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
         completed_trackers, default_agent
     )
 
-    assert story_evaluation.evaluation_store.has_prediction_target_mismatch()
+    assert story_evaluation.evaluation_store.check_prediction_target_mismatch()
     assert len(story_evaluation.failed_stories) == 1
     assert num_stories == 1
 
@@ -153,7 +153,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
         test_stories, form_bot_agent
     )
 
-    assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+    assert not story_evaluation.evaluation_store.check_prediction_target_mismatch()
 
 
 async def test_source_in_failed_stories(
@@ -319,7 +319,7 @@ async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text)
         test_stories, response_selector_agent
     )
     # check that test story can either specify base intent or full retrieval intent
-    assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
+    assert not story_evaluation.evaluation_store.check_prediction_target_mismatch()
 
 
 @pytest.mark.parametrize(

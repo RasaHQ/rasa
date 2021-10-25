@@ -321,9 +321,11 @@ class MessageProcessor:
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
-        return self.tracker_store.get_or_create_tracker(
+        tracker = self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )
+        tracker.model_id = self.model_metadata.model_id
+        return tracker
 
     def get_trackers_for_all_conversation_sessions(
         self, conversation_id: Text

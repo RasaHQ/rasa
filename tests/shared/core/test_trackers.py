@@ -73,7 +73,11 @@ from tests.core.utilities import (
     get_tracker,
 )
 
-from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    METADATA_MODEL_ID,
+    PREDICTED_CONFIDENCE_KEY,
+)
 
 test_domain = Domain.load("data/test_moodbot/domain.yml")
 
@@ -1519,3 +1523,18 @@ def test_tracker_fingerprint_story_reading(domain: Domain):
     f2 = tracker2.fingerprint()
 
     assert f1 == f2
+
+
+def test_model_id_is_added_to_events():
+    tracker = DialogueStateTracker("bloop", [])
+    tracker.model_id = "some_id"
+    tracker.update(ActionExecuted())
+    tracker.update_with_events([UserUttered(), SessionStarted()], None)
+    assert all(e.metadata[METADATA_MODEL_ID] == "some_id" for e in tracker.events)
+
+
+def test_model_id_is_not_added_to_events_with_id():
+    tracker = DialogueStateTracker("bloop", [])
+    tracker.model_id = "some_id"
+    tracker.update(ActionExecuted(metadata={METADATA_MODEL_ID: "old_id"}))
+    assert tracker.events[-1].metadata[METADATA_MODEL_ID] == "old_id"

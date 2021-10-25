@@ -5,11 +5,10 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 import shutil
 from pathlib import Path
 from collections import defaultdict
-from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_addons as tfa
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -1406,7 +1405,7 @@ class TED(TransformerRasaModel):
         dialogue_transformed, attention_weights = self._tf_layers[
             f"transformer.{DIALOGUE}"
         ](dialogue_in, 1 - mask, self._training)
-        dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
+        dialogue_transformed = tf.nn.gelu(dialogue_transformed)
 
         if self.max_history_featurizer_is_used:
             # pick last vector if max history featurizer is used, since we inverted
