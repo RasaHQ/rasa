@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Callable, Dict, Optional, Text, Type
+from typing import Callable, Dict, Optional, Text, Type, Any
 from unittest.mock import Mock
 
 from _pytest.logging import LogCaptureFixture
@@ -15,6 +15,9 @@ from rasa.engine.graph import (
     GraphSchema,
     SchemaNode,
     GraphModelConfiguration,
+    GraphNode,
+    ExecutionContext,
+    GraphNodeHook,
 )
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -435,3 +438,50 @@ def test_graph_trainer_train_logging(
         "Starting to train component 'SubtractByX'.",
         "Finished training component 'SubtractByX'.",
     ]
+
+
+@pytest.mark.parametrize(
+    "on_before, on_after",
+    [(lambda: True, lambda: 2 / 0), (lambda: 2 / 0, lambda: True)],
+)
+def test_exception_handling_for_on_before_hook(
+    on_before: Callable,
+    on_after: Callable,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+):
+    schema_node = SchemaNode(
+        needs={}, uses=ProvideX, fn="provide", constructor_name="create", config={},
+    )
+
+    class MyHook(GraphNodeHook):
+        def on_after_node(
+            self,
+            node_name: Text,
+            execution_context: ExecutionContext,
+            config: Dict[Text, Any],
+            output: Any,
+            input_hook_data: Dict,
+        ) -> None:
+            on_before()
+
+        def on_before_node(
+            self,
+            node_name: Text,
+            execution_context: ExecutionContext,
+            config: Dict[Text, Any],
+            received_inputs: Dict[Text, Any],
+        ) -> Dict:
+            on_after()
+            return {}
+
+    node = GraphNode.from_schema_node(
+        "some_node",
+        schema_node,
+        default_model_storage,
+        default_execution_context,
+        hooks=[MyHook()],
+    )
+
+    with pytest.raises(GraphComponentException):
+        node()

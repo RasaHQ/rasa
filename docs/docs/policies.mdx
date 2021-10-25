@@ -103,7 +103,7 @@ TED Policy architecture comprises the following steps:
    - previous system actions or bot utterances processed through a bot sequence transformer encoder,
    - slots and active forms
 
-   for each time step into an input vector to the embedding layer that precedes the 
+   for each time step into an input vector to the embedding layer that precedes the
    dialogue transformer.
 
 2. Feed the embedding of the input vector into the dialogue transformer encoder.
@@ -287,9 +287,12 @@ However, additional parameters exist that can be adapted.
 | loss_type                             | "cross_entropy"        | The type of the loss function, either 'cross_entropy'        |
 |                                       |                        | or 'margin'.                                                 |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
-| ranking_length                        | 10                     | Number of top actions to normalize scores for. Applicable    |
-|                                       |                        | only with loss type 'cross_entropy' and 'softmax'            |
-|                                       |                        | confidences. Set to 0 to disable normalization.              |
+| ranking_length                        | 0                      | Number of top actions to include in prediction. Confidences  |
+|                                       |                        | of all other actions will be set to 0. Set to 0 to let the   |
+|                                       |                        | prediction include confidences for all actions.              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| renormalize_confidences               | False                  | Normalize the top predictions. Applicable only with loss     |
+|                                       |                        | type 'cross_entropy' and 'softmax' confidences.              |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | maximum_positive_similarity           | 0.8                    | Indicates how similar the algorithm should try to make       |
 |                                       |                        | embedding vectors for correct labels.                        |
