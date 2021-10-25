@@ -208,7 +208,7 @@ def migrate_domain_format(
 
         if not slots or not forms:
             raise RasaException(
-                f"The files you have provided in {domain_file} are missing slots "
+                f"The files you have provided in '{domain_file}' are missing slots "
                 f"or forms. Please make sure to include these for a "
                 f"successful migration."
             )

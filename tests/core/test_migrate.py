@@ -1,3 +1,4 @@
+import re
 import textwrap
 from pathlib import Path
 from typing import Text, Any
@@ -716,7 +717,8 @@ def test_migrate_domain_raises_exception_for_non_domain_file(tmp_path: Path):
 
     with pytest.raises(
         RasaException,
-        match=f"The file '{domain_file}' could not be validated as a domain file.",
+        match=f"The file '{re.escape(str(domain_file))}' could not "
+        f"be validated as a domain file.",
     ):
         rasa.core.migrate.migrate_domain_format(domain_file, domain_file)
 
@@ -746,8 +748,8 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
 
     with pytest.raises(
         RasaException,
-        match=f"The files you have provided in {domain_dir} are missing slots "
-        f"or forms. Please make sure to include these for a "
-        f"successful migration.",
+        match=f"The files you have provided in '{re.escape(str(domain_dir))}' "
+        f"are missing slots or forms. "
+        f"Please make sure to include these for a successful migration.",
     ):
         rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
