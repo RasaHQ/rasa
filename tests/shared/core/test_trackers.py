@@ -1525,3 +1525,10 @@ def test_model_id_is_added_to_events():
     tracker.update(ActionExecuted())
     tracker.update_with_events([UserUttered(), SessionStarted()], None)
     assert all(e.metadata[METADATA_MODEL_ID] == "some_id" for e in tracker.events)
+
+
+def test_model_id_is_not_added_to_events_with_id():
+    tracker = DialogueStateTracker("bloop", [])
+    tracker.model_id = "some_id"
+    tracker.update(ActionExecuted(metadata={METADATA_MODEL_ID: "old_id"}))
+    assert tracker.events[-1].metadata[METADATA_MODEL_ID] == "old_id"

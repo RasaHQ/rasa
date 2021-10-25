@@ -1243,6 +1243,33 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
     assert deserialized_events[3].timestamp > time_before_adding_events
 
 
+async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClient):
+    model_id = rasa_app.app.agent.model_id
+    sender_id = str(uuid.uuid1())
+    conversation = f"/conversations/{sender_id}"
+
+    existing_model_id = "some_old_id"
+    assert existing_model_id != model_id
+    event = with_model_id(BotUttered("hello!"), existing_model_id)
+    serialized_event = event.as_dict()
+
+    # Wait a bit so that the server-generated timestamp is strictly greater
+    # than time_before_adding_events
+    _, response = await rasa_app.post(
+        f"{conversation}/tracker/events",
+        json=serialized_event,
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+    _, tracker_response = await rasa_app.get(f"/conversations/{sender_id}/tracker")
+    tracker = tracker_response.json()
+
+    deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
+
+    # there is an initial session start sequence at the beginning of the tracker
+    received_event = deserialized_events[3]
+    assert received_event == with_model_id(event, existing_model_id)
+
+
 async def test_push_multiple_events(rasa_app: SanicASGITestClient):
     model_id = rasa_app.app.agent.model_id
     conversation_id = str(uuid.uuid1())

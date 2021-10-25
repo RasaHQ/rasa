@@ -645,7 +645,7 @@ class DialogueStateTracker:
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
 
-        if self.model_id:
+        if self.model_id and METADATA_MODEL_ID not in event.metadata:
             event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
 
         self.events.append(event)
