@@ -124,7 +124,7 @@ class SlotSetMarker(AtomicMarker):
     @classmethod
     def tag(cls) -> Text:
         """Returns the tag to be used in a config file."""
-        return "slot_was_set"
+        return "slot_is_set"
 
     @classmethod
     def negated_tag(cls) -> Optional[Text]:
