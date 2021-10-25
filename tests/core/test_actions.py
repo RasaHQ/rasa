@@ -2029,7 +2029,7 @@ async def test_action_extract_slots_execute_validation_action(
             - type: custom
 
         actions:
-        - validate_global_slot_mappings
+        - action_validate_global_slot_mappings
         """
     )
     domain = Domain.from_yaml(domain_yaml)
@@ -2078,7 +2078,7 @@ async def test_action_extract_slots_custom_action_and_predefined_slot_validation
               action: action_test
 
         actions:
-        - validate_global_slot_mappings
+        - action_validate_global_slot_mappings
         - action_test
         """
     )
@@ -2183,6 +2183,9 @@ async def test_action_extract_slots_with_duplicate_custom_actions():
             tracker,
             domain,
         )
+
+        assert len(mocked.requests) == 1
+
         assert len(slot_events) == 2
         assert SlotSet("custom_slot_two", 2) in slot_events
         assert SlotSet("custom_slot_one", 1) in slot_events

@@ -36,6 +36,7 @@ from rasa.shared.core.constants import (
     DEFAULT_SLOT_NAMES,
     MAPPING_CONDITIONS,
     ACTIVE_LOOP,
+    ACTION_VALIDATE_GLOBAL_SLOT_MAPPINGS,
 )
 from rasa.shared.core.domain import Domain, SlotMapping
 from rasa.shared.core.events import (
@@ -1069,9 +1070,7 @@ class ActionExtractSlots(Action):
         slot_candidates = "\n".join([e.key for e in slot_events])
         logger.debug(f"Validating extracted slots: {slot_candidates}")
 
-        validate_name = "validate_global_slot_mappings"
-
-        if validate_name not in domain.user_actions:
+        if ACTION_VALIDATE_GLOBAL_SLOT_MAPPINGS not in domain.user_actions:
             return slot_events
 
         _tracker = DialogueStateTracker.from_events(
@@ -1080,7 +1079,7 @@ class ActionExtractSlots(Action):
             slots=domain.slots,
         )
         validate_events = await self._run_custom_action(
-            validate_name, output_channel, nlg, _tracker, domain
+            ACTION_VALIDATE_GLOBAL_SLOT_MAPPINGS, output_channel, nlg, _tracker, domain
         )
         validated_slot_names = [
             event.key for event in validate_events if isinstance(event, SlotSet)

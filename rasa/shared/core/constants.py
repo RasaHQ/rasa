@@ -31,6 +31,7 @@ ACTION_TWO_STAGE_FALLBACK_NAME = "action_two_stage_fallback"
 ACTION_UNLIKELY_INTENT_NAME = "action_unlikely_intent"
 RULE_SNIPPET_ACTION_NAME = "..."
 ACTION_EXTRACT_SLOTS = "action_extract_slots"
+ACTION_VALIDATE_GLOBAL_SLOT_MAPPINGS = "action_validate_global_slot_mappings"
 
 DEFAULT_ACTION_NAMES = [
     ACTION_LISTEN_NAME,
