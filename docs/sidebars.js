@@ -62,6 +62,7 @@ module.exports = {
             'model-configuration',
             'components',
             'policies',
+            'custom-components',
             'training-data-importers',
             'language-support',
           ],

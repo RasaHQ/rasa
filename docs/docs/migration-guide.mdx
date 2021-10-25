@@ -24,6 +24,28 @@ If you still have training data in Markdown format then the recommended approach
 to convert your data from Markdown to YAML. Please use the commands described
 [here](./migration-guide.mdx#training-data-files).
 
+### Custom Policies and Custom Components
+
+Rasa Open Source 3.0 changed the way how NLU component and dialogue
+policies are trained and run during inference. As part of these changes the interfaces
+for NLU components and policies were unified and adapted.
+
+The next section outlines which adaptions are required to run your custom NLU components
+and policies with 3.0.
+
+:::caution
+
+Please read the updated guide on components [here](custom-components) before
+continuing to follow the step-by-step guide to migrate your own custom components.
+:::
+
+#### Changes to Custom Policies
+
+#### Changes to Custom NLU Components
+
+TBD
+
+
 ### Training data
 
 `TrainingDataImporter` and all its implementations are updated to contain only synchronous methods.

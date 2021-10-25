@@ -1,0 +1,265 @@
+---
+id: custom-components
+sidebar_label: Custom Components & Policies
+title: Custom Components & Policies
+abstract: You can extend Rasa Open Source with custom NLU components and policies. This page is guide on how to develop your own custom components.
+---
+
+Rasa Open Source provides a variety of [NLU components](components) or
+[dialogue policies](policies) out of the box. You can customize these out of the box
+components or create your own components from scratch with custom components.
+
+To use your custom component with Rasa Open Source it has to fulfill the following
+requirements:
+- It has to implement the [`GraphComponent` interface](#the-graphcomponent-interface)
+- It has to [registered](#registering-components-with-the-model-configuration)
+- It has to be used in the [configuration file](#using-custom-components-in-your-model-configuration)
+- It has to use type annotations. Rasa Open Source makes use of the type annotations
+  to validate your model configuration.
+  [Forward references](https://www.python.org/dev/peps/pep-0484/#forward-references)
+  are not allowed. If you're using Python 3.7 you can use
+  [`from __future__ import annotations](https://www.python.org/dev/peps/pep-0563/#enabling-the-future-behavior-in-python-3-7)
+  to get rid of forward references.
+
+## Getting Started
+Before you get started you have to decide whether you want to implement a custom
+[NLU component](components) or a [dialogue policy](policies). If you're implementing
+a custom policy then we recommend extending the existing
+`rasa.core.policies.policy.Policy` class. If you want to implement a custom NLU
+then start out with the following skeleton:
+
+```python (docs/sources/data/test_classes/nlu_component_skeleton.py)
+```
+:::note custom tokenizers
+If you create a custom tokenizer you should implement the methods of `rasa.nlu.tokenizers.tokenizer.Tokenizer`.
+The `train` and `process` methods are already implemented and you simply need to overwrite the `tokenize`
+method.
+
+:::
+
+
+
+## The `GraphComponent` interface
+Any custom NLU component or policy has to inherit the `GraphComponent` interface:
+
+```python (docs/sources/data/test_classes/graph_component_interface.py)
+```
+
+:::tip
+
+The `rasa.core.policies.policy.Policy` class for
+dialogue policies already implements this interface dialogue policies.
+:::
+
+- `create` (required): This method is used to instantiate your component during training.
+    - `config`: This is your model's default configuration merged with the
+       configuration provided to the component in the model configuration file.
+    - `model_storage`: You can use this to persist and load your components. See the
+       [persistence](migration-guide#model-persistence) section for further details on its usage.
+    - `resource`: This uniquely identifies your component within the `model_storage`.
+       See the [persistence](migration-guide#model-persistence) section for further
+       details on its usage.
+    - `execution_context`: This provides additional information about the current
+       mode of execution.
+       - `model_id`: A unique identifier for the model used during inference. This
+          parameter is `None` during training.
+       - `should_add_diagnostic_data`: If `True` then additional diagnostic metadata
+          can be added to your component's predictions.
+       - `is_finetuning`: If `True` then it's not a regular training run. Instead, your
+          component is [finetuned](command-line-interface#incremental-training) from
+          a previously trained model.
+       - `graph_schema`: TBD (I'd )
+       - `node_name`: TBD
+
+
+- `load` (optional): This method is used to instantiate your component during inference.
+   The default implementation calls your `create` method. It is recommended to override
+   this when your component
+   [persists data as part of the training](migration-guide#model-persistence).
+   See `create` for a description of the single parameters.
+
+- `get_default_config` (optional): This should return the default configuration for
+   your component. The default implementation returns an empty dictionary which means
+   that there is no default configuration for the component.
+   Rasa Open Source will update the configuration given in the configuration file with
+   the default configuration during runtime.
+
+- `supported_languages` (optional): Use this method to specify which languages your
+   component supports. Rasa Open Source will use the `language` key in the model
+   configuration file to validate that your component is valid for usage with the
+   specified language. If your component returns `None` (this is the default
+   implementation), you indicate that it supports all languages.
+
+   Examples:
+   - `[]`: The component doesn't support any language
+   - `None`: All languages are supported expect the languages defined in
+     `not_supported_languages`
+   - `[en]`: The component can only be used for English conversations.
+
+- `not_supported_languages` (optional): Use this method to specify which languages your
+   component does not support. Rasa Open Source will use the `language` key in the
+   model configuration file to validate that your component is valid for usage with
+   the specified language. If your component returns `None` (this is the default
+   implementation), you indicate that it supports all languages.
+
+   Examples:
+   - `None` or `[]`: All languages specified in `supported_languages` are supported.
+   - `[en]`: The component can be used for any language except English.
+
+- `required_packages` (optional): Use this to indicate which Python packages need to
+   be installed to be able to use this component. Rasa Open Source will raise an error
+   during execution if your component is used without the required libraries being
+   installed. By default this method returns an empty list which means that your
+   component does not have any extra dependencies.
+
+   Examples:
+   - `[]`: No extra packages are required to use this component
+   - `["spacy"]`: The Python package `spacy` needs to be installed to be able to run
+      this component.
+
+## Model Persistence
+Some components require to persist data as part of the training which should be
+available to the component during inference. For this purpose Rasa Open Source provides
+`model_storage` and `resource` parameters to your components `create` and `load`
+method. The `model_storage` provides access to data from all components. The `resource`
+allows you to uniquely identify your component's location in the model storage.
+
+As you can see in the snippet below `self._model_storage.write_to(self._resource)`
+provides a path to a directory where you can persist any data required by your
+component. Note that it is required to return your components `resource` at the end
+of your component's training method so that Rasa Open Source can cache the training
+results between trainings.
+
+When Rasa Open Source calls `load` to instantiate your component for
+inference you can use the counterpart `self._model_storage.read_from(resource)` to
+get access to the same directory. Using the provided path you can then load the
+persisted data and initialize your component with it.
+
+```python (docs/sources/data/test_classes/component_with_persistence.py)
+```
+
+## Registering Components with the Model Configuration
+To make your component available to Rasa Open source you have to register your component
+with the model configuration. You do this with the `DefaultV1Recipe.register` decorator:
+
+```python (docs/sources/data/test_classes/registered_component.py)
+```
+
+Rasa Open Source uses the information provided in the registration and the positioning
+of your component within the configuration file to schedule the execution of your
+component with its required data. Using the `DefaultV1Recipe.register` you can
+specify the following details:
+
+- `component_types`: This specifies what purpose your component fulfills within the
+   model. It is also possible to specify multiple types (e.g. if your component is both
+   intent classifier and entity extractor):
+   * `ComponentType.MODEL_LOADER`: Component type for
+      [language models](components#language-models). Components of this type provide
+      pretrained models to other components' `train`, `process_training_data` and
+      `process` methods if they have specified `model_from=<model loader name>`.
+      This component is run during training and
+      inference. Rasa Open Source will use the component's `provide` method to retrieve
+      the model which should be provided to dependent components.
+
+   * `ComponentType.MESSAGE_TOKENIZER`: Component type for
+      [tokenizers](components#tokenizers). This component is run during training and
+      inference. Rasa Open Source will use the component's `train` method if
+      `is_trainable=True` is specified. Rasa Open Source will use
+      `process_training_data` for tokenizing training data examples and `process`
+      to tokenize messages during inference.
+
+   * `ComponentType.MESSAGE_FEATURIZER`: Component type for
+      [featurizers](components#featurizers). This component is run during training and
+      inference. Rasa Open Source will use the component's `train` method if
+      `is_trainable=True` is specified. Rasa Open Source will use
+      `process_training_data` for featurizing training data examples and `process`
+      to featurize messages during inference.
+
+   * `ComponentType.INTENT_CLASSIFIER`: Component type for
+      [intent classifiers](components#intent-classifiers). This component is run only
+      during training if `is_trainable=True`. The component is always run during
+      inference.
+      Rasa Open Source will use the component's `train` method if
+      `is_trainable=True` is specified. Rasa Open Source will use
+      the component's `process` method to classify messages during inference.
+
+   * `ComponentType.ENTITY_EXTRACTOR`: Component type for
+      [entity extractors](components#entity-extractors). This component is run only
+      during training if `is_trainable=True`. The component is always run during
+      inference.
+      Rasa Open Source will use the component's `train` method if
+      `is_trainable=True` is specified. Rasa Open Source will use
+      the component's `process` method to extract entities during inference.
+
+   * `ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT`: Component type for
+      [policies](policies) which don't require additional end-to-end features
+      (see [end-to-end training](stories#end-to-end-training) for more information).
+      This component is run only during training if `is_trainable=True`.
+      The component is always run during inference.
+      Rasa Open Source will use the component's `train` method if
+      `is_trainable=True` is specified. Rasa Open Source will use
+      the component's `predict_action_probabilities` to make predictions for the
+      next action which should be run in the conversation.
+
+   * `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`: Component type for
+      [policies](policies) which require additional end-to-end features
+      (see [end-to-end training](stories#end-to-end-training) for more information).
+      The end-to-end features are passed into the component's `train` and
+      `predict_action_probabilities` as `precomputations` parameter.
+      This component is run only during training if `is_trainable=True`.
+      The component is always run during inference.
+      Rasa Open Source will use the component's `train` method if
+      `is_trainable=True` is specified. Rasa Open Source will use
+      the component's `predict_action_probabilities` to make predictions for the
+      next action which should be run in the conversation.
+
+- `is_trainable`: Specifies if the component requires to train itself before it can
+   process training data for other dependent components or before it can make
+   predictions
+
+- `model_from`: Specifies if a pretrained model needs to be provided to `train`,
+  `process_training_data` and `process` methods of the component. Note that you still
+   need to make sure that the model provided component is part of your model
+   configuration.
+
+## Using Custom Components in your Model Configuration
+You can use custom components like any other NLU component or policy within your
+[model configuration](model-configuration). The only change is that you have to specify
+the full module name instead of the class name only:
+
+```yaml-rasa title="config.yml"
+recipe: default.v1
+language: en
+pipeline:
+# other NLU components
+- name: your.custom.NLUComponent
+  dimensions: ["number"]
+
+policies:
+# other dialogue policies
+- name: your.custom.Policy
+```
+
+## Implementation Hints
+
+### Message Metadata
+When you [define metadata for your intent examples in your training data](./training-data-format.mdx#training-examples),
+your component can access both the intent metadata and the intent example metadata during processing:
+
+```python
+# in your component class
+
+    def process(self, message: Message, **kwargs: Any) -> None:
+        metadata = message.get("metadata")
+        print(metadata.get("intent"))
+        print(metadata.get("example"))
+```
+
+### Sparse and Dense Message Features
+If you create a custom message featurizer you can return two different kind of features: sequence features and sentence
+features. The sequence features are a matrix of size `(number-of-tokens x feature-dimension)`, e.g.
+the matrix contains a feature vector for every token in the sequence.
+The sentence features are represented by a matrix of size `(1 x feature-dimension)`.
+
+## Examples of Custom Components
+Vincent?

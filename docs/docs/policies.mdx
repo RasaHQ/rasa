@@ -1117,8 +1117,19 @@ The featurized trackers will be identical to each other but the target labels in
 
 ## Custom Policies
 
+:::info New in 3.0
+Rasa Open Source 3.0 unified the implementation of NLU components and policies.
+This requires changes to custom policies written for earlier versions of Rasa Open
+Source. Please see the
+[migration guide](migration-guide#custom-policies-and-custom-components) for a
+step-by-step guide for the migration.
+
+:::
+
+
 You can also write custom policies and reference them in your configuration. In the example below, the
 last two lines show how to use a custom policy class and pass arguments to it.
+See the [guide on custom components](custom-components) for a full guide on this.
 
 ```yaml-rasa {9-10}
 policies:
@@ -1129,3 +1140,4 @@ policies:
   - name: "path.to.your.policy.class"
     arg1: "..."
 ```
+
