@@ -550,7 +550,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         #    till now.
         # 2. There is at least one event of type `ActionExecuted`
         #    after the last `UserUttered` event.
-        if self._should_skip_prediction(tracker):
+        if self._should_skip_prediction(tracker, domain):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
                 f"as either there is no event of type `UserUttered` or "
@@ -590,14 +590,17 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         )
 
     @staticmethod
-    def _should_skip_prediction(tracker: DialogueStateTracker) -> bool:
+    def _should_skip_prediction(tracker: DialogueStateTracker, domain: Domain,) -> bool:
         """Checks if the policy should skip making a prediction.
 
         A prediction can be skipped if:
             1. There is no event of type `UserUttered` in the tracker.
-            2. There is an event of type `ActionExecuted` after the last
+            2. If the `UserUttered` event intent is new and not in domain (a
+                new intent can be created from rasa interactive and not in domain
+                yet)
+            3. There is an event of type `ActionExecuted` after the last
                 `UserUttered` event. This is to prevent the dialogue manager
-                 from getting stuck in a prediction loop.
+                from getting stuck in a prediction loop.
                 For example, if the last `ActionExecuted` event
                 contained `action_unlikely_intent` predicted by
                 `UnexpecTEDIntentPolicy` and
@@ -615,6 +618,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             if isinstance(event, ActionExecuted):
                 return True
             elif isinstance(event, UserUttered):
+                if event.intent_name not in domain.intents:
+                    return True
                 return False
         # No event of type `ActionExecuted` and `UserUttered` means
         # that there is nothing for `UnexpecTEDIntentPolicy` to predict on.
