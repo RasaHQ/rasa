@@ -144,9 +144,9 @@ def _validate_target(
 
     if not typing_utils.issubtype(target_return_type, expected_type):
         raise GraphSchemaValidationException(
-            f"Your {target_type} model's last component '{target_node.uses.__name__}' "
-            f"returns an invalid return type '{target_return_type}'. "
-            f"This is not allowed. The {target_type} "
+            f"Your {target_type} model's output component "
+            f"'{target_node.uses.__name__}' returns an invalid return "
+            f"type '{target_return_type}'. This is not allowed. The {target_type} "
             f"model's last component is expected to return the type '{expected_type}'."
         )
 
@@ -381,7 +381,7 @@ def _validate_constructor(
             f"Your model uses a component '{node.uses.__name__}' which has a "
             f"method '{node.constructor_name}' which has required parameters "
             f"('{', '.join(required_args)}'). "
-            f"Extra parameters can only be supplied to the creation method which is "
+            f"Extra parameters can only be supplied to the constructor method which is "
             f"used during training."
         )
 
