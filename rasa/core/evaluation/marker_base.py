@@ -69,7 +69,7 @@ def configurable_marker(marker_class: Type[Marker]) -> Type[Marker]:
         if tag_ in TAGS:
             raise RuntimeError(
                 "Expected the tags of all configurable markers to be "
-                "identifyable by their tag."
+                "identifiable by their tag."
             )
         TAGS.add(tag_)
     # (non-negated) tag <-> class
@@ -117,7 +117,7 @@ class InvalidMarkerConfig(RasaException):
 
 
 MetaData = TypedDict(
-    "MetaData", {"preceeding_user_turns": List[int], "timestamp": List[int]}
+    "MetaData", {"preceeding_user_turns": List[int], "timestamp": List[float]}
 )
 
 T = TypeVar("T")
@@ -131,7 +131,7 @@ class Marker(ABC):
     does not apply to the conversation so far.
     """
 
-    def __init__(self, name: Optional[Text] = None, negated: bool = False):
+    def __init__(self, name: Optional[Text] = None, negated: bool = False) -> None:
         """Instantiates a marker.
 
         Args:
@@ -221,7 +221,7 @@ class Marker(ABC):
         - the timestamp of each event where the marker applied and
         - the number of user turns that preceded that timestamp
 
-        If this marker is the special `ANY_MARKER` (identified by it's name), then
+        If this marker is the special `ANY_MARKER` (identified by its name), then
         results will be collected for all (immediate) sub-markers.
 
         If `recursive` is set to `True`, then all included markers are evaluated.
@@ -257,7 +257,7 @@ class Marker(ABC):
         """
         self.reset()
         timestamps: List[int] = []
-        preceeding_user_turns: List[int] = [0]
+        preceding_user_turns: List[int] = [0]
         for event in events:
             is_user_turn = isinstance(event, UserUttered)
             preceeding_user_turns.append(preceeding_user_turns[-1] + int(is_user_turn))
@@ -269,7 +269,7 @@ class Marker(ABC):
             "timestamp": timestamps,
         }
 
-    @classmethod
+    @staticmethod
     def _filter_all(
         cls, markers: List[Marker], meta_data: MetaData,
     ) -> Dict[Text, MetaData]:
@@ -280,7 +280,7 @@ class Marker(ABC):
             meta_data: some meta data with one item per event that was tracked by
                 each of the given markers
         Returns:
-            a dictionary mapping the string respresentation of the respective marker
+            a dictionary mapping the string representation of the respective marker
             to the filtered meta data
         """
         results: Dict[Text, MetaData] = dict()
@@ -296,7 +296,6 @@ class Marker(ABC):
         """Returns the items for the points in time where the marker applies.
 
         Args:
-            marker: a marker that has tracked some events
             items: a list of items for each tracked event
         Returns:
             a dictionary mapping all applied filters to a list containing meta data
@@ -306,7 +305,7 @@ class Marker(ABC):
         if len(self.history) != len(items):
             raise RuntimeError(
                 f"Expected the marker to have tracked {len(items)} many events "
-                f"but only found {len(self.history)}"
+                f"but only found {len(self.history)}."
             )
         return [
             meta_data_for_event
@@ -362,7 +361,7 @@ class Marker(ABC):
                     logging.info(f"Added markers from {full_path}")
         if not config:
             raise InvalidMarkerConfig(
-                f"Could not load any markers from the directory tree rooted at {path}."
+                f"Could not load any markers from the directory tree rooted at '{path}'."
             )
         return cls.from_config(config)
 
@@ -448,7 +447,7 @@ class CompoundMarker(Marker, ABC):
 
     def __init__(
         self, markers: List[Marker], negated: bool = False, name: Optional[Text] = None
-    ):
+    ) -> None:
         """Instantiates a marker.
 
         Args:
@@ -547,7 +546,7 @@ class CompoundMarker(Marker, ABC):
 class AtomicMarker(Marker, ABC):
     """A marker that does not contain any sub-markers."""
 
-    def __init__(self, text: Text, negated: bool = False, name: Optional[Text] = None):
+    def __init__(self, text: Text, negated: bool = False, name: Optional[Text] = None) -> None:
         """Instantiates an atomic marker.
 
         Args:

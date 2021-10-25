@@ -24,7 +24,7 @@ class AndMarker(CompoundMarker):
 
     def _to_str_with(self, tag: Text) -> Text:
         marker_str = f" {tag} ".join(str(marker) for marker in self.sub_markers)
-        return "({})".format(marker_str)
+        return f"({marker_str})"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return all(marker.history[-1] for marker in self.sub_markers)
@@ -46,7 +46,7 @@ class OrMarker(CompoundMarker):
 
     def _to_str_with(self, tag: Text) -> Text:
         marker_str = f" {tag} ".join(str(marker) for marker in self.sub_markers)
-        return "({})".format(marker_str)
+        return f"({marker_str})"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return any(marker.history[-1] for marker in self.sub_markers)
