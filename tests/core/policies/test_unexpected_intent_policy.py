@@ -595,15 +595,15 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         should_skip: bool,
         tmp_path: Path,
     ):
-        caplog.set_level(logging.DEBUG)
         loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
         interpreter = RegexInterpreter()
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
 
-        prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
-        )
+        with caplog.at_level(logging.DEBUG):
+            prediction = loaded_policy.predict_action_probabilities(
+                tracker, default_domain, interpreter
+            )
 
         assert (
             "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
@@ -647,15 +647,15 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker_events: List[Event],
         tmp_path: Path,
     ):
-        caplog.set_level(logging.DEBUG)
         loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
         interpreter = RegexInterpreter()
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
 
-        prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
-        )
+        with caplog.at_level(logging.DEBUG):
+            prediction = loaded_policy.predict_action_probabilities(
+                tracker, default_domain, interpreter
+            )
 
         assert "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
 
