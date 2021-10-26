@@ -24,7 +24,7 @@ import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.data import is_likely_yaml_file
 from rasa.shared.exceptions import InvalidConfigException, RasaException
-from rasa.shared.core.events import UserUttered, Event
+from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 
 import logging
 
@@ -246,7 +246,7 @@ class Marker(ABC):
 
     def evaluate_events(
         self, events: List[Event], recursive: bool = False
-    ) -> Dict[Text, DialogueMetaData]:
+    ) -> List[Dict[Text, DialogueMetaData]]:
         """Resets the marker, tracks all events, and collects some information.
 
         The collected information includes:
@@ -262,6 +262,9 @@ class Marker(ABC):
             events: a list of events describing a conversation
             recursive: set this to `True` to collect evaluations for all markers that
                this marker consists of
+        Returns:
+            a list of evaluations containing one dictionary mapping marker names
+            to dialogue meta data each dialogue contained in the tracker
         """
         # determine which marker to extract results from
         markers_to_be_evaluated: List[Marker] = []
@@ -272,20 +275,58 @@ class Marker(ABC):
         else:
             markers_to_be_evaluated = [self]
 
-        # track all events and collect meta data per timestep
-        meta_data = self._track_all_and_collect_meta_data(events=events)
-
-        # for each marker, keep meta data only for those timesteps where it applies
-        results: Dict[Text, DialogueMetaData] = {}
-        for marker in markers_to_be_evaluated:
-            results[str(marker)] = marker._filter_meta_data(meta_data=meta_data)
+        # split the events into dialogues and evaluate them separately
+        dialogues = self._split_sessions(events=events)
+        results: List[Dict[Text, DialogueMetaData]] = []
+        for dialogue in dialogues:
+            # track all events and collect meta data per timestep
+            meta_data = self._track_all_and_collect_meta_data(events=dialogue)
+            # for each marker, keep only certain meta data
+            result: Dict[Text, DialogueMetaData] = {}
+            for marker in markers_to_be_evaluated:
+                result[str(marker)] = marker._filter_meta_data(meta_data=meta_data)
+            results.append(result)
         return results
+
+    @staticmethod
+    def _split_sessions(events: List[Event]) -> List[List[Event]]:
+        """Identifies single dialogues in a the given sequence of events.
+
+        Args:
+            events: a sequence of events, e.g. extracted from a tracker store
+        Returns:
+            a list of sub-sequences of the given events that describe single
+            conversations
+        """
+        session_start_indices = [
+            idx
+            for idx, event in enumerate(events)
+            if isinstance(event, ActionExecuted)
+            and event.action_name
+            == rasa.shared.core.constants.ACTION_SESSION_START_NAME
+        ]
+        if len(session_start_indices) == 0:
+            return [events]
+        dialogues = []
+        for dialogue_idx in range(len(session_start_indices)):
+            start_idx = (
+                session_start_indices[dialogue_idx - 1] if (dialogue_idx > 0) else 0
+            )
+            end_idx = session_start_indices[dialogue_idx]
+            dialogue = [events[idx] for idx in range(start_idx, end_idx)]
+            dialogues.append(dialogue)
+        last_dialogue = [
+            events[idx] for idx in range(session_start_indices[-1], len(events))
+        ]
+        dialogues.append(last_dialogue)
+        return dialogues
 
     def _track_all_and_collect_meta_data(self, events: List[Event]) -> DialogueMetaData:
         """Resets the marker, tracks all events, and collects metadata.
 
         Args:
-            events: all events of a dialogue that should be tracked with markers
+            events: all events of a *single* dialogue that should be tracked and
+                evaluated
         Returns:
             metadata for each tracked event
         """
