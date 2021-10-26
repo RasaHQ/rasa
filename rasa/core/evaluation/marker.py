@@ -2,23 +2,22 @@ from typing import Optional, Text
 from rasa.core.evaluation.marker_base import (
     CompoundMarker,
     AtomicMarker,
-    configurable_marker,
+    MarkerRegistry,
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 
-@configurable_marker
+@MarkerRegistry.configurable_marker
 class AndMarker(CompoundMarker):
     """Checks that all sub-markers apply."""
 
-    @classmethod
-    def tag(cls) -> Text:
+    @staticmethod
+    def tag() -> Text:
         """Returns the tag to be used in a config file."""
         return "and"
 
-    @classmethod
-    def negated_tag(cls) -> Text:
+    @staticmethod
+    def negated_tag() -> Text:
         """Returns the tag to be used in a config file for the negated version."""
         return "at_least_one_not"
 
@@ -30,17 +29,17 @@ class AndMarker(CompoundMarker):
         return all(marker.history[-1] for marker in self.sub_markers)
 
 
-@configurable_marker
+@MarkerRegistry.configurable_marker
 class OrMarker(CompoundMarker):
     """Checks that at least one sub-marker applies."""
 
-    @classmethod
-    def tag(cls) -> Text:
+    @staticmethod
+    def tag() -> Text:
         """Returns the tag to be used in a config file."""
         return "or"
 
-    @classmethod
-    def negated_tag(cls) -> Optional[Text]:
+    @staticmethod
+    def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return "not"
 
@@ -52,12 +51,17 @@ class OrMarker(CompoundMarker):
         return any(marker.history[-1] for marker in self.sub_markers)
 
 
-@configurable_marker
+@MarkerRegistry.configurable_marker
 class SequenceMarker(CompoundMarker):
-    """Checks that all sub-markers applied in the specified order."""
+    """Checks that all sub-markers apply to consecutive in the specified order.
 
-    @classmethod
-    def tag(cls) -> Text:
+    Given a sequence of sub-markers `m_0, m_1,...,m_n`, the sequence marker applies
+    at the `i`-th event if sub-marker `m_{n-j}` applies at the `{i-j}`-th event
+    for `j` in `[0,..,n]`.
+    """
+
+    @staticmethod
+    def tag() -> Text:
         """Returns the tag to be used in a config file."""
         return "seq"
 
@@ -66,8 +70,11 @@ class SequenceMarker(CompoundMarker):
         return f"{tag}({sub_markers_str})"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
-        # Note: the sub-markers have been updated before this tracker
-        if len(self.history) < len(self.sub_markers) - 1:
+        # Remember that all the sub-markers have been updated before this tracker.
+        # This means the history of the sub-markers already includes a result
+        # for the event we evaluate here:
+        num_tracked_events_including_current = len(self.sub_markers[0].history)
+        if num_tracked_events_including_current < len(self.sub_markers):
             return False
         return all(
             marker.history[-idx - 1]
@@ -75,17 +82,17 @@ class SequenceMarker(CompoundMarker):
         )
 
 
-@configurable_marker
+@MarkerRegistry.configurable_marker
 class ActionExecutedMarker(AtomicMarker):
     """Checks whether an action is executed at the current step."""
 
-    @classmethod
-    def tag(cls) -> Text:
+    @staticmethod
+    def tag() -> Text:
         """Returns the tag to be used in a config file."""
         return "action_executed"
 
-    @classmethod
-    def negated_tag(cls) -> Optional[Text]:
+    @staticmethod
+    def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return "action_not_executed"
 
@@ -93,41 +100,46 @@ class ActionExecutedMarker(AtomicMarker):
         return isinstance(event, ActionExecuted) and event.action_name == self.text
 
 
-@configurable_marker
+@MarkerRegistry.configurable_marker
 class IntentDetectedMarker(AtomicMarker):
-    """Checks whether an intent is expressed at the current step."""
+    """Checks whether an intent is expressed at the current step.
 
-    @classmethod
-    def tag(cls) -> Text:
+    More precisely it applies at an event if this event is a `UserUttered` event
+    where either (1) the retrieval intent or (2) just the intent coincides with
+    the specified text.
+    """
+
+    @staticmethod
+    def tag() -> Text:
         """Returns the tag to be used in a config file."""
         return "intent_detected"
 
-    @classmethod
-    def negated_tag(cls) -> Optional[Text]:
+    @staticmethod
+    def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return "intent_not_detected"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
-        return (
-            isinstance(event, UserUttered)
-            and event.intent.get(INTENT_NAME_KEY) == self.text
-        )
+        return isinstance(event, UserUttered) and self.text in [
+            event.intent_name,
+            event.full_retrieval_intent_name,
+        ]
 
 
-@configurable_marker
+@MarkerRegistry.configurable_marker
 class SlotSetMarker(AtomicMarker):
     """Checks whether a slot is set at the current step.
 
     The actual `SlotSet` event might have happened at an earlier step.
     """
 
-    @classmethod
-    def tag(cls) -> Text:
+    @staticmethod
+    def tag() -> Text:
         """Returns the tag to be used in a config file."""
         return "slot_is_set"
 
-    @classmethod
-    def negated_tag(cls) -> Optional[Text]:
+    @staticmethod
+    def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return "slot_is_not_set"
 

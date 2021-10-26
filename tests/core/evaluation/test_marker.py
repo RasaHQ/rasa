@@ -140,7 +140,7 @@ def test_atomic_marker_evaluate_events(atomic_marker_type: Type[AtomicMarker]):
     else:
         expected = [2, 4, 6]
 
-    assert evaluation["marker_name"]["preceeding_user_turns"] == expected
+    assert evaluation["marker_name"].preceding_user_turns == expected
 
 
 def test_compound_marker_or_track():
@@ -222,7 +222,7 @@ def test_compound_marker_nested_track():
 
     evaluation = marker.evaluate_events(events)
 
-    assert evaluation["marker_name"]["preceeding_user_turns"] == [3, 5]
+    assert evaluation["marker_name"].preceding_user_turns == [3, 5]
 
 
 def test_atomic_markers_repr_not():

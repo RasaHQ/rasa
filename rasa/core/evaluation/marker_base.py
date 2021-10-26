@@ -14,9 +14,8 @@ from typing import (
     Union,
 )
 
-from typing_extensions import TypedDict
 from pathlib import Path
-
+from dataclasses import dataclass
 
 import rasa.shared.core.constants
 import rasa.shared.nlu.constants
@@ -31,74 +30,90 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Special name of an `OrMarker` that won't be evaluated.
-ANY_MARKER = "<any_marker>"
 
-# all tags can be used in config files
-TAGS: Set[Text] = set()
-# mapping of all possible tags to the respective classes
-TAG_TO_MARKER_CLASS: Dict[Text, Type[Marker]] = {}
-MARKER_CLASS_TO_TAG: Dict[Type[Marker], Text] = {}
-# mapping negated tas (e.g. 'slot_was_not_set') to regular tags ('slot_was_set')
-NEGATED_TAG_TO_TAG: Dict[Text, Text] = {}
-TAG_TO_NEGATED_TAG: Dict[Text, Text] = {}
-# all tags that can be used in config files for a condition
-CONDITION_TAGS: Set[Text] = set()
-# all tags that can be used to configure operators
-OPERATOR_TAGS: Set[Text] = set()
+class MarkerRegistry:
+    """Keeps track of tags that can be used to configure markers."""
+
+    all_tags: Set[Text] = set()
+    condition_tag_to_marker_class: Dict[Text, Type[AtomicMarker]] = {}
+    operator_tag_to_marker_class: Dict[Text, Type[CompoundMarker]] = {}
+    marker_class_to_tag: Dict[Type[Marker], Text] = {}
+    negated_tag_to_tag: Dict[Text, Text] = {}
+    tag_to_negated_tag: Dict[Text, Text] = {}
+
+    @classmethod
+    def register(cls) -> None:
+        """Must import all modules containing markers."""
+        import rasa.core.evaluation.marker  # noqa
+
+    @classmethod
+    def configurable_marker(cls, marker_class: Type[Marker]) -> Type[Marker]:
+        """Decorator used to register a marker that can be used in config files.
+
+        Args:
+            marker_class: the marker class to be made available via config files
+        Returns:
+            the registered marker class
+        """
+        if not issubclass(marker_class, Marker):
+            raise RuntimeError("Can only register marker classes as configurable.")
+
+        tag = marker_class.tag()
+        negated_tag = marker_class.negated_tag()
+        cls._register_tags(tags={tag, negated_tag})
+        cls._register_tag_class(marker_class=marker_class, positive_tag=tag)
+        cls._register_negation(tag=tag, negated_tag=negated_tag)
+        return marker_class
+
+    @classmethod
+    def _register_tags(cls, tags: Set[Optional[Text]]) -> None:
+        specified_tags = {tag for tag in tags if tag is not None}
+        for tag_ in specified_tags:
+            if tag_ in cls.all_tags:
+                raise RuntimeError(
+                    "Expected the tags of all configurable markers to be "
+                    "identifiable by their tag."
+                )
+            cls.all_tags.add(tag_)
+
+    @classmethod
+    def _register_negation(cls, tag: Text, negated_tag: Optional[Text]) -> None:
+        if negated_tag is not None:
+            cls.negated_tag_to_tag[negated_tag] = tag
+            cls.tag_to_negated_tag[tag] = negated_tag
+
+    @classmethod
+    def get_non_negated_tag(cls, tag_or_negated_tag: Text) -> Tuple[Text, bool]:
+        """Returns the non-negated marker tag, given a (possible) negated marker tag.
+
+        Args:
+            tag_or_negated_tag: the tag for a possibly negated marker
+        Returns:
+            the tag itself if it was already positive, otherwise the positive version;
+            and a boolean that represents whether the given tag was a negative one
+        """
+        # either the given `marker_name` is already "positive" (e.g. "slot was set")
+        # or there is an entry mapping it to it's positive version:
+        positive_version = cls.negated_tag_to_tag.get(
+            tag_or_negated_tag, tag_or_negated_tag
+        )
+        is_negation = tag_or_negated_tag != positive_version
+        return positive_version, is_negation
+
+    @classmethod
+    def _register_tag_class(
+        cls, marker_class: Type[Marker], positive_tag: Text
+    ) -> None:
+        if issubclass(marker_class, AtomicMarker):
+            cls.condition_tag_to_marker_class[positive_tag] = marker_class
+        else:
+            cls.operator_tag_to_marker_class[positive_tag] = marker_class
+        cls.marker_class_to_tag[marker_class] = positive_tag
 
 
-def configurable_marker(marker_class: Type[Marker]) -> Type[Marker]:
-    """Registers a marker that can be used in config files.
-
-    Args:
-        marker_class: the marker class to be made available via config files
-    Returns:
-        the registered marker class
-    """
-    if not issubclass(marker_class, Marker):
-        raise RuntimeError("Can only register marker classes as configurable.")
-    # to simplify things:
-    tag = marker_class.tag()
-    negated_tag = marker_class.negated_tag()
-    specified_tags = {tag}
-    if negated_tag is not None:
-        specified_tags.add(negated_tag)
-    # tags should be unique
-    for tag_ in specified_tags:
-        if tag_ in TAGS:
-            raise RuntimeError(
-                "Expected the tags of all configurable markers to be "
-                "identifiable by their tag."
-            )
-        TAGS.add(tag_)
-    # (non-negated) tag <-> class
-    TAG_TO_MARKER_CLASS[tag] = marker_class
-    MARKER_CLASS_TO_TAG[marker_class] = tag
-    # (non-negated) tag <-> negated tag
-    if negated_tag is not None:
-        NEGATED_TAG_TO_TAG[negated_tag] = tag
-        TAG_TO_NEGATED_TAG[tag] = negated_tag
-    # condition or operator?
-    if issubclass(marker_class, AtomicMarker):
-        CONDITION_TAGS.update(specified_tags)
-    else:
-        OPERATOR_TAGS.update(specified_tags)
-    return marker_class
-
-
-def inspect_tag(tag: Text) -> Tuple[Text, bool]:
-    """Given a negative tag, returns the positive version.
-
-    Returns:
-        the tag itself if it was already positive, otherwise the positive version;
-        and a boolean that represents whether the given tag was a negative one
-    """
-    # either the given `marker_name` is already "positive" (e.g. "slot was set")
-    # or there is an entry mapping it to it's positive version:
-    positive_version = NEGATED_TAG_TO_TAG.get(tag, tag)
-    is_negation = tag != positive_version
-    return positive_version, is_negation
+# Triggers the import of all modules containing marker classes in order to register
+# all configurable markers.
+MarkerRegistry.register()
 
 
 # We allow multiple atomic markers to be grouped under the same tag e.g.
@@ -116,9 +131,24 @@ class InvalidMarkerConfig(RasaException):
     """Exception that can be raised when the config for a marker is not valid."""
 
 
-MetaData = TypedDict(
-    "MetaData", {"preceeding_user_turns": List[int], "timestamp": List[float]}
-)
+@dataclass
+class DialogueMetaData:
+    """Describes meta data per event in some dialogue."""
+
+    preceding_user_turns: List[int]
+    timestamp: List[float]
+
+    def __post_init__(self) -> None:
+        if len(self.preceding_user_turns) != len(self.timestamp):
+            raise RuntimeError(
+                "The given data can't possibly describe the same sequence of events "
+                "since it contains information for different numbers of events, "
+                "respectively."
+            )
+
+    def __len__(self) -> int:
+        return len(self.preceding_user_turns)
+
 
 T = TypeVar("T")
 
@@ -131,6 +161,10 @@ class Marker(ABC):
     does not apply to the conversation so far.
     """
 
+    # Identifier for an artificial marker that is created when loading markers
+    # from a dictionary of configs. For more details, see `from_config_dict`.
+    ANY_MARKER = "<any_marker>"
+
     def __init__(self, name: Optional[Text] = None, negated: bool = False) -> None:
         """Instantiates a marker.
 
@@ -140,12 +174,13 @@ class Marker(ABC):
             negated: whether this marker should be negated (i.e. a negated marker
                 applies if and only if the non-negated marker does not apply)
         """
-        if name == ANY_MARKER:
+        if name == Marker.ANY_MARKER:
             raise InvalidMarkerConfig(
-                f"You must not use the special marker name {ANY_MARKER}. This is "
-                f"to avoid confusion when you generate a marker from a list of "
-                f"marker configurations, which will lead to all markers to be "
-                f"combined under one common `ORMarker` named {ANY_MARKER}."
+                f"You must not use the special marker name {Marker.ANY_MARKER}. "
+                f"This is to avoid confusion when you generate a marker from a "
+                f"dictionary of marker configurations, which will lead to all "
+                f"markers being combined under one common `ORMarker` named "
+                f"{Marker.ANY_MARKER}."
             )
         self.name = name
         self.history: List[bool] = []
@@ -155,11 +190,7 @@ class Marker(ABC):
         return self.name or repr(self)
 
     def __repr__(self) -> Text:
-        tag = MARKER_CLASS_TO_TAG.get(self.__class__, None)
-        if tag is None:
-            raise RuntimeError(f"This class {self.__class__} is not configurable.")
-        if self.negated:
-            tag = TAG_TO_NEGATED_TAG.get(tag)
+        tag = str(self.negated_tag()) if self.negated else self.tag()
         return self._to_str_with(tag)
 
     @classmethod
@@ -189,6 +220,7 @@ class Marker(ABC):
             result = not result
         self.history.append(result)
 
+    @abstractmethod
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         """Checks whether the non-negated version applies at the next given event.
 
@@ -214,7 +246,7 @@ class Marker(ABC):
 
     def evaluate_events(
         self, events: List[Event], recursive: bool = False
-    ) -> Dict[Text, MetaData]:
+    ) -> Dict[Text, DialogueMetaData]:
         """Resets the marker, tracks all events, and collects some information.
 
         The collected information includes:
@@ -234,7 +266,7 @@ class Marker(ABC):
         # determine which marker to extract results from
         markers_to_be_evaluated: List[Marker] = []
         if not recursive:
-            if isinstance(self, CompoundMarker) and self.name == ANY_MARKER:
+            if isinstance(self, CompoundMarker) and self.name == Marker.ANY_MARKER:
                 markers_to_be_evaluated = self.sub_markers
             else:
                 markers_to_be_evaluated = [self]
@@ -245,13 +277,16 @@ class Marker(ABC):
         meta_data = self._track_all_and_collect_meta_data(events=events)
 
         # for each marker, keep meta data only for those timesteps where it applies
-        return self._filter_all(markers=markers_to_be_evaluated, meta_data=meta_data)
+        results: Dict[Text, DialogueMetaData] = {}
+        for marker in markers_to_be_evaluated:
+            results[str(marker)] = marker._filter_meta_data(meta_data=meta_data)
+        return results
 
-    def _track_all_and_collect_meta_data(self, events: List[Event]) -> MetaData:
+    def _track_all_and_collect_meta_data(self, events: List[Event]) -> DialogueMetaData:
         """Resets the marker, tracks all events, and collects metadata.
 
         Args:
-            events: all events that should be tracked
+            events: all events of a dialogue that should be tracked with markers
         Returns:
             metadata for each tracked event
         """
@@ -260,96 +295,75 @@ class Marker(ABC):
         preceding_user_turns: List[int] = [0]
         for event in events:
             is_user_turn = isinstance(event, UserUttered)
-            preceeding_user_turns.append(preceeding_user_turns[-1] + int(is_user_turn))
+            preceding_user_turns.append(preceding_user_turns[-1] + int(is_user_turn))
             timestamps.append(event.timestamp)
             self.track(event=event)
-        preceeding_user_turns = preceeding_user_turns[:-1]  # drop last
-        return {
-            "preceeding_user_turns": preceeding_user_turns,
-            "timestamp": timestamps,
-        }
+        preceding_user_turns = preceding_user_turns[:-1]  # drop last
+        return DialogueMetaData(
+            preceding_user_turns=preceding_user_turns, timestamp=timestamps
+        )
 
-    @staticmethod
-    def _filter_all(
-        cls, markers: List[Marker], meta_data: MetaData,
-    ) -> Dict[Text, MetaData]:
-        """Filters the given meta data according to where the respective marker applies.
+    def _filter_meta_data(self, meta_data: DialogueMetaData,) -> DialogueMetaData:
+        """Filters meta data for an event after tracking those events.
+
+        Note: Overwrite this method if you create a new marker class that should *not*
+        contain meta data about each event where the marker applied in the final
+        evaluation (see `evaluate_events`).
 
         Args:
-            markers: the markers that we want to use for filtering the meta data
             meta_data: some meta data with one item per event that was tracked by
                 each of the given markers
         Returns:
-            a dictionary mapping the string representation of the respective marker
-            to the filtered meta data
+            filtered dialogue meta data
+        Raises:
+            `RuntimeError` if this function is used to filter meta data that
+            describes less or more events than were tracked.
         """
-        results: Dict[Text, MetaData] = dict()
-        for marker in markers:
-            marker_results = {
-                key: marker._filter(meta_data_per_event)
-                for key, meta_data_per_event in meta_data.items()
-            }
-            results[str(marker)] = marker_results
-        return results
-
-    def _filter(self, items: List[T]) -> List[T]:
-        """Returns the items for the points in time where the marker applies.
-
-        Args:
-            items: a list of items for each tracked event
-        Returns:
-            a dictionary mapping all applied filters to a list containing meta data
-            for the i-th event if the respective marker applies after the i-th tracked
-            event
-        """
-        if len(self.history) != len(items):
+        if len(meta_data) != len(self.history):
             raise RuntimeError(
-                f"Expected the marker to have tracked {len(items)} many events "
-                f"but only found {len(self.history)}."
+                f"Expected the given meta data to describe as many events "
+                f"as marker {self} tracked."
             )
-        return [
-            meta_data_for_event
-            for applies, meta_data_for_event in zip(self.history, items)
-            if applies
-        ]
+        indices = [idx for (idx, applies) in enumerate(self.history) if applies]
+        return DialogueMetaData(
+            preceding_user_turns=[
+                meta_data.preceding_user_turns[idx] for idx in indices
+            ],
+            timestamp=[meta_data.timestamp[idx] for idx in indices],
+        )
 
-    @classmethod
-    def from_config_file(cls, path: Union[Text, Path]) -> Marker:
-        """Loads markers from a single config file and combines them into one Marker.
-
-        A config file for `Markers` is a dictionary mapping custom marker names
-        to configurations of a `CompoundMarker` or `AtomicMarker`.
+    @staticmethod
+    def from_path(path: Union[Path, Text]) -> Marker:
+        """Loads markers from one config file or all config files in a directory tree.
 
         For more details, see `from_config_dict`.
 
         Args:
-            path: the path to a config file
+            path: either the path to a single config file or the root of the directory
+                tree that contains marker config files
         Returns:
             all configured markers, combined into one marker object
         """
         path = os.path.abspath(path)
-        config = rasa.shared.io.read_yaml_file(path)
-        return cls.from_config(config)
+        if os.path.isfile(path):
+            config = rasa.shared.utils.io.read_yaml_file(path)
+        elif os.path.isdir(path):
+            config = Marker._load_and_combine_config_files_under(root_dir=path)
+        else:
+            config = {}
+        if not config:
+            raise InvalidMarkerConfig(f"Could not load any markers from '{path}'.")
+        return Marker.from_config(config)
 
-    @classmethod
-    def from_all_config_files_in_directory_tree(cls, path: Union[Text, Path]) -> Marker:
-        """Loads and appends multiple configs from a directory tree.
-
-        For more details, see `from_config_dict`.
-
-        Args:
-            path: the root of the directory tree that contains marker config files
-        Returns:
-            all configured markers, combined into one marker object
-        """
+    @staticmethod
+    def _load_and_combine_config_files_under(root_dir: Text) -> MarkerConfig:
         combined_configs = {}
-        path = os.path.abspath(path)
-        for root, _, files in os.walk(path, followlinks=True):
+        for root, _, files in os.walk(root_dir, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
                 if is_likely_yaml_file(full_path):
-                    config = rasa.shared.io.read_yaml_file(full_path)
-                    cls.validate_config(config)
+                    config = rasa.shared.utils.io.read_yaml_file(full_path)
+                    # TODO: validation
                     if set(config.keys()).intersection(combined_configs.keys()):
                         raise InvalidMarkerConfig(
                             f"The names of markers defined in {full_path} "
@@ -359,20 +373,18 @@ class Marker(ABC):
                         )
                     combined_configs.extend(config)
                     logging.info(f"Added markers from {full_path}")
-        if not config:
-            raise InvalidMarkerConfig(
-                f"Could not load any markers from the directory tree rooted at '{path}'."
-            )
-        return cls.from_config(config)
+        return combined_configs
 
-    @classmethod
-    def from_config_dict(cls, config: Dict[Text, MarkerConfig]) -> Marker:
+    @staticmethod
+    def from_config_dict(config: Dict[Text, MarkerConfig]) -> Marker:
         """Creates markers from a dictionary of marker configurations.
 
-        If there is more than one custom marker defined this way, then the returned
-        marker will be an `or` combination of all custom markers named `ANY_MARKER`.
-        When evaluating this marker, the results for the special `ANY_MARKER` will
-        be ignored and only the results for the custom markers will be returned.
+        If there is more than one custom marker defined in the given dictionary,
+        then the returned marker will be an `or` combination of all defined markers
+        named `ANY_MARKER`.
+        During evaluation, where we usually only return results for the top-level
+        marker, we identify this special marker by it's name and return evaluations
+        for all combined markers instead.
 
         Args:
             config: mapping custom marker names to marker configurations
@@ -382,18 +394,18 @@ class Marker(ABC):
         from rasa.core.evaluation.marker import OrMarker
 
         markers = [
-            cls.from_config(marker_config, name=marker_name)
+            Marker.from_config(marker_config, name=marker_name)
             for marker_name, marker_config in config.items()
         ]
         if len(markers) > 1:
             marker = OrMarker(markers=markers)
-            marker.name = ANY_MARKER  # cannot be set via name parameter
+            marker.name = Marker.ANY_MARKER  # cannot be set via name parameter
         else:
             marker = markers[0]
         return marker
 
-    @classmethod
-    def from_config(cls, config: MarkerConfig, name: Optional[Text] = None) -> Marker:
+    @staticmethod
+    def from_config(config: MarkerConfig, name: Optional[Text] = None) -> Marker:
         """Creates a marker from the given config.
 
         Args:
@@ -417,7 +429,8 @@ class Marker(ABC):
             marker_name = next(iter(marker_config))
             sub_marker_config = marker_config[marker_name]
 
-            if marker_name in OPERATOR_TAGS:
+            tag, _ = MarkerRegistry.get_non_negated_tag(tag_or_negated_tag=marker_name)
+            if tag in MarkerRegistry.operator_tag_to_marker_class:
                 sub_markers = [
                     CompoundMarker.from_config(
                         operator=marker_name,
@@ -493,9 +506,8 @@ class CompoundMarker(Marker, ABC):
             marker.reset()
         super().reset()
 
-    @classmethod
+    @staticmethod
     def from_config(
-        cls,
         operator: Text,
         sub_marker_configs: List[Union[ConditionConfigList, OperatorConfig]],
         name: Optional[Text] = None,
@@ -510,17 +522,21 @@ class CompoundMarker(Marker, ABC):
            a compound marker if there are markers to combine - and just an event
            marker if there is only a single marker
         """
-        if operator not in OPERATOR_TAGS:
+        tag, is_negation = MarkerRegistry.get_non_negated_tag(operator)
+        operator_class = MarkerRegistry.operator_tag_to_marker_class.get(tag)
+        if operator_class is None:
             raise InvalidConfigException(f"Unknown operator '{operator}'.")
-
-        positive_version, is_negation = inspect_tag(operator)
 
         collected_sub_markers: List[Marker] = []
         for sub_marker_name_and_config in sub_marker_configs:
             sub_marker_name = next(iter(sub_marker_name_and_config))
             sub_marker_config = sub_marker_name_and_config[sub_marker_name]
 
-            if sub_marker_name in CONDITION_TAGS:
+            next_sub_markers: List[Marker] = []
+            sub_tag, _ = MarkerRegistry.get_non_negated_tag(
+                tag_or_negated_tag=sub_marker_name
+            )
+            if sub_tag in MarkerRegistry.condition_tag_to_marker_class:
                 # We allow several AtomicMarkers to be collected under the same tag.
                 # If this is done at the top-level (see `Marker.from_config`), then
                 # we would combine them under a new `AndMarker`.
@@ -537,7 +553,6 @@ class CompoundMarker(Marker, ABC):
                 ]
             collected_sub_markers.extend(next_sub_markers)
 
-        operator_class: Type[CompoundMarker] = TAG_TO_MARKER_CLASS[positive_version]
         marker = operator_class(markers=collected_sub_markers, negated=is_negation)
         marker.name = name
         return marker
@@ -546,7 +561,9 @@ class CompoundMarker(Marker, ABC):
 class AtomicMarker(Marker, ABC):
     """A marker that does not contain any sub-markers."""
 
-    def __init__(self, text: Text, negated: bool = False, name: Optional[Text] = None) -> None:
+    def __init__(
+        self, text: Text, negated: bool = False, name: Optional[Text] = None
+    ) -> None:
         """Instantiates an atomic marker.
 
         Args:
@@ -570,13 +587,12 @@ class AtomicMarker(Marker, ABC):
         """
         yield self
 
-    @classmethod
+    @staticmethod
     def from_config(
-        cls,
         marker_name: Text,
         sub_marker_config: Union[Text, List[Text]],
         name: Optional[Text] = None,
-    ) -> List[Marker]:
+    ) -> List[AtomicMarker]:
         """Creates an atomic marker from the given config.
 
         Args:
@@ -587,14 +603,16 @@ class AtomicMarker(Marker, ABC):
         Returns:
             the configured `AtomicMarker`s
         """
-        if marker_name not in CONDITION_TAGS:
+        tag, is_negation = MarkerRegistry.get_non_negated_tag(marker_name)
+        marker_class = MarkerRegistry.condition_tag_to_marker_class.get(tag)
+        if marker_class is None:
             raise InvalidConfigException(f"Unknown condition '{marker_name}'.")
+
         if isinstance(sub_marker_config, Text):
             sub_marker_config_list = [sub_marker_config]
         else:
             sub_marker_config_list = sub_marker_config
-        positive_version, is_negation = inspect_tag(marker_name)
-        marker_class = TAG_TO_MARKER_CLASS[positive_version]
+
         markers = []
         for marker_text in sub_marker_config_list:
             marker = marker_class(marker_text, negated=is_negation)
