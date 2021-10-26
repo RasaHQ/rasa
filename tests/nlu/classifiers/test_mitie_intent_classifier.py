@@ -3,12 +3,10 @@ import pytest
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.classifiers.mitie_intent_classifier import (
-    MitieIntentClassifierGraphComponent,
-)
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
+from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 import rasa.shared.nlu.training_data.loading
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -23,8 +21,8 @@ from rasa.shared.nlu.training_data.message import Message
 def mitie_model(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ) -> MitieModel:
-    component = MitieNLPGraphComponent.create(
-        MitieNLPGraphComponent.get_default_config(),
+    component = MitieNLP.create(
+        MitieNLP.get_default_config(),
         default_model_storage,
         Resource("mitie"),
         default_execution_context,
@@ -38,11 +36,11 @@ def test_train_load_predict_loop(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     mitie_model: MitieModel,
-    mitie_tokenizer: MitieTokenizerGraphComponent,
+    mitie_tokenizer: MitieTokenizer,
 ):
     resource = Resource("mitie_classifier")
-    component = MitieIntentClassifierGraphComponent.create(
-        MitieIntentClassifierGraphComponent.get_default_config(),
+    component = MitieIntentClassifier.create(
+        MitieIntentClassifier.get_default_config(),
         default_model_storage,
         resource,
         default_execution_context,
@@ -56,8 +54,8 @@ def test_train_load_predict_loop(
 
     component.train(training_data, mitie_model)
 
-    component = MitieIntentClassifierGraphComponent.load(
-        MitieIntentClassifierGraphComponent.get_default_config(),
+    component = MitieIntentClassifier.load(
+        MitieIntentClassifier.get_default_config(),
         default_model_storage,
         resource,
         default_execution_context,
@@ -75,12 +73,12 @@ def test_load_from_untrained(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     mitie_model: MitieModel,
-    mitie_tokenizer: MitieTokenizerGraphComponent,
+    mitie_tokenizer: MitieTokenizer,
 ):
     resource = Resource("some_resource")
 
-    component = MitieIntentClassifierGraphComponent.load(
-        MitieIntentClassifierGraphComponent.get_default_config(),
+    component = MitieIntentClassifier.load(
+        MitieIntentClassifier.get_default_config(),
         default_model_storage,
         resource,
         default_execution_context,
@@ -97,7 +95,7 @@ def test_load_from_untrained_but_with_resource_existing(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     mitie_model: MitieModel,
-    mitie_tokenizer: MitieTokenizerGraphComponent,
+    mitie_tokenizer: MitieTokenizer,
 ):
     resource = Resource("some_resource")
 
@@ -105,8 +103,8 @@ def test_load_from_untrained_but_with_resource_existing(
         # This makes sure the directory exists but the model file itself doesn't
         pass
 
-    component = MitieIntentClassifierGraphComponent.load(
-        MitieIntentClassifierGraphComponent.get_default_config(),
+    component = MitieIntentClassifier.load(
+        MitieIntentClassifier.get_default_config(),
         default_model_storage,
         resource,
         default_execution_context,

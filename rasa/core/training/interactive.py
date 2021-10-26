@@ -62,7 +62,6 @@ from rasa.shared.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-import rasa.core.interpreter
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
@@ -1426,7 +1425,7 @@ async def _plot_trackers(
     if unconfirmed:
         event_sequences[-1].extend(unconfirmed)
 
-    graph = await visualize_neighborhood(
+    graph = visualize_neighborhood(
         event_sequences[-1], event_sequences, output_file=None, max_history=2
     )
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import shutil
-import tarfile
+from tarsafe import TarSafe
 import tempfile
 import uuid
 from contextlib import contextmanager
@@ -12,18 +12,19 @@ from typing import Text, ContextManager, Tuple, Union
 
 import rasa.utils.common
 import rasa.shared.utils.io
-from rasa.engine.storage.storage import ModelMetadata, ModelStorage
+from rasa.engine.storage.storage import (
+    ModelMetadata,
+    ModelStorage,
+)
+from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-
-from rasa.engine.graph import GraphSchema
+import rasa.model
 
 logger = logging.getLogger(__name__)
 
 # Paths within model archive
 MODEL_ARCHIVE_COMPONENTS_DIR = "components"
-MODEL_ARCHIVE_TRAIN_SCHEMA_FILE = "train_schema.yml"
-MODEL_ARCHIVE_PREDICT_SCHEMA_FILE = "predict_schema.yml"
 MODEL_ARCHIVE_METADATA_FILE = "metadata.json"
 
 
@@ -68,11 +69,24 @@ class LocalModelStorage(ModelStorage):
                 metadata,
             )
 
+    @classmethod
+    def metadata_from_archive(
+        cls, model_archive_path: Union[Text, Path]
+    ) -> ModelMetadata:
+        """Retrieves metadata from archive (see parent class for full docstring)."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_directory = Path(temporary_directory)
+
+            cls._extract_archive_to_directory(model_archive_path, temporary_directory)
+            metadata = cls._load_metadata(temporary_directory)
+
+            return metadata
+
     @staticmethod
     def _extract_archive_to_directory(
         model_archive_path: Union[Text, Path], temporary_directory: Union[Text, Path],
     ) -> None:
-        with tarfile.open(model_archive_path, mode="r:gz") as tar:
+        with TarSafe.open(model_archive_path, mode="r:gz") as tar:
             tar.extractall(temporary_directory)
 
     @staticmethod
@@ -129,8 +143,7 @@ class LocalModelStorage(ModelStorage):
     def create_model_package(
         self,
         model_archive_path: Union[Text, Path],
-        train_schema: GraphSchema,
-        predict_schema: GraphSchema,
+        model_configuration: GraphModelConfiguration,
         domain: Domain,
     ) -> ModelMetadata:
         """Creates model package (see parent class for full docstring)."""
@@ -143,12 +156,13 @@ class LocalModelStorage(ModelStorage):
                 self._storage_path, temporary_directory / MODEL_ARCHIVE_COMPONENTS_DIR
             )
 
-            model_metadata = self._create_model_metadata(
-                domain, predict_schema, train_schema
-            )
+            model_metadata = self._create_model_metadata(domain, model_configuration)
             self._persist_metadata(model_metadata, temporary_directory)
 
-            with tarfile.open(model_archive_path, "w:gz") as tar:
+            if not model_archive_path.parent.exists():
+                model_archive_path.parent.mkdir(parents=True)
+
+            with TarSafe.open(model_archive_path, "w:gz") as tar:
                 tar.add(temporary_directory, arcname="")
 
         logger.debug(f"Model package created in path '{model_archive_path}'.")
@@ -164,13 +178,18 @@ class LocalModelStorage(ModelStorage):
 
     @staticmethod
     def _create_model_metadata(
-        domain: Domain, predict_schema: GraphSchema, train_schema: GraphSchema
+        domain: Domain, model_configuration: GraphModelConfiguration
     ) -> ModelMetadata:
         return ModelMetadata(
             trained_at=datetime.utcnow(),
             rasa_open_source_version=rasa.__version__,
             model_id=uuid.uuid4().hex,
             domain=domain,
-            train_schema=train_schema,
-            predict_schema=predict_schema,
+            train_schema=model_configuration.train_schema,
+            predict_schema=model_configuration.predict_schema,
+            training_type=model_configuration.training_type,
+            project_fingerprint=rasa.model.project_fingerprint(),
+            language=model_configuration.language,
+            core_target=model_configuration.core_target,
+            nlu_target=model_configuration.nlu_target,
         )

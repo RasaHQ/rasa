@@ -1,0 +1,140 @@
+nodes:
+  schema_validator:
+    needs:
+      importer: __importer__
+    uses: rasa.graph_components.validators.default_recipe_validator.DefaultV1RecipeValidator
+    constructor_name: create
+    fn: validate
+    config: {}
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  finetuning_validator:
+    needs:
+      importer: schema_validator
+    uses: rasa.graph_components.validators.finetuning_validator.FinetuningValidator
+    constructor_name: create
+    fn: validate
+    config:
+      validate_core: false
+      validate_nlu: true
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  nlu_training_data_provider:
+    needs:
+      importer: finetuning_validator
+    uses: rasa.graph_components.providers.nlu_training_data_provider.NLUTrainingDataProvider
+    constructor_name: create
+    fn: provide
+    config:
+      language: en
+      persist: false
+    eager: false
+    is_target: false
+    is_input: true
+    resource: null
+  provide_SpacyNLP0:
+    needs: {}
+    uses: rasa.nlu.utils.spacy_utils.SpacyNLP
+    constructor_name: create
+    fn: provide
+    config:
+      model: en_core_web_md
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  run_SpacyNLP0:
+    needs:
+      training_data: nlu_training_data_provider
+      model: provide_SpacyNLP0
+    uses: rasa.nlu.utils.spacy_utils.SpacyNLP
+    constructor_name: load
+    fn: process_training_data
+    config:
+      model: en_core_web_md
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  run_SpacyTokenizer1:
+    needs:
+      training_data: run_SpacyNLP0
+    uses: rasa.nlu.tokenizers.spacy_tokenizer.SpacyTokenizer
+    constructor_name: load
+    fn: process_training_data
+    config: {}
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  train_RegexFeaturizer2:
+    needs:
+      training_data: run_SpacyTokenizer1
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
+    constructor_name: create
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  run_RegexFeaturizer2:
+    needs:
+      training_data: run_SpacyTokenizer1
+      resource: train_RegexFeaturizer2
+    uses: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer
+    constructor_name: load
+    fn: process_training_data
+    config: {}
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  run_SpacyFeaturizer3:
+    needs:
+      training_data: run_RegexFeaturizer2
+    uses: rasa.nlu.featurizers.dense_featurizer.spacy_featurizer.SpacyFeaturizer
+    constructor_name: load
+    fn: process_training_data
+    config: {}
+    eager: false
+    is_target: false
+    is_input: false
+    resource: null
+  train_CRFEntityExtractor4:
+    needs:
+      training_data: run_SpacyFeaturizer3
+    uses: rasa.nlu.extractors.crf_entity_extractor.CRFEntityExtractor
+    constructor_name: create
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  train_EntitySynonymMapper5:
+    needs:
+      training_data: run_SpacyFeaturizer3
+    uses: rasa.nlu.extractors.entity_synonyms.EntitySynonymMapper
+    constructor_name: create
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null
+  train_SklearnIntentClassifier6:
+    needs:
+      training_data: run_SpacyFeaturizer3
+    uses: rasa.nlu.classifiers.sklearn_intent_classifier.SklearnIntentClassifier
+    constructor_name: create
+    fn: train
+    config: {}
+    eager: false
+    is_target: true
+    is_input: false
+    resource: null

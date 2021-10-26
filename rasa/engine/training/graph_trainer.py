@@ -4,17 +4,20 @@ from pathlib import Path
 from typing import Any, Dict, Text, Type, Union
 
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import ExecutionContext, GraphSchema
+from rasa.engine.graph import ExecutionContext, GraphSchema, GraphModelConfiguration
+from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.runner.interface import GraphRunner
-from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.storage import (
+    ModelStorage,
+    ModelMetadata,
+)
 from rasa.engine.training.components import (
     PrecomputedValueProvider,
     FingerprintComponent,
     FingerprintStatus,
 )
-from rasa.engine.training.hooks import TrainingHook
-from rasa.shared.core.domain import Domain
-
+from rasa.engine.training.hooks import TrainingHook, LoggingHook
+from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -42,54 +45,78 @@ class GraphTrainer:
 
     def train(
         self,
-        train_schema: GraphSchema,
-        predict_schema: GraphSchema,
-        domain_path: Path,
+        model_configuration: GraphModelConfiguration,
+        importer: TrainingDataImporter,
         output_filename: Path,
-    ) -> GraphRunner:
+        force_retraining: bool = False,
+        is_finetuning: bool = False,
+    ) -> ModelMetadata:
         """Trains and packages a model and returns the prediction graph runner.
 
         Args:
-            train_schema: The train graph schema.
-            predict_schema: The predict graph schema.
-            domain_path: The path to the domain file.
+            model_configuration: The model configuration (schemas, language, etc.)
+            importer: The importer which provides the training data for the training.
             output_filename: The location to save the packaged model.
+            force_retraining: If `True` then the cache is skipped and all components
+                are retrained.
 
         Returns:
-            A graph runner loaded with the predict schema.
-
+            The metadata describing the trained model.
         """
         logger.debug("Starting training.")
 
-        pruned_training_schema = self._fingerprint_and_prune(train_schema)
+        # Retrieve the domain for the model metadata right at the start.
+        # This avoids that something during the graph runs mutates it.
+        domain = copy.deepcopy(importer.get_domain())
 
-        hooks = [TrainingHook(cache=self._cache, model_storage=self._model_storage)]
+        if force_retraining:
+            logger.debug(
+                "Skip fingerprint run as a full training of the model was enforced."
+            )
+            pruned_training_schema = model_configuration.train_schema
+        else:
+            fingerprint_run_outputs = self.fingerprint(
+                model_configuration.train_schema,
+                importer=importer,
+                is_finetuning=is_finetuning,
+            )
+            pruned_training_schema = self._prune_schema(
+                model_configuration.train_schema, fingerprint_run_outputs
+            )
+
+        hooks = [
+            LoggingHook(),
+            TrainingHook(
+                cache=self._cache,
+                model_storage=self._model_storage,
+                pruned_schema=pruned_training_schema,
+            ),
+        ]
 
         graph_runner = self._graph_runner_class.create(
             graph_schema=pruned_training_schema,
             model_storage=self._model_storage,
-            execution_context=ExecutionContext(graph_schema=pruned_training_schema),
+            execution_context=ExecutionContext(
+                graph_schema=model_configuration.train_schema,
+                is_finetuning=is_finetuning,
+            ),
             hooks=hooks,
         )
 
         logger.debug("Running the pruned train graph with real node execution.")
 
-        graph_runner.run()
+        graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
-        domain = Domain.from_path(domain_path)
-        model_metadata = self._model_storage.create_model_package(
-            output_filename, train_schema, predict_schema, domain
+        return self._model_storage.create_model_package(
+            output_filename, model_configuration, domain,
         )
 
-        return self._graph_runner_class.create(
-            graph_schema=predict_schema,
-            model_storage=self._model_storage,
-            execution_context=ExecutionContext(
-                graph_schema=predict_schema, model_id=model_metadata.model_id
-            ),
-        )
-
-    def _fingerprint_and_prune(self, train_schema: GraphSchema) -> GraphSchema:
+    def fingerprint(
+        self,
+        train_schema: GraphSchema,
+        importer: TrainingDataImporter,
+        is_finetuning: bool = False,
+    ) -> Dict[Text, Union[FingerprintStatus, Any]]:
         """Runs the graph using fingerprints to determine which nodes need to re-run.
 
         Nodes which have a matching fingerprint key in the cache can either be removed
@@ -98,25 +125,24 @@ class GraphTrainer:
 
         Args:
             train_schema: The train graph schema that will be run in fingerprint mode.
+            importer: The importer which provides the training data for the training.
+            is_finetuning: `True` if we want to finetune the model.
 
         Returns:
-            A new, potentially smaller and/or cached, graph schema.
+            Mapping of node names to fingerprint results.
         """
         fingerprint_schema = self._create_fingerprint_schema(train_schema)
 
         fingerprint_graph_runner = self._graph_runner_class.create(
             graph_schema=fingerprint_schema,
             model_storage=self._model_storage,
-            execution_context=ExecutionContext(graph_schema=fingerprint_schema),
+            execution_context=ExecutionContext(
+                graph_schema=train_schema, is_finetuning=is_finetuning
+            ),
         )
 
         logger.debug("Running the train graph in fingerprint mode.")
-        fingerprint_run_outputs = fingerprint_graph_runner.run()
-
-        pruned_training_schema = self._prune_schema(
-            train_schema, fingerprint_run_outputs
-        )
-        return pruned_training_schema
+        return fingerprint_graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
     def _create_fingerprint_schema(self, train_schema: GraphSchema) -> GraphSchema:
         fingerprint_schema = copy.deepcopy(train_schema)
@@ -205,8 +231,8 @@ class GraphTrainer:
                 )
                 if output_result:
                     logger.debug(
-                        f"Updating {current_node_name} to use a "
-                        f"`{PrecomputedValueProvider.__name__}`."
+                        f"Updating '{current_node_name}' to use a "
+                        f"'{PrecomputedValueProvider.__name__}'."
                     )
                     PrecomputedValueProvider.replace_schema_node(node, output_result)
                     # We remove all parent dependencies as the cached output value will

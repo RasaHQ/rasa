@@ -6,11 +6,12 @@ import pytest
 from _pytest.tmpdir import TempPathFactory
 
 import rasa.shared.utils.io
-from rasa.engine.graph import SchemaNode, GraphSchema
+from rasa.engine.graph import SchemaNode, GraphSchema, GraphModelConfiguration
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
+from rasa.shared.importers.autoconfig import TrainingType
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 
@@ -104,15 +105,23 @@ def test_create_model_package(
     trained_at = datetime.utcnow()
     with freezegun.freeze_time(trained_at):
         train_model_storage.create_model_package(
-            archive_path, train_schema, predict_schema, domain
+            archive_path,
+            GraphModelConfiguration(
+                train_schema, predict_schema, TrainingType.BOTH, None, None, "nlu"
+            ),
+            domain,
         )
 
     # Unpack and inspect packaged model
     load_model_storage_dir = tmp_path_factory.mktemp("load model storage")
 
+    just_packaged_metadata = LocalModelStorage.metadata_from_archive(archive_path)
+
     (load_model_storage, packaged_metadata,) = LocalModelStorage.from_model_archive(
         load_model_storage_dir, archive_path
     )
+
+    assert just_packaged_metadata.trained_at == packaged_metadata.trained_at
 
     assert packaged_metadata.train_schema == train_schema
     assert packaged_metadata.predict_schema == predict_schema
@@ -121,9 +130,25 @@ def test_create_model_package(
     assert packaged_metadata.rasa_open_source_version == rasa.__version__
     assert packaged_metadata.trained_at == trained_at
     assert packaged_metadata.model_id
+    assert packaged_metadata.project_fingerprint
 
     persisted_resources = load_model_storage_dir.glob("*")
     assert list(persisted_resources) == [Path(load_model_storage_dir, "resource1")]
+
+
+def test_create_package_with_non_existing_parent(tmp_path: Path):
+    storage = LocalModelStorage.create(tmp_path)
+    model_file = tmp_path / "new" / "sub" / "dir" / "file.tar.gz"
+
+    storage.create_model_package(
+        model_file,
+        GraphModelConfiguration(
+            GraphSchema({}), GraphSchema({}), TrainingType.BOTH, None, None, "nlu"
+        ),
+        Domain.empty(),
+    )
+
+    assert model_file.is_file()
 
 
 def test_create_model_package_with_non_empty_model_storage(tmp_path: Path):
@@ -133,3 +158,18 @@ def test_create_model_package_with_non_empty_model_storage(tmp_path: Path):
     with pytest.raises(ValueError):
         # Unpacking into an already filled `ModelStorage` raises an exception.
         _ = LocalModelStorage.from_model_archive(tmp_path, Path("does not matter"))
+
+
+def test_create_model_package_with_non_existing_dir(
+    tmp_path: Path, default_model_storage: ModelStorage
+):
+    path = tmp_path / "some_dir" / "another" / "model.tar.gz"
+    default_model_storage.create_model_package(
+        path,
+        GraphModelConfiguration(
+            GraphSchema({}), GraphSchema({}), TrainingType.BOTH, None, None, "nlu"
+        ),
+        Domain.empty(),
+    )
+
+    assert path.exists()
