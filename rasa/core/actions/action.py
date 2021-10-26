@@ -1,7 +1,7 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING, Union, Tuple, Set
+from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING, Tuple, Set, Union
 
 import aiohttp
 import rasa.core
@@ -37,6 +37,7 @@ from rasa.shared.core.constants import (
     MAPPING_CONDITIONS,
     ACTIVE_LOOP,
     ACTION_VALIDATE_GLOBAL_SLOT_MAPPINGS,
+    MAPPING_TYPE,
 )
 from rasa.shared.core.domain import Domain, SlotMapping
 from rasa.shared.core.events import (
@@ -957,7 +958,7 @@ class ActionDefaultAskRephrase(ActionBotResponse):
 
 
 class ActionExtractSlots(Action):
-    """Silent action that runs after each user turn.
+    """Default action that runs after each user turn.
 
     Sets slots to extracted values from user message
     according to assigned slot mappings.
@@ -965,14 +966,15 @@ class ActionExtractSlots(Action):
 
     def __init__(self, action_endpoint: Optional[EndpointConfig]) -> None:
         """Initializes default action extract slots."""
-        self.action_endpoint = action_endpoint
+        self._action_endpoint = action_endpoint
 
     def name(self) -> Text:
         """Returns action_extract_slots name."""
         return ACTION_EXTRACT_SLOTS
 
+    @staticmethod
     def _matches_mapping_conditions(
-        self, mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
     ) -> bool:
         slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
 
@@ -1003,7 +1005,7 @@ class ActionExtractSlots(Action):
         domain: "Domain",
     ) -> List[Event]:
         slot_events: List[Event] = []
-        remote_action = RemoteAction(custom_action, self.action_endpoint)
+        remote_action = RemoteAction(custom_action, self._action_endpoint)
         disallowed_types = set()
 
         try:
@@ -1016,10 +1018,10 @@ class ActionExtractSlots(Action):
                 else:
                     disallowed_types.add(event.type_name)
         except (RasaException, ClientResponseError) as e:
-            rasa.shared.utils.io.raise_warning(
+            logger.warning(
                 f"Failed to execute custom action '{custom_action}' "
                 f"as a result of error '{str(e)}'. The default action "
-                f"extract slots failed to fill slots with custom "
+                f"{self.name} failed to fill slots with custom "
                 f"mappings."
             )
 
@@ -1120,13 +1122,13 @@ class ActionExtractSlots(Action):
                 if not intent_is_desired:
                     continue
 
-                if mapping.get(MAPPING_CONDITIONS) and mapping.get("type") != str(
+                if mapping.get(MAPPING_CONDITIONS) and mapping.get(MAPPING_TYPE) != str(
                     SlotMapping.FROM_TRIGGER_INTENT
                 ):
                     if not self._matches_mapping_conditions(mapping, tracker):
                         continue
 
-                if mapping["type"] in predefined_mappings:
+                if mapping.get(MAPPING_TYPE) in predefined_mappings:
                     value = extract_slot_value_from_predefined_mapping(mapping, tracker)
                 else:
                     value = None
@@ -1138,7 +1140,9 @@ class ActionExtractSlots(Action):
                     if tracker.get_slot(slot.name) != value:
                         slot_events.append(SlotSet(slot.name, value))
 
-                should_fill_custom_slot = mapping["type"] == str(SlotMapping.CUSTOM)
+                should_fill_custom_slot = mapping.get(MAPPING_TYPE) == str(
+                    SlotMapping.CUSTOM
+                )
 
                 if should_fill_custom_slot:
                     (
@@ -1165,20 +1169,20 @@ def extract_slot_value_from_predefined_mapping(
     mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
 ) -> List[Any]:
     """Extracts slot value if slot has an applicable predefined mapping."""
-    should_fill_entity_slot = mapping["type"] == str(
+    should_fill_entity_slot = mapping.get(MAPPING_TYPE) == str(
         SlotMapping.FROM_ENTITY
     ) and SlotMapping.entity_is_desired(mapping, tracker,)
 
-    should_fill_intent_slot = mapping["type"] == str(SlotMapping.FROM_INTENT)
+    should_fill_intent_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT)
 
-    should_fill_text_slot = mapping["type"] == str(SlotMapping.FROM_TEXT)
+    should_fill_text_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_TEXT)
 
     active_loops_in_mapping_conditions = [
         active_loop.get(ACTIVE_LOOP)
         for active_loop in mapping.get(MAPPING_CONDITIONS, [])
     ]
     should_fill_trigger_slot = (
-        mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
+        mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_TRIGGER_INTENT)
         and tracker.active_loop_name not in active_loops_in_mapping_conditions
     )
 

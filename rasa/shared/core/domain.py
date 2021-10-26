@@ -40,7 +40,7 @@ import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
+from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
 from rasa.shared.core.constants import SLOT_MAPPINGS, MAPPING_CONDITIONS, ACTIVE_LOOP
@@ -1230,7 +1230,7 @@ class Domain:
                     )
                 ]
                 if matching_entities:
-                    if slot.type_name == "list":
+                    if isinstance(slot, ListSlot):
                         slot_events.append(SlotSet(slot.name, matching_entities))
                     else:
                         slot_events.append(SlotSet(slot.name, matching_entities[-1]))

@@ -87,6 +87,7 @@ DEFAULT_SLOT_NAMES = {
 
 SLOT_MAPPINGS = "mappings"
 MAPPING_CONDITIONS = "conditions"
+MAPPING_TYPE = "type"
 
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a `SubState`
