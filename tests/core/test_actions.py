@@ -2029,7 +2029,7 @@ async def test_action_extract_slots_execute_validation_action(
             - type: custom
 
         actions:
-        - action_validate_global_slot_mappings
+        - action_validate_slot_mappings
         """
     )
     domain = Domain.from_yaml(domain_yaml)
@@ -2078,7 +2078,7 @@ async def test_action_extract_slots_custom_action_and_predefined_slot_validation
               action: action_test
 
         actions:
-        - action_validate_global_slot_mappings
+        - action_validate_slot_mappings
         - action_test
         """
     )
