@@ -589,7 +589,6 @@ def e2e_bot_config_file() -> Path:
 @pytest.fixture(scope="session")
 def e2e_bot_training_files() -> List[Path]:
     return [
-        Path("data/test_e2ebot/data/rules.yml"),
         Path("data/test_e2ebot/data/stories.yml"),
         Path("data/test_e2ebot/data/nlu.yml"),
     ]

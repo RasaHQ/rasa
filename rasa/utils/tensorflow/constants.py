@@ -107,4 +107,6 @@ SCORE_KEY = "score"
 THRESHOLD_KEY = "threshold"
 SEVERITY_KEY = "severity"
 NAME = "name"
+
+TF_DETERMINISTIC_OPS = "TF_DETERMINISTIC_OPS"
 EPOCH_OVERRIDE = "epoch_override"
