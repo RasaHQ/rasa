@@ -91,6 +91,15 @@ class TrainingHook(GraphNodeHook):
 class LoggingHook(GraphNodeHook):
     """Logs the training of components."""
 
+    def __init__(self, pruned_schema: GraphSchema) -> None:
+        """Creates hook.
+
+        Args:
+            pruned_schema: The pruned schema provides us with the information whether
+                a component is cached or not.
+        """
+        self._pruned_schema = pruned_schema
+
     def on_before_node(
         self,
         node_name: Text,
@@ -99,9 +108,9 @@ class LoggingHook(GraphNodeHook):
         received_inputs: Dict[Text, Any],
     ) -> Dict:
         """Logs the training start of a graph node."""
-        node = execution_context.graph_schema.nodes[node_name]
+        node = self._pruned_schema.nodes[node_name]
 
-        if self._does_node_train(node):
+        if not self._is_cached_node(node) and self._does_node_train(node):
             logger.info(f"Starting to train component '{node.uses.__name__}'.")
 
         return {}
@@ -113,6 +122,10 @@ class LoggingHook(GraphNodeHook):
         # persist some training data.
         return node.is_target and not node.is_input
 
+    @staticmethod
+    def _is_cached_node(node: SchemaNode) -> bool:
+        return node.uses == PrecomputedValueProvider
+
     def on_after_node(
         self,
         node_name: Text,
@@ -122,7 +135,15 @@ class LoggingHook(GraphNodeHook):
         input_hook_data: Dict,
     ) -> None:
         """Logs when a component finished its training."""
-        node = execution_context.graph_schema.nodes[node_name]
+        node = self._pruned_schema.nodes[node_name]
 
-        if self._does_node_train(node):
+        if not self._does_node_train(node):
+            return
+
+        if self._is_cached_node(node):
+            actual_component = execution_context.graph_schema.nodes[node_name]
+            logger.info(
+                f"Restored component '{actual_component.uses.__name__}' from cache."
+            )
+        else:
             logger.info(f"Finished training component '{node.uses.__name__}'.")
