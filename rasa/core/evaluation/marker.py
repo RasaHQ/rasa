@@ -53,7 +53,7 @@ class OrMarker(CompoundMarker):
 
 @MarkerRegistry.configurable_marker
 class SequenceMarker(CompoundMarker):
-    """Checks that all sub-markers apply to consecutive in the specified order.
+    """Checks that all sub-markers apply consecutively in the specified order.
 
     Given a sequence of sub-markers `m_0, m_1,...,m_n`, the sequence marker applies
     at the `i`-th event if sub-marker `m_{n-j}` applies at the `{i-j}`-th event
