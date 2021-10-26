@@ -42,7 +42,7 @@ class MarkerRegistry:
     tag_to_negated_tag: Dict[Text, Text] = {}
 
     @classmethod
-    def register(cls) -> None:
+    def register_builtin_markers(cls) -> None:
         """Must import all modules containing markers."""
         import rasa.core.evaluation.marker  # noqa
 
@@ -113,7 +113,7 @@ class MarkerRegistry:
 
 # Triggers the import of all modules containing marker classes in order to register
 # all configurable markers.
-MarkerRegistry.register()
+MarkerRegistry.register_builtin_markers()
 
 
 # We allow multiple atomic markers to be grouped under the same tag e.g.
@@ -265,13 +265,12 @@ class Marker(ABC):
         """
         # determine which marker to extract results from
         markers_to_be_evaluated: List[Marker] = []
-        if not recursive:
-            if isinstance(self, CompoundMarker) and self.name == Marker.ANY_MARKER:
-                markers_to_be_evaluated = self.sub_markers
-            else:
-                markers_to_be_evaluated = [self]
-        else:
+        if recursive:
             markers_to_be_evaluated = [marker for marker in self]
+        elif isinstance(self, CompoundMarker) and self.name == Marker.ANY_MARKER:
+            markers_to_be_evaluated = self.sub_markers
+        else:
+            markers_to_be_evaluated = [self]
 
         # track all events and collect meta data per timestep
         meta_data = self._track_all_and_collect_meta_data(events=events)
