@@ -74,9 +74,10 @@
         },
         {
           "items": [
+            "reference/rasa/core/evaluation/marker",
+            "reference/rasa/core/evaluation/marker_base",
             "reference/rasa/core/evaluation/marker_stats",
-            "reference/rasa/core/evaluation/marker_tracker_loader",
-            "reference/rasa/core/evaluation/markers"
+            "reference/rasa/core/evaluation/marker_tracker_loader"
           ],
           "label": "rasa.core.evaluation",
           "type": "category"
