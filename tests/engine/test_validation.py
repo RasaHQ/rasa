@@ -42,6 +42,11 @@ class TestComponentWithRun(TestComponentWithoutRun):
         pass
 
 
+class TestComponentWithRunAndParam(TestComponentWithoutRun):
+    def run(self, training_data: TrainingData) -> TrainingData:
+        pass
+
+
 class TestNLUTarget(TestComponentWithoutRun):
     def run(self) -> List[Message]:
         pass
@@ -133,7 +138,7 @@ def test_graph_component_fn_does_not_exist():
     graph_config = create_test_schema(uses=TestComponentWithRun, run_fn="some_fn")
 
     with pytest.raises(
-        GraphSchemaValidationException, match="specified method 'some_fn'"
+        GraphSchemaValidationException, match="required method 'some_fn'"
     ):
         validation.validate(graph_config,)
 
@@ -239,7 +244,7 @@ def test_graph_constructor_missing():
     graph_config = create_test_schema(uses=MyComponent, constructor_name="invalid")
 
     with pytest.raises(
-        GraphSchemaValidationException, match="specified method 'invalid'"
+        GraphSchemaValidationException, match="required method 'invalid'"
     ):
         validation.validate(graph_config,)
 
@@ -522,12 +527,14 @@ def test_matching_params_due_to_constructor_but_eager():
         constructor_name="load",
     )
 
-    with pytest.raises(GraphSchemaValidationException, match="lazy mode"):
+    with pytest.raises(
+        GraphSchemaValidationException, match="which is used during training"
+    ):
         validation.validate(graph_config)
 
 
 @pytest.mark.parametrize(
-    "eager, error_message", [(True, "lazy mode"), (False, "needs the param")]
+    "eager, error_message", [(True, "during training"), (False, "needs the param")]
 )
 def test_unsatisfied_constructor(eager: bool, error_message: Text):
     class MyComponent(TestComponentWithRun):
@@ -550,20 +557,32 @@ def test_unsatisfied_constructor(eager: bool, error_message: Text):
         validation.validate(graph_config)
 
 
+def test_parent_is_missing():
+    graph_config = create_test_schema(
+        uses=TestComponentWithRunAndParam,
+        needs={"training_data": "not existing parent"},
+    )
+
+    with pytest.raises(
+        GraphSchemaValidationException, match="this component is not part"
+    ):
+        validation.validate(graph_config)
+
+
 def test_parent_supplying_wrong_type():
     class MyUnreliableParent(TestComponentWithoutRun):
         def run(self) -> Domain:
             pass
 
-    class MyComponent(TestComponentWithoutRun):
-        def run(self, training_data: TrainingData) -> TrainingData:
-            pass
-
     graph_config = create_test_schema(
-        uses=MyComponent, parent=MyUnreliableParent, needs={"training_data": "parent"},
+        uses=TestComponentWithRunAndParam,
+        parent=MyUnreliableParent,
+        needs={"training_data": "parent"},
     )
 
-    with pytest.raises(GraphSchemaValidationException, match="type .* expected"):
+    with pytest.raises(
+        GraphSchemaValidationException, match="expects an input of type"
+    ):
         validation.validate(graph_config,)
 
 
@@ -592,7 +611,9 @@ def test_parent_supplying_wrong_type_to_constructor():
         needs={"some_param": "parent"},
     )
 
-    with pytest.raises(GraphSchemaValidationException, match="type .* expected"):
+    with pytest.raises(
+        GraphSchemaValidationException, match="expects an input of type"
+    ):
         validation.validate(graph_config,)
 
 
@@ -864,7 +885,7 @@ def test_validation_with_core_target_wrong_type():
     )
 
     with pytest.raises(
-        GraphSchemaValidationException, match="Core target .* invalid return type",
+        GraphSchemaValidationException, match="Core model's .* invalid return type",
     ):
         validation.validate(
             GraphModelConfiguration(
@@ -1111,7 +1132,7 @@ def test_validate_validates_required_components(
     if num_unmet == 0:
         validation.validate(graph_config)
     else:
-        message = f"{num_unmet} nodes are missing"
+        message = f"{num_unmet} components are missing"
         with pytest.raises(GraphSchemaValidationException, match=message):
             validation.validate(graph_config)
 
@@ -1132,7 +1153,7 @@ def test_validate_required_components(
     if num_unmet == 0:
         validation._validate_required_components(schema=graph_schema,)
     else:
-        message = f"{num_unmet} nodes are missing"
+        message = f"{num_unmet} components are missing"
         with pytest.raises(GraphSchemaValidationException, match=message):
             validation._validate_required_components(schema=graph_schema)
 
