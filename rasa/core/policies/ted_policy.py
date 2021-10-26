@@ -2,16 +2,13 @@ from __future__ import annotations
 import logging
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.core.domain import Domain
 import shutil
 from pathlib import Path
 from collections import defaultdict
-from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_addons as tfa
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -53,9 +50,12 @@ from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.events import EntitiesAdded, Event
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.features import Features
 import rasa.shared.utils.io
 import rasa.utils.io
-import rasa.utils.train_utils
+from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.model_data import (
@@ -77,6 +77,7 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     LEARNING_RATE,
     RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     LOSS_TYPE,
     SIMILARITY_TYPE,
     NUM_NEG,
@@ -123,8 +124,6 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
     EPOCH_OVERRIDE,
 )
-
-from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
@@ -254,10 +253,16 @@ class TEDPolicy(Policy):
             SIMILARITY_TYPE: AUTO,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
-            # Number of top actions to normalize scores for. Applicable with
-            # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-            # to turn off normalization.
-            RANKING_LENGTH: 10,
+            # Number of top actions for which confidences should be predicted.
+            # The number of  Set to `0` if confidences for all actions should be
+            # predicted. The confidences for all other actions will be set to 0.
+            RANKING_LENGTH: 0,
+            # Determines wether the confidences of the chosen top actions should be
+            # renormalized so that they sum up to 1. By default, we do not renormalize
+            # and return the confidences for the top actions as is.
+            # Note that renormalization only makes sense if confidences are generated
+            # via `softmax`.
+            RENORMALIZE_CONFIDENCES: False,
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
             # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -819,11 +824,15 @@ class TEDPolicy(Policy):
             confidences, similarities, domain
         )
 
-        if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
-            # TODO: This should be removed in 3.0 when softmax as
-            #  model confidence and normalization is completely deprecated.
-            confidence = rasa.utils.train_utils.normalize(
-                confidence, self.config[RANKING_LENGTH]
+        # rank and mask the confidence (if we need to)
+        ranking_length = self.config[RANKING_LENGTH]
+        if 0 < ranking_length < len(confidence):
+            renormalize = (
+                self.config[RENORMALIZE_CONFIDENCES]
+                and self.config[MODEL_CONFIDENCE] == SOFTMAX
+            )
+            _, confidence = train_utils.rank_and_mask(
+                confidence, ranking_length=ranking_length, renormalize=renormalize
             )
 
         optional_events = self._create_optional_event_for_entities(
@@ -1396,7 +1405,7 @@ class TED(TransformerRasaModel):
         dialogue_transformed, attention_weights = self._tf_layers[
             f"transformer.{DIALOGUE}"
         ](dialogue_in, 1 - mask, self._training)
-        dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
+        dialogue_transformed = tf.nn.gelu(dialogue_transformed)
 
         if self.max_history_featurizer_is_used:
             # pick last vector if max history featurizer is used, since we inverted

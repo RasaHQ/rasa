@@ -3,9 +3,6 @@ import copy
 import pytest
 import numpy as np
 from typing import List, Dict, Text, Any, Optional, Tuple, Union, Callable
-from unittest.mock import Mock
-
-from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -26,6 +23,7 @@ from rasa.utils.tensorflow.constants import (
     EPOCHS,
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
+    RENORMALIZE_CONFIDENCES,
     TRANSFORMER_SIZE,
     CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
@@ -38,7 +36,6 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
 )
-from rasa.utils import train_utils
 from rasa.shared.nlu.constants import (
     TEXT,
     FEATURE_TYPE_SENTENCE,
@@ -409,7 +406,6 @@ async def test_process_gives_diagnostic_data(
     "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
 )
 async def test_margin_loss_is_not_normalized(
-    monkeypatch: MonkeyPatch,
     classifier_params: Dict[Text, int],
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
@@ -429,37 +425,39 @@ async def test_margin_loss_is_not_normalized(
     message = Message(data={TEXT: "hello"})
     message = process_message(loaded_pipeline, message)
 
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
     classified_message = response_selector.process([message])[0]
 
     response_ranking = (
         classified_message.get("response_selector").get("default").get("ranking")
     )
 
-    # check that the output was not normalized
-    mock.normalize.assert_not_called()
+    # check that output was not normalized
+    assert [item["confidence"] for item in response_ranking] != pytest.approx(1)
 
     # check that the output was correctly truncated
     assert len(response_ranking) == 9
 
 
 @pytest.mark.parametrize(
-    "classifier_params, output_length",
+    "classifier_params, output_length, sums_up_to_1",
     [
-        ({RANDOM_SEED: 42, EPOCHS: 1}, 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1}, 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, 2),
+        ({}, 9, True),
+        ({EPOCHS: 1}, 9, True),
+        ({RANKING_LENGTH: 2}, 2, False),
+        ({RANKING_LENGTH: 2, RENORMALIZE_CONFIDENCES: True}, 2, True),
     ],
 )
 async def test_softmax_ranking(
     classifier_params: Dict[Text, int],
     output_length: int,
+    sums_up_to_1: bool,
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
     process_message: Callable[..., Message],
 ):
+    classifier_params[RANDOM_SEED] = 42
+    classifier_params[EPOCHS] = 1
+
     pipeline = [
         {"component": WhitespaceTokenizer},
         {"component": CountVectorsFeaturizer},
@@ -481,6 +479,10 @@ async def test_softmax_ranking(
     )
     # check that the output was correctly truncated after normalization
     assert len(response_ranking) == output_length
+    output_sums_to_1 = sum(
+        [intent.get("confidence") for intent in response_ranking]
+    ) == pytest.approx(1)
+    assert output_sums_to_1 == sums_up_to_1
 
 
 @pytest.mark.parametrize(

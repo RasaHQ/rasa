@@ -327,11 +327,6 @@ After extracting a slot value from user input, you can validate the extracted sl
 By default Rasa Open Source only validates if any slot was filled after requesting
 a slot.
 
-:::caution Changed in 2.1
-Forms no longer raise `ActionExecutionRejection` if nothing is extracted from the user’s
-utterance for any of the required slots.
-:::
-
 You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>`
 to validate any extracted slots. Make sure to add this action to the `actions`
 section of your domain:

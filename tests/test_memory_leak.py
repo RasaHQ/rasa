@@ -56,7 +56,7 @@ class MemoryLeakTest(abc.ABC):
     def function_to_profile(self) -> None:
         raise NotImplementedError
 
-    @pytest.mark.timeout(600, func_only=True)
+    @pytest.mark.timeout(720, func_only=True)
     def test_for_memory_leak(
         self, name_for_dumped_files: Text, tmp_path: Path,
     ) -> None:
@@ -155,7 +155,7 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 1700
+        return 2000
 
     def function_to_profile(self) -> None:
         import rasa.model_training
