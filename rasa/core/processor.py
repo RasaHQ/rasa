@@ -131,6 +131,20 @@ class MessageProcessor:
             )
             return None
 
+        tracker = await self._run_action_extract_slots(message, tracker)
+
+        await self._run_prediction_loop(message.output_channel, tracker)
+
+        self._save_tracker(tracker)
+
+        if isinstance(message.output_channel, CollectingOutputChannel):
+            return message.output_channel.messages
+
+        return None
+
+    async def _run_action_extract_slots(
+        self, message: UserMessage, tracker: DialogueStateTracker,
+    ) -> DialogueStateTracker:
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
         )
@@ -144,15 +158,7 @@ class MessageProcessor:
             f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
             f"resulting in {len(extraction_events)} events: {events_as_str}"
         )
-
-        await self._run_prediction_loop(message.output_channel, tracker)
-
-        self._save_tracker(tracker)
-
-        if isinstance(message.output_channel, CollectingOutputChannel):
-            return message.output_channel.messages
-
-        return None
+        return tracker
 
     async def predict_next_for_sender_id(
         self, sender_id: Text

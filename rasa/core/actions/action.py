@@ -997,6 +997,18 @@ class ActionExtractSlots(Action):
 
         return False
 
+    @staticmethod
+    def _verify_mapping_conditions(
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+    ) -> bool:
+        if mapping.get(MAPPING_CONDITIONS) and mapping.get(MAPPING_TYPE) != str(
+            SlotMapping.FROM_TRIGGER_INTENT
+        ):
+            if not ActionExtractSlots._matches_mapping_conditions(mapping, tracker):
+                return False
+
+        return True
+
     async def _run_custom_action(
         self,
         custom_action: Text,
@@ -1128,11 +1140,8 @@ class ActionExtractSlots(Action):
                 if not intent_is_desired:
                     continue
 
-                if mapping.get(MAPPING_CONDITIONS) and mapping.get(MAPPING_TYPE) != str(
-                    SlotMapping.FROM_TRIGGER_INTENT
-                ):
-                    if not self._matches_mapping_conditions(mapping, tracker):
-                        continue
+                if not ActionExtractSlots._verify_mapping_conditions(mapping, tracker):
+                    continue
 
                 if mapping.get(MAPPING_TYPE) in predefined_mappings:
                     value = extract_slot_value_from_predefined_mapping(mapping, tracker)

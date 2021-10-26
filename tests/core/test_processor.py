@@ -1389,7 +1389,10 @@ async def test_processor_valid_slot_setting(form_bot_agent: Agent):
         "that's correct",
         CollectingOutputChannel(),
         "test",
-        parse_data={"intent": {"name": "affirm"}, "entities": []},
+        parse_data={
+            "intent": {"name": "affirm"},
+            "entities": [{"entity": "seating", "value": True}],
+        },
     )
     await processor.handle_message(message)
     tracker = processor.get_tracker("test")
