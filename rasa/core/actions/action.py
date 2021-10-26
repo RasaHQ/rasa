@@ -1014,7 +1014,12 @@ class ActionExtractSlots(Action):
                 output_channel, nlg, tracker, domain
             )
             for event in custom_events:
-                if isinstance(event, (SlotSet, BotUttered)):
+                if (
+                    isinstance(event, SlotSet)
+                    and tracker.get_slot(event.key) != event.value
+                ):
+                    slot_events.append(event)
+                elif isinstance(event, BotUttered):
                     slot_events.append(event)
                 else:
                     disallowed_types.add(event.type_name)

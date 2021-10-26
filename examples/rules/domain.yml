@@ -22,8 +22,8 @@ slots:
     influence_conversation: false
     mappings:
       # Slot mappings can be defined in the domain.
-      # You can also implement custom slot mappings in your validate function for the
-      # `Form` by returning the desired slot events.
+      # You can also implement custom slot mappings in your
+      # `action_validate_slot_mappings` function by returning the desired slot events.
       # The slot mappings follow the same syntax as currently in the SDK implementation.
       - type: from_entity
         entity: some_slot

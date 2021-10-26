@@ -2337,3 +2337,133 @@ async def test_action_extract_slots_with_empty_conditions():
         domain,
     )
     assert events == [SlotSet("location", "Berlin")]
+
+
+async def test_action_extract_slots_with_none_value_predefined_mapping():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        entities:
+        - some_entity
+
+        slots:
+          some_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: some_entity
+
+          custom_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+
+        actions:
+        - action_validate_slot_mappings
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi", entities=[{"entity": "some_entity", "value": None}])
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == []
+
+
+async def test_action_extract_slots_with_none_value_custom_mapping():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        slots:
+          custom_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+
+        actions:
+        - action_validate_slot_mappings
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [{"event": "slot", "name": "custom_slot", "value": None}]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert events == []
+
+
+async def test_action_extract_slots_returns_bot_uttered():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        slots:
+          custom_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+
+        actions:
+        - action_validate_slot_mappings
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": "custom_slot", "value": "test"},
+                    {"event": "bot", "text": "Information recorded."},
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert all([isinstance(event, (SlotSet, BotUttered)) for event in events])

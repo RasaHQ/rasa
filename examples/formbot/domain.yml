@@ -41,9 +41,15 @@ slots:
     - type: from_intent
       intent: affirm
       value: true
+      conditions:
+      - active_loop: restaurant_form
+        requested_slot: outdoor_seating
     - type: from_intent
       intent: deny
       value: false
+      conditions:
+      - active_loop: restaurant_form
+        requested_slot: outdoor_seating
   preferences:
     type: text
     influence_conversation: false
@@ -51,8 +57,14 @@ slots:
     - type: from_intent
       intent: deny
       value: no additional preferences
+      conditions:
+      - active_loop: restaurant_form
+        requested_slot: preferences
     - type: from_text
       not_intent: affirm
+      conditions:
+      - active_loop: restaurant_form
+        requested_slot: preferences
   feedback:
     type: text
     influence_conversation: false
@@ -60,6 +72,9 @@ slots:
     - type: from_entity
       entity: feedback
     - type: from_text
+      conditions:
+      - active_loop: restaurant_form
+        requested_slot: feedback
   requested_slot:
     type: text
     influence_conversation: false
