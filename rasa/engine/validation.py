@@ -312,8 +312,8 @@ def _validate_run_fn(
                 f"Your model uses a component '{node.uses.__name__}' which "
                 f"needs the param '{param_name}' to be provided to its method "
                 f"'{node.fn}'. Please make sure that you registered "
-                f"your component correctly and that the structure of your model "
-                f"configuration is valid."
+                f"your component correctly and and that your model configuration is "
+                f"valid."
             )
 
 
@@ -391,8 +391,8 @@ def _validate_constructor(
                 f"Your model uses a component '{node.uses.__name__}' which "
                 f"needs the param '{param_name}' to be provided to its method "
                 f"'{node.constructor_name}'. Please make sure that you registered "
-                f"your component correctly and that the structure of your model "
-                f"configuration is valid."
+                f"your component correctly and and that your model configuration is "
+                f"valid."
             )
 
 
@@ -414,8 +414,8 @@ def _validate_needs(
                 f"param '{param_name}' although "
                 f"its method '{node.fn}' does not accept a parameter with this "
                 f"name. Please make sure that you registered "
-                f"your component correctly and that the structure of your model "
-                f"configuration is valid."
+                f"your component correctly and and that your model configuration is "
+                f"valid."
             )
 
         if not _is_placeholder_input(parent_name) and parent_name not in graph.nodes:
@@ -423,8 +423,8 @@ def _validate_needs(
                 f"Your model uses a component '{node.uses.__name__}' which expects "
                 f"input from a previous component but this component is not part of "
                 f"your model configuration. Please make sure that you registered "
-                f"your component correctly and that the structure of your model "
-                f"configuration is valid."
+                f"your component correctly and and that your model configuration is "
+                f"valid."
             )
 
         required_type = available_args.get(param_name)
@@ -479,8 +479,8 @@ def _validate_parent_return_type(
             f"'{required_type}' but it receives an input of type '{parent_return_type}'"
             f"{parent_node_text}. "
             f"Please make sure that you registered "
-            f"your component correctly and that the structure of your model "
-            f"configuration is valid."
+            f"your component correctly and and that your model configuration is "
+            f"valid."
         )
 
 
