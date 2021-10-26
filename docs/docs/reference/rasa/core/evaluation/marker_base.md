@@ -153,7 +153,7 @@ Returns an iterator over all markers that are part of this marker.
 #### evaluate\_events
 
 ```python
- | evaluate_events(events: List[Event], recursive: bool = False) -> Dict[Text, DialogueMetaData]
+ | evaluate_events(events: List[Event], recursive: bool = False) -> List[Dict[Text, DialogueMetaData]]
 ```
 
 Resets the marker, tracks all events, and collects some information.
@@ -172,6 +172,11 @@ If `recursive` is set to `True`, then all included markers are evaluated.
 - `events` - a list of events describing a conversation
 - `recursive` - set this to `True` to collect evaluations for all markers that
   this marker consists of
+
+**Returns**:
+
+  a list of evaluations containing one dictionary mapping marker names
+  to dialogue meta data each dialogue contained in the tracker
 
 #### from\_path
 

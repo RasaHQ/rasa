@@ -11,9 +11,8 @@ from rasa.core.evaluation.marker import (
     SequenceMarker,
 )
 from rasa.core.evaluation.marker_base import Marker, AtomicMarker
-
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
-
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 
@@ -134,13 +133,14 @@ def test_atomic_marker_evaluate_events(atomic_marker_type: Type[AtomicMarker]):
     marker = atomic_marker_type(text="same-text", name="marker_name")
     evaluation = marker.evaluate_events(events)
 
-    assert "marker_name" in evaluation
+    assert len(evaluation) == 1
+    assert "marker_name" in evaluation[0]
     if atomic_marker_type == IntentDetectedMarker:
         expected = [1, 3, 5]
     else:
         expected = [2, 4, 6]
 
-    assert evaluation["marker_name"].preceding_user_turns == expected
+    assert evaluation[0]["marker_name"].preceding_user_turns == expected
 
 
 def test_compound_marker_or_track():
@@ -222,7 +222,28 @@ def test_compound_marker_nested_track():
 
     evaluation = marker.evaluate_events(events)
 
-    assert evaluation["marker_name"].preceding_user_turns == [3, 5]
+    assert evaluation[0]["marker_name"].preceding_user_turns == [3, 5]
+
+
+def test_sessions_evaluated_separately():
+    """Each marker applies an exact number of times (slots are immediately un-set)."""
+
+    events = [
+        UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
+        UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
+        UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
+        SlotSet("same-text", value="any"),
+        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
+        UserUttered(intent={INTENT_NAME_KEY: "no-slot-set-here"}),
+        UserUttered(intent={INTENT_NAME_KEY: "no-slot-set-here"}),
+    ]
+
+    marker = SlotSetMarker(text="same-text", name="my-marker")
+    evaluation = marker.evaluate_events(events)
+
+    assert len(evaluation) == 2
+    assert evaluation[0]["my-marker"].preceding_user_turns == [3]
+    assert evaluation[1]["my-marker"].preceding_user_turns == []
 
 
 def test_atomic_markers_repr_not():
