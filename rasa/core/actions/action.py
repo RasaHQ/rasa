@@ -960,6 +960,9 @@ class ActionDefaultAskRephrase(ActionBotResponse):
 class ActionExtractSlots(Action):
     """Default action that runs after each user turn.
 
+    Action is executed automatically in MessageProcessor.handle_message(...)
+    before the next predicted action is run.
+
     Sets slots to extracted values from user message
     according to assigned slot mappings.
     """
@@ -1019,13 +1022,13 @@ class ActionExtractSlots(Action):
             logger.warning(
                 f"Failed to execute custom action '{custom_action}' "
                 f"as a result of error '{str(e)}'. The default action "
-                f"{self.name} failed to fill slots with custom "
+                f"'{self.name()}' failed to fill slots with custom "
                 f"mappings."
             )
 
         for type_name in disallowed_types:
             logger.info(
-                f"Running custom action '{custom_action} has resulted "
+                f"Running custom action '{custom_action}' has resulted "
                 f"in an event of type '{type_name}'. This is "
                 f"disallowed and the tracker will not be "
                 f"updated with this event."

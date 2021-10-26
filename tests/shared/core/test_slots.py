@@ -128,12 +128,20 @@ class SlotTestCollection:
         slot.reset()
         assert not slot.has_been_set
 
-    @pytest.mark.parametrize("influence_conversation", [True, False])
+    @pytest.mark.parametrize(
+        "influence_conversation, slot_mappings",
+        [
+            (True, []),
+            (True, [{"type": "from_entity", "entity": "test"}]),
+            (False, []),
+            (False, [{"type": "from_entity", "entity": "test"}]),
+        ],
+    )
     def test_slot_fingerprint_consistency(
-        self, influence_conversation: bool, mappings: List[Dict[Text, Any]]
+        self, influence_conversation: bool, slot_mappings: List[Dict[Text, Any]]
     ):
-        slot1 = self.create_slot(mappings, influence_conversation)
-        slot2 = self.create_slot(mappings, influence_conversation)
+        slot1 = self.create_slot(slot_mappings, influence_conversation)
+        slot2 = self.create_slot(slot_mappings, influence_conversation)
         f1 = slot1.fingerprint()
         f2 = slot2.fingerprint()
         assert f1 == f2

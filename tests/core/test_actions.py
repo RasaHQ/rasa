@@ -1,8 +1,10 @@
+import logging
 import textwrap
 from datetime import datetime
 from typing import List, Text, Any, Dict, Optional
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from jsonschema import ValidationError
 
@@ -81,6 +83,7 @@ from rasa.shared.core.constants import (
     ACTION_EXTRACT_SLOTS,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -2189,3 +2192,148 @@ async def test_action_extract_slots_with_duplicate_custom_actions():
         assert len(slot_events) == 2
         assert SlotSet("custom_slot_two", 2) in slot_events
         assert SlotSet("custom_slot_one", 1) in slot_events
+
+
+async def test_action_extract_slots_disallowed_events(caplog: LogCaptureFixture):
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        slots:
+          custom_slot_one:
+            type: float
+            influence_conversation: false
+            mappings:
+            - type: custom
+              action: action_test
+
+        actions:
+        - action_test
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": "custom_slot_one", "value": 1},
+                    {"event": "reset_slots"},
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        with caplog.at_level(logging.INFO):
+            slot_events = await action_extract_slots.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
+            )
+
+        assert all(
+            [
+                "Running custom action 'action_test' has resulted "
+                "in an event of type 'reset_slots'." in message
+                for message in caplog.messages
+            ]
+        )
+        assert slot_events == [SlotSet("custom_slot_one", 1)]
+
+
+@pytest.mark.parametrize(
+    "exception",
+    [
+        RasaException("Test"),
+        ClientResponseError(400, "Test", '{"action_name": "action_test"}'),
+    ],
+)
+async def test_action_extract_slots_warns_custom_action_exceptions(
+    caplog: LogCaptureFixture, exception: Exception,
+):
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        slots:
+          custom_slot_one:
+            type: float
+            influence_conversation: false
+            mappings:
+            - type: custom
+              action: action_test
+
+        actions:
+        - action_test
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url, exception=exception,
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        with caplog.at_level(logging.WARNING):
+            await action_extract_slots.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
+            )
+
+        assert any(
+            [
+                "The default action 'action_extract_slots' failed to fill "
+                "slots with custom mappings." in message
+                for message in caplog.messages
+            ]
+        )
+
+
+async def test_action_extract_slots_with_empty_conditions():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        entities:
+        - city
+
+        slots:
+          location:
+            type: float
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: city
+              conditions: []
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi", entities=[{"entity": "city", "value": "Berlin"}])
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [SlotSet("location", "Berlin")]

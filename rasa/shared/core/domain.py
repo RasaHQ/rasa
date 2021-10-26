@@ -1846,7 +1846,7 @@ class SlotMapping(Enum):
                 )
 
     @staticmethod
-    def _get_ignored_intents(
+    def _get_active_loop_ignored_intents(
         mapping: Dict[Text, Any], domain: Domain, active_loop_name: Text,
     ) -> List[Text]:
         mapping_conditions = mapping.get("conditions")
@@ -1864,10 +1864,7 @@ class SlotMapping(Enum):
             form_ignored_intents = domain.forms[active_loop_name].get(
                 IGNORED_INTENTS, []
             )
-            if not isinstance(form_ignored_intents, list):
-                ignored_intents = [form_ignored_intents]
-            else:
-                ignored_intents = form_ignored_intents
+            ignored_intents = SlotMapping.to_list(form_ignored_intents)
 
         return ignored_intents
 
@@ -1883,7 +1880,9 @@ class SlotMapping(Enum):
         if active_loop_name:
             mapping_not_intents = set(
                 mapping_not_intents
-                + SlotMapping._get_ignored_intents(mapping, domain, active_loop_name)
+                + SlotMapping._get_active_loop_ignored_intents(
+                    mapping, domain, active_loop_name
+                )
             )
 
         intent = tracker.latest_message.intent.get("name")
