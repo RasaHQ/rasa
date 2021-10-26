@@ -282,9 +282,10 @@ class Marker(ABC):
             # track all events and collect meta data per timestep
             meta_data = self._track_all_and_collect_meta_data(events=dialogue)
             # for each marker, keep only certain meta data
-            result: Dict[Text, DialogueMetaData] = {}
-            for marker in markers_to_be_evaluated:
-                result[str(marker)] = marker._filter_meta_data(meta_data=meta_data)
+            result: Dict[Text, DialogueMetaData] = {
+                str(marker): marker._filter_meta_data(meta_data=meta_data)
+                for marker in markers_to_be_evaluated
+            }
             results.append(result)
         return results
 
