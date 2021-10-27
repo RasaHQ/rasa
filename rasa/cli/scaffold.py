@@ -126,15 +126,15 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
 
 def init_project(args: argparse.Namespace, path: Text) -> None:
     os.chdir(path)
-    create_initial_project()
+    create_initial_project(".")
     print("Created project directory at '{}'.".format(os.path.abspath(path)))
     print_train_or_instructions(args)
 
 
-def create_initial_project() -> None:
+def create_initial_project(path: Text) -> None:
     from distutils.dir_util import copy_tree
 
-    copy_tree(scaffold_path(), ".")
+    copy_tree(scaffold_path(), path)
 
 
 def scaffold_path() -> Text:
