@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import List, Optional, Text, Tuple, Type
 import itertools
 
@@ -17,7 +16,7 @@ from rasa.core.evaluation.marker_base import (
     CompoundMarker,
     Marker,
     AtomicMarker,
-    DialogueMetaData
+    DialogueMetaData,
 )
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
@@ -352,13 +351,10 @@ def test_compound_marker_nested_randomly_ors_track(
             marker.track(event)
 
     # by design, every marker applies at some point / never
-    try:
-        if matches:
-            assert all([any(sub_marker.history) for sub_marker in marker])
-        else:
-            assert all([not any(sub_marker.history) for sub_marker in marker])
-    except:
-        breakpoint()
+    if matches:
+        assert all([any(sub_marker.history) for sub_marker in marker])
+    else:
+        assert all([not any(sub_marker.history) for sub_marker in marker])
 
 
 def test_sessions_evaluated_separately():

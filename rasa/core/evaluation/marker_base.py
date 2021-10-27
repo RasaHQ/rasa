@@ -517,7 +517,7 @@ class CompoundMarker(Marker, ABC):
         self.sub_markers: List[Marker] = markers
 
     def _to_str_with(self, tag: Text) -> Text:
-        marker_str = f", ".join(str(marker) for marker in self.sub_markers)
+        marker_str = ", ".join(str(marker) for marker in self.sub_markers)
         return f"{tag}({marker_str})"
 
     def track(self, event: Event) -> None:
