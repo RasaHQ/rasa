@@ -13,9 +13,9 @@ from rasa.shared.core.domain import (
     KEY_ENTITIES,
     KEY_SLOTS,
     KEY_FORMS,
-    SlotMapping,
     Domain,
 )
+from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.exceptions import RasaException
 
 

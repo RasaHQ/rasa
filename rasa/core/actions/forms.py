@@ -5,7 +5,7 @@ import json
 from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
-from rasa.shared.core.domain import Domain, SlotMapping, KEY_SLOTS
+from rasa.shared.core.domain import Domain, KEY_SLOTS
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
@@ -22,6 +22,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.slots import ListSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig

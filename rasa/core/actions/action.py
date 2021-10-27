@@ -39,7 +39,7 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
 )
-from rasa.shared.core.domain import Domain, SlotMapping
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
@@ -51,6 +51,7 @@ from rasa.shared.core.events import (
     Restarted,
     SessionStarted,
 )
+from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.slots import ListSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
