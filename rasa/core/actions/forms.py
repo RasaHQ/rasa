@@ -319,6 +319,24 @@ class FormAction(LoopAction):
 
         return events_since_last_user_uttered
 
+    def _slot_is_set_by_non_unique_entity_mappings(
+        self,
+        mapping: Dict[Text, Any],
+        slot_name: Text,
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+    ) -> bool:
+        if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
+            return False
+
+        if self.get_slot_to_fill(tracker) == slot_name:
+            return False
+
+        if self._entity_mapping_is_unique(mapping, domain):
+            return False
+
+        return True
+
     def _update_slot_values(
         self,
         event: SlotSet,
@@ -329,16 +347,11 @@ class FormAction(LoopAction):
         slot_mappings = self.get_mappings_for_slot(event.key, domain)
 
         for mapping in slot_mappings:
-            slot_values[event.key] = event.value
 
-            if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
-                continue
-
-            if self.get_slot_to_fill(tracker) == event.key:
-                continue
-
-            if not self._entity_mapping_is_unique(mapping, domain):
-                del slot_values[event.key]
+            if not self._slot_is_set_by_non_unique_entity_mappings(
+                mapping, event.key, tracker, domain
+            ):
+                slot_values[event.key] = event.value
 
         return slot_values
 
