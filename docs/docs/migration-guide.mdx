@@ -6,6 +6,9 @@ description: |
   Information about changes between major versions of chatbot framework Rasa Core
   and how you can migrate from one version to another.
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import { Button } from '@theme/Button';
 
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
@@ -35,11 +38,327 @@ and policies with 3.0.
 
 :::caution
 
-Please read the updated guide on components [here](custom-components) before
+Please read the updated guide on custom components [here](custom-components) before
 continuing to follow the step-by-step guide to migrate your own custom components.
 :::
 
 #### Changes to Custom Policies
+This guide leads you through the migration of a custom policy step by step.
+
+**Instantiating a Policy for Training**
+
+Policies are no longer instantiated via their constructor. Instead, all policies have
+to implement a `create` method. During the policy instantation the configuration from
+the [model configuration](model-configuration) is passed in as a dictionary instead
+of as separate parameters. Similarly, the`featurizers` are no longer instantiated
+outside of policies.
+Instead, the super class `rasa.core.policies.policy.Policy` instantiates the
+featurizers itself.
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-init" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      def __init__(
+          self,
+          featurizer: Optional[TrackerFeaturizer] = None,
+          priority: int = DEFAULT_POLICY_PRIORITY,
+          max_history: Optional[int] = None,
+      ) -> None:
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyPolicy(Policy):
+      def __init__(
+          self,
+          featurizer: Optional[TrackerFeaturizer] = None,
+          priority: int = DEFAULT_POLICY_PRIORITY,
+          max_history: Optional[int] = None,
+      ) -> None:
+          super().__init__(
+            config, model_storage, resource, execution_context
+          )
+      ...
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> Policy:
+        """Creates a new untrained policy (see parent class for full docstring)."""
+        return cls(config, model_storage, resource, execution_context)
+
+  ```
+
+  </TabItem>
+</Tabs>
+
+
+**Default Config**
+
+The default configuration is no longer provided via default values in your policy's
+constructor but instead returned by the method `get_default_config`:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-default-config" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+
+      def __init__(key1: Text = "value1") -> None:
+          ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyPolicy(Policy):
+      ...
+      @staticmethod
+      def get_default_config() -> Dict[Text, Any]:
+          return {"key1": "value1"}
+
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Persisting a Trained Policy**
+
+Policies are responsible for persisting themselves. Previously the `persist` method
+was called from the outside. You should use the provided `model_storage` and `resource`
+to persist your component at the end of the training and then return the `resource`
+as result of your policy's `train` method.
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-persistence" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List[TrackerWithCachedStates],
+          domain: Domain,
+          interpreter: NaturalLanguageInterpreter,
+          **kwargs: Any,
+      ) -> None:
+          ...
+
+      def persist(self, path: Union[Text, Path]) -> None:
+          if self.featurizer is not None:
+              self.featurizer.persist(path)
+
+          file = Path(path) / "model_data.json"
+          rasa.shared.utils.io.create_directory_for_file(file)
+          rasa.shared.utils.io.dump_obj_as_json_to_file(file, self.get_model_data())
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List[TrackerWithCachedStates],
+          domain: Domain,
+          **kwargs: Any,
+      ) -> Resource:
+          ...
+          self.persist()
+          return self._resource
+
+      def persist() -> None:
+          with self._model_storage.write_to(self._resource) as directory:
+              if self.featurizer is not None:
+                  self.featurizer.persist(directory)
+
+              file = directory / "model_data.json"
+              rasa.shared.utils.io.dump_obj_as_json_to_file(file, self.get_model_data())
+      ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Instantiating a Trained Policy**
+
+Similar as you had to use the `model_storage` and `resource` to persist the policy
+in the previous step, you need to use these now to load the persisted policy.
+
+:::info
+It is no longer required to persist your policy's config yourself. The config passed
+into `load` will contain the configuration which your model was trained with.
+:::
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-loading" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      @classmethod
+      def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
+          featurizer = None
+          if (Path(path) / FEATURIZER_FILE).is_file():
+              featurizer = TrackerFeaturizer.load(path)
+
+          model_data = {}
+          model_data_file = Path(path) / "model_data.json"
+          if metadata_file.is_file():
+              model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+
+          return cls(model_data, featurizer)
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyPolicy(Policy):
+      @classmethod
+      def load(
+          cls,
+          config: Dict[Text, Any],
+          model_storage: ModelStorage,
+          resource: Resource,
+          execution_context: ExecutionContext,
+          **kwargs: Any,
+      ) -> Policy:
+          """Loads a trained policy (see parent class for full docstring)."""
+          featurizer = None
+          model_data = {}
+
+          try:
+              with model_storage.read_from(resource) as path:
+                  if (Path(path) / FEATURIZER_FILE).is_file():
+                      featurizer = TrackerFeaturizer.load(path)
+
+                  model_data_file = directory / "model_data.json"
+                  model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+
+          except (ValueError, FileNotFoundError, FileIOException):
+              logger.debug(
+                  f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
+                  f"metadata couldn't be loaded."
+              )
+
+          return cls(
+              config, model_storage, resource, execution_context,
+              featurizer=featurizer, model_data=model_data
+          )
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Using End-To-End Features**
+If you were using a custom [end-to-end policy](stories#end-to-end-training) in Rasa
+Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
+events manually. If your component requires end-to-end features in Rasa Open Source 3
+you need to [register](custom-components#registering-components-with-the-model-configuration)
+your component with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
+will be precomputed and passed into your policy during training and inference.
+
+:::caution
+End-To-End features will only be computed and provided to your policy if your training
+data actually contains [end-to-end training data]((stories#end-to-end-training).
+:::
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List[TrackerWithCachedStates],
+          domain: Domain,
+          interpreter: NaturalLanguageInterpreter,
+          **kwargs: Any,
+      ) -> None:
+          ...
+
+      def predict_action_probabilities(
+          self,
+          tracker: DialogueStateTracker,
+          domain: Domain,
+          interpreter: NaturalLanguageInterpreter,
+          **kwargs: Any,
+      ) -> PolicyPrediction:
+          ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  @DefaultV1Recipe.register(
+      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+  )
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List[TrackerWithCachedStates],
+          domain: Domain,
+          precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+      ) -> Resource:
+          ...
+
+      def predict_action_probabilities(
+          self,
+          tracker: DialogueStateTracker,
+          domain: Domain,
+          precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+          rule_only_data: Optional[Dict[Text, Any]] = None,
+          **kwargs: Any,
+      ) -> PolicyPrediction:
+          ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Registering your Component**
+Before you can use your custom policy you have to register your component using the
+`DefaultV1Recipe.register` decorator. If your component requires end-to-end features
+specify the component type `POLICY_WITH_END_TO_END_SUPPORT`. Otherwise, use
+`POLICY_WITHOUT_END_TO_END_SUPPORT`. Specify `is_trainable=True` if the `train`
+method of your policy should be called during the training. If your component is only
+used during inference use `is_trainable=False`.
+
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  @DefaultV1Recipe.register(
+      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+  )
+  class MyPolicy(Policy):
+      ...
+  ```
+
+  </TabItem>
+</Tabs>
 
 #### Changes to Custom NLU Components
 
