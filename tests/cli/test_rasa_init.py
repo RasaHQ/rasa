@@ -50,3 +50,14 @@ def test_init_help(run: Callable[..., RunResult]):
 def test_user_asked_to_train_model(run_with_stdin: Callable[..., RunResult]):
     run_with_stdin("init", stdin=b"\nYN")
     assert not os.path.exists("models")
+
+
+def test_train_data_in_project_dir(run_with_stdin: Callable[..., RunResult]):
+    """Test cache directory placement.
+
+    Tests cache directories for training data are in project root, not
+    where `rasa init` is run.
+    """
+    run_with_stdin("init", stdin=b"test-project\n\n\nno\n")
+    assert not os.path.exists(".rasa")
+    assert os.path.exists("test-project/.rasa/cache")
