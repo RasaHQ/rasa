@@ -3,7 +3,6 @@ import collections
 import json
 import logging
 import os
-from itertools import chain
 from pathlib import Path
 from typing import (
     Any,
@@ -42,7 +41,7 @@ from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
-from rasa.shared.core.constants import SLOT_MAPPINGS, MAPPING_CONDITIONS, ACTIVE_LOOP
+from rasa.shared.core.constants import MAPPING_CONDITIONS
 
 
 if TYPE_CHECKING:
@@ -192,16 +191,16 @@ class Domain:
         """
         responses = data.get(KEY_RESPONSES, {})
 
+        forms = data.get(KEY_FORMS, {})
+        _validate_forms(forms)
+
         domain_slots = data.get(KEY_SLOTS, {})
-        rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots)
+        rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots, forms)
         slots = cls.collect_slots(domain_slots)
 
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
-        forms = data.get(KEY_FORMS, {})
-
-        _validate_forms(forms, domain_slots)
 
         return cls(
             intents,
@@ -1784,7 +1783,7 @@ class Domain:
         )
 
 
-def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> None:
+def _validate_forms(forms: Union[Dict, List]) -> None:
     if not isinstance(forms, dict):
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
@@ -1806,30 +1805,3 @@ def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> 
                 f"the keyword `{REQUIRED_SLOTS_KEY}` is required. "
                 f"Please see {DOCS_URL_FORMS} for more information."
             )
-
-        form_slots = forms[form_name].get(REQUIRED_SLOTS_KEY, form_data)
-
-        all_form_slots = [
-            required_slots[REQUIRED_SLOTS_KEY] for required_slots in forms.values()
-        ]
-        all_required_slots = set(chain.from_iterable(all_form_slots))
-
-        for slot, properties in domain_slots.items():
-            for mapping in properties[SLOT_MAPPINGS]:
-                for condition in mapping.get(MAPPING_CONDITIONS, []):
-                    if condition[ACTIVE_LOOP] == form_name and slot not in form_slots:
-                        raise InvalidDomain(
-                            f"Slot '{slot}' has a mapping condition for form "
-                            f"'{form_name}', but it's not present in '{form_name}' "
-                            f"form's '{REQUIRED_SLOTS_KEY}'. "
-                            f"The slot needs to be added to this key."
-                        )
-
-                if (
-                    mapping.get("type") == str(SlotMapping.FROM_TRIGGER_INTENT)
-                    and slot not in all_required_slots
-                ):
-                    raise InvalidDomain(
-                        f"Slot '{slot}' has a 'from_trigger_intent' mapping, but it's "
-                        f"not listed in any form '{REQUIRED_SLOTS_KEY}'."
-                    )

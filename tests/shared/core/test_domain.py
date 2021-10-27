@@ -1237,7 +1237,8 @@ def test_featurized_entities_ordered_consistently():
                     "type": "float",
                     "mappings": [{"type": "from_trigger_intent", "value": 5}],
                 }
-            }
+            },
+            KEY_FORMS: {"some_form": {"required_slots": ["slot_x"]}},
         },
         {
             KEY_SLOTS: {
@@ -1247,7 +1248,8 @@ def test_featurized_entities_ordered_consistently():
                         {"type": "from_trigger_intent", "value": "some value"}
                     ],
                 }
-            }
+            },
+            KEY_FORMS: {"some_form": {"required_slots": ["slot_x"]}},
         },
         {KEY_SLOTS: {"slot_x": {"type": "text", "mappings": [{"type": "from_text"}]}}},
     ],
@@ -1793,4 +1795,24 @@ def test_invalid_domain_slot_with_mapping_conditions_not_in_form():
                   - started_booking_form
             """
             )
+        )
+
+
+def test_invalid_slot_mappings_condition_form_not_in_domain_forms():
+    with pytest.raises(InvalidDomain):
+        Domain.from_yaml(
+            """
+            version: "2.0"
+            intents:
+            - affirm
+            slots:
+              some_slot:
+                type: bool
+                mappings:
+                - type: from_intent
+                  intent: affirm
+                  value: true
+                  conditions:
+                  - active_loop: booking_form
+            """
         )

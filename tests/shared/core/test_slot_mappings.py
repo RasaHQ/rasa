@@ -1,6 +1,6 @@
 import pytest
 
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, InvalidDomain, KEY_SLOTS
 from rasa.shared.core.events import UserUttered, ActiveLoop
 from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -100,3 +100,31 @@ def test_slot_mappings_ignored_intents_during_active_loop():
     assert (
         SlotMapping.intent_is_desired(mappings_for_cuisine[0], tracker, domain) is False
     )
+
+
+@pytest.mark.parametrize(
+    "domain_as_dict",
+    [
+        # missing mappings parameter
+        {KEY_SLOTS: {"some_slot": {"type": "text", "influence_conversation": False,}}},
+        # mappings is not of type list
+        {KEY_SLOTS: {"some_slot": {"type": "text", "mappings": {},}}},
+        # form does not exist in domain forms
+        {
+            KEY_SLOTS: {
+                "some_slot": {
+                    "type": "text",
+                    "mappings": [
+                        {
+                            "type": "from_text",
+                            "conditions": [{"active_loop": "some_form"}],
+                        }
+                    ],
+                }
+            }
+        },
+    ],
+)
+def test_validate_slot_mappings_raises(domain_as_dict):
+    with pytest.raises(InvalidDomain):
+        Domain.from_dict(domain_as_dict)
