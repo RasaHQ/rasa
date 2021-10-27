@@ -127,12 +127,12 @@ def test_markers_cli_results_save_correctly(
             senders.add(row["sender_id"])
             if row["marker_name"] == "marker1":
                 assert row["dialogue_id"] == "0"
-                # assert row["event_id"] == "1"
+                assert int(row["event_id"]) >= 2
                 assert row["num_preceding_user_turns"] == "0"
 
             if row["marker_name"] == "marker2":
                 assert row["dialogue_id"] == "1"
-                # assert row["event_id"] == "2"
+                assert int(row["event_id"]) >= 3
                 assert row["num_preceding_user_turns"] == "1"
 
         assert len(senders) == 5
