@@ -1,7 +1,6 @@
 import logging
 from pathlib import Path
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
-from pathlib import Path
 
 from rasa.core.agent import Agent
 from rasa.engine.storage.local_model_storage import LocalModelStorage

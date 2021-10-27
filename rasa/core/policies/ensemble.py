@@ -2,7 +2,6 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from typing import Optional, Text, List, Dict, Any
 import logging
-from typing import Text, Optional, Any, List, Dict
 
 from rasa.engine.graph import GraphComponent
 from rasa.engine.storage.storage import ModelStorage

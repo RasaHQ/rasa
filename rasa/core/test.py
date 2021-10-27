@@ -3,7 +3,6 @@ from pathlib import Path
 import tempfile
 import warnings as pywarnings
 import typing
-from pathlib import Path
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 

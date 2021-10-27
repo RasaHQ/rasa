@@ -1,5 +1,4 @@
 import logging
-import os
 import textwrap
 import uuid
 from pathlib import Path
