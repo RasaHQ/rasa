@@ -87,6 +87,40 @@ def _migrate_form_slots(
     return new_forms, updated_slots
 
 
+def _migrate_auto_fill(
+    slot_name: Text, properties: Dict[Text, Any], entities: List[Text],
+) -> Dict[Text, Any]:
+    if slot_name in entities and properties.get("auto_fill", True) is True:
+        from_entity_mapping = {
+            "type": str(SlotMapping.FROM_ENTITY),
+            "entity": slot_name,
+        }
+        mappings = properties.get("mappings", [])
+        if from_entity_mapping not in mappings:
+            mappings.append(from_entity_mapping)
+            properties.update({"mappings": mappings})
+
+    if "auto_fill" in properties:
+        del properties["auto_fill"]
+
+    return properties
+
+
+def _migrate_custom_slots(
+    slot_name: Text, properties: Dict[Text, Any]
+) -> Dict[Text, Any]:
+    if not properties.get("mappings"):
+        properties.update({"mappings": [{"type": "custom"}]})
+
+        rasa.shared.utils.io.raise_warning(
+            f"A custom mapping was added to slot '{slot_name}'. "
+            f"Please double-check this is correct.",
+            UserWarning,
+        )
+
+    return properties
+
+
 def _migrate_auto_fill_and_custom_slots(
     domain: Dict[Text, Any], slots: Dict[Text, Any]
 ) -> Dict[Text, Any]:
@@ -94,29 +128,10 @@ def _migrate_auto_fill_and_custom_slots(
     entities = domain.get(KEY_ENTITIES, [])
 
     for slot_name, properties in slots.items():
-        if slot_name in entities and properties.get("auto_fill", True) is True:
-            from_entity_mapping = {
-                "type": str(SlotMapping.FROM_ENTITY),
-                "entity": slot_name,
-            }
-            mappings = properties.get("mappings", [])
-            if from_entity_mapping not in mappings:
-                mappings.append(from_entity_mapping)
-                properties.update({"mappings": mappings})
+        updated_properties = _migrate_auto_fill(slot_name, properties, entities)
+        updated_properties = _migrate_custom_slots(slot_name, updated_properties)
 
-        if "auto_fill" in properties:
-            del properties["auto_fill"]
-
-        if not properties.get("mappings"):
-            properties.update({"mappings": [{"type": "custom"}]})
-
-            rasa.shared.utils.io.raise_warning(
-                f"A custom mapping was added to slot '{slot_name}'. "
-                f"Please double-check this is correct.",
-                UserWarning,
-            )
-
-        new_slots[slot_name] = properties
+        new_slots[slot_name] = updated_properties
     return new_slots
 
 

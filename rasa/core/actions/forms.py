@@ -303,9 +303,10 @@ class FormAction(LoopAction):
             isinstance(event, ActionExecutionRejected) for event in validation_events
         )
 
-    def _get_slot_extractions(
-        self, tracker: "DialogueStateTracker", domain: Domain,
-    ) -> Dict[Text, Any]:
+    @staticmethod
+    def _get_events_since_last_user_uttered(
+        tracker: "DialogueStateTracker",
+    ) -> List[SlotSet]:
         if tracker.latest_message in tracker.events:
             index = tracker.events.index(tracker.latest_message)
         else:
@@ -316,7 +317,39 @@ class FormAction(LoopAction):
             event for event in tracker_events[index:] if isinstance(event, SlotSet)
         ]
 
+        return events_since_last_user_uttered
+
+    def _update_slot_values(
+        self,
+        event: SlotSet,
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        slot_values: Dict[Text, Any],
+    ) -> Dict[Text, Any]:
+        slot_mappings = self.get_mappings_for_slot(event.key, domain)
+
+        for mapping in slot_mappings:
+            slot_values[event.key] = event.value
+
+            if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
+                continue
+
+            if self.get_slot_to_fill(tracker) == event.key:
+                continue
+
+            if not self._entity_mapping_is_unique(mapping, domain):
+                del slot_values[event.key]
+
+        return slot_values
+
+    def _get_slot_extractions(
+        self, tracker: "DialogueStateTracker", domain: Domain,
+    ) -> Dict[Text, Any]:
+        events_since_last_user_uttered = FormAction._get_events_since_last_user_uttered(
+            tracker
+        )
         slot_values = {}
+
         for event in events_since_last_user_uttered:
             if not tracker.active_loop:
                 # pre-filled slots were already validated at form activation
@@ -325,19 +358,7 @@ class FormAction(LoopAction):
             if event.key not in self.required_slots(domain):
                 continue
 
-            slot_mappings = self.get_mappings_for_slot(event.key, domain)
-
-            for mapping in slot_mappings:
-                slot_values[event.key] = event.value
-
-                if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
-                    continue
-
-                if self.get_slot_to_fill(tracker) == event.key:
-                    continue
-
-                if not self._entity_mapping_is_unique(mapping, domain):
-                    del slot_values[event.key]
+            slot_values = self._update_slot_values(event, tracker, domain, slot_values)
 
         return slot_values
 
