@@ -6,8 +6,7 @@ from typing import Dict, Text, Any
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.constants import SLOT_MAPPINGS
-from rasa.shared.core.domain import KEY_RESPONSES, Domain, KEY_SLOTS
+from rasa.shared.core.domain import KEY_RESPONSES, Domain
 
 
 class DomainWithoutResponsesProvider(GraphComponent):
@@ -38,8 +37,5 @@ class DomainWithoutResponsesProvider(GraphComponent):
 
         for response_name in serialized_domain[KEY_RESPONSES]:
             serialized_domain[KEY_RESPONSES][response_name] = []
-
-        for slot_name in serialized_domain[KEY_SLOTS]:
-            serialized_domain[KEY_SLOTS][slot_name][SLOT_MAPPINGS] = []
 
         return Domain.from_dict(serialized_domain)

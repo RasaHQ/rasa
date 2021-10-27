@@ -191,16 +191,16 @@ class Domain:
         """
         responses = data.get(KEY_RESPONSES, {})
 
-        forms = data.get(KEY_FORMS, {})
-        _validate_forms(forms)
-
         domain_slots = data.get(KEY_SLOTS, {})
-        rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots, forms)
+        rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots)
         slots = cls.collect_slots(domain_slots)
 
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
+
+        forms = data.get(KEY_FORMS, {})
+        _validate_forms(forms)
 
         return cls(
             intents,

@@ -259,3 +259,42 @@ def test_validate_files_invalid_domain():
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
         with pytest.warns(UserWarning) as w:
             assert "Please migrate to RulePolicy." in str(w[0].message)
+
+
+def test_validate_files_invalid_slot_mappings(tmp_path: Path):
+    domain = tmp_path / "domain.yml"
+    slot_name = "started_booking_form"
+    domain.write_text(
+        f"""
+            version: "2.0"
+            intents:
+            - activate_booking
+            entities:
+            - city
+            slots:
+              {slot_name}:
+                type: bool
+                influence_conversation: false
+                mappings:
+                - type: from_trigger_intent
+                  intent: activate_booking
+                  value: true
+              location:
+                type: text
+                mappings:
+                - type: from_entity
+                  entity: city
+            forms:
+              booking_form:
+                required_slots:
+                - location
+                """
+    )
+    args = {
+        "domain": str(domain),
+        "data": None,
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))

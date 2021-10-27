@@ -1,8 +1,7 @@
-import itertools
 from enum import Enum
 from typing import Text, Dict, Any, List, Optional, TYPE_CHECKING
 
-from rasa.shared.constants import DOCS_URL_SLOTS, IGNORED_INTENTS, REQUIRED_SLOTS_KEY
+from rasa.shared.constants import DOCS_URL_SLOTS, IGNORED_INTENTS
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:
@@ -160,12 +159,9 @@ class SlotMapping(Enum):
         return slot_fulfils_entity_mapping
 
 
-def validate_slot_mappings(
-    domain_slots: Dict[Text, Any], forms: Dict[Text, Any]
-) -> None:
+def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     """Raises InvalidDomain exception if slot mappings are invalid."""
     from rasa.shared.core.domain import InvalidDomain
-    from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
 
     rasa.shared.utils.io.raise_warning(
         f"Slot auto-fill has been removed in 3.0 and replaced with a "
@@ -173,11 +169,6 @@ def validate_slot_mappings(
         f"Please refer to {DOCS_URL_SLOTS} to learn more.",
         UserWarning,
     )
-
-    all_form_slots = [
-        required_slots[REQUIRED_SLOTS_KEY] for required_slots in forms.values()
-    ]
-    all_required_slots = set(itertools.chain.from_iterable(all_form_slots))
 
     for slot_name, properties in domain_slots.items():
         mappings = properties.get("mappings")
@@ -199,32 +190,3 @@ def validate_slot_mappings(
 
         for slot_mapping in mappings:
             SlotMapping.validate(slot_mapping, slot_name)
-
-            for condition in slot_mapping.get(MAPPING_CONDITIONS, []):
-                condition_active_loop = condition.get(ACTIVE_LOOP)
-                form_name = forms.get(condition_active_loop)
-                if not form_name:
-                    raise InvalidDomain(
-                        f"Slot '{slot_name}' has a mapping condition for form "
-                        f"'{condition_active_loop}' which is not listed in "
-                        f"domain forms. Please add this form to the forms section or "
-                        f"check for typos."
-                    )
-
-                form_slots = form_name.get(REQUIRED_SLOTS_KEY, {})
-                if slot_name not in form_slots:
-                    raise InvalidDomain(
-                        f"Slot '{slot_name}' has a mapping condition for form "
-                        f"'{condition_active_loop}', but it's not present in "
-                        f"'{condition_active_loop}' form's '{REQUIRED_SLOTS_KEY}'. "
-                        f"The slot needs to be added to this key."
-                    )
-
-            if (
-                slot_mapping.get("type") == str(SlotMapping.FROM_TRIGGER_INTENT)
-                and slot_name not in all_required_slots
-            ):
-                raise InvalidDomain(
-                    f"Slot '{slot_name}' has a 'from_trigger_intent' mapping, but it's "
-                    f"not listed in any form '{REQUIRED_SLOTS_KEY}'."
-                )

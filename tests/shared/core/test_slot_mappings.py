@@ -106,23 +106,9 @@ def test_slot_mappings_ignored_intents_during_active_loop():
     "domain_as_dict",
     [
         # missing mappings parameter
-        {KEY_SLOTS: {"some_slot": {"type": "text", "influence_conversation": False,}}},
+        {KEY_SLOTS: {"some_slot": {"type": "text", "influence_conversation": False}}},
         # mappings is not of type list
-        {KEY_SLOTS: {"some_slot": {"type": "text", "mappings": {},}}},
-        # form does not exist in domain forms
-        {
-            KEY_SLOTS: {
-                "some_slot": {
-                    "type": "text",
-                    "mappings": [
-                        {
-                            "type": "from_text",
-                            "conditions": [{"active_loop": "some_form"}],
-                        }
-                    ],
-                }
-            }
-        },
+        {KEY_SLOTS: {"some_slot": {"type": "text", "mappings": {}}}},
     ],
 )
 def test_validate_slot_mappings_raises(domain_as_dict):
