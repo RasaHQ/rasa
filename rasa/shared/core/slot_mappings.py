@@ -3,7 +3,11 @@ from typing import Text, Dict, Any, List, Optional, TYPE_CHECKING
 
 from rasa.shared.constants import DOCS_URL_SLOTS, IGNORED_INTENTS
 import rasa.shared.utils.io
-from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
+)
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -148,8 +152,10 @@ class SlotMapping(Enum):
         for entity in extracted_entities:
             if (
                 mapping.get(ENTITY_ATTRIBUTE_TYPE) == entity[ENTITY_ATTRIBUTE_TYPE]
-                and mapping.get(ENTITY_ATTRIBUTE_ROLE) == entity.get(ENTITY_ATTRIBUTE_ROLE)
-                and mapping.get(ENTITY_ATTRIBUTE_GROUP) == entity.get(ENTITY_ATTRIBUTE_GROUP)
+                and mapping.get(ENTITY_ATTRIBUTE_ROLE)
+                == entity.get(ENTITY_ATTRIBUTE_ROLE)
+                and mapping.get(ENTITY_ATTRIBUTE_GROUP)
+                == entity.get(ENTITY_ATTRIBUTE_GROUP)
             ):
                 matching_values = tracker.get_latest_entity_values(
                     mapping.get(ENTITY_ATTRIBUTE_TYPE),
