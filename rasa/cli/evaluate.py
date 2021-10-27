@@ -9,7 +9,7 @@ from rasa.core.evaluation.marker_base import Marker, DialogueMetaData
 
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.evaluate as arguments
-import json
+import csv
 
 
 def add_subparser(
@@ -74,6 +74,7 @@ def add_subparser(
 
 
 def _run_markers_cli(args: argparse.Namespace):
+    """Run markers algorithm using parameters from CLI."""
     seed = args.seed if "seed" in args else None
     count = args.count if "count" in args else None
 
@@ -99,8 +100,9 @@ def _run_markers(
     output_filename: Text,
     stats_file: Text = None,
 ):
+    """Run markers algorithm over specified config and tracker store."""
     tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
-    markers = _load_markers(config)
+    markers = Marker.from_path(config)
 
     results = _collect_markers(markers, tracker_loader)
     _save_results(output_filename, results)
@@ -109,13 +111,10 @@ def _run_markers(
         _compute_stats(results, stats_file)
 
 
-def _load_markers(confpath: Text) -> Marker:
-    return Marker.from_path(confpath)
-
-
 def _create_tracker_loader(
     endpoint_config: Text, strategy: Text, count: int, seed: int
 ) -> MarkerTrackerLoader:
+    """Create a tracker loader against the configured tracker store."""
     endpoints = AvailableEndpoints.read_endpoints(endpoint_config)
     tracker_store = TrackerStore.create(endpoints.tracker_store)
     return MarkerTrackerLoader(tracker_store, strategy, count, seed,)
@@ -124,6 +123,7 @@ def _create_tracker_loader(
 def _collect_markers(
     markers: Marker, tracker_loader: MarkerTrackerLoader
 ) -> Dict[Text, List[Dict[Text, DialogueMetaData]]]:
+    """Collect markers for each dialogue in each tracker loaded."""
     processed_trackers = {}
 
     for tracker in tracker_loader.load():
@@ -136,8 +136,7 @@ def _collect_markers(
 def _save_results(
     path: Text, results: Dict[Text, List[Dict[Text, DialogueMetaData]]]
 ) -> None:
-    import csv
-
+    """Save extracted marker results as CSV to specified path."""
     with open(path, "w") as f:
         table_writer = csv.writer(f)
         table_writer.writerow(
@@ -170,5 +169,6 @@ def _save_results(
 def _compute_stats(
     results: List[Union[Text, Dict[Text, DialogueMetaData]]], out_file: str
 ):
+    """Compute stats over extracted marker data."""
     # TODO: Figure out how this is done
     pass
