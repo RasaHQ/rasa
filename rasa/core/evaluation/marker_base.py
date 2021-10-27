@@ -378,7 +378,7 @@ class Marker(ABC):
             config = {}
         if not config:
             raise InvalidMarkerConfig(f"Could not load any markers from '{path}'.")
-        return Marker.from_config(config)
+        return Marker.from_config_dict(config)
 
     @staticmethod
     def _load_and_combine_config_files_under(root_dir: Text) -> MarkerConfig:

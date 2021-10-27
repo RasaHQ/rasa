@@ -7,7 +7,7 @@ def set_markers_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "output_filename",
         type=str,
-        help="The filename to write the extracted markers to",
+        help="The filename to write the extracted markers to (CSV format).",
     )
 
     parser.add_argument(

@@ -4,11 +4,12 @@ from typing import List, TextIO, Text, Dict, Union
 from rasa.core.utils import AvailableEndpoints
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
+import rasa.core.evaluation.marker
+from rasa.core.evaluation.marker_base import Marker, DialogueMetaData
 
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.evaluate as arguments
 import json
-import os.path
 
 
 def add_subparser(
@@ -69,15 +70,23 @@ def add_subparser(
     )
     arguments.set_markers_all_arguments(markers_all_subparser)
 
-    marker_parser.set_defaults(func=_run_markers)
+    marker_parser.set_defaults(func=_run_markers_cli)
 
 
 def _run_markers_cli(args: argparse.Namespace):
     seed = args.seed if "seed" in args else None
     count = args.count if "count" in args else None
 
+    stats_file = args.stats_file if "stats_file" in args and args.stats else None
+
     _run_markers(
-        seed, count, args.endpoints, args.strategy, args.config, args.output_filename
+        seed,
+        count,
+        args.endpoints,
+        args.strategy,
+        args.config,
+        args.output_filename,
+        stats_file,
     )
 
 
@@ -88,6 +97,7 @@ def _run_markers(
     strategy: Text,
     config: Text,
     output_filename: Text,
+    stats_file: Text = None,
 ):
     tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
     markers = _load_markers(config)
@@ -95,13 +105,12 @@ def _run_markers(
     results = _collect_markers(markers, tracker_loader)
     _save_results(output_filename, results)
 
-    # if args.stats:
-    #     _stats(None, args.stats)
-    pass
+    if stats_file:
+        _compute_stats(results, stats_file)
 
 
-def _load_markers(confpath: Text) -> "Markers":
-    return Markers.from_path(confpath)
+def _load_markers(confpath: Text) -> Marker:
+    return Marker.from_path(confpath)
 
 
 def _create_tracker_loader(
@@ -113,27 +122,53 @@ def _create_tracker_loader(
 
 
 def _collect_markers(
-    markers: "Markers", tracker_loader: MarkerTrackerLoader
-) -> List[Union[Text, Dict[Text, "EvaluationResult"]]]:
-    processed_trackers = []
+    markers: Marker, tracker_loader: MarkerTrackerLoader
+) -> Dict[Text, List[Dict[Text, DialogueMetaData]]]:
+    processed_trackers = {}
 
     for tracker in tracker_loader.load():
         tracker_result = markers.evaluate_events(tracker.events)
-        tracker_result["sender_id"] = tracker.sender_id
-        processed_trackers.append(tracker_result)
+        processed_trackers[tracker.sender_id] = tracker_result
 
     return processed_trackers
 
 
 def _save_results(
-    path: Text, results: List[Union[Text, Dict[Text, "EvaluationResult"]]]
+    path: Text, results: Dict[Text, List[Dict[Text, DialogueMetaData]]]
 ) -> None:
+    import csv
+
     with open(path, "w") as f:
-        f.write(json.dumps(results))
+        table_writer = csv.writer(f)
+        table_writer.writerow(
+            [
+                "sender_id",
+                "dialogue_id",
+                "marker_name",
+                "event_id",
+                "num_preceding_user_turns",
+            ]
+        )
+        for sender_id, dialogues in results.items():
+            for dialogue_id, dialogue in enumerate(dialogues):
+                for marker_name, marker_metadata in dialogue.items():
+                    # TODO: make sure this is updated when timestamp is actually event id
+                    for event_id, preceding_user_turns in zip(
+                        marker_metadata.timestamp, marker_metadata.preceding_user_turns
+                    ):
+                        table_writer.writerow(
+                            [
+                                sender_id,
+                                dialogue_id,
+                                marker_name,
+                                event_id,
+                                preceding_user_turns,
+                            ]
+                        )
 
 
 def _compute_stats(
-    results: List[Union[Text, Dict[Text, "EvaluationResult"]]], out_file: str
+    results: List[Union[Text, Dict[Text, DialogueMetaData]]], out_file: str
 ):
     # TODO: Figure out how this is done
     pass
