@@ -1107,6 +1107,9 @@ class ActionExtractSlots(Action):
             event.key for event in validate_events if isinstance(event, SlotSet)
         ]
 
+        # If the custom action doesn't return a SlotSet event for an extracted slot
+        # candidate we assume that it was valid. The custom action has to return a
+        # SlotSet(slot_name, None) event to mark a Slot as invalid.
         return validate_events + [
             event for event in slot_events if event.key not in validated_slot_names
         ]

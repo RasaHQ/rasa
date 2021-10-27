@@ -1295,8 +1295,6 @@ def test_form_invalid_required_slots_raises():
 @pytest.mark.parametrize(
     "domain_as_dict",
     [
-        # Wrong type for slot names
-        {KEY_SLOTS: {"my_slot": 5}},
         # Wrong type for slot mappings
         {KEY_SLOTS: {"my_slot": {"type": "text", "mappings": {}}}},
         # Unknown mapping
@@ -1344,6 +1342,39 @@ def test_form_invalid_required_slots_raises():
 def test_slot_invalid_mappings(domain_as_dict: Dict[Text, Any]):
     with pytest.raises(InvalidDomain):
         Domain.from_dict(domain_as_dict)
+
+
+@pytest.mark.parametrize(
+    "domain_yaml",
+    [
+        # Wrong type for slots
+        (
+            """
+        version: "2.0"
+        slots:
+          []
+        """
+        ),
+        # Wrong type for slot names
+        (
+            """
+        version: "2.0"
+        slots:
+          some_slot: 5
+        """
+        ),
+        (
+            """
+        version: "2.0"
+        slots:
+          some_slot: []
+        """
+        ),
+    ],
+)
+def test_invalid_slots_raises_yaml_exception(domain_yaml: Text):
+    with pytest.raises(YamlValidationException):
+        Domain.from_yaml(domain_yaml)
 
 
 def test_slot_order_is_preserved():

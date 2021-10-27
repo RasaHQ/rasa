@@ -167,12 +167,6 @@ def validate_slot_mappings(
     from rasa.shared.core.domain import InvalidDomain
     from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
 
-    if not isinstance(domain_slots, Dict):
-        raise InvalidDomain(
-            f"Slots were specified as '{type(domain_slots)}'. "
-            f"They need to be specified as dictionary."
-        )
-
     rasa.shared.utils.io.raise_warning(
         f"Slot auto-fill has been removed in 3.0 and replaced with a "
         f"new explicit mechanism to set slots. "
@@ -186,11 +180,6 @@ def validate_slot_mappings(
     all_required_slots = set(itertools.chain.from_iterable(all_form_slots))
 
     for slot_name, properties in domain_slots.items():
-        if not isinstance(properties, dict):
-            raise InvalidDomain(
-                f"The properties of slot '{slot_name}' were specified as "
-                f"'{type(properties)}'. They need to be specified as dictionary."
-            )
         mappings = properties.get("mappings")
 
         if mappings is None:
