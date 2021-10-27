@@ -154,7 +154,7 @@ def _save_results(
                 for marker_name, marker_metadata in dialogue.items():
                     # TODO: make sure this is updated when timestamp is actually event id
                     for event_id, preceding_user_turns in zip(
-                        marker_metadata.timestamp, marker_metadata.preceding_user_turns
+                        marker_metadata.event_ids, marker_metadata.preceding_user_turns
                     ):
                         table_writer.writerow(
                             [
