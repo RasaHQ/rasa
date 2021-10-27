@@ -395,20 +395,24 @@ class Marker(ABC):
     @staticmethod
     def _load_and_combine_config_files_under(root_dir: Text) -> MarkerConfig:
         combined_configs = {}
-        for root, _, files in os.walk(root_dir, followlinks=True):
-            for yaml_file in [file for file in files if is_likely_yaml_file(file)]:
-                full_path = os.path.join(root, yaml_file)
-                config = rasa.shared.utils.io.read_yaml_file(full_path)
-                # TODO: validation
-                if set(config.keys()).intersection(combined_configs.keys()):
-                    raise InvalidMarkerConfig(
-                        f"The names of markers defined in {full_path} "
-                        f"({sorted(config.keys())}) "
-                        f"overlap with the names of markers loaded so far "
-                        f"({sorted(combined_configs.keys())})."
-                    )
-                combined_configs.extend(config)
-                logging.info(f"Added markers from {full_path}")
+        yaml_files = [
+            os.path.join(root, file)
+            for root, _, files in os.walk(root_dir, followlinks=True)
+            for file in files
+            if is_likely_yaml_file(file)
+        ]
+        for yaml_file in yaml_files:
+            config = rasa.shared.utils.io.read_yaml_file(yaml_file)
+            # TODO: validation
+            if set(config.keys()).intersection(combined_configs.keys()):
+                raise InvalidMarkerConfig(
+                    f"The names of markers defined in {yaml_file} "
+                    f"({sorted(config.keys())}) "
+                    f"overlap with the names of markers loaded so far "
+                    f"({sorted(combined_configs.keys())})."
+                )
+            combined_configs.extend(config)
+            logging.info(f"Added markers from {yaml_file}")
         return combined_configs
 
     @staticmethod
