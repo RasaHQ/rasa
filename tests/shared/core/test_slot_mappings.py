@@ -1,3 +1,5 @@
+from typing import Text
+
 import pytest
 
 from rasa.shared.core.domain import Domain, InvalidDomain, KEY_SLOTS
@@ -9,7 +11,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 @pytest.mark.parametrize(
     "slot_name, expected", [("GPE_destination", True), ("GPE_origin", False)]
 )
-def test_slot_mapping_entity_is_desired(slot_name, expected):
+def test_slot_mapping_entity_is_desired(slot_name: Text, expected: bool):
     domain = Domain.from_file("data/test_domains/travel_form.yml")
     tracker = DialogueStateTracker("test_id", slots=domain.slots)
     event = UserUttered(

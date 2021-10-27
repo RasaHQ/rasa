@@ -78,8 +78,7 @@ slots:
   requested_slot:
     type: text
     influence_conversation: false
-    mappings:
-    - type: from_text
+    mappings: []
 
 responses:
   utter_ask_cuisine:

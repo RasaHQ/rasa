@@ -28,9 +28,13 @@ slots:
       - type: from_entity
         entity: some_slot
       # Example of a slot mapping which extracts the slot value from the message text if
-      # the intent is `greet`.
+      # the intent is `greet`, the active loop is `loop_q_form` and `requested_slot` is
+      # the same slot:
       # - type: from_text
       #   intent: greet
+      #   conditions:
+      #   - active_loop: loop_q_form
+      #     requested_slot: some_slot
       # Example of a slot mapping which sets the slot to `my value` in case the message
       # has an intent `greet`
       # - type: from_intent

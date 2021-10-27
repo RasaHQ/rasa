@@ -156,6 +156,9 @@ slots:
     type: text
     mappings:
     - type: from_text
+      conditions:
+      - active_loop: newsletter_form
+        requested_slot: email
 forms:
   newsletter_form:
     required_slots:

@@ -233,7 +233,6 @@ def test_early_exit_on_invalid_domain():
     importer = RasaFileImporter(domain_path=domain_path)
     with pytest.warns(UserWarning) as record:
         validator = Validator.from_importer(importer)
-    print([r.message for r in record])
     validator.verify_domain_validity()
 
     # two for non-unique domains, two for auto-fill removal
