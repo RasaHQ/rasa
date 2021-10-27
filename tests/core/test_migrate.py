@@ -107,7 +107,9 @@ def test_migrate_domain_format_with_required_slots(
                 {
                     "type": "from_text",
                     "intent": "inform",
-                    "conditions": [{"active_loop": "booking_form"}],
+                    "conditions": [
+                        {"active_loop": "booking_form", "requested_slot": "email"},
+                    ],
                 }
             ],
         },
@@ -208,7 +210,9 @@ def test_migrate_domain_form_without_required_slots(
                 {
                     "type": "from_text",
                     "intent": "inform",
-                    "conditions": [{"active_loop": "booking_form"}],
+                    "conditions": [
+                        {"active_loop": "booking_form", "requested_slot": "email"},
+                    ],
                 }
             ],
         },
@@ -274,7 +278,12 @@ def test_migrate_domain_with_diff_slot_types(
                     "type": "from_intent",
                     "value": value,
                     "intent": "confirm",
-                    "conditions": [{"active_loop": "reservation_form"}],
+                    "conditions": [
+                        {
+                            "active_loop": "reservation_form",
+                            "requested_slot": "outdoor_seating",
+                        },
+                    ],
                 }
             ],
         },
@@ -490,15 +499,15 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
                 "type": "from_text",
                 "intent": "inform",
                 "conditions": [
-                    {"active_loop": "form_one"},
-                    {"active_loop": "form_two"},
+                    {"active_loop": "form_one", "requested_slot": "name"},
+                    {"active_loop": "form_two", "requested_slot": "name"},
                 ],
             },
             {
                 "type": "from_intent",
                 "intent": "deny",
                 "value": "demo",
-                "conditions": [{"active_loop": "form_two"}],
+                "conditions": [{"active_loop": "form_two", "requested_slot": "name"}],
             },
         ],
     }
@@ -510,7 +519,9 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
             {
                 "type": "from_text",
                 "intent": "greet",
-                "conditions": [{"active_loop": "form_one"},],
+                "conditions": [
+                    {"active_loop": "form_one", "requested_slot": "location"},
+                ],
             },
             {
                 "type": "from_entity",
