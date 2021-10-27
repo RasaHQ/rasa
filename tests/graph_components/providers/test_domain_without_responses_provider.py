@@ -7,7 +7,8 @@ from rasa.graph_components.providers.domain_without_response_provider import (
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.domain import KEY_E2E_ACTIONS, KEY_RESPONSES, Domain
+from rasa.shared.core.constants import SLOT_MAPPINGS
+from rasa.shared.core.domain import KEY_E2E_ACTIONS, KEY_RESPONSES, Domain, KEY_SLOTS
 
 
 @pytest.mark.parametrize(
@@ -36,10 +37,10 @@ def test_provide(
     modified_dict = modified_domain.as_dict()
     original_dict = original_domain.as_dict()
 
-    # all configurations not impacted by responses stay intact
+    # all configurations not impacted by responses or slots stay intact
     assert sorted(original_dict.keys()) == sorted(modified_dict.keys())
     for key in original_dict.keys():
-        if key not in [KEY_RESPONSES, KEY_E2E_ACTIONS]:
+        if key not in [KEY_RESPONSES, KEY_E2E_ACTIONS, KEY_SLOTS]:
             assert original_dict[key] == modified_dict[key]
 
     # Note: The given domains do contain responses and some actions for which no
@@ -64,6 +65,15 @@ def test_provide(
     assert original_domain.responses.keys()
     assert all(original_domain.responses.values())
 
+    assert original_domain.slots
+    assert modified_domain.slots
+
+    for slot_name in original_dict.get(KEY_SLOTS, {}).keys():
+        assert slot_name in modified_dict[KEY_SLOTS].keys()
+        assert modified_dict[KEY_SLOTS][slot_name][SLOT_MAPPINGS] == []
+
     del modified_dict[KEY_RESPONSES]
     del original_dict[KEY_RESPONSES]
+    del modified_dict[KEY_SLOTS]
+    del original_dict[KEY_SLOTS]
     assert modified_dict == original_dict
