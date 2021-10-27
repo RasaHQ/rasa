@@ -149,6 +149,19 @@ class DialogueMetaData:
     def __len__(self) -> int:
         return len(self.preceding_user_turns)
 
+    def filter(self, indices: List[int]) -> DialogueMetaData:
+        """Return a list containing meta data for the requested event indices.
+
+        Args:
+            indices: indices of events for which we want to extract meta data
+        Returns:
+            a new meta data object containing the entries for the requested indices
+        """
+        return DialogueMetaData(
+            preceding_user_turns=[self.preceding_user_turns[idx] for idx in indices],
+            timestamp=[self.timestamp[idx] for idx in indices],
+        )
+
 
 T = TypeVar("T")
 
@@ -283,7 +296,7 @@ class Marker(ABC):
             meta_data = self._track_all_and_collect_meta_data(events=dialogue)
             # for each marker, keep only certain meta data
             result: Dict[Text, DialogueMetaData] = {
-                str(marker): marker._filter_meta_data(meta_data=meta_data)
+                str(marker): meta_data.filter(indices=marker.relevant_events())
                 for marker in markers_to_be_evaluated
             }
             results.append(result)
@@ -344,34 +357,17 @@ class Marker(ABC):
             preceding_user_turns=preceding_user_turns, timestamp=timestamps
         )
 
-    def _filter_meta_data(self, meta_data: DialogueMetaData,) -> DialogueMetaData:
-        """Filters meta data for an event after tracking those events.
+    def relevant_events(self) -> List[int]:
+        """Returns the indices of those tracked events that are relevant for evaluation.
 
         Note: Overwrite this method if you create a new marker class that should *not*
         contain meta data about each event where the marker applied in the final
         evaluation (see `evaluate_events`).
 
-        Args:
-            meta_data: some meta data with one item per event that was tracked by
-                each of the given markers
         Returns:
-            filtered dialogue meta data
-        Raises:
-            `RuntimeError` if this function is used to filter meta data that
-            describes less or more events than were tracked.
+            indices of tracked events
         """
-        if len(meta_data) != len(self.history):
-            raise RuntimeError(
-                f"Expected the given meta data to describe as many events "
-                f"as marker {self} tracked."
-            )
-        indices = [idx for (idx, applies) in enumerate(self.history) if applies]
-        return DialogueMetaData(
-            preceding_user_turns=[
-                meta_data.preceding_user_turns[idx] for idx in indices
-            ],
-            timestamp=[meta_data.timestamp[idx] for idx in indices],
-        )
+        return [idx for (idx, applies) in enumerate(self.history) if applies]
 
     @staticmethod
     def from_path(path: Union[Path, Text]) -> Marker:
@@ -399,21 +395,24 @@ class Marker(ABC):
     @staticmethod
     def _load_and_combine_config_files_under(root_dir: Text) -> MarkerConfig:
         combined_configs = {}
-        for root, _, files in os.walk(root_dir, followlinks=True):
-            for file in files:
-                full_path = os.path.join(root, file)
-                if is_likely_yaml_file(full_path):
-                    config = rasa.shared.utils.io.read_yaml_file(full_path)
-                    # TODO: validation
-                    if set(config.keys()).intersection(combined_configs.keys()):
-                        raise InvalidMarkerConfig(
-                            f"The names of markers defined in {full_path} "
-                            f"({sorted(config.keys())}) "
-                            f"overlap with the names of markers loaded so far "
-                            f"({sorted(combined_configs.keys())})."
-                        )
-                    combined_configs.extend(config)
-                    logging.info(f"Added markers from {full_path}")
+        yaml_files = [
+            os.path.join(root, file)
+            for root, _, files in os.walk(root_dir, followlinks=True)
+            for file in files
+            if is_likely_yaml_file(file)
+        ]
+        for yaml_file in yaml_files:
+            config = rasa.shared.utils.io.read_yaml_file(yaml_file)
+            # TODO: validation
+            if set(config.keys()).intersection(combined_configs.keys()):
+                raise InvalidMarkerConfig(
+                    f"The names of markers defined in {yaml_file} "
+                    f"({sorted(config.keys())}) "
+                    f"overlap with the names of markers loaded so far "
+                    f"({sorted(combined_configs.keys())})."
+                )
+            combined_configs.extend(config)
+            logging.info(f"Added markers from {yaml_file}")
         return combined_configs
 
     @staticmethod
