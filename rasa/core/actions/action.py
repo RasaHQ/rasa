@@ -38,6 +38,7 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
+    PREDEFINED_MAPPINGS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -1125,13 +1126,6 @@ class ActionExtractSlots(Action):
             slot for slot in domain.slots if slot.name not in DEFAULT_SLOT_NAMES
         ]
 
-        predefined_mappings = {
-            str(SlotMapping.FROM_ENTITY),
-            str(SlotMapping.FROM_INTENT),
-            str(SlotMapping.FROM_TEXT),
-            str(SlotMapping.FROM_TRIGGER_INTENT),
-        }
-
         for slot in user_slots:
             for mapping in slot.mappings:
                 intent_is_desired = SlotMapping.intent_is_desired(
@@ -1144,7 +1138,7 @@ class ActionExtractSlots(Action):
                 if not ActionExtractSlots._verify_mapping_conditions(mapping, tracker):
                     continue
 
-                if mapping.get(MAPPING_TYPE) in predefined_mappings:
+                if mapping.get(MAPPING_TYPE) in PREDEFINED_MAPPINGS:
                     value = extract_slot_value_from_predefined_mapping(mapping, tracker)
                 else:
                     value = None

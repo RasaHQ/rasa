@@ -782,7 +782,7 @@ class Domain:
             self.slots.append(
                 TextSlot(
                     rasa.shared.core.constants.REQUESTED_SLOT,
-                    mappings=[{}],
+                    mappings=[],
                     influence_conversation=False,
                 )
             )
@@ -814,14 +814,12 @@ class Domain:
             for slot in knowledge_base_slots:
                 if slot not in slot_names:
                     self.slots.append(
-                        TextSlot(slot, mappings=[{}], influence_conversation=False)
+                        TextSlot(slot, mappings=[], influence_conversation=False)
                     )
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(
-                rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[{}]
-            )
+            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[])
         )
 
     def index_for_action(self, action_name: Text) -> int:
@@ -1810,14 +1808,6 @@ def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> 
             )
 
         form_slots = forms[form_name].get(REQUIRED_SLOTS_KEY, form_data)
-
-        if not isinstance(form_slots, list):
-            raise InvalidDomain(
-                f"The slots for form '{form_name}' were specified "
-                f"as '{type(form_slots)}'. They need to be specified "
-                f"as list. Please see {DOCS_URL_FORMS} "
-                f"for more information."
-            )
 
         all_form_slots = [
             required_slots[REQUIRED_SLOTS_KEY] for required_slots in forms.values()

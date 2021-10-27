@@ -2,7 +2,6 @@ from enum import Enum
 from typing import Text, Dict, Any, List, Optional, TYPE_CHECKING
 
 from rasa.shared.constants import DOCS_URL_SLOTS, IGNORED_INTENTS
-from rasa.shared.core.constants import ACTIVE_LOOP
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:
@@ -74,6 +73,8 @@ class SlotMapping(Enum):
     def _get_active_loop_ignored_intents(
         mapping: Dict[Text, Any], domain: "Domain", active_loop_name: Text,
     ) -> List[Text]:
+        from rasa.shared.core.constants import ACTIVE_LOOP
+
         mapping_conditions = mapping.get("conditions")
         active_loop_match = True
         ignored_intents = []

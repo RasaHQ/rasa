@@ -1,4 +1,5 @@
 import rasa.shared.constants as constants
+from rasa.shared.core.slot_mappings import SlotMapping
 
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
@@ -83,6 +84,13 @@ DEFAULT_SLOT_NAMES = {
     SLOT_LISTED_ITEMS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
+}
+
+PREDEFINED_MAPPINGS = {
+    str(SlotMapping.FROM_ENTITY),
+    str(SlotMapping.FROM_INTENT),
+    str(SlotMapping.FROM_TEXT),
+    str(SlotMapping.FROM_TRIGGER_INTENT),
 }
 
 SLOT_MAPPINGS = "mappings"

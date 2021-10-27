@@ -43,6 +43,7 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
+from rasa.shared.utils.validation import YamlValidationException
 
 
 def test_slots_states_before_user_utterance(domain: Domain):
@@ -1263,8 +1264,6 @@ def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
         # Wrong type for required_slots
         {KEY_FORMS: {"my_form": []}},
         {KEY_FORMS: {"my_form": 5}},
-        # 2.0 slot mappings
-        {KEY_FORMS: {"my_form": {"required_slots": {"slot1": {}}}}},
         # ignored_intent in forms, but no required_slots
         {KEY_FORMS: {"my_form": {"ignored_intents": ["greet"]}}},
     ],
@@ -1272,6 +1271,23 @@ def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
 def test_form_invalid_mappings(domain_as_dict: Dict[Text, Any]):
     with pytest.raises(InvalidDomain):
         Domain.from_dict(domain_as_dict)
+
+
+def test_form_invalid_required_slots_raises():
+    with pytest.raises(YamlValidationException):
+        Domain.from_yaml(
+            """
+            version: "2.0"
+            entities:
+            - some_entity
+            forms:
+              my_form:
+                required_slots:
+                  some_slot:
+                  - type: from_entity
+                    entity: some_entity
+        """
+        )
 
 
 @pytest.mark.parametrize(
