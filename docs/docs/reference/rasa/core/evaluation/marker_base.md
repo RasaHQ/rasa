@@ -71,6 +71,22 @@ class DialogueMetaData()
 
 Describes meta data per event in some dialogue.
 
+#### filter
+
+```python
+ | filter(indices: List[int]) -> DialogueMetaData
+```
+
+Return a list containing meta data for the requested event indices.
+
+**Arguments**:
+
+- `indices` - indices of events for which we want to extract meta data
+
+**Returns**:
+
+  a new meta data object containing the entries for the requested indices
+
 ## Marker Objects
 
 ```python
@@ -177,6 +193,22 @@ If `recursive` is set to `True`, then all included markers are evaluated.
 
   a list of evaluations containing one dictionary mapping marker names
   to dialogue meta data each dialogue contained in the tracker
+
+#### relevant\_events
+
+```python
+ | relevant_events() -> List[int]
+```
+
+Returns the indices of those tracked events that are relevant for evaluation.
+
+Note: Overwrite this method if you create a new marker class that should *not*
+contain meta data about each event where the marker applied in the final
+evaluation (see `evaluate_events`).
+
+**Returns**:
+
+  indices of tracked events
 
 #### from\_path
 
