@@ -10,7 +10,7 @@ from rasa.core.evaluation.marker import (
     SlotSetMarker,
     SequenceMarker,
 )
-from rasa.core.evaluation.marker_base import Marker, AtomicMarker
+from rasa.core.evaluation.marker_base import DialogueMetaData, Marker, AtomicMarker
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -18,6 +18,22 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 EVENT_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
 COMPOUND_MARKERS = [AndMarker, OrMarker, SequenceMarker]
+
+
+def test_dialogue_meta_data_creation_fails_if_lists_do_not_align():
+    with pytest.raises(RuntimeError):
+        DialogueMetaData(preceding_user_turns=[1, 2, 3], timestamp=[0.1, 0.2])
+
+
+def test_dialogue_meta_data_filtering_filters_all_lists():
+    meta_data = DialogueMetaData(preceding_user_turns=[1, 2, 3], timestamp=[4, 5, 6])
+    filtered = meta_data.filter([0, 2])
+    # result contains expected values:
+    assert filtered.preceding_user_turns == [1, 3]
+    assert filtered.timestamp == [4, 6]
+    # original data remains unchanged:
+    assert meta_data.preceding_user_turns == [1, 2, 3]
+    assert meta_data.timestamp == [4, 5, 6]
 
 
 def test_marker_from_config_dict_single_and():
