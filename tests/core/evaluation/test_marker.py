@@ -219,7 +219,7 @@ def test_compound_marker_seq_track(negated: bool):
     ]
     events, expected = zip(*events_expected)
     sub_markers = [IntentDetectedMarker("1"), IntentDetectedMarker("2")]
-    marker = SequenceMarker(sub_markers, name="marker_name")
+    marker = SequenceMarker(sub_markers, name="marker_name", negated=negated)
     for event in events:
         marker.track(event)
     expected = list(expected)
