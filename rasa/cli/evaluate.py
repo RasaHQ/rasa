@@ -4,8 +4,7 @@ from typing import List, TextIO, Text, Dict, Union
 from rasa.core.utils import AvailableEndpoints
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
-import rasa.core.evaluation.marker
-from rasa.core.evaluation.marker_base import Marker, DialogueMetaData
+from rasa.core.evaluation.marker_base import EventMetaData, Marker
 
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.evaluate as arguments
@@ -122,7 +121,7 @@ def _create_tracker_loader(
 
 def _collect_markers(
     markers: Marker, tracker_loader: MarkerTrackerLoader
-) -> Dict[Text, List[Dict[Text, DialogueMetaData]]]:
+) -> Dict[Text, List[Dict[Text, EventMetaData]]]:
     """Collect markers for each dialogue in each tracker loaded."""
     processed_trackers = {}
 
@@ -134,7 +133,7 @@ def _collect_markers(
 
 
 def _save_results(
-    path: Text, results: Dict[Text, List[Dict[Text, DialogueMetaData]]]
+    path: Text, results: Dict[Text, List[Dict[Text, EventMetaData]]]
 ) -> None:
     """Save extracted marker results as CSV to specified path."""
     with open(path, "w") as f:
@@ -151,23 +150,20 @@ def _save_results(
         for sender_id, dialogues in results.items():
             for dialogue_id, dialogue in enumerate(dialogues):
                 for marker_name, marker_metadata in dialogue.items():
-                    # TODO: make sure this is updated when timestamp is actually event id
-                    for event_id, preceding_user_turns in zip(
-                        marker_metadata.event_ids, marker_metadata.preceding_user_turns
-                    ):
+                    for metadata in marker_metadata:
                         table_writer.writerow(
                             [
                                 sender_id,
                                 dialogue_id,
                                 marker_name,
-                                event_id,
-                                preceding_user_turns,
+                                metadata.idx,
+                                metadata.preceding_user_turns,
                             ]
                         )
 
 
 def _compute_stats(
-    results: List[Union[Text, Dict[Text, DialogueMetaData]]], out_file: str
+    results: List[Union[Text, Dict[Text, EventMetaData]]], out_file: str
 ):
     """Compute stats over extracted marker data."""
     # TODO: Figure out how this is done
