@@ -2210,7 +2210,7 @@ uvloop = {version = "<0.15.0", markers = "sys_platform != \"win32\""}
 type = "git"
 url = "https://github.com/rasahq/rasa-sdk.git"
 reference = "python3.9"
-resolved_reference = "8be579c71d21e9b4e2163fe459c0af778c0546ef"
+resolved_reference = "f74b09d31114b06b0c2ce85b58a8dbcc19c2259f"
 
 [[package]]
 name = "redis"
@@ -3306,7 +3306,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "92def823d280bb0bbc58273478b7c3c0342b7ed9a7e81e9095843083552b8e49"
+content-hash = "aa120ba37b469b385dc8e0a98fba02fa58f0c5bf7e55f02a44e7065d574cbb5b"
 
 [metadata.files]
 absl-py = [
