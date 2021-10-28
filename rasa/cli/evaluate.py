@@ -1,14 +1,15 @@
 import argparse
-from typing import List, TextIO, Text, Dict, Union
+from typing import List, Text, Optional
 
 from rasa.core.utils import AvailableEndpoints
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
-from rasa.core.evaluation.marker_base import EventMetaData, Marker
+from rasa.core.evaluation.marker_base import Marker
 
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.evaluate as arguments
-import csv
+import rasa.shared.utils.cli
+import os.path
 
 
 def add_subparser(
@@ -60,20 +61,23 @@ def add_subparser(
     )
     arguments.set_markers_sample_arguments(markers_sample_subparser)
 
-    markers_all_subparser = markers_subparser.add_parser(
+    markers_subparser.add_parser(
         "all",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Select all trackers.",
     )
-    arguments.set_markers_all_arguments(markers_all_subparser)
 
     marker_parser.set_defaults(func=_run_markers_cli)
 
 
-def _run_markers_cli(args: argparse.Namespace):
-    """Run markers algorithm using parameters from CLI."""
+def _run_markers_cli(args: argparse.Namespace) -> None:
+    """Run markers algorithm using parameters from CLI.
+
+    Args:
+        args: The arguments passed in from the CLI.
+    """
     seed = args.seed if "seed" in args else None
     count = args.count if "count" in args else None
 
@@ -91,80 +95,63 @@ def _run_markers_cli(args: argparse.Namespace):
 
 
 def _run_markers(
-    seed: int,
-    count: int,
+    seed: Optional[int],
+    count: Optional[int],
     endpoint_config: Text,
     strategy: Text,
     config: Text,
     output_filename: Text,
-    stats_file: Text = None,
+    stats_file: Optional[Text] = None,
 ):
-    """Run markers algorithm over specified config and tracker store."""
+    """Run markers algorithm over specified config and tracker store.
+
+    Args:
+        seed: (Optional) The seed to initialise the random number generator for
+              use with the 'sample' strategy.
+        count: (Optional) Number of trackers to extract from (for any strategy
+               except 'all').
+        endpoint_config: Path to the endpoint configuration defining the tracker
+                         store to use.
+        strategy: Strategy to use when selecting trackers to extract from.
+        config: Path to the markers definition file to use.
+        output_filename: Path to write out the extracted markers.
+        stats_file: (Optional) Path to write out statistics about the extracted
+                    markers.
+    """
+
+    if os.path.exists(output_filename):
+        rasa.shared.utils.cli.print_error_and_exit(
+            "A file with the output filename already exists"
+        )
+
+    if stats_file and os.path.exists(stats_file):
+        rasa.shared.utils.cli.print_error_and_exit(
+            "A file with the stats filename already exists"
+        )
+
     tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
     markers = Marker.from_path(config)
-
-    results = _collect_markers(markers, tracker_loader)
-    _save_results(output_filename, results)
-
-    if stats_file:
-        _compute_stats(results, stats_file)
+    markers.export_markers(tracker_loader, output_filename, stats_file)
 
 
 def _create_tracker_loader(
-    endpoint_config: Text, strategy: Text, count: int, seed: int
+    endpoint_config: Text, strategy: Text, count: Optional[int], seed: Optional[int]
 ) -> MarkerTrackerLoader:
-    """Create a tracker loader against the configured tracker store."""
+    """Create a tracker loader against the configured tracker store.
+
+    Args:
+        endpoint_config: Path to the endpoint configuration defining the tracker
+                         store to use.
+        strategy: Strategy to use when selecting trackers to extract from.
+        count: (Optional) Number of trackers to extract from (for any strategy
+               except 'all').
+        seed: (Optional) The seed to initialise the random number generator for
+              use with the 'sample' strategy.
+
+    Returns:
+        A MarkerTrackerLoader object configured with the specified strategy against
+        the configured tracker store.
+    """
     endpoints = AvailableEndpoints.read_endpoints(endpoint_config)
     tracker_store = TrackerStore.create(endpoints.tracker_store)
     return MarkerTrackerLoader(tracker_store, strategy, count, seed,)
-
-
-def _collect_markers(
-    markers: Marker, tracker_loader: MarkerTrackerLoader
-) -> Dict[Text, List[Dict[Text, EventMetaData]]]:
-    """Collect markers for each dialogue in each tracker loaded."""
-    processed_trackers = {}
-
-    for tracker in tracker_loader.load():
-        tracker_result = markers.evaluate_events(tracker.events)
-        processed_trackers[tracker.sender_id] = tracker_result
-
-    return processed_trackers
-
-
-def _save_results(
-    path: Text, results: Dict[Text, List[Dict[Text, EventMetaData]]]
-) -> None:
-    """Save extracted marker results as CSV to specified path."""
-    with open(path, "w") as f:
-        table_writer = csv.writer(f)
-        table_writer.writerow(
-            [
-                "sender_id",
-                "dialogue_id",
-                "marker_name",
-                "event_id",
-                "num_preceding_user_turns",
-            ]
-        )
-        for sender_id, dialogues in results.items():
-            for dialogue_id, dialogue in enumerate(dialogues):
-                for marker_name, marker_metadata in dialogue.items():
-                    for metadata in marker_metadata:
-                        table_writer.writerow(
-                            [
-                                sender_id,
-                                dialogue_id,
-                                marker_name,
-                                metadata.idx,
-                                metadata.preceding_user_turns,
-                            ]
-                        )
-
-
-def _compute_stats(
-    results: List[Union[Text, Dict[Text, EventMetaData]]], out_file: str
-):
-    """Compute stats over extracted marker data."""
-    # TODO: Figure out how this is done
-    pass

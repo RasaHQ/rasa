@@ -3,7 +3,7 @@ from rasa.cli.arguments.default_arguments import add_endpoint_param, add_domain_
 
 
 def set_markers_arguments(parser: argparse.ArgumentParser):
-    """Specifies arguments for `rasa evaluate markers`"""
+    """Specifies arguments for `rasa evaluate markers`."""
     parser.add_argument(
         "output_filename",
         type=str,
@@ -15,8 +15,8 @@ def set_markers_arguments(parser: argparse.ArgumentParser):
         default="markers.yml",
         type=str,
         help="The config file(s) containing marker definitions. This can be a single "
-        "YAML file, or a directory that contains several files with domain "
-        "specifications in it. The content of these files will be read and merged "
+        "YAML file, or a directory that contains several files with marker "
+        "definitions in it. The content of these files will be read and merged "
         "together.",
     )
 
@@ -38,35 +38,24 @@ def set_markers_arguments(parser: argparse.ArgumentParser):
     )
 
     add_endpoint_param(
-        parser,
-        help_text="Configuration file for the model server and the connectors as a "
-        "yml file.",
+        parser, help_text="Configuration file for the tracker store as a yml file.",
     )
 
     add_domain_param(parser)
 
 
 def set_markers_first_n_arguments(parser: argparse.ArgumentParser):
-    """Specifies arguments for `rasa evaluate markers by_first_n`"""
+    """Specifies arguments for `rasa evaluate markers by_first_n`."""
     parser.add_argument(
         "count", type=int, help="The number of trackers to extract markers from",
     )
 
 
 def set_markers_sample_arguments(parser: argparse.ArgumentParser):
-    """Specifies arguments for `rasa evaluate markers by_sample"""
+    """Specifies arguments for `rasa evaluate markers by_sample`."""
     parser.add_argument(
         "--seed", type=int, help="Seed to use if selecting trackers by 'sample'"
     )
     parser.add_argument(
         "count", type=int, help="The number of trackers to extract markers from",
     )
-
-
-def set_markers_all_arguments(parser: argparse.ArgumentParser):
-    pass
-
-
-def set_evaluate_arguments(parser: argparse.ArgumentParser):
-    # Two subparsers
-    pass

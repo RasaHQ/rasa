@@ -638,16 +638,6 @@ def write_endpoint_config_to_yaml(
     return endpoints_path
 
 
-def write_markers_config_to_yaml(
-    path: Path, data: Dict[Text, Any], markers_filename: Text = "markers.yml"
-) -> Path:
-    markers_path = path / markers_filename
-
-    # write endpoints config to file
-    rasa.shared.utils.io.write_yaml(data, markers_path)
-    return markers_path
-
-
 def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
     return UserUttered(
         uuid.uuid4().hex,

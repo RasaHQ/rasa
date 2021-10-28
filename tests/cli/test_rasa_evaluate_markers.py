@@ -1,12 +1,10 @@
 from pathlib import Path
 from rasa.shared.core.domain import Domain
 from rasa.core.tracker_store import SQLTrackerStore
-from typing import Callable, Text, List, Tuple
-from unittest.mock import Mock
+from typing import Callable, Text, Tuple, Dict, Any
 import csv
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
 import rasa.cli.evaluate
@@ -14,12 +12,35 @@ import rasa.cli.evaluate
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from tests.conftest import (
-    MockExporter,
-    random_user_uttered_event,
-    write_endpoint_config_to_yaml,
-    write_markers_config_to_yaml,
-)
+from tests.conftest import write_endpoint_config_to_yaml
+
+
+@pytest.fixture
+def marker_sqlite_tracker(tmp_path: Path) -> Tuple[SQLTrackerStore, Text]:
+    domain = Domain.empty()
+    db_path = str(tmp_path / "rasa.db")
+    tracker_store = SQLTrackerStore(dialect="sqlite", db=db_path)
+    for i in range(5):
+        tracker = DialogueStateTracker(str(i), None)
+        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)], domain)
+        tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
+        tracker.update(UserUttered("hello"))
+        tracker.update_with_events(
+            [SlotSet(str(5 + j), "slot") for j in range(5)], domain
+        )
+        tracker_store.save(tracker)
+
+    return tracker_store, db_path
+
+
+def write_markers_config_to_yaml(
+    path: Path, data: Dict[Text, Any], markers_filename: Text = "markers.yml"
+) -> Path:
+    markers_path = path / markers_filename
+
+    # write markers config to file
+    rasa.shared.utils.io.write_yaml(data, markers_path)
+    return markers_path
 
 
 def test_evaluate_markers_help(run: Callable[..., RunResult]):
@@ -39,7 +60,7 @@ def test_evaluate_markers_help(run: Callable[..., RunResult]):
 
 def test_evaluate_markers_first_n_help(run: Callable[..., RunResult]):
     # We need to specify an output_filename as that's the first positional parameter
-    output = run("evaluate", "markers", "test.csv", "first_n", "--help")
+    output = run("evaluate", "markers", "--no-stats", "test.csv", "first_n", "--help")
 
     help_text = """usage: rasa evaluate markers output_filename first_n [-h] [-v] [-vv] [--quiet]
                                                      count"""
@@ -79,24 +100,6 @@ def test_evaluate_markers_all_help(run: Callable[..., RunResult]):
     printed_help = set(output.outlines)
     for line in lines:
         assert line in printed_help
-
-
-@pytest.fixture
-def marker_sqlite_tracker(tmp_path: Path) -> Tuple[SQLTrackerStore, Text]:
-    domain = Domain.empty()
-    db_path = str(tmp_path / "rasa.db")
-    tracker_store = SQLTrackerStore(dialect="sqlite", db=db_path)
-    for i in range(5):
-        tracker = DialogueStateTracker(str(i), None)
-        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)], domain)
-        tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
-        tracker.update(UserUttered("hello"))
-        tracker.update_with_events(
-            [SlotSet(str(5 + j), "slot") for j in range(5)], domain
-        )
-        tracker_store.save(tracker)
-
-    return tracker_store, db_path
 
 
 def test_markers_cli_results_save_correctly(
