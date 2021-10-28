@@ -32,7 +32,7 @@ def set_markers_arguments(parser: argparse.ArgumentParser):
 
     stats.add_argument(
         "--stats-file",
-        default="stats.json",
+        default="stats.csv",
         type=str,
         help="The filename to write out computed summary statistics.",
     )
