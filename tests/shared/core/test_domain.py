@@ -1773,3 +1773,36 @@ def test_domain_slots_for_entities_sets_valid_list_slot():
         ]
     )
     assert events == [SlotSet("toppings", ["parmesan", "prosciutto"])]
+
+
+def test_domain_slots_for_entities_with_entity_mapping_to_multiple_slots():
+    domain = Domain.from_yaml(
+        """
+        version: "2.0"
+        entities:
+        - city
+        slots:
+          departure_city:
+            type: text
+            mappings:
+            - type: from_entity
+              entity: city
+              role: from
+          arrival_city:
+            type: text
+            mappings:
+            - type: from_entity
+              entity: city
+              role: to
+        """
+    )
+    events = domain.slots_for_entities(
+        [
+            {"entity": "city", "value": "London", "role": "from"},
+            {"entity": "city", "value": "Berlin", "role": "to"},
+        ]
+    )
+    assert events == [
+        SlotSet("departure_city", "London"),
+        SlotSet("arrival_city", "Berlin"),
+    ]

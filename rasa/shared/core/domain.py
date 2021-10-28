@@ -42,6 +42,11 @@ from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, Lis
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
 from rasa.shared.core.constants import MAPPING_CONDITIONS
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
+)
 
 
 if TYPE_CHECKING:
@@ -624,9 +629,6 @@ class Domain:
         self._user_slots = copy.copy(slots)
         self.slots = slots
         self._add_default_slots()
-        self.entities_from_mappings_without_conditions = (
-            self._get_entities_from_mappings_without_conditions()
-        )
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
@@ -1204,19 +1206,6 @@ class Domain:
 
         return states
 
-    def _get_entities_from_mappings_without_conditions(self) -> Dict[Any, Slot]:
-        entity_mappings: Dict[Any, Slot] = {}
-
-        for slot in self.slots:
-            for mapping in slot.mappings:
-                if (
-                    mapping.get("type") == str(SlotMapping.FROM_ENTITY)
-                    and mapping.get(MAPPING_CONDITIONS) is None
-                ):
-                    entity_mappings[mapping.get("entity")] = slot
-
-        return entity_mappings
-
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
         """Creates slot events for entities if from_entity mapping matches.
 
@@ -1229,18 +1218,27 @@ class Domain:
         if self.store_entities_as_slots:
             slot_events = []
 
-            matching_slots = {}
+            for slot in self.slots:
+                matching_entities = []
 
-            for entity in entities:
-                entity_name = entity.get("entity")
-                if entity_name in self.entities_from_mappings_without_conditions:
-                    slot = self.entities_from_mappings_without_conditions[entity_name]
-                    matching_entities = matching_slots.get(slot, [])
-                    matching_entities.append(entity.get("value"))
-                    matching_slots[slot] = matching_entities
+                for mapping in slot.mappings:
+                    if mapping.get("type") != str(
+                        SlotMapping.FROM_ENTITY
+                    ) or mapping.get(MAPPING_CONDITIONS):
+                        continue
 
-            if matching_slots:
-                for slot, matching_entities in matching_slots.items():
+                    for entity in entities:
+                        if (
+                            entity.get(ENTITY_ATTRIBUTE_TYPE)
+                            == mapping.get(ENTITY_ATTRIBUTE_TYPE)
+                            and entity.get(ENTITY_ATTRIBUTE_ROLE)
+                            == mapping.get(ENTITY_ATTRIBUTE_ROLE)
+                            and entity.get(ENTITY_ATTRIBUTE_GROUP)
+                            == mapping.get(ENTITY_ATTRIBUTE_GROUP)
+                        ):
+                            matching_entities.append(entity.get("value"))
+
+                if matching_entities:
                     if isinstance(slot, ListSlot):
                         slot_events.append(SlotSet(slot.name, matching_entities))
                     else:
