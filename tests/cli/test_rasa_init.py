@@ -1,7 +1,13 @@
+import argparse
 import os
 from pathlib import Path
 from typing import Callable
 from _pytest.pytester import RunResult
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.pytester import Testdir
+
+from rasa.cli import scaffold
+from tests.conftest import enable_cache
 
 
 def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
@@ -52,12 +58,41 @@ def test_user_asked_to_train_model(run_with_stdin: Callable[..., RunResult]):
     assert not os.path.exists("models")
 
 
-def test_train_data_in_project_dir(run_with_stdin: Callable[..., RunResult]):
+def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, testdir: Testdir):
     """Test cache directory placement.
 
     Tests cache directories for training data are in project root, not
     where `rasa init` is run.
     """
-    run_with_stdin("init", stdin=b"test-project\n\n\nno\n")
-    assert not os.path.exists(".rasa")
-    assert os.path.exists("test-project/.rasa/cache")
+    # We would like to test CLI but can't run it with popen because we want
+    # to be able to monkeypath it. Solution is to call functions inside CLI
+    # module. Initial project folder should have been created before
+    # `init_project`, that's what we do here.
+    new_project_folder = "new-project-folder"
+    testdir.mkdir(new_project_folder)
+
+    # Simulate CLI run arguments.
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+    scaffold.add_subparser(subparsers, parents=[])
+
+    args = parser.parse_args(["init", "--no-prompt",])
+
+    # Simple config which should train fast.
+    def mock_get_config(*args):
+        return {
+            "language": "en",
+            "pipeline": [{"name": "KeywordIntentClassifier"}],
+            "policies": [{"name": "MemoizationPolicy"}],
+            "recipe": "default.v1",
+        }
+
+    monkeypatch.setattr(
+        "rasa.shared.importers.importer.CombinedDataImporter.get_config",
+        mock_get_config,
+    )
+    # Cache dir is auto patched to be a temp directory, this makes it
+    # go back to local project folder so we can test it is created correctly.
+    with enable_cache(Path(".rasa", "cache")):
+        scaffold.init_project(args, new_project_folder)
+    assert os.path.split(os.getcwd())[-1] == new_project_folder
