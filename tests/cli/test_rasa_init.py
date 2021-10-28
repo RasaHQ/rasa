@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Callable
 from _pytest.pytester import RunResult
 from _pytest.monkeypatch import MonkeyPatch
-from _pytest.pytester import Testdir
 
 from rasa.cli import scaffold
 from tests.conftest import enable_cache
@@ -59,18 +58,18 @@ def test_user_asked_to_train_model(run_with_stdin: Callable[..., RunResult]):
     assert not os.path.exists("models")
 
 
-def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, testdir: Testdir):
+def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
     """Test cache directory placement.
 
     Tests cache directories for training data are in project root, not
     where `rasa init` is run.
     """
     # We would like to test CLI but can't run it with popen because we want
-    # to be able to monkeypath it. Solution is to call functions inside CLI
+    # to be able to monkeypatch it. Solution is to call functions inside CLI
     # module. Initial project folder should have been created before
     # `init_project`, that's what we do here.
-    new_project_folder = "new-project-folder"
-    testdir.mkdir(new_project_folder)
+    new_project_folder_path = tmp_path / "new-project-folder"
+    new_project_folder_path.mkdir()
 
     # Simulate CLI run arguments.
     parser = argparse.ArgumentParser()
@@ -84,7 +83,7 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, testdir: Testdir):
         return {
             "language": "en",
             "pipeline": [{"name": "KeywordIntentClassifier"}],
-            "policies": [{"name": "MemoizationPolicy"}],
+            "policies": [{"name": "RulePolicy"}],
             "recipe": "default.v1",
         }
 
@@ -96,5 +95,5 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, testdir: Testdir):
     # go back to local project folder so we can test it is created correctly.
     with enable_cache(Path(".rasa", "cache")):
         mock_stdin([])
-        scaffold.init_project(args, new_project_folder)
-    assert os.path.split(os.getcwd())[-1] == new_project_folder
+        scaffold.init_project(args, str(new_project_folder_path))
+    assert os.getcwd() == str(new_project_folder_path)
