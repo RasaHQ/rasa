@@ -101,9 +101,9 @@ Instantiates a marker.
 #### tag
 
 ```python
- | @classmethod
+ | @staticmethod
  | @abstractmethod
- | tag(cls) -> Text
+ | tag() -> Text
 ```
 
 Returns the tag to be used in a config file.
@@ -111,8 +111,8 @@ Returns the tag to be used in a config file.
 #### negated\_tag
 
 ```python
- | @classmethod
- | negated_tag(cls) -> Optional[Text]
+ | @staticmethod
+ | negated_tag() -> Optional[Text]
 ```
 
 Returns the tag to be used in a config file for the negated version.

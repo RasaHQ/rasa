@@ -78,6 +78,52 @@ for `j` in `[0,..,n]`.
 
 Returns the tag to be used in a config file.
 
+## OccurrenceMarker Objects
+
+```python
+@MarkerRegistry.configurable_marker
+class OccurrenceMarker(CompoundMarker)
+```
+
+Checks that all sub-markers applied at least once in history.
+
+It doesn&#x27;t matter if the sub markers stop applying later in history. If they
+applied at least once they will always evaluate to `True`.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(markers: List[Marker], negated: bool = False, name: Optional[Text] = None) -> None
+```
+
+Creates marker (see parent class for full docstring).
+
+#### tag
+
+```python
+ | @staticmethod
+ | tag() -> Text
+```
+
+Returns the tag to be used in a config file.
+
+#### negated\_tag
+
+```python
+ | @staticmethod
+ | negated_tag() -> Optional[Text]
+```
+
+Returns the tag to be used in a config file for the negated version.
+
+#### relevant\_events
+
+```python
+ | relevant_events() -> List[int]
+```
+
+Only return index of first match (see parent class for full docstring).
+
 ## ActionExecutedMarker Objects
 
 ```python
