@@ -499,7 +499,7 @@ class Marker(ABC):
         Args:
             tracker_loader: The tracker loader to use to select trackers for marker
                             extraction.
-            output_filename: Path to write out the extracted markers.
+            output_file: Path to write out the extracted markers.
             stats_file: (Optional) Path to write out statistics about the extracted
                         markers.
         """
@@ -537,17 +537,28 @@ class Marker(ABC):
             )
             for sender_id, dialogues in results.items():
                 for dialogue_id, dialogue in enumerate(dialogues):
-                    for marker_name, marker_metadata in dialogue.items():
-                        for metadata in marker_metadata:
-                            table_writer.writerow(
-                                [
-                                    sender_id,
-                                    dialogue_id,
-                                    marker_name,
-                                    metadata.idx,
-                                    metadata.preceding_user_turns,
-                                ]
-                            )
+                    Marker._write_dialogue(
+                        table_writer, sender_id, dialogue_id, dialogue
+                    )
+
+    @staticmethod
+    def _write_dialogue(
+        writer: csv.writer,
+        sender_id: Text,
+        dialogue_id: int,
+        dialogue: Dict[Text, EventMetaData],
+    ) -> None:
+        for marker_name, marker_metadata in dialogue.items():
+            for metadata in marker_metadata:
+                writer.writerow(
+                    [
+                        sender_id,
+                        dialogue_id,
+                        marker_name,
+                        metadata.idx,
+                        metadata.preceding_user_turns,
+                    ]
+                )
 
     @staticmethod
     def _compute_stats(

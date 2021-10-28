@@ -118,7 +118,6 @@ def _run_markers(
         stats_file: (Optional) Path to write out statistics about the extracted
                     markers.
     """
-
     if os.path.exists(output_filename):
         rasa.shared.utils.cli.print_error_and_exit(
             "A file with the output filename already exists"
