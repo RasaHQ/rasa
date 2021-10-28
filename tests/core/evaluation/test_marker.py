@@ -18,6 +18,7 @@ from rasa.core.evaluation.marker_base import (
     CompoundMarker,
     Marker,
     AtomicMarker,
+    InvalidMarkerConfig,
 )
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
@@ -229,8 +230,12 @@ def test_compound_marker_occur_track(negated: bool):
         (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
     ]
     events, expected = zip(*events_expected)
-    sub_markers = [IntentDetectedMarker("1"), SlotSetMarker("2")]
-    marker = OccurrenceMarker(sub_markers, name="marker_name", negated=negated)
+    sub_marker = OrMarker(
+        [IntentDetectedMarker("1"), SlotSetMarker("2")],
+        name="or marker",
+        negated=False,
+    )
+    marker = OccurrenceMarker([sub_marker], name="marker_name", negated=negated)
     for event in events:
         marker.track(event)
     expected = list(expected)
@@ -241,6 +246,19 @@ def test_compound_marker_occur_track(negated: bool):
     assert marker.relevant_events() == [expected.index(True)]
 
 
+@pytest.mark.parametrize(
+    "sub_markers, negated",
+    itertools.product(
+        ([], [IntentDetectedMarker("1"), IntentDetectedMarker("2")]), [False, True]
+    ),
+)
+def test_compound_marker_occur_raises_wrong_amount_submarkers(
+    sub_markers: List[Marker], negated: bool
+):
+    with pytest.raises(InvalidMarkerConfig):
+        OccurrenceMarker(sub_markers, name="marker_name", negated=negated)
+
+
 def test_compound_marker_occur_never_applied():
     events_expected = [
         (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
@@ -249,8 +267,12 @@ def test_compound_marker_occur_never_applied():
         (SlotSet("1", value="test"), True),
     ]
     events, expected = zip(*events_expected)
-    sub_markers = [IntentDetectedMarker("1"), SlotSetMarker("2")]
-    marker = OccurrenceMarker(sub_markers, name="marker_name", negated=False)
+    sub_marker = OrMarker(
+        [IntentDetectedMarker("1"), SlotSetMarker("2")],
+        name="and marker",
+        negated=False,
+    )
+    marker = OccurrenceMarker([sub_marker], name="or", negated=False)
     for event in events:
         marker.track(event)
 

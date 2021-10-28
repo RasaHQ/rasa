@@ -3,6 +3,8 @@ from rasa.core.evaluation.marker_base import (
     CompoundMarker,
     AtomicMarker,
     MarkerRegistry,
+    Marker,
+    InvalidMarkerConfig,
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 
@@ -81,6 +83,18 @@ class OccurrenceMarker(CompoundMarker):
     It doesn't matter if the sub markers stop applying later in history. If they
     applied at least once they will always evaluate to `True`.
     """
+
+    def __init__(
+        self, markers: List[Marker], negated: bool = False, name: Optional[Text] = None
+    ) -> None:
+        """Creates marker (see parent class for full docstring)."""
+        super().__init__(markers, negated, name)
+        if len(markers) != 1:
+            own_tag = self.negated_tag() if negated else self.tag()
+            raise InvalidMarkerConfig(
+                f"It is not possible to have multiple markers below a '{own_tag}' "
+                f"marker."
+            )
 
     @staticmethod
     def tag() -> Text:
