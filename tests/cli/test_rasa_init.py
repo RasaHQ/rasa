@@ -68,6 +68,7 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
     # to be able to monkeypatch it. Solution is to call functions inside CLI
     # module. Initial project folder should have been created before
     # `init_project`, that's what we do here.
+    monkeypatch.chdir(tmp_path)
     new_project_folder_path = tmp_path / "new-project-folder"
     new_project_folder_path.mkdir()
 
