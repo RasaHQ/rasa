@@ -6,7 +6,7 @@ MARKER_ID_SCHEMA = {
 OPERATOR_SCHEMA = {
     "description": "The operator to apply to the list of conditions.",
     "type": "string",
-    "enum": ["AND", "AT_LEAST_ONE_NOT", "OR", "NOT", "SEQ", "OCCUR", "NEVER"],
+    "enum": ["AND", "AT_LEAST_ONE_NOT", "OR", "NOT", "SEQ", "AT_LEAST_ONCE", "NEVER"],
     "default": "AND",
 }
 

@@ -76,16 +76,16 @@ class SequenceMarker(CompoundMarker):
 
 @MarkerRegistry.configurable_marker
 class OccurrenceMarker(CompoundMarker):
-    """Checks that all sub-markers applied once in history.
+    """Checks that all sub-markers applied at least once in history.
 
     It doesn't matter if the sub markers stop applying later in history. If they
-    applied just once they will always be `True`.
+    applied at least once they will always evaluate to `True`.
     """
 
     @staticmethod
     def tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "occur"
+        return "at_least_once"
 
     @staticmethod
     def negated_tag() -> Optional[Text]:
