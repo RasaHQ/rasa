@@ -8,6 +8,7 @@ from _pytest.pytester import Testdir
 
 from rasa.cli import scaffold
 from tests.conftest import enable_cache
+from tests.core.channels.test_cmdline import mock_stdin
 
 
 def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
@@ -94,5 +95,6 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, testdir: Testdir):
     # Cache dir is auto patched to be a temp directory, this makes it
     # go back to local project folder so we can test it is created correctly.
     with enable_cache(Path(".rasa", "cache")):
+        mock_stdin([])
         scaffold.init_project(args, new_project_folder)
     assert os.path.split(os.getcwd())[-1] == new_project_folder
