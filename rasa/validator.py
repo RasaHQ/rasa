@@ -1,3 +1,4 @@
+import itertools
 import logging
 from collections import defaultdict
 from typing import Set, Text, Optional, Dict, Any
@@ -9,11 +10,14 @@ from rasa.shared.constants import (
     DOCS_URL_FORMS,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
+    REQUIRED_SLOTS_KEY,
 )
+from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, ActiveLoop
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.generator import TrainingDataGenerator
+from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -311,8 +315,8 @@ class Validator:
         everything_is_alright = True
 
         for form in self.domain.form_names:
-            form_slots = self.domain.slot_mapping_for_form(form)
-            for slot in form_slots.keys():
+            form_slots = self.domain.required_slots_for_form(form)
+            for slot in form_slots:
                 if slot in domain_slot_names:
                     continue
                 else:
@@ -321,6 +325,56 @@ class Validator:
                         f"is not present in the domain slots."
                         f"Please add the correct slot or check for typos.",
                         docs=DOCS_URL_DOMAINS,
+                    )
+                    everything_is_alright = False
+
+        return everything_is_alright
+
+    def verify_slot_mappings(self) -> bool:
+        """Verifies that slot mappings match forms."""
+        everything_is_alright = True
+
+        all_form_slots = [
+            required_slots[REQUIRED_SLOTS_KEY]
+            for required_slots in self.domain.forms.values()
+        ]
+        all_required_slots = set(itertools.chain.from_iterable(all_form_slots))
+
+        for slot in self.domain.slots:
+            for mapping in slot.mappings:
+                for condition in mapping.get(MAPPING_CONDITIONS, []):
+                    condition_active_loop = condition.get(ACTIVE_LOOP)
+                    if (
+                        condition_active_loop
+                        and condition_active_loop not in self.domain.form_names
+                    ):
+                        rasa.shared.utils.io.raise_warning(
+                            f"Slot '{slot.name}' has a mapping condition for form "
+                            f"'{condition_active_loop}' which is not listed in "
+                            f"domain forms. Please add this form to the forms section "
+                            f"or check for typos."
+                        )
+                        everything_is_alright = False
+
+                    form_slots = self.domain.forms.get(condition_active_loop, {}).get(
+                        REQUIRED_SLOTS_KEY, {}
+                    )
+                    if form_slots and slot.name not in form_slots:
+                        rasa.shared.utils.io.raise_warning(
+                            f"Slot '{slot.name}' has a mapping condition for form "
+                            f"'{condition_active_loop}', but it's not present in "
+                            f"'{condition_active_loop}' form's '{REQUIRED_SLOTS_KEY}'. "
+                            f"The slot needs to be added to this key."
+                        )
+                        everything_is_alright = False
+
+                if (
+                    mapping.get("type") == str(SlotMapping.FROM_TRIGGER_INTENT)
+                    and slot.name not in all_required_slots
+                ):
+                    rasa.shared.utils.io.raise_warning(
+                        f"Slot '{slot.name}' has a 'from_trigger_intent' mapping, "
+                        f"but it's not listed in any form '{REQUIRED_SLOTS_KEY}'."
                     )
                     everything_is_alright = False
 
