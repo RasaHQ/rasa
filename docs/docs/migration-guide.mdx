@@ -534,10 +534,10 @@ some additional changes will need to be made as described in their respective se
 With the introduction of [rules](./rules.mdx) and the [RulePolicy](./policies.mdx#rule-policy),
 the following policies are deprecated:
 
-- `Mapping Policy`
-- `Fallback Policy`
-- `Two-Stage-Fallback Policy`
-- `Form Policy`
+- [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy)
+- [Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#fallback-policy)
+- [Two-Stage Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#two-stage-fallback-policy)
+- [Form Policy](https://rasa.com/docs/rasa/2.x/policies#form-policy)
 
 
 To migrate the policies automatically, you can run the following command:
@@ -558,7 +558,7 @@ You can also migrate the individual policies manually, if you don't want to use 
 
 #### Manually migrating from the Mapping Policy
 
-If you previously used the `Mapping Policy`, you
+If you previously used the [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy), you
 can follow the documentation on [FAQs](./chitchat-faqs.mdx) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
@@ -596,7 +596,7 @@ policies:
 
 #### Manually migrating from the Fallback Policy
 
-If you previously used the `Fallback Policy`, the following model
+If you previously used the [Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#fallback-policy), the following model
 configuration would translate as follows given a previous configuration like this:
 
 ```yaml-rasa title="config.yml"
@@ -641,7 +641,7 @@ information.
 #### Manually migrating from the Two-Stage-Fallback Policy
 
 If you previously used the
-`Two-Stage-Fallback Policy`, with a configuration
+[Two-Stage Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#two-stage-fallback-policy), with a configuration
 like this for example:
 
 ```yaml-rasa title="config.yml"
