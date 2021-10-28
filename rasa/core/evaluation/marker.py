@@ -1,4 +1,4 @@
-from typing import Optional, Text
+from typing import Optional, Text, List
 from rasa.core.evaluation.marker_base import (
     CompoundMarker,
     AtomicMarker,
@@ -72,6 +72,38 @@ class SequenceMarker(CompoundMarker):
             marker.history[-idx - 1]
             for idx, marker in enumerate(reversed(self.sub_markers))
         )
+
+
+@MarkerRegistry.configurable_marker
+class OccurrenceMarker(CompoundMarker):
+    """Checks that all sub-markers applied once in history.
+
+    It doesn't matter if the sub markers stop applying later in history. If they
+    applied just once they will always be `True`.
+    """
+
+    @staticmethod
+    def tag() -> Text:
+        """Returns the tag to be used in a config file."""
+        return "occur"
+
+    @staticmethod
+    def negated_tag() -> Optional[Text]:
+        """Returns the tag to be used in a config file for the negated version."""
+        return "never"
+
+    def _non_negated_version_applies_at(self, event: Event) -> bool:
+        if self.history and self.history[-1]:
+            return True
+
+        return all(any(marker.history) for marker in self.sub_markers)
+
+    def relevant_events(self) -> List[int]:
+        """Only return index of first match (see parent class for full docstring)."""
+        try:
+            return [self.history.index(True)]
+        except ValueError:
+            return []
 
 
 @MarkerRegistry.configurable_marker

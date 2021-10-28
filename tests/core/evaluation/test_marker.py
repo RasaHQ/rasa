@@ -11,6 +11,7 @@ from rasa.core.evaluation.marker import (
     OrMarker,
     SlotSetMarker,
     SequenceMarker,
+    OccurrenceMarker,
 )
 from rasa.core.evaluation.marker_base import (
     CompoundMarker,
@@ -213,6 +214,41 @@ def test_compound_marker_seq_track(negated: bool):
     if negated:
         expected = [not applies for applies in expected]
     assert marker.history == expected
+
+
+@pytest.mark.parametrize("negated", [True, False])
+def test_compound_marker_occur_track(negated: bool):
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (SlotSet("2", value="bla"), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), True),
+        (SlotSet("2", value=None), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
+    ]
+    events, expected = zip(*events_expected)
+    sub_markers = [IntentDetectedMarker("1"), SlotSetMarker("2")]
+    marker = OccurrenceMarker(sub_markers, name="marker_name", negated=negated)
+    for event in events:
+        marker.track(event)
+    expected = list(expected)
+    if negated:
+        expected = [not applies for applies in expected]
+    assert marker.history == expected
+
+    assert marker.relevant_events() == [expected.index(True)]
+
+
+def test_compound_marker_occur_never_applied():
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+    ]
+    events, expected = zip(*events_expected)
+    sub_markers = [IntentDetectedMarker("1"), SlotSetMarker("2")]
+    marker = OccurrenceMarker(sub_markers, name="marker_name", negated=False)
+    for event in events:
+        marker.track(event)
+
+    assert marker.relevant_events() == []
 
 
 def test_compound_marker_nested_simple_track():
