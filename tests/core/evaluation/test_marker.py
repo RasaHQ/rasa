@@ -10,7 +10,7 @@ from rasa.core.evaluation.marker import (
     SlotSetMarker,
     SequenceMarker,
 )
-from rasa.core.evaluation.marker_base import DialogueMetaData, Marker, AtomicMarker
+from rasa.core.evaluation.marker_base import Marker, AtomicMarker
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -18,22 +18,6 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 EVENT_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
 COMPOUND_MARKERS = [AndMarker, OrMarker, SequenceMarker]
-
-
-def test_dialogue_meta_data_creation_fails_if_lists_do_not_align():
-    with pytest.raises(RuntimeError):
-        DialogueMetaData(preceding_user_turns=[1, 2, 3], timestamp=[0.1, 0.2])
-
-
-def test_dialogue_meta_data_filtering_filters_all_lists():
-    meta_data = DialogueMetaData(preceding_user_turns=[1, 2, 3], timestamp=[4, 5, 6])
-    filtered = meta_data.filter([0, 2])
-    # result contains expected values:
-    assert filtered.preceding_user_turns == [1, 3]
-    assert filtered.timestamp == [4, 6]
-    # original data remains unchanged:
-    assert meta_data.preceding_user_turns == [1, 2, 3]
-    assert meta_data.timestamp == [4, 5, 6]
 
 
 def test_marker_from_config_dict_single_and():
@@ -156,7 +140,10 @@ def test_atomic_marker_evaluate_events(atomic_marker_type: Type[AtomicMarker]):
     else:
         expected = [2, 4, 6]
 
-    assert evaluation[0]["marker_name"].preceding_user_turns == expected
+    actual_preceeding_user_turns = [
+        meta_data.preceding_user_turns for meta_data in evaluation[0]["marker_name"]
+    ]
+    assert actual_preceeding_user_turns == expected
 
 
 def test_compound_marker_or_track():
@@ -238,7 +225,9 @@ def test_compound_marker_nested_track():
 
     evaluation = marker.evaluate_events(events)
 
-    assert evaluation[0]["marker_name"].preceding_user_turns == [3, 5]
+    assert len(evaluation[0]["marker_name"]) == 2
+    assert evaluation[0]["marker_name"][0].preceding_user_turns == 3
+    assert evaluation[0]["marker_name"][1].preceding_user_turns == 5
 
 
 def test_sessions_evaluated_separately():
@@ -258,8 +247,31 @@ def test_sessions_evaluated_separately():
     evaluation = marker.evaluate_events(events)
 
     assert len(evaluation) == 2
-    assert evaluation[0]["my-marker"].preceding_user_turns == [3]
-    assert evaluation[1]["my-marker"].preceding_user_turns == []
+    assert len(evaluation[0]["my-marker"]) == 1
+    assert evaluation[0]["my-marker"][0].preceding_user_turns == 3
+    assert len(evaluation[1]["my-marker"]) == 0  # i.e. slot set does not "leak"
+
+
+def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
+    events = [
+        UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
+        UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
+        UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
+        SlotSet("same-text", value="any"),
+        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
+        UserUttered(intent={INTENT_NAME_KEY: "no-slot-set-here"}),
+        UserUttered(intent={INTENT_NAME_KEY: "no-slot-set-here"}),
+        SlotSet("same-text", value="any"),
+    ]
+    marker = SlotSetMarker(text="same-text", name="my-marker")
+    evaluation = marker.evaluate_events(events)
+    assert len(evaluation) == 2
+    assert len(evaluation[0]["my-marker"]) == 1
+    assert evaluation[0]["my-marker"][0].preceding_user_turns == 3
+    assert evaluation[0]["my-marker"][0].idx == 3
+    assert len(evaluation[1]["my-marker"]) == 1
+    assert evaluation[1]["my-marker"][0].preceding_user_turns == 2
+    assert evaluation[1]["my-marker"][0].idx == 7  # i.e. NOT the index in the dialogue
 
 
 def test_atomic_markers_repr_not():
