@@ -569,3 +569,40 @@ def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path:
         r"but it's not present in 'booking_form' form's 'required_slots'.*",
     ):
         assert not validator.verify_slot_mappings()
+
+
+def test_verify_slot_mappings_valid(tmp_path: Path):
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        """
+        version: "2.0"
+        intents:
+        - activate_booking
+        entities:
+        - city
+        slots:
+          location:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: city
+              conditions:
+              - active_loop: booking_form
+          started_booking_form:
+            type: bool
+            influence_conversation: false
+            mappings:
+            - type: from_trigger_intent
+              intent: activate_booking
+              value: true
+        forms:
+          booking_form:
+            required_slots:
+            - started_booking_form
+            - location
+            """
+    )
+    importer = RasaFileImporter(domain_path=domain)
+    validator = Validator.from_importer(importer)
+    assert validator.verify_slot_mappings()

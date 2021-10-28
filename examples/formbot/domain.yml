@@ -75,10 +75,6 @@ slots:
       conditions:
       - active_loop: restaurant_form
         requested_slot: feedback
-  requested_slot:
-    type: text
-    influence_conversation: false
-    mappings: []
 
 responses:
   utter_ask_cuisine:
