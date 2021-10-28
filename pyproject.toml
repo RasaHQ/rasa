@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py37", "py38",]
+target-version = [ "py37", "py38", "py39",]
 exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
@@ -90,10 +90,10 @@ colorhash = "~1.0.2"
 jsonschema = "~3.2"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2022.0"
-rasa-sdk = "^3.0.0"
+rasa-sdk = ">=3.0.0"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
-sanic = "^21.6.0"
+sanic = "^21.9.0"
 sanic-cors = "^1.0.0"
 sanic-jwt = "^1.6.0"
 cloudpickle = ">=1.2,<1.7"
