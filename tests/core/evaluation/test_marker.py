@@ -220,10 +220,12 @@ def test_compound_marker_seq_track(negated: bool):
 @pytest.mark.parametrize("negated", [True, False])
 def test_compound_marker_occur_track(negated: bool):
     events_expected = [
-        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
-        (SlotSet("2", value="bla"), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "0"}), False),
+        (SlotSet("2", value=None), False),
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), True),
         (SlotSet("2", value=None), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
+        (SlotSet("2", value="bla"), True),
         (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
     ]
     events, expected = zip(*events_expected)
@@ -241,7 +243,10 @@ def test_compound_marker_occur_track(negated: bool):
 
 def test_compound_marker_occur_never_applied():
     events_expected = [
-        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+        (SlotSet("2", value=None), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "0"}), False),
+        (SlotSet("1", value="test"), True),
     ]
     events, expected = zip(*events_expected)
     sub_markers = [IntentDetectedMarker("1"), SlotSetMarker("2")]

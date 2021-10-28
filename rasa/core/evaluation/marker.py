@@ -93,10 +93,7 @@ class OccurrenceMarker(CompoundMarker):
         return "never"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
-        if self.history and self.history[-1]:
-            return True
-
-        return all(any(marker.history) for marker in self.sub_markers)
+        return any(any(marker.history) for marker in self.sub_markers)
 
     def relevant_events(self) -> List[int]:
         """Only return index of first match (see parent class for full docstring)."""
