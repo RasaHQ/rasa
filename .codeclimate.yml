@@ -1,6 +1,7 @@
 version: "2"
 exclude_patterns:
 - rasa/core/utils.py   # codeclimate has some encoding issues with this files because of emojis
+- rasa/utils/tensorflow/temp_keras_modules.py # largely copy paste and temporary
 - .*
 - .github/
 - CHANGELOG.mdx
@@ -15,7 +16,7 @@ exclude_patterns:
 - bandit.yml
 - binder/
 - changelog/
-- data/        
+- data/
 - docs/
 - examples/
 - poetry.lock

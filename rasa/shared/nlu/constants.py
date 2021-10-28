@@ -11,6 +11,7 @@ FULL_RETRIEVAL_INTENT_NAME_KEY = "full_retrieval_intent_name"
 METADATA = "metadata"
 METADATA_INTENT = "intent"
 METADATA_EXAMPLE = "example"
+METADATA_MODEL_ID = "model_id"
 INTENT_RANKING_KEY = "intent_ranking"
 PREDICTED_CONFIDENCE_KEY = "confidence"
 
