@@ -166,6 +166,15 @@ Returns an iterator over all markers that are part of this marker.
 
   an iterator over all markers that are part of this marker
 
+#### \_\_len\_\_
+
+```python
+ | @abstractmethod
+ | __len__() -> int
+```
+
+Returns the count of all markers that are part of this marker.
+
 #### evaluate\_events
 
 ```python
@@ -324,6 +333,14 @@ Returns an iterator over all included markers, plus this marker itself.
 
   an iterator over all markers that are part of this marker
 
+#### \_\_len\_\_
+
+```python
+ | __len__() -> int
+```
+
+Returns the count of all markers that are part of this marker.
+
 #### reset
 
 ```python
@@ -391,6 +408,14 @@ Returns an iterator that just returns this `AtomicMarker`.
 **Returns**:
 
   an iterator over all markers that are part of this marker, i.e. this marker
+
+#### \_\_len\_\_
+
+```python
+ | __len__() -> int
+```
+
+Returns the count of all markers that are part of this marker.
 
 #### from\_config
 
