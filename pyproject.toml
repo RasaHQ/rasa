@@ -161,6 +161,7 @@ types-setuptools = "^57.0.0"
 memory-profiler = "^0.58.0"
 psutil = "^5.8.0"
 mypy-extensions = "^0.4.3"
+sanic-testing = "^0.7.0"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
