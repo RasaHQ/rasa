@@ -412,7 +412,7 @@ List of states for each state of the trackers history.
  | slots_for_entities(entities: List[Dict[Text, Any]]) -> List[SlotSet]
 ```
 
-Creates slot events for entities if auto-filling is enabled.
+Creates slot events for entities if from_entity mapping matches.
 
 **Arguments**:
 
@@ -577,7 +577,7 @@ Check whether the domain is empty.
 
 ```python
  | @staticmethod
- | is_domain_file(filename: Text) -> bool
+ | is_domain_file(filename: Union[Text, Path]) -> bool
 ```
 
 Checks whether the given file path is a Rasa domain file.
@@ -597,20 +597,13 @@ Checks whether the given file path is a Rasa domain file.
 - `YamlException` - if the file seems to be a YAML file (extension) but
   can not be read / parsed.
 
-#### slot\_mapping\_for\_form
+#### required\_slots\_for\_form
 
 ```python
- | slot_mapping_for_form(form_name: Text) -> Dict[Text, Any]
+ | required_slots_for_form(form_name: Text) -> List[Text]
 ```
 
-Retrieve the slot mappings for a form which are defined in the domain.
-
-Options:
-- an extracted entity
-- intent: value pairs
-- trigger_intent: value pairs
-- a whole message
-or a list of them, where the first match will be picked
+Retrieve the list of required slot names for a form defined in the domain.
 
 **Arguments**:
 
@@ -619,7 +612,21 @@ or a list of them, where the first match will be picked
 
 **Returns**:
 
-  The slot mapping or an empty dictionary in case no mapping was found.
+  The list of slot names or an empty list if no form was found.
+
+#### count\_slot\_mapping\_statistics
+
+```python
+ | count_slot_mapping_statistics() -> Tuple[int, int, int]
+```
+
+Counts the total number of slot mappings and custom slot mappings.
+
+**Returns**:
+
+  A triple of integers where the first entry is the total number of mappings,
+  the second entry is the total number of custom mappings, and the third entry
+  is the total number of mappings which have conditions attached.
 
 #### \_\_repr\_\_
 
@@ -628,40 +635,4 @@ or a list of them, where the first match will be picked
 ```
 
 Returns text representation of object.
-
-## SlotMapping Objects
-
-```python
-class SlotMapping(Enum)
-```
-
-Defines the available slot mappings.
-
-#### \_\_str\_\_
-
-```python
- | __str__() -> Text
-```
-
-Returns a string representation of the object.
-
-#### validate
-
-```python
- | @staticmethod
- | validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None
-```
-
-Validates a slot mapping.
-
-**Arguments**:
-
-- `mapping` - The mapping which is validated.
-- `form_name` - The name of the form which uses this slot mapping.
-- `slot_name` - The name of the slot which is mapped by this mapping.
-  
-
-**Raises**:
-
-- `InvalidDomain` - In case the slot mapping is not valid.
 

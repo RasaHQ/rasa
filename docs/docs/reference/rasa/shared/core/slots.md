@@ -29,7 +29,7 @@ Key-value store for storing information during a conversation.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Text, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = True) -> None
+ | __init__(name: Text, mappings: List[Dict[Text, Any]], initial_value: Any = None, value_reset_delay: Optional[int] = None, influence_conversation: bool = True) -> None
 ```
 
 Create a Slot.
@@ -38,10 +38,9 @@ Create a Slot.
 
 - `name` - The name of the slot.
 - `initial_value` - The initial value of the slot.
+- `mappings` - List containing slot mappings.
 - `value_reset_delay` - After how many turns the slot should be reset to the
   initial_value. This is behavior is currently not implemented.
-- `auto_fill` - `True` if the slot should be filled automatically by entities
-  with the same name.
 - `influence_conversation` - If `True` the slot will be featurized and hence
   influence the predictions of the dialogue polices.
 
@@ -120,6 +119,14 @@ Indicates if the slot&#x27;s value has been set.
 
 Returns a slots class by its type name.
 
+#### persistence\_info
+
+```python
+ | persistence_info() -> Dict[str, Any]
+```
+
+Returns relevant information to persist this slot.
+
 #### fingerprint
 
 ```python
@@ -143,7 +150,7 @@ A slot storing a float value.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Text, initial_value: Optional[float] = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, max_value: float = 1.0, min_value: float = 0.0, influence_conversation: bool = True) -> None
+ | __init__(name: Text, mappings: List[Dict[Text, Any]], initial_value: Optional[float] = None, value_reset_delay: Optional[int] = None, max_value: float = 1.0, min_value: float = 0.0, influence_conversation: bool = True) -> None
 ```
 
 Creates a FloatSlot.
@@ -203,7 +210,7 @@ Slot type which can be used to branch conversations based on its value.
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Text, values: Optional[List[Any]] = None, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = True) -> None
+ | __init__(name: Text, mappings: List[Dict[Text, Any]], values: Optional[List[Any]] = None, initial_value: Any = None, value_reset_delay: Optional[int] = None, influence_conversation: bool = True) -> None
 ```
 
 Creates a `Categorical  Slot` (see parent class for detailed docstring).
@@ -230,8 +237,22 @@ Returns serialized slot.
 class AnySlot(Slot)
 ```
 
-Slot which can be used to store any value. Users need to create a subclass of
-`Slot` in case the information is supposed to get featurized.
+Slot which can be used to store any value.
+
+Users need to create a subclass of `Slot` in case
+the information is supposed to get featurized.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(name: Text, mappings: List[Dict[Text, Any]], initial_value: Any = None, value_reset_delay: Optional[int] = None, influence_conversation: bool = False) -> None
+```
+
+Creates an `Any  Slot` (see parent class for detailed docstring).
+
+**Raises**:
+
+  InvalidSlotConfigError, if slot is featurized.
 
 #### \_\_eq\_\_
 

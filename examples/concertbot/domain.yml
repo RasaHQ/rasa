@@ -20,12 +20,18 @@ slots:
   concerts:
     type: list
     influence_conversation: false
+    mappings:
+    - type: custom
   venues:
     type: list
     influence_conversation: false
+    mappings:
+    - type: custom
   likes_music:
     type: bool
     influence_conversation: true
+    mappings:
+    - type: custom
 
 responses:
   utter_greet:

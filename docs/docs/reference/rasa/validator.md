@@ -124,6 +124,14 @@ Runs all the validations on intents and utterances.
 
 Verifies that form slots match the slot mappings in domain.
 
+#### verify\_slot\_mappings
+
+```python
+ | verify_slot_mappings() -> bool
+```
+
+Verifies that slot mappings match forms.
+
 #### verify\_domain\_validity
 
 ```python

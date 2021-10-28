@@ -70,53 +70,6 @@ Get mappings for requested slot.
 
 If None, map requested slot to an entity with the same name
 
-#### get\_ignored\_intents
-
-```python
- | get_ignored_intents(domain: Domain) -> List[Text]
-```
-
-Returns a list of ignored intents.
-
-**Arguments**:
-
-- `domain` - The current model domain.
-  
-
-**Returns**:
-
-  The value/s found in `ignored_intents` parameter in the `domain.yml`
-  (under forms).
-
-#### intent\_is\_desired
-
-```python
- | intent_is_desired(requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain) -> bool
-```
-
-Check whether user intent matches intent conditions.
-
-#### entity\_is\_desired
-
-```python
- | entity_is_desired(slot_mapping: Dict[Text, Any], slot: Text, entity_type_of_slot_to_fill: Optional[Text], tracker: DialogueStateTracker, domain: Domain) -> bool
-```
-
-Check whether slot should be filled by an entity in the input or not.
-
-**Arguments**:
-
-- `slot_mapping` - Slot mapping.
-- `slot` - The slot to be filled.
-- `entity_type_of_slot_to_fill` - Entity type of slot to fill.
-- `tracker` - The tracker.
-- `domain` - The domain.
-  
-
-**Returns**:
-
-  True, if slot should be filled, false otherwise.
-
 #### get\_entity\_value\_for\_slot
 
 ```python
@@ -139,16 +92,6 @@ Extract entities for given name and optional role and group.
 
   Value of entity.
 
-#### extract\_other\_slots
-
-```python
- | extract_other_slots(tracker: DialogueStateTracker, domain: Domain) -> Dict[Text, Any]
-```
-
-Extract the values of the other slots
-if they are set by corresponding entities from the user input
-else return `None`.
-
 #### get\_slot\_to\_fill
 
 ```python
@@ -163,27 +106,6 @@ previous form and must be ignored.
 **Returns**:
 
   The slot name or `None`
-
-#### extract\_requested\_slot
-
-```python
- | extract_requested_slot(tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text) -> Dict[Text, Any]
-```
-
-Extract the value of requested slot from a user input else return `None`.
-
-**Arguments**:
-
-- `tracker` - a DialogueStateTracker instance
-- `domain` - the current domain
-- `slot_to_fill` - the name of the slot to fill
-  
-
-**Returns**:
-
-  a dictionary with one key being the name of the slot to fill
-  and its value being the slot value, or an empty dictionary
-  if no slot value was found.
 
 #### validate\_slots
 
@@ -255,4 +177,20 @@ as any `SlotSet` events from validation of pre-filled slots.
 **Returns**:
 
   Events from the activation.
+
+#### is\_done
+
+```python
+ | async is_done(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain", events_so_far: List[Event]) -> bool
+```
+
+Checks if loop can be terminated.
+
+#### deactivate
+
+```python
+ | async deactivate(*args: Any, **kwargs: Any) -> List[Event]
+```
+
+Deactivates form.
 

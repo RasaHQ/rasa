@@ -4,6 +4,7 @@
       "items": [
         {
           "items": [
+            "reference/rasa/cli/arguments/data",
             "reference/rasa/cli/arguments/default_arguments",
             "reference/rasa/cli/arguments/interactive",
             "reference/rasa/cli/arguments/run",
@@ -137,6 +138,7 @@
         "reference/rasa/core/jobs",
         "reference/rasa/core/lock",
         "reference/rasa/core/lock_store",
+        "reference/rasa/core/migrate",
         "reference/rasa/core/processor",
         "reference/rasa/core/run",
         "reference/rasa/core/test",
@@ -373,6 +375,7 @@
             "reference/rasa/shared/core/domain",
             "reference/rasa/shared/core/events",
             "reference/rasa/shared/core/generator",
+            "reference/rasa/shared/core/slot_mappings",
             "reference/rasa/shared/core/slots",
             "reference/rasa/shared/core/trackers"
           ],

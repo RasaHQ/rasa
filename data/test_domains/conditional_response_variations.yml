@@ -12,8 +12,12 @@ slots:
     values:
       - primary
       - secondary
+    mappings:
+      - type: custom
   can_withdraw:
     type: bool
+    mappings:
+      - type: custom
 
 responses:
   utter_withdraw:

@@ -591,3 +591,49 @@ Returns action default ask rephrase name.
 
 Initializes action default ask rephrase.
 
+## ActionExtractSlots Objects
+
+```python
+class ActionExtractSlots(Action)
+```
+
+Default action that runs after each user turn.
+
+Action is executed automatically in MessageProcessor.handle_message(...)
+before the next predicted action is run.
+
+Sets slots to extracted values from user message
+according to assigned slot mappings.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(action_endpoint: Optional[EndpointConfig]) -> None
+```
+
+Initializes default action extract slots.
+
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns action_extract_slots name.
+
+#### run
+
+```python
+ | async run(output_channel: "OutputChannel", nlg: "NaturalLanguageGenerator", tracker: "DialogueStateTracker", domain: "Domain") -> List[Event]
+```
+
+Runs action. Please see parent class for the full docstring.
+
+#### extract\_slot\_value\_from\_predefined\_mapping
+
+```python
+extract_slot_value_from_predefined_mapping(mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> List[Any]
+```
+
+Extracts slot value if slot has an applicable predefined mapping.
+
