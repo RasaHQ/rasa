@@ -279,6 +279,26 @@ def test_compound_marker_occur_never_applied():
     assert marker.relevant_events() == []
 
 
+def test_compound_marker_occur_never_applied_negated():
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (SlotSet("2", value=None), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "0"}), False),
+        (SlotSet("1", value="test"), False),
+    ]
+    events, expected = zip(*events_expected)
+    sub_marker = OrMarker(
+        [IntentDetectedMarker("1"), SlotSetMarker("2")],
+        name="and marker",
+        negated=False,
+    )
+    marker = OccurrenceMarker([sub_marker], name="or", negated=True)
+    for event in events:
+        marker.track(event)
+
+    assert marker.relevant_events() == []
+
+
 def test_compound_marker_nested_simple_track():
     events = [
         UserUttered(intent={"name": "1"}),
