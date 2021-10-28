@@ -127,35 +127,11 @@ class InvalidMarkerConfig(RasaException):
 
 
 @dataclass
-class DialogueMetaData:
+class EventMetaData:
     """Describes meta data per event in some dialogue."""
 
-    preceding_user_turns: List[int]
-    timestamp: List[float]
-
-    def __post_init__(self) -> None:
-        if len(self.preceding_user_turns) != len(self.timestamp):
-            raise RuntimeError(
-                "The given data can't possibly describe the same sequence of events "
-                "since it contains information for different numbers of events, "
-                "respectively."
-            )
-
-    def __len__(self) -> int:
-        return len(self.preceding_user_turns)
-
-    def filter(self, indices: List[int]) -> DialogueMetaData:
-        """Return a list containing meta data for the requested event indices.
-
-        Args:
-            indices: indices of events for which we want to extract meta data
-        Returns:
-            a new meta data object containing the entries for the requested indices
-        """
-        return DialogueMetaData(
-            preceding_user_turns=[self.preceding_user_turns[idx] for idx in indices],
-            timestamp=[self.timestamp[idx] for idx in indices],
-        )
+    idx: int
+    preceding_user_turns: int
 
 
 T = TypeVar("T")
@@ -259,7 +235,7 @@ class Marker(ABC):
 
     def evaluate_events(
         self, events: List[Event], recursive: bool = False
-    ) -> List[Dict[Text, DialogueMetaData]]:
+    ) -> List[Dict[Text, List[EventMetaData]]]:
         """Resets the marker, tracks all events, and collects some information.
 
         The collected information includes:
@@ -276,8 +252,9 @@ class Marker(ABC):
             recursive: set this to `True` to collect evaluations for all markers that
                this marker consists of
         Returns:
-            a list of evaluations containing one dictionary mapping marker names
-            to dialogue meta data each dialogue contained in the tracker
+            a list that contains, for each dialogue contained in the tracker, a
+            dictionary mapping that maps marker names to meta data of relevant
+            events
         """
         # determine which marker to extract results from
         markers_to_be_evaluated: List[Marker] = []
@@ -289,28 +266,32 @@ class Marker(ABC):
             markers_to_be_evaluated = [self]
 
         # split the events into dialogues and evaluate them separately
-        dialogues = self._split_sessions(events=events)
-        results: List[Dict[Text, DialogueMetaData]] = []
-        for dialogue in dialogues:
+        dialogues_and_start_indices = self._split_sessions(events=events)
+
+        extracted_markers: List[Dict[Text, List[EventMetaData]]] = []
+        for dialogue, start_idx in dialogues_and_start_indices:
             # track all events and collect meta data per timestep
-            meta_data = self._track_all_and_collect_meta_data(events=dialogue)
+            meta_data = self._track_all_and_collect_meta_data(
+                events=dialogue, event_idx_offset=start_idx
+            )
             # for each marker, keep only certain meta data
-            result: Dict[Text, DialogueMetaData] = {
-                str(marker): meta_data.filter(indices=marker.relevant_events())
+            extracted: Dict[Text, EventMetaData] = {
+                str(marker): [meta_data[idx] for idx in marker.relevant_events()]
                 for marker in markers_to_be_evaluated
             }
-            results.append(result)
-        return results
+            extracted_markers.append(extracted)
+        return extracted_markers
 
     @staticmethod
-    def _split_sessions(events: List[Event]) -> List[List[Event]]:
+    def _split_sessions(events: List[Event]) -> List[Tuple[List[Event], int]]:
         """Identifies single dialogues in a the given sequence of events.
 
         Args:
             events: a sequence of events, e.g. extracted from a tracker store
         Returns:
             a list of sub-sequences of the given events that describe single
-            conversations
+            conversations and the respective index that describes where the
+            subsequence starts in the original sequence
         """
         session_start_indices = [
             idx
@@ -320,42 +301,49 @@ class Marker(ABC):
             == rasa.shared.core.constants.ACTION_SESSION_START_NAME
         ]
         if len(session_start_indices) == 0:
-            return [events]
-        dialogues = []
+            return [(events, 0)]
+        dialogues_and_start_indices: List[Tuple[List[Event], int]] = []
         for dialogue_idx in range(len(session_start_indices)):
             start_idx = (
                 session_start_indices[dialogue_idx - 1] if (dialogue_idx > 0) else 0
             )
             end_idx = session_start_indices[dialogue_idx]
             dialogue = [events[idx] for idx in range(start_idx, end_idx)]
-            dialogues.append(dialogue)
+            dialogues_and_start_indices.append((dialogue, start_idx))
         last_dialogue = [
             events[idx] for idx in range(session_start_indices[-1], len(events))
         ]
-        dialogues.append(last_dialogue)
-        return dialogues
+        dialogues_and_start_indices.append((last_dialogue, session_start_indices[-1]))
+        return dialogues_and_start_indices
 
-    def _track_all_and_collect_meta_data(self, events: List[Event]) -> DialogueMetaData:
+    def _track_all_and_collect_meta_data(
+        self, events: List[Event], event_idx_offset: int = 0
+    ) -> List[EventMetaData]:
         """Resets the marker, tracks all events, and collects metadata.
 
         Args:
             events: all events of a *single* dialogue that should be tracked and
                 evaluated
+            event_idx_offset: offset that will be used to modify the collected event
+                meta data, i.e. all event indices will be shifted by this offset
         Returns:
-            metadata for each tracked event
+            metadata for each tracked event with all event indices shifted by the
+            given `event_idx_offset`
         """
         self.reset()
-        timestamps: List[int] = []
-        preceding_user_turns: List[int] = [0]
-        for event in events:
+        dialogue_meta_data: List[EventMetaData] = []
+        num_preceeding_user_turns = 0
+        for idx, event in enumerate(events):
             is_user_turn = isinstance(event, UserUttered)
-            preceding_user_turns.append(preceding_user_turns[-1] + int(is_user_turn))
-            timestamps.append(event.timestamp)
+            dialogue_meta_data.append(
+                EventMetaData(
+                    idx=idx + event_idx_offset,
+                    preceding_user_turns=num_preceeding_user_turns,
+                )
+            )
             self.track(event=event)
-        preceding_user_turns = preceding_user_turns[:-1]  # drop last
-        return DialogueMetaData(
-            preceding_user_turns=preceding_user_turns, timestamp=timestamps
-        )
+            num_preceeding_user_turns += int(is_user_turn)
+        return dialogue_meta_data
 
     def relevant_events(self) -> List[int]:
         """Returns the indices of those tracked events that are relevant for evaluation.

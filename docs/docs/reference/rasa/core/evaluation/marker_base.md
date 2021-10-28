@@ -62,30 +62,14 @@ class InvalidMarkerConfig(RasaException)
 
 Exception that can be raised when the config for a marker is not valid.
 
-## DialogueMetaData Objects
+## EventMetaData Objects
 
 ```python
 @dataclass
-class DialogueMetaData()
+class EventMetaData()
 ```
 
 Describes meta data per event in some dialogue.
-
-#### filter
-
-```python
- | filter(indices: List[int]) -> DialogueMetaData
-```
-
-Return a list containing meta data for the requested event indices.
-
-**Arguments**:
-
-- `indices` - indices of events for which we want to extract meta data
-
-**Returns**:
-
-  a new meta data object containing the entries for the requested indices
 
 ## Marker Objects
 
@@ -178,7 +162,7 @@ Returns the count of all markers that are part of this marker.
 #### evaluate\_events
 
 ```python
- | evaluate_events(events: List[Event], recursive: bool = False) -> List[Dict[Text, DialogueMetaData]]
+ | evaluate_events(events: List[Event], recursive: bool = False) -> List[Dict[Text, List[EventMetaData]]]
 ```
 
 Resets the marker, tracks all events, and collects some information.
@@ -200,8 +184,9 @@ If `recursive` is set to `True`, then all included markers are evaluated.
 
 **Returns**:
 
-  a list of evaluations containing one dictionary mapping marker names
-  to dialogue meta data each dialogue contained in the tracker
+  a list that contains, for each dialogue contained in the tracker, a
+  dictionary mapping that maps marker names to meta data of relevant
+  events
 
 #### relevant\_events
 
