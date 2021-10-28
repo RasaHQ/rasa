@@ -4,6 +4,7 @@ import itertools
 import pytest
 import numpy as np
 
+import rasa.shared.utils.schemas.markers
 from rasa.core.evaluation.marker import (
     ActionExecutedMarker,
     AndMarker,
@@ -24,7 +25,7 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 
 CONDITION_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
-OPERATOR_MARKERS = [AndMarker, OrMarker, SequenceMarker]
+OPERATOR_MARKERS = [AndMarker, OrMarker, SequenceMarker, OccurrenceMarker]
 
 
 def test_marker_from_config_dict_single_and():
@@ -430,3 +431,16 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
 def test_atomic_markers_repr_not():
     marker = IntentDetectedMarker("intent1", negated=True)
     assert str(marker) == "(intent_not_detected: intent1)"
+
+
+def test_all_operators_in_schema():
+    operators_in_schema = rasa.shared.utils.schemas.markers.OPERATOR_SCHEMA["enum"]
+    operators_in_schema = {tag.lower() for tag in operators_in_schema}
+
+    actual_operators = set()
+    for operator in OPERATOR_MARKERS:
+        actual_operators.add(operator.tag())
+        if operator.negated_tag():
+            actual_operators.add(operator.negated_tag())
+
+    assert actual_operators == operators_in_schema
