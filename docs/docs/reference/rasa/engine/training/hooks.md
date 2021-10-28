@@ -48,6 +48,19 @@ class LoggingHook(GraphNodeHook)
 
 Logs the training of components.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(pruned_schema: GraphSchema) -> None
+```
+
+Creates hook.
+
+**Arguments**:
+
+- `pruned_schema` - The pruned schema provides us with the information whether
+  a component is cached or not.
+
 #### on\_before\_node
 
 ```python
