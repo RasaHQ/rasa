@@ -98,3 +98,4 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
         mock_stdin([])
         scaffold.init_project(args, str(new_project_folder_path))
     assert os.getcwd() == str(new_project_folder_path)
+    assert os.path.exists(".rasa/cache")
