@@ -21,10 +21,6 @@ class AndMarker(CompoundMarker):
         """Returns the tag to be used in a config file for the negated version."""
         return "at_least_one_not"
 
-    def _to_str_with(self, tag: Text) -> Text:
-        marker_str = f" {tag} ".join(str(marker) for marker in self.sub_markers)
-        return f"({marker_str})"
-
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return all(marker.history[-1] for marker in self.sub_markers)
 
@@ -42,10 +38,6 @@ class OrMarker(CompoundMarker):
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return "not"
-
-    def _to_str_with(self, tag: Text) -> Text:
-        marker_str = f" {tag} ".join(str(marker) for marker in self.sub_markers)
-        return f"({marker_str})"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return any(marker.history[-1] for marker in self.sub_markers)
@@ -145,8 +137,9 @@ class SlotSetMarker(AtomicMarker):
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         if isinstance(event, SlotSet) and event.key == self.text:
-            # it might be un-set
+            # slot is set if and only if it's value is not `None`
             return event.value is not None
-        else:
-            # it is still set
-            return bool(len(self.history) and self.history[-1])
+        if self.history:
+            was_set = self.history[-1] if not self.negated else not self.history[-1]
+            return was_set
+        return False

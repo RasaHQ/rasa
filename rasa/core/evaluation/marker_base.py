@@ -111,11 +111,6 @@ class MarkerRegistry:
         cls.marker_class_to_tag[marker_class] = positive_tag
 
 
-# Triggers the import of all modules containing marker classes in order to register
-# all configurable markers.
-MarkerRegistry.register_builtin_markers()
-
-
 # We allow multiple atomic markers to be grouped under the same tag e.g.
 # 'slot_set: ["slot_a", "slot_b"]' (see `AtomicMarkers` / `CompoundMarkers`),
 # which is why this config maps to a list of texts or just one text:
@@ -231,6 +226,11 @@ class Marker(ABC):
         Returns:
             an iterator over all markers that are part of this marker
         """
+        ...
+
+    @abstractmethod
+    def __len__(self) -> int:
+        """Returns the count of all markers that are part of this marker."""
         ...
 
     def evaluate_events(
@@ -444,6 +444,9 @@ class Marker(ABC):
         Returns:
             the configured marker
         """
+        # Triggers the import of all modules containing marker classes in order to
+        # register all configurable markers.
+        MarkerRegistry.register_builtin_markers()
         from rasa.core.evaluation.marker import AndMarker
 
         # A marker config can be either an atomic marker config list or a
@@ -501,6 +504,10 @@ class CompoundMarker(Marker, ABC):
         super().__init__(name=name, negated=negated)
         self.sub_markers: List[Marker] = markers
 
+    def _to_str_with(self, tag: Text) -> Text:
+        marker_str = ", ".join(str(marker) for marker in self.sub_markers)
+        return f"{tag}({marker_str})"
+
     def track(self, event: Event) -> None:
         """Updates the marker according to the given event.
 
@@ -523,6 +530,10 @@ class CompoundMarker(Marker, ABC):
             for sub_marker in marker:
                 yield sub_marker
         yield self
+
+    def __len__(self) -> int:
+        """Returns the count of all markers that are part of this marker."""
+        return len(self.sub_markers) + 1
 
     def reset(self) -> None:
         """Evaluate this marker given the next event.
@@ -614,6 +625,10 @@ class AtomicMarker(Marker, ABC):
             an iterator over all markers that are part of this marker, i.e. this marker
         """
         yield self
+
+    def __len__(self) -> int:
+        """Returns the count of all markers that are part of this marker."""
+        return 1
 
     @staticmethod
     def from_config(
