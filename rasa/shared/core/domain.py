@@ -1204,8 +1204,8 @@ class Domain:
 
         return states
 
-    def _get_entities_from_mappings_without_conditions(self) -> Dict[Text, Any]:
-        entity_mappings: Dict[Text, Any] = {}
+    def _get_entities_from_mappings_without_conditions(self) -> Dict[Any, Slot]:
+        entity_mappings: Dict[Any, Slot] = {}
 
         for slot in self.slots:
             for mapping in slot.mappings:
@@ -1213,7 +1213,7 @@ class Domain:
                     mapping.get("type") == str(SlotMapping.FROM_ENTITY)
                     and mapping.get(MAPPING_CONDITIONS) is None
                 ):
-                    entity_mappings[slot.name] = mapping.get("entity")
+                    entity_mappings[mapping.get("entity")] = slot
 
         return entity_mappings
 
@@ -1228,25 +1228,24 @@ class Domain:
         """
         if self.store_entities_as_slots:
             slot_events = []
-            for slot in self.slots:
-                if (
-                    slot.name
-                    not in self.entities_from_mappings_without_conditions.keys()
-                ):
-                    continue
 
-                matching_entities = [
-                    entity.get("value")
-                    for entity in entities
-                    if entity.get("entity")
-                    in self.entities_from_mappings_without_conditions[slot.name]
-                ]
+            matching_slots = {}
 
-                if matching_entities:
+            for entity in entities:
+                entity_name = entity.get("entity")
+                if entity_name in self.entities_from_mappings_without_conditions:
+                    slot = self.entities_from_mappings_without_conditions[entity_name]
+                    matching_entities = matching_slots.get(slot, [])
+                    matching_entities.append(entity.get("value"))
+                    matching_slots[slot] = matching_entities
+
+            if matching_slots:
+                for slot, matching_entities in matching_slots.items():
                     if isinstance(slot, ListSlot):
                         slot_events.append(SlotSet(slot.name, matching_entities))
                     else:
                         slot_events.append(SlotSet(slot.name, matching_entities[-1]))
+
             return slot_events
         else:
             return []

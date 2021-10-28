@@ -1552,3 +1552,66 @@ async def test_extract_other_slots_raises_no_matched_conditions():
             CollectingOutputChannel(),
             TemplatedNaturalLanguageGenerator(domain.responses),
         )
+
+
+async def test_action_extract_slots_custom_mapping_with_condition():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "2.0"
+
+        slots:
+          custom_slot:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+              conditions:
+              - active_loop: some_form
+
+        forms:
+          some_form:
+            required_slots:
+            - custom_slot
+
+        actions:
+        - validate_some_form
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    events = [ActiveLoop("some_form"), UserUttered("Hi")]
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=events, slots=domain.slots
+    )
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [{"event": "slot", "name": "custom_slot", "value": "test"},]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert events == []
+
+        form = FormAction("some_form", action_server)
+        form_events = await form.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        assert form_events == [
+            SlotSet("custom_slot", "test"),
+            SlotSet(REQUESTED_SLOT, None),
+            ActiveLoop(None),
+        ]
