@@ -1295,8 +1295,6 @@ def test_form_invalid_required_slots_raises():
 @pytest.mark.parametrize(
     "domain_as_dict",
     [
-        # Wrong type for slot mappings
-        {KEY_SLOTS: {"my_slot": {"type": "text", "mappings": {}}}},
         # Unknown mapping
         {KEY_SLOTS: {"my_slot": {"type": "text", "mappings": [{"type": "test"}]}}},
         # Mappings with missing keys

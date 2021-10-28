@@ -170,8 +170,6 @@ class SlotMapping(Enum):
 
 def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     """Raises InvalidDomain exception if slot mappings are invalid."""
-    from rasa.shared.core.domain import InvalidDomain
-
     rasa.shared.utils.io.raise_warning(
         f"Slot auto-fill has been removed in 3.0 and replaced with a "
         f"new explicit mechanism to set slots. "
@@ -181,21 +179,6 @@ def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
 
     for slot_name, properties in domain_slots.items():
         mappings = properties.get("mappings")
-
-        if mappings is None:
-            raise InvalidDomain(
-                f"The slot '{slot_name}' has no mappings defined. "
-                f"Please see {DOCS_URL_SLOTS} for more information."
-            )
-
-        if not isinstance(mappings, list):
-            raise InvalidDomain(
-                f"The slot mappings for slot '{slot_name}' in "
-                f"the domain have type '{type(mappings)}'. "
-                f"It is required to provide a list of slot "
-                f"mappings. Please see {DOCS_URL_SLOTS} "
-                f"for more information."
-            )
 
         for slot_mapping in mappings:
             SlotMapping.validate(slot_mapping, slot_name)

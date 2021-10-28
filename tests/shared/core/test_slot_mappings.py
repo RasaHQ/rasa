@@ -2,10 +2,11 @@ from typing import Text
 
 import pytest
 
-from rasa.shared.core.domain import Domain, InvalidDomain, KEY_SLOTS
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActiveLoop
 from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.utils.validation import YamlValidationException
 
 
 @pytest.mark.parametrize(
@@ -104,15 +105,32 @@ def test_slot_mappings_ignored_intents_during_active_loop():
     )
 
 
-@pytest.mark.parametrize(
-    "domain_as_dict",
-    [
-        # missing mappings parameter
-        {KEY_SLOTS: {"some_slot": {"type": "text", "influence_conversation": False}}},
-        # mappings is not of type list
-        {KEY_SLOTS: {"some_slot": {"type": "text", "mappings": {}}}},
-    ],
-)
-def test_validate_slot_mappings_raises(domain_as_dict):
-    with pytest.raises(InvalidDomain):
-        Domain.from_dict(domain_as_dict)
+def test_missing_slot_mappings_raises():
+    with pytest.raises(YamlValidationException):
+        Domain.from_yaml(
+            """
+            version: "2.0"
+            slots:
+              some_slot:
+                type: text
+                influence_conversation: False
+            """
+        )
+
+
+def test_slot_mappings_invalid_type_raises():
+    with pytest.raises(YamlValidationException):
+        Domain.from_yaml(
+            """
+            version: "2.0"
+            entities:
+            - from_entity
+            slots:
+              some_slot:
+                type: text
+                influence_conversation: False
+                mappings:
+                  type: from_entity
+                  entity: some_entity
+            """
+        )

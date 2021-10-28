@@ -624,6 +624,9 @@ class Domain:
         self._user_slots = copy.copy(slots)
         self.slots = slots
         self._add_default_slots()
+        self.entities_from_mappings_without_conditions = (
+            self._get_entities_from_mappings_without_conditions()
+        )
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
@@ -1201,6 +1204,19 @@ class Domain:
 
         return states
 
+    def _get_entities_from_mappings_without_conditions(self) -> Dict[Text, Any]:
+        entity_mappings: Dict[Text, Any] = {}
+
+        for slot in self.slots:
+            for mapping in slot.mappings:
+                if (
+                    mapping.get("type") == str(SlotMapping.FROM_ENTITY)
+                    and mapping.get(MAPPING_CONDITIONS) is None
+                ):
+                    entity_mappings[slot.name] = mapping.get("entity")
+
+        return entity_mappings
+
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
         """Creates slot events for entities if from_entity mapping matches.
 
@@ -1213,18 +1229,19 @@ class Domain:
         if self.store_entities_as_slots:
             slot_events = []
             for slot in self.slots:
+                if (
+                    slot.name
+                    not in self.entities_from_mappings_without_conditions.keys()
+                ):
+                    continue
+
                 matching_entities = [
                     entity.get("value")
                     for entity in entities
-                    if any(
-                        [
-                            entity.get("entity") == mapping.get("entity")
-                            for mapping in slot.mappings
-                            if mapping.get("type") == str(SlotMapping.FROM_ENTITY)
-                            and mapping.get(MAPPING_CONDITIONS) is None
-                        ]
-                    )
+                    if entity.get("entity")
+                    in self.entities_from_mappings_without_conditions[slot.name]
                 ]
+
                 if matching_entities:
                     if isinstance(slot, ListSlot):
                         slot_events.append(SlotSet(slot.name, matching_entities))
