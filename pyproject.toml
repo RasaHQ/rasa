@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py37", "py38",]
+target-version = [ "py37", "py38", "py39",]
 exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
@@ -16,7 +16,7 @@ maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
 homepage = "https://rasa.com"
 repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
-classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Programming Language :: Python", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Programming Language :: Python :: 3.8", "Topic :: Software Development :: Libraries",]
+classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Programming Language :: Python", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Programming Language :: Python :: 3.8", "Programming Language :: Python :: 3.9", "Topic :: Software Development :: Libraries",]
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
 include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
 readme = "README.md"
@@ -63,7 +63,7 @@ name = "Miscellaneous internal changes"
 showcontent = false
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.9"
+python = ">=3.7,<3.10"
 boto3 = "^1.12"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.4"
@@ -90,12 +90,12 @@ colorhash = "~1.0.2"
 jsonschema = "~3.2"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2022.0"
-rasa-sdk = "^2.8.1"
+rasa-sdk = { git = "https://github.com/rasahq/rasa-sdk.git", branch = "python3.9" }
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
-sanic = ">=19.12.2,<20.12.0"
-sanic-cors = "^0.10.0b1"
-sanic-jwt = ">=1.6.0,<1.7.0"
+sanic = "^21.9.0"
+sanic-cors = "^1.0.0"
+sanic-jwt = "^1.6.0"
 cloudpickle = ">=1.2,<1.7"
 aiohttp = ">=3.6,<3.8,!=3.7.4.post0"
 questionary = ">=1.5.1,<1.11.0"
