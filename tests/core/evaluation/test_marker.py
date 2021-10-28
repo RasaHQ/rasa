@@ -339,7 +339,14 @@ def generate_random_marker(
         condition_text = constant_condition_text or f"{rng.choice(1000)}"
         return condition_class(text=condition_text, negated=negated), 1
     else:
-        num_branches = rng.choice(max_branches - 1) + 1
+        operator_class = possible_operators[rng.choice(len(possible_operators))]
+        # TODO: Causes error with the `Occurrence` marker as this one doesn't allow
+        # more than one sub markers. Revisit this when handling the config validation.
+        num_branches = (
+            1
+            if operator_class == OccurrenceMarker
+            else rng.choice(max_branches - 1) + 1
+        )
         marker_size = 0
         sub_markers = []
         for _ in range(num_branches):
@@ -354,7 +361,6 @@ def generate_random_marker(
             )
             marker_size += sub_marker_size
             sub_markers.append(sub_marker)
-        operator_class = possible_operators[rng.choice(len(possible_operators))]
         negated = bool(rng.choice(2)) if constant_negated is None else constant_negated
         marker = operator_class(markers=sub_markers, negated=negated)
         marker_size += 1
