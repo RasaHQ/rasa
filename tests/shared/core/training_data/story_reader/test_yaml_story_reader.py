@@ -78,8 +78,8 @@ def test_can_read_test_story_with_slots(domain: Domain):
 @pytest.mark.parametrize(
     "domain_dict",
     [
-        {"slots": {"my_slot": {"type": "text"}}},
-        {"slots": {"my_slot": {"type": "list"}}},
+        {"slots": {"my_slot": {"type": "text", "mappings": [{"type": "from_text"}]}}},
+        {"slots": {"my_slot": {"type": "list", "mappings": [{"type": "from_text"}]}}},
     ],
 )
 async def test_default_slot_value_if_slots_referenced_by_name_only(domain_dict: Dict):
@@ -102,8 +102,12 @@ async def test_default_slot_value_if_slots_referenced_by_name_only(domain_dict: 
 @pytest.mark.parametrize(
     "domain_dict",
     [
-        {"slots": {"my_slot": {"type": "categorical"}}},
-        {"slots": {"my_slot": {"type": "float"}}},
+        {
+            "slots": {
+                "my_slot": {"type": "categorical", "mappings": [{"type": "from_text"}]}
+            }
+        },
+        {"slots": {"my_slot": {"type": "float", "mappings": [{"type": "from_text"}]}}},
     ],
 )
 async def test_default_slot_value_if_incompatible_slots_referenced_by_name_only(
@@ -155,7 +159,10 @@ async def test_default_slot_value_if_unfeaturized_slot():
         - my_slot
     """
     domain = Domain.from_dict(
-        {"intents": ["greet"], "slots": {"my_slot": {"type": "any"}}}
+        {
+            "intents": ["greet"],
+            "slots": {"my_slot": {"type": "any", "mappings": [{"type": "from_text"}]}},
+        }
     )
     reader = YAMLStoryReader(domain)
     with pytest.warns(None) as warnings:
@@ -746,7 +753,7 @@ def test_generate_training_data_with_cycles(domain: Domain):
     # if new default actions are added the keys of the actions will be changed
 
     all_label_ids = [id for ids in label_ids for id in ids]
-    assert Counter(all_label_ids) == {0: 6, 14: 3, 13: num_tens, 1: 2, 15: 1}
+    assert Counter(all_label_ids) == {0: 6, 15: 3, 14: num_tens, 1: 2, 16: 1}
 
 
 def test_generate_training_data_with_unused_checkpoints(domain: Domain):

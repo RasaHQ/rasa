@@ -180,14 +180,14 @@ class Marker(ABC):
         tag = str(self.negated_tag()) if self.negated else self.tag()
         return self._to_str_with(tag)
 
-    @classmethod
+    @staticmethod
     @abstractmethod
-    def tag(cls) -> Text:
+    def tag() -> Text:
         """Returns the tag to be used in a config file."""
         ...
 
-    @classmethod
-    def negated_tag(cls) -> Optional[Text]:
+    @staticmethod
+    def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return None
 
