@@ -4,6 +4,7 @@ import itertools
 import pytest
 import numpy as np
 
+import rasa.shared.utils.schemas.markers
 from rasa.core.evaluation.marker import (
     ActionExecutedMarker,
     AndMarker,
@@ -11,11 +12,13 @@ from rasa.core.evaluation.marker import (
     OrMarker,
     SlotSetMarker,
     SequenceMarker,
+    OccurrenceMarker,
 )
 from rasa.core.evaluation.marker_base import (
     CompoundMarker,
     Marker,
     AtomicMarker,
+    InvalidMarkerConfig,
 )
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
@@ -23,7 +26,7 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 
 CONDITION_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
-OPERATOR_MARKERS = [AndMarker, OrMarker, SequenceMarker]
+OPERATOR_MARKERS = [AndMarker, OrMarker, SequenceMarker, OccurrenceMarker]
 
 
 def test_marker_from_config_dict_single_and():
@@ -215,6 +218,87 @@ def test_compound_marker_seq_track(negated: bool):
     assert marker.history == expected
 
 
+@pytest.mark.parametrize("negated", [True, False])
+def test_compound_marker_occur_track(negated: bool):
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "0"}), False),
+        (SlotSet("2", value=None), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), True),
+        (SlotSet("2", value=None), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
+        (SlotSet("2", value="bla"), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
+    ]
+    events, expected = zip(*events_expected)
+    sub_marker = OrMarker(
+        [IntentDetectedMarker("1"), SlotSetMarker("2")],
+        name="or marker",
+        negated=False,
+    )
+    marker = OccurrenceMarker([sub_marker], name="marker_name", negated=negated)
+    for event in events:
+        marker.track(event)
+    expected = list(expected)
+    if negated:
+        expected = [not applies for applies in expected]
+    assert marker.history == expected
+
+    assert marker.relevant_events() == [expected.index(True)]
+
+
+@pytest.mark.parametrize(
+    "sub_markers, negated",
+    itertools.product(
+        ([], [IntentDetectedMarker("1"), IntentDetectedMarker("2")]), [False, True]
+    ),
+)
+def test_compound_marker_occur_raises_wrong_amount_submarkers(
+    sub_markers: List[Marker], negated: bool
+):
+    with pytest.raises(InvalidMarkerConfig):
+        OccurrenceMarker(sub_markers, name="marker_name", negated=negated)
+
+
+def test_compound_marker_occur_never_applied():
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+        (SlotSet("2", value=None), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "0"}), False),
+        (SlotSet("1", value="test"), True),
+    ]
+    events, expected = zip(*events_expected)
+    sub_marker = OrMarker(
+        [IntentDetectedMarker("1"), SlotSetMarker("2")],
+        name="and marker",
+        negated=False,
+    )
+    marker = OccurrenceMarker([sub_marker], name="or", negated=False)
+    for event in events:
+        marker.track(event)
+
+    assert marker.relevant_events() == []
+
+
+def test_compound_marker_occur_never_applied_negated():
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (SlotSet("2", value=None), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "0"}), False),
+        (SlotSet("1", value="test"), False),
+    ]
+    events, expected = zip(*events_expected)
+    sub_marker = OrMarker(
+        [IntentDetectedMarker("1"), SlotSetMarker("2")],
+        name="and marker",
+        negated=False,
+    )
+    marker = OccurrenceMarker([sub_marker], name="or", negated=True)
+    for event in events:
+        marker.track(event)
+
+    assert marker.relevant_events() == []
+
+
 def test_compound_marker_nested_simple_track():
     events = [
         UserUttered(intent={"name": "1"}),
@@ -255,7 +339,14 @@ def generate_random_marker(
         condition_text = constant_condition_text or f"{rng.choice(1000)}"
         return condition_class(text=condition_text, negated=negated), 1
     else:
-        num_branches = rng.choice(max_branches - 1) + 1
+        operator_class = possible_operators[rng.choice(len(possible_operators))]
+        # TODO: Causes error with the `Occurrence` marker as this one doesn't allow
+        # more than one sub markers. Revisit this when handling the config validation.
+        num_branches = (
+            1
+            if operator_class == OccurrenceMarker
+            else rng.choice(max_branches - 1) + 1
+        )
         marker_size = 0
         sub_markers = []
         for _ in range(num_branches):
@@ -270,7 +361,6 @@ def generate_random_marker(
             )
             marker_size += sub_marker_size
             sub_markers.append(sub_marker)
-        operator_class = possible_operators[rng.choice(len(possible_operators))]
         negated = bool(rng.choice(2)) if constant_negated is None else constant_negated
         marker = operator_class(markers=sub_markers, negated=negated)
         marker_size += 1
@@ -394,3 +484,16 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
 def test_atomic_markers_repr_not():
     marker = IntentDetectedMarker("intent1", negated=True)
     assert str(marker) == "(intent_not_detected: intent1)"
+
+
+def test_all_operators_in_schema():
+    operators_in_schema = rasa.shared.utils.schemas.markers.OPERATOR_SCHEMA["enum"]
+    operators_in_schema = {tag.lower() for tag in operators_in_schema}
+
+    actual_operators = set()
+    for operator in OPERATOR_MARKERS:
+        actual_operators.add(operator.tag())
+        if operator.negated_tag():
+            actual_operators.add(operator.negated_tag())
+
+    assert actual_operators == operators_in_schema

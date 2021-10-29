@@ -19,24 +19,38 @@ slots:
   object_type:
     type: text
     influence_conversation: false
+    mappings:
+    - type: custom
   mention:
     type: text
     influence_conversation: false
+    mappings:
+    - type: custom
   attribute:
     type: text
     influence_conversation: false
+    mappings:
+    - type: custom
   hotel:
     type: text
     influence_conversation: false
+    mappings:
+    - type: custom
   restaurant:
     type: text
     influence_conversation: false
+    mappings:
+    - type: custom
   city:
     type: text
     influence_conversation: false
+    mappings:
+    - type: custom
   cuisine:
     type: text
     influence_conversation: false
+    mappings:
+    - type: custom
 
 actions:
 - action_query_knowledge_base
