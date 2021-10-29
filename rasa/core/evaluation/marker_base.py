@@ -493,7 +493,7 @@ class Marker(ABC):
         tracker_loader: MarkerTrackerLoader,
         output_file: Text,
         stats_file: Optional[Text] = None,
-    ):
+    ) -> None:
         """Collect markers for each dialogue in each tracker loaded.
 
         Args:
