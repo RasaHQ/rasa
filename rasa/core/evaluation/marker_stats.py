@@ -7,7 +7,7 @@ import csv
 import numpy as np
 
 
-from rasa.core.evaluation.marker_base import EventMetaData
+from rasa.core.evaluation.marker_base import EventMetaData, Marker
 
 
 def compute_statistics(
@@ -230,17 +230,32 @@ class MarkerStatistics:
     def _write_per_session_statistics(self, table_writer: _CSVWriter) -> None:
         for marker_name, collected_statistics in self.session_results.items():
             for statistic_name, values in collected_statistics.items():
-                for record_idx, (sender_id, session_idx) in enumerate(
-                    self.session_identifier
-                ):
-                    MarkerStatistics._write_row(
-                        table_writer=table_writer,
-                        sender_id=sender_id,
-                        session_idx=session_idx,
-                        marker_name=marker_name,
-                        statistic_name=self._add_num_user_turns_str_to(statistic_name),
-                        statistic_value=values[record_idx],
-                    )
+                self._write_per_session_statistic(
+                    table_writer=table_writer,
+                    marker_name=marker_name,
+                    statistic_name=statistic_name,
+                    values=values,
+                )
+
+    @staticmethod
+    def _write_per_session_statistic(
+        session_identifier: List[Tuple[Text, int]],
+        marker_name: Text,
+        statistic_name: Text,
+        values: List[Union[np.float, int]],
+        table_writer: _CSVWriter,
+    ) -> None:
+        for record_idx, (sender_id, session_idx) in enumerate(session_identifier):
+            MarkerStatistics._write_row(
+                table_writer=table_writer,
+                sender_id=sender_id,
+                session_idx=session_idx,
+                marker_name=marker_name,
+                statistic_name=MarkerStatistics._add_num_user_turns_str_to(
+                    statistic_name
+                ),
+                statistic_value=values[record_idx],
+            )
 
     @staticmethod
     def _write_row(
