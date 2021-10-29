@@ -634,6 +634,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         should_skip: bool,
         tmp_path: Path,
     ):
+        """Skips predictions to prevent loop."""
         loaded_policy = self.persist_and_load_policy(
             trained_policy, model_storage, resource, execution_context
         )
@@ -682,19 +683,23 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_skip_predictions_if_new_intent(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         caplog: LogCaptureFixture,
         tracker_events: List[Event],
-        tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
-        interpreter = RegexInterpreter()
+        """Skips predictions if there's a new intent created."""
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
 
         with caplog.at_level(logging.DEBUG):
             prediction = loaded_policy.predict_action_probabilities(
-                tracker, default_domain, interpreter
+                tracker, default_domain, precomputations=None,
             )
 
         assert "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
