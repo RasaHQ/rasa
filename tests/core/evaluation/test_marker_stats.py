@@ -261,5 +261,3 @@ def test_to_csv(tmp_path: Path, seed: int):
     }
 
     assert actual_information == expected_information
-
-    breakpoint()
