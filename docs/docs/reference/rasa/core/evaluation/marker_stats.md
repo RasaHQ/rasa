@@ -2,99 +2,123 @@
 sidebar_label: rasa.core.evaluation.marker_stats
 title: rasa.core.evaluation.marker_stats
 ---
-## MarkerStats Objects
+#### compute\_statistics
 
 ```python
-class MarkerStats(TypedDict)
+compute_statistics(values: List[Union[float, int]]) -> Dict[Text, Union[int, np.float]]
 ```
 
-A TypedDict for statistics computed over extracted markers.
+Computes some statistics over the given numbers.
 
-#### load\_extracted\_markers\_json\_file
+## \_WriteRow Objects
 
 ```python
-load_extracted_markers_json_file(path: Union[Text, Path]) -> List
+class _WriteRow(Protocol)
 ```
 
-Reads a json marker file.
+Describes a csv writer supporting a `writerow` method (workaround for typing).
+
+#### writerow
+
+```python
+ | writerow(row: List[Text]) -> None
+```
+
+Write the given row.
 
 **Arguments**:
 
-- `path` - path to a json file.
+- `row` - the entries of a row as a list of strings
 
-#### compute\_summary\_stats
+## MarkerStatistics Objects
 
 ```python
-compute_summary_stats(data_points: Union[List[float], np.ndarray]) -> MarkerStats
+class MarkerStatistics()
 ```
 
-Computes summary statistics for a given array.
+Computes some statistics on marker extraction results.
+
+(1) Number of sessions where markers apply:
+
+For each marker, we compute the total number (as well as the percentage) of
+sessions in which a marker applies at least once.
+Moreover, we output the total number of sessions that were parsed.
+
+(2) Number of user turns preceding relevant events - per sessions:
+
+For each marker, we consider all relevant events where that marker applies.
+Everytime a marker applies, we check how many user turns precede that event.
+We collect all these numbers and compute basic statistics (e.g. count and mean)
+on them.
+
+This means, per session, we compute how often a marker applies and how many
+user turns precede a relevant marker application on average, in that session.
+
+(3) Number of user turns preceding relevant events - over all sessions:
+
+Here, for each marker, we consider all relevant events where a marker applies
+*in any of the sessions*. Then, we again calculate basic statistics over the
+respective number of user turns that precede each of these events.
+
+This means, we compute how many events the marker applies in total and we
+compute an estimate of the expected number of user turns preceding that
+precede an (relevant) event where a marker applies.
+
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Creates a new marker statistics object.
+
+#### process
+
+```python
+ | process(sender_id: Text, session_idx: int, meta_data_on_relevant_events_per_marker: Dict[Text, List[EventMetaData]]) -> None
+```
+
+Processes the meta data that was extracted from a single session.
+
+Internally, this method ..
+1. computes some statistics for the given meta data and saves it for later
+2. keeps track of the total number of sessions processed and the
+collects all metadata to be able to compute meta data over *all*
 
 **Arguments**:
 
-- `data_points` - can be a numpy array or a list of numbers.
-  
+- `sender_id` - an id that, together with the `session_idx` identifies
+  the session from which the markers where extracted
+- `session_idx` - an index that, together with the `sender_id` identifies
+  the session from which the markers where extracted
+- `meta_data_on_relevant_events_per_marker` - marker extraction results,
+  i.e. a dictionary mapping
+  marker names to the meta data describing relevant events
+  for those markers
 
-**Returns**:
-
-  A MarkerStats object containing size, mean, median, min, and max.
-  If the given array of data points is empty, it returns 0 for size, and
-  `np.nan` for every statistic.
-
-#### compute\_single\_tracker\_stats
+#### overall\_statistic\_to\_csv
 
 ```python
-compute_single_tracker_stats(single_tracker_markers: Dict[str, Any]) -> Dict[str, MarkerStats]
+ | overall_statistic_to_csv(path: Path, overwrite: bool = False) -> None
 ```
 
-Computes summary statistics for a single tracker.
+Exports the overall statistics (over all processes sessions) to a csv file.
 
 **Arguments**:
 
-- `single_tracker_markers` - a dictionary containing the extracted
-  markers for one tracker.
-  
+- `path` - path to where the csv file should be written.
+- `overwrite` - set to `True` to enable overwriting an existing file
 
-**Returns**:
-
-  A dictionary containing statistics computed for each marker.
-
-#### compute\_multi\_tracker\_stats
+#### per\_session\_statistics\_to\_csv
 
 ```python
-compute_multi_tracker_stats(multi_tracker_markers: List[Dict[str, Any]]) -> Tuple[Dict[str, Union[int, MarkerStats]], Dict[Any, Dict[str, MarkerStats]]]
+ | per_session_statistics_to_csv(path: Path, overwrite: bool = False) -> None
 ```
 
-Computes summary statistics for multiple trackers.
+Exports the resulting statistics to a csv file.
 
 **Arguments**:
 
-- `multi_tracker_markers` - a list of dictionaries each containing the
-  extracted markers for one tracker.
-  
-
-**Returns**:
-
-  A dictionary containing summary statistics computed per
-  marker over all trackers.
-  A dictionary containing summary statistics computed
-  per tracker.
-
-#### write\_stats
-
-```python
-write_stats(path: Union[Text, Path], stats: dict, per_tracker_stats: dict) -> None
-```
-
-Outputs statistics to JSON file.
-
-#### np\_encoder
-
-```python
-np_encoder(obj: Any) -> Any
-```
-
-Encodes numpy array values to make them JSON serializable.
-
-adapted from: https://bit.ly/3ajjTwp
+- `path` - path to where the csv file should be written.
+- `overwrite` - set to `True` to enable overwriting an existing file
 
