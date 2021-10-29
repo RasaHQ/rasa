@@ -32,7 +32,7 @@ def test_compute_statistics_simple_check():
 
 
 def _generate_random_example_for_one_session_and_one_marker(
-        rng: np.random.Generator,
+    rng: np.random.Generator,
 ) -> Tuple[List[EventMetaData], List[int]]:
     """Generates a random marker extraction result for a single session and marker.
 
@@ -65,10 +65,10 @@ PerMarkerCollectedNumbers = Dict[Text, List[List[int]]]
 
 
 def _generate_random_examples(
-        rng: np.random.Generator,
-        num_markers: int = 3,
-        num_sessions_min: int = 2,
-        num_sessions_max: int = 10,
+    rng: np.random.Generator,
+    num_markers: int = 3,
+    num_sessions_min: int = 2,
+    num_sessions_max: int = 10,
 ) -> Tuple[List[PerMarkerResults], PerMarkerCollectedNumbers]:
     """Generates a random number of random marker extraction results for some markers.
 
@@ -142,7 +142,7 @@ def test_process_results_per_session(seed: int):
         assert stats.session_identifier[idx] == (sender_ids[idx], session_indices[idx],)
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234, ])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
 def test_process_results_overall(seed: int):
     rng = np.random.default_rng(seed=seed)
     (
@@ -176,7 +176,7 @@ def test_process_results_overall(seed: int):
         assert stats.num_preceding_user_turns_collected[marker] == concatenated_numbers
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234, ])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
 def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
     rng = np.random.default_rng(seed=seed)
     (
@@ -252,7 +252,8 @@ def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
             }
             row_idx += 1
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234, ])
+
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
 def test_per_session_statistics_to_csv(tmp_path: Path, seed: int):
 
     rng = np.random.default_rng(seed=seed)
