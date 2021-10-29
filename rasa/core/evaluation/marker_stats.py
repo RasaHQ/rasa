@@ -43,7 +43,7 @@ class MarkerStatistics:
 
     (1) Number of sessions where markers apply:
 
-    For each marker, we compute the total number (as well as the percentage) of the
+    For each marker, we compute the total number (as well as the percentage) of
     sessions in which a marker applies at least once.
     Moreover, we output the total number of sessions that were parsed.
 
@@ -55,15 +55,15 @@ class MarkerStatistics:
     on them.
 
     This means, per session, we compute how often a marker applies and how many
-    user turns preceding a relevant marker application on average, in that session.
+    user turns precede a relevant marker application on average, in that session.
 
     (3) Number of user turns preceding relevant events - over all sessions:
 
     Here, for each marker, we consider all relevant events where a marker applies
     *in any of the sessions*. Then, we again calculate basic statistics over the
-    respective number of user turns that precedes each of these events.
+    respective number of user turns that precede each of these events.
 
-    This means, we compute to how many events the marker applies in total and we
+    This means, we compute how many events the marker applies in total and we
     compute an estimate of the expected number of user turns preceding that
     precede an (relevant) event where a marker applies.
     """
