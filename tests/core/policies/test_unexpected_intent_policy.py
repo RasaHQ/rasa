@@ -634,17 +634,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         should_skip: bool,
         tmp_path: Path,
     ):
-        caplog.set_level(logging.DEBUG)
+        """Skips predictions to prevent loop."""
         loaded_policy = self.persist_and_load_policy(
             trained_policy, model_storage, resource, execution_context
         )
         precomputations = None
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
-
-        prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations
-        )
+        with caplog.at_level(logging.DEBUG):
+            prediction = loaded_policy.predict_action_probabilities(
+                tracker, default_domain, precomputations
+            )
 
         assert (
             "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
@@ -654,6 +654,59 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             assert prediction.probabilities == loaded_policy._default_predictions(
                 default_domain
             )
+
+    @pytest.mark.parametrize(
+        "tracker_events",
+        [
+            [
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+            ],
+            [
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+                EntitiesAdded([{"name": "dummy"}]),
+            ],
+            [
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+                SlotSet("name"),
+            ],
+            [
+                ActiveLoop("loop"),
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+                ActionExecutionRejected("loop"),
+            ],
+        ],
+    )
+    def test_skip_predictions_if_new_intent(
+        self,
+        trained_policy: UnexpecTEDIntentPolicy,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        default_domain: Domain,
+        caplog: LogCaptureFixture,
+        tracker_events: List[Event],
+    ):
+        """Skips predictions if there's a new intent created."""
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
+        tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
+        tracker.update_with_events(tracker_events, default_domain)
+
+        with caplog.at_level(logging.DEBUG):
+            prediction = loaded_policy.predict_action_probabilities(
+                tracker, default_domain, precomputations=None,
+            )
+
+        assert "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
+
+        assert prediction.probabilities == loaded_policy._default_predictions(
+            default_domain
+        )
 
     @pytest.mark.parametrize(
         "tracker_events_with_action, tracker_events_without_action",
