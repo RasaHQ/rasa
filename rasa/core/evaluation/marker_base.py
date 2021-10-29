@@ -530,31 +530,31 @@ class Marker(ABC):
             table_writer.writerow(
                 [
                     "sender_id",
-                    "dialogue_id",
+                    "session_idx",
                     "marker_name",
                     "event_id",
                     "num_preceding_user_turns",
                 ]
             )
             for sender_id, dialogues in results.items():
-                for dialogue_id, dialogue in enumerate(dialogues):
+                for session_idx, session in enumerate(dialogues):
                     Marker._write_relevant_events(
-                        table_writer, sender_id, dialogue_id, dialogue
+                        table_writer, sender_id, session_idx, session
                     )
 
     @staticmethod
     def _write_relevant_events(
         writer: csv.writer,
         sender_id: Text,
-        dialogue_id: int,
-        dialogue: Dict[Text, EventMetaData],
+        session_idx: int,
+        session: Dict[Text, EventMetaData],
     ) -> None:
-        for marker_name, marker_metadata in dialogue.items():
+        for marker_name, marker_metadata in session.items():
             for metadata in marker_metadata:
                 writer.writerow(
                     [
                         sender_id,
-                        dialogue_id,
+                        session_idx,
                         marker_name,
                         metadata.idx,
                         metadata.preceding_user_turns,
