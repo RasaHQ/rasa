@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Dict, Text, Union, List, Tuple, Protocol
+from typing import Dict, Text, Union, List, Tuple
+from typing_extensions import Protocol
 from pathlib import Path
 import csv
 
