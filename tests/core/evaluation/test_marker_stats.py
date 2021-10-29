@@ -54,12 +54,22 @@ def _generate_random_example_for_one_session_and_one_marker(
     return event_list, all_preceding_user_turn_numbers
 
 
+# For every evaluated session, we obtain as a result a mapping of the evaluated
+# marker names to the meta data for the respective relevant events.
+PerMarkerResults = Dict[Text, List[EventMetaData]]
+# We collect the "number of preceding user turns" that we generate randomly and
+# compare them to the actual results later. In the following, the inner `List[int]`
+# contains the "number of preceding user turns" created for one session (and the
+# respective dialogue):
+PerMarkerCollectedNumbers = Dict[Text, List[List[int]]]
+
+
 def _generate_random_examples(
     rng: np.random.Generator,
     num_markers: int = 3,
     num_sessions_min: int = 2,
     num_sessions_max: int = 10,
-) -> Tuple[List[Dict[Text, List[EventMetaData]]], Dict[Text, List[List[int]]]]:
+) -> Tuple[List[PerMarkerResults], PerMarkerCollectedNumbers]:
     """Generates a random number of random marker extraction results for some markers.
 
     Args:
@@ -72,11 +82,11 @@ def _generate_random_examples(
     """
     num_sessions = int(rng.integers(low=num_sessions_min, high=num_sessions_max + 1))
     markers = [f"marker{idx}" for idx in range(num_markers)]
-    per_session_results: List[Dict[Text, List[EventMetaData]]] = []
-    preceding_user_turn_numbers_used_per_marker: Dict[Text, List[List[int]]] = {
+    per_session_results: List[PerMarkerResults] = []
+    preceding_user_turn_numbers_used_per_marker: PerMarkerCollectedNumbers = {
         marker: [] for marker in markers
     }
-    for _ in range(num_sessions - 1):  # we append one later
+    for _ in range(num_sessions - 1):  # we append one more later
         result_dict = {}
         for marker in markers:
             (
@@ -93,7 +103,7 @@ def _generate_random_examples(
     return per_session_results, preceding_user_turn_numbers_used_per_marker
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234])
 def test_process_results_per_session(seed: int):
 
     rng = np.random.default_rng(seed=seed)
@@ -112,7 +122,9 @@ def test_process_results_per_session(seed: int):
         sender_id = str(rng.choice(100))
         session_idx = int(rng.choice(100))
         stats.process(
-            session_idx=session_idx, sender_id=sender_id, extracted_markers=results,
+            session_idx=session_idx,
+            sender_id=sender_id,
+            meta_data_on_relevant_events_per_marker=results,
         )
         sender_ids.append(sender_id)
         session_indices.append(session_idx)
@@ -147,7 +159,7 @@ def test_process_results_overall(seed: int):
         stats.process(
             session_idx=session_idx,
             sender_id=str(rng.choice(100)),
-            extracted_markers=results,
+            meta_data_on_relevant_events_per_marker=results,
         )
 
     assert stats.num_sessions == num_sessions
@@ -184,7 +196,7 @@ def test_to_csv(tmp_path: Path, seed: int):
         stats.process(
             session_idx=session_idx,
             sender_id=str(rng.choice(100)),
-            extracted_markers=results,
+            meta_data_on_relevant_events_per_marker=results,
         )
 
     tmp_file = tmp_path / "test.csv"

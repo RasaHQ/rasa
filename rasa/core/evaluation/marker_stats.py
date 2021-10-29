@@ -1,7 +1,6 @@
 from __future__ import annotations
-from typing import Dict, Text, Union, List, Tuple
+from typing import Dict, Text, Union, List, Tuple, Protocol
 from pathlib import Path
-import io
 import csv
 
 import numpy as np
@@ -23,11 +22,8 @@ def compute_statistics(
     }
 
 
-class _CSVWriter:
-    """A csv writer."""
-
-    def __init__(self, stream: io.TextIOBase) -> None:
-        self.table_writer = csv.writer(stream)
+class _WriteRow(Protocol):
+    """Describes a csv writer supporting a `writerow` method (workaround for typing)."""
 
     def writerow(self, row: List[Text]) -> None:
         """Write the given row.
@@ -35,7 +31,7 @@ class _CSVWriter:
         Args:
             row: the entries of a row as a list of strings
         """
-        self.table_writer.writerow(row)
+        ...
 
 
 class MarkerStatistics:
@@ -85,12 +81,12 @@ class MarkerStatistics:
     ALL_SENDERS = "all"
 
     def __init__(self) -> None:
-        """Creates a new marker statistic."""
+        """Creates a new marker statistics object."""
         # to ensure consistency of processed rows
         self._marker_names = []
 
         # (1) For collecting the per-session analysis:
-        # NOTE: we could stream these instead of collecting them...
+        # NOTE: we could stream / compute them later instead of collecting them...
         self.session_results: Dict[Text, Dict[Text, List[Union[int, float]]]] = {}
         self.session_identifier: List[Tuple[Text, int]] = []
 
@@ -101,50 +97,57 @@ class MarkerStatistics:
 
     def process(
         self,
-        extracted_markers: Dict[Text, List[EventMetaData]],
-        session_idx: int,
         sender_id: Text,
+        session_idx: int,
+        meta_data_on_relevant_events_per_marker: Dict[Text, List[EventMetaData]],
     ) -> None:
-        """Adds the restriction result to the statistics evaluation.
+        """Processes the meta data that was extracted from a single session.
+
+        Internally, this method ..
+        1. computes some statistics for the given meta data and saves it for later
+        2. keeps track of the total number of sessions processed and the
+           collects all metadata to be able to compute meta data over *all*
 
         Args:
-            extracted_markers: marker extraction results, i.e. a dictionary mapping
-                from a marker name to a list of meta data describing relevant events
-                for that marker
-            session_idx: an index that, together with the `sender_id` identifies
-                the session from which the markers where extracted
             sender_id: an id that, together with the `session_idx` identifies
                 the session from which the markers where extracted
+            session_idx: an index that, together with the `sender_id` identifies
+                the session from which the markers where extracted
+            meta_data_on_relevant_events_per_marker: marker extraction results,
+                i.e. a dictionary mapping
+                marker names to the meta data describing relevant events
+                for those markers
         """
         if len(self._marker_names) == 0:
             # sort and initialise here once so our result tables are sorted
-            self._marker_names = sorted(extracted_markers.keys())
+            self._marker_names = sorted(meta_data_on_relevant_events_per_marker.keys())
             self.count_if_applied_at_least_once = {
                 marker_name: 0 for marker_name in self._marker_names
             }
             self.num_preceding_user_turns_collected = {
                 marker_name: [] for marker_name in self._marker_names
             }
-            # NOTE: we could stream these instead of collecting them...
+            # NOTE: we could stream / compute them later instead of collecting them...
             stat_names = sorted(compute_statistics([]).keys())
             self.session_results = {
                 marker_name: {stat_name: [] for stat_name in stat_names}
                 for marker_name in self._marker_names
             }
         else:
-            if set(extracted_markers.keys()) != set(self.session_results):
+            given_markers = meta_data_on_relevant_events_per_marker.keys()
+            if set(given_markers) != set(self._marker_names):
                 raise RuntimeError(
                     f"Expected all processed extraction results to contain information"
                     f"for the same set of markers. But found "
-                    f"{set(extracted_markers.keys())} which differs from "
-                    f"the marker extracted so far (i.e. {self.session_results})."
+                    f"{sorted(given_markers)} which differs from "
+                    f"the marker extracted so far (i.e. {sorted(self._marker_names)})."
                 )
 
         # update session identifiers / count
         self.num_sessions += 1
         self.session_identifier.append((sender_id, session_idx))
 
-        for marker_name, meta_data in extracted_markers.items():
+        for marker_name, meta_data in meta_data_on_relevant_events_per_marker.items():
 
             num_preceding_user_turns = [
                 event_meta_data.preceding_user_turns for event_meta_data in meta_data
@@ -172,11 +175,11 @@ class MarkerStatistics:
         if path.is_file() and not overwrite:
             raise FileExistsError(f"Expected that there was no file at {path}.")
         with path.open(mode="w") as f:
-            table_writer = _CSVWriter(f)
+            table_writer = csv.writer(f)
             table_writer.writerow(self._header())
             self._write_overview(table_writer)
             self._write_overall_statistics(table_writer)
-            # NOTE: we could stream these instead of collecting them...
+            # NOTE: we could stream / compute them later instead of collecting them...
             self._write_per_session_statistics(table_writer)
 
     @staticmethod
@@ -189,7 +192,7 @@ class MarkerStatistics:
             "value",
         ]
 
-    def _write_overview(self, table_writer: _CSVWriter) -> None:
+    def _write_overview(self, table_writer: _WriteRow) -> None:
         special_sender_idx = self.ALL_SENDERS
         special_session_idx = self.ALL_SESSIONS
         self._write_row(
@@ -220,7 +223,7 @@ class MarkerStatistics:
                 else 100.0,
             )
 
-    def _write_overall_statistics(self, table_writer: _CSVWriter) -> None:
+    def _write_overall_statistics(self, table_writer: _WriteRow) -> None:
         for marker_name, num_list in self.num_preceding_user_turns_collected.items():
             for statistic_name, value in compute_statistics(num_list).items():
                 MarkerStatistics._write_row(
@@ -232,7 +235,7 @@ class MarkerStatistics:
                     statistic_value=value,
                 )
 
-    def _write_per_session_statistics(self, table_writer: _CSVWriter) -> None:
+    def _write_per_session_statistics(self, table_writer: _WriteRow) -> None:
         for marker_name, collected_statistics in self.session_results.items():
             for statistic_name, values in collected_statistics.items():
                 self._write_per_session_statistic(
@@ -245,7 +248,7 @@ class MarkerStatistics:
 
     @staticmethod
     def _write_per_session_statistic(
-        table_writer: _CSVWriter,
+        table_writer: _WriteRow,
         marker_name: Text,
         statistic_name: Text,
         session_identifiers: List[Tuple[Text, int]],
@@ -265,7 +268,7 @@ class MarkerStatistics:
 
     @staticmethod
     def _write_row(
-        table_writer: _CSVWriter,
+        table_writer: _WriteRow,
         sender_id: Text,
         session_idx: Union[int, np.float],
         marker_name: Text,
