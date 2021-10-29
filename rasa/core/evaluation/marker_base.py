@@ -2,7 +2,6 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from typing import (
     Dict,
     Iterator,
