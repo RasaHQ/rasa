@@ -126,6 +126,152 @@ confidences. This change can affect the maximum confidence predicted by the
 However, the previous behavior can still be enforced by setting
 `ranking_length=10` and `renormalize_confidences=True`.
 
+### Slot Mappings
+
+As of version 3.0, there is a single explicit mechanism for slot filling enabled by defining slot mappings for each slot
+in the `slots` section of the domain file.
+
+This mechanism replaces the implicit slot setting via auto-fill of slots with entities of the same name.
+The `auto_fill` key in the domain is no longer available, as well as the `auto_fill` parameter in the constructor of
+the `Slot` class.
+
+While forms continue to request the next slot, the extraction of slots is now delegated exclusively to the new default
+action `action_extract_slots`. This action runs in the background after each user turn without it being required to be
+triggered manually.
+
+This approach allows slots to be kept up to date over the course of a conversation, and removes duplicated effort in
+mapping the same slots in multiple forms.
+
+You are now required to add the `mappings` key for each slot in the 3.0 domain format, including any slots with custom
+mappings. The keys used to define predefined mappings in 2.0 were maintained. Additionally, you can define slots with
+custom mappings implemented in a custom action, like so:
+
+```yaml
+slots:
+  is_existing_customer:
+    type: bool
+    mappings:
+    - type: custom
+      action: action_verify_customer_status
+```
+
+You can also create a custom validation action extending the `ValidationAction` in the Rasa SDK to either
+define validation methods for slots with predefined mappings or custom extraction and validation methods for slots
+with custom mappings. In either cases, you do not need to specify the `action` key in the mapping, however you will
+need to list `action_validate_slot_mappings` in the domain `actions`.
+You can continue using `FormValidationAction` as in 2.0, however please note this will only run if the form is activated.
+
+Because slot mappings are now relocated from `forms` to `slots`, the `required_slots` of a form has been converted in a
+list of slot names.
+
+To migrate automatically to the 3.0 domain format, you can run the following command:
+
+```bash
+rasa data migrate -d DOMAIN --out OUT_PATH
+```
+
+In addition to creating a a valid 3.0 domain in the indicated out path, this command will automatically backup your
+original domain file(s) in a file labeled `original_domain.yml` or `original_domain` directory if a directory was
+provided instead.
+
+Please note that the migrated slot mappings from forms will include mapping conditions for each form.
+To learn more on mapping conditions, you can read more in this [section](./domain.mdx#mapping-conditions).
+
+#### Manually migrating from 2.0 domain format to the 3.0 format
+
+Let's consider the following 2.0 domain file:
+
+```yaml
+entities:
+ - cuisine
+ - number
+ slots:
+   cuisine:
+     type: text
+   num_people:
+     type: float
+   outdoor_seating:
+     type: bool
+ forms:
+   restaurant_form:
+     required_slots:
+         cuisine:
+           - type: from_entity
+             entity: cuisine
+         num_people:
+           - type: from_entity
+             entity: number
+         outdoor_seating:
+           - type: from_intent
+             intent: affirm
+             value: true
+           - type: from_intent
+             intent: deny
+             value: false
+```
+
+Each slot in `slots` will need a new key mappings .
+This key is a list of mappings moved from forms, while the `required_slots` field collapses to a list of slot names.
+For example, the initial result of this migration could look like this:
+
+```yaml
+entities:
+ - cuisine
+ - number
+ slots:
+   cuisine:
+     type: text
+     mappings:
+     - type: from_entity
+       entity: cuisine
+   num_people:
+     type: float
+     mappings:
+     - type: from_entity
+       entity: number
+   outdoor_seating:
+     type: bool
+     mappings:
+     - type: from_intent
+       intent: affirm
+       value: true
+     - type: from_intent
+       intent: deny
+       value: false
+ forms:
+   restaurant_form:
+     required_slots:
+	 - cuisine
+     - num_people
+     - outdoor_seating
+```
+
+In case you'd like certain slots to be filled only within the context of a form, you can add mapping conditions like so:
+
+```yaml
+ slots:
+   outdoor_seating:
+     type: bool
+     mappings:
+     - type: from_intent
+       intent: affirm
+       value: true
+       conditions:
+       - active_loop: restaurant_form
+         requested_slot: outdoor_seating
+     - type: from_intent
+       intent: deny
+       value: false
+       conditions:
+       - active_loop: restaurant_form
+         requested_slot: outdoor_seating
+```
+
+Please note it is not required to use mapping conditions for custom slot mappings defined in a custom action inheriting
+from `FormValidationAction`. However if you wish certain custom slot mappings to only be set within the context of a form,
+make sure your custom action inherits from `FormValidationAction` rather than from `ValidationAction`.
+The latter will set slots universally outside forms too.
+
 ## Rasa 2.7 to 2.8
 
 :::caution
