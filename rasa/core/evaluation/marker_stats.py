@@ -7,7 +7,7 @@ import csv
 import numpy as np
 
 
-from rasa.core.evaluation.marker_base import EventMetaData, Marker
+from rasa.core.evaluation.marker_base import EventMetaData
 
 
 def compute_statistics(
@@ -234,18 +234,19 @@ class MarkerStatistics:
                     table_writer=table_writer,
                     marker_name=marker_name,
                     statistic_name=statistic_name,
+                    session_identifiers=self.session_identifier,
                     values=values,
                 )
 
     @staticmethod
     def _write_per_session_statistic(
-        session_identifier: List[Tuple[Text, int]],
+        table_writer: _CSVWriter,
         marker_name: Text,
         statistic_name: Text,
+        session_identifiers: List[Tuple[Text, int]],
         values: List[Union[np.float, int]],
-        table_writer: _CSVWriter,
     ) -> None:
-        for record_idx, (sender_id, session_idx) in enumerate(session_identifier):
+        for record_idx, (sender_id, session_idx) in enumerate(session_identifiers):
             MarkerStatistics._write_row(
                 table_writer=table_writer,
                 sender_id=sender_id,
