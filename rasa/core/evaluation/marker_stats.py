@@ -165,8 +165,8 @@ class MarkerStatistics:
             if len(num_preceding_user_turns):
                 self.count_if_applied_at_least_once[marker_name] += 1
 
-    def to_csv(self, path: Path, overwrite: bool = False) -> None:
-        """Exports the resulting statistics to a csv file.
+    def overall_statistic_to_csv(self, path: Path, overwrite: bool = False) -> None:
+        """Exports the overall statistics (over all processes sessions) to a csv file.
 
         Args:
             path: path to where the csv file should be written.
@@ -179,6 +179,21 @@ class MarkerStatistics:
             table_writer.writerow(self._header())
             self._write_overview(table_writer)
             self._write_overall_statistics(table_writer)
+
+    def per_session_statistics_to_csv(
+        self, path: Path, overwrite: bool = False
+    ) -> None:
+        """Exports the resulting statistics to a csv file.
+
+        Args:
+            path: path to where the csv file should be written.
+            overwrite: set to `True` to enable overwriting an existing file
+        """
+        if path.is_file() and not overwrite:
+            raise FileExistsError(f"Expected that there was no file at {path}.")
+        with path.open(mode="w") as f:
+            table_writer = csv.writer(f)
+            table_writer.writerow(self._header())
             # NOTE: we could stream / compute them later instead of collecting them...
             self._write_per_session_statistics(table_writer)
 

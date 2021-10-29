@@ -32,7 +32,7 @@ def test_compute_statistics_simple_check():
 
 
 def _generate_random_example_for_one_session_and_one_marker(
-    rng: np.random.Generator,
+        rng: np.random.Generator,
 ) -> Tuple[List[EventMetaData], List[int]]:
     """Generates a random marker extraction result for a single session and marker.
 
@@ -65,10 +65,10 @@ PerMarkerCollectedNumbers = Dict[Text, List[List[int]]]
 
 
 def _generate_random_examples(
-    rng: np.random.Generator,
-    num_markers: int = 3,
-    num_sessions_min: int = 2,
-    num_sessions_max: int = 10,
+        rng: np.random.Generator,
+        num_markers: int = 3,
+        num_sessions_min: int = 2,
+        num_sessions_max: int = 10,
 ) -> Tuple[List[PerMarkerResults], PerMarkerCollectedNumbers]:
     """Generates a random number of random marker extraction results for some markers.
 
@@ -105,7 +105,6 @@ def _generate_random_examples(
 
 @pytest.mark.parametrize("seed", [2345, 5654, 2345234])
 def test_process_results_per_session(seed: int):
-
     rng = np.random.default_rng(seed=seed)
 
     (
@@ -143,9 +142,8 @@ def test_process_results_per_session(seed: int):
         assert stats.session_identifier[idx] == (sender_ids[idx], session_indices[idx],)
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234, ])
 def test_process_results_overall(seed: int):
-
     rng = np.random.default_rng(seed=seed)
     (
         per_session_results,
@@ -178,9 +176,8 @@ def test_process_results_overall(seed: int):
         assert stats.num_preceding_user_turns_collected[marker] == concatenated_numbers
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
-def test_to_csv(tmp_path: Path, seed: int):
-
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234, ])
+def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
     rng = np.random.default_rng(seed=seed)
     (
         per_session_results,
@@ -200,7 +197,7 @@ def test_to_csv(tmp_path: Path, seed: int):
         )
 
     tmp_file = tmp_path / "test.csv"
-    stats.to_csv(path=tmp_file)
+    stats.overall_statistic_to_csv(path=tmp_file)
 
     with tmp_file.open(mode="r") as f:
         reader = csv.DictReader(f)
@@ -255,12 +252,40 @@ def test_to_csv(tmp_path: Path, seed: int):
             }
             row_idx += 1
 
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234, ])
+def test_per_session_statistics_to_csv(tmp_path: Path, seed: int):
+
+    rng = np.random.default_rng(seed=seed)
+    (
+        per_session_results,
+        preceding_user_turn_numbers_used_per_marker,
+    ) = _generate_random_examples(
+        num_markers=3, rng=rng, num_sessions_min=10, num_sessions_max=20
+    )
+    markers = sorted(preceding_user_turn_numbers_used_per_marker.keys())
+
+    stats = MarkerStatistics()
+    for session_idx, results in enumerate(per_session_results):
+        stats.process(
+            session_idx=session_idx,
+            sender_id=str(rng.choice(100)),
+            meta_data_on_relevant_events_per_marker=results,
+        )
+
+    tmp_file = tmp_path / "test.csv"
+    stats.per_session_statistics_to_csv(path=tmp_file)
+
+    with tmp_file.open(mode="r") as f:
+        reader = csv.DictReader(f)
+        rows = [row for row in reader]
+
     actual_information = {
         (row["sender_id"], row["session_idx"], row["marker"], row["statistic"]): row[
             "value"
         ]
-        for row in rows[row_idx:]
+        for row in rows
     }
+    num_digits = 3
     expected_information = {
         (
             sender_id,
