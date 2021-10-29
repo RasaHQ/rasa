@@ -26,10 +26,15 @@ def compute_statistics(
 class _CSVWriter:
     """A csv writer."""
 
-    def __init__(self, stream: io.IOBase) -> None:
+    def __init__(self, stream: io.TextIOBase) -> None:
         self.table_writer = csv.writer(stream)
 
     def writerow(self, row: List[Text]) -> None:
+        """Write the given row.
+
+        Args:
+            row: the entries of a row as a list of strings
+        """
         self.table_writer.writerow(row)
 
 
@@ -90,7 +95,7 @@ class MarkerStatistics:
         self.session_identifier: List[Tuple[Text, int]] = []
 
         # (2) For the overall statistics:
-        self.num_preceeding_user_turns_collected: Dict[Text, List[int]] = {}
+        self.num_preceding_user_turns_collected: Dict[Text, List[int]] = {}
         self.count_if_applied_at_least_once: Dict[Text, int] = {}
         self.num_sessions = 0
 
@@ -117,7 +122,7 @@ class MarkerStatistics:
             self.count_if_applied_at_least_once = {
                 marker_name: 0 for marker_name in self._marker_names
             }
-            self.num_preceeding_user_turns_collected = {
+            self.num_preceding_user_turns_collected = {
                 marker_name: [] for marker_name in self._marker_names
             }
             # NOTE: we could stream these instead of collecting them...
@@ -141,20 +146,20 @@ class MarkerStatistics:
 
         for marker_name, meta_data in extracted_markers.items():
 
-            num_preceeding_user_turns = [
+            num_preceding_user_turns = [
                 event_meta_data.preceding_user_turns for event_meta_data in meta_data
             ]
 
             # update per session statistics
-            statistics = compute_statistics(num_preceeding_user_turns)
+            statistics = compute_statistics(num_preceding_user_turns)
             for stat_name, stat_value in statistics.items():
                 self.session_results[marker_name][stat_name].append(stat_value)
 
             # update overall statistics
-            self.num_preceeding_user_turns_collected[marker_name].extend(
-                num_preceeding_user_turns
+            self.num_preceding_user_turns_collected[marker_name].extend(
+                num_preceding_user_turns
             )
-            if len(num_preceeding_user_turns):
+            if len(num_preceding_user_turns):
                 self.count_if_applied_at_least_once[marker_name] += 1
 
     def to_csv(self, path: Path, overwrite: bool = False) -> None:
@@ -216,7 +221,7 @@ class MarkerStatistics:
             )
 
     def _write_overall_statistics(self, table_writer: _CSVWriter) -> None:
-        for marker_name, num_list in self.num_preceeding_user_turns_collected.items():
+        for marker_name, num_list in self.num_preceding_user_turns_collected.items():
             for statistic_name, value in compute_statistics(num_list).items():
                 MarkerStatistics._write_row(
                     table_writer=table_writer,

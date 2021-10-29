@@ -31,7 +31,7 @@ def test_compute_statistics_simple_check():
     assert stats["median"] == 1.5  # this is no bug, it is a convention numpy follows
 
 
-def _generate_random_example(
+def _generate_random_example_for_one_session_and_one_marker(
     rng: np.random.Generator,
 ) -> Tuple[List[EventMetaData], List[int]]:
     """Generates a random marker extraction result for a single session and marker.
@@ -59,7 +59,7 @@ def _generate_random_examples(
     num_markers: int = 3,
     num_sessions_min: int = 2,
     num_sessions_max: int = 10,
-) -> Tuple[List[EventMetaData], Dict[Text, List[List[int]]]]:
+) -> Tuple[List[Dict[Text, List[EventMetaData]]], Dict[Text, List[List[int]]]]:
     """Generates a random number of random marker extraction results for some markers.
 
     Args:
@@ -72,22 +72,25 @@ def _generate_random_examples(
     """
     num_sessions = int(rng.integers(low=num_sessions_min, high=num_sessions_max + 1))
     markers = [f"marker{idx}" for idx in range(num_markers)]
-    per_session_results: List[Dict[Text, EventMetaData]] = []
-    preceeding_user_turn_numbers_used_per_marker: Dict[Text, List[List[int]]] = {
+    per_session_results: List[Dict[Text, List[EventMetaData]]] = []
+    preceding_user_turn_numbers_used_per_marker: Dict[Text, List[List[int]]] = {
         marker: [] for marker in markers
     }
     for _ in range(num_sessions - 1):  # we append one later
         result_dict = {}
         for marker in markers:
-            event_list, num_list = _generate_random_example(rng=rng)
+            (
+                event_list,
+                num_list,
+            ) = _generate_random_example_for_one_session_and_one_marker(rng=rng)
             result_dict[marker] = event_list
-            preceeding_user_turn_numbers_used_per_marker[marker].append(num_list)
+            preceding_user_turn_numbers_used_per_marker[marker].append(num_list)
         per_session_results.append(result_dict)
     # append a session where we didn't find any marker
     per_session_results.append({marker: [] for marker in markers})
-    for marker in preceeding_user_turn_numbers_used_per_marker:
-        preceeding_user_turn_numbers_used_per_marker[marker].append([])
-    return per_session_results, preceeding_user_turn_numbers_used_per_marker
+    for marker in preceding_user_turn_numbers_used_per_marker:
+        preceding_user_turn_numbers_used_per_marker[marker].append([])
+    return per_session_results, preceding_user_turn_numbers_used_per_marker
 
 
 @pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
@@ -97,9 +100,9 @@ def test_process_results_per_session(seed: int):
 
     (
         per_session_results,
-        preceeding_user_turn_numbers_used_per_marker,
+        preceding_user_turn_numbers_used_per_marker,
     ) = _generate_random_examples(num_markers=3, rng=rng)
-    markers = sorted(preceeding_user_turn_numbers_used_per_marker.keys())
+    markers = sorted(preceding_user_turn_numbers_used_per_marker.keys())
     num_sessions = len(per_session_results)
 
     stats = MarkerStatistics()
@@ -118,7 +121,7 @@ def test_process_results_per_session(seed: int):
     for marker in markers:
         for idx in range(num_sessions):
             expected_stats = compute_statistics(
-                preceeding_user_turn_numbers_used_per_marker[marker][idx]
+                preceding_user_turn_numbers_used_per_marker[marker][idx]
             )
             for stat_name, stat_value in expected_stats.items():
                 assert pytest.approx(
@@ -134,9 +137,9 @@ def test_process_results_overall(seed: int):
     rng = np.random.default_rng(seed=seed)
     (
         per_session_results,
-        preceeding_user_turn_numbers_used_per_marker,
+        preceding_user_turn_numbers_used_per_marker,
     ) = _generate_random_examples(num_markers=3, rng=rng)
-    markers = sorted(preceeding_user_turn_numbers_used_per_marker.keys())
+    markers = sorted(preceding_user_turn_numbers_used_per_marker.keys())
     num_sessions = len(per_session_results)
 
     stats = MarkerStatistics()
@@ -150,17 +153,17 @@ def test_process_results_overall(seed: int):
     assert stats.num_sessions == num_sessions
     for marker in markers:
         # count how often we generated some results for a session:
-        number_lists = preceeding_user_turn_numbers_used_per_marker[marker]
+        number_lists = preceding_user_turn_numbers_used_per_marker[marker]
         applies_at_least_once = sum(len(sub_list) > 0 for sub_list in number_lists)
         # and compare that to the expected count:
         assert stats.count_if_applied_at_least_once[marker] == applies_at_least_once
-        # check if we collected the all the "preceeding user turn numbers"
+        # check if we collected the all the "preceding user turn numbers"
         concatenated_numbers = list(
             itertools.chain.from_iterable(
-                preceeding_user_turn_numbers_used_per_marker[marker]
+                preceding_user_turn_numbers_used_per_marker[marker]
             )
         )
-        assert stats.num_preceeding_user_turns_collected[marker] == concatenated_numbers
+        assert stats.num_preceding_user_turns_collected[marker] == concatenated_numbers
 
 
 @pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
@@ -169,11 +172,11 @@ def test_to_csv(tmp_path: Path, seed: int):
     rng = np.random.default_rng(seed=seed)
     (
         per_session_results,
-        preceeding_user_turn_numbers_used_per_marker,
+        preceding_user_turn_numbers_used_per_marker,
     ) = _generate_random_examples(
         num_markers=3, rng=rng, num_sessions_min=10, num_sessions_max=20
     )
-    markers = sorted(preceeding_user_turn_numbers_used_per_marker.keys())
+    markers = sorted(preceding_user_turn_numbers_used_per_marker.keys())
     num_sessions = len(per_session_results)
 
     stats = MarkerStatistics()
@@ -201,23 +204,23 @@ def test_to_csv(tmp_path: Path, seed: int):
 
     num_digits = 3
     row_idx = 1
-    for marker_idx in range(len(markers)):
-        rows[row_idx] == {
+    for marker_name in markers:
+        assert rows[row_idx] == {
             "sender_id": "all",
             "session_idx": "nan",
-            "marker": "marker0",
+            "marker": marker_name,
             "statistic": "number_of_sessions_where_marker_applies_at_least_once",
-            "value": str(stats.count_if_applied_at_least_once[markers[marker_idx]]),
+            "value": str(stats.count_if_applied_at_least_once[marker_name]),
         }
         row_idx += 1
-        rows[row_idx] == {
+        assert rows[row_idx] == {
             "sender_id": "all",
             "session_idx": "nan",
-            "marker": "marker0",
+            "marker": marker_name,
             "statistic": "percentage_of_sessions_where_marker_applies_at_least_once",
             "value": str(
                 round(
-                    stats.count_if_applied_at_least_once[markers[marker_idx]]
+                    stats.count_if_applied_at_least_once[marker_name]
                     / num_sessions
                     * 100,
                     num_digits,
@@ -228,10 +231,10 @@ def test_to_csv(tmp_path: Path, seed: int):
 
     for marker_name in markers:
         statistics = compute_statistics(
-            stats.num_preceeding_user_turns_collected[marker_name]
+            stats.num_preceding_user_turns_collected[marker_name]
         )
         for stat_name, stat_value in statistics.items():
-            rows[row_idx] == {
+            assert rows[row_idx] == {
                 "sender_id": "all",
                 "session_idx": "nan",
                 "marker": marker_name,
