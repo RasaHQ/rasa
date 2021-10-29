@@ -133,9 +133,9 @@ def add_dry_run_param(
         "and this information will be printed as the output. The return "
         "code is a 4-bit bitmask that can also be used to determine what exactly needs "
         "to be retrained:\n"
-        "- 1 means Core needs to be retrained\n"
-        "- 2 means NLU needs to be retrained\n"
-        "- 4 means responses in the domain should be updated\n"
+        "- 0 means that no extensive training is required (note that the responses "
+        "still might require updating by running 'rasa train').\n"
+        "- 1 means the model needs to be retrained\n"
         "- 8 means the training was forced (--force argument is specified)",
     )
 

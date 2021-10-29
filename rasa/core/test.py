@@ -1,5 +1,7 @@
 import logging
 import os
+from pathlib import Path
+import tempfile
 import warnings as pywarnings
 import typing
 from collections import defaultdict, namedtuple
@@ -13,16 +15,16 @@ from rasa.core.constants import (
     SUCCESSFUL_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
 )
+from rasa.core.channels import UserMessage
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.core.constants import (
     POLICIES_THAT_EXTRACT_ENTITIES,
     ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-from rasa.core.channels import UserMessage
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
@@ -32,6 +34,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     TOKENS_NAMES,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
 )
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -56,6 +59,9 @@ from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWrite
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.tensorflow.constants import QUERY_INTENT_KEY, SEVERITY_KEY
+from rasa.exceptions import ActionLimitReached
+
+from rasa.core.actions.action import ActionRetrieveResponse
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -105,7 +111,7 @@ class WarningPredictedAction(ActionExecuted):
         self.action_name_prediction = action_name_prediction
         super().__init__(action_name, policy, confidence, timestamp, metadata)
 
-    def inline_comment(self) -> Text:
+    def inline_comment(self, **kwargs: Any) -> Text:
         """A comment attached to this event. Used during dumping."""
         return f"predicted: {self.action_name_prediction}"
 
@@ -145,7 +151,7 @@ class WronglyPredictedAction(ActionExecuted):
             action_text=action_text_target,
         )
 
-    def inline_comment(self) -> Text:
+    def inline_comment(self, **kwargs: Any) -> Text:
         """A comment attached to this event. Used during dumping."""
         comment = f"predicted: {self.action_name_prediction}"
         if self.predicted_action_unlikely_intent:
@@ -285,8 +291,8 @@ class EvaluationStore:
             )
         )
 
-        aligned_entity_targets = []
-        aligned_entity_predictions = []
+        aligned_entity_targets: List[Optional[Text]] = []
+        aligned_entity_predictions: List[Optional[Text]] = []
 
         for text in texts:
             # sort the entities of this sentence to compare them directly
@@ -294,14 +300,14 @@ class EvaluationStore:
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
                 ),
-                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],
             )
             entity_predictions = sorted(
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
                     self.entity_predictions,
                 ),
-                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],
             )
 
             i_pred, i_target = 0, 0
@@ -369,6 +375,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         except LookupError:
             self.predicted_intent = None
 
+        self.target_entities = eval_store.entity_targets
         self.predicted_entities = eval_store.entity_predictions
 
         intent = {"name": eval_store.intent_targets[0]}
@@ -382,11 +389,11 @@ class WronglyClassifiedUserUtterance(UserUttered):
             event.input_channel,
         )
 
-    def inline_comment(self) -> Optional[Text]:
+    def inline_comment(self, force_comment_generation: bool = False) -> Optional[Text]:
         """A comment attached to this event. Used during dumping."""
         from rasa.shared.core.events import format_message
 
-        if self.predicted_intent != self.intent["name"]:
+        if force_comment_generation or self.predicted_intent != self.intent["name"]:
             predicted_message = format_message(
                 self.text, self.predicted_intent, self.predicted_entities
             )
@@ -418,32 +425,23 @@ class WronglyClassifiedUserUtterance(UserUttered):
         )
 
 
-async def _create_data_generator(
+def _create_data_generator(
     resource_name: Text,
     agent: "Agent",
     max_stories: Optional[int] = None,
     use_conversation_test_files: bool = False,
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
-    from rasa.shared.constants import DEFAULT_DOMAIN_PATH
-    from rasa.model import get_model_subdirectories
 
-    core_model = None
-    if agent.model_directory:
-        core_model, _ = get_model_subdirectories(agent.model_directory)
-
-    if core_model and os.path.exists(os.path.join(core_model, DEFAULT_DOMAIN_PATH)):
-        domain_path = os.path.join(core_model, DEFAULT_DOMAIN_PATH)
-    else:
-        domain_path = None
-
+    tmp_domain_path = Path(tempfile.mkdtemp()) / "domain.yaml"
+    agent.domain.persist(tmp_domain_path)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[resource_name], domain_path=domain_path
+        training_data_paths=[resource_name], domain_path=str(tmp_domain_path)
     )
     if use_conversation_test_files:
-        story_graph = await test_data_importer.get_conversation_tests()
+        story_graph = test_data_importer.get_conversation_tests()
     else:
-        story_graph = await test_data_importer.get_stories()
+        story_graph = test_data_importer.get_stories()
 
     return TrainingDataGenerator(
         story_graph,
@@ -461,7 +459,7 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity = {ENTITY_ATTRIBUTE_TEXT: text}
+        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}
         for k in (
             ENTITY_ATTRIBUTE_START,
             ENTITY_ATTRIBUTE_END,
@@ -532,7 +530,6 @@ def _collect_user_uttered_predictions(
 
     # predicted intent: note that this is only the base intent at this point
     predicted_base_intent = predicted.get(INTENT, {}).get(INTENT_NAME_KEY)
-
     # if the test story only provides the base intent AND the prediction was correct,
     # we are not interested in full retrieval intents and skip this section.
     # In any other case we are interested in the full retrieval intent (e.g. for report)
@@ -563,8 +560,20 @@ def _collect_user_uttered_predictions(
                 f" \n\n{story_dump}"
             )
     else:
+        response_selector_info = (
+            {
+                RESPONSE_SELECTOR_PROPERTY_NAME: predicted[
+                    RESPONSE_SELECTOR_PROPERTY_NAME
+                ]
+            }
+            if RESPONSE_SELECTOR_PROPERTY_NAME in predicted
+            else None
+        )
         end_to_end_user_utterance = EndToEndUserUtterance(
-            event.text, event.intent, event.entities
+            text=event.text,
+            intent=event.intent,
+            entities=event.entities,
+            parse_data=response_selector_info,
         )
         partial_tracker.update(end_to_end_user_utterance)
 
@@ -586,7 +595,7 @@ def emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None:
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
-def _get_e2e_entity_evaluation_result(
+async def _get_e2e_entity_evaluation_result(
     processor: "MessageProcessor",
     tracker: DialogueStateTracker,
     prediction: PolicyPrediction,
@@ -602,28 +611,61 @@ def _get_e2e_entity_evaluation_result(
         entity_targets = previous_event.entities
         if entity_targets or entities_predicted_by_policies:
             text = previous_event.text
-            parsed_message = processor.interpreter.featurize_message(
-                Message(data={TEXT: text})
-            )
-            if parsed_message:
-                tokens = parsed_message.get(TOKENS_NAMES[TEXT])
-                return EntityEvaluationResult(
-                    entity_targets, entities_predicted_by_policies, tokens, text
-                )
+            if text:
+                parsed_message = await processor.parse_message(UserMessage(text=text))
+                if parsed_message:
+                    tokens = [
+                        Token(text[start:end], start, end)
+                        for start, end in parsed_message.get(TOKENS_NAMES[TEXT], [])
+                    ]
+                    return EntityEvaluationResult(
+                        entity_targets, entities_predicted_by_policies, tokens, text
+                    )
+    return None
 
 
-def _run_action_prediction(
+def _get_predicted_action_name(
+    predicted_action: rasa.core.actions.action.Action,
+    partial_tracker: DialogueStateTracker,
+    expected_action_name: Text,
+) -> Text:
+    """Get the name of predicted action.
+
+    If the action is instance of `ActionRetrieveResponse`, we need to return full
+    action name with its retrieval intent (e.g. utter_faq/is-this-legit).
+    The only case when we should not do it is when an expected action given in
+    a test story is a retrieval action but it's not specified in the test story.
+    To illustrate this, we're basically avoiding this unnecessary mismatch:
+    utter_faq (expected) != utter_faq/is-this-legit (predicted).
+    In this case or if the action isn't instance of `ActionRetrieveResponse`,
+    the function returns only the action name (e.g. utter_faq).
+    """
+    if (
+        isinstance(predicted_action, ActionRetrieveResponse)
+        and expected_action_name != predicted_action.name()
+    ):
+        full_retrieval_name = predicted_action.get_full_retrieval_name(partial_tracker)
+        predicted_action_name = (
+            full_retrieval_name if full_retrieval_name else predicted_action.name()
+        )
+    else:
+        predicted_action_name = predicted_action.name()
+    return predicted_action_name
+
+
+async def _run_action_prediction(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
-) -> Tuple[Text, PolicyPrediction, EntityEvaluationResult]:
-    action, prediction = processor.predict_next_action(partial_tracker)
-    predicted_action = action.name()
-
-    policy_entity_result = _get_e2e_entity_evaluation_result(
-        processor, partial_tracker, prediction
+) -> Tuple[Text, PolicyPrediction, Optional[EntityEvaluationResult]]:
+    action, prediction = processor.predict_next_with_tracker_if_should(partial_tracker)
+    predicted_action = _get_predicted_action_name(
+        action, partial_tracker, expected_action
     )
 
+    policy_entity_result = await _get_e2e_entity_evaluation_result(
+        processor, partial_tracker, prediction
+    )
     if (
         prediction.policy_name
         and predicted_action != expected_action
@@ -635,24 +677,25 @@ def _run_action_prediction(
         # but it might be Ok if form action is rejected.
         emulate_loop_rejection(partial_tracker)
         # try again
-        action, prediction = processor.predict_next_action(partial_tracker)
-
+        action, prediction = processor.predict_next_with_tracker_if_should(
+            partial_tracker
+        )
         # Even if the prediction is also wrong, we don't have to undo the emulation
         # of the action rejection as we know that the user explicitly specified
         # that something else than the form was supposed to run.
-        predicted_action = action.name()
+        predicted_action = _get_predicted_action_name(
+            action, partial_tracker, expected_action
+        )
 
     return predicted_action, prediction, policy_entity_result
 
 
-def _collect_action_executed_predictions(
+async def _collect_action_executed_predictions(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     event: ActionExecuted,
     fail_on_prediction_errors: bool,
-    circuit_breaker_tripped: bool,
 ) -> Tuple[EvaluationStore, PolicyPrediction, Optional[EntityEvaluationResult]]:
-    from rasa.core.policies.form_policy import FormPolicy
 
     action_executed_eval_store = EvaluationStore()
 
@@ -663,13 +706,15 @@ def _collect_action_executed_predictions(
     policy_entity_result = None
     prev_action_unlikely_intent = False
 
-    if circuit_breaker_tripped:
+    try:
+        (
+            predicted_action,
+            prediction,
+            policy_entity_result,
+        ) = await _run_action_prediction(processor, partial_tracker, expected_action)
+    except ActionLimitReached:
         prediction = PolicyPrediction([], policy_name=None)
         predicted_action = "circuit breaker tripped"
-    else:
-        predicted_action, prediction, policy_entity_result = _run_action_prediction(
-            processor, partial_tracker, expected_action
-        )
 
     predicted_action_unlikely_intent = predicted_action == ACTION_UNLIKELY_INTENT_NAME
     if predicted_action_unlikely_intent and predicted_action != expected_action:
@@ -685,9 +730,18 @@ def _collect_action_executed_predictions(
             )
         )
         prev_action_unlikely_intent = True
-        predicted_action, prediction, policy_entity_result = _run_action_prediction(
-            processor, partial_tracker, expected_action
-        )
+
+        try:
+            (
+                predicted_action,
+                prediction,
+                policy_entity_result,
+            ) = await _run_action_prediction(
+                processor, partial_tracker, expected_action
+            )
+        except ActionLimitReached:
+            prediction = PolicyPrediction([], policy_name=None)
+            predicted_action = "circuit breaker tripped"
 
     action_executed_eval_store.add_to_store(
         action_predictions=[predicted_action], action_targets=[expected_action]
@@ -715,14 +769,6 @@ def _collect_action_executed_predictions(
             error_msg = (
                 f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
             )
-            if FormPolicy.__name__ in prediction.policy_name:
-                error_msg += (
-                    "FormAction is not run during "
-                    "evaluation therefore it is impossible to know "
-                    "if validation failed or this story is wrong. "
-                    "If the story is correct, add it to the "
-                    "training stories and retrain."
-                )
             raise WrongPredictionException(error_msg)
     elif prev_action_unlikely_intent:
         partial_tracker.update(
@@ -770,7 +816,7 @@ async def _predict_tracker_actions(
     List[EntityEvaluationResult],
 ]:
 
-    processor = agent.create_processor()
+    processor = agent.processor
     tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
@@ -781,29 +827,18 @@ async def _predict_tracker_actions(
         agent.domain.slots,
         sender_source=tracker.sender_source,
     )
-
     tracker_actions = []
-    should_predict_another_action = True
-    num_predicted_actions = 0
     policy_entity_results = []
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            circuit_breaker_tripped = processor.is_action_limit_reached(
-                num_predicted_actions, should_predict_another_action
-            )
             (
                 action_executed_result,
                 prediction,
                 entity_result,
-            ) = _collect_action_executed_predictions(
-                processor,
-                partial_tracker,
-                event,
-                fail_on_prediction_errors,
-                circuit_breaker_tripped,
+            ) = await _collect_action_executed_predictions(
+                processor, partial_tracker, event, fail_on_prediction_errors,
             )
-
             if entity_result:
                 policy_entity_results.append(entity_result)
 
@@ -817,11 +852,6 @@ async def _predict_tracker_actions(
                         "confidence": prediction.max_confidence,
                     }
                 )
-                should_predict_another_action = processor.should_predict_another_action(
-                    action_executed_result.action_predictions[0]
-                )
-                num_predicted_actions += 1
-
         elif use_e2e and isinstance(event, UserUttered):
             # This means that user utterance didn't have a user message, only intent,
             # so we can skip the NLU part and take the parse data directly.
@@ -833,29 +863,25 @@ async def _predict_tracker_actions(
             # Leaving that as it is because Markdown is in legacy mode.
             else:
                 predicted = await processor.parse_message(UserMessage(event.text))
+
             user_uttered_result = _collect_user_uttered_predictions(
                 event, predicted, partial_tracker, fail_on_prediction_errors
             )
-
             tracker_eval_store.merge_store(user_uttered_result)
         else:
             partial_tracker.update(event)
-        if isinstance(event, UserUttered):
-            num_predicted_actions = 0
-
     return tracker_eval_store, partial_tracker, tracker_actions, policy_entity_results
 
 
 def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
-    """Given a list of action items, returns the fraction of actions
-
-    that were predicted using one of the Memoization policies."""
-    from rasa.core.policies.ensemble import SimplePolicyEnsemble
+    """Given a list of actions, returns the fraction predicted by non ML policies."""
+    import rasa.core.policies.ensemble
 
     in_training_data = [
         a["action"]
         for a in action_list
-        if a["policy"] and not SimplePolicyEnsemble.is_not_in_training_data(a["policy"])
+        if a["policy"]
+        and not rasa.core.policies.ensemble.is_not_in_training_data(a["policy"])
     ]
 
     return len(in_training_data) / len(action_list) if action_list else 0
@@ -962,9 +988,7 @@ async def _collect_story_predictions(
         accuracy = 0
 
     _log_evaluation_table(
-        [1] * len(completed_trackers),
-        "END-TO-END" if use_e2e else "CONVERSATION",
-        accuracy,
+        [1] * len(completed_trackers), "CONVERSATION", accuracy,
     )
 
     return (
@@ -1049,11 +1073,11 @@ async def test(
     """
     from rasa.model_testing import get_evaluation_metrics
 
-    generator = await _create_data_generator(stories, agent, max_stories, e2e)
+    generator = _create_data_generator(stories, agent, max_stories, e2e)
     completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, _, entity_results = await _collect_story_predictions(
-        completed_trackers, agent, fail_on_prediction_errors, e2e
+        completed_trackers, agent, fail_on_prediction_errors, use_e2e=e2e
     )
 
     evaluation_store = story_evaluation.evaluation_store
@@ -1278,7 +1302,7 @@ async def _evaluate_core_model(
     logger.info(f"Evaluating model '{model}'")
 
     agent = Agent.load(model)
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         stories_file, agent, use_conversation_test_files=use_conversation_test_files
     )
     completed_trackers = generator.generate_story_trackers()

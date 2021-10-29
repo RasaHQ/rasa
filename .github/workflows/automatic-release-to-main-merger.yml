@@ -88,7 +88,7 @@ jobs:
 
       - name: Open pull request ☄️
         if: always()
-        uses: repo-sync/pull-request@d80b305e358ef8131f270608735c72e2c913f2af
+        uses: repo-sync/pull-request@5ba2c80b97c87b9174c1548141b7acd80f6376e1
         with:
           # using this token to make sure it triggers other actions
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}

@@ -1,23 +1,25 @@
+from typing import Any, Dict, Text
+
 import numpy as np
 import pytest
 
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.shared.nlu.training_data import loading
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 
 
-@pytest.fixture(scope="module")
-def spacy_nlp_component(component_builder, blank_config):
-    spacy_nlp_config = {"name": "SpacyNLP", "model": "en_core_web_md"}
-    return component_builder.create_component(spacy_nlp_config, blank_config)
+def create_spacy_featurizer(config: Dict[Text, Any]) -> SpacyFeaturizer:
+    return SpacyFeaturizer(
+        {**SpacyFeaturizer.get_default_config(), **config}, "spacy_featurizer",
+    )
 
 
 def test_spacy_featurizer_cls_vector(spacy_nlp):
-    featurizer = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+    featurizer = create_spacy_featurizer({})
 
     sentence = "Hey how are you today"
     message = Message(data={TEXT: sentence})
@@ -43,7 +45,7 @@ def test_spacy_featurizer_cls_vector(spacy_nlp):
 @pytest.mark.parametrize("sentence", ["hey how are you today"])
 def test_spacy_featurizer(sentence, spacy_nlp):
 
-    ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+    ftr = create_spacy_featurizer({})
 
     doc = spacy_nlp(sentence)
     vecs = ftr._features_for_doc(doc)
@@ -52,7 +54,9 @@ def test_spacy_featurizer(sentence, spacy_nlp):
     assert np.allclose(vecs, expected, atol=1e-5)
 
 
-def test_spacy_training_sample_alignment(spacy_nlp_component):
+def test_spacy_training_sample_alignment(
+    spacy_nlp_component: SpacyNLP, spacy_model: SpacyModel
+):
     from spacy.tokens import Doc
 
     m1 = Message.build(text="I have a feeling", intent="feeling")
@@ -60,7 +64,7 @@ def test_spacy_training_sample_alignment(spacy_nlp_component):
     m3 = Message.build(text="I am the last message", intent="feeling")
     td = TrainingData(training_examples=[m1, m2, m3])
 
-    attribute_docs = spacy_nlp_component.docs_for_training_data(td)
+    attribute_docs = spacy_nlp_component._docs_for_training_data(spacy_model.model, td)
 
     assert isinstance(attribute_docs["text"][0], Doc)
     assert isinstance(attribute_docs["text"][1], Doc)
@@ -77,13 +81,13 @@ def test_spacy_training_sample_alignment(spacy_nlp_component):
     ]
 
 
-def test_spacy_intent_featurizer(spacy_nlp_component):
-    from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-
+def test_spacy_intent_featurizer(
+    spacy_nlp_component: SpacyNLP, spacy_model: SpacyModel
+):
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
-    spacy_nlp_component.train(td, config=None)
-    spacy_featurizer = SpacyFeaturizer()
-    spacy_featurizer.train(td, config=None)
+    spacy_nlp_component.process_training_data(td, spacy_model)
+    spacy_featurizer = create_spacy_featurizer({})
+    spacy_featurizer.process_training_data(td)
 
     intent_features_exist = np.array(
         [
@@ -101,12 +105,11 @@ def test_spacy_intent_featurizer(spacy_nlp_component):
     [("hey how are you today", [-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])],
 )
 def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
-    from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
     doc = spacy_nlp(sentence)
     token_vectors = [t.vector for t in doc]
 
-    ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+    ftr = create_spacy_featurizer({})
 
     greet = {TEXT: sentence, "intent": "greet", "text_features": [0.5]}
 
@@ -129,14 +132,13 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
 
 
 def test_spacy_featurizer_casing(spacy_nlp):
-    from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
     # if this starts failing for the default model, we should think about
     # removing the lower casing the spacy nlp component does when it
     # retrieves vectors. For compressed spacy models (e.g. models
     # ending in _sm) this test will most likely fail.
 
-    ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+    ftr = create_spacy_featurizer({})
 
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
     for e in td.intent_examples:
@@ -155,7 +157,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
 
 def test_spacy_featurizer_train(spacy_nlp):
 
-    featurizer = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+    featurizer = create_spacy_featurizer({})
 
     sentence = "Hey how are you today"
     message = Message(data={TEXT: sentence})
@@ -164,7 +166,7 @@ def test_spacy_featurizer_train(spacy_nlp):
     message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     message.set(SPACY_DOCS[RESPONSE], spacy_nlp(sentence))
 
-    featurizer.train(TrainingData([message]), RasaNLUModelConfig())
+    featurizer.process_training_data(TrainingData([message]))
 
     expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
@@ -202,7 +204,6 @@ def test_spacy_featurizer_train(spacy_nlp):
 
 
 def test_spacy_featurizer_using_empty_model():
-    from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
     import spacy
 
     sentence = "This test is using an empty spaCy model"
@@ -210,7 +211,7 @@ def test_spacy_featurizer_using_empty_model():
     model = spacy.blank("en")
     doc = model(sentence)
 
-    ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+    ftr = create_spacy_featurizer({})
 
     message = Message(data={TEXT: sentence})
     message.set(SPACY_DOCS[TEXT], doc)

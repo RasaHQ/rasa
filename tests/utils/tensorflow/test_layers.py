@@ -13,7 +13,6 @@ from rasa.utils.tensorflow.layers import (
 from rasa.utils.tensorflow.constants import (
     INNER,
     SOFTMAX,
-    LINEAR_NORM,
     LABEL,
     LABEL_PAD_ID,
 )
@@ -365,8 +364,6 @@ def test_multi_label_dot_product_loss__loss_sigmoid_is_ln2_when_all_similarities
     [
         # Confidence is always `1.0` since only one option exists and we use softmax
         (SOFTMAX, [[[-3.0], [0.0]]], [[[1.0], [1.0]]]),
-        # Confidence is always `0.0` since negatives are clipped
-        (LINEAR_NORM, [[[-3.0], [0.0]]], [[[0.0], [0.0]]]),
     ],
 )
 def test_dot_product_loss_get_similarities_and_confidences_from_embeddings(

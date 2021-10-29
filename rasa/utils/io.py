@@ -1,15 +1,12 @@
 import asyncio
+import filecmp
 import logging
 import os
 import pickle
-import tarfile
-from tarsafe import TarSafe
 import tempfile
 import warnings
-import zipfile
 import re
 from asyncio import AbstractEventLoop
-from io import BytesIO as IOReader
 from pathlib import Path
 from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING, Pattern
 
@@ -82,28 +79,8 @@ def pickle_load(filename: Union[Text, Path]) -> Any:
         return pickle.load(f)
 
 
-def unarchive(byte_array: bytes, directory: Text) -> Text:
-    """Tries to unpack a byte array interpreting it as an archive.
-
-    Tries to use tar first to unpack, if that fails, zip will be used."""
-
-    try:
-        tar = TarSafe.open(fileobj=IOReader(byte_array))
-        tar.extractall(directory)
-        tar.close()
-        return directory
-    except tarfile.TarError:
-        zip_ref = zipfile.ZipFile(IOReader(byte_array))
-        zip_ref.extractall(directory)
-        zip_ref.close()
-        return directory
-
-
 def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text:
-    """Creates a tempfile.NamedTemporaryFile object for data.
-
-    mode defines NamedTemporaryFile's  mode parameter in py3."""
-
+    """Creates a tempfile.NamedTemporaryFile object for data."""
     encoding = None if "b" in mode else rasa.shared.utils.io.DEFAULT_ENCODING
     f = tempfile.NamedTemporaryFile(
         mode=mode, suffix=suffix, delete=False, encoding=encoding
@@ -173,11 +150,15 @@ def create_validator(
     return FunctionValidator
 
 
-def json_unpickle(file_name: Union[Text, Path]) -> Any:
+def json_unpickle(
+    file_name: Union[Text, Path], encode_non_string_keys: bool = False
+) -> Any:
     """Unpickle an object from file using json.
 
     Args:
         file_name: the file to load the object from
+        encode_non_string_keys: If set to `True` then jsonpickle will encode non-string
+          dictionary keys instead of coercing them into strings via `repr()`.
 
     Returns: the object
     """
@@ -187,22 +168,28 @@ def json_unpickle(file_name: Union[Text, Path]) -> Any:
     jsonpickle_numpy.register_handlers()
 
     file_content = rasa.shared.utils.io.read_file(file_name)
-    return jsonpickle.loads(file_content)
+    return jsonpickle.loads(file_content, keys=encode_non_string_keys)
 
 
-def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
+def json_pickle(
+    file_name: Union[Text, Path], obj: Any, encode_non_string_keys: bool = False
+) -> None:
     """Pickle an object to a file using json.
 
     Args:
         file_name: the file to store the object to
         obj: the object to store
+        encode_non_string_keys: If set to `True` then jsonpickle will encode non-string
+          dictionary keys instead of coercing them into strings via `repr()`.
     """
     import jsonpickle.ext.numpy as jsonpickle_numpy
     import jsonpickle
 
     jsonpickle_numpy.register_handlers()
 
-    rasa.shared.utils.io.write_text_file(jsonpickle.dumps(obj), file_name)
+    rasa.shared.utils.io.write_text_file(
+        jsonpickle.dumps(obj, keys=encode_non_string_keys), file_name
+    )
 
 
 def get_emoji_regex() -> Pattern:
@@ -220,3 +207,38 @@ def get_emoji_regex() -> Pattern:
         "]+",
         flags=re.UNICODE,
     )
+
+
+def are_directories_equal(dir1: Path, dir2: Path) -> bool:
+    """Compares two directories recursively.
+
+    Files in each directory are
+    assumed to be equal if their names and contents are equal.
+
+    Args:
+        dir1: The first directory.
+        dir2: The second directory.
+
+    Returns:
+        `True` if they are equal, `False` otherwise.
+    """
+    dirs_cmp = filecmp.dircmp(dir1, dir2)
+    if dirs_cmp.left_only or dirs_cmp.right_only:
+        return False
+
+    (_, mismatches, errors) = filecmp.cmpfiles(
+        dir1, dir2, dirs_cmp.common_files, shallow=False
+    )
+
+    if mismatches or errors:
+        return False
+
+    for common_dir in dirs_cmp.common_dirs:
+        new_dir1 = Path(dir1, common_dir)
+        new_dir2 = Path(dir2, common_dir)
+
+        is_equal = are_directories_equal(new_dir1, new_dir2)
+        if not is_equal:
+            return False
+
+    return True

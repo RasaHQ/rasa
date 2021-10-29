@@ -84,6 +84,7 @@ env
 .history
 rasa/segment_key
 rasa/keys
+.rasa
 /results/
 # Local Netlify folder
 .netlify
