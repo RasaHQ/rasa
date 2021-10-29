@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from typing import (
     Dict,
@@ -490,7 +491,7 @@ class Marker(ABC):
 
     def export_markers(
         self,
-        tracker_loader: MarkerTrackerLoader,
+        tracker_loader: Iterator[Optional[DialogueStateTracker]],
         output_file: Text,
         stats_file: Optional[Text] = None,
     ) -> None:
@@ -505,9 +506,10 @@ class Marker(ABC):
         """
         processed_trackers = {}
 
-        for tracker in tracker_loader.load():
-            tracker_result = self.evaluate_events(tracker.events)
-            processed_trackers[tracker.sender_id] = tracker_result
+        for tracker in tracker_loader:
+            if tracker:
+                tracker_result = self.evaluate_events(tracker.events)
+                processed_trackers[tracker.sender_id] = tracker_result
 
         Marker._save_results(output_file, processed_trackers)
 
@@ -537,12 +539,12 @@ class Marker(ABC):
             )
             for sender_id, dialogues in results.items():
                 for dialogue_id, dialogue in enumerate(dialogues):
-                    Marker._write_dialogue(
+                    Marker._write_relevant_events(
                         table_writer, sender_id, dialogue_id, dialogue
                     )
 
     @staticmethod
-    def _write_dialogue(
+    def _write_relevant_events(
         writer: csv.writer,
         sender_id: Text,
         dialogue_id: int,

@@ -130,7 +130,7 @@ def _run_markers(
 
     tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
     markers = Marker.from_path(config)
-    markers.export_markers(tracker_loader, output_filename, stats_file)
+    markers.export_markers(tracker_loader.load(), output_filename, stats_file)
 
 
 def _create_tracker_loader(
