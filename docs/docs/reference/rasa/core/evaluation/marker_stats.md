@@ -10,26 +10,6 @@ compute_statistics(values: List[Union[float, int]]) -> Dict[Text, Union[int, np.
 
 Computes some statistics over the given numbers.
 
-## \_WriteRow Objects
-
-```python
-class _WriteRow(Protocol)
-```
-
-Describes a csv writer supporting a `writerow` method (workaround for typing).
-
-#### writerow
-
-```python
- | writerow(row: List[Text]) -> None
-```
-
-Write the given row.
-
-**Arguments**:
-
-- `row` - the entries of a row as a list of strings
-
 ## MarkerStatistics Objects
 
 ```python

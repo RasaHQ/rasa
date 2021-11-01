@@ -6,6 +6,7 @@
           "items": [
             "reference/rasa/cli/arguments/data",
             "reference/rasa/cli/arguments/default_arguments",
+            "reference/rasa/cli/arguments/evaluate",
             "reference/rasa/cli/arguments/interactive",
             "reference/rasa/cli/arguments/run",
             "reference/rasa/cli/arguments/train",
@@ -15,6 +16,7 @@
           "type": "category"
         },
         "reference/rasa/cli/data",
+        "reference/rasa/cli/evaluate",
         "reference/rasa/cli/export",
         "reference/rasa/cli/interactive",
         "reference/rasa/cli/run",

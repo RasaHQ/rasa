@@ -2,6 +2,52 @@
 sidebar_label: rasa.utils.io
 title: rasa.utils.io
 ---
+## WriteRow Objects
+
+```python
+class WriteRow(Protocol)
+```
+
+Describes a csv writer supporting a `writerow` method (workaround for typing).
+
+#### writerow
+
+```python
+ | writerow(row: List[Text]) -> None
+```
+
+Write the given row.
+
+**Arguments**:
+
+- `row` - the entries of a row as a list of strings
+
+#### configure\_colored\_logging
+
+```python
+configure_colored_logging(loglevel: Text) -> None
+```
+
+Configures coloredlogs library for specified loglevel.
+
+**Arguments**:
+
+- `loglevel` - The loglevel to configure the library for
+
+#### enable\_async\_loop\_debugging
+
+```python
+enable_async_loop_debugging(event_loop: AbstractEventLoop, slow_callback_duration: float = 0.1) -> AbstractEventLoop
+```
+
+Enables debugging on an event loop.
+
+**Arguments**:
+
+- `event_loop` - The event loop to enable debugging on
+- `slow_callback_duration` - The threshold at which a callback should be
+  alerted as slow.
+
 #### pickle\_dump
 
 ```python

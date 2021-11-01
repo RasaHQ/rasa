@@ -268,6 +268,22 @@ Creates a marker from the given config.
 
   the configured marker
 
+#### export\_markers
+
+```python
+ | export_markers(tracker_loader: Iterator[Optional[DialogueStateTracker]], output_file: Text, stats_file: Optional[Text] = None) -> None
+```
+
+Collect markers for each dialogue in each tracker loaded.
+
+**Arguments**:
+
+- `tracker_loader` - The tracker loader to use to select trackers for marker
+  extraction.
+- `output_file` - Path to write out the extracted markers.
+- `stats_file` - (Optional) Path to write out statistics about the extracted
+  markers.
+
 ## CompoundMarker Objects
 
 ```python
