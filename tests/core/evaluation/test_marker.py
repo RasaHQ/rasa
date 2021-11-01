@@ -601,3 +601,56 @@ def test_domain_validation_with_invalid_marker(
 
     domain = Domain.empty()
     assert not marker.validate_against_domain(domain)
+
+
+def test_marker_dict_as_submarker():
+    with pytest.raises(InvalidMarkerConfig):
+        Marker.from_config(
+            {AndMarker.positive_tag(): {SlotSetMarker.positive_tag(): "s1"}}
+        )
+
+
+def test_marker_config_is_list():
+    with pytest.raises(InvalidMarkerConfig):
+        Marker.from_config([SlotSetMarker.positive_tag()])
+
+
+def test_marker_config_is_list_with_nested_dict():
+    with pytest.raises(InvalidMarkerConfig):
+        Marker.from_config([{SlotSetMarker.positive_tag(): "s1"}])
+
+
+def test_marker_config_is_string():
+    with pytest.raises(InvalidMarkerConfig):
+        Marker.from_config(SlotSetMarker.positive_tag())
+
+
+def test_marker_config_unknown_operator():
+    with pytest.raises(InvalidMarkerConfig):
+        Marker.from_config({"Ard": {IntentDetectedMarker.positive_tag(): "intent1"}})
+
+
+def test_marker_config_unknown_condition():
+    with pytest.raises(InvalidMarkerConfig):
+        Marker.from_config({AndMarker.positive_tag(): {"intent": "intent1"}})
+
+
+def test_marker_config_reserved_keyword():
+    with pytest.raises(InvalidMarkerConfig):
+        Marker.from_config({Marker.ANY_MARKER: "blah"})
+
+
+def test_marker_config_operator_no_submarkers():
+    with pytest.raises(InvalidMarkerConfig):
+        Marker.from_config({AndMarker.positive_tag(): "blah"})
+
+
+def test_marker_config_condition_with_submarker():
+    with pytest.raises(InvalidMarkerConfig):
+        Marker.from_config(
+            {
+                SlotSetMarker.positive_tag(): {
+                    IntentDetectedMarker.positive_tag(): "blah"
+                }
+            }
+        )
