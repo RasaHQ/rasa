@@ -1,6 +1,8 @@
 from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.utils.io import WriteRow
 from typing import (
     Dict,
     Iterator,
@@ -27,6 +29,8 @@ from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 
 import logging
+import csv
+import os.path
 
 logger = logging.getLogger(__name__)
 
@@ -378,7 +382,7 @@ class Marker(ABC):
             config = {}
         if not config:
             raise InvalidMarkerConfig(f"Could not load any markers from '{path}'.")
-        return Marker.from_config(config)
+        return Marker.from_config_dict(config)
 
     @staticmethod
     def _load_and_combine_config_files_under(root_dir: Text) -> MarkerConfig:
@@ -484,6 +488,87 @@ class Marker(ABC):
             marker = collected_sub_markers[0]
             marker.name = name
         return marker
+
+    def export_markers(
+        self,
+        tracker_loader: Iterator[Optional[DialogueStateTracker]],
+        output_file: Text,
+        stats_file: Optional[Text] = None,
+    ) -> None:
+        """Collect markers for each dialogue in each tracker loaded.
+
+        Args:
+            tracker_loader: The tracker loader to use to select trackers for marker
+                            extraction.
+            output_file: Path to write out the extracted markers.
+            stats_file: (Optional) Path to write out statistics about the extracted
+                        markers.
+        """
+        processed_trackers = {}
+
+        for tracker in tracker_loader:
+            if tracker:
+                tracker_result = self.evaluate_events(tracker.events)
+                processed_trackers[tracker.sender_id] = tracker_result
+
+        Marker._save_results(output_file, processed_trackers)
+
+        if stats_file:
+            Marker._compute_stats(stats_file, processed_trackers)
+
+    @staticmethod
+    def _save_results(
+        path: Text, results: Dict[Text, List[Dict[Text, EventMetaData]]]
+    ) -> None:
+        """Save extracted marker results as CSV to specified path.
+
+        Args:
+            path: Path to write out the extracted markers.
+            results: Extracted markers from a selection of trackers.
+        """
+        with open(path, "w") as f:
+            table_writer = csv.writer(f)
+            table_writer.writerow(
+                [
+                    "sender_id",
+                    "session_idx",
+                    "marker_name",
+                    "event_id",
+                    "num_preceding_user_turns",
+                ]
+            )
+            for sender_id, dialogues in results.items():
+                for session_idx, session in enumerate(dialogues):
+                    Marker._write_relevant_events(
+                        table_writer, sender_id, session_idx, session
+                    )
+
+    @staticmethod
+    def _write_relevant_events(
+        writer: WriteRow,
+        sender_id: Text,
+        session_idx: int,
+        session: Dict[Text, EventMetaData],
+    ) -> None:
+        for marker_name, marker_metadata in session.items():
+            for metadata in marker_metadata:
+                writer.writerow(
+                    [
+                        sender_id,
+                        str(session_idx),
+                        marker_name,
+                        metadata.idx,
+                        metadata.preceding_user_turns,
+                    ]
+                )
+
+    @staticmethod
+    def _compute_stats(
+        out_file: Text, results: List[Union[Text, Dict[Text, EventMetaData]]]
+    ) -> None:
+        """Compute stats over extracted marker data."""
+        # TODO: Figure out how this is done
+        pass
 
 
 class CompoundMarker(Marker, ABC):
