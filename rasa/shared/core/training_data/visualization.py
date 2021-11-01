@@ -1,5 +1,5 @@
 from collections import defaultdict, deque
-
+import logging
 import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
@@ -31,7 +31,7 @@ END_NODE_ID = -1
 TMP_NODE_ID = -2
 
 VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
-
+logger = logging.getLogger(__name__)
 
 class UserMessageGenerator:
     def __init__(self, nlu_training_data: "TrainingData") -> None:
@@ -186,6 +186,7 @@ def _add_edge(
         label = ""
 
     if not graph.has_edge(u, v, key=EDGE_NONE_LABEL):
+        logger.debug(f"_add_edge {label}")
         graph.add_edge(u, v, key=key, label=label, **kwargs)
     else:
         d = graph.get_edge_data(u, v, key=EDGE_NONE_LABEL)
@@ -290,6 +291,7 @@ async def _replace_edge_labels_with_nodes(
         if k != EDGE_NONE_LABEL:
             if message_generator and d.get("label", k) is not None:
                 parsed_info = await interpreter.parse(d.get("label", k))
+                logger.debug(f"_replace_edge_labels_with_nodes {parsed_info}")
                 label = message_generator.message_for_data(parsed_info)
             else:
                 label = d.get("label", k)
@@ -397,11 +399,12 @@ def _add_message_edge(
 
     if message:
         message_key = message.get("intent", {}).get("name", None)
-        message_label = message.get("text", None)
+        message_label = message.get("intent", {}).get("name", None)
     else:
         message_key = None
         message_label = None
 
+    logger.debug(f"key, label: {message_key}, {message_label}")
     _add_edge(
         graph,
         current_node,
