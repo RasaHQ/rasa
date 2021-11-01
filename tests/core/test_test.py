@@ -208,6 +208,7 @@ async def _train_rule_based_agent(
         config = textwrap.dedent(
             f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        pipeline: []
         policies:
         - name: RulePolicy
           restrict_rules: false
