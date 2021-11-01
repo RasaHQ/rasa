@@ -151,7 +151,7 @@ class ActionExecutedMarker(ConditionMarker):
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.
-        
+
         Args:
             domain: The domain to check against
         """
@@ -189,7 +189,7 @@ class IntentDetectedMarker(ConditionMarker):
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.
-        
+
         Args:
             domain: The domain to check against
         """
@@ -228,7 +228,7 @@ class SlotSetMarker(ConditionMarker):
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.
-        
+
         Args:
             domain: The domain to check against
         """

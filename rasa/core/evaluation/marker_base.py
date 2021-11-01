@@ -271,7 +271,7 @@ class Marker(ABC):
     @abstractmethod
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.
-        
+
         Args:
             domain: The domain to check against
         """
@@ -739,7 +739,7 @@ class OperatorMarker(Marker, ABC):
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.
-        
+
         Args:
             domain: The domain to check against
         """

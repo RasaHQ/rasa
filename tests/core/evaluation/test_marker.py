@@ -562,7 +562,8 @@ def collect_intents(marker: Marker) -> Set[Text]:
     "depth, max_branches, seed", [(1, 3, 3456), (4, 3, 345), (4, 5, 2345)]
 )
 def test_domain_validation_with_valid_marker(depth: int, max_branches: int, seed: int):
-    # We do this a bit backwards, we construct the domain from the marker and assert they must match
+    # We do this a bit backwards, we construct the domain from the marker
+    # and assert they must match
     rng = np.random.default_rng(seed=seed)
     marker, expected_size = generate_random_marker(
         depth=depth,
