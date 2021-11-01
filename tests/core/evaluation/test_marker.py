@@ -4,7 +4,7 @@ from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.shared.core.domain import Domain
-from typing import List, Optional, Text, Tuple, Type
+from typing import List, Optional, Set, Text, Tuple, Type
 import itertools
 
 import pytest
@@ -472,7 +472,7 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
 
 
 def test_markers_cli_results_save_correctly(tmp_path: Text):
-    domain = Domain([], [], [Slot("2", []), Slot("7", [])], {}, [], {})
+    domain = Domain.empty()
     store = InMemoryTrackerStore(domain)
 
     for i in range(5):
@@ -511,3 +511,93 @@ def test_markers_cli_results_save_correctly(tmp_path: Text):
                 assert row["num_preceding_user_turns"] == "1"
 
         assert len(senders) == 5
+
+
+def collect_slots(marker: Marker) -> Set[Text]:
+    if isinstance(marker, SlotSetMarker):
+        return set([marker.text])
+
+    if isinstance(marker, OperatorMarker):
+        s = set()
+        for submarker in marker.sub_markers:
+            for elem in collect_slots(submarker):
+                s.add(elem)
+
+        return s
+
+    return set()
+
+
+def collect_actions(marker: Marker) -> Set[Text]:
+    if isinstance(marker, ActionExecutedMarker):
+        return set([marker.text])
+
+    if isinstance(marker, OperatorMarker):
+        s = set()
+        for submarker in marker.sub_markers:
+            for elem in collect_actions(submarker):
+                s.add(elem)
+
+        return s
+
+    return set()
+
+
+def collect_intents(marker: Marker) -> Set[Text]:
+    if isinstance(marker, IntentDetectedMarker):
+        return set([marker.text])
+
+    if isinstance(marker, OperatorMarker):
+        s = set()
+        for submarker in marker.sub_markers:
+            for elem in collect_intents(submarker):
+                s.add(elem)
+
+        return s
+
+    return set()
+
+
+@pytest.mark.parametrize(
+    "depth, max_branches, seed", [(1, 3, 3456), (4, 3, 345), (4, 5, 2345)]
+)
+def test_domain_validation_with_valid_marker(depth: int, max_branches: int, seed: int):
+    # We do this a bit backwards, we construct the domain from the marker and assert they must match
+    rng = np.random.default_rng(seed=seed)
+    marker, expected_size = generate_random_marker(
+        depth=depth,
+        max_branches=max_branches,
+        rng=rng,
+        possible_conditions=CONDITION_MARKERS,
+        possible_operators=OPERATOR_MARKERS,
+        constant_condition_text=None,
+        constant_negated=None,
+    )
+
+    slots = [Slot(name, []) for name in collect_slots(marker)]
+    actions = list(collect_actions(marker))
+    intents = collect_intents(marker)
+    domain = Domain(intents, [], slots, {}, actions, {})
+
+    assert marker.validate_against_domain(domain)
+
+
+@pytest.mark.parametrize(
+    "depth, max_branches, seed", [(1, 3, 3456), (4, 3, 345), (4, 5, 2345)]
+)
+def test_domain_validation_with_invalid_marker(
+    depth: int, max_branches: int, seed: int
+):
+    rng = np.random.default_rng(seed=seed)
+    marker, expected_size = generate_random_marker(
+        depth=depth,
+        max_branches=max_branches,
+        rng=rng,
+        possible_conditions=CONDITION_MARKERS,
+        possible_operators=OPERATOR_MARKERS,
+        constant_condition_text=None,
+        constant_negated=None,
+    )
+
+    domain = Domain.empty()
+    assert not marker.validate_against_domain(domain)
