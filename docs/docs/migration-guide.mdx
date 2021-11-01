@@ -8,7 +8,6 @@ description: |
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import { Button } from '@theme/Button';
 
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
@@ -126,7 +125,6 @@ constructor but instead returned by the method `get_default_config`:
       @staticmethod
       def get_default_config() -> Dict[Text, Any]:
           return {"key1": "value1"}
-
   ```
 
   </TabItem>
@@ -338,7 +336,7 @@ method of your policy should be called during the training. If your component is
 used during inference use `is_trainable=False`.
 
 
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-register" defaultValue="new">
   <TabItem value="old">
 
   ```python
@@ -362,8 +360,424 @@ used during inference use `is_trainable=False`.
 
 #### Changes to Custom NLU Components
 
-TBD
+**Inheriting from `GraphComponent`**
+NLU components which previously inherited from one of the following classes additionally
+need to inherit from the
+[`GraphComponent` interface](custom-components#the-graphcomponent-interface):
+- `SparseFeaturizer`
+- `DenseFeaturizer`
+- `IntentClassifier`
+- `EntityExtractor`
 
+This snippet shows the required changes:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-parent-class" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(SparseFeaturizer):
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  from rasa.engine.graph import GraphComponent
+
+  class MyNLUComponent(GraphComponent, SparseFeaturizer):
+      ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+**EntityExtractorMixing**
+The `EntityExtractor` class was renamed to `EntityExtractorMixing`:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-entity-extractor" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  from rasa.nlu.extractors.extractor import EntityExtractor
+
+  class MyNLUComponent(EntityExtractor):
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  from rasa.engine.graph import GraphComponent
+  from rasa.nlu.extractors.extractor import EntityExtractorMixin
+
+  class MyNLUComponent(GraphComponent, EntityExtractorMixin):
+      ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+
+**Instantiating a NLU Component for Training**
+
+NLU components are no longer instantiated via their constructor. Instead, all NLU
+components have to override the `create` method of the
+[`GraphComponent` interface](custom-components#the-graphcomponent-interface). The
+passed in configuration is your components default configuration including any updates
+from your model configuration file.
+
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-init" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(IntentClassifier):
+
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        super().__init__(component_config)
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyNLUComponent(GraphComponent, IntentClassifier):
+
+    def __init__(self, component_config: Dict[Text, Any]) -> None:
+        self.component_config = component_config
+      ...
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> GraphComponent:
+        """Creates a new component (see parent class for full docstring)."""
+        return cls(config)
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Default Config**
+
+The default configuration is no longer a static class property but instead returned
+by the method `get_default_config`:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-default-config" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(IntentClassifier):
+      ...
+      defaults = {"key1": "value1"}
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyNLUComponent(GraphComponent, IntentClassifier):
+      ...
+      @staticmethod
+      def get_default_config() -> Dict[Text, Any]:
+          return {"key1": "value1"}
+
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Persisting a Trained Component**
+
+NLU components are responsible for persisting themselves.
+Previously the `persist` method was called from the outside.
+You should use the provided `model_storage` and `resource`
+to persist your component at the end of the training and then return the `resource`
+as result of your component's `train` method.
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-persistence" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(IntentClassifier):
+      def train(
+          self,
+          training_data: TrainingData,
+          config: Optional[RasaNLUModelConfig] = None,
+          **kwargs: Any,
+      ) -> None:
+          ...
+
+      def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+          file = Path(model_dir) / "{file_name}.model_data.json"
+          rasa.shared.utils.io.create_directory_for_file(file)
+          rasa.shared.utils.io.dump_obj_as_json_to_file(file, self.get_model_data())
+
+          return {"file": file_name}
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyNLUComponent(GraphComponent, IntentClassifier):
+      def train(self, training_data: TrainingData) -> Resource:
+          ...
+          self.persist()
+          return self._resource
+
+      def persist() -> None:
+          with self._model_storage.write_to(self._resource) as directory:
+              file = directory / "model_data.json"
+              rasa.shared.utils.io.dump_obj_as_json_to_file(file, self.get_model_data())
+      ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+
+**Instantiating a Trained Component**
+Similar as you had to use the `model_storage` and `resource` to persist the NLU
+component in the previous step, you need to use these now to load the persisted
+component.
+
+:::info
+It is no longer required to persist your component's config yourself. The config passed
+into `load` will contain the configuration which your model was trained with.
+:::
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-loading" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(IntentClassifier):
+      @classmethod
+      def load(
+          cls,
+          meta: Dict[Text, Any],
+          model_dir: Text,
+          model_metadata: Metadata = None,
+          cached_component: Optional["DIETClassifier"] = None,
+          should_finetune: bool = False,
+          **kwargs: Any,
+      ) -> "MyNLUComponent":
+          file_name = meta.get("file")
+          file = Path(model_dir) / "{file_name}.model_data.json"
+          model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+
+          return cls(model_data)
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyNLUComponent(GraphComponent, IntentClassifier):
+      @classmethod
+      def load(
+          cls,
+          config: Dict[Text, Any],
+          model_storage: ModelStorage,
+          resource: Resource,
+          execution_context: ExecutionContext,
+          **kwargs: Any,
+      ) -> MyNLUComponent:
+          model_data = {}
+
+          try:
+              with model_storage.read_from(resource) as path:
+
+                  model_data_file = directory / "model_data.json"
+                  model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+
+          except (ValueError, FileNotFoundError, FileIOException):
+              logger.debug(
+                  f"Couldn't load metadata for component '{cls.__name__}' as the persisted "
+                  f"model data couldn't be loaded."
+              )
+
+          return cls(
+              config, model_storage, resource, execution_context,
+              model_data=model_data
+          )
+  ```
+  </TabItem>
+</Tabs>
+
+
+**Augmenting Training Data**
+
+Components like tokenizers or featurizers train augment the training data with their
+output during the model training as their output is required by components later in the
+pipeline. Typically, featurizers require *tokenized* messages as well as intent
+classifiers require *featurized* training data to train themselves. Rasa Open Source
+3.0 makes these different purposes explicit. While both component training and
+training data augmentation where done as part of the `train` method previously, they
+are now split in `train` and `process_training_data`:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-component-train-process-split" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(SparseFeaturizer):
+      def train(
+          self,
+          training_data: TrainingData,
+          config: Optional[RasaNLUModelConfig] = None,
+          **kwargs: Any,
+      ) -> None:
+          self.train_featurizer(training_data)
+
+          for message in training_data.training_examples:
+              self.add_features(message)
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyNLUComponent(GraphComponent, SparseFeaturizer):
+      def train(self, training_data: TrainingData) -> Resource:
+          self.train_featurizer(training_data)
+
+          self.persist()
+          return self._resource
+
+      def process_training_data(training_data: TrainingData) -> TrainingData:
+          for message in training_data.training_examples:
+              self.add_features(message)
+
+          return training_data
+  ```
+  </TabItem>
+</Tabs>
+
+
+**Handling Lists of Messages During Inference**
+
+Starting with Rasa Open Source 3.0 all NLU components have to support a list of
+messages during inference. Unless your model supports batch predictions the easiest
+way to handle this is to loop over the messages:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-component-process-messages-split" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(IntentClassifier):
+      def process(self, message: Message, **kwargs: Any) -> None:
+        self.predict(message)
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyNLUComponent(GraphComponent, IntentClassifier):
+      def process(self, messages: List[Message]) -> List[Message]:
+          for message in messages:
+              self.predict(message)
+
+          return messages
+  ```
+  </TabItem>
+</Tabs>
+
+
+**Registering your Component**
+Before you can use your custom NLU component you have to register your component using the
+`DefaultV1Recipe.register` decorator. The component types correspond to the existing
+parent classes:
+
+* `Tokenizer` -> `ComponentType.MESSAGE_TOKENIZER`
+* `SparseFeaturizer` / `DenseFeaturizer` -> `ComponentType.MESSAGE_FEATURIZER`
+* `IntentClassifier` -> `ComponentType.INTENT_CLASSIFIER`
+* `EntityExtractor` -> `ComponentType.ENTITY_EXTRACTOR`
+* If your component provides a pretrained model which then should be used by other
+  components during training and inference use `ComponentType.MODEL_LOADER`
+
+Specify `is_trainable=True` if the `train` method of your policy should be called
+during the training.
+
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-register" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(IntentClassifier):
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  @DefaultV1Recipe.register(
+      DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+  )
+  class MyNLUComponent(GraphComponent, IntentClassifier):
+      ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Using a Model Provider**
+
+If your component requires a pretrained model such as a [Spacy](components#spacynlp) or
+[Mitie](components#mitienlp) language model, specify this with the `model_from`
+parameter in the `register` decorator. The model will then be passed to your models
+`train`, `process_training_data` and `process` methods:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-model-provider" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(IntentClassifier):
+      def train(
+          self,
+          training_data: TrainingData,
+          cfg: Optional[RasaNLUModelConfig] = None,
+          **kwargs: Any,
+      ) -> None:
+          """Train the featurizer.
+          spacy_nlp = kwargs.get("spacy_nlp")
+          ...
+
+      def process(self, message: Message, **kwargs: Any) -> None:
+          spacy_nlp = kwargs.get("spacy_nlp", None)
+          ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  @DefaultV1Recipe.register(
+      DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True, model_from="SpacyNLP"
+  )
+  class MyNLUComponent(GraphComponent, IntentClassifier):
+      def train(
+          self, training_data: TrainingData, model: SpacyModel) -> Resource:
+          spacy_nlp = model.model
+          ...
+
+      def process(self, messages: List[Message], model: SpacyModel) -> List[Message]:
+          spacy_nlp = model.model
+          ...
+  ```
+
+  </TabItem>
+</Tabs>
 
 ### Training data
 
