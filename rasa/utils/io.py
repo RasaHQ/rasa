@@ -17,8 +17,8 @@ from typing import (
     Callable,
     TYPE_CHECKING,
     Pattern,
-    Protocol,
 )
+from typing_extensions import Protocol
 
 import rasa.shared.constants
 import rasa.shared.utils.io
