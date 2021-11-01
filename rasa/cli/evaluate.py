@@ -1,4 +1,5 @@
 import argparse
+from rasa.shared.core.domain import Domain
 from typing import List, Text, Optional
 
 from rasa.core.utils import AvailableEndpoints
@@ -87,6 +88,7 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
         seed,
         count,
         args.endpoints,
+        args.domain,
         args.strategy,
         args.config,
         args.output_filename,
@@ -98,6 +100,7 @@ def _run_markers(
     seed: Optional[int],
     count: Optional[int],
     endpoint_config: Text,
+    domain_path: Text,
     strategy: Text,
     config: Text,
     output_filename: Text,
@@ -112,6 +115,8 @@ def _run_markers(
                except 'all').
         endpoint_config: Path to the endpoint configuration defining the tracker
                          store to use.
+        domain_path: Path to the domain specification to use when validating the
+                     marker definitions.
         strategy: Strategy to use when selecting trackers to extract from.
         config: Path to the markers definition file to use.
         output_filename: Path to write out the extracted markers.
@@ -128,8 +133,16 @@ def _run_markers(
             "A file with the stats filename already exists"
         )
 
-    tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
+    domain = Domain.load(domain_path)
     markers = Marker.from_path(config)
+
+    if not markers.validate_against_domain(domain):
+        rasa.shared.utils.cli.print_error_and_exit(
+            "Validation errors were found in the markers definition. "
+            "Please see errors listed above and fix before running again."
+        )
+
+    tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
     markers.export_markers(tracker_loader.load(), output_filename, stats_file)
 
 

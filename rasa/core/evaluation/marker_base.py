@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.io import WriteRow
 from typing import (
@@ -265,6 +266,15 @@ class Marker(ABC):
     @abstractmethod
     def __len__(self) -> int:
         """Returns the count of all markers that are part of this marker."""
+        ...
+
+    @abstractmethod
+    def validate_against_domain(self, domain: Domain) -> bool:
+        """Checks that this marker (and its children) refer to entries in the domain.
+        
+        Args:
+            domain: The domain to check against
+        """
         ...
 
     def evaluate_events(
@@ -726,6 +736,16 @@ class OperatorMarker(Marker, ABC):
         for marker in self.sub_markers:
             marker.reset()
         super().reset()
+
+    def validate_against_domain(self, domain: Domain) -> bool:
+        """Checks that this marker (and its children) refer to entries in the domain.
+        
+        Args:
+            domain: The domain to check against
+        """
+        return all(
+            marker.validate_against_domain(domain) for marker in self.sub_markers
+        )
 
     @staticmethod
     def from_tag_and_sub_config(

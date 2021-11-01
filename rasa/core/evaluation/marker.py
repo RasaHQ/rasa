@@ -1,3 +1,4 @@
+from rasa.shared.core.domain import Domain
 from typing import Optional, Text, List
 from rasa.core.evaluation.marker_base import (
     OperatorMarker,
@@ -5,6 +6,7 @@ from rasa.core.evaluation.marker_base import (
     MarkerRegistry,
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
+import rasa.shared.utils.io
 
 
 @MarkerRegistry.configurable_marker
@@ -147,6 +149,21 @@ class ActionExecutedMarker(ConditionMarker):
         """Returns the tag to be used in a config file for the negated version."""
         return "action_not_executed"
 
+    def validate_against_domain(self, domain: Domain) -> bool:
+        """Checks that this marker (and its children) refer to entries in the domain.
+        
+        Args:
+            domain: The domain to check against
+        """
+        valid = self.text in domain.action_names_or_texts
+
+        if not valid:
+            rasa.shared.utils.io.raise_warning(
+                f"Referenced action '{self.text}' does not exist in the domain"
+            )
+
+        return valid
+
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return isinstance(event, ActionExecuted) and event.action_name == self.text
 
@@ -169,6 +186,21 @@ class IntentDetectedMarker(ConditionMarker):
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return "intent_not_detected"
+
+    def validate_against_domain(self, domain: Domain) -> bool:
+        """Checks that this marker (and its children) refer to entries in the domain.
+        
+        Args:
+            domain: The domain to check against
+        """
+        valid = self.text in domain.intent_properties
+
+        if not valid:
+            rasa.shared.utils.io.raise_warning(
+                f"Referenced intent '{self.text}' does not exist in the domain"
+            )
+
+        return valid
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return isinstance(event, UserUttered) and self.text in [
@@ -193,6 +225,21 @@ class SlotSetMarker(ConditionMarker):
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return "slot_is_not_set"
+
+    def validate_against_domain(self, domain: Domain) -> bool:
+        """Checks that this marker (and its children) refer to entries in the domain.
+        
+        Args:
+            domain: The domain to check against
+        """
+        valid = any(self.text == slot.name for slot in domain.slots)
+
+        if not valid:
+            rasa.shared.utils.io.raise_warning(
+                f"Referenced slot '{self.text}' does not exist in the domain"
+            )
+
+        return valid
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         if isinstance(event, SlotSet) and event.key == self.text:

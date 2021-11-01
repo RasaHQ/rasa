@@ -1,4 +1,5 @@
 import csv
+from rasa.shared.core.slots import Slot
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.tracker_store import InMemoryTrackerStore
@@ -471,7 +472,7 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
 
 
 def test_markers_cli_results_save_correctly(tmp_path: Text):
-    domain = Domain.empty()
+    domain = Domain([], [], [Slot("2", []), Slot("7", [])], {}, [], {})
     store = InMemoryTrackerStore(domain)
 
     for i in range(5):
