@@ -12,13 +12,11 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.constants import SPACY_DOCS
-from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
-    SpacyFeaturizerGraphComponent,
-)
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
-    CountVectorsFeaturizerGraphComponent,
+    CountVectorsFeaturizer,
 )
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.utils.tensorflow import model_data_utils
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import (
@@ -224,20 +222,20 @@ def test_convert_training_examples(
 ):
     message = Message(data={TEXT: text, INTENT: intent, ENTITIES: entities})
 
-    tokenizer = SpacyTokenizerGraphComponent.create(
-        SpacyTokenizerGraphComponent.get_default_config(),
+    tokenizer = SpacyTokenizer.create(
+        SpacyTokenizer.get_default_config(),
         default_model_storage,
         Resource("tokenizer"),
         default_execution_context,
     )
-    count_vectors_featurizer = CountVectorsFeaturizerGraphComponent.create(
-        CountVectorsFeaturizerGraphComponent.get_default_config(),
+    count_vectors_featurizer = CountVectorsFeaturizer.create(
+        CountVectorsFeaturizer.get_default_config(),
         default_model_storage,
         Resource("count_featurizer"),
         default_execution_context,
     )
-    spacy_featurizer = SpacyFeaturizerGraphComponent.create(
-        SpacyFeaturizerGraphComponent.get_default_config(),
+    spacy_featurizer = SpacyFeaturizer.create(
+        SpacyFeaturizer.get_default_config(),
         default_model_storage,
         Resource("spacy_featurizer"),
         default_execution_context,

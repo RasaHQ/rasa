@@ -56,7 +56,96 @@ def test_luis_data():
 def test_wit_data():
     td = load_data("data/examples/wit/demo-flights.json")
     assert not td.is_empty()
-    assert len(td.entity_examples) == 4
+    assert td.entity_examples == [
+        Message(
+            {
+                "intent": "flight_booking",
+                "entities": [
+                    {
+                        "entity": "location",
+                        "start": 19,
+                        "end": 25,
+                        "entities": [],
+                        "role": "from",
+                        "value": "london",
+                    }
+                ],
+                "text": "i want to fly from london",
+            }
+        ),
+        Message(
+            {
+                "intent": "flight_booking",
+                "entities": [
+                    {
+                        "entity": "location",
+                        "start": 17,
+                        "end": 23,
+                        "entities": [],
+                        "role": "to",
+                        "value": "berlin",
+                    }
+                ],
+                "text": "i want to fly to berlin",
+            }
+        ),
+        Message(
+            {
+                "intent": "flight_booking",
+                "entities": [
+                    {
+                        "entity": "location",
+                        "start": 18,
+                        "end": 24,
+                        "entities": [],
+                        "role": "from",
+                        "value": "berlin",
+                    },
+                    {
+                        "entity": "location",
+                        "start": 28,
+                        "end": 33,
+                        "entities": [],
+                        "role": "to",
+                        "value": "tokyo",
+                    },
+                ],
+                "text": "i want to go from berlin to tokyo tomorrow",
+            }
+        ),
+        Message(
+            {
+                "intent": "flight_booking",
+                "entities": [
+                    {
+                        "entity": "location",
+                        "start": 30,
+                        "end": 36,
+                        "entities": [],
+                        "role": "from",
+                        "value": "london",
+                    },
+                    {
+                        "entity": "wit$datetime",
+                        "start": 50,
+                        "end": 61,
+                        "entities": [],
+                        "role": "datetime",
+                        "value": "next monday",
+                    },
+                    {
+                        "entity": "location",
+                        "start": 40,
+                        "end": 49,
+                        "entities": [],
+                        "role": "to",
+                        "value": "amsterdam",
+                    },
+                ],
+                "text": "i'm looking for a flight from london to amsterdam next monday",
+            }
+        ),
+    ]
     assert len(td.intent_examples) == 5
     assert len(td.training_examples) == 5
     assert td.entity_synonyms == {}
@@ -112,15 +201,13 @@ def test_composite_entities_data():
     td = load_data("data/test/demo-rasa-composite-entities.yml")
     assert not td.is_empty()
     assert len(td.entity_examples) == 11
-    assert len(td.intent_examples) == 45
-    assert len(td.training_examples) == 45
+    assert len(td.intent_examples) == 29
+    assert len(td.training_examples) == 29
     assert td.entity_synonyms == {"SF": "San Fransisco"}
     assert td.intents == {
         "order_pizza",
         "book_flight",
         "chitchat",
-        "greet",
-        "goodbye",
         "affirm",
     }
     assert td.entities == {"location", "topping", "size"}
@@ -416,7 +503,7 @@ def test_data_merging(files):
     assert td.regex_features == td_reference.regex_features
 
 
-def test_repeated_entities(tmp_path):
+def test_repeated_entities(tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizer):
     data = """
 {
   "rasa_nlu_data": {
@@ -443,7 +530,7 @@ def test_repeated_entities(tmp_path):
     example = td.entity_examples[0]
     entities = example.get("entities")
     assert len(entities) == 1
-    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    tokens = whitespace_tokenizer.tokenize(example, attribute=TEXT)
     start, end = MitieEntityExtractor.find_entity(
         entities[0], example.get(TEXT), tokens
     )
@@ -451,7 +538,7 @@ def test_repeated_entities(tmp_path):
     assert end == 10
 
 
-def test_multiword_entities(tmp_path):
+def test_multiword_entities(tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizer):
     data = """
 {
   "rasa_nlu_data": {
@@ -478,7 +565,7 @@ def test_multiword_entities(tmp_path):
     example = td.entity_examples[0]
     entities = example.get("entities")
     assert len(entities) == 1
-    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    tokens = whitespace_tokenizer.tokenize(example, attribute=TEXT)
     start, end = MitieEntityExtractor.find_entity(
         entities[0], example.get(TEXT), tokens
     )
@@ -828,7 +915,9 @@ def test_label_fingerprints(message: Message):
     assert training_data1.label_fingerprint() != training_data2.label_fingerprint()
 
 
-def test_training_data_fingerprint_incorporates_tokens():
+def test_training_data_fingerprint_incorporates_tokens(
+    whitespace_tokenizer: WhitespaceTokenizer,
+):
     from rasa.shared.importers.utils import training_data_from_paths
 
     files = [
@@ -837,8 +926,7 @@ def test_training_data_fingerprint_incorporates_tokens():
     ]
     training_data = training_data_from_paths(files, language="en")
     fp1 = training_data.fingerprint()
-    tokenizer = WhitespaceTokenizer()
-    tokenizer.train(training_data)
+    whitespace_tokenizer.process_training_data(training_data)
     # training data fingerprint has changed
     assert fp1 != training_data.fingerprint()
 

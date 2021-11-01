@@ -73,8 +73,6 @@ parameter for slots with the same name.
 The `entities` section lists all entities that can be
 extracted by any [entity extractor](./components.mdx) in your
 NLU pipeline.
-If you are using the feature [Entity Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups) you also
-need to list the roles and groups of an entity in this section.
 
 For example:
 
@@ -84,6 +82,15 @@ entities:
    - time             # entity extracted by DucklingEntityExtractor
    - membership_type  # custom entity extracted by DIETClassifier
    - priority         # custom entity extracted by DIETClassifier
+```
+
+If you are using the feature [Entity Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups) you also
+need to list the roles and groups of an entity in this section.
+
+For example:
+
+```yaml-rasa
+entities:
    - city:            # custom entity extracted by DIETClassifier
        roles:
        - from
@@ -182,6 +189,9 @@ information before it is able to predict the weather.
   slots:
      cuisine:
         type: text
+        mappings:
+        - type: from_entity
+          entity: cuisine
   ```
 
 * **Description**
@@ -221,6 +231,8 @@ information before it is able to predict the weather.
   slots:
      is_authenticated:
         type: bool
+        mappings:
+        - type: custom
   ```
 
 * **Description**
@@ -250,6 +262,8 @@ information before it is able to predict the weather.
         - low
         - medium
         - high
+      mappings:
+      - type: custom
   ```
 
 * **Description**
@@ -283,6 +297,8 @@ information before it is able to predict the weather.
       type: float
       min_value: -100.0
       max_value:  100.0
+      mappings:
+      - type: custom
   ```
 
 * **Defaults**
@@ -314,6 +330,8 @@ information before it is able to predict the weather.
   slots:
     shopping_items:
       type: list
+      mappings:
+      - type: custom
   ```
 
 * **Description**
@@ -338,6 +356,8 @@ information before it is able to predict the weather.
   slots:
     shopping_items:
       type: any
+      mappings:
+      - type: custom
   ```
 
 * **Description**
@@ -412,6 +432,8 @@ slots:
   people:
     type: addons.my_custom_slots.NumberOfPeopleSlot
     influence_conversation: true
+    mappings:
+    - type: custom
 ```
 
 Now that your custom slot class can be used by Rasa Open Source, add training stories that diverge based on the value of the `people` slot.
@@ -498,7 +520,9 @@ To disable auto-filling for a particular slot, you can set the
 slots:
   name:
     type: text
-    auto_fill: false
+    mappings:
+    - type: from_entity
+      entity: name
 ```
 
 ### Initial slot values
@@ -510,6 +534,8 @@ slots:
   num_fallbacks:
     type: float
     initial_value: 0
+    mappings:
+    - type: custom
 ```
 
 ## Responses

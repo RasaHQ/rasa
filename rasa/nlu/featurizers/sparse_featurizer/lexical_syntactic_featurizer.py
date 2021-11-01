@@ -13,18 +13,20 @@ from typing import (
     Callable,
     Set,
     Optional,
+    Type,
     Union,
 )
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.tokenizers.spacy_tokenizer import (
     POS_TAG_KEY,
-    SpacyTokenizerGraphComponent,
+    SpacyTokenizer,
 )
-from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -33,14 +35,8 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import InvalidConfigException
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.nlu.featurizers.sparse_featurizer._lexical_syntactic_featurizer import (
-    LexicalSyntacticFeaturizer,
-)
 
 logger = logging.getLogger(__name__)
-
-# TODO: remove after all references to old featurizer have been removed
-LexicalSyntacticFeaturizer = LexicalSyntacticFeaturizer
 
 
 END_OF_SENTENCE = "EOS"
@@ -49,7 +45,10 @@ BEGIN_OF_SENTENCE = "BOS"
 FEATURES = "features"
 
 
-class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
+class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
     """Extracts and encodes lexical syntactic features.
 
     Given a sequence of tokens, this featurizer produces a sequence of features
@@ -126,11 +125,16 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
             return str(token_position == 0)
         return str(cls._FUNCTION_DICT[feature_name](token))
 
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Tokenizer]
+
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """Returns the component's default config."""
         return {
-            **SparseFeaturizer2.get_default_config(),
+            **SparseFeaturizer.get_default_config(),
             FEATURES: [
                 ["low", "title", "upper"],
                 ["BOS", "EOS", "low", "upper", "title", "digit"],
@@ -270,7 +274,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                 f"Expected training data to include tokens with part-of-speech tags"
                 f"because the given configuration includes part-of-speech features "
                 f"`pos` and/or `pos2`. "
-                f"Please add a {SpacyTokenizerGraphComponent.__name__} to your "
+                f"Please add a {SpacyTokenizer.__name__} to your "
                 f"configuration if you want to use the part-of-speech-features in the"
                 f"{self.__class__.__name__}. "
                 f"Continuing without the part-of-speech-features."
@@ -484,7 +488,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> LexicalSyntacticFeaturizerGraphComponent:
+    ) -> LexicalSyntacticFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -496,7 +500,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> LexicalSyntacticFeaturizerGraphComponent:
+    ) -> LexicalSyntacticFeaturizer:
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
@@ -512,7 +516,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                     feature_to_idx_dict=feature_to_idx_dict,
                 )
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load `{cls.__class__.__name__}` from model storage. "
                 f"Resource '{resource.name}' doesn't exist."
             )

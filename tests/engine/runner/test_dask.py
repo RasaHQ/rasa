@@ -13,6 +13,7 @@ from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.storage import ModelStorage
 from tests.engine.graph_components_test_classes import (
     AddInputs,
+    AssertComponent,
     ExecutionContextAware,
     ProvideX,
     SubtractByX,
@@ -181,12 +182,14 @@ def test_unused_node(default_model_storage: ModelStorage):
                 config={},
                 is_target=True,
             ),
-            "provide_2": SchemaNode(  # This will not output
-                needs={},
-                uses=ProvideX,
-                fn="provide",
+            # This node will not fail as it will be pruned because it is not a target
+            # or a target's ancestor.
+            "assert_false": SchemaNode(
+                needs={"i": "input"},
+                uses=AssertComponent,
+                fn="run_assert",
                 constructor_name="create",
-                config={},
+                config={"value_to_assert": "some_value"},
             ),
         }
     )
@@ -195,7 +198,7 @@ def test_unused_node(default_model_storage: ModelStorage):
         model_storage=default_model_storage,
         execution_context=ExecutionContext(graph_schema=graph_schema, model_id="1"),
     )
-    results = runner.run()
+    results = runner.run(inputs={"input": "some_other_value"})
     assert results == {"provide": 1}
 
 
@@ -267,36 +270,6 @@ def test_execution_context(default_model_storage: ModelStorage):
     result = runner.run()["execution_context_aware"]
     assert result.model_id == "some_id"
     assert result.node_name == "execution_context_aware"
-
-
-def test_loop(default_model_storage: ModelStorage):
-    graph_schema = GraphSchema(
-        {
-            "subtract_a": SchemaNode(
-                needs={"i": "subtract_b"},
-                uses=SubtractByX,
-                fn="subtract_x",
-                constructor_name="create",
-                config={},
-                is_target=False,
-            ),
-            "subtract_b": SchemaNode(
-                needs={"i": "subtract_a"},
-                uses=SubtractByX,
-                fn="subtract_x",
-                constructor_name="create",
-                config={},
-                is_target=True,
-            ),
-        }
-    )
-    runner = DaskGraphRunner(
-        graph_schema=graph_schema,
-        model_storage=default_model_storage,
-        execution_context=ExecutionContext(graph_schema=graph_schema, model_id="1"),
-    )
-    with pytest.raises(GraphRunError):
-        runner.run()
 
 
 def test_input_value_is_node_name(default_model_storage: ModelStorage):

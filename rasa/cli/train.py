@@ -118,21 +118,16 @@ def _model_for_finetuning(args: argparse.Namespace) -> Optional[Text]:
         return args.finetune
 
 
-def run_core_training(
-    args: argparse.Namespace, train_path: Optional[Text] = None
-) -> Optional[Text]:
+def run_core_training(args: argparse.Namespace) -> Optional[Text]:
     """Trains a Rasa Core model only.
 
     Args:
         args: Command-line arguments to configure training.
-        train_path: Path where trained model but not unzipped model should be stored.
 
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
     from rasa.model_training import train_core
-
-    output = train_path or args.out
 
     args.domain = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
@@ -154,8 +149,7 @@ def run_core_training(
             domain=args.domain,
             config=config,
             stories=story_file,
-            output=output,
-            train_path=train_path,
+            output=args.out,
             fixed_model_name=args.fixed_model_name,
             additional_arguments=additional_arguments,
             model_to_finetune=_model_for_finetuning(args),
@@ -166,21 +160,16 @@ def run_core_training(
         return None
 
 
-def run_nlu_training(
-    args: argparse.Namespace, train_path: Optional[Text] = None
-) -> Optional[Text]:
+def run_nlu_training(args: argparse.Namespace) -> Optional[Text]:
     """Trains an NLU model.
 
     Args:
         args: Namespace arguments.
-        train_path: Directory where models should be stored.
 
     Returns:
         Path to a trained model or `None` if training was not successful.
     """
     from rasa.model_training import train_nlu
-
-    output = train_path or args.out
 
     config = _get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
     nlu_data = rasa.cli.utils.get_validated_path(
@@ -195,8 +184,7 @@ def run_nlu_training(
     return train_nlu(
         config=config,
         nlu_data=nlu_data,
-        output=output,
-        train_path=train_path,
+        output=args.out,
         fixed_model_name=args.fixed_model_name,
         persist_nlu_training_data=args.persist_nlu_data,
         additional_arguments=extract_nlu_additional_arguments(args),

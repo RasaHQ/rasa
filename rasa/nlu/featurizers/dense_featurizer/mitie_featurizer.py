@@ -1,20 +1,21 @@
+from __future__ import annotations
 import numpy as np
 import logging
 import typing
-from typing import Any, List, Text, Dict, Tuple
+from typing import Any, List, Text, Dict, Tuple, Type
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
-from rasa.nlu.featurizers.dense_featurizer._mitie_featurizer import MitieFeaturizer
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
     TOKENS_NAMES,
 )
-from rasa.nlu.utils.mitie_utils import MitieModel
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
@@ -26,19 +27,25 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MitieFeaturizer = MitieFeaturizer
 
-
-class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER,
+    is_trainable=False,
+    model_from="MitieNLP",
+)
+class MitieFeaturizer(DenseFeaturizer, GraphComponent):
     """A class that featurizes using Mitie."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [MitieNLP, Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """Returns the component's default config."""
         return {
-            **DenseFeaturizer2.get_default_config(),
+            **DenseFeaturizer.get_default_config(),
             # Specify what pooling operation should be used to calculate the vector of
             # the complete utterance. Available options: 'mean' and 'max'
             POOLING: MEAN_POOLING,
@@ -52,7 +59,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def __init__(
         self, config: Dict[Text, Any], execution_context: ExecutionContext,
     ) -> None:
-        """Instantiates a new `MitieFeaturizerGraphComponent` instance."""
+        """Instantiates a new `MitieFeaturizer` instance."""
         super().__init__(execution_context.node_name, config)
         self.pooling_operation = self._config[POOLING]
 
@@ -63,7 +70,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> "MitieFeaturizerGraphComponent":
+    ) -> MitieFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, execution_context)
 

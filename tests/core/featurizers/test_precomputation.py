@@ -351,7 +351,7 @@ def test_container_derive_messages_from_domain_and_add():
         action_texts=action_texts,
         responses=responses,
         entities=["e_a", "e_b", "e_c"],
-        slots=[Slot(name="s")],
+        slots=[Slot(name="s", mappings=[{}])],
         forms=forms,
     )
     lookup_table = MessageContainerForCoreFeaturization()

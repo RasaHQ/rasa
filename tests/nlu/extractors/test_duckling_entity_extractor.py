@@ -6,9 +6,7 @@ import responses
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.extractors.duckling_entity_extractor import (
-    DucklingEntityExtractorComponent,
-)
+from rasa.nlu.extractors.duckling_entity_extractor import DucklingEntityExtractor
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 
@@ -16,11 +14,11 @@ from rasa.shared.nlu.training_data.message import Message
 @pytest.fixture()
 def create_duckling(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
-) -> Callable[[Dict[Text, Any]], DucklingEntityExtractorComponent]:
-    def inner(config: Dict[Text, Any]) -> DucklingEntityExtractorComponent:
-        return DucklingEntityExtractorComponent.create(
+) -> Callable[[Dict[Text, Any]], DucklingEntityExtractor]:
+    def inner(config: Dict[Text, Any]) -> DucklingEntityExtractor:
+        return DucklingEntityExtractor.create(
             config={
-                **DucklingEntityExtractorComponent.get_default_config(),
+                **DucklingEntityExtractor.get_default_config(),
                 "url": "http://localhost:8000",
                 **config,
             },
@@ -33,7 +31,7 @@ def create_duckling(
 
 
 def test_duckling_entity_extractor_with_multiple_extracted_dates(
-    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractorComponent]
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor]
 ):
     duckling = create_duckling({"dimensions": ["time"], "timezone": "UTC"})
 
@@ -152,7 +150,7 @@ def test_duckling_entity_extractor_with_multiple_extracted_dates(
 
 
 def test_duckling_entity_extractor_with_one_extracted_date(
-    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractorComponent]
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor]
 ):
     duckling = create_duckling({"dimensions": ["time"], "timezone": "UTC"})
 
@@ -195,7 +193,7 @@ def test_duckling_entity_extractor_with_one_extracted_date(
 
 
 def test_duckling_entity_extractor_dimension_filtering(
-    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractorComponent]
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor]
 ):
     duckling_number = create_duckling({"dimensions": ["number"]})
 

@@ -8,6 +8,7 @@ from rasa.shared.nlu.constants import (
     TEXT,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
 )
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 
@@ -39,6 +40,7 @@ class WitReader(JsonTrainingDataReader):
                 (name, role) = entity_name.rsplit(":", 1)
                 e[ENTITY_ATTRIBUTE_TYPE] = name
                 e[ENTITY_ATTRIBUTE_ROLE] = role
+                e[ENTITY_ATTRIBUTE_VALUE] = e.pop("body", None)
 
             data = {}
             if intent:

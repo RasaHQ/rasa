@@ -1,18 +1,20 @@
 from __future__ import annotations
 import logging
 import re
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 import scipy.sparse
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.shared.nlu.constants import (
     TEXT,
     RESPONSE,
@@ -20,22 +22,26 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.featurizers.sparse_featurizer._regex_featurizer import RegexFeaturizer
 
 logger = logging.getLogger(__name__)
 
-# TODO: remove after all references to old featurizer have been removed
-RegexFeaturizer = RegexFeaturizer
 
-
-class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
+class RegexFeaturizer(SparseFeaturizer, GraphComponent):
     """Adds message features based on regex expressions."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """Returns the component's default config."""
         return {
-            **SparseFeaturizer2.get_default_config(),
+            **SparseFeaturizer.get_default_config(),
             # text will be processed with case sensitive as default
             "case_sensitive": True,
             # use lookup tables to generate features
@@ -81,7 +87,7 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> RegexFeaturizerGraphComponent:
+    ) -> RegexFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -233,7 +239,7 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> RegexFeaturizerGraphComponent:
+    ) -> RegexFeaturizer:
         """Loads trained component (see parent class for full docstring)."""
         known_patterns = None
 

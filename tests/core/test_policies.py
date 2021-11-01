@@ -27,26 +27,24 @@ from rasa.shared.core.events import (
 from rasa.core import training
 from rasa.core.constants import POLICY_MAX_HISTORY
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer2 as TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
-    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer,
+    IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer2 as SingleStateFeaturizer,
-    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
+    SingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.core.policies.policy import (
     SupportedData,
-    Policy,
     InvalidPolicyConfig,
-    PolicyGraphComponent,
+    Policy,
 )
-from rasa.core.policies.rule_policy import RulePolicyGraphComponent
-from rasa.core.policies.ted_policy import TEDPolicyGraphComponent
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import (
-    AugmentedMemoizationPolicyGraphComponent as AugmentedMemoizationPolicy,
-    MemoizationPolicyGraphComponent as MemoizationPolicy,
-    MemoizationPolicyGraphComponent,
+    AugmentedMemoizationPolicy,
+    MemoizationPolicy,
 )
 
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -76,7 +74,7 @@ class PolicyTestCollection:
     Each policy can declare further tests on its own."""
 
     @staticmethod
-    def _policy_class_to_test() -> Type[PolicyGraphComponent]:
+    def _policy_class_to_test() -> Type[Policy]:
         raise NotImplementedError
 
     max_history = 3  # this is the amount of history we test on
@@ -107,7 +105,7 @@ class PolicyTestCollection:
         resource: Resource,
         execution_context: ExecutionContext,
         config: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyGraphComponent:
+    ) -> Policy:
         return self._policy_class_to_test()(
             config=self._config(config),
             model_storage=model_storage,
@@ -140,7 +138,7 @@ class PolicyTestCollection:
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> PolicyGraphComponent:
+    ) -> Policy:
         policy = self.create_policy(
             featurizer, model_storage, resource, execution_context
         )
@@ -152,7 +150,7 @@ class PolicyTestCollection:
 
     def test_featurizer(
         self,
-        trained_policy: PolicyGraphComponent,
+        trained_policy: Policy,
         resource: Resource,
         model_storage: ModelStorage,
         tmp_path: Path,
@@ -178,7 +176,7 @@ class PolicyTestCollection:
     @pytest.mark.parametrize("should_finetune", [False, True])
     def test_persist_and_load(
         self,
-        trained_policy: PolicyGraphComponent,
+        trained_policy: Policy,
         default_domain: Domain,
         should_finetune: bool,
         stories_path: Text,
@@ -240,9 +238,7 @@ class PolicyTestCollection:
         assert loaded is not None
 
     @staticmethod
-    def _get_next_action(
-        policy: PolicyGraphComponent, events: List[Event], domain: Domain
-    ) -> Text:
+    def _get_next_action(policy: Policy, events: List[Event], domain: Domain) -> Text:
         tracker = get_tracker(events)
         scores = policy.predict_action_probabilities(tracker, domain,).probabilities
         index = scores.index(max(scores))
@@ -254,8 +250,7 @@ class PolicyTestCollection:
             (
                 [
                     {
-                        # TODO: remove "2" when migration of policies is done
-                        "name": "MaxHistoryTrackerFeaturizer2",
+                        "name": "MaxHistoryTrackerFeaturizer",
                         "max_history": 12,
                         "state_featurizer": [],
                     }
@@ -264,19 +259,17 @@ class PolicyTestCollection:
                 type(None),
             ),
             (
-                # TODO: remove "2" when migration of policies is done
-                [{"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12}],
+                [{"name": "MaxHistoryTrackerFeaturizer", "max_history": 12}],
                 MaxHistoryTrackerFeaturizer(max_history=12),
                 type(None),
             ),
             (
                 [
                     {
-                        # TODO: remove "2" when migration of policies is done
-                        "name": "IntentMaxHistoryTrackerFeaturizer2",
+                        "name": "IntentMaxHistoryTrackerFeaturizer",
                         "max_history": 12,
                         "state_featurizer": [
-                            {"name": "IntentTokenizerSingleStateFeaturizer2"}
+                            {"name": "IntentTokenizerSingleStateFeaturizer"}
                         ],
                     }
                 ],
@@ -321,18 +314,16 @@ class PolicyTestCollection:
         "featurizer_config",
         [
             [
-                # TODO: remove "2" when migration of policies is done
-                {"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12},
-                {"name": "MaxHistoryTrackerFeaturizer2", "max_history": 12},
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
             ],
             [
                 {
-                    # TODO: remove "2" when migration of policies is done
-                    "name": "IntentMaxHistoryTrackerFeaturizer2",
+                    "name": "IntentMaxHistoryTrackerFeaturizer",
                     "max_history": 12,
                     "state_featurizer": [
-                        {"name": "IntentTokenizerSingleStateFeaturizer2"},
-                        {"name": "IntentTokenizerSingleStateFeaturizer2"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
                     ],
                 }
             ],
@@ -340,7 +331,7 @@ class PolicyTestCollection:
     )
     def test_different_invalid_featurizer_configs(
         self,
-        trained_policy: PolicyGraphComponent,
+        trained_policy: Policy,
         featurizer_config: Optional[Dict[Text, Any]],
         model_storage: ModelStorage,
         resource: Resource,
@@ -358,7 +349,7 @@ class PolicyTestCollection:
 
 class TestMemoizationPolicy(PolicyTestCollection):
     @staticmethod
-    def _policy_class_to_test() -> Type[PolicyGraphComponent]:
+    def _policy_class_to_test() -> Type[Policy]:
         return MemoizationPolicy
 
     @pytest.fixture(scope="class")
@@ -368,7 +359,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
     def test_featurizer(
         self,
-        trained_policy: PolicyGraphComponent,
+        trained_policy: Policy,
         resource: Resource,
         model_storage: ModelStorage,
         tmp_path: Path,
@@ -605,12 +596,20 @@ class TestMemoizationPolicy(PolicyTestCollection):
             slots:
                 slot_1:
                     type: bool
+                    mappings:
+                    - type: from_text
                 slot_2:
                     type: bool
+                    mappings:
+                    - type: from_text
                 slot_3:
                     type: bool
+                    mappings:
+                    - type: from_text
                 slot_4:
                     type: bool
+                    mappings:
+                    - type: from_text
             """
         )
         events = [
@@ -647,7 +646,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
     """Test suite for AugmentedMemoizationPolicy."""
 
     @staticmethod
-    def _policy_class_to_test() -> Type[PolicyGraphComponent]:
+    def _policy_class_to_test() -> Type[Policy]:
         return AugmentedMemoizationPolicy
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
@@ -679,10 +678,16 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
                     slot_1:
                         type: bool
                         initial_value: true
+                        mappings:
+                        - type: from_text
                     slot_2:
                         type: bool
+                        mappings:
+                        - type: from_text
                     slot_3:
                         type: bool
+                        mappings:
+                        - type: from_text
                 """
         )
         training_story = TrackerWithCachedStates.from_events(
@@ -730,9 +735,9 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
 @pytest.mark.parametrize(
     "policy,supported_data",
     [
-        (TEDPolicyGraphComponent, SupportedData.ML_DATA),
-        (RulePolicyGraphComponent, SupportedData.ML_AND_RULE_DATA),
-        (MemoizationPolicyGraphComponent, SupportedData.ML_DATA),
+        (TEDPolicy, SupportedData.ML_DATA),
+        (RulePolicy, SupportedData.ML_AND_RULE_DATA),
+        (MemoizationPolicy, SupportedData.ML_DATA),
     ],
 )
 def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
