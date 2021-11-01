@@ -2,6 +2,7 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.utils.io import WriteRow
 from typing import (
     Dict,
     Iterator,
@@ -544,7 +545,7 @@ class Marker(ABC):
 
     @staticmethod
     def _write_relevant_events(
-        writer: csv.writer,
+        writer: WriteRow,
         sender_id: Text,
         session_idx: int,
         session: Dict[Text, EventMetaData],
@@ -554,7 +555,7 @@ class Marker(ABC):
                 writer.writerow(
                     [
                         sender_id,
-                        session_idx,
+                        str(session_idx),
                         marker_name,
                         metadata.idx,
                         metadata.preceding_user_turns,
@@ -564,7 +565,7 @@ class Marker(ABC):
     @staticmethod
     def _compute_stats(
         out_file: Text, results: List[Union[Text, Dict[Text, EventMetaData]]]
-    ):
+    ) -> None:
         """Compute stats over extracted marker data."""
         # TODO: Figure out how this is done
         pass

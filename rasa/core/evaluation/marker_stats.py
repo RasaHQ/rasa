@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Dict, Text, Union, List, Tuple
-from typing_extensions import Protocol
+from rasa.utils.io import WriteRow
 from pathlib import Path
 import csv
 
@@ -21,18 +21,6 @@ def compute_statistics(
         "min": min(values) if values else np.nan,
         "max": max(values) if values else np.nan,
     }
-
-
-class _WriteRow(Protocol):
-    """Describes a csv writer supporting a `writerow` method (workaround for typing)."""
-
-    def writerow(self, row: List[Text]) -> None:
-        """Write the given row.
-
-        Args:
-            row: the entries of a row as a list of strings
-        """
-        ...
 
 
 class MarkerStatistics:
@@ -208,7 +196,7 @@ class MarkerStatistics:
             "value",
         ]
 
-    def _write_overview(self, table_writer: _WriteRow) -> None:
+    def _write_overview(self, table_writer: WriteRow) -> None:
         special_sender_idx = self.ALL_SENDERS
         special_session_idx = self.ALL_SESSIONS
         self._write_row(
@@ -239,7 +227,7 @@ class MarkerStatistics:
                 else 100.0,
             )
 
-    def _write_overall_statistics(self, table_writer: _WriteRow) -> None:
+    def _write_overall_statistics(self, table_writer: WriteRow) -> None:
         for marker_name, num_list in self.num_preceding_user_turns_collected.items():
             for statistic_name, value in compute_statistics(num_list).items():
                 MarkerStatistics._write_row(
@@ -251,7 +239,7 @@ class MarkerStatistics:
                     statistic_value=value,
                 )
 
-    def _write_per_session_statistics(self, table_writer: _WriteRow) -> None:
+    def _write_per_session_statistics(self, table_writer: WriteRow) -> None:
         for marker_name, collected_statistics in self.session_results.items():
             for statistic_name, values in collected_statistics.items():
                 self._write_per_session_statistic(
@@ -264,7 +252,7 @@ class MarkerStatistics:
 
     @staticmethod
     def _write_per_session_statistic(
-        table_writer: _WriteRow,
+        table_writer: WriteRow,
         marker_name: Text,
         statistic_name: Text,
         session_identifiers: List[Tuple[Text, int]],
@@ -284,7 +272,7 @@ class MarkerStatistics:
 
     @staticmethod
     def _write_row(
-        table_writer: _WriteRow,
+        table_writer: WriteRow,
         sender_id: Text,
         session_idx: Union[int, np.float],
         marker_name: Text,

@@ -102,7 +102,7 @@ def _run_markers(
     config: Text,
     output_filename: Text,
     stats_file: Optional[Text] = None,
-):
+) -> None:
     """Run markers algorithm over specified config and tracker store.
 
     Args:
