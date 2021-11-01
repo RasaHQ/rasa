@@ -129,18 +129,16 @@ However, the previous behavior can still be enforced by setting
 ### Slot Mappings
 
 As of version 3.0, there is a single explicit mechanism for slot filling enabled by defining slot mappings for each slot
-in the `slots` section of the domain file.
+in the `slots` section of the domain file. This approach allows slots to be kept up to date over the course of a conversation, and removes duplicated effort in
+mapping the same slots in multiple forms.
 
-This mechanism replaces the implicit slot setting via auto-fill of slots with entities of the same name.
+This new mechanism replaces the implicit slot setting via auto-fill of slots with entities of the same name.
 The `auto_fill` key in the domain is no longer available, as well as the `auto_fill` parameter in the constructor of
 the `Slot` class.
 
 While forms continue to request the next slot, the extraction of slots is now delegated exclusively to the new default
 action `action_extract_slots`. This action runs in the background after each user turn without it being required to be
 triggered manually.
-
-This approach allows slots to be kept up to date over the course of a conversation, and removes duplicated effort in
-mapping the same slots in multiple forms.
 
 You are now required to add the `mappings` key for each slot in the 3.0 domain format, including any slots with custom
 mappings. The keys used to define predefined mappings in 2.0 were maintained. Additionally, you can define slots with
@@ -163,6 +161,8 @@ You can continue using `FormValidationAction` as in 2.0, however please note thi
 
 Because slot mappings are now relocated from `forms` to `slots`, the `required_slots` of a form has been converted in a
 list of slot names.
+
+#### Automatic migration from 2.0 domain format to the 3.0 format
 
 To migrate automatically to the 3.0 domain format, you can run the following command:
 
@@ -210,7 +210,7 @@ entities:
              value: false
 ```
 
-Each slot in `slots` will need a new key mappings .
+Each slot in `slots` will need a new key `mappings` .
 This key is a list of mappings moved from forms, while the `required_slots` field collapses to a list of slot names.
 For example, the initial result of this migration could look like this:
 
