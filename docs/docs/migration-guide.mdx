@@ -28,12 +28,12 @@ to convert your data from Markdown to YAML. Please use the commands described
 
 ### Custom Policies and Custom Components
 
-Rasa Open Source 3.0 changed the way how NLU component and dialogue
-policies are trained and run during inference. As part of these changes the interfaces
-for NLU components and policies were unified and adapted.
+Rasa Open Source 3.0 changed the way how [NLU components](components) and
+[policies](policies) are trained and run during inference. As part of these changes
+the interfaces for NLU components and policies have been unified and adapted.
 
-The next section outlines which adaptions are required to run your custom NLU components
-and policies with 3.0.
+The next sections outline which adaptions are required to run your custom NLU components
+and policies with Rasa Open Source 3.0.
 
 :::caution
 
@@ -41,13 +41,62 @@ Please read the updated guide on custom components [here](custom-components) bef
 continuing to follow the step-by-step guide to migrate your own custom components.
 :::
 
+**Type Annotations**
+
+It is now required to use
+[type annotations](https://docs.python.org/3/library/typing.html) in your custom NLU
+components and policies. Rasa Open Source uses these type annotations to validate that
+your components are compatible and correctly configured. As outlined in the custom
+[components guide](custom-components) it is not allowed to use
+[Forward references](https://www.python.org/dev/peps/pep-0484/#forward-references).
+
+:::info Forward References with Python 3.7
+Use the
+[`from __future__ import annotations`](https://www.python.org/dev/peps/pep-0563/#enabling-the-future-behavior-in-python-3-7)
+import to avoid using forward references with Python 3.7.
+:::
+
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-type-annotations" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List["TrackerWithCachedStates"],
+          domain,
+          **kwargs: Any,
+      ):
+          ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  from __future__ import annotations
+
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List[TrackerWithCachedStates],
+          domain: Domain,
+          **kwargs: Any,
+      ) -> Resource:
+          ...
+  ```
+
+  </TabItem>
+</Tabs>
+
 #### Changes to Custom Policies
 This guide leads you through the migration of a custom policy step by step.
 
 **Instantiating a Policy for Training**
 
 Policies are no longer instantiated via their constructor. Instead, all policies have
-to implement a `create` method. During the policy instantation the configuration from
+to implement a `create` method. During the policy instantiation the configuration from
 the [model configuration](model-configuration) is passed in as a dictionary instead
 of as separate parameters. Similarly, the`featurizers` are no longer instantiated
 outside of policies.
@@ -91,40 +140,9 @@ featurizers itself.
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> Policy:
-        """Creates a new untrained policy (see parent class for full docstring)."""
+    ) -> MyPolicy:
         return cls(config, model_storage, resource, execution_context)
 
-  ```
-
-  </TabItem>
-</Tabs>
-
-
-**Default Config**
-
-The default configuration is no longer provided via default values in your policy's
-constructor but instead returned by the method `get_default_config`:
-
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-default-config" defaultValue="new">
-  <TabItem value="old">
-
-  ```python
-  class MyPolicy(Policy):
-
-      def __init__(key1: Text = "value1") -> None:
-          ...
-  ```
-
-  </TabItem>
-  <TabItem value="new">
-
-  ```python
-  class MyPolicy(Policy):
-      ...
-      @staticmethod
-      def get_default_config() -> Dict[Text, Any]:
-          return {"key1": "value1"}
   ```
 
   </TabItem>
@@ -133,7 +151,8 @@ constructor but instead returned by the method `get_default_config`:
 **Persisting a Trained Policy**
 
 Policies are responsible for persisting themselves. Previously the `persist` method
-was called from the outside. You should use the provided `model_storage` and `resource`
+was called from the outside. Use the provided `model_storage` and `resource`
+(see [component persistence](custom-components#model-persistence) for more details)
 to persist your component at the end of the training and then return the `resource`
 as result of your policy's `train` method.
 
@@ -155,9 +174,10 @@ as result of your policy's `train` method.
           if self.featurizer is not None:
               self.featurizer.persist(path)
 
-          file = Path(path) / "model_data.json"
-          rasa.shared.utils.io.create_directory_for_file(file)
-          rasa.shared.utils.io.dump_obj_as_json_to_file(file, self.get_model_data())
+          file_path = Path(path) / "model_data.json"
+          rasa.shared.utils.io.create_directory_for_file(file_path)
+          rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
+              self.get_model_data())
       ...
   ```
 
@@ -181,8 +201,9 @@ as result of your policy's `train` method.
               if self.featurizer is not None:
                   self.featurizer.persist(directory)
 
-              file = directory / "model_data.json"
-              rasa.shared.utils.io.dump_obj_as_json_to_file(file, self.get_model_data())
+              file_path = directory / "model_data.json"
+              rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
+                  self.get_model_data())
       ...
   ```
 
@@ -192,11 +213,12 @@ as result of your policy's `train` method.
 **Instantiating a Trained Policy**
 
 Similar as you had to use the `model_storage` and `resource` to persist the policy
-in the previous step, you need to use these now to load the persisted policy.
+in the previous step, you need to use `model_storage` and `resource` in your policy's
+`load` method to instantiate it.
 
 :::info
-It is no longer required to persist your policy's config yourself. The config passed
-into `load` will contain the configuration which your model was trained with.
+It is no longer required to persist your policy's configuration yourself. The config passed
+into `load` will automatically contain the configuration which your model was trained with.
 :::
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-loading" defaultValue="new">
@@ -232,8 +254,7 @@ into `load` will contain the configuration which your model was trained with.
           resource: Resource,
           execution_context: ExecutionContext,
           **kwargs: Any,
-      ) -> Policy:
-          """Loads a trained policy (see parent class for full docstring)."""
+      ) -> MyPolicy:
           featurizer = None
           model_data = {}
 
@@ -260,7 +281,40 @@ into `load` will contain the configuration which your model was trained with.
   </TabItem>
 </Tabs>
 
-**Using End-To-End Features**
+**Providing a Default Configuration for a Policy**
+
+The default configuration is no longer provided via default values in your policy's
+constructor but instead returned by the static method `get_default_config`:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-default-config" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+
+      def __init__(key1: Text = "value1") -> None:
+          ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyPolicy(Policy):
+
+      def __init__(self, config: Dict[Text, Any]) -> None:
+          ...
+
+      @staticmethod
+      def get_default_config() -> Dict[Text, Any]:
+          return {"key1": "value1"}
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Using End-To-End Features in a Policy**
+
 If you were using a custom [end-to-end policy](stories#end-to-end-training) in Rasa
 Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
 events manually. If your component requires end-to-end features in Rasa Open Source 3
@@ -270,7 +324,7 @@ will be precomputed and passed into your policy during training and inference.
 
 :::caution
 End-To-End features will only be computed and provided to your policy if your training
-data actually contains [end-to-end training data]((stories#end-to-end-training).
+data actually contains [end-to-end training data](stories#end-to-end-training).
 :::
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
@@ -300,7 +354,7 @@ data actually contains [end-to-end training data]((stories#end-to-end-training).
   </TabItem>
   <TabItem value="new">
 
-  ```python
+  ```python {2,9,17}
   @DefaultV1Recipe.register(
       DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
   )
@@ -327,7 +381,8 @@ data actually contains [end-to-end training data]((stories#end-to-end-training).
   </TabItem>
 </Tabs>
 
-**Registering your Component**
+**Registering a Policy**
+
 Before you can use your custom policy you have to register your component using the
 `DefaultV1Recipe.register` decorator. If your component requires end-to-end features
 specify the component type `POLICY_WITH_END_TO_END_SUPPORT`. Otherwise, use
@@ -347,9 +402,12 @@ used during inference use `is_trainable=False`.
   </TabItem>
   <TabItem value="new">
 
-  ```python
+  ```python {3-5}
+  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+
   @DefaultV1Recipe.register(
-      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT,
+      is_trainable=True
   )
   class MyPolicy(Policy):
       ...
@@ -358,9 +416,47 @@ used during inference use `is_trainable=False`.
   </TabItem>
 </Tabs>
 
+**Providing Rule-only Data to a Policy**
+
+Rasa Open Source allows excluding conversation parts which are completely handled by
+[rules](rules). In Rasa Open Source 2 the necessary information was passed onto the
+policies using the `set_shared_policy_states` method which set the policy attribute
+`_rule_only_data`. Rasa Open Source passes this data in via the
+`predict_action_probabilities` method. The passed `rule_only_data` can be `None`
+in case the [`RulePolicy`](policies#rule-policy) is not part of your model
+configuration.
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-rule-only-data" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+
+      def set_shared_policy_states(self, **kwargs: Any) -> None:
+          """Sets policy's shared states for correct featurization."""
+          self._rule_only_data = kwargs.get("rule_only_data", {})
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python {6}
+  class MyPolicy(Policy):
+      def predict_action_probabilities(
+          self,
+          tracker: DialogueStateTracker,
+          domain: Domain,
+          rule_only_data: Optional[Dict[Text, Any]] = None,
+    ) -> PolicyPrediction:
+  ```
+
+  </TabItem>
+</Tabs>
+
 #### Changes to Custom NLU Components
 
 **Inheriting from `GraphComponent`**
+
 NLU components which previously inherited from one of the following classes additionally
 need to inherit from the
 [`GraphComponent` interface](custom-components#the-graphcomponent-interface):
@@ -382,7 +478,7 @@ This snippet shows the required changes:
   </TabItem>
   <TabItem value="new">
 
-  ```python
+  ```python {3}
   from rasa.engine.graph import GraphComponent
 
   class MyNLUComponent(GraphComponent, SparseFeaturizer):
@@ -392,7 +488,8 @@ This snippet shows the required changes:
   </TabItem>
 </Tabs>
 
-**EntityExtractorMixing**
+** Inheriting from `EntityExtractorMixin` instead of `EntityExtractor`**
+
 The `EntityExtractor` class was renamed to `EntityExtractorMixing`:
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-entity-extractor" defaultValue="new">
@@ -408,7 +505,7 @@ The `EntityExtractor` class was renamed to `EntityExtractorMixing`:
   </TabItem>
   <TabItem value="new">
 
-  ```python
+  ```python {2,4}
   from rasa.engine.graph import GraphComponent
   from rasa.nlu.extractors.extractor import EntityExtractorMixin
 
@@ -458,47 +555,18 @@ from your model configuration file.
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> GraphComponent:
-        """Creates a new component (see parent class for full docstring)."""
         return cls(config)
   ```
 
   </TabItem>
 </Tabs>
 
-**Default Config**
-
-The default configuration is no longer a static class property but instead returned
-by the method `get_default_config`:
-
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-default-config" defaultValue="new">
-  <TabItem value="old">
-
-  ```python
-  class MyNLUComponent(IntentClassifier):
-      ...
-      defaults = {"key1": "value1"}
-  ```
-
-  </TabItem>
-  <TabItem value="new">
-
-  ```python
-  class MyNLUComponent(GraphComponent, IntentClassifier):
-      ...
-      @staticmethod
-      def get_default_config() -> Dict[Text, Any]:
-          return {"key1": "value1"}
-
-  ```
-
-  </TabItem>
-</Tabs>
-
-**Persisting a Trained Component**
+**Persisting a Trained NLU Component**
 
 NLU components are responsible for persisting themselves.
 Previously the `persist` method was called from the outside.
 You should use the provided `model_storage` and `resource`
+(see [component persistence](custom-components#model-persistence) for more details)
 to persist your component at the end of the training and then return the `resource`
 as result of your component's `train` method.
 
@@ -516,9 +584,10 @@ as result of your component's `train` method.
           ...
 
       def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
-          file = Path(model_dir) / "{file_name}.model_data.json"
-          rasa.shared.utils.io.create_directory_for_file(file)
-          rasa.shared.utils.io.dump_obj_as_json_to_file(file, self.get_model_data())
+          file_path = Path(model_dir) / "{file_name}.model_data.json"
+          rasa.shared.utils.io.create_directory_for_file(file_path)
+          rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
+              self.get_model_data())
 
           return {"file": file_name}
       ...
@@ -536,8 +605,9 @@ as result of your component's `train` method.
 
       def persist() -> None:
           with self._model_storage.write_to(self._resource) as directory:
-              file = directory / "model_data.json"
-              rasa.shared.utils.io.dump_obj_as_json_to_file(file, self.get_model_data())
+              model_data_file = directory / "model_data.json"
+              rasa.shared.utils.io.dump_obj_as_json_to_file(model_data_file,
+                  self.get_model_data())
       ...
   ```
 
@@ -545,8 +615,11 @@ as result of your component's `train` method.
 </Tabs>
 
 
-**Instantiating a Trained Component**
-Similar as you had to use the `model_storage` and `resource` to persist the NLU
+**Instantiating a Trained NLU Component**
+
+Similar as you had to use the `model_storage` and `resource`
+(see [component persistence](custom-components#model-persistence) for more details)
+to persist the NLU
 component in the previous step, you need to use these now to load the persisted
 component.
 
@@ -571,8 +644,8 @@ into `load` will contain the configuration which your model was trained with.
           **kwargs: Any,
       ) -> "MyNLUComponent":
           file_name = meta.get("file")
-          file = Path(model_dir) / "{file_name}.model_data.json"
-          model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+          file_path = Path(model_dir) / "{file_name}.model_data.json"
+          model_data = json.loads(rasa.shared.utils.io.read_file(file_path))
 
           return cls(model_data)
       ...
@@ -607,23 +680,51 @@ into `load` will contain the configuration which your model was trained with.
               )
 
           return cls(
-              config, model_storage, resource, execution_context,
-              model_data=model_data
+              config, model_data=model_data
           )
   ```
   </TabItem>
 </Tabs>
 
+**Providing a Default Configuration for an NLU Component**
 
-**Augmenting Training Data**
+The default configuration is no longer a static class property but instead returned
+by the static method `get_default_config`:
 
-Components like tokenizers or featurizers train augment the training data with their
-output during the model training as their output is required by components later in the
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-default-config" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyNLUComponent(IntentClassifier):
+      ...
+      defaults = {"key1": "value1"}
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyNLUComponent(GraphComponent, IntentClassifier):
+      ...
+      @staticmethod
+      def get_default_config() -> Dict[Text, Any]:
+          return {"key1": "value1"}
+
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Augmenting Training Data in an NLU Component**
+
+Components like [tokenizers](components#tokenizers) or
+[featurizers](components#featurizers) augment the training data with their
+output during the model training. Their output is required by components later in the
 pipeline. Typically, featurizers require *tokenized* messages as well as intent
 classifiers require *featurized* training data to train themselves. Rasa Open Source
-3.0 makes these different purposes explicit. While both component training and
-training data augmentation where done as part of the `train` method previously, they
-are now split in `train` and `process_training_data`:
+3.0 makes these different purposes explicit. Previously both component training and
+training data augmentation were done as part of the `train` method. In Rasa Open Source
+3.0 they are split in `train` and `process_training_data`:
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-component-train-process-split" defaultValue="new">
   <TabItem value="old">
@@ -662,12 +763,12 @@ are now split in `train` and `process_training_data`:
   </TabItem>
 </Tabs>
 
-
-**Handling Lists of Messages During Inference**
+**Handling Lists of Messages During Inference in an NLU Component**
 
 Starting with Rasa Open Source 3.0 all NLU components have to support a list of
 messages during inference. Unless your model supports batch predictions the easiest
-way to handle this is to loop over the messages:
+way to handle this is to loop over the messages. It is also required to return the
+message objects at the end of the `process` method.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-component-process-messages-split" defaultValue="new">
   <TabItem value="old">
@@ -694,14 +795,15 @@ way to handle this is to loop over the messages:
 
 
 **Registering your Component**
+
 Before you can use your custom NLU component you have to register your component using the
 `DefaultV1Recipe.register` decorator. The component types correspond to the existing
 parent classes:
 
-* `Tokenizer` -> `ComponentType.MESSAGE_TOKENIZER`
-* `SparseFeaturizer` / `DenseFeaturizer` -> `ComponentType.MESSAGE_FEATURIZER`
-* `IntentClassifier` -> `ComponentType.INTENT_CLASSIFIER`
-* `EntityExtractor` -> `ComponentType.ENTITY_EXTRACTOR`
+* `Tokenizer`: `ComponentType.MESSAGE_TOKENIZER`
+* `SparseFeaturizer` / `DenseFeaturizer`: `ComponentType.MESSAGE_FEATURIZER`
+* `IntentClassifier`: `ComponentType.INTENT_CLASSIFIER`
+* `EntityExtractor`: `ComponentType.ENTITY_EXTRACTOR`
 * If your component provides a pretrained model which then should be used by other
   components during training and inference use `ComponentType.MODEL_LOADER`
 
@@ -720,7 +822,9 @@ during the training.
   </TabItem>
   <TabItem value="new">
 
-  ```python
+  ```python {3-5}
+  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+
   @DefaultV1Recipe.register(
       DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
   )
@@ -735,7 +839,7 @@ during the training.
 
 If your component requires a pretrained model such as a [Spacy](components#spacynlp) or
 [Mitie](components#mitienlp) language model, specify this with the `model_from`
-parameter in the `register` decorator. The model will then be passed to your models
+parameter in the `register` decorator. The model will then be passed to your model's
 `train`, `process_training_data` and `process` methods:
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-model-provider" defaultValue="new">
