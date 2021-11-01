@@ -232,10 +232,10 @@ takes its presence into account so that [conversation behaviour is customizable]
 ## action_extract_slots
 
 This action runs after each user turn, before the next assistant action prediction and execution.
-`action_extract_slots` loops through the slot mappings of each domain slot in order to set or update
+`action_extract_slots` loops through the [slot mappings](./domain.mdx#slot-mappings) of each domain slot in order to set or update
 slots throughout the conversation with information extracted from the latest user message.
 
-If `action_extract_slots` finds a custom slot mapping, it will check first if a custom action was defined in the
+If `action_extract_slots` finds a [custom slot mapping](./domain.mdx#custom-slot-mappings), it will check first if a custom action was defined in the
 mapping via the `action` key and then run it.
 
 At the end of this loop, the default action will run the custom validation action
