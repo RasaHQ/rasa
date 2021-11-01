@@ -470,11 +470,6 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     assert evaluation[1]["my-marker"][0].idx == 7  # i.e. NOT the index in the dialogue
 
 
-def test_atomic_markers_repr_not():
-    marker = IntentDetectedMarker("intent1", negated=True)
-    assert str(marker) == "(intent_not_detected: intent1)"
-
-
 def test_markers_cli_results_save_correctly(tmp_path: Text):
     domain = Domain.empty()
     store = InMemoryTrackerStore(domain)
@@ -493,8 +488,8 @@ def test_markers_cli_results_save_correctly(tmp_path: Text):
 
     results_path = tmp_path / "results.csv"
 
-    markers = Marker.from_config_dict(
-        {"marker1": {"slot_is_set": "2"}, "marker2": {"slot_is_set": "7"}}
+    markers = OrMarker(
+        markers=[SlotSetMarker("2", name="marker1"), SlotSetMarker("7", name="marker2")]
     )
     markers.export_markers(tracker_loader.load(), results_path, stats_file=None)
 
@@ -515,16 +510,3 @@ def test_markers_cli_results_save_correctly(tmp_path: Text):
                 assert row["num_preceding_user_turns"] == "1"
 
         assert len(senders) == 5
-
-
-def test_all_operators_in_schema():
-    operators_in_schema = rasa.shared.utils.schemas.markers.OPERATOR_SCHEMA["enum"]
-    operators_in_schema = {tag.lower() for tag in operators_in_schema}
-
-    actual_operators = set()
-    for operator in OPERATOR_MARKERS:
-        actual_operators.add(operator.tag())
-        if operator.negated_tag():
-            actual_operators.add(operator.negated_tag())
-
-    assert actual_operators == operators_in_schema
