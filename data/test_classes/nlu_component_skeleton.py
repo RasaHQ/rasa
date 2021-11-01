@@ -28,7 +28,9 @@ class CustomNLUComponent(GraphComponent):
         ...
 
     def process_training_data(self, training_data: TrainingData) -> TrainingData:
-        # TODO: Implement this if your component provides input to other
+        # TODO: Implement this if your component augments the training data with
+        #       tokens or message features which are used by other components
+        #       during training.
         # components during training.
         ...
 
