@@ -56,21 +56,19 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         help="Store logs in specified file.",
     )
     parser.add_argument(
-        "--use-syslog",
-        action="store_true",
-        help="Add syslog as a log handler",
+        "--use-syslog", action="store_true", help="Add syslog as a log handler",
     )
     parser.add_argument(
         "--syslog-address",
         type=str,
         default=constants.DEFAULT_SYSLOG_HOST,
-        help="Address of the syslog server. --use-sylog flag is required"
+        help="Address of the syslog server. --use-sylog flag is required",
     )
     parser.add_argument(
         "--syslog-port",
         type=int,
         default=constants.DEFAULT_SYSLOG_PORT,
-        help="Port of the syslog server. --use-sylog flag is required"
+        help="Port of the syslog server. --use-sylog flag is required",
     )
     parser.add_argument(
         "--syslog-protocol",

@@ -17,7 +17,7 @@ import numpy as np
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH,TCP_PROTOCOL
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
 
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -49,12 +49,12 @@ def configure_file_logging(
         syslog_protocol: Protocol with the syslog server
     """
     if use_syslog:
-        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] [%(process)d]"
-                                      " %(message)s")
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)-5.5s] [%(process)d]" " %(message)s"
+        )
         socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
         syslog_handler = logging.handlers.SysLogHandler(
-            address=(syslog_address,syslog_port),
-            socktype=socktype,
+            address=(syslog_address, syslog_port), socktype=socktype,
         )
         syslog_handler.setLevel(logger_obj.level)
         syslog_handler.setFormatter(formatter)
