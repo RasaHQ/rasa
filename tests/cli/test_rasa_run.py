@@ -1,5 +1,5 @@
 import os
-from typing import Callable
+from typing import Callable, Text
 from _pytest.pytester import RunResult
 
 
@@ -14,12 +14,18 @@ def test_run_does_not_start(run_in_simple_project: Callable[..., RunResult]):
     assert any(error in line for line in output.outlines)
 
 
-def test_run_help(run: Callable[..., RunResult]):
+def test_run_help(
+    run: Callable[..., RunResult],
+    argparse_asterisk_argument_output: Callable[[Text], Text],
+):
     output = run("run", "--help")
 
-    help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
+    help_text = (
+        """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--endpoints ENDPOINTS] [-i INTERFACE] [-p PORT]
-                [-t AUTH_TOKEN] [--cors [CORS ...]] [--enable-api]
+                [-t AUTH_TOKEN] [--cors """
+        + argparse_asterisk_argument_output("CORS")
+        + """] [--enable-api]
                 [--response-timeout RESPONSE_TIMEOUT]
                 [--remote-storage REMOTE_STORAGE]
                 [--ssl-certificate SSL_CERTIFICATE]
@@ -28,6 +34,7 @@ def test_run_help(run: Callable[..., RunResult]):
                 [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
                 [--jwt-method JWT_METHOD]
                 {actions} ... [model-as-positional-argument]"""
+    )
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -36,11 +43,18 @@ def test_run_help(run: Callable[..., RunResult]):
         assert line in printed_help
 
 
-def test_run_action_help(run: Callable[..., RunResult]):
+def test_run_action_help(
+    run: Callable[..., RunResult],
+    argparse_asterisk_argument_output: Callable[[Text], Text],
+):
     output = run("run", "actions", "--help")
 
-    help_text = """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
-                        [--cors [CORS ...]] [--actions ACTIONS]"""
+    help_text = (
+        """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+                        [--cors """
+        + argparse_asterisk_argument_output("CORS")
+        + """] [--actions ACTIONS]"""
+    )
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

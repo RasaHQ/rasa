@@ -76,7 +76,7 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     )
     server_arguments.add_argument(
         "--cors",
-        nargs="+",
+        nargs="*",
         type=str,
         help="Enable CORS for the passed origin. Use * to whitelist all origins.",
     )

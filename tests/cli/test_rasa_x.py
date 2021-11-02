@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from typing import Callable, Dict
+from typing import Callable, Dict, Text
 from _pytest.pytester import RunResult
 
 
@@ -13,20 +13,27 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
 
 
-def test_x_help(run: Callable[..., RunResult]):
+def test_x_help(
+    run: Callable[..., RunResult],
+    argparse_asterisk_argument_output: Callable[[Text], Text],
+):
     output = run("x", "--help")
 
-    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA [DATA ...]]
+    help_text = (
+        """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA [DATA ...]]
               [-c CONFIG] [-d DOMAIN] [--no-prompt] [--production]
               [--rasa-x-port RASA_X_PORT] [--config-endpoint CONFIG_ENDPOINT]
               [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-i INTERFACE]
-              [-p PORT] [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]]
+              [-p PORT] [-t AUTH_TOKEN] [--cors """
+        + argparse_asterisk_argument_output("CORS")
+        + """]
               [--enable-api] [--response-timeout RESPONSE_TIMEOUT]
               [--remote-storage REMOTE_STORAGE]
               [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
               [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]
               [--credentials CREDENTIALS] [--connector CONNECTOR]
               [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]"""
+    )
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
