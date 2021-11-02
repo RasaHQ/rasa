@@ -1011,11 +1011,19 @@ def track_nlu_model_test(test_data: "TrainingData") -> None:
 
 
 @ensure_telemetry_enabled
-def track_markers_evaluation_triggered() -> None:
+def track_markers_evaluation_triggered(
+        strategy: Text,
+        only_extract: bool,
+        seed: Optional[int],
+        count: Optional[int],
+) -> None:
     _track(
         TELEMETRY_MARKERS_EVALUATION_TRIGGERED_EVENT,
         {
-
+            "strategy": strategy,
+            "only_extract": only_extract,
+            "seed": seed,
+            "count": count,
         },
     )
 
