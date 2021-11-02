@@ -81,10 +81,16 @@ async def test_events_schema(
 
     telemetry.track_nlu_model_test(TrainingData())
 
+    telemetry.track_markers_evaluation_initiated("all", False, None, None)
+
+    telemetry.track_markers_extracted(1)
+
+    telemetry.track_markers_stats_computed(1)
+
     pending = asyncio.all_tasks() - initial
     await asyncio.gather(*pending)
 
-    assert mock.call_count == 15
+    assert mock.call_count == 18
 
     for args, _ in mock.call_args_list:
         event = args[0]
