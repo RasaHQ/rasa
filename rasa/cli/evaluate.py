@@ -84,9 +84,7 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
     seed = args.seed if "seed" in args else None
     count = args.count if "count" in args else None
 
-    stats_file_prefix = (
-        args.stats_file_prefix if "stats_file_prefix" in args and args.stats else None
-    )
+    stats_file_prefix = args.stats_file_prefix if args.stats else None
 
     _run_markers(
         seed,
