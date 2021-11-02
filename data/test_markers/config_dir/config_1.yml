@@ -1,5 +1,0 @@
-markers:
-  - marker: no_restart
-    condition:
-      - action_not_executed:
-        - action_restart
