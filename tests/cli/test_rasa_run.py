@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Callable, Text
 from _pytest.pytester import RunResult
 
@@ -14,20 +15,24 @@ def test_run_does_not_start(run_in_simple_project: Callable[..., RunResult]):
     assert any(error in line for line in output.outlines)
 
 
-def test_run_help(
-    run: Callable[..., RunResult],
-    argparse_asterisk_argument_output: Callable[[Text], Text],
-):
+def test_run_help(run: Callable[..., RunResult],):
     output = run("run", "--help")
 
+    if sys.version_info.minor >= 9:
+        # This is required because `argparse` behaves differently on
+        # Python 3.9 and above. The difference is the changed formatting of help
+        # output for CLI arguments with `nargs="*"
+        cors_lines = "[--cors [CORS ...]] [--enable-api]"
+    else:
+        cors_lines = "[--cors [CORS [CORS ...]]] [--enable-api]"
+
     help_text = (
-            """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file 
-    LOG_FILE]
+            """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--use-syslog] [--syslog-address SYSLOG_ADDRESS]
                 [--syslog-port SYSLOG_PORT]
                 [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
                 [-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
-                [--cors """ + argparse_asterisk_argument_output("CORS") + """] [--enable-api]
+                """ + cors_lines + """ 
                 [--response-timeout RESPONSE_TIMEOUT]
                 [--remote-storage REMOTE_STORAGE]
                 [--ssl-certificate SSL_CERTIFICATE]
@@ -45,18 +50,18 @@ def test_run_help(
         assert line in printed_help
 
 
-def test_run_action_help(
-    run: Callable[..., RunResult],
-    argparse_asterisk_argument_output: Callable[[Text], Text],
-):
+def test_run_action_help(run: Callable[..., RunResult],):
     output = run("run", "actions", "--help")
 
-    help_text = (
-        """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
-                        [--cors """
-        + argparse_asterisk_argument_output("CORS")
-        + """] [--actions ACTIONS]"""
-    )
+    if sys.version_info.minor >= 9:
+        # This is required because `argparse` behaves differently on
+        # Python 3.9 and above. The difference is the changed formatting of help
+        # output for CLI arguments with `nargs="*"
+        help_text = """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+                        [--cors [CORS ...]] [--actions ACTIONS]"""
+    else:
+        help_text = """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

@@ -244,8 +244,10 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     Args:
         args: the parsed CLI arguments for 'rasa test nlu'.
     """
-
-    asyncio.run(
+    # we can replace it with asyncio.run(..) but it doesn't work in Python 3.9
+    # see https://github.com/virtool/virtool-workflow/issues/55#issuecomment-733164513
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(
         run_nlu_test_async(
             args.config,
             args.nlu,
@@ -267,7 +269,10 @@ def run_core_test(args: argparse.Namespace) -> None:
     Args:
         args: the parsed CLI arguments for 'rasa test core'.
     """
-    asyncio.run(run_core_test_async(args))
+    # we can replace it with asyncio.run(..) but it doesn't work in Python 3.9
+    # see https://github.com/virtool/virtool-workflow/issues/55#issuecomment-733164513
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_core_test_async(args))
 
 
 def test(args: argparse.Namespace) -> None:

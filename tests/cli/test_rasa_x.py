@@ -1,4 +1,8 @@
+import sys
+import pytest
 import argparse
+from typing import Callable, Dict
+from pathlib import Path
 from pathlib import Path
 
 import pytest
@@ -6,8 +10,6 @@ from typing import Callable, Dict, Text
 
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
-
-
 from aioresponses import aioresponses
 
 import rasa.shared.utils.io
@@ -16,11 +18,16 @@ from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
 
 
-def test_x_help(
-    run: Callable[..., RunResult],
-    argparse_asterisk_argument_output: Callable[[Text], Text],
-):
+def test_x_help(run: Callable[..., RunResult]):
     output = run("x", "--help")
+
+    if sys.version_info.minor >= 9:
+        # This is required because `argparse` behaves differently on
+        # Python 3.9 and above. The difference is the changed formatting of help
+        # output for CLI arguments with `nargs="*"
+        cors_lines = """[--cors [CORS ...]] [--enable-api]"""
+    else:
+        cors_lines = """[--cors [CORS [CORS ...]]]"""
 
     help_text = (
         """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA [DATA ...]]
@@ -30,8 +37,7 @@ def test_x_help(
               [--syslog-address SYSLOG_ADDRESS] [--syslog-port SYSLOG_PORT]
               [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
               [-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
-              [--cors """ + argparse_asterisk_argument_output("CORS") + """] [--enable-api]
-              [--response-timeout RESPONSE_TIMEOUT]
+              """ + cors_lines + """
               [--remote-storage REMOTE_STORAGE]
               [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
               [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]
