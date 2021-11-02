@@ -29,7 +29,6 @@ def create_http_input_channels(
     channel: Optional[Text], credentials_file: Optional[Text]
 ) -> List["InputChannel"]:
     """Instantiate the chosen input channel."""
-
     if credentials_file:
         all_credentials = rasa.shared.utils.io.read_config_file(credentials_file)
     else:
@@ -96,7 +95,6 @@ def configure_app(
     syslog_protocol: Optional[Text] = None,
 ) -> Sanic:
     """Run the agent."""
-
     rasa.core.utils.configure_file_logging(
         logger, log_file, use_syslog, syslog_address, syslog_port, syslog_protocol,
     )
@@ -172,7 +170,6 @@ def serve_application(
     syslog_protocol: Optional[Text] = None,
 ) -> None:
     """Run the API entrypoint."""
-
     if not channel and not credentials:
         channel = "cmdline"
 

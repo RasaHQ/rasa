@@ -185,8 +185,7 @@ def update_sanic_log_level(
     syslog_port: Optional[int] = None,
     syslog_protocol: Optional[Text] = None,
 ) -> None:
-    """Set the log level of sanic loggers to the log level specified in the environment
-    variable 'LOG_LEVEL_LIBRARIES'."""
+    """Set the log level to 'LOG_LEVEL_LIBRARIES' environment variable ."""
     from sanic.log import logger, error_logger, access_logger
 
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
