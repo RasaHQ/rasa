@@ -3,6 +3,7 @@
     "Model Training",
     "Model Testing",
     "Model Serving",
+    "Markers Evaluation",
     "Data Handling",
     "Miscellaneous"
   ],
@@ -421,6 +422,63 @@
         "num_lookup_tables",
         "num_synonyms",
         "num_regexes"
+      ]
+    },
+    "Markers Evaluation Initiated": {
+      "description": "Triggered when markers evaluation has been initiated.",
+      "type": "object",
+      "section": "Markers Evaluation",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "Strategy to use when selecting trackers to extract from."
+        },
+        "only_extract": {
+          "type": "boolean",
+          "description": "Indicates if path to write out statistics hasn't been specified."
+        },
+        "seed": {
+          "type": ["string", "null"],
+          "description": "The seed to initialise the random number generator for use with the 'sample' strategy."
+        },
+        "count": {
+          "type": ["string", "null"],
+          "description": "Number of trackers to extract from (for any strategy except 'all')."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "count"
+      ]
+    },
+    "Markers Extracted": {
+      "description": "Triggered when markers has been extracted.",
+      "type": "object",
+      "section": "Markers Evaluation",
+      "properties": {
+        "trackers_count": {
+          "type": "integer",
+          "description": "Number of processed trackers."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "trackers_count"
+      ]
+    },
+    "Markers Stats Computed": {
+      "description": "Triggered when marker stats has been computed.",
+      "type": "object",
+      "section": "Markers Evaluation",
+      "properties": {
+        "trackers_count": {
+          "type": "integer",
+          "description": "Number of processed trackers."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "trackers_count"
       ]
     }
   }

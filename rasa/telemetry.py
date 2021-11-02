@@ -94,7 +94,7 @@ TELEMETRY_RASA_X_LOCAL_STARTED_EVENT = "Rasa X Local Started"
 TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
-TELEMETRY_MARKERS_EVALUATION_TRIGGERED_EVENT = "Markers Evaluation Triggered"
+TELEMETRY_MARKERS_EVALUATION_INITIATED_EVENT = "Markers Evaluation Initiated"
 TELEMETRY_MARKERS_EXTRACTED_EVENT = "Markers Extracted"
 TELEMETRY_MARKERS_STATS_COMPUTED_EVENT = "Markers Stats Computed"
 
@@ -1011,14 +1011,11 @@ def track_nlu_model_test(test_data: "TrainingData") -> None:
 
 
 @ensure_telemetry_enabled
-def track_markers_evaluation_triggered(
-        strategy: Text,
-        only_extract: bool,
-        seed: Optional[int],
-        count: Optional[int],
+def track_markers_evaluation_initiated(
+    strategy: Text, only_extract: bool, seed: Optional[int], count: Optional[int],
 ) -> None:
     _track(
-        TELEMETRY_MARKERS_EVALUATION_TRIGGERED_EVENT,
+        TELEMETRY_MARKERS_EVALUATION_INITIATED_EVENT,
         {
             "strategy": strategy,
             "only_extract": only_extract,
@@ -1029,20 +1026,14 @@ def track_markers_evaluation_triggered(
 
 
 @ensure_telemetry_enabled
-def track_markers_extracted(count: int) -> None:
+def track_markers_extracted(trackers_count: int) -> None:
     _track(
-        TELEMETRY_MARKERS_EXTRACTED_EVENT,
-        {
-            "count": count
-        },
+        TELEMETRY_MARKERS_EXTRACTED_EVENT, {"trackers_count": trackers_count},
     )
 
 
 @ensure_telemetry_enabled
-def track_markers_stats_computed(count: int) -> None:
+def track_markers_stats_computed(trackers_count: int) -> None:
     _track(
-        TELEMETRY_MARKERS_STATS_COMPUTED_EVENT,
-        {
-            "count": count
-        },
+        TELEMETRY_MARKERS_STATS_COMPUTED_EVENT, {"trackers_count": trackers_count},
     )

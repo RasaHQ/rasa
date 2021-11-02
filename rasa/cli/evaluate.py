@@ -132,11 +132,8 @@ def _run_markers(
             computed per session will be stored in
             '<path-to-stats-folder>/statistics-per-session.csv'.
     """
-    telemetry.track_markers_evaluation_triggered(
-        strategy=strategy,
-        only_extract=stats_file is None,
-        seed=seed,
-        count=count,
+    telemetry.track_markers_evaluation_initiated(
+        strategy=strategy, only_extract=stats_file is not None, seed=seed, count=count,
     )
 
 	domain = Domain.load(domain_path) if domain_path else None
