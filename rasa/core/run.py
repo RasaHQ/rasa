@@ -217,8 +217,6 @@ def serve_application(
         input_channels, endpoints, model_path, number_of_workers, enable_api
     )
 
-    app.register_listener(clear_model_files, "after_server_stop")
-
     rasa.utils.common.update_sanic_log_level(
         log_file, use_syslog, syslog_address, syslog_port, syslog_protocol,
     )
