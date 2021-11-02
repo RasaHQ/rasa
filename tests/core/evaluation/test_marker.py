@@ -1,15 +1,12 @@
 import csv
-from rasa.shared.core.slots import Slot
-from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.core.tracker_store import InMemoryTrackerStore
-from rasa.shared.core.domain import Domain
-from typing import List, Optional, Set, Text, Tuple, Type
+from typing import List, Optional, Set, Text, Tuple, Type, Any
 import itertools
+from pathlib import Path
 
 import pytest
 import numpy as np
 
+import rasa.shared.utils.io
 from rasa.core.evaluation.marker import (
     IntentDetectedMarker,
     SlotSetMarker,
@@ -29,7 +26,11 @@ from rasa.core.evaluation.marker_base import (
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-
+from rasa.shared.core.slots import Slot
+from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.shared.core.domain import Domain
 
 CONDITION_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
 OPERATOR_MARKERS = [AndMarker, OrMarker, SequenceMarker, OccurrenceMarker]
@@ -471,7 +472,7 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     assert evaluation[1]["my-marker"][0].idx == 7  # i.e. NOT the index in the dialogue
 
 
-def test_markers_cli_results_save_correctly(tmp_path: Text):
+def test_markers_cli_results_save_correctly(tmp_path: Path):
     domain = Domain.empty()
     store = InMemoryTrackerStore(domain)
 
@@ -513,49 +514,14 @@ def test_markers_cli_results_save_correctly(tmp_path: Text):
         assert len(senders) == 5
 
 
-def collect_slots(marker: Marker) -> Set[Text]:
-    if isinstance(marker, SlotSetMarker):
-        return set([marker.text])
-
-    if isinstance(marker, OperatorMarker):
-        s = set()
-        for submarker in marker.sub_markers:
-            for elem in collect_slots(submarker):
-                s.add(elem)
-
-        return s
-
-    return set()
-
-
-def collect_actions(marker: Marker) -> Set[Text]:
-    if isinstance(marker, ActionExecutedMarker):
-        return set([marker.text])
-
-    if isinstance(marker, OperatorMarker):
-        s = set()
-        for submarker in marker.sub_markers:
-            for elem in collect_actions(submarker):
-                s.add(elem)
-
-        return s
-
-    return set()
-
-
-def collect_intents(marker: Marker) -> Set[Text]:
-    if isinstance(marker, IntentDetectedMarker):
-        return set([marker.text])
-
-    if isinstance(marker, OperatorMarker):
-        s = set()
-        for submarker in marker.sub_markers:
-            for elem in collect_intents(submarker):
-                s.add(elem)
-
-        return s
-
-    return set()
+def _collect_parameters(
+    marker: Marker, condition_type: Type[ConditionMarker]
+) -> Set[Text]:
+    return set(
+        sub_marker.text
+        for sub_marker in marker
+        if isinstance(sub_marker, condition_type)
+    )
 
 
 @pytest.mark.parametrize(
@@ -575,9 +541,9 @@ def test_domain_validation_with_valid_marker(depth: int, max_branches: int, seed
         constant_negated=None,
     )
 
-    slots = [Slot(name, []) for name in collect_slots(marker)]
-    actions = list(collect_actions(marker))
-    intents = collect_intents(marker)
+    slots = [Slot(name, []) for name in _collect_parameters(marker, SlotSetMarker)]
+    actions = list(_collect_parameters(marker, ActionExecutedMarker))
+    intents = _collect_parameters(marker, IntentDetectedMarker)
     domain = Domain(intents, [], slots, {}, actions, {})
 
     assert marker.validate_against_domain(domain)
@@ -601,57 +567,92 @@ def test_domain_validation_with_invalid_marker(
     )
 
     domain = Domain.empty()
-    assert not marker.validate_against_domain(domain)
+    with pytest.warns(None):
+        is_valid = marker.validate_against_domain(domain)
+    assert not is_valid
 
 
-def test_marker_dict_as_submarker():
+@pytest.mark.parametrize(
+    "config",
+    [
+        # (1) top level configuration
+        # - config is list
+        [SlotSetMarker.positive_tag()],
+        # - config is list with nested dict
+        [{SlotSetMarker.positive_tag(): "s1"}],
+        # - config is just a str
+        # (2) sub-markers
+        SlotSetMarker.positive_tag(),
+        # - sub-marker config is dict not list
+        {AndMarker.positive_tag(): {SlotSetMarker.positive_tag(): "s1"}},
+        # - sub-marker under condition
+        {SlotSetMarker.positive_tag(): {IntentDetectedMarker.positive_tag(): "blah"}},
+        # - no sub-config for operator (see also: "amount_sub_markers" tests)
+        {AndMarker.positive_tag(): "blah"},
+        # (3) tags
+        # - unknown operator
+        {"Ard": {IntentDetectedMarker.positive_tag(): "intent1"}},
+        # - unknown condition
+        {AndMarker.positive_tag(): {"intent": "intent1"}},
+        # -  special tag used by user
+        {Marker.ANY_MARKER: "blah"},
+    ],
+)
+def test_marker_validation_raises(config: Any):
     with pytest.raises(InvalidMarkerConfig):
-        Marker.from_config(
-            {AndMarker.positive_tag(): {SlotSetMarker.positive_tag(): "s1"}}
+        Marker.from_config(config)
+
+
+def test_marker_from_path_only_reads_yamls(tmp_path: Path,):
+    suffixes = [("yaml", True), ("yml", True), ("yaeml", False), ("config", False)]
+    for idx, (suffix, allowed) in enumerate(suffixes):
+        config = {f"marker-{idx}": {IntentDetectedMarker.positive_tag(): "intent"}}
+        config_file = tmp_path / f"config-{idx}.{suffix}"
+        rasa.shared.utils.io.write_yaml(
+            data=config, target=config_file,
         )
+    loaded = Marker.from_path(tmp_path)
+    assert len(loaded.sub_markers) == sum(allowed for _, allowed in suffixes)
+    assert set(sub_marker.name for sub_marker in loaded.sub_markers) == set(
+        f"marker-{idx}" for idx, (_, allowed) in enumerate(suffixes) if allowed
+    )
 
 
-def test_marker_config_is_list():
+@pytest.mark.parametrize(
+    "path_config_tuples",
+    [
+        [  # two configs defining the same marker
+            (
+                "folder1/config1.yaml",
+                {"my_marker1": {IntentDetectedMarker.positive_tag(): "this-intent"}},
+            ),
+            (
+                "folder2/config2.yaml",
+                {
+                    "my_marker1": {
+                        IntentDetectedMarker.positive_tag(): "different-intent"
+                    },
+                    "my_marker2": {ActionExecutedMarker.positive_tag(): "action"},
+                },
+            ),
+        ],
+        [  # one buggy config
+            (
+                "folder1/config2.yaml",
+                {"my_marker1": {IntentDetectedMarker.positive_tag(): "intent1"}},
+            ),
+            ("folder2/config2.yaml", {"my_marker1": {"unknown-tag": "intent2"}}),
+        ],
+    ],
+)
+def test_marker_from_path_raises(
+    tmp_path: Path, path_config_tuples: List[Tuple[Text, Any]]
+):
+    for path_to_yaml, config in path_config_tuples:
+        full_path = tmp_path / path_to_yaml
+        folder = full_path.parents[0]
+        if folder != tmp_path:
+            Path.mkdir(folder, exist_ok=False)
+        rasa.shared.utils.io.write_yaml(data=config, target=full_path)
     with pytest.raises(InvalidMarkerConfig):
-        Marker.from_config([SlotSetMarker.positive_tag()])
-
-
-def test_marker_config_is_list_with_nested_dict():
-    with pytest.raises(InvalidMarkerConfig):
-        Marker.from_config([{SlotSetMarker.positive_tag(): "s1"}])
-
-
-def test_marker_config_is_string():
-    with pytest.raises(InvalidMarkerConfig):
-        Marker.from_config(SlotSetMarker.positive_tag())
-
-
-def test_marker_config_unknown_operator():
-    with pytest.raises(InvalidMarkerConfig):
-        Marker.from_config({"Ard": {IntentDetectedMarker.positive_tag(): "intent1"}})
-
-
-def test_marker_config_unknown_condition():
-    with pytest.raises(InvalidMarkerConfig):
-        Marker.from_config({AndMarker.positive_tag(): {"intent": "intent1"}})
-
-
-def test_marker_config_reserved_keyword():
-    with pytest.raises(InvalidMarkerConfig):
-        Marker.from_config({Marker.ANY_MARKER: "blah"})
-
-
-def test_marker_config_operator_no_submarkers():
-    with pytest.raises(InvalidMarkerConfig):
-        Marker.from_config({AndMarker.positive_tag(): "blah"})
-
-
-def test_marker_config_condition_with_submarker():
-    with pytest.raises(InvalidMarkerConfig):
-        Marker.from_config(
-            {
-                SlotSetMarker.positive_tag(): {
-                    IntentDetectedMarker.positive_tag(): "blah"
-                }
-            }
-        )
+        Marker.from_path(tmp_path)

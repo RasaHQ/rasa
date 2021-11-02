@@ -523,7 +523,7 @@ class Marker(ABC):
                     f"from {yaml_file}."
                 )  # TODO: add link to docs
             marker_names.update(loaded_config.keys())
-            loaded_configs[yaml_file] = loaded_configs
+            loaded_configs[yaml_file] = loaded_config
         return loaded_configs
 
     @staticmethod
