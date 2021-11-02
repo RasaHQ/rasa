@@ -21,7 +21,7 @@ Kafka event broker.
 #### \_\_init\_\_
 
 ```python
- | __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, partition_by_sender: bool = False, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, sasl_mechanism: Optional[Text] = "PLAIN", ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", loglevel: Union[int, Text] = logging.ERROR, convert_intent_id_to_string: bool = False, **kwargs: Any, ,) -> None
+ | __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, partition_by_sender: bool = False, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, sasl_mechanism: Optional[Text] = "PLAIN", ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", loglevel: Union[int, Text] = logging.ERROR, **kwargs: Any, ,) -> None
 ```
 
 Kafka event broker.
@@ -57,8 +57,6 @@ Kafka event broker.
 - `security_protocol` - Protocol used to communicate with brokers.
   Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
 - `loglevel` - Logging level of the kafka logger.
-- `convert_intent_id_to_string` - Optional flag to configure whether intent ID&#x27;s
-  are converted from an integer to a string.
 
 #### from\_endpoint\_config
 

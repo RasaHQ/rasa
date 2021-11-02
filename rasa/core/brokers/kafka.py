@@ -34,7 +34,6 @@ class KafkaEventBroker(EventBroker):
         ssl_check_hostname: bool = False,
         security_protocol: Text = "SASL_PLAINTEXT",
         loglevel: Union[int, Text] = logging.ERROR,
-        convert_intent_id_to_string: bool = False,
         **kwargs: Any,
     ) -> None:
         """Kafka event broker.
@@ -69,8 +68,6 @@ class KafkaEventBroker(EventBroker):
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
             loglevel: Logging level of the kafka logger.
-            convert_intent_id_to_string: Optional flag to configure whether intent ID's
-                are converted from an integer to a string.
         """
         import kafka
 
@@ -87,7 +84,6 @@ class KafkaEventBroker(EventBroker):
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
-        self.convert_intent_id_to_string = convert_intent_id_to_string
 
         logging.getLogger("kafka").setLevel(loglevel)
 
@@ -110,8 +106,6 @@ class KafkaEventBroker(EventBroker):
         retry_delay_in_seconds: float = 5,
     ) -> None:
         """Publishes events."""
-        if self.convert_intent_id_to_string:
-            event = self._convert_intent_id_to_string(event)
         if self.producer is None:
             self._create_producer()
             connected = self.producer.bootstrap_connected()
@@ -204,18 +198,6 @@ class KafkaEventBroker(EventBroker):
             f"Calling kafka send({self.topic}, value={event}, key={partition_key!s})"
         )
         self.producer.send(self.topic, value=event, key=partition_key)
-
-    def _convert_intent_id_to_string(self, event: Dict[Text, Any]) -> Dict[Text, Any]:
-        if event.get("event", "") == "user" and "id" in event.get("parse_data", {}).get(
-            "intent", {}
-        ):
-            event["parse_data"]["intent"]["id"] = str(
-                event["parse_data"]["intent"]["id"]
-            )
-            for idx, parse_data in enumerate(event["parse_data"]["intent_ranking"]):
-                parse_data["id"] = str(parse_data["id"])
-                event["parse_data"]["intent_ranking"][idx] = parse_data
-        return event
 
     def _close(self) -> None:
         self.producer.close()
