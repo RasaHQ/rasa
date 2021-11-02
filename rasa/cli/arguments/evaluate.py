@@ -24,8 +24,7 @@ def set_markers_arguments(parser: argparse.ArgumentParser) -> None:
 
     stats.add_argument(
         "--no-stats",
-        default=False,
-        action="store_true",
+        action="store_false",
         dest="stats",
         help="Do not compute summary statistics.",
     )
@@ -33,6 +32,7 @@ def set_markers_arguments(parser: argparse.ArgumentParser) -> None:
     stats.add_argument(
         "--stats-file-prefix",
         default="stats",
+        nargs="?",
         type=str,
         help="The common file prefix of the files where we write out the compute "
         "statistics. More precisely, the file prefix must consist of a common "
