@@ -510,12 +510,12 @@ class ResponseSelector(DIETClassifier):
 
             # First check if the predicted label was the key itself
             search_key = util.template_key_to_intent_response_key(key)
-            if hash(search_key) == label.get("id"):
+            if search_key == label.get("name"):
                 return search_key
 
             # Otherwise loop over the responses to check if the text has a direct match
             for response in responses:
-                if hash(response.get(TEXT, "")) == label.get("id"):
+                if response.get(TEXT, "") == label.get("name"):
                     return search_key
         return None
 
@@ -578,7 +578,6 @@ class ResponseSelector(DIETClassifier):
             )
             prediction_dict = {
                 RESPONSE_SELECTOR_PREDICTION_KEY: {
-                    "id": top_label["id"],
                     RESPONSE_SELECTOR_RESPONSES_KEY: label_responses,
                     PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
                     INTENT_RESPONSE_KEY: label_intent_response_key,
