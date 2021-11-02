@@ -4,7 +4,7 @@ from pathlib import Path
 
 from _pytest.capture import CaptureFixture
 import pytest
-from typing import Callable
+from typing import Callable, Text
 from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
 
@@ -453,16 +453,23 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
         assert line in printed_help
 
 
-def test_train_core_help(run: Callable[..., RunResult]):
+def test_train_core_help(
+    run: Callable[..., RunResult],
+    argparse_asterisk_argument_output: Callable[[Text], Text],
+):
     output = run("train", "core", "--help")
 
-    help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
+    help_text = (
+        """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
                        [-c CONFIG [CONFIG ...]] [--out OUT]
                        [--augmentation AUGMENTATION] [--debug-plots] [--force]
                        [--fixed-model-name FIXED_MODEL_NAME]
-                       [--percentages [PERCENTAGES [PERCENTAGES ...]]]
+                       [--percentages """
+        + argparse_asterisk_argument_output("PERCENTAGES")
+        + """]
                        [--runs RUNS] [--finetune [FINETUNE]]
                        [--epoch-fraction EPOCH_FRACTION]"""
+    )
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

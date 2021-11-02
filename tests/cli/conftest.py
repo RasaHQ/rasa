@@ -4,6 +4,7 @@ from subprocess import check_call
 
 from _pytest.tmpdir import TempdirFactory
 from typing import Callable, Text
+import sys
 import pytest
 import shutil
 import os
@@ -97,3 +98,20 @@ def run_in_simple_project_with_model(
         return result
 
     return do_run
+
+
+@pytest.fixture
+def argparse_asterisk_argument_output() -> Callable[[Text], Text]:
+    """Returns a formatted argument string for CLI arguments with `nargs="*"`.
+
+    This function is required because `argparse` behaves differently on
+    Python 3.9 and above and returns a string that is formatted a bit
+    differently.
+    """
+
+    def func(argument: Text) -> Text:
+        if sys.version_info.minor >= 9:
+            return f"[{argument} ...]"
+        return f"[{argument} [{argument} ...]]"
+
+    return func
