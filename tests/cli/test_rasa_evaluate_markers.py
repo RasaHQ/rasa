@@ -48,7 +48,7 @@ def test_evaluate_markers_help(run: Callable[..., RunResult]):
     output = run("evaluate", "markers", "--help")
 
     help_text = """usage: rasa evaluate markers [-h] [-v] [-vv] [--quiet] [--config CONFIG]
-                             [--no-stats | --stats-file-prefix STATS_FILE_PREFIX]
+                             [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
                              [--endpoints ENDPOINTS] [-d DOMAIN]
                              output_filename {first_n,sample,all} ..."""
 
