@@ -1,6 +1,4 @@
 from pathlib import Path
-from rasa.shared.core.domain import Domain
-from rasa.core.tracker_store import SQLTrackerStore
 from typing import Callable, Text, Tuple, Dict, Any
 import csv
 
@@ -12,6 +10,9 @@ import rasa.cli.evaluate
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
+from rasa.shared.core.domain import Domain
+from rasa.core.tracker_store import SQLTrackerStore
+from rasa.cli.evaluate import STATS_SESSION_SUFFIX, STATS_OVERALL_SUFFIX
 from tests.conftest import write_endpoint_config_to_yaml
 
 
@@ -47,7 +48,7 @@ def test_evaluate_markers_help(run: Callable[..., RunResult]):
     output = run("evaluate", "markers", "--help")
 
     help_text = """usage: rasa evaluate markers [-h] [-v] [-vv] [--quiet] [--config CONFIG]
-                             [--no-stats | --stats-file STATS_FILE]
+                             [--no-stats | --stats-file-prefix STATS_FILE_PREFIX]
                              [--endpoints ENDPOINTS] [-d DOMAIN]
                              output_filename {first_n,sample,all} ..."""
 
@@ -117,6 +118,7 @@ def test_markers_cli_results_save_correctly(
     )
 
     results_path = tmp_path / "results.csv"
+    stats_file_prefix = tmp_path / "statistics"
 
     rasa.cli.evaluate._run_markers(
         seed=None,
@@ -126,12 +128,16 @@ def test_markers_cli_results_save_correctly(
         domain_path=None,
         config=markers_path,
         output_filename=results_path,
-        stats_file=None,
+        stats_file_prefix=stats_file_prefix,
     )
 
-    with open(results_path, "r") as results:
-        result_reader = csv.DictReader(results)
-
-        # Loop over entire file to ensure nothing in the file causes any errors
-        for _ in result_reader:
-            continue
+    for expected_output in [
+        results_path,
+        tmp_path / ("statistics" + STATS_SESSION_SUFFIX),
+        tmp_path / ("statistics" + STATS_OVERALL_SUFFIX),
+    ]:
+        with expected_output.open(mode="r") as results:
+            result_reader = csv.DictReader(results)
+            # Loop over entire file to ensure nothing in the file causes any errors
+            for _ in result_reader:
+                continue

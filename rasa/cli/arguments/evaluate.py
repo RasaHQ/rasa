@@ -31,10 +31,10 @@ def set_markers_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     stats.add_argument(
-        "--stats-file",
-        default="stats.csv",
+        "--stats-file-prefix",
+        default="stats",
         type=str,
-        help="The filename to write out computed summary statistics.",
+        help="The common file prefix used to write out computed summary statistics.",
     )
 
     add_endpoint_param(

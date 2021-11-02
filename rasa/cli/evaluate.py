@@ -1,16 +1,18 @@
 import argparse
-from rasa.shared.core.domain import Domain
 from typing import List, Text, Optional
+from pathlib import Path
 
 from rasa.core.utils import AvailableEndpoints
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.core.evaluation.marker_base import Marker
-
+from rasa.shared.core.domain import Domain
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.evaluate as arguments
 import rasa.shared.utils.cli
-import os.path
+
+STATS_OVERALL_SUFFIX = "-overall.csv"
+STATS_SESSION_SUFFIX = "-per-session.csv"
 
 
 def add_subparser(
@@ -82,7 +84,9 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
     seed = args.seed if "seed" in args else None
     count = args.count if "count" in args else None
 
-    stats_file = args.stats_file if "stats_file" in args and args.stats else None
+    stats_file_prefix = (
+        args.stats_file_prefix if "stats_file_prefix" in args and args.stats else None
+    )
 
     _run_markers(
         seed,
@@ -92,7 +96,7 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
         args.strategy,
         args.config,
         args.output_filename,
-        stats_file,
+        stats_file_prefix,
     )
 
 
@@ -104,7 +108,7 @@ def _run_markers(
     strategy: Text,
     config: Text,
     output_filename: Text,
-    stats_file: Optional[Text] = None,
+    stats_file_prefix: Optional[Path] = None,
 ) -> None:
     """Run markers algorithm over specified config and tracker store.
 
@@ -120,22 +124,12 @@ def _run_markers(
         strategy: Strategy to use when selecting trackers to extract from.
         config: Path to the markers definition file to use.
         output_filename: Path to write out the extracted markers.
-        stats_file: (Optional) Path to write out statistics about the extracted
-                    markers.
+        stats_file_prefix: (Optional) Prefix of paths to write out statistics about the
+            extracted markers. The prefix will be used to create two concrete paths by
+            appending suffixes "-overall.csv" and "-per-session.csv", respectively.
     """
-    if os.path.exists(output_filename):
-        rasa.shared.utils.cli.print_error_and_exit(
-            "A file with the output filename already exists"
-        )
-
-    if stats_file and os.path.exists(stats_file):
-        rasa.shared.utils.cli.print_error_and_exit(
-            "A file with the stats filename already exists"
-        )
-
     domain = Domain.load(domain_path) if domain_path else None
     markers = Marker.from_path(config)
-
     if domain and not markers.validate_against_domain(domain):
         rasa.shared.utils.cli.print_error_and_exit(
             "Validation errors were found in the markers definition. "
@@ -143,7 +137,19 @@ def _run_markers(
         )
 
     tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
-    markers.export_markers(tracker_loader.load(), output_filename, stats_file)
+
+    def _append_suffix(path: Optional[Path], suffix: Text) -> Optional[Path]:
+        return path.parent / (path.name + suffix) if path else None
+
+    try:
+        markers.evaluate_trackers(
+            trackers=tracker_loader.load(),
+            output_file=output_filename,
+            session_stats_file=_append_suffix(stats_file_prefix, STATS_SESSION_SUFFIX),
+            overall_stats_file=_append_suffix(stats_file_prefix, STATS_OVERALL_SUFFIX),
+        )
+    except (FileExistsError, NotADirectoryError) as e:
+        rasa.shared.utils.cli.print_error_and_exit(message=str(e))
 
 
 def _create_tracker_loader(
