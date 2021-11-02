@@ -193,7 +193,7 @@ Checks that this marker (and its children) refer to entries in the domain.
 #### evaluate\_events
 
 ```python
- | evaluate_events(events: List[Event], recursive: bool = False) -> List[Dict[Text, List[EventMetaData]]]
+ | evaluate_events(events: List[Event], recursive: bool = False) -> List[SessionEvaluation]
 ```
 
 Resets the marker, tracks all events, and collects some information.
@@ -295,21 +295,30 @@ condition (see `ConditionMarker.from_tag_and_sub_config`).
 
   the configured marker
 
-#### export\_markers
+#### evaluate\_trackers
 
 ```python
- | export_markers(tracker_loader: Iterator[Optional[DialogueStateTracker]], output_file: Text, stats_file: Optional[Text] = None) -> None
+ | evaluate_trackers(trackers: Iterator[Optional[DialogueStateTracker]], output_file: Path, session_stats_file: Optional[Path] = None, overall_stats_file: Optional[Path] = None) -> None
 ```
 
 Collect markers for each dialogue in each tracker loaded.
 
 **Arguments**:
 
-- `tracker_loader` - The tracker loader to use to select trackers for marker
-  extraction.
-- `output_file` - Path to write out the extracted markers.
-- `stats_file` - (Optional) Path to write out statistics about the extracted
+- `trackers` - An iterator over the trackers from which we want to extract
   markers.
+- `output_file` - Path to write out the extracted markers.
+- `session_stats_file` - (Optional) Path to write out statistics about the
+  extracted markers for each session separately.
+- `overall_stats_file` - (Optional) Path to write out statistics about the
+  markers extracted from all session data.
+  
+
+**Raises**:
+
+  `FileExistsError` if any of the specified files already exists
+  `NotADirectoryError` if any of the specified files is supposed to be
+  contained in a directory that does not exist
 
 ## OperatorMarker Objects
 
