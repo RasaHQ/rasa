@@ -6,7 +6,9 @@ from rasa.core.evaluation.marker_base import (
     MarkerRegistry,
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
-import rasa.shared.utils.io
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @MarkerRegistry.configurable_marker
@@ -158,7 +160,7 @@ class ActionExecutedMarker(ConditionMarker):
         valid = self.text in domain.action_names_or_texts
 
         if not valid:
-            rasa.shared.utils.io.raise_warning(
+            logger.error(
                 f"Referenced action '{self.text}' does not exist in the domain"
             )
 
@@ -196,7 +198,7 @@ class IntentDetectedMarker(ConditionMarker):
         valid = self.text in domain.intent_properties
 
         if not valid:
-            rasa.shared.utils.io.raise_warning(
+            logger.error(
                 f"Referenced intent '{self.text}' does not exist in the domain"
             )
 
@@ -235,9 +237,7 @@ class SlotSetMarker(ConditionMarker):
         valid = any(self.text == slot.name for slot in domain.slots)
 
         if not valid:
-            rasa.shared.utils.io.raise_warning(
-                f"Referenced slot '{self.text}' does not exist in the domain"
-            )
+            logger.error(f"Referenced slot '{self.text}' does not exist in the domain")
 
         return valid
 
