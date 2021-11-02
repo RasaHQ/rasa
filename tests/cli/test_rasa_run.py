@@ -19,7 +19,7 @@ def test_run_help(run: Callable[..., RunResult]):
 
     help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--endpoints ENDPOINTS] [-i INTERFACE] [-p PORT]
-                [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
+                [-t AUTH_TOKEN] [--cors [CORS ...]] [--enable-api]
                 [--response-timeout RESPONSE_TIMEOUT]
                 [--remote-storage REMOTE_STORAGE]
                 [--ssl-certificate SSL_CERTIFICATE]
@@ -40,7 +40,7 @@ def test_run_action_help(run: Callable[..., RunResult]):
     output = run("run", "actions", "--help")
 
     help_text = """usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
-                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]"""
+                        [--cors [CORS ...]] [--actions ACTIONS]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
