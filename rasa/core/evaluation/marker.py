@@ -118,13 +118,13 @@ class OccurrenceMarker(OperatorMarker):
         return 1
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
+        occurred_before = False
+
         if self.history:
+            occurred_before = self.history[-1]
             if self.negated:
-                occurred_before = not self.history[-1]
-            else:
-                occurred_before = self.history[-1]
-        else:
-            occurred_before = False
+                occurred_before = not occurred_before
+
         return occurred_before or self.sub_markers[0].history[-1]
 
     def relevant_events(self) -> List[int]:
