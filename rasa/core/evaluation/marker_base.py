@@ -1,6 +1,8 @@
 from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.utils.io import WriteRow
 from typing import (
     Dict,
     Iterator,
@@ -27,6 +29,8 @@ from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 
 import logging
+import csv
+import os.path
 
 logger = logging.getLogger(__name__)
 
@@ -111,11 +115,6 @@ class MarkerRegistry:
         cls.marker_class_to_tag[marker_class] = positive_tag
 
 
-# Triggers the import of all modules containing marker classes in order to register
-# all configurable markers.
-MarkerRegistry.register_builtin_markers()
-
-
 # We allow multiple atomic markers to be grouped under the same tag e.g.
 # 'slot_set: ["slot_a", "slot_b"]' (see `AtomicMarkers` / `CompoundMarkers`),
 # which is why this config maps to a list of texts or just one text:
@@ -132,35 +131,11 @@ class InvalidMarkerConfig(RasaException):
 
 
 @dataclass
-class DialogueMetaData:
+class EventMetaData:
     """Describes meta data per event in some dialogue."""
 
-    preceding_user_turns: List[int]
-    timestamp: List[float]
-
-    def __post_init__(self) -> None:
-        if len(self.preceding_user_turns) != len(self.timestamp):
-            raise RuntimeError(
-                "The given data can't possibly describe the same sequence of events "
-                "since it contains information for different numbers of events, "
-                "respectively."
-            )
-
-    def __len__(self) -> int:
-        return len(self.preceding_user_turns)
-
-    def filter(self, indices: List[int]) -> DialogueMetaData:
-        """Return a list containing meta data for the requested event indices.
-
-        Args:
-            indices: indices of events for which we want to extract meta data
-        Returns:
-            a new meta data object containing the entries for the requested indices
-        """
-        return DialogueMetaData(
-            preceding_user_turns=[self.preceding_user_turns[idx] for idx in indices],
-            timestamp=[self.timestamp[idx] for idx in indices],
-        )
+    idx: int
+    preceding_user_turns: int
 
 
 T = TypeVar("T")
@@ -206,14 +181,14 @@ class Marker(ABC):
         tag = str(self.negated_tag()) if self.negated else self.tag()
         return self._to_str_with(tag)
 
-    @classmethod
+    @staticmethod
     @abstractmethod
-    def tag(cls) -> Text:
+    def tag() -> Text:
         """Returns the tag to be used in a config file."""
         ...
 
-    @classmethod
-    def negated_tag(cls) -> Optional[Text]:
+    @staticmethod
+    def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return None
 
@@ -257,9 +232,14 @@ class Marker(ABC):
         """
         ...
 
+    @abstractmethod
+    def __len__(self) -> int:
+        """Returns the count of all markers that are part of this marker."""
+        ...
+
     def evaluate_events(
         self, events: List[Event], recursive: bool = False
-    ) -> List[Dict[Text, DialogueMetaData]]:
+    ) -> List[Dict[Text, List[EventMetaData]]]:
         """Resets the marker, tracks all events, and collects some information.
 
         The collected information includes:
@@ -276,8 +256,9 @@ class Marker(ABC):
             recursive: set this to `True` to collect evaluations for all markers that
                this marker consists of
         Returns:
-            a list of evaluations containing one dictionary mapping marker names
-            to dialogue meta data each dialogue contained in the tracker
+            a list that contains, for each dialogue contained in the tracker, a
+            dictionary mapping that maps marker names to meta data of relevant
+            events
         """
         # determine which marker to extract results from
         markers_to_be_evaluated: List[Marker] = []
@@ -289,28 +270,32 @@ class Marker(ABC):
             markers_to_be_evaluated = [self]
 
         # split the events into dialogues and evaluate them separately
-        dialogues = self._split_sessions(events=events)
-        results: List[Dict[Text, DialogueMetaData]] = []
-        for dialogue in dialogues:
+        dialogues_and_start_indices = self._split_sessions(events=events)
+
+        extracted_markers: List[Dict[Text, List[EventMetaData]]] = []
+        for dialogue, start_idx in dialogues_and_start_indices:
             # track all events and collect meta data per timestep
-            meta_data = self._track_all_and_collect_meta_data(events=dialogue)
+            meta_data = self._track_all_and_collect_meta_data(
+                events=dialogue, event_idx_offset=start_idx
+            )
             # for each marker, keep only certain meta data
-            result: Dict[Text, DialogueMetaData] = {
-                str(marker): meta_data.filter(indices=marker.relevant_events())
+            extracted: Dict[Text, EventMetaData] = {
+                str(marker): [meta_data[idx] for idx in marker.relevant_events()]
                 for marker in markers_to_be_evaluated
             }
-            results.append(result)
-        return results
+            extracted_markers.append(extracted)
+        return extracted_markers
 
     @staticmethod
-    def _split_sessions(events: List[Event]) -> List[List[Event]]:
+    def _split_sessions(events: List[Event]) -> List[Tuple[List[Event], int]]:
         """Identifies single dialogues in a the given sequence of events.
 
         Args:
             events: a sequence of events, e.g. extracted from a tracker store
         Returns:
             a list of sub-sequences of the given events that describe single
-            conversations
+            conversations and the respective index that describes where the
+            subsequence starts in the original sequence
         """
         session_start_indices = [
             idx
@@ -320,42 +305,49 @@ class Marker(ABC):
             == rasa.shared.core.constants.ACTION_SESSION_START_NAME
         ]
         if len(session_start_indices) == 0:
-            return [events]
-        dialogues = []
+            return [(events, 0)]
+        dialogues_and_start_indices: List[Tuple[List[Event], int]] = []
         for dialogue_idx in range(len(session_start_indices)):
             start_idx = (
                 session_start_indices[dialogue_idx - 1] if (dialogue_idx > 0) else 0
             )
             end_idx = session_start_indices[dialogue_idx]
             dialogue = [events[idx] for idx in range(start_idx, end_idx)]
-            dialogues.append(dialogue)
+            dialogues_and_start_indices.append((dialogue, start_idx))
         last_dialogue = [
             events[idx] for idx in range(session_start_indices[-1], len(events))
         ]
-        dialogues.append(last_dialogue)
-        return dialogues
+        dialogues_and_start_indices.append((last_dialogue, session_start_indices[-1]))
+        return dialogues_and_start_indices
 
-    def _track_all_and_collect_meta_data(self, events: List[Event]) -> DialogueMetaData:
+    def _track_all_and_collect_meta_data(
+        self, events: List[Event], event_idx_offset: int = 0
+    ) -> List[EventMetaData]:
         """Resets the marker, tracks all events, and collects metadata.
 
         Args:
             events: all events of a *single* dialogue that should be tracked and
                 evaluated
+            event_idx_offset: offset that will be used to modify the collected event
+                meta data, i.e. all event indices will be shifted by this offset
         Returns:
-            metadata for each tracked event
+            metadata for each tracked event with all event indices shifted by the
+            given `event_idx_offset`
         """
         self.reset()
-        timestamps: List[int] = []
-        preceding_user_turns: List[int] = [0]
-        for event in events:
+        dialogue_meta_data: List[EventMetaData] = []
+        num_preceeding_user_turns = 0
+        for idx, event in enumerate(events):
             is_user_turn = isinstance(event, UserUttered)
-            preceding_user_turns.append(preceding_user_turns[-1] + int(is_user_turn))
-            timestamps.append(event.timestamp)
+            dialogue_meta_data.append(
+                EventMetaData(
+                    idx=idx + event_idx_offset,
+                    preceding_user_turns=num_preceeding_user_turns,
+                )
+            )
             self.track(event=event)
-        preceding_user_turns = preceding_user_turns[:-1]  # drop last
-        return DialogueMetaData(
-            preceding_user_turns=preceding_user_turns, timestamp=timestamps
-        )
+            num_preceeding_user_turns += int(is_user_turn)
+        return dialogue_meta_data
 
     def relevant_events(self) -> List[int]:
         """Returns the indices of those tracked events that are relevant for evaluation.
@@ -390,7 +382,7 @@ class Marker(ABC):
             config = {}
         if not config:
             raise InvalidMarkerConfig(f"Could not load any markers from '{path}'.")
-        return Marker.from_config(config)
+        return Marker.from_config_dict(config)
 
     @staticmethod
     def _load_and_combine_config_files_under(root_dir: Text) -> MarkerConfig:
@@ -456,6 +448,9 @@ class Marker(ABC):
         Returns:
             the configured marker
         """
+        # Triggers the import of all modules containing marker classes in order to
+        # register all configurable markers.
+        MarkerRegistry.register_builtin_markers()
         from rasa.core.evaluation.marker import AndMarker
 
         # A marker config can be either an atomic marker config list or a
@@ -494,6 +489,87 @@ class Marker(ABC):
             marker.name = name
         return marker
 
+    def export_markers(
+        self,
+        tracker_loader: Iterator[Optional[DialogueStateTracker]],
+        output_file: Text,
+        stats_file: Optional[Text] = None,
+    ) -> None:
+        """Collect markers for each dialogue in each tracker loaded.
+
+        Args:
+            tracker_loader: The tracker loader to use to select trackers for marker
+                            extraction.
+            output_file: Path to write out the extracted markers.
+            stats_file: (Optional) Path to write out statistics about the extracted
+                        markers.
+        """
+        processed_trackers = {}
+
+        for tracker in tracker_loader:
+            if tracker:
+                tracker_result = self.evaluate_events(tracker.events)
+                processed_trackers[tracker.sender_id] = tracker_result
+
+        Marker._save_results(output_file, processed_trackers)
+
+        if stats_file:
+            Marker._compute_stats(stats_file, processed_trackers)
+
+    @staticmethod
+    def _save_results(
+        path: Text, results: Dict[Text, List[Dict[Text, EventMetaData]]]
+    ) -> None:
+        """Save extracted marker results as CSV to specified path.
+
+        Args:
+            path: Path to write out the extracted markers.
+            results: Extracted markers from a selection of trackers.
+        """
+        with open(path, "w") as f:
+            table_writer = csv.writer(f)
+            table_writer.writerow(
+                [
+                    "sender_id",
+                    "session_idx",
+                    "marker_name",
+                    "event_id",
+                    "num_preceding_user_turns",
+                ]
+            )
+            for sender_id, dialogues in results.items():
+                for session_idx, session in enumerate(dialogues):
+                    Marker._write_relevant_events(
+                        table_writer, sender_id, session_idx, session
+                    )
+
+    @staticmethod
+    def _write_relevant_events(
+        writer: WriteRow,
+        sender_id: Text,
+        session_idx: int,
+        session: Dict[Text, EventMetaData],
+    ) -> None:
+        for marker_name, marker_metadata in session.items():
+            for metadata in marker_metadata:
+                writer.writerow(
+                    [
+                        sender_id,
+                        str(session_idx),
+                        marker_name,
+                        metadata.idx,
+                        metadata.preceding_user_turns,
+                    ]
+                )
+
+    @staticmethod
+    def _compute_stats(
+        out_file: Text, results: List[Union[Text, Dict[Text, EventMetaData]]]
+    ) -> None:
+        """Compute stats over extracted marker data."""
+        # TODO: Figure out how this is done
+        pass
+
 
 class CompoundMarker(Marker, ABC):
     """Combines several markers into one."""
@@ -512,6 +588,10 @@ class CompoundMarker(Marker, ABC):
         """
         super().__init__(name=name, negated=negated)
         self.sub_markers: List[Marker] = markers
+
+    def _to_str_with(self, tag: Text) -> Text:
+        marker_str = ", ".join(str(marker) for marker in self.sub_markers)
+        return f"{tag}({marker_str})"
 
     def track(self, event: Event) -> None:
         """Updates the marker according to the given event.
@@ -535,6 +615,10 @@ class CompoundMarker(Marker, ABC):
             for sub_marker in marker:
                 yield sub_marker
         yield self
+
+    def __len__(self) -> int:
+        """Returns the count of all markers that are part of this marker."""
+        return len(self.sub_markers) + 1
 
     def reset(self) -> None:
         """Evaluate this marker given the next event.
@@ -626,6 +710,10 @@ class AtomicMarker(Marker, ABC):
             an iterator over all markers that are part of this marker, i.e. this marker
         """
         yield self
+
+    def __len__(self) -> int:
+        """Returns the count of all markers that are part of this marker."""
+        return 1
 
     @staticmethod
     def from_config(

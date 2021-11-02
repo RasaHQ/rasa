@@ -1258,8 +1258,12 @@ async def test_predict_next_action_with_hidden_rules(
         slots:
           {rule_slot}:
             type: text
+            mappings:
+            - type: from_text
           {story_slot}:
             type: text
+            mappings:
+            - type: from_text
         """
     )
     domain = Domain.from_yaml(domain_content)
@@ -1377,6 +1381,22 @@ async def test_processor_logs_text_tokens_in_tracker(
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
 
     assert event_tokens == indices
+
+
+async def test_processor_valid_slot_setting(form_bot_agent: Agent):
+    processor = form_bot_agent.processor
+    message = UserMessage(
+        "that's correct",
+        CollectingOutputChannel(),
+        "test",
+        parse_data={
+            "intent": {"name": "affirm"},
+            "entities": [{"entity": "seating", "value": True}],
+        },
+    )
+    await processor.handle_message(message)
+    tracker = processor.get_tracker("test")
+    assert SlotSet("outdoor_seating", True) in tracker.events
 
 
 async def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):

@@ -1,7 +1,15 @@
-from typing import Type
+import csv
+from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.shared.core.domain import Domain
+from typing import List, Optional, Text, Tuple, Type
+import itertools
 
 import pytest
+import numpy as np
 
+import rasa.shared.utils.schemas.markers
 from rasa.core.evaluation.marker import (
     ActionExecutedMarker,
     AndMarker,
@@ -9,35 +17,24 @@ from rasa.core.evaluation.marker import (
     OrMarker,
     SlotSetMarker,
     SequenceMarker,
+    OccurrenceMarker,
 )
-from rasa.core.evaluation.marker_base import DialogueMetaData, Marker, AtomicMarker
+from rasa.core.evaluation.marker_base import (
+    CompoundMarker,
+    Marker,
+    AtomicMarker,
+    InvalidMarkerConfig,
+)
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 
-EVENT_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
-COMPOUND_MARKERS = [AndMarker, OrMarker, SequenceMarker]
-
-
-def test_dialogue_meta_data_creation_fails_if_lists_do_not_align():
-    with pytest.raises(RuntimeError):
-        DialogueMetaData(preceding_user_turns=[1, 2, 3], timestamp=[0.1, 0.2])
-
-
-def test_dialogue_meta_data_filtering_filters_all_lists():
-    meta_data = DialogueMetaData(preceding_user_turns=[1, 2, 3], timestamp=[4, 5, 6])
-    filtered = meta_data.filter([0, 2])
-    # result contains expected values:
-    assert filtered.preceding_user_turns == [1, 3]
-    assert filtered.timestamp == [4, 6]
-    # original data remains unchanged:
-    assert meta_data.preceding_user_turns == [1, 2, 3]
-    assert meta_data.timestamp == [4, 5, 6]
+CONDITION_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]
+OPERATOR_MARKERS = [AndMarker, OrMarker, SequenceMarker, OccurrenceMarker]
 
 
 def test_marker_from_config_dict_single_and():
-
     config = {
         "marker_1": {
             AndMarker.tag(): [
@@ -51,9 +48,7 @@ def test_marker_from_config_dict_single_and():
             ]
         }
     }
-
     marker = Marker.from_config_dict(config)
-
     assert marker.name == "marker_1"
     assert isinstance(marker, AndMarker)
     assert isinstance(marker.sub_markers[0], SlotSetMarker)
@@ -63,7 +58,6 @@ def test_marker_from_config_dict_single_and():
 
 
 def test_marker_from_config_list_inserts_and_marker():
-
     config = [
         {SlotSetMarker.tag(): ["s1"]},
         {
@@ -73,9 +67,7 @@ def test_marker_from_config_list_inserts_and_marker():
             ]
         },
     ]
-
     marker = Marker.from_config(config)
-
     assert isinstance(marker, AndMarker)  # i.e. the default marker inserted
     assert isinstance(marker.sub_markers[0], SlotSetMarker)
     assert isinstance(marker.sub_markers[1], OrMarker)
@@ -84,7 +76,6 @@ def test_marker_from_config_list_inserts_and_marker():
 
 
 def test_marker_from_config_unwraps_grouped_conditions_under_compound():
-
     config = [
         {
             OrMarker.tag(): [
@@ -93,9 +84,7 @@ def test_marker_from_config_unwraps_grouped_conditions_under_compound():
             ]
         },
     ]
-
     marker = Marker.from_config(config)
-
     assert isinstance(marker, OrMarker)
     assert len(marker.sub_markers) == 5
     assert all(
@@ -107,12 +96,19 @@ def test_marker_from_config_unwraps_grouped_conditions_under_compound():
     }
 
 
-@pytest.mark.parametrize("atomic_marker_type", EVENT_MARKERS)
-def test_atomic_marker_track(atomic_marker_type: Type[AtomicMarker]):
+@pytest.mark.parametrize("marker_class", CONDITION_MARKERS)
+def test_atomic_markers_negated_to_str(marker_class: Type[AtomicMarker]):
+    marker = marker_class("intent1", negated=True)
+    if marker.negated_tag() is not None:
+        assert marker.negated_tag() in str(marker)
+
+
+@pytest.mark.parametrize(
+    "atomic_marker_type, negated", itertools.product(CONDITION_MARKERS, [False, True])
+)
+def test_atomic_marker_track(atomic_marker_type: Type[AtomicMarker], negated: bool):
     """Each marker applies an exact number of times (slots are immediately un-set)."""
-
-    marker = atomic_marker_type(text="same-text", name="marker_name")
-
+    marker = atomic_marker_type(text="same-text", name="marker_name", negated=negated)
     events = [
         UserUttered(intent={"name": "1"}),
         UserUttered(intent={"name": "same-text"}),
@@ -120,21 +116,22 @@ def test_atomic_marker_track(atomic_marker_type: Type[AtomicMarker]):
         SlotSet("same-text", value=None),
         ActionExecuted(action_name="same-text"),
     ]
-
-    num_applies = 3
-    events = events * num_applies
-
+    num_non_negated_condition_applies = 3
+    events = events * num_non_negated_condition_applies
     for event in events:
         marker.track(event)
-
     assert len(marker.history) == len(events)
-    assert sum(marker.history) == num_applies
+    expected = (
+        num_non_negated_condition_applies
+        if not negated
+        else (len(events) - num_non_negated_condition_applies)
+    )
+    assert sum(marker.history) == expected
 
 
-@pytest.mark.parametrize("atomic_marker_type", EVENT_MARKERS)
+@pytest.mark.parametrize("atomic_marker_type", CONDITION_MARKERS)
 def test_atomic_marker_evaluate_events(atomic_marker_type: Type[AtomicMarker]):
     """Each marker applies an exact number of times (slots are immediately un-set)."""
-
     events = [
         UserUttered(intent={INTENT_NAME_KEY: "1"}),
         UserUttered(intent={INTENT_NAME_KEY: "same-text"}),
@@ -142,13 +139,10 @@ def test_atomic_marker_evaluate_events(atomic_marker_type: Type[AtomicMarker]):
         SlotSet("same-text", value=None),
         ActionExecuted(action_name="same-text"),
     ]
-
     num_applies = 3
     events = events * num_applies
-
     marker = atomic_marker_type(text="same-text", name="marker_name")
     evaluation = marker.evaluate_events(events)
-
     assert len(evaluation) == 1
     assert "marker_name" in evaluation[0]
     if atomic_marker_type == IntentDetectedMarker:
@@ -156,28 +150,39 @@ def test_atomic_marker_evaluate_events(atomic_marker_type: Type[AtomicMarker]):
     else:
         expected = [2, 4, 6]
 
-    assert evaluation[0]["marker_name"].preceding_user_turns == expected
+    actual_preceeding_user_turns = [
+        meta_data.preceding_user_turns for meta_data in evaluation[0]["marker_name"]
+    ]
+    assert actual_preceeding_user_turns == expected
 
 
-def test_compound_marker_or_track():
+@pytest.mark.parametrize("marker_class", OPERATOR_MARKERS)
+def test_compound_markers_negated_to_str(marker_class: Type[CompoundMarker]):
+    marker = marker_class([IntentDetectedMarker("bla")], negated=True)
+    if marker.negated_tag() is not None:
+        assert marker.negated_tag() in str(marker)
 
+
+@pytest.mark.parametrize("negated", [True, False])
+def test_compound_marker_or_track(negated: bool):
     events = [
         UserUttered(intent={INTENT_NAME_KEY: "1"}),
         UserUttered(intent={INTENT_NAME_KEY: "unknown"}),
         UserUttered(intent={INTENT_NAME_KEY: "2"}),
         UserUttered(intent={INTENT_NAME_KEY: "unknown"}),
     ]
-
     sub_markers = [IntentDetectedMarker("1"), IntentDetectedMarker("2")]
-    marker = OrMarker(sub_markers, name="marker_name")
+    marker = OrMarker(sub_markers, name="marker_name", negated=negated)
     for event in events:
         marker.track(event)
+    expected = [True, False, True, False]
+    if negated:
+        expected = [not applies for applies in expected]
+    assert marker.history == expected
 
-    assert marker.history == [True, False, True, False]
 
-
-def test_compound_marker_and_track():
-
+@pytest.mark.parametrize("negated", [True, False])
+def test_compound_marker_and_track(negated: bool):
     events_expected = [
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
         (SlotSet("2", value="bla"), False),
@@ -188,17 +193,18 @@ def test_compound_marker_and_track():
         (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
     ]
     events, expected = zip(*events_expected)
-
     sub_markers = [IntentDetectedMarker("1"), SlotSetMarker("2")]
-    marker = AndMarker(sub_markers, name="marker_name")
+    marker = AndMarker(sub_markers, name="marker_name", negated=negated)
     for event in events:
         marker.track(event)
+    expected = list(expected)
+    if negated:
+        expected = [not applies for applies in expected]
+    assert marker.history == expected
 
-    assert marker.history == list(expected)
 
-
-def test_compound_marker_seq_track():
-
+@pytest.mark.parametrize("negated", [True, False])
+def test_compound_marker_seq_track(negated: bool):
     events_expected = [
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
         (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
@@ -207,17 +213,98 @@ def test_compound_marker_seq_track():
         (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
     ]
     events, expected = zip(*events_expected)
-
     sub_markers = [IntentDetectedMarker("1"), IntentDetectedMarker("2")]
-    marker = SequenceMarker(sub_markers, name="marker_name")
+    marker = SequenceMarker(sub_markers, name="marker_name", negated=negated)
+    for event in events:
+        marker.track(event)
+    expected = list(expected)
+    if negated:
+        expected = [not applies for applies in expected]
+    assert marker.history == expected
+
+
+@pytest.mark.parametrize("negated", [True, False])
+def test_compound_marker_occur_track(negated: bool):
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "0"}), False),
+        (SlotSet("2", value=None), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), True),
+        (SlotSet("2", value=None), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
+        (SlotSet("2", value="bla"), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
+    ]
+    events, expected = zip(*events_expected)
+    sub_marker = OrMarker(
+        [IntentDetectedMarker("1"), SlotSetMarker("2")],
+        name="or marker",
+        negated=False,
+    )
+    marker = OccurrenceMarker([sub_marker], name="marker_name", negated=negated)
+    for event in events:
+        marker.track(event)
+    expected = list(expected)
+    if negated:
+        expected = [not applies for applies in expected]
+    assert marker.history == expected
+
+    assert marker.relevant_events() == [expected.index(True)]
+
+
+@pytest.mark.parametrize(
+    "sub_markers, negated",
+    itertools.product(
+        ([], [IntentDetectedMarker("1"), IntentDetectedMarker("2")]), [False, True]
+    ),
+)
+def test_compound_marker_occur_raises_wrong_amount_submarkers(
+    sub_markers: List[Marker], negated: bool
+):
+    with pytest.raises(InvalidMarkerConfig):
+        OccurrenceMarker(sub_markers, name="marker_name", negated=negated)
+
+
+def test_compound_marker_occur_never_applied():
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+        (SlotSet("2", value=None), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "0"}), False),
+        (SlotSet("1", value="test"), True),
+    ]
+    events, expected = zip(*events_expected)
+    sub_marker = OrMarker(
+        [IntentDetectedMarker("1"), SlotSetMarker("2")],
+        name="and marker",
+        negated=False,
+    )
+    marker = OccurrenceMarker([sub_marker], name="or", negated=False)
     for event in events:
         marker.track(event)
 
-    assert marker.history == list(expected)
+    assert marker.relevant_events() == []
 
 
-def test_compound_marker_nested_track():
+def test_compound_marker_occur_never_applied_negated():
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (SlotSet("2", value=None), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "0"}), False),
+        (SlotSet("1", value="test"), False),
+    ]
+    events, expected = zip(*events_expected)
+    sub_marker = OrMarker(
+        [IntentDetectedMarker("1"), SlotSetMarker("2")],
+        name="and marker",
+        negated=False,
+    )
+    marker = OccurrenceMarker([sub_marker], name="or", negated=True)
+    for event in events:
+        marker.track(event)
 
+    assert marker.relevant_events() == []
+
+
+def test_compound_marker_nested_simple_track():
     events = [
         UserUttered(intent={"name": "1"}),
         UserUttered(intent={"name": "2"}),
@@ -227,7 +314,6 @@ def test_compound_marker_nested_track():
         UserUttered(intent={"name": "5"}),
         UserUttered(intent={"name": "6"}),
     ]
-
     marker = AndMarker(
         markers=[
             SlotSetMarker("s1"),
@@ -235,10 +321,125 @@ def test_compound_marker_nested_track():
         ],
         name="marker_name",
     )
-
     evaluation = marker.evaluate_events(events)
 
-    assert evaluation[0]["marker_name"].preceding_user_turns == [3, 5]
+    assert len(evaluation[0]["marker_name"]) == 2
+    assert evaluation[0]["marker_name"][0].preceding_user_turns == 3
+    assert evaluation[0]["marker_name"][1].preceding_user_turns == 5
+
+
+def generate_random_marker(
+    depth: int,
+    max_branches: int,
+    rng: np.random.Generator,
+    constant_condition_text: Optional[Text],
+    possible_conditions: List[Type[AtomicMarker]],
+    constant_negated: Optional[bool],
+    possible_operators: List[Type[CompoundMarker]],
+) -> Tuple[Marker, int]:
+    """Generates an (max_branches)-ary tree with the specified depth."""
+    if depth == 0:
+        condition_class = possible_conditions[rng.choice(len(possible_conditions))]
+        negated = bool(rng.choice(2)) if constant_negated is None else constant_negated
+        condition_text = constant_condition_text or f"{rng.choice(1000)}"
+        return condition_class(text=condition_text, negated=negated), 1
+    else:
+        operator_class = possible_operators[rng.choice(len(possible_operators))]
+        # TODO: Causes error with the `Occurrence` marker as this one doesn't allow
+        # more than one sub markers. Revisit this when handling the config validation.
+        num_branches = (
+            1
+            if operator_class == OccurrenceMarker
+            else rng.choice(max_branches - 1) + 1
+        )
+        marker_size = 0
+        sub_markers = []
+        for _ in range(num_branches):
+            sub_marker, sub_marker_size = generate_random_marker(
+                depth=depth - 1,
+                max_branches=max_branches,
+                rng=rng,
+                constant_negated=constant_negated,
+                constant_condition_text=constant_condition_text,
+                possible_operators=possible_operators,
+                possible_conditions=possible_conditions,
+            )
+            marker_size += sub_marker_size
+            sub_markers.append(sub_marker)
+        negated = bool(rng.choice(2)) if constant_negated is None else constant_negated
+        marker = operator_class(markers=sub_markers, negated=negated)
+        marker_size += 1
+        return marker, marker_size
+
+
+@pytest.mark.parametrize(
+    "depth, max_branches, seed", [(1, 3, 3456), (4, 3, 345), (4, 5, 2345)]
+)
+def test_compound_marker_nested_randomly_track(
+    depth: int, max_branches: int, seed: int
+):
+    rng = np.random.default_rng(seed=seed)
+    marker, expected_size = generate_random_marker(
+        depth=depth,
+        max_branches=max_branches,
+        rng=rng,
+        possible_conditions=CONDITION_MARKERS,
+        possible_operators=OPERATOR_MARKERS,
+        constant_condition_text=None,
+        constant_negated=None,
+    )
+    events = [
+        UserUttered(intent={"name": "1"}),
+        UserUttered(intent={"name": "1"}),
+        SlotSet("1", value="any"),
+        SlotSet("1", value=None),
+        ActionExecuted(action_name="1"),
+    ]
+    for event in events:
+        marker.track(event)
+    assert len([sub_marker for sub_marker in marker]) == expected_size
+    for sub_marker in marker:
+        assert len(sub_marker.history) == len(events)
+
+
+@pytest.mark.parametrize(
+    "depth, seed, matches",
+    [
+        (depth, seed, matches)
+        for depth, seed in [(1, 3456), (4, 345)]
+        for matches in [True, False]
+    ],
+)
+def test_compound_marker_nested_randomly_ors_track(
+    depth: int, seed: int, matches: bool
+):
+    rng = np.random.default_rng(seed=seed)
+    constant_condition_text = "1" if matches else "2"
+    marker, _ = generate_random_marker(
+        depth=depth,
+        max_branches=3,
+        rng=rng,
+        possible_conditions=CONDITION_MARKERS,
+        possible_operators=[OrMarker],
+        constant_negated=False,
+        constant_condition_text=constant_condition_text,
+    )
+    # By setting the max_branches to 3 and then tracking all permutations of these
+    # 3 events we ensure that all markers apply at some point (including `seq`)
+    events = [
+        UserUttered(intent={"name": "1"}),
+        SlotSet("1", value="any"),
+        ActionExecuted(action_name="1"),
+    ]
+    for permuted_events in itertools.permutations(events):
+        for event in permuted_events:
+            marker.track(event)
+
+    # by design, every marker applies at some point / never
+    if matches:
+        assert all([any(sub_marker.history) for sub_marker in marker])
+    else:
+        assert all([not any(sub_marker.history) for sub_marker in marker])
 
 
 def test_sessions_evaluated_separately():
@@ -258,10 +459,88 @@ def test_sessions_evaluated_separately():
     evaluation = marker.evaluate_events(events)
 
     assert len(evaluation) == 2
-    assert evaluation[0]["my-marker"].preceding_user_turns == [3]
-    assert evaluation[1]["my-marker"].preceding_user_turns == []
+    assert len(evaluation[0]["my-marker"]) == 1
+    assert evaluation[0]["my-marker"][0].preceding_user_turns == 3
+    assert len(evaluation[1]["my-marker"]) == 0  # i.e. slot set does not "leak"
+
+
+def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
+    events = [
+        UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
+        UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
+        UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
+        SlotSet("same-text", value="any"),
+        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
+        UserUttered(intent={INTENT_NAME_KEY: "no-slot-set-here"}),
+        UserUttered(intent={INTENT_NAME_KEY: "no-slot-set-here"}),
+        SlotSet("same-text", value="any"),
+    ]
+    marker = SlotSetMarker(text="same-text", name="my-marker")
+    evaluation = marker.evaluate_events(events)
+    assert len(evaluation) == 2
+    assert len(evaluation[0]["my-marker"]) == 1
+    assert evaluation[0]["my-marker"][0].preceding_user_turns == 3
+    assert evaluation[0]["my-marker"][0].idx == 3
+    assert len(evaluation[1]["my-marker"]) == 1
+    assert evaluation[1]["my-marker"][0].preceding_user_turns == 2
+    assert evaluation[1]["my-marker"][0].idx == 7  # i.e. NOT the index in the dialogue
 
 
 def test_atomic_markers_repr_not():
     marker = IntentDetectedMarker("intent1", negated=True)
     assert str(marker) == "(intent_not_detected: intent1)"
+
+
+def test_markers_cli_results_save_correctly(tmp_path: Text):
+    domain = Domain.empty()
+    store = InMemoryTrackerStore(domain)
+
+    for i in range(5):
+        tracker = DialogueStateTracker(str(i), None)
+        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)], domain)
+        tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
+        tracker.update(UserUttered("hello"))
+        tracker.update_with_events(
+            [SlotSet(str(5 + j), "slot") for j in range(5)], domain
+        )
+        store.save(tracker)
+
+    tracker_loader = MarkerTrackerLoader(store, "all")
+
+    results_path = tmp_path / "results.csv"
+
+    markers = Marker.from_config_dict(
+        {"marker1": {"slot_is_set": "2"}, "marker2": {"slot_is_set": "7"}}
+    )
+    markers.export_markers(tracker_loader.load(), results_path, stats_file=None)
+
+    with open(results_path, "r") as results:
+        result_reader = csv.DictReader(results)
+        senders = set()
+
+        for row in result_reader:
+            senders.add(row["sender_id"])
+            if row["marker_name"] == "marker1":
+                assert row["session_idx"] == "0"
+                assert int(row["event_id"]) >= 2
+                assert row["num_preceding_user_turns"] == "0"
+
+            if row["marker_name"] == "marker2":
+                assert row["session_idx"] == "1"
+                assert int(row["event_id"]) >= 3
+                assert row["num_preceding_user_turns"] == "1"
+
+        assert len(senders) == 5
+
+
+def test_all_operators_in_schema():
+    operators_in_schema = rasa.shared.utils.schemas.markers.OPERATOR_SCHEMA["enum"]
+    operators_in_schema = {tag.lower() for tag in operators_in_schema}
+
+    actual_operators = set()
+    for operator in OPERATOR_MARKERS:
+        actual_operators.add(operator.tag())
+        if operator.negated_tag():
+            actual_operators.add(operator.negated_tag())
+
+    assert actual_operators == operators_in_schema

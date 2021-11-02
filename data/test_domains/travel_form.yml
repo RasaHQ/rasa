@@ -17,11 +17,21 @@ entities:
 slots:
   GPE_origin:
     type: text
+    mappings:
+    - type: from_entity
+      entity: GPE
+      role: origin
   GPE_destination:
     type: text
+    mappings:
+    - type: from_entity
+      entity: GPE
+      role: destination
   requested_slot:
     type: text
     influence_conversation: false
+    mappings:
+    - type: custom
 
 responses:
   utter_ask_GPE_origin:

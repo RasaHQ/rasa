@@ -748,7 +748,7 @@ def test_tracker_does_not_modify_slots(
     slot_type: Type[Slot], initial_value: Any, value_to_set: Any
 ):
     slot_name = "some-slot"
-    slot = slot_type(slot_name, initial_value)
+    slot = slot_type(slot_name, mappings=[{}], initial_value=initial_value)
     tracker = DialogueStateTracker("some-conversation-id", [slot])
 
     # change the slot value in the tracker
@@ -1377,8 +1377,14 @@ def test_autofill_slots_for_policy_entities():
             slots:
                 {nlu_entity}:
                     type: text
+                    mappings:
+                    - type: from_entity
+                      entity: {nlu_entity}
                 {policy_entity}:
                     type: text
+                    mappings:
+                    - type: from_entity
+                      entity: {policy_entity}
             """
         )
     )
@@ -1440,7 +1446,7 @@ def test_autofill_slots_for_policy_entities():
 
 
 def test_tracker_fingerprinting_consistency():
-    slot = TextSlot(name="name", influence_conversation=True)
+    slot = TextSlot(name="name", mappings=[{}], influence_conversation=True)
     slot.value = "example"
     tr1 = DialogueStateTracker("test_sender_id", slots=[slot])
     tr2 = DialogueStateTracker("test_sender_id", slots=[slot])
@@ -1450,7 +1456,7 @@ def test_tracker_fingerprinting_consistency():
 
 
 def test_tracker_unique_fingerprint(domain: Domain):
-    slot = TextSlot(name="name", influence_conversation=True)
+    slot = TextSlot(name="name", mappings=[{}], influence_conversation=True)
     slot.value = "example"
     tr = DialogueStateTracker("test_sender_id", slots=[slot])
     f1 = tr.fingerprint()
@@ -1458,7 +1464,7 @@ def test_tracker_unique_fingerprint(domain: Domain):
     event1 = UserUttered(
         text="hello",
         parse_data={
-            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+            "intent": {"name": "greet", "confidence": 0.9604260921478271},
             "entities": [
                 {"entity": "city", "value": "London"},
                 {"entity": "count", "value": 1},
@@ -1467,9 +1473,9 @@ def test_tracker_unique_fingerprint(domain: Domain):
             "message_id": "3f4c04602a4947098c574b107d3ccc59",
             "metadata": {},
             "intent_ranking": [
-                {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
-                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748},
-                {"id": 0, "name": "deny", "confidence": 0.011255578137934208},
+                {"name": "greet", "confidence": 0.9604260921478271},
+                {"name": "goodbye", "confidence": 0.01835782080888748},
+                {"name": "deny", "confidence": 0.011255578137934208},
             ],
         },
     )
@@ -1502,7 +1508,7 @@ def test_tracker_fingerprint_story_reading(domain: Domain):
             else:
                 events.append(evts)
 
-        slot = TextSlot(name="name", influence_conversation=True)
+        slot = TextSlot(name="name", mappings=[{}], influence_conversation=True)
         slot.value = "example"
 
         tracker = DialogueStateTracker.from_events("sender_id", events, [slot])

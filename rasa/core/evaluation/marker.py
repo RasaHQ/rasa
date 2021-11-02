@@ -1,8 +1,10 @@
-from typing import Optional, Text
+from typing import Optional, Text, List
 from rasa.core.evaluation.marker_base import (
     CompoundMarker,
     AtomicMarker,
     MarkerRegistry,
+    Marker,
+    InvalidMarkerConfig,
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered, Event
 
@@ -21,10 +23,6 @@ class AndMarker(CompoundMarker):
         """Returns the tag to be used in a config file for the negated version."""
         return "at_least_one_not"
 
-    def _to_str_with(self, tag: Text) -> Text:
-        marker_str = f" {tag} ".join(str(marker) for marker in self.sub_markers)
-        return f"({marker_str})"
-
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return all(marker.history[-1] for marker in self.sub_markers)
 
@@ -42,10 +40,6 @@ class OrMarker(CompoundMarker):
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
         return "not"
-
-    def _to_str_with(self, tag: Text) -> Text:
-        marker_str = f" {tag} ".join(str(marker) for marker in self.sub_markers)
-        return f"({marker_str})"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return any(marker.history[-1] for marker in self.sub_markers)
@@ -80,6 +74,47 @@ class SequenceMarker(CompoundMarker):
             marker.history[-idx - 1]
             for idx, marker in enumerate(reversed(self.sub_markers))
         )
+
+
+@MarkerRegistry.configurable_marker
+class OccurrenceMarker(CompoundMarker):
+    """Checks that all sub-markers applied at least once in history.
+
+    It doesn't matter if the sub markers stop applying later in history. If they
+    applied at least once they will always evaluate to `True`.
+    """
+
+    def __init__(
+        self, markers: List[Marker], negated: bool = False, name: Optional[Text] = None
+    ) -> None:
+        """Creates marker (see parent class for full docstring)."""
+        super().__init__(markers, negated, name)
+        if len(markers) != 1:
+            own_tag = self.negated_tag() if negated else self.tag()
+            raise InvalidMarkerConfig(
+                f"It is not possible to have multiple markers below a '{own_tag}' "
+                f"marker."
+            )
+
+    @staticmethod
+    def tag() -> Text:
+        """Returns the tag to be used in a config file."""
+        return "at_least_once"
+
+    @staticmethod
+    def negated_tag() -> Optional[Text]:
+        """Returns the tag to be used in a config file for the negated version."""
+        return "never"
+
+    def _non_negated_version_applies_at(self, event: Event) -> bool:
+        return any(any(marker.history) for marker in self.sub_markers)
+
+    def relevant_events(self) -> List[int]:
+        """Only return index of first match (see parent class for full docstring)."""
+        try:
+            return [self.history.index(True)]
+        except ValueError:
+            return []
 
 
 @MarkerRegistry.configurable_marker
@@ -145,8 +180,9 @@ class SlotSetMarker(AtomicMarker):
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         if isinstance(event, SlotSet) and event.key == self.text:
-            # it might be un-set
+            # slot is set if and only if it's value is not `None`
             return event.value is not None
-        else:
-            # it is still set
-            return bool(len(self.history) and self.history[-1])
+        if self.history:
+            was_set = self.history[-1] if not self.negated else not self.history[-1]
+            return was_set
+        return False
