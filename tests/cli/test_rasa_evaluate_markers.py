@@ -119,7 +119,14 @@ def test_markers_cli_results_save_correctly(
     results_path = tmp_path / "results.csv"
 
     rasa.cli.evaluate._run_markers(
-        None, 10, endpoints_path, "first_n", markers_path, results_path, None
+        seed=None,
+        count=10,
+        endpoint_config=endpoints_path,
+        strategy="first_n",
+        domain_path=None,
+        config=markers_path,
+        output_filename=results_path,
+        stats_file=None,
     )
 
     with open(results_path, "r") as results:
