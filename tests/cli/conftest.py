@@ -4,7 +4,6 @@ from subprocess import check_call
 
 from _pytest.tmpdir import TempdirFactory
 from typing import Callable, Text
-import sys
 import pytest
 import shutil
 import os

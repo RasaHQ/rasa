@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Callable, Text
+from typing import Callable
 from _pytest.pytester import RunResult
 
 
