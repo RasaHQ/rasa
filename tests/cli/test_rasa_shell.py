@@ -1,19 +1,28 @@
-from typing import Callable, Text
+import sys
+from typing import Callable
 from _pytest.pytester import RunResult
 
 
-def test_shell_help(
-    run: Callable[..., RunResult],
-    argparse_asterisk_argument_output: Callable[[Text], Text],
-):
+def test_shell_help(run: Callable[..., RunResult]):
     output = run("shell", "--help")
+
+    if sys.version_info.minor >= 9:
+        # This is required because `argparse` behaves differently on
+        # Python 3.9 and above. The difference is the changed formatting of help
+        # output for CLI arguments with `nargs="*"
+        cors_lines = """[-p PORT] [-t AUTH_TOKEN] [--cors [CORS ...]] [--enable-api]
+                  [--response-timeout RESPONSE_TIMEOUT]"""
+    else:
+        cors_lines = """[-p PORT] [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]]
+                  [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""
 
     help_text = (
         """usage: rasa shell [-h] [-v] [-vv] [--quiet]
                   [--conversation-id CONVERSATION_ID] [-m MODEL]
                   [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-i INTERFACE]
-                  [-p PORT] [-t AUTH_TOKEN] [--cors """ + argparse_asterisk_argument_output("CORS") + """]
-                  [--enable-api] [--response-timeout RESPONSE_TIMEOUT]
+                  """
+        + cors_lines
+        + """
                   [--remote-storage REMOTE_STORAGE]
                   [--ssl-certificate SSL_CERTIFICATE]
                   [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
