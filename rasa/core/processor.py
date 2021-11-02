@@ -34,6 +34,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     FOLLOWUP_ACTION,
     SESSION_START_METADATA_SLOT,
+    ACTION_EXTRACT_SLOTS,
 )
 from rasa.shared.core.events import (
     ActionExecutionRejected,
@@ -54,6 +55,7 @@ from rasa.shared.constants import (
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
 import rasa.core.tracker_store
+import rasa.core.actions.action
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import (
@@ -129,6 +131,8 @@ class MessageProcessor:
             )
             return None
 
+        tracker = await self._run_action_extract_slots(message, tracker)
+
         await self._run_prediction_loop(message.output_channel, tracker)
 
         self._save_tracker(tracker)
@@ -137,6 +141,24 @@ class MessageProcessor:
             return message.output_channel.messages
 
         return None
+
+    async def _run_action_extract_slots(
+        self, message: UserMessage, tracker: DialogueStateTracker,
+    ) -> DialogueStateTracker:
+        action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
+            ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
+        )
+        extraction_events = await action_extract_slots.run(
+            message.output_channel, self.nlg, tracker, self.domain
+        )
+        tracker.update_with_events(extraction_events, self.domain)
+
+        events_as_str = "\n".join([str(e) for e in extraction_events])
+        logger.debug(
+            f"Default action '{ACTION_EXTRACT_SLOTS}' was executed, "
+            f"resulting in {len(extraction_events)} events: {events_as_str}"
+        )
+        return tracker
 
     async def predict_next_for_sender_id(
         self, sender_id: Text
@@ -305,9 +327,11 @@ class MessageProcessor:
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
-        return self.tracker_store.get_or_create_tracker(
+        tracker = self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )
+        tracker.model_id = self.model_metadata.model_id
+        return tracker
 
     def get_trackers_for_all_conversation_sessions(
         self, conversation_id: Text

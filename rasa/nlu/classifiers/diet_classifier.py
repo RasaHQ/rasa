@@ -935,7 +935,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self, predict_out: Optional[Dict[Text, tf.Tensor]]
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
-        label: Dict[Text, Any] = {"name": None, "id": None, "confidence": 0.0}
+        label: Dict[Text, Any] = {"name": None, "confidence": 0.0}
         label_ranking = []
 
         if predict_out is None:
@@ -962,18 +962,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         casted_message_sim: List[float] = message_sim.tolist()  # np.float to float
         top_label_idx = ranked_label_indices[0]
         label = {
-            "id": hash(self.index_label_id_mapping[top_label_idx]),
             "name": self.index_label_id_mapping[top_label_idx],
             "confidence": casted_message_sim[top_label_idx],
         }
 
         ranking = [(idx, casted_message_sim[idx]) for idx in ranked_label_indices]
         label_ranking = [
-            {
-                "id": hash(self.index_label_id_mapping[label_idx]),
-                "name": self.index_label_id_mapping[label_idx],
-                "confidence": score,
-            }
+            {"name": self.index_label_id_mapping[label_idx], "confidence": score,}
             for label_idx, score in ranking
         ]
 

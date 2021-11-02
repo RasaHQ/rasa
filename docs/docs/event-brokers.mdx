@@ -113,10 +113,6 @@ You will need a running Kafka server.
 
 ### Partition Key
 
-:::info New in 2.5
-The `partition_by_sender` parameter was added.
-:::
-
 Rasa Open Source's Kafka producer can optionally be configured to partition messages by conversation ID.
 This can be configured by setting `partition_by_sender` in the `endpoints.yml` file to True.
 By default, this parameter is set to `False` and the producer will randomly assign a partition to each message.  

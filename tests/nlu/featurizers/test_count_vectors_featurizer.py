@@ -585,7 +585,7 @@ def test_count_vector_featurizer_use_lemma(
     spacy_tokenizer.process([train_message])
     spacy_tokenizer.process([test_message])
 
-    ftr.train(TrainingData([train_message]), spacy_nlp=SpacyModel(spacy_nlp, "en"))
+    ftr.train(TrainingData([train_message]), model=SpacyModel(spacy_nlp, "en"))
 
     ftr.process([test_message])
 

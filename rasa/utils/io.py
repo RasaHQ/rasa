@@ -8,7 +8,17 @@ import warnings
 import re
 from asyncio import AbstractEventLoop
 from pathlib import Path
-from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING, Pattern
+from typing import (
+    Text,
+    Any,
+    Union,
+    List,
+    Type,
+    Callable,
+    TYPE_CHECKING,
+    Pattern,
+)
+from typing_extensions import Protocol
 
 import rasa.shared.constants
 import rasa.shared.utils.io
@@ -17,7 +27,24 @@ if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
 
 
+class WriteRow(Protocol):
+    """Describes a csv writer supporting a `writerow` method (workaround for typing)."""
+
+    def writerow(self, row: List[Text]) -> None:
+        """Write the given row.
+
+        Args:
+            row: the entries of a row as a list of strings
+        """
+        ...
+
+
 def configure_colored_logging(loglevel: Text) -> None:
+    """Configures coloredlogs library for specified loglevel.
+
+    Args:
+        loglevel: The loglevel to configure the library for
+    """
     import coloredlogs
 
     loglevel = loglevel or os.environ.get(
@@ -40,6 +67,13 @@ def configure_colored_logging(loglevel: Text) -> None:
 def enable_async_loop_debugging(
     event_loop: AbstractEventLoop, slow_callback_duration: float = 0.1
 ) -> AbstractEventLoop:
+    """Enables debugging on an event loop.
+
+    Args:
+        event_loop: The event loop to enable debugging on
+        slow_callback_duration: The threshold at which a callback should be
+                                alerted as slow.
+    """
     logging.info(
         "Enabling coroutine debugging. Loop id {}.".format(id(asyncio.get_event_loop()))
     )

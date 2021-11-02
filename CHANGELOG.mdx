@@ -16,6 +16,100 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.12] - 2021-10-21
+### Bugfixes
+- [#9771](https://github.com/rasahq/rasa/issues/9771): Fixed a bug where `rasa test --fail-on-prediction-errors` would raise a 
+  `WrongPredictionException` for entities which were actually predicted correctly.
+
+  This happened in two ways:
+  1. if for a user message some entities were extracted multiple times (by multiple entity
+  extractors) but listed only once in the test story,
+  2. if the order in which entities from a message were extracted didn't match the order
+  in which they were listed in the test story.
+
+### Improved Documentation
+- [#9691](https://github.com/rasahq/rasa/issues/9691): Improve the documentation for training `TEDPolicy` with data augmentation.
+
+
+## [2.8.11] - 2021-10-20
+### Bugfixes
+- [#9858](https://github.com/rasahq/rasa/issues/9858): Updates dependency on `sanic-jwt` (1.5.0 -> ">=1.6.0, <1.7.0")
+
+  This removes the need to pin the version of `pyjwt` as the newer version of `sanic-jwt`
+  manages this properly.
+
+
+## [2.8.10] - 2021-10-14
+### Bugfixes
+- [#5657](https://github.com/rasahq/rasa/issues/5657): Add List handling in the `send_custom_json` method on `channels/facebook.py`.
+  Bellow are some examples that could cause en error before.
+
+  Example 1: when the whole json is a List
+  ```
+  [
+      {
+          "blocks": {
+              "type": "progression_bar",
+              "text": {"text": "progression 1", "level": "1"},
+          }
+      },
+      {"sender": {"id": "example_id"}},
+  ]
+  ```
+
+  Example 2: instead of being a Dict, *blocks* is a List when there are 2 *type*
+  keys under it
+  ```
+  {
+      "blocks": [
+          {"type": "title", "text": {"text": "Conversation progress"}},
+          {
+              "type": "progression_bar",
+              "text": {"text": "Look how far we are...", "level": "1"},
+          },
+      ]
+  }
+  ```
+- [#7676](https://github.com/rasahq/rasa/issues/7676): Fixed bug when using wit.ai training data to train.
+  Training failed with an error similarly to this:
+
+  ```bash
+    File "./venv/lib/python3.8/site-packages/rasa/nlu/classifiers/diet_classifier.py", line 803, in train
+      self.check_correct_entity_annotations(training_data)
+    File "./venv/lib/python3.8/site-packages/rasa/nlu/extractors/extractor.py", line 418, in check_correct_entity_annotations
+      entities_repr = [
+    File "./venv/lib/python3.8/site-packages/rasa/nlu/extractors/extractor.py", line 422, in <listcomp>
+      entity[ENTITY_ATTRIBUTE_VALUE],
+  KeyError: 'value'
+  ```
+- [#9851](https://github.com/rasahq/rasa/issues/9851): Fix CVE-2021-41127
+
+
+## [2.8.9] - 2021-10-08
+### Improvements
+- [#7619](https://github.com/rasahq/rasa/issues/7619): Bump TensorFlow version to 2.6.
+
+  This update brings some security benefits (see TensorFlow 
+  [release notes](https://github.com/tensorflow/tensorflow/releases/tag/v2.6.0)
+  for details). However, internal experiments suggest that it is also associated with
+  increased train and inference time, as well as increased memory usage.
+
+  You can read more about why we decided to update TensorFlow, and what the expected 
+  impact is [here](https://rasa.com/blog/let-s-talk-about-tensorflow-2-6/).
+
+  If you experience a significant increase in train time, inference time, and/or memory 
+  usage, please let us know in the [forum](https://forum.rasa.com/t/feedback-upgrading-to-tensorflow-2-6/48331).
+
+  Users can no longer set `TF_DETERMINISTIC_OPS=1` if they are using GPU(s) because a 
+  `tf.errors.UnimplementedError` will be thrown by TensorFlow (read more
+  [here](https://github.com/tensorflow/tensorflow/releases/tag/v2.6.0)).
+
+  :::caution
+  This **breaks backward compatibility of previously trained models**.
+  It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
+  your assistant before trying to use this version.
+
+  :::
 ## [2.8.8] - 2021-10-06
                        
 
@@ -869,7 +963,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Improvements
 - [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](policies.mdx#rule-policy) or the deprecated 
-  `MappingPolicy` are missing
+  [MappingPolicy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy) are missing
   from the model's `policies` configuration. Changed the info log to a warning as one
   of this policies should be added to the model configuration.
 
@@ -1407,7 +1501,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ### Bugfixes
-- [#7089](https://github.com/rasahq/rasa/issues/7089): Fix `ConveRTTokenizer` failing because of wrong model URL by making the `model_url` parameter of `ConveRTTokenizer` mandatory.
+- [#7089](https://github.com/rasahq/rasa/issues/7089): Fix [ConveRTTokenizer](https://rasa.com/docs/rasa/2.x/components#converttokenizer) failing because of wrong model URL by making the `model_url` parameter of `ConveRTTokenizer` mandatory.
 
   Since the ConveRT model was taken [offline](https://github.com/RasaHQ/rasa/issues/6806), we can no longer use
   the earlier public URL of the model. Additionally, since the licence for the model is unknown,
@@ -1614,10 +1708,10 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   custom `Policy` implementation doesn't provide this parameter Rasa Open Source
   will print a warning and omit passing the `interpreter`.
 - [#6088](https://github.com/rasahq/rasa/issues/6088): Added the new dialogue policy RulePolicy which will replace the old “rule-like”
-  policies Mapping Policy,
-  Fallback Policy,
-  Two-Stage Fallback Policy, and
-  Form Policy. These policies are now
+  policies [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy),
+  [Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#fallback-policy),
+  [Two-Stage Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#two-stage-fallback-policy), and
+  [Form Policy](https://rasa.com/docs/rasa/2.x/policies#form-policy). These policies are now
   deprecated and will be removed in the future. Please see the
   [rules documentation](./rules.mdx) for more information.
 
@@ -2448,7 +2542,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 * [#5006](https://github.com/rasahq/rasa/issues/5006): Channel `hangouts` for Rasa integration with Google Hangouts Chat is now supported out-of-the-box.
 
-* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for `HFTransformersNLP`.
+* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for [HFTransformersNLP](https://rasa.com/docs/rasa/2.x/components#hftransformersnlp).
 
 * [#5422](https://github.com/rasahq/rasa/issues/5422): Add options `tensorboard_log_directory` and `tensorboard_log_level` to `EmbeddingIntentClassifier`,
   `DIETClasifier`, `ResponseSelector`, `EmbeddingPolicy` and `TEDPolicy`.
@@ -2512,7 +2606,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 ### Bugfixes
 
 * [#5205](https://github.com/rasahq/rasa/issues/5205): Fixed the bug when FormPolicy was overwriting MappingPolicy prediction (e.g. `/restart`).
-  Priorities for Mapping Policy and Form Policy are no longer linear:
+  Priorities for [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy) and [Form Policy](https://rasa.com/docs/rasa/2.x/policies#form-policy) are no longer linear:
   `FormPolicy` priority is 5, but its prediction is ignored if `MappingPolicy` is used for prediction.
 
 * [#5215](https://github.com/rasahq/rasa/issues/5215): Fixed issue related to storing Python `float` values as `decimal.Decimal` objects
@@ -2615,10 +2709,10 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 * [#5187](https://github.com/rasahq/rasa/issues/5187): Integrate language models from HuggingFace's [Transformers](https://github.com/huggingface/transformers) Library.
 
-  Add a new NLP component `HFTransformersNLP` which tokenizes and featurizes incoming messages using a specified
+  Add a new NLP component [HFTransformersNLP](https://rasa.com/docs/rasa/2.x/components#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
-  Add `LanguageModelTokenizer` and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
-  `HFTransformersNLP` and sets them correctly for message object.
+  Add [LanguageModelTokenizer](https://rasa.com/docs/rasa/2.x/components#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
+  [HFTransformersNLP](https://rasa.com/docs/rasa/2.x/components#hftransformersnlp) and sets them correctly for message object.
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
 * [#5225](https://github.com/rasahq/rasa/issues/5225): Added a new CLI command `rasa export` to publish tracker events from a persistent
@@ -2707,8 +2801,8 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 * [#4006](https://github.com/rasahq/rasa/issues/4006): Fixed timestamp parsing warning when using DucklingHTTPExtractor
 
-* [#4601](https://github.com/rasahq/rasa/issues/4601): Fixed issue with `action_restart` getting overridden by `action_listen` when the `MappingPolicy` and the
-  `TwoStageFallbackPolicy` are used together.
+* [#4601](https://github.com/rasahq/rasa/issues/4601): Fixed issue with `action_restart` getting overridden by `action_listen` when the [Mapping Policy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy) and the
+  [Two-Stage Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#two-stage-fallback-policy) are used together.
 
 * [#5201](https://github.com/rasahq/rasa/issues/5201): Fixed incorrectly raised Error encountered in pipelines with a `ResponseSelector` and NLG.
 

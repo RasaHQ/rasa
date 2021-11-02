@@ -400,10 +400,18 @@ for details.
 
 </details>
 
+:::note
+In addition to the config parameters above, `TEDPolicy` prediction performance and
+training time are affected by the `--augmentation` argument of the `rasa train`
+command. For more information see
+[Data Augmentation](./policies.mdx#data-augmentation).
+
+:::
+
 
 ### UnexpecTED Intent Policy
 
-:::caution New in 2.8
+:::info New in 2.8
 This feature is experimental.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.
@@ -962,7 +970,22 @@ stories:
 
 You actually want to teach your policy to **ignore** the dialogue history
 when it isn't relevant and to respond with the same action no matter
-what happened before.
+what happened before. To achieve this, individual stories are
+concatenated into longer stories. From the example above, data augmentation
+might produce a story by combining `thank` with `say goodbye` and then `thank` again,
+equivalent to:
+
+```yaml-rasa
+stories:
+  - story: thank -> say goodbye -> thank
+    steps:
+    - intent: thankyou
+    - action: utter_youarewelcome
+    - intent: goodbye
+    - action: utter_goodbye
+    - intent: thankyou
+    - action: utter_youarewelcome
+```
 
 You can alter this behavior with the `--augmentation` flag,
 which allows you to set the `augmentation_factor`.
@@ -970,12 +993,18 @@ The `augmentation_factor` determines how many augmented stories are
 subsampled during training. The augmented stories are subsampled before training
 since their number can quickly become very large, and you want to limit it.
 The number of sampled stories is `augmentation_factor` x10.
-By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
+By default `augmentation_factor` is set to 50, resulting in a maximum of 500 augmented stories.
 
-`--augmentation 0` disables all augmentation behavior.
-The memoization based policies are not affected by augmentation
-(independent of the `augmentation_factor`) and will automatically
-ignore all augmented stories.
+`--augmentation 0` disables all augmentation behavior. `TEDPolicy` is the **only** policy
+affected by augmentation. Other policies like `MemoizationPolicy` or `RulePolicy`
+automatically ignore all augmented stories (regardless of the `augmentation_factor`).
+
+`--augmentation` is an important parameter when trying to reduce `TEDPolicy` training
+time. Reducing the `augmentation_factor` decreases the size of the training data
+and subsequently the time to train the policy. However, reducing the amount of data
+augmentation can also reduce the performance of `TEDPolicy`. We recommend using
+a memoization based policy along with `TEDPolicy` when reducing the amount of data
+augmentation to compensate.
 
 ### Featurizers
 

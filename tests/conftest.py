@@ -27,6 +27,7 @@ from sanic import Sanic
 from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
+from rasa.shared.nlu.constants import METADATA_MODEL_ID
 import rasa.shared.utils.io
 from rasa import server
 from rasa.core.agent import Agent, load_agent
@@ -37,7 +38,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import SessionConfig, Domain
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import Event, UserUttered
 from rasa.core.exporter import Exporter
 
 import rasa.core.run
@@ -165,36 +166,6 @@ def e2e_story_file_trips_circuit_breaker_path() -> Text:
 @pytest.fixture(scope="session")
 def endpoints_path() -> Text:
     return "data/test_endpoints/example_endpoints.yml"
-
-
-@pytest.fixture(scope="session")
-def simple_markers_config() -> Text:
-    return "data/test_markers/config_simple.yml"
-
-
-@pytest.fixture(scope="session")
-def markers_config_folder() -> Text:
-    return "data/test_markers/config_dir"
-
-
-@pytest.fixture(scope="session")
-def invalid_markers_config() -> Text:
-    return "data/test_markers/config_invalid.yml"
-
-
-@pytest.fixture(scope="session")
-def markers_config_operators() -> Text:
-    return "data/test_markers/config_operators.yml"
-
-
-@pytest.fixture(scope="session")
-def extracted_markers_json() -> Text:
-    return "data/test_markers/extracted_markers.json"
-
-
-@pytest.fixture(scope="session")
-def marker_stats_output_json() -> Text:
-    return "stats_output.json"
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
@@ -588,7 +559,6 @@ def e2e_bot_config_file() -> Path:
 @pytest.fixture(scope="session")
 def e2e_bot_training_files() -> List[Path]:
     return [
-        Path("data/test_e2ebot/data/rules.yml"),
         Path("data/test_e2ebot/data/stories.yml"),
         Path("data/test_e2ebot/data/nlu.yml"),
     ]
@@ -772,3 +742,13 @@ def enable_cache(cache_dir: Path):
 @pytest.fixture()
 def whitespace_tokenizer() -> WhitespaceTokenizer:
     return WhitespaceTokenizer(WhitespaceTokenizer.get_default_config())
+
+
+def with_model_ids(events: List[Event], model_id: Text) -> List[Event]:
+    return [with_model_id(event, model_id) for event in events]
+
+
+def with_model_id(event: Event, model_id: Text) -> Event:
+    new_event = copy.deepcopy(event)
+    new_event.metadata[METADATA_MODEL_ID] = model_id
+    return new_event
