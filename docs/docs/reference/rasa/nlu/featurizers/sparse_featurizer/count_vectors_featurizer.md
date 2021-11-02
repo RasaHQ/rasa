@@ -67,7 +67,7 @@ Creates a new untrained component (see parent class for full docstring).
 #### train
 
 ```python
- | train(training_data: TrainingData, spacy_nlp: Optional[SpacyModel] = None) -> Resource
+ | train(training_data: TrainingData, model: Optional[SpacyModel] = None) -> Resource
 ```
 
 Trains the featurizer.
