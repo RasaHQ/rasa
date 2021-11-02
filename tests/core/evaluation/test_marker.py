@@ -1,3 +1,8 @@
+import csv
+from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.shared.core.domain import Domain
 from typing import List, Optional, Text, Tuple, Type
 import itertools
 
@@ -484,6 +489,48 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
 def test_atomic_markers_repr_not():
     marker = IntentDetectedMarker("intent1", negated=True)
     assert str(marker) == "(intent_not_detected: intent1)"
+
+
+def test_markers_cli_results_save_correctly(tmp_path: Text):
+    domain = Domain.empty()
+    store = InMemoryTrackerStore(domain)
+
+    for i in range(5):
+        tracker = DialogueStateTracker(str(i), None)
+        tracker.update_with_events([SlotSet(str(j), "slot") for j in range(5)], domain)
+        tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
+        tracker.update(UserUttered("hello"))
+        tracker.update_with_events(
+            [SlotSet(str(5 + j), "slot") for j in range(5)], domain
+        )
+        store.save(tracker)
+
+    tracker_loader = MarkerTrackerLoader(store, "all")
+
+    results_path = tmp_path / "results.csv"
+
+    markers = Marker.from_config_dict(
+        {"marker1": {"slot_is_set": "2"}, "marker2": {"slot_is_set": "7"}}
+    )
+    markers.export_markers(tracker_loader.load(), results_path, stats_file=None)
+
+    with open(results_path, "r") as results:
+        result_reader = csv.DictReader(results)
+        senders = set()
+
+        for row in result_reader:
+            senders.add(row["sender_id"])
+            if row["marker_name"] == "marker1":
+                assert row["session_idx"] == "0"
+                assert int(row["event_id"]) >= 2
+                assert row["num_preceding_user_turns"] == "0"
+
+            if row["marker_name"] == "marker2":
+                assert row["session_idx"] == "1"
+                assert int(row["event_id"]) >= 3
+                assert row["num_preceding_user_turns"] == "1"
+
+        assert len(senders) == 5
 
 
 def test_all_operators_in_schema():

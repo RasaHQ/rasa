@@ -1464,7 +1464,7 @@ def test_tracker_unique_fingerprint(domain: Domain):
     event1 = UserUttered(
         text="hello",
         parse_data={
-            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+            "intent": {"name": "greet", "confidence": 0.9604260921478271},
             "entities": [
                 {"entity": "city", "value": "London"},
                 {"entity": "count", "value": 1},
@@ -1473,9 +1473,9 @@ def test_tracker_unique_fingerprint(domain: Domain):
             "message_id": "3f4c04602a4947098c574b107d3ccc59",
             "metadata": {},
             "intent_ranking": [
-                {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
-                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748},
-                {"id": 0, "name": "deny", "confidence": 0.011255578137934208},
+                {"name": "greet", "confidence": 0.9604260921478271},
+                {"name": "goodbye", "confidence": 0.01835782080888748},
+                {"name": "deny", "confidence": 0.011255578137934208},
             ],
         },
     )
