@@ -34,7 +34,10 @@ def set_markers_arguments(parser: argparse.ArgumentParser) -> None:
         "--stats-file-prefix",
         default="stats",
         type=str,
-        help="The common file prefix used to write out computed summary statistics.",
+        help="The common file prefix of the files where we write out the compute "
+        "statistics. More precisely, the file prefix must consist of a common "
+        "path plus a common file prefix, to which suffixes `-overall.csv` and "
+        "`-per-session.csv` will be added automatically.",
     )
 
     add_endpoint_param(

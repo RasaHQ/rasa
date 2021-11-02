@@ -124,9 +124,14 @@ def _run_markers(
         strategy: Strategy to use when selecting trackers to extract from.
         config: Path to the markers definition file to use.
         output_filename: Path to write out the extracted markers.
-        stats_file_prefix: (Optional) Prefix of paths to write out statistics about the
-            extracted markers. The prefix will be used to create two concrete paths by
-            appending suffixes "-overall.csv" and "-per-session.csv", respectively.
+        stats_file_prefix: (Optional) A prefix used to create paths where files with
+            statistics on the marker extraction results will be written.
+            It must consists of the path to the where those files should be stored
+            and the common file prefix, e.g. '<path-to-stats-folder>/statistics'.
+            Statistics derived from all marker extractions will be stored in
+            '<path-to-stats-folder>/statistics-overall.csv', while the statistics
+            computed per session will be stored in
+            '<path-to-stats-folder>/statistics-per-session.csv'.
     """
     domain = Domain.load(domain_path) if domain_path else None
     markers = Marker.from_path(config)
