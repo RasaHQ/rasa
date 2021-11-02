@@ -145,8 +145,9 @@ jobs:
 
       - name: Get TensorFlow version
         run: |-
-          # Read TF version, trim special characters ^~><+
-          TF_VERSION=$(grep "tensorflow =" pyproject.toml | sed 's/^[^"]*"\([^"]*\),.*/\1/' | sed 's/[\^~><=]//g')
+          # Read TF version from poetry.lock file
+          pip install toml
+          TF_VERSION=$(scripts/read_tenforflow_version.sh)
           # Keep the first 3 characters, e.g. we keep 2.3 if TF_VERSION is 2.3.4
           TF_VERSION=${TF_VERSION::3}
           echo "TensorFlow version: $TF_VERSION"
@@ -232,6 +233,11 @@ jobs:
           echo "::set-output name=is_dataset_exists::true"
           echo "::set-output name=is_config_exists::true"
           echo "::set-output name=is_external::${IS_EXTERNAL}"
+
+          # Warn about job if dataset is Hermit and config is BERT + DIET(seq) + ResponseSelector(t2t) or Sparse + BERT + DIET(seq) + ResponseSelector(t2t)
+          if [[ "${{ matrix.dataset }}" == "Hermit" && "${{ matrix.config }}" =~ "BERT + DIET(seq) + ResponseSelector(t2t)" ]]; then
+            echo "::warning::This ${{ matrix.dataset }} dataset / ${{ matrix.config }} config is currently being skipped on scheduled tests due to OOM associated with the upgrade to TF 2.6. You may see OOM here."
+          fi
 
           if [[ "${IS_EXTERNAL}" == "true" ]]; then
             echo "DATASET_DIR=dataset_external" >> $GITHUB_ENV
@@ -330,7 +336,6 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          TF_DETERMINISTIC_OPS: 1
         run: |-
           poetry run rasa --version
 

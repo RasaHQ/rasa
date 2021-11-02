@@ -32,7 +32,7 @@ class RuleOnlyDataProvider(GraphComponent):
         """Creates component (see parent class for docstring)."""
         rule_only_data = {}
         try:
-            with model_storage.write_to(resource) as directory:
+            with model_storage.read_from(resource) as directory:
                 rule_only_data = rasa.shared.utils.io.read_json_file(
                     directory / "rule_only_data.json"
                 )

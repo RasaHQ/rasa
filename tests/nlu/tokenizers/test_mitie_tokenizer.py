@@ -9,16 +9,16 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizerGraphComponent
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 
 
 @pytest.fixture()
 def tokenizer(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-) -> Callable[[Dict[Text, Any]], MitieTokenizerGraphComponent]:
-    def inner(config: Dict[Text, Any]) -> MitieTokenizerGraphComponent:
-        return MitieTokenizerGraphComponent.create(
-            {**MitieTokenizerGraphComponent.get_default_config(), **config},
+) -> Callable[[Dict[Text, Any]], MitieTokenizer]:
+    def inner(config: Dict[Text, Any]) -> MitieTokenizer:
+        return MitieTokenizer.create(
+            {**MitieTokenizer.get_default_config(), **config},
             default_model_storage,
             Resource("mitie_tokenizer"),
             default_execution_context,
@@ -46,7 +46,7 @@ def test_mitie(
     text: Text,
     expected_tokens: List[Text],
     expected_indices: List[Tuple[int, int]],
-    tokenizer: Callable[[Dict[Text, Any]], MitieTokenizerGraphComponent],
+    tokenizer: Callable[[Dict[Text, Any]], MitieTokenizer],
 ):
     tk = tokenizer({})
 
@@ -67,7 +67,7 @@ def test_mitie(
 def test_custom_intent_symbol(
     text: Text,
     expected_tokens: List[Text],
-    tokenizer: Callable[[Dict[Text, Any]], MitieTokenizerGraphComponent],
+    tokenizer: Callable[[Dict[Text, Any]], MitieTokenizer],
 ):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 

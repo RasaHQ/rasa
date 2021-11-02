@@ -8,7 +8,6 @@ import rasa.shared.core.constants
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -188,6 +187,10 @@ class TrainingDataImporter:
     def fingerprint(self) -> Text:
         """Returns a random fingerprint as data shouldn't be cached."""
         return rasa.shared.utils.io.random_string(25)
+
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return self.__class__.__name__
 
 
 class NluDataImporter(TrainingDataImporter):
@@ -447,11 +450,7 @@ class E2EImporter(TrainingDataImporter):
             action_texts=additional_e2e_action_names,
         )
 
-    def get_stories(
-        self,
-        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
         See parent class for details.

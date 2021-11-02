@@ -78,7 +78,7 @@ def _rasa_service(
     from rasa.core.run import serve_application
 
     # needs separate logging configuration as it is started in its own process
-    rasa.utils.common.set_log_level(args.loglevel)
+    rasa.utils.common.configure_logging_and_warnings(args.loglevel)
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
     if not credentials_path:
@@ -249,7 +249,7 @@ def generate_rasa_x_token(length: int = 16) -> Text:
 
 def _configure_logging(args: argparse.Namespace) -> None:
     from rasa.core.utils import configure_file_logging
-    from rasa.utils.common import set_log_level
+    from rasa.utils.common import configure_logging_and_warnings
 
     log_level = args.loglevel or DEFAULT_LOG_LEVEL_RASA_X
 
@@ -259,7 +259,9 @@ def _configure_logging(args: argparse.Namespace) -> None:
     logging.basicConfig(level=log_level)
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
-    set_log_level(log_level)
+    configure_logging_and_warnings(
+        log_level, warn_only_once=False, filter_repeated_logs=False
+    )
     configure_file_logging(logging.root, args.log_file)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
@@ -433,7 +435,7 @@ def _get_credentials_and_endpoints_paths(
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
-        endpoints_config_path, credentials_path = rasa.utils.common.run_in_loop(
+        endpoints_config_path, credentials_path = asyncio.run(
             _pull_runtime_config_from_server(config_endpoint)
         )
 

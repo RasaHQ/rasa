@@ -2,7 +2,6 @@ import asyncio
 import logging
 import uuid
 import os
-import shutil
 from functools import partial
 from typing import Any, List, Optional, Text, Union, Dict
 
@@ -12,16 +11,12 @@ import rasa.shared.utils.common
 import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
-from rasa import model, server, telemetry
+from rasa import server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
-from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
-import rasa.core.interpreter
-from rasa.core.lock_store import LockStore
-from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.io
 from sanic import Sanic
@@ -214,11 +209,6 @@ def serve_application(
     )
     app.register_listener(close_resources, "after_server_stop")
 
-    # noinspection PyUnresolvedReferences
-    async def clear_model_files(_app: Sanic, _loop: Text) -> None:
-        if app.agent.model_directory:
-            shutil.rmtree(_app.agent.model_directory)
-
     number_of_workers = rasa.core.utils.number_of_sanic_workers(
         endpoints.lock_store if endpoints else None
     )
@@ -232,6 +222,7 @@ def serve_application(
     rasa.utils.common.update_sanic_log_level(
         log_file, use_syslog, syslog_address, syslog_port, syslog_protocol,
     )
+
     app.run(
         host=interface,
         port=port,
@@ -254,55 +245,12 @@ async def load_agent_on_start(
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments).
     """
-    # noinspection PyBroadException
-    try:
-        with model.get_model(model_path) as unpacked_model:
-            _, nlu_model = model.get_model_subdirectories(unpacked_model)
-            _interpreter = rasa.core.interpreter.create_interpreter(
-                endpoints.nlu or nlu_model
-            )
-    except Exception:
-        logger.debug(f"Could not load interpreter from '{model_path}'.")
-        _interpreter = None
-
-    _broker = await EventBroker.create(endpoints.event_broker, loop=loop)
-    _tracker_store = TrackerStore.create(endpoints.tracker_store, event_broker=_broker)
-    _lock_store = LockStore.create(endpoints.lock_store)
-
-    model_server = endpoints.model if endpoints and endpoints.model else None
-
-    try:
-        app.agent = await agent.load_agent(
-            model_path,
-            model_server=model_server,
-            remote_storage=remote_storage,
-            interpreter=_interpreter,
-            generator=endpoints.nlg,
-            tracker_store=_tracker_store,
-            lock_store=_lock_store,
-            action_endpoint=endpoints.action,
-        )
-    except Exception as e:
-        rasa.shared.utils.io.raise_warning(
-            f"The model at '{model_path}' could not be loaded. "
-            f"Error: {type(e)}: {e}"
-        )
-        app.agent = None
-
-    if not app.agent:
-        rasa.shared.utils.io.raise_warning(
-            "Agent could not be loaded with the provided configuration. "
-            "Load default agent without any model."
-        )
-        app.agent = Agent(
-            interpreter=_interpreter,
-            generator=endpoints.nlg,
-            tracker_store=_tracker_store,
-            action_endpoint=endpoints.action,
-            model_server=model_server,
-            remote_storage=remote_storage,
-        )
-
+    app.agent = await agent.load_agent(
+        model_path=model_path,
+        remote_storage=remote_storage,
+        endpoints=endpoints,
+        loop=loop,
+    )
     logger.info("Rasa server is up and running.")
     return app.agent
 

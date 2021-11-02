@@ -11,6 +11,7 @@ import fakeredis
 import freezegun
 import pytest
 
+from rasa.core.training import load_data
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training
@@ -72,7 +73,11 @@ from tests.core.utilities import (
     get_tracker,
 )
 
-from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    METADATA_MODEL_ID,
+    PREDICTED_CONFIDENCE_KEY,
+)
 
 test_domain = Domain.load("data/test_moodbot/domain.yml")
 
@@ -519,7 +524,7 @@ def _load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueState
 def test_dump_and_restore_as_json(
     default_agent: Agent, tmp_path: Path, stories_path: Text
 ):
-    trackers = default_agent.load_data(stories_path)
+    trackers = load_data(stories_path, default_agent.domain)
 
     for tracker in trackers:
         out_path = tmp_path / "dumped_tracker.json"
@@ -743,7 +748,7 @@ def test_tracker_does_not_modify_slots(
     slot_type: Type[Slot], initial_value: Any, value_to_set: Any
 ):
     slot_name = "some-slot"
-    slot = slot_type(slot_name, initial_value)
+    slot = slot_type(slot_name, mappings=[{}], initial_value=initial_value)
     tracker = DialogueStateTracker("some-conversation-id", [slot])
 
     # change the slot value in the tracker
@@ -1372,8 +1377,14 @@ def test_autofill_slots_for_policy_entities():
             slots:
                 {nlu_entity}:
                     type: text
+                    mappings:
+                    - type: from_entity
+                      entity: {nlu_entity}
                 {policy_entity}:
                     type: text
+                    mappings:
+                    - type: from_entity
+                      entity: {policy_entity}
             """
         )
     )
@@ -1435,7 +1446,7 @@ def test_autofill_slots_for_policy_entities():
 
 
 def test_tracker_fingerprinting_consistency():
-    slot = TextSlot(name="name", influence_conversation=True)
+    slot = TextSlot(name="name", mappings=[{}], influence_conversation=True)
     slot.value = "example"
     tr1 = DialogueStateTracker("test_sender_id", slots=[slot])
     tr2 = DialogueStateTracker("test_sender_id", slots=[slot])
@@ -1445,7 +1456,7 @@ def test_tracker_fingerprinting_consistency():
 
 
 def test_tracker_unique_fingerprint(domain: Domain):
-    slot = TextSlot(name="name", influence_conversation=True)
+    slot = TextSlot(name="name", mappings=[{}], influence_conversation=True)
     slot.value = "example"
     tr = DialogueStateTracker("test_sender_id", slots=[slot])
     f1 = tr.fingerprint()
@@ -1453,7 +1464,7 @@ def test_tracker_unique_fingerprint(domain: Domain):
     event1 = UserUttered(
         text="hello",
         parse_data={
-            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+            "intent": {"name": "greet", "confidence": 0.9604260921478271},
             "entities": [
                 {"entity": "city", "value": "London"},
                 {"entity": "count", "value": 1},
@@ -1462,9 +1473,9 @@ def test_tracker_unique_fingerprint(domain: Domain):
             "message_id": "3f4c04602a4947098c574b107d3ccc59",
             "metadata": {},
             "intent_ranking": [
-                {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
-                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748},
-                {"id": 0, "name": "deny", "confidence": 0.011255578137934208},
+                {"name": "greet", "confidence": 0.9604260921478271},
+                {"name": "goodbye", "confidence": 0.01835782080888748},
+                {"name": "deny", "confidence": 0.011255578137934208},
             ],
         },
     )
@@ -1497,7 +1508,7 @@ def test_tracker_fingerprint_story_reading(domain: Domain):
             else:
                 events.append(evts)
 
-        slot = TextSlot(name="name", influence_conversation=True)
+        slot = TextSlot(name="name", mappings=[{}], influence_conversation=True)
         slot.value = "example"
 
         tracker = DialogueStateTracker.from_events("sender_id", events, [slot])
@@ -1512,3 +1523,18 @@ def test_tracker_fingerprint_story_reading(domain: Domain):
     f2 = tracker2.fingerprint()
 
     assert f1 == f2
+
+
+def test_model_id_is_added_to_events():
+    tracker = DialogueStateTracker("bloop", [])
+    tracker.model_id = "some_id"
+    tracker.update(ActionExecuted())
+    tracker.update_with_events([UserUttered(), SessionStarted()], None)
+    assert all(e.metadata[METADATA_MODEL_ID] == "some_id" for e in tracker.events)
+
+
+def test_model_id_is_not_added_to_events_with_id():
+    tracker = DialogueStateTracker("bloop", [])
+    tracker.model_id = "some_id"
+    tracker.update(ActionExecuted(metadata={METADATA_MODEL_ID: "old_id"}))
+    assert tracker.events[-1].metadata[METADATA_MODEL_ID] == "old_id"

@@ -8,9 +8,7 @@ import pytest
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
-from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer2 as SingleStateFeaturizer,
-)
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
@@ -91,7 +89,7 @@ def test_prepare_for_training():
     domain = Domain(
         intents=["greet"],
         entities=["name"],
-        slots=[Slot("name")],
+        slots=[Slot("name", mappings=[{}])],
         responses={},
         forms={},
         action_names=["utter_greet", "action_check_weather"],

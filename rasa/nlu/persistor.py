@@ -2,7 +2,6 @@ import abc
 import logging
 import os
 import shutil
-import tarfile
 from typing import Optional, Text, Tuple, TYPE_CHECKING
 
 import rasa.shared.utils.common
@@ -67,7 +66,7 @@ class Persistor(abc.ABC):
             tar_name = self._tar_name(model_name)
 
         self._retrieve_tar(tar_name)
-        self._decompress(os.path.basename(tar_name), target_path)
+        self._copy(os.path.basename(tar_name), target_path)
 
     @abc.abstractmethod
     def _retrieve_tar(self, filename: Text) -> Text:
@@ -101,10 +100,8 @@ class Persistor(abc.ABC):
         return f"{model_name}{ext}"
 
     @staticmethod
-    def _decompress(compressed_path: Text, target_path: Text) -> None:
-
-        with tarfile.open(compressed_path, "r:gz") as tar:
-            tar.extractall(target_path)  # target dir will be created if it not exists
+    def _copy(compressed_path: Text, target_path: Text) -> None:
+        shutil.copy2(compressed_path, target_path)
 
 
 class AWSPersistor(Persistor):

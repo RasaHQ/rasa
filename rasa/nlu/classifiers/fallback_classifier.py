@@ -1,9 +1,10 @@
 from __future__ import annotations
 import copy
 import logging
-from typing import Any, List, Text, Dict, Union, Tuple, Optional
+from typing import Any, List, Text, Dict, Type, Union, Tuple, Optional
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
@@ -11,6 +12,7 @@ from rasa.core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
 )
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -19,19 +21,22 @@ from rasa.shared.nlu.constants import (
     PREDICTED_CONFIDENCE_KEY,
 )
 
-from rasa.nlu.classifiers._fallback_classifier import FallbackClassifier
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-FallbackClassifier = FallbackClassifier
-
 THRESHOLD_KEY = "threshold"
 AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
 
 logger = logging.getLogger(__name__)
 
 
-class FallbackClassifierGraphComponent(GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=False
+)
+class FallbackClassifier(GraphComponent, IntentClassifier):
     """Handles incoming messages with low NLU confidence."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [IntentClassifier]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -58,7 +63,7 @@ class FallbackClassifierGraphComponent(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> FallbackClassifierGraphComponent:
+    ) -> FallbackClassifier:
         """Creates a new component (see parent class for full docstring)."""
         return cls(config)
 

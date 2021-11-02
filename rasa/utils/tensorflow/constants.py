@@ -56,6 +56,7 @@ SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
 DENSE_INPUT_DROPOUT = "use_dense_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
+RENORMALIZE_CONFIDENCES = "renormalize_confidences"
 MODEL_CONFIDENCE = "model_confidence"
 
 BILOU_FLAG = "BILOU_flag"
@@ -106,4 +107,6 @@ SCORE_KEY = "score"
 THRESHOLD_KEY = "threshold"
 SEVERITY_KEY = "severity"
 NAME = "name"
+
+TF_DETERMINISTIC_OPS = "TF_DETERMINISTIC_OPS"
 EPOCH_OVERRIDE = "epoch_override"

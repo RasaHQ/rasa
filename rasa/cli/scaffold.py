@@ -46,7 +46,7 @@ def add_subparser(
     scaffold_parser.set_defaults(func=run)
 
 
-def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
+def print_train_or_instructions(args: argparse.Namespace) -> None:
     """Train a model if the user wants to."""
     import questionary
     import rasa
@@ -61,12 +61,12 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
     if should_train:
         print_success("Training an initial model...")
-        config = os.path.join(path, DEFAULT_CONFIG_PATH)
-        training_files = os.path.join(path, DEFAULT_DATA_PATH)
-        domain = os.path.join(path, DEFAULT_DOMAIN_PATH)
-        output = os.path.join(path, create_output_path())
-
-        training_result = rasa.train(domain, config, training_files, output)
+        training_result = rasa.train(
+            DEFAULT_DOMAIN_PATH,
+            DEFAULT_CONFIG_PATH,
+            DEFAULT_DATA_PATH,
+            create_output_path(),
+        )
         args.model = training_result.model
 
         print_run_or_instructions(args)
@@ -125,12 +125,15 @@ def print_run_or_instructions(args: argparse.Namespace) -> None:
 
 
 def init_project(args: argparse.Namespace, path: Text) -> None:
-    create_initial_project(path)
+    """Inits project."""
+    os.chdir(path)
+    create_initial_project(".")
     print("Created project directory at '{}'.".format(os.path.abspath(path)))
-    print_train_or_instructions(args, path)
+    print_train_or_instructions(args)
 
 
 def create_initial_project(path: Text) -> None:
+    """Creates directory structure and templates for initial project."""
     from distutils.dir_util import copy_tree
 
     copy_tree(scaffold_path(), path)

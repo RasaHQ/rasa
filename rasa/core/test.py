@@ -1,5 +1,7 @@
 import logging
 import os
+from pathlib import Path
+import tempfile
 import warnings as pywarnings
 import typing
 from collections import defaultdict, namedtuple
@@ -16,12 +18,12 @@ from rasa.core.constants import (
 from rasa.core.channels import UserMessage
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.core.constants import (
     POLICIES_THAT_EXTRACT_ENTITIES,
     ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
@@ -218,10 +220,24 @@ class EvaluationStore:
             entity_targets=other.entity_targets,
         )
 
-    def has_prediction_target_mismatch(self) -> bool:
+    def _check_entity_prediction_target_mismatch(self) -> bool:
+        """Checks that same entities were expected and actually extracted.
+
+        Possible duplicates or differences in order should not matter.
+        """
+        deduplicated_targets = set(
+            tuple(entity.items()) for entity in self.entity_targets
+        )
+        deduplicated_predictions = set(
+            tuple(entity.items()) for entity in self.entity_predictions
+        )
+        return deduplicated_targets != deduplicated_predictions
+
+    def check_prediction_target_mismatch(self) -> bool:
+        """Checks if intent, entity or action predictions don't match expected ones."""
         return (
             self.intent_predictions != self.intent_targets
-            or self.entity_predictions != self.entity_targets
+            or self._check_entity_prediction_target_mismatch()
             or self.action_predictions != self.action_targets
         )
 
@@ -416,20 +432,11 @@ def _create_data_generator(
     use_conversation_test_files: bool = False,
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
-    from rasa.shared.constants import DEFAULT_DOMAIN_PATH
-    from rasa.model import get_model_subdirectories
 
-    core_model = None
-    if agent.model_directory:
-        core_model, _ = get_model_subdirectories(agent.model_directory)
-
-    if core_model and os.path.exists(os.path.join(core_model, DEFAULT_DOMAIN_PATH)):
-        domain_path = os.path.join(core_model, DEFAULT_DOMAIN_PATH)
-    else:
-        domain_path = None
-
+    tmp_domain_path = Path(tempfile.mkdtemp()) / "domain.yaml"
+    agent.domain.persist(tmp_domain_path)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[resource_name], domain_path=domain_path
+        training_data_paths=[resource_name], domain_path=str(tmp_domain_path)
     )
     if use_conversation_test_files:
         story_graph = test_data_importer.get_conversation_tests()
@@ -542,14 +549,14 @@ def _collect_user_uttered_predictions(
             entity_predictions=_clean_entity_results(event.text, predicted_entities),
         )
 
-    if user_uttered_eval_store.has_prediction_target_mismatch():
+    if user_uttered_eval_store.check_prediction_target_mismatch():
         partial_tracker.update(
             WronglyClassifiedUserUtterance(event, user_uttered_eval_store)
         )
         if fail_on_prediction_errors:
             story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
             raise WrongPredictionException(
-                f"NLU model predicted a wrong intent. Failed Story:"
+                f"NLU model predicted a wrong intent or entities. Failed Story:"
                 f" \n\n{story_dump}"
             )
     else:
@@ -588,7 +595,7 @@ def emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None:
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 
-def _get_e2e_entity_evaluation_result(
+async def _get_e2e_entity_evaluation_result(
     processor: "MessageProcessor",
     tracker: DialogueStateTracker,
     prediction: PolicyPrediction,
@@ -604,14 +611,16 @@ def _get_e2e_entity_evaluation_result(
         entity_targets = previous_event.entities
         if entity_targets or entities_predicted_by_policies:
             text = previous_event.text
-            parsed_message = processor.interpreter.featurize_message(
-                Message(data={TEXT: text})
-            )
-            if parsed_message:
-                tokens = parsed_message.get(TOKENS_NAMES[TEXT])
-                return EntityEvaluationResult(
-                    entity_targets, entities_predicted_by_policies, tokens, text
-                )
+            if text:
+                parsed_message = await processor.parse_message(UserMessage(text=text))
+                if parsed_message:
+                    tokens = [
+                        Token(text[start:end], start, end)
+                        for start, end in parsed_message.get(TOKENS_NAMES[TEXT], [])
+                    ]
+                    return EntityEvaluationResult(
+                        entity_targets, entities_predicted_by_policies, tokens, text
+                    )
     return None
 
 
@@ -644,17 +653,17 @@ def _get_predicted_action_name(
     return predicted_action_name
 
 
-def _run_action_prediction(
+async def _run_action_prediction(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
 ) -> Tuple[Text, PolicyPrediction, Optional[EntityEvaluationResult]]:
-    action, prediction = processor.predict_next_action(partial_tracker)
+    action, prediction = processor.predict_next_with_tracker_if_should(partial_tracker)
     predicted_action = _get_predicted_action_name(
         action, partial_tracker, expected_action
     )
 
-    policy_entity_result = _get_e2e_entity_evaluation_result(
+    policy_entity_result = await _get_e2e_entity_evaluation_result(
         processor, partial_tracker, prediction
     )
     if (
@@ -668,7 +677,9 @@ def _run_action_prediction(
         # but it might be Ok if form action is rejected.
         emulate_loop_rejection(partial_tracker)
         # try again
-        action, prediction = processor.predict_next_action(partial_tracker)
+        action, prediction = processor.predict_next_with_tracker_if_should(
+            partial_tracker
+        )
         # Even if the prediction is also wrong, we don't have to undo the emulation
         # of the action rejection as we know that the user explicitly specified
         # that something else than the form was supposed to run.
@@ -679,7 +690,7 @@ def _run_action_prediction(
     return predicted_action, prediction, policy_entity_result
 
 
-def _collect_action_executed_predictions(
+async def _collect_action_executed_predictions(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     event: ActionExecuted,
@@ -696,9 +707,11 @@ def _collect_action_executed_predictions(
     prev_action_unlikely_intent = False
 
     try:
-        predicted_action, prediction, policy_entity_result = _run_action_prediction(
-            processor, partial_tracker, expected_action
-        )
+        (
+            predicted_action,
+            prediction,
+            policy_entity_result,
+        ) = await _run_action_prediction(processor, partial_tracker, expected_action)
     except ActionLimitReached:
         prediction = PolicyPrediction([], policy_name=None)
         predicted_action = "circuit breaker tripped"
@@ -719,7 +732,11 @@ def _collect_action_executed_predictions(
         prev_action_unlikely_intent = True
 
         try:
-            predicted_action, prediction, policy_entity_result = _run_action_prediction(
+            (
+                predicted_action,
+                prediction,
+                policy_entity_result,
+            ) = await _run_action_prediction(
                 processor, partial_tracker, expected_action
             )
         except ActionLimitReached:
@@ -730,7 +747,7 @@ def _collect_action_executed_predictions(
         action_predictions=[predicted_action], action_targets=[expected_action]
     )
 
-    if action_executed_eval_store.has_prediction_target_mismatch():
+    if action_executed_eval_store.check_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
                 expected_action_name,
@@ -799,7 +816,7 @@ async def _predict_tracker_actions(
     List[EntityEvaluationResult],
 ]:
 
-    processor = agent.create_processor()
+    processor = agent.processor
     tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
@@ -819,7 +836,7 @@ async def _predict_tracker_actions(
                 action_executed_result,
                 prediction,
                 entity_result,
-            ) = _collect_action_executed_predictions(
+            ) = await _collect_action_executed_predictions(
                 processor, partial_tracker, event, fail_on_prediction_errors,
             )
             if entity_result:
@@ -857,15 +874,14 @@ async def _predict_tracker_actions(
 
 
 def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
-    """Given a list of action items, returns the fraction of actions
-
-    that were predicted using one of the Memoization policies."""
-    from rasa.core.policies.ensemble import SimplePolicyEnsemble
+    """Given a list of actions, returns the fraction predicted by non ML policies."""
+    import rasa.core.policies.ensemble
 
     in_training_data = [
         a["action"]
         for a in action_list
-        if a["policy"] and not SimplePolicyEnsemble.is_not_in_training_data(a["policy"])
+        if a["policy"]
+        and not rasa.core.policies.ensemble.is_not_in_training_data(a["policy"])
     ]
 
     return len(in_training_data) / len(action_list) if action_list else 0
@@ -947,7 +963,7 @@ async def _collect_story_predictions(
 
         action_list.extend(tracker_actions)
 
-        if tracker_results.has_prediction_target_mismatch():
+        if tracker_results.check_prediction_target_mismatch():
             # there is at least one wrong prediction
             failed_stories.append(predicted_tracker)
             correct_dialogues.append(0)
