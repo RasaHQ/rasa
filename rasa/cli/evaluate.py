@@ -100,7 +100,7 @@ def _run_markers(
     seed: Optional[int],
     count: Optional[int],
     endpoint_config: Text,
-    domain_path: Text,
+    domain_path: Optional[Text],
     strategy: Text,
     config: Text,
     output_filename: Text,
@@ -133,10 +133,10 @@ def _run_markers(
             "A file with the stats filename already exists"
         )
 
-    domain = Domain.load(domain_path)
+    domain = Domain.load(domain_path) if domain_path else None
     markers = Marker.from_path(config)
 
-    if not markers.validate_against_domain(domain):
+    if domain and not markers.validate_against_domain(domain):
         rasa.shared.utils.cli.print_error_and_exit(
             "Validation errors were found in the markers definition. "
             "Please see errors listed above and fix before running again."
