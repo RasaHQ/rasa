@@ -24,7 +24,7 @@ stories:
 - story: goodbye
   steps:
   - checkpoint: process_name
-    slot_was_set:
+  - slot_was_set:
     - name: "Josh"
   - action: utter_goodbye
   - action: action_restart
@@ -32,7 +32,7 @@ stories:
 - story: utter default
   steps:
   - checkpoint: process_name
-    slot_was_set:
+  - slot_was_set:
     - name: null
   - action: utter_default
   - checkpoint: get_name
