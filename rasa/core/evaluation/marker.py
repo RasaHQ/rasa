@@ -230,7 +230,7 @@ class SlotSetMarker(ConditionMarker):
         """Checks that this marker (and its children) refer to entries in the domain.
 
         Args:
-            domain: The domain to check against
+            domain: The domain to check against.
         """
         valid = any(self.text == slot.name for slot in domain.slots)
 
