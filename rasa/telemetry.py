@@ -94,6 +94,9 @@ TELEMETRY_RASA_X_LOCAL_STARTED_EVENT = "Rasa X Local Started"
 TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
+TELEMETRY_MARKERS_EVALUATION_TRIGGERED_EVENT = "Markers Evaluation Triggered"
+TELEMETRY_MARKERS_EXTRACTED_EVENT = "Markers Extracted"
+TELEMETRY_MARKERS_STATS_COMPUTED_EVENT = "Markers Stats Computed"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -1003,5 +1006,35 @@ def track_nlu_model_test(test_data: "TrainingData") -> None:
             "num_lookup_tables": len(test_data.lookup_tables),
             "num_synonyms": len(test_data.entity_synonyms),
             "num_regexes": len(test_data.regex_features),
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_evaluation_triggered() -> None:
+    _track(
+        TELEMETRY_MARKERS_EVALUATION_TRIGGERED_EVENT,
+        {
+
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_extracted(count: int) -> None:
+    _track(
+        TELEMETRY_MARKERS_EXTRACTED_EVENT,
+        {
+            "count": count
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_stats_computed(count: int) -> None:
+    _track(
+        TELEMETRY_MARKERS_STATS_COMPUTED_EVENT,
+        {
+            "count": count
         },
     )

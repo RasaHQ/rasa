@@ -2,6 +2,7 @@ import argparse
 from typing import List, Text, Optional
 from pathlib import Path
 
+from rasa import telemetry
 from rasa.core.utils import AvailableEndpoints
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
@@ -131,7 +132,9 @@ def _run_markers(
             computed per session will be stored in
             '<path-to-stats-folder>/statistics-per-session.csv'.
     """
-    domain = Domain.load(domain_path) if domain_path else None
+    telemetry.track_markers_evaluation_triggered()
+
+	domain = Domain.load(domain_path) if domain_path else None
     markers = Marker.from_path(config)
     if domain and not markers.validate_against_domain(domain):
         rasa.shared.utils.cli.print_error_and_exit(
