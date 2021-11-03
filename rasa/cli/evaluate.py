@@ -152,7 +152,9 @@ def _run_markers(
     num_markers = len(markers) - 1
     max_depth = markers.depth() - 1
     # Find maximum branching of marker
-    branching_factor = max(len(marker) - 1 for marker in markers)
+    branching_factor = max(
+        len(sub_marker) - 1 for marker in markers.sub_markers for sub_marker in marker
+    )
 
     telemetry.track_markers_parsed_count(num_markers, max_depth, branching_factor)
 
