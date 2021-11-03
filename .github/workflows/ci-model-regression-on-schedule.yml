@@ -61,7 +61,7 @@ jobs:
         run: |-
           # Read TF version from poetry.lock file
           pip install toml
-          TF_VERSION=$(scripts/read_tenforflow_version.sh)
+          TF_VERSION=$(scripts/read_tensorflow_version.sh)
           echo "TensorFlow version: $TF_VERSION"
           echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
 
