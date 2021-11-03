@@ -150,7 +150,7 @@ def _run_markers(
     # Calculate telemetry
     # Subtract one to remove the virtual OR over all markers
     num_markers = len(markers) - 1
-    max_depth = markers.depth() - 1
+    max_depth = markers.max_depth() - 1
     # Find maximum branching of marker
     branching_factor = max(
         len(sub_marker) - 1 for marker in markers.sub_markers for sub_marker in marker

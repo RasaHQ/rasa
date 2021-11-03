@@ -425,7 +425,7 @@
       ]
     },
     "Markers Extraction Initiated": {
-      "description": "Triggered when markers extraction has been initiated.",
+      "description": "Triggered when marker extraction has been initiated.",
       "type": "object",
       "section": "Markers Extraction",
       "properties": {
@@ -494,8 +494,8 @@
         "branching_factor"
       ]
     },
-    "Markers Stats Computed": {
-      "description": "Triggered when marker stats has been computed.",
+    "Markers Statistics Computed": {
+      "description": "Triggered when marker statistics have been computed.",
       "type": "object",
       "section": "Markers Extraction",
       "properties": {
