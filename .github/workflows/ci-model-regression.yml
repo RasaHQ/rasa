@@ -290,7 +290,7 @@ jobs:
 
         run: |-
           echo "1"
-          poetry run ddtrace-run-run rasa --version
+          poetry run ddtrace-run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           cd ${{ github.workspace }}
