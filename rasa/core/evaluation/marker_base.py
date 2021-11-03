@@ -407,7 +407,7 @@ class Marker(ABC):
         that the names of the markers defined in these files are unique across all
         loaded files.
 
-        Note that all loaded markers will be combined into one marker via one
+        Note that all loaded markers will be combined into one marker via onetet
         artificial OR-operator. When evaluating the resulting marker, then the
         artificial OR-operator will be ignored and results will be reported for
         every sub-marker.
@@ -448,12 +448,8 @@ class Marker(ABC):
                 loaded_markers.append(marker)
 
         # combine the markers
-        if len(loaded_markers) > 1:
-            marker = OrMarker(markers=loaded_markers)
-            marker.name = Marker.ANY_MARKER  # cannot be set via name parameter
-        else:
-            marker = loaded_markers[0]
-
+        marker = OrMarker(markers=loaded_markers)
+        marker.name = Marker.ANY_MARKER  # cannot be set via name parameter
         return marker
 
     @staticmethod
