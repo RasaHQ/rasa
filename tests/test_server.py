@@ -194,7 +194,7 @@ async def test_status_secured(rasa_secured_app: httpx.AsyncClient):
 
 
 async def test_status_not_ready_agent(rasa_app: httpx.AsyncClient):
-    rasa_app.agent = None
+    rasa_app.sanic_app.agent = None
     _, response = await rasa_app.get("/status")
     assert response.status == HTTPStatus.CONFLICT
 
@@ -895,7 +895,7 @@ async def test_evaluate_intent_with_model_server(
         agent_with_model_server = await load_agent(
             model_server=EndpointConfig(production_model_server_url)
         )
-        rasa_app.app.agent = agent_with_model_server
+        rasa_app.sanic_app.agent = agent_with_model_server
 
         _, response = await rasa_app.post(
             f"/model/test/intents?model={test_model_server_url}",
@@ -910,7 +910,7 @@ async def test_evaluate_intent_with_model_server(
         "response_selection_evaluation",
     }
 
-    production_model_server = rasa_app.app.agent.model_server
+    production_model_server = rasa_app.sanic_app.agent.model_server
     # Assert that the model server URL for the test didn't override the production
     # model server URL
     assert production_model_server.url == production_model_server_url
@@ -1160,7 +1160,7 @@ async def test_replace_events_empty_request_body(rasa_app: httpx.AsyncClient):
 
 @freeze_time("2018-01-01")
 async def test_requesting_non_existent_tracker(rasa_app: httpx.AsyncClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     _, response = await rasa_app.get("/conversations/madeupid/tracker")
     content = response.json
     assert response.status == HTTPStatus.OK
@@ -1209,7 +1209,7 @@ async def test_requesting_non_existent_tracker(rasa_app: httpx.AsyncClient):
 
 @pytest.mark.parametrize("event", test_events)
 async def test_pushing_event(rasa_app: httpx.AsyncClient, event: Event):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1246,7 +1246,7 @@ async def test_pushing_event(rasa_app: httpx.AsyncClient, event: Event):
 
 
 async def test_pushing_event_with_existing_model_id(rasa_app: httpx.AsyncClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1273,7 +1273,7 @@ async def test_pushing_event_with_existing_model_id(rasa_app: httpx.AsyncClient)
 
 
 async def test_push_multiple_events(rasa_app: httpx.AsyncClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     conversation_id = str(uuid.uuid1())
     conversation = f"/conversations/{conversation_id}"
 
@@ -1335,7 +1335,7 @@ async def test_pushing_event_while_executing_side_effects(
 
 
 async def test_post_conversation_id_with_slash(rasa_app: httpx.AsyncClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     conversation_id = str(uuid.uuid1())
     id_len = len(conversation_id) // 2
     conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
@@ -1916,8 +1916,8 @@ async def test_get_story(
 
     tracker_store.save(tracker)
 
-    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
-    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store)
 
     url = f"/conversations/{conversation_id}/story?"
 
@@ -1958,7 +1958,7 @@ async def test_get_story_does_not_update_conversation_session(
         session_expiration_time=1 / 60, carry_over_slots=True
     )
 
-    monkeypatch.setattr(rasa_app.app.agent.processor, "domain", domain)
+    monkeypatch.setattr(rasa_app.sanic_app.agent.processor, "domain", domain)
 
     # conversation contains one session that has expired
     now = time.time()
@@ -1972,14 +1972,14 @@ async def test_get_story_does_not_update_conversation_session(
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
     # the conversation session has expired
-    assert rasa_app.app.agent.processor._has_session_expired(tracker)
+    assert rasa_app.sanic_app.agent.processor._has_session_expired(tracker)
 
     tracker_store = InMemoryTrackerStore(domain)
 
     tracker_store.save(tracker)
 
-    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
-    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store)
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
 
@@ -2061,7 +2061,7 @@ async def test_update_conversation_with_events(
     expected_events: List[Event],
 ):
     conversation_id = "some-conversation-ID"
-    agent = rasa_app.app.agent
+    agent = rasa_app.sanic_app.agent
     tracker_store = agent.tracker_store
     domain = agent.domain
     model_id = agent.model_id
