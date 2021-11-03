@@ -493,7 +493,7 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
     markers = OrMarker(
         markers=[SlotSetMarker("2", name="marker1"), SlotSetMarker("7", name="marker2")]
     )
-    markers.export_markers(tracker_loader.load(), results_path, stats_file=None)
+    markers.evaluate_trackers(tracker_loader.load(), results_path)
 
     with open(results_path, "r") as results:
         result_reader = csv.DictReader(results)
