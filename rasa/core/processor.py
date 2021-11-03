@@ -131,7 +131,7 @@ class MessageProcessor:
             )
             return None
 
-        tracker = await self._run_action_extract_slots(message, tracker)
+        tracker = await self._run_action_extract_slots(message.output_channel, tracker)
 
         await self._run_prediction_loop(message.output_channel, tracker)
 
@@ -143,13 +143,13 @@ class MessageProcessor:
         return None
 
     async def _run_action_extract_slots(
-        self, message: UserMessage, tracker: DialogueStateTracker,
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker,
     ) -> DialogueStateTracker:
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
         )
         extraction_events = await action_extract_slots.run(
-            message.output_channel, self.nlg, tracker, self.domain
+            output_channel, self.nlg, tracker, self.domain
         )
         tracker.update_with_events(extraction_events, self.domain)
 
@@ -546,6 +546,9 @@ class MessageProcessor:
             UserUttered.create_external(intent_name, entity_list, input_channel),
             self.domain,
         )
+
+        tracker = await self._run_action_extract_slots(output_channel, tracker)
+
         await self._run_prediction_loop(output_channel, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
