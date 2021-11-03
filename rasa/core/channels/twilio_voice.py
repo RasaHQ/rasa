@@ -2,7 +2,7 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
-from typing import Text, Callable, Awaitable, List, Any, Dict, Optional
+from typing import Text, Callable, Awaitable, List, Any, Dict, Optional, Union
 
 import rasa.utils.io
 import rasa.shared.utils.io
@@ -224,7 +224,7 @@ class TwilioVoiceInput(InputChannel):
             return response.json({"status": "ok"})
 
         @twilio_voice_webhook.route("/webhook", methods=["POST"])
-        async def receive(request: Request) -> Text:
+        async def receive(request: Request) -> Union[Text, HTTPResponse]:
             sender_id = request.form.get("From")
             text = request.form.get("SpeechResult")
             input_channel = self.name()

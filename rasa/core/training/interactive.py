@@ -7,6 +7,7 @@ from multiprocessing import Process
 from typing import (
     Any,
     Callable,
+    Coroutine,
     Deque,
     Dict,
     List,
@@ -1623,12 +1624,14 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
-    def visualisation_html(request: Request) -> HTTPResponse:
+    def visualisation_html(request: Request) -> Coroutine[Any, Any, HTTPResponse]:
         return response.file(visualization.visualization_html_path())
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request: Request,) -> HTTPResponse:
+    def visualisation_png(
+        request: Request,
+    ) -> Union[HTTPResponse, Coroutine[Any, Any, HTTPResponse]]:
         try:
             headers = {"Cache-Control": "no-cache"}
             return response.file(os.path.abspath(image_path), headers=headers)
