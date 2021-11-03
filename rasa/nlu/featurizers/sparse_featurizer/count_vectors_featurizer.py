@@ -605,19 +605,19 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
             return [], []
 
     def train(
-        self, training_data: TrainingData, spacy_nlp: Optional[SpacyModel] = None,
+        self, training_data: TrainingData, model: Optional[SpacyModel] = None,
     ) -> Resource:
         """Trains the featurizer.
 
         Take parameters from config and
         construct a new count vectorizer using the sklearn framework.
         """
-        if spacy_nlp is not None:
+        if model is not None:
             # create spacy lemma_ for OOV_words
             self.OOV_words = [
                 t.lemma_ if self.use_lemma else t.text
                 for w in self.OOV_words
-                for t in spacy_nlp.model(w)
+                for t in model.model(w)
             ]
 
         # process sentences and collect data for all attributes

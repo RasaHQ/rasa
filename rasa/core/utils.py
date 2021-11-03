@@ -98,16 +98,17 @@ def list_routes(app: Sanic) -> Dict[Text, Text]:
                 return name
         return None
 
-    for endpoint, route in app.router.routes_all.items():
+    for route in app.router.routes:
+        endpoint = route.parts
         if endpoint[:-1] in app.router.routes_all and endpoint[-1] == "/":
             continue
 
         options = {}
-        for arg in route.parameters:
+        for arg in route._params:
             options[arg] = f"[{arg}]"
 
         if not isinstance(route.handler, CompositionView):
-            handlers = [(list(route.methods)[0], route.name)]
+            handlers = [(list(route.methods)[0], route.name.split(".")[-1])]
         else:
             handlers = [
                 (method, find_route(v.__name__, endpoint) or v.__name__)
@@ -115,7 +116,7 @@ def list_routes(app: Sanic) -> Dict[Text, Text]:
             ]
 
         for method, name in handlers:
-            line = unquote(f"{endpoint:50s} {method:30s} {name}")
+            line = unquote(f"{endpoint[0]:50s} {method:30s} {name}")
             output[name] = line
 
     url_table = "\n".join(output[url] for url in sorted(output))

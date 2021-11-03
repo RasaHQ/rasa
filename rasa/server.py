@@ -75,9 +75,11 @@ if TYPE_CHECKING:
     from rasa.core.processor import MessageProcessor
     from mypy_extensions import Arg, VarArg, KwArg
 
+    SanicResponse = Union[
+        response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
+    ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
-        response.BaseHTTPResponse,
+        [Arg(Request, "request"), VarArg(), KwArg()], SanicResponse,  # noqa: F821
     ]
 
 
@@ -164,7 +166,7 @@ def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
 
     def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
-        def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
+        def decorated(request: Request, *args: Any, **kwargs: Any) -> "SanicResponse":
             conversation_id = kwargs["conversation_id"]
             if request.app.agent.tracker_store.exists(conversation_id):
                 return f(request, *args, **kwargs)
@@ -202,7 +204,7 @@ def requires_auth(
         ) -> Optional[bool]:
             # This is a coroutine since `sanic-jwt==1.6`
             jwt_data = await rasa.utils.common.call_potential_coroutine(
-                request.app.auth.extract_payload(request)
+                request.app.ctx.auth.extract_payload(request)
             )
 
             user = jwt_data.get("user", {})
@@ -221,27 +223,23 @@ def requires_auth(
         @wraps(f)
         async def decorated(
             request: Request, *args: Any, **kwargs: Any
-        ) -> response.BaseHTTPResponse:
+        ) -> response.HTTPResponse:
 
             provided = request.args.get("token", None)
 
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 result = f(request, *args, **kwargs)
-                if isawaitable(result):
-                    result = await result
-                return result
+                return await result if isawaitable(result) else result
             elif app.config.get(
                 "USE_JWT"
             ) and await rasa.utils.common.call_potential_coroutine(
                 # This is a coroutine since `sanic-jwt==1.6`
-                request.app.auth.is_authenticated(request)
+                request.app.ctx.auth.is_authenticated(request)
             ):
                 if await sufficient_scope(request, *args, **kwargs):
                     result = f(request, *args, **kwargs)
-                    if isawaitable(result):
-                        result = await result
-                    return result
+                    return await result if isawaitable(result) else result
                 raise ErrorResponse(
                     HTTPStatus.FORBIDDEN,
                     "NotAuthorized",
@@ -253,9 +251,7 @@ def requires_auth(
             elif token is None and app.config.get("USE_JWT") is None:
                 # authentication is disabled
                 result = f(request, *args, **kwargs)
-                if isawaitable(result):
-                    result = await result
-                return result
+                return await result if isawaitable(result) else result
             raise ErrorResponse(
                 HTTPStatus.UNAUTHORIZED,
                 "NotAuthenticated",
@@ -548,7 +544,7 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
         async def wrapped() -> None:
             try:
                 result: HTTPResponse = await f(request, *args, **kwargs)
-                payload = dict(
+                payload: Dict[Text, Any] = dict(
                     data=result.body, headers={"Content-Type": result.content_type}
                 )
                 logger.debug(
@@ -697,7 +693,7 @@ def create_app(
             }
         )
 
-    @app.get("/conversations/<conversation_id:path>/tracker")
+    @app.get("/conversations/<conversation_id>/tracker")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -723,7 +719,7 @@ def create_app(
                 f"An unexpected error occurred. Error: {e}",
             )
 
-    @app.post("/conversations/<conversation_id:path>/tracker/events")
+    @app.post("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def append_events(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -784,7 +780,7 @@ def create_app(
 
         return events
 
-    @app.put("/conversations/<conversation_id:path>/tracker/events")
+    @app.put("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def replace_events(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -811,7 +807,7 @@ def create_app(
                 f"An unexpected error occurred. Error: {e}",
             )
 
-    @app.get("/conversations/<conversation_id:path>/story")
+    @app.get("/conversations/<conversation_id>/story")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
@@ -838,7 +834,7 @@ def create_app(
                 f"An unexpected error occurred. Error: {e}",
             )
 
-    @app.post("/conversations/<conversation_id:path>/execute")
+    @app.post("/conversations/<conversation_id>/execute")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
@@ -893,7 +889,7 @@ def create_app(
 
         return response.json(response_body)
 
-    @app.post("/conversations/<conversation_id:path>/trigger_intent")
+    @app.post("/conversations/<conversation_id>/trigger_intent")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def trigger_intent(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -951,7 +947,7 @@ def create_app(
 
         return response.json(response_body)
 
-    @app.post("/conversations/<conversation_id:path>/predict")
+    @app.post("/conversations/<conversation_id>/predict")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
@@ -971,7 +967,7 @@ def create_app(
                 f"An unexpected error occurred. Error: {e}",
             )
 
-    @app.post("/conversations/<conversation_id:path>/messages")
+    @app.post("/conversations/<conversation_id>/messages")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def add_message(request: Request, conversation_id: Text) -> HTTPResponse:
