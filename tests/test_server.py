@@ -160,7 +160,7 @@ async def test_root_secured(rasa_non_trained_secured_app: httpx.AsyncClient):
 
 async def test_version(rasa_non_trained_app: httpx.AsyncClient):
     _, response = await rasa_non_trained_app.get("/version")
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert content.get("version") == rasa.__version__
     assert (
@@ -171,9 +171,9 @@ async def test_version(rasa_non_trained_app: httpx.AsyncClient):
 
 async def test_status(rasa_app: httpx.AsyncClient, trained_rasa_model: Text):
     _, response = await rasa_app.get("/status")
-    model_file = response.json()["model_file"]
+    model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "fingerprint" in response.json
     assert model_file == Path(trained_rasa_model).name
 
 
@@ -181,10 +181,10 @@ async def test_status_nlu_only(
     rasa_app_nlu: httpx.AsyncClient, trained_nlu_model: Text
 ):
     _, response = await rasa_app_nlu.get("/status")
-    model_file = response.json()["model_file"]
+    model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
-    assert "model_file" in response.json()
+    assert "fingerprint" in response.json
+    assert "model_file" in response.json
     assert model_file == Path(trained_nlu_model).name
 
 
@@ -322,7 +322,7 @@ def test_train_status_is_not_blocked_by_training(
     # Check if the number of currently running trainings was incremented
     response = requests.get("http://localhost:5005/status")
     assert response.status_code == HTTPStatus.OK
-    assert response.json()["num_active_training_jobs"] == 1
+    assert response.json["num_active_training_jobs"] == 1
 
     # Tell the blocking training function to stop
     shared_statuses["stop_training"] = True
@@ -338,7 +338,7 @@ def test_train_status_is_not_blocked_by_training(
     # Check if the number of currently running trainings was decremented
     response = requests.get("http://localhost:5005/status")
     assert response.status_code == HTTPStatus.OK
-    assert response.json()["num_active_training_jobs"] == 0
+    assert response.json["num_active_training_jobs"] == 0
 
 
 @pytest.mark.parametrize(
@@ -377,7 +377,7 @@ async def test_parse(rasa_app: httpx.AsyncClient, response_test: ResponseTest):
     _, response = await rasa_app.post(
         response_test.endpoint, json=response_test.payload
     )
-    rjs = response.json()
+    rjs = response.json
     assert response.status == HTTPStatus.OK
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
     assert rjs["entities"] == response_test.expected_response["entities"]
@@ -430,7 +430,7 @@ async def test_parse_without_nlu_model(rasa_app_core: httpx.AsyncClient):
     _, response = await rasa_app_core.post("/model/parse", json={"text": "hello"})
     assert response.status == HTTPStatus.OK
 
-    rjs = response.json()
+    rjs = response.json
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
@@ -725,7 +725,7 @@ async def xtest_evaluate_stories(rasa_app: httpx.AsyncClient, stories_path: Text
 
     assert response.status == HTTPStatus.OK
 
-    js = response.json()
+    js = response.json
     assert set(js.keys()) == {
         "report",
         "precision",
@@ -766,7 +766,7 @@ async def test_evaluate_stories_end_to_end(
     )
 
     assert response.status == HTTPStatus.OK
-    js = response.json()
+    js = response.json
     assert set(js.keys()) == {
         "report",
         "precision",
@@ -796,7 +796,7 @@ async def test_evaluate_intent(rasa_app: httpx.AsyncClient, nlu_data_path: Text)
     )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
@@ -833,7 +833,7 @@ async def test_evaluate_intent_on_just_nlu_model(
     )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
@@ -844,7 +844,7 @@ async def test_evaluate_intent_with_model_param(
     rasa_app: httpx.AsyncClient, trained_nlu_model: Text, nlu_data_path: Text
 ):
     _, response = await rasa_app.get("/status")
-    previous_model_file = response.json()["model_file"]
+    previous_model_file = response.json["model_file"]
 
     nlu_data = rasa.shared.utils.io.read_file(nlu_data_path)
 
@@ -855,14 +855,14 @@ async def test_evaluate_intent_with_model_param(
     )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
     }
 
     _, response = await rasa_app.get("/status")
-    assert previous_model_file == response.json()["model_file"]
+    assert previous_model_file == response.json["model_file"]
 
 
 async def test_evaluate_intent_with_model_server(
@@ -904,7 +904,7 @@ async def test_evaluate_intent_with_model_server(
         )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
@@ -935,7 +935,7 @@ async def test_cross_validation(
     )
 
     assert response.status == HTTPStatus.OK
-    response_body = response.json()
+    response_body = response.json
     for required_key in {
         "intent_evaluation",
         "entity_evaluation",
@@ -1106,7 +1106,7 @@ async def test_predict(rasa_app: httpx.AsyncClient):
         json=data,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert "scores" in content
     assert "tracker" in content
@@ -1162,7 +1162,7 @@ async def test_replace_events_empty_request_body(rasa_app: httpx.AsyncClient):
 async def test_requesting_non_existent_tracker(rasa_app: httpx.AsyncClient):
     model_id = rasa_app.app.agent.model_id
     _, response = await rasa_app.get("/conversations/madeupid/tracker")
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert content["paused"] is False
     assert content["slots"] == {
@@ -1226,11 +1226,11 @@ async def test_pushing_event(rasa_app: httpx.AsyncClient, event: Event):
         json=serialized_event,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    assert response.json() is not None
+    assert response.json is not None
     assert response.status == HTTPStatus.OK
 
     _, tracker_response = await rasa_app.get(f"/conversations/{sender_id}/tracker")
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
 
     assert len(tracker.get("events")) == 4
@@ -1263,7 +1263,7 @@ async def test_pushing_event_with_existing_model_id(rasa_app: httpx.AsyncClient)
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
     _, tracker_response = await rasa_app.get(f"/conversations/{sender_id}/tracker")
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
 
     deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
 
@@ -1283,13 +1283,13 @@ async def test_push_multiple_events(rasa_app: httpx.AsyncClient):
         json=events,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    assert response.json() is not None
+    assert response.json is not None
     assert response.status == HTTPStatus.OK
 
     _, tracker_response = await rasa_app.get(
         f"/conversations/{conversation_id}/tracker"
     )
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
 
     # there is an initial session start sequence at the beginning
@@ -1347,13 +1347,13 @@ async def test_post_conversation_id_with_slash(rasa_app: httpx.AsyncClient):
         json=events,
         headers={"Content-Type": "application/json"},
     )
-    assert response.json() is not None
+    assert response.json is not None
     assert response.status == HTTPStatus.OK
 
     _, tracker_response = await rasa_app.get(
         f"/conversations/{conversation_id}/tracker"
     )
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
 
     # there is a session start sequence at the start
@@ -1369,13 +1369,13 @@ async def test_put_tracker(rasa_app: httpx.AsyncClient):
         json=data,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert len(content["events"]) == len(test_events)
     assert content["sender_id"] == "pushtracker"
 
     _, tracker_response = await rasa_app.get("/conversations/pushtracker/tracker")
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
     evts = tracker.get("events")
     assert events.deserialise_events(evts) == test_events
@@ -1385,14 +1385,14 @@ async def test_predict_without_conversation_id(rasa_app: httpx.AsyncClient):
     _, response = await rasa_app.post("/conversations/non_existent_id/predict")
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json()["message"] == "Conversation ID not found."
+    assert response.json["message"] == "Conversation ID not found."
 
 
 async def test_sorted_predict(rasa_app: httpx.AsyncClient):
     await _create_tracker_for_sender(rasa_app, "sortedpredict")
 
     _, response = await rasa_app.post("/conversations/sortedpredict/predict")
-    scores = response.json()["scores"]
+    scores = response.json["scores"]
     sorted_scores = sorted(scores, key=lambda k: (-k["score"], k["action"]))
     assert scores == sorted_scores
 
@@ -1477,7 +1477,7 @@ def test_list_routes(empty_agent: Agent):
 async def test_unload_model_error(rasa_app: httpx.AsyncClient):
     _, response = await rasa_app.get("/status")
     assert response.status == HTTPStatus.OK
-    assert "model_file" in response.json() and response.json()["model_file"] is not None
+    assert "model_file" in response.json and response.json["model_file"] is not None
 
     _, response = await rasa_app.delete("/model")
     assert response.status == HTTPStatus.NO_CONTENT
@@ -1488,7 +1488,7 @@ async def test_get_domain(rasa_app: httpx.AsyncClient):
         "/domain", headers={"accept": rasa.server.JSON_CONTENT_TYPE}
     )
 
-    content = response.json()
+    content = response.json
 
     assert response.status == HTTPStatus.OK
     assert "config" in content
@@ -1509,9 +1509,9 @@ async def test_load_model(rasa_app: httpx.AsyncClient, trained_core_model: Text)
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "fingerprint" in response.json
 
-    old_fingerprint = response.json()["fingerprint"]
+    old_fingerprint = response.json["fingerprint"]
 
     data = {"model_file": trained_core_model}
     _, response = await rasa_app.put("/model", json=data)
@@ -1521,9 +1521,9 @@ async def test_load_model(rasa_app: httpx.AsyncClient, trained_core_model: Text)
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "fingerprint" in response.json
 
-    assert old_fingerprint != response.json()["fingerprint"]
+    assert old_fingerprint != response.json["fingerprint"]
 
 
 async def test_load_model_from_model_server(
@@ -1532,9 +1532,9 @@ async def test_load_model_from_model_server(
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "fingerprint" in response.json
 
-    old_fingerprint = response.json()["fingerprint"]
+    old_fingerprint = response.json["fingerprint"]
 
     endpoint = EndpointConfig("https://example.com/model/trained_core_model")
     with open(trained_core_model, "rb") as f:
@@ -1559,9 +1559,9 @@ async def test_load_model_from_model_server(
             _, response = await rasa_app.get("/status")
 
             assert response.status == HTTPStatus.OK
-            assert "fingerprint" in response.json()
+            assert "fingerprint" in response.json
 
-            assert old_fingerprint != response.json()["fingerprint"]
+            assert old_fingerprint != response.json["fingerprint"]
 
 
 async def test_load_model_invalid_request_body(
@@ -1589,7 +1589,7 @@ async def test_execute(rasa_app: httpx.AsyncClient):
 
     assert response.status == HTTPStatus.OK
 
-    parsed_content = response.json()
+    parsed_content = response.json
     assert parsed_content["tracker"]
     assert parsed_content["messages"]
 
@@ -1601,7 +1601,7 @@ async def test_execute_without_conversation_id(rasa_app: httpx.AsyncClient):
     )
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json()["message"] == "Conversation ID not found."
+    assert response.json["message"] == "Conversation ID not found."
 
 
 async def test_execute_with_missing_action_name(rasa_app: httpx.AsyncClient):
@@ -1636,7 +1636,7 @@ async def test_trigger_intent(rasa_app: httpx.AsyncClient):
 
     assert response.status == HTTPStatus.OK
 
-    parsed_content = response.json()
+    parsed_content = response.json
     assert parsed_content["tracker"]
     assert parsed_content["messages"]
 
@@ -1651,7 +1651,7 @@ async def test_trigger_intent_with_entity(rasa_app: httpx.AsyncClient):
 
     assert response.status == HTTPStatus.OK
 
-    parsed_content = response.json()
+    parsed_content = response.json
     last_slot_set_event = [
         event
         for event in parsed_content["tracker"]["events"]
@@ -1944,7 +1944,7 @@ async def test_get_story_without_conversation_id(
     _, response = await rasa_app.get(url)
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json()["message"] == "Conversation ID not found."
+    assert response.json["message"] == "Conversation ID not found."
 
 
 async def test_get_story_does_not_update_conversation_session(
