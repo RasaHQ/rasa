@@ -78,8 +78,10 @@ continuing to follow the step-by-step guide to migrate your own custom graph com
 
 **Type Annotations**
 
+Until Rasa Open Source 3.0 [type annotations](https://docs.python.org/3/library/typing.html)
+were not required in custom policies or custom NLU components.
 It is now required to use
-[type annotations](https://docs.python.org/3/library/typing.html) in your custom NLU
+[type annotations](https://docs.python.org/3/library/typing.html) in custom NLU
 components and policies. Rasa Open Source uses these type annotations to validate that
 your graph components are compatible and correctly configured. As outlined in the custom
 [components guide](custom-graph-components) it is not allowed to use
@@ -185,8 +187,9 @@ featurizers itself.
 
 **Persisting a Trained Policy**
 
-Policies are responsible for persisting themselves. Previously the `persist` method
-was called from the outside. Use the provided `model_storage` and `resource`
+Policies used to be persisted by an outside call to the policy's `persist` method.
+With Rasa Open Source 3.0 policies are responsible for persisting themselves.
+Use the provided `model_storage` and `resource`
 (see [graph component persistence](custom-graph-components#model-persistence) for more details)
 to persist your graph component at the end of the training and then return the `resource`
 as result of your policy's `train` method.
@@ -598,8 +601,8 @@ from your model configuration file.
 
 **Persisting a Trained NLU Component**
 
-NLU components are responsible for persisting themselves.
-Previously the `persist` method was called from the outside.
+NLU components used to be persisted by an outside call to the NLU component's `persist` method.
+With Rasa Open Source 3.0 NLU components are responsible for persisting themselves.
 You should use the provided `model_storage` and `resource`
 (see [component persistence](custom-graph-components#model-persistence) for more details)
 to persist your NLU component at the end of the training and then return the `resource`
@@ -800,6 +803,7 @@ training data augmentation were done as part of the `train` method. In Rasa Open
 
 **Handling Lists of Messages During Inference in an NLU Component**
 
+NLU components used to receive a single `Message` object during inference.
 Starting with Rasa Open Source 3.0 all NLU components have to support a list of
 messages during inference. Unless your model supports batch predictions the easiest
 way to handle this is to loop over the messages. It is also required to return the
@@ -873,7 +877,9 @@ during the training.
 **Using a Model Provider With your NLU Component**
 
 If your NLU component requires a pretrained model such as a [Spacy](components#spacynlp) or
-[Mitie](components#mitienlp) language model, specify this with the `model_from`
+[Mitie](components#mitienlp) language model you have to specify the NLU component which
+provides this model in your model's pipeline before the NLU component which requires
+the model. In addition to this you now also need to specify the required model in the `model_from`
 parameter in the `register` decorator. The model will then be passed to your model's
 `train`, `process_training_data` and `process` methods:
 
