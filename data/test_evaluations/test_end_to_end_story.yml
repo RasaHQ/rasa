@@ -22,8 +22,6 @@ stories:
   - intent: greet
     user: |
       /greet{"name": "Max"}
-  - slot_was_set:
-      - name: "Max"
   - action: utter_greet
   - intent: default
     user: /default

@@ -1,14 +1,10 @@
 stories:
-- story: story without entities
+- story: story with or and entities
   steps:
-  - intent: greet
-  - action: utter_greet
-
-- story: story with entities
-  steps:
-  - intent: greet
-    entities:
-    - name: peter
-  - slot_was_set:
-    - name: peter
+  - or:
+    - intent: greet
+    - intent: greet
+      entities:
+      # slot with the same name was autofilled
+      - name: peter
   - action: utter_greet

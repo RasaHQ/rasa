@@ -267,10 +267,11 @@ class StoryStep:
     def explicit_events(
         self, domain: Domain, should_append_final_listen: bool = True
     ) -> List[Event]:
-        """Returns events contained in the story step.
+        """Returns events contained in the story step including implicit events.
 
         Not all events are always listed in the story dsl. This
-        includes listen actions. This functions makes these events explicit and
+        includes listen actions as well as implicitly
+        set slots. This functions makes these events explicit and
         returns them with the rest of the steps events.
         """
         events: List[Event] = []
@@ -278,7 +279,10 @@ class StoryStep:
         for e in self.events:
             if isinstance(e, UserUttered):
                 self._add_action_listen(events)
-            events.append(e)
+                events.append(e)
+                events.extend(domain.slots_for_entities(e.entities))
+            else:
+                events.append(e)
 
         if not self.end_checkpoints and should_append_final_listen:
             self._add_action_listen(events)

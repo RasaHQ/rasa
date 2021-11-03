@@ -3,7 +3,6 @@ stories:
   steps:
   - intent: greet
     entities:
-      - name
-  - slot_was_set:
-      - name
+    # slot with the same name was NOT autofilled
+    - name
   - action: utter_greet
