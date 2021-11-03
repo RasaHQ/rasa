@@ -3306,7 +3306,7 @@ transformers = ["transformers", "tokenizers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "ba915b95925cee29bdd075bc6c695236690f1db6866f4f0ff7f5aed441f79370"
+content-hash = "d321a8416f8ceb3b76888c28745f6e2af5ec11c3919897cb83de724797d79077"
 
 [metadata.files]
 absl-py = [

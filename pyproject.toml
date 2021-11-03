@@ -93,7 +93,7 @@ pytz = ">=2019.1,<2022.0"
 rasa-sdk = { git = "https://github.com/rasahq/rasa-sdk.git", branch = "main" }
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
-sanic = "^21.6.0"
+sanic = "^21.9.0"
 sanic-cors = "^1.0.0"
 sanic-jwt = "^1.6.0"
 cloudpickle = ">=1.2,<1.7"
