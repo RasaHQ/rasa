@@ -600,10 +600,7 @@ def run_in_thread(f: Callable[..., Coroutine]) -> Callable:
         # Use a sync wrapper for our `async` function as `run_in_executor` only supports
         # sync functions
         def run() -> HTTPResponse:
-            # we can replace it with asyncio.run(..) but it doesn't work in Python 3.9
-            # see https://github.com/virtool/virtool-workflow/issues/55#issuecomment-733164513
-            loop = asyncio.new_event_loop()
-            return loop.run_until_complete(f(request, *args, **kwargs))
+            return asyncio.run(f(request, *args, **kwargs))
 
         with concurrent.futures.ThreadPoolExecutor() as pool:
             return await request.app.loop.run_in_executor(pool, run)
