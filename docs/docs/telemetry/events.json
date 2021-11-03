@@ -3,7 +3,7 @@
     "Model Training",
     "Model Testing",
     "Model Serving",
-    "Markers Evaluation",
+    "Markers Extraction",
     "Data Handling",
     "Miscellaneous"
   ],
@@ -424,10 +424,10 @@
         "num_regexes"
       ]
     },
-    "Markers Evaluation Initiated": {
-      "description": "Triggered when markers evaluation has been initiated.",
+    "Markers Extraction Initiated": {
+      "description": "Triggered when markers extraction has been initiated.",
       "type": "object",
-      "section": "Markers Evaluation",
+      "section": "Markers Extraction",
       "properties": {
         "strategy": {
           "type": "string",
@@ -448,13 +448,16 @@
       },
       "additionalProperties": false,
       "required": [
+        "strategy",
+        "only_extract",
+        "seed",
         "count"
       ]
     },
     "Markers Extracted": {
-      "description": "Triggered when markers has been extracted.",
+      "description": "Triggered when markers have been extracted.",
       "type": "object",
-      "section": "Markers Evaluation",
+      "section": "Markers Extraction",
       "properties": {
         "trackers_count": {
           "type": "integer",
@@ -469,7 +472,7 @@
     "Markers Stats Computed": {
       "description": "Triggered when marker stats has been computed.",
       "type": "object",
-      "section": "Markers Evaluation",
+      "section": "Markers Extraction",
       "properties": {
         "trackers_count": {
           "type": "integer",
