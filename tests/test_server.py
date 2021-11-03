@@ -194,7 +194,7 @@ async def test_status_secured(rasa_secured_app: httpx.AsyncClient):
 
 
 async def test_status_not_ready_agent(rasa_app: httpx.AsyncClient):
-    rasa_app.app.agent = None
+    rasa_app.agent = None
     _, response = await rasa_app.get("/status")
     assert response.status == HTTPStatus.CONFLICT
 

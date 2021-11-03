@@ -3007,11 +3007,11 @@ telegram = ["requests"]
 
 [[package]]
 name = "transformers"
-version = "2.5.1"
+version = "2.8.0"
 description = "State-of-the-art Natural Language Processing for TensorFlow 2.0 and PyTorch"
 category = "main"
 optional = true
-python-versions = ">=3.5.0"
+python-versions = ">=3.6.0"
 
 [package.dependencies]
 boto3 = "*"
@@ -3297,16 +3297,16 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [extras]
-full = ["spacy", "transformers", "jieba"]
+full = ["spacy", "transformers", "tokenizers", "jieba"]
 gh-release-notes = ["github3.py"]
 jieba = ["jieba"]
 spacy = ["spacy"]
-transformers = ["transformers"]
+transformers = ["transformers", "tokenizers"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "9e087eaf2adfbcbb40dec79a725a45f9cdff4f335cbdb2b8d2ae64d3bc294438"
+content-hash = "d321a8416f8ceb3b76888c28745f6e2af5ec11c3919897cb83de724797d79077"
 
 [metadata.files]
 absl-py = [
@@ -5372,8 +5372,8 @@ tqdm = [
     {file = "tqdm-4.62.3.tar.gz", hash = "sha256:d359de7217506c9851b7869f3708d8ee53ed70a1b8edbba4dbcb47442592920d"},
 ]
 transformers = [
-    {file = "transformers-2.5.1-py3-none-any.whl", hash = "sha256:d08269bc7c088b47e3586002c4b10fa55d42330c9777b77ba60c3692efd5f283"},
-    {file = "transformers-2.5.1.tar.gz", hash = "sha256:c4b775ebffce65e1d8f2e5db74c5efdc4426ebecdaee1516c90573aafa1ceaf4"},
+    {file = "transformers-2.8.0-py3-none-any.whl", hash = "sha256:2b64cfe0033a47ba664837758cd9750196666ea1306e5c40ad5617353c3dc2fc"},
+    {file = "transformers-2.8.0.tar.gz", hash = "sha256:b9f29cdfd39c28f29e0806c321270dea337d6174a7aa60daf9625bf83dbb12ee"},
 ]
 twilio = [
     {file = "twilio-6.50.1.tar.gz", hash = "sha256:dd8371c9b4ea422d6de7526b63b587da82e8488f2b3f6b1258d2cad6e4006a65"},
