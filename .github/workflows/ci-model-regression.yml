@@ -431,6 +431,12 @@ jobs:
     if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
+      - name: Run DataDog Agent
+        # if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+        run: |
+          docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
+          docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
+          docker port dd_agent
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -557,14 +563,22 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
+      - name: Install ddtrace
+        if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+        run: poetry run pip install -U ddtrace
+
       - name: Run test
         id: run_test
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
+          DD_ENV: regression-tests # ${{ matrix.test }}
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace
+
         run: |-
-          poetry run rasa --version
+          poetry run rasa --version --ddtrace
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           cd ${{ github.workspace }}
