@@ -147,7 +147,7 @@ jobs:
         run: |-
           # Read TF version from poetry.lock file
           pip install toml
-          TF_VERSION=$(scripts/read_tenforflow_version.sh)
+          TF_VERSION=$(scripts/read_tensorflow_version.sh)
           # Keep the first 3 characters, e.g. we keep 2.3 if TF_VERSION is 2.3.4
           TF_VERSION=${TF_VERSION::3}
           echo "TensorFlow version: $TF_VERSION"

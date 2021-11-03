@@ -24,17 +24,20 @@ def set_markers_arguments(parser: argparse.ArgumentParser) -> None:
 
     stats.add_argument(
         "--no-stats",
-        default=False,
-        action="store_true",
+        action="store_false",
         dest="stats",
         help="Do not compute summary statistics.",
     )
 
     stats.add_argument(
-        "--stats-file",
-        default="stats.csv",
+        "--stats-file-prefix",
+        default="stats",
+        nargs="?",
         type=str,
-        help="The filename to write out computed summary statistics.",
+        help="The common file prefix of the files where we write out the compute "
+        "statistics. More precisely, the file prefix must consist of a common "
+        "path plus a common file prefix, to which suffixes `-overall.csv` and "
+        "`-per-session.csv` will be added automatically.",
     )
 
     add_endpoint_param(
