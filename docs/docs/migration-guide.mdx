@@ -26,6 +26,43 @@ If you still have training data in Markdown format then the recommended approach
 to convert your data from Markdown to YAML. Please use the commands described
 [here](./migration-guide.mdx#training-data-files).
 
+### Model Configuration
+
+It is required to specify the used `recipe` within the
+[model configuration](model-configuration). As of now Rasa Open Source only supports
+the `default.v1` recipe and will continue using this even if you don't specify this
+in the model configuration. To avoid breaking changes in the future it is recommended
+to specify `recipe: "default.v1"` at the top of your model configuration:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-config" defaultValue="new">
+  <TabItem value="old">
+
+  ```yaml-rasa
+  language: <language>
+
+  pipeline:
+    ...
+  policies:
+    ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```yaml-rasa {1}
+  recipe: default.v1
+
+  language: <language>
+
+  pipeline:
+    ...
+  policies:
+    ...
+  ```
+
+  </TabItem>
+</Tabs>
+
 ### Custom Policies and Custom Components
 
 Rasa Open Source 3.0 changed the way how [NLU components](components) and
