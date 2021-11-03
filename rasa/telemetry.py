@@ -1015,6 +1015,16 @@ def track_nlu_model_test(test_data: "TrainingData") -> None:
 def track_markers_extraction_initiated(
     strategy: Text, only_extract: bool, seed: Optional[int], count: Optional[int],
 ) -> None:
+    """Track when a user tries to extract success markers.
+
+    Args:
+        strategy: The strategy the user is using for tracker selection
+        only_extract: Indicates if the user is only extracting markers or also
+                      producing stats
+        seed: (Optional) The seed used if strategy is 'sample' and the user selects
+              one
+        count: (Optional) The number of trackers the user is trying to select.
+    """
     _track(
         TELEMETRY_MARKERS_EXTRACTION_INITIATED_EVENT,
         {
@@ -1028,6 +1038,11 @@ def track_markers_extraction_initiated(
 
 @ensure_telemetry_enabled
 def track_markers_extracted(trackers_count: int) -> None:
+    """Track when markers have been extracted by a user.
+
+    Args:
+        trackers_count: The actual number of trackers processed
+    """
     _track(
         TELEMETRY_MARKERS_EXTRACTED_EVENT, {"trackers_count": trackers_count},
     )
@@ -1035,6 +1050,11 @@ def track_markers_extracted(trackers_count: int) -> None:
 
 @ensure_telemetry_enabled
 def track_markers_stats_computed(trackers_count: int) -> None:
+    """Track when stats over markers have been computed by a user.
+
+    Args:
+        trackers_count: The actual number of trackers processed
+    """
     _track(
         TELEMETRY_MARKERS_STATS_COMPUTED_EVENT, {"trackers_count": trackers_count},
     )
@@ -1042,6 +1062,11 @@ def track_markers_stats_computed(trackers_count: int) -> None:
 
 @ensure_telemetry_enabled
 def track_markers_parsed_count(marker_count: int) -> None:
+    """Track when markers have been successfully parsed from config.
+
+    Args:
+        marker_count: The number of markers found in the config
+    """
     _track(
         TELEMETRY_MARKERS_PARSED_COUNT, {"marker_count": marker_count},
     )
