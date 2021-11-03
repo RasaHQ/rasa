@@ -147,9 +147,14 @@ def _run_markers(
             "Please see errors listed above and fix before running again."
         )
 
+    # Calculate telemetry
     # Subtract one to remove the virtual OR over all markers
     num_markers = len(markers) - 1
-    telemetry.track_markers_parsed_count(num_markers)
+    max_depth = markers.depth() - 1
+    # Find maximum branching of marker
+    branching_factor = max(len(marker) - 1 for marker in markers)
+
+    telemetry.track_markers_parsed_count(num_markers, max_depth, branching_factor)
 
     tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
 

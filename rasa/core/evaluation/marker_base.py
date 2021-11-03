@@ -272,6 +272,11 @@ class Marker(ABC):
         """
         ...
 
+    @abstractmethod
+    def max_depth(self) -> int:
+        """Gets the maximum depth from this point in the marker tree."""
+        ...
+
     def evaluate_events(
         self, events: List[Event], recursive: bool = False
     ) -> List[SessionEvaluation]:
@@ -407,7 +412,7 @@ class Marker(ABC):
         that the names of the markers defined in these files are unique across all
         loaded files.
 
-        Note that all loaded markers will be combined into one marker via onetet
+        Note that all loaded markers will be combined into one marker via one
         artificial OR-operator. When evaluating the resulting marker, then the
         artificial OR-operator will be ignored and results will be reported for
         every sub-marker.
@@ -758,6 +763,10 @@ class OperatorMarker(Marker, ABC):
             marker.validate_against_domain(domain) for marker in self.sub_markers
         )
 
+    def max_depth(self) -> int:
+        """Gets the maximum depth from this point in the marker tree."""
+        return 1 + max(child.max_depth() for child in self.sub_markers)
+
     @staticmethod
     def from_tag_and_sub_config(
         tag: Text, sub_config: Any, name: Optional[Text] = None,
@@ -837,6 +846,10 @@ class ConditionMarker(Marker, ABC):
 
     def __len__(self) -> int:
         """Returns the count of all markers that are part of this marker."""
+        return 1
+
+    def max_depth(self) -> int:
+        """Gets the maximum depth from this point in the marker tree."""
         return 1
 
     @staticmethod

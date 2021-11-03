@@ -682,3 +682,23 @@ def test_marker_from_path_raises(
         rasa.shared.utils.io.write_yaml(data=config, target=full_path)
     with pytest.raises(InvalidMarkerConfig):
         Marker.from_path(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "marker,expected_depth",
+    [
+        (
+            AndMarker(
+                markers=[
+                    SlotSetMarker("s1"),
+                    OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6"),]),
+                ],
+            ),
+            3,
+        ),
+        (SlotSetMarker("s1"), 1),
+        (AndMarker(markers=[SlotSetMarker("s1"), IntentDetectedMarker("6"),],), 2),
+    ],
+)
+def test_marker_depth(marker: Marker, expected_depth: int):
+    assert marker.max_depth() == expected_depth
