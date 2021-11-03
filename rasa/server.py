@@ -204,7 +204,7 @@ def requires_auth(
         ) -> Optional[bool]:
             # This is a coroutine since `sanic-jwt==1.6`
             jwt_data = await rasa.utils.common.call_potential_coroutine(
-                request.app.auth.extract_payload(request)
+                request.app.ctx.auth.extract_payload(request)
             )
 
             user = jwt_data.get("user", {})
@@ -235,7 +235,7 @@ def requires_auth(
                 "USE_JWT"
             ) and await rasa.utils.common.call_potential_coroutine(
                 # This is a coroutine since `sanic-jwt==1.6`
-                request.app.auth.is_authenticated(request)
+                request.app.ctx.auth.is_authenticated(request)
             ):
                 if await sufficient_scope(request, *args, **kwargs):
                     result = f(request, *args, **kwargs)
@@ -600,7 +600,10 @@ def run_in_thread(f: Callable[..., Coroutine]) -> Callable:
         # Use a sync wrapper for our `async` function as `run_in_executor` only supports
         # sync functions
         def run() -> HTTPResponse:
-            return asyncio.run(f(request, *args, **kwargs))
+            # we can replace it with asyncio.run(..) but it doesn't work in Python 3.9
+            # see https://github.com/virtool/virtool-workflow/issues/55#issuecomment-733164513
+            loop = asyncio.new_event_loop()
+            return loop.run_until_complete(f(request, *args, **kwargs))
 
         with concurrent.futures.ThreadPoolExecutor() as pool:
             return await request.app.loop.run_in_executor(pool, run)

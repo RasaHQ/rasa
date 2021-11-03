@@ -93,7 +93,7 @@ pytz = ">=2019.1,<2022.0"
 rasa-sdk = { git = "https://github.com/rasahq/rasa-sdk.git", branch = "main" }
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
-sanic = "^21.9.0"
+sanic = "^21.6.0"
 sanic-cors = "^1.0.0"
 sanic-jwt = "^1.6.0"
 cloudpickle = ">=1.2,<1.7"
@@ -127,6 +127,7 @@ typing-extensions = "^3.7.4"
 typing-utils = "^0.1.0"
 tarsafe = "^0.0.3"
 randomname = "^0.1.5"
+keras = "<2.7.0"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
@@ -166,8 +167,8 @@ sanic-testing = "^0.7.0"
 [tool.poetry.extras]
 spacy = [ "spacy",]
 jieba = [ "jieba",]
-transformers = [ "transformers", "tokenizers",]
-full = [ "spacy", "transformers", "tokenizers", "jieba",]
+transformers = [ "transformers",]
+full = [ "spacy", "transformers", "jieba",]
 gh-release-notes = [ "github3.py",]
 
 [tool.poetry.scripts]
@@ -195,10 +196,6 @@ optional = true
 
 [tool.poetry.dependencies.transformers]
 version = ">=2.4,<2.12"
-optional = true
-
-[tool.poetry.dependencies.tokenizers]
-version = "0.5.2"
 optional = true
 
 [tool.poetry.dependencies.jieba]
