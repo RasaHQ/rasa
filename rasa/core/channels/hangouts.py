@@ -218,6 +218,7 @@ class HangoutsInput(InputChannel):
 
     @classmethod
     def name(cls) -> Text:
+        """Returns channel name."""
         return CHANNEL_NAME
 
     @staticmethod
@@ -278,7 +279,7 @@ class HangoutsInput(InputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
-
+        """API configuration for the channel webhook."""
         custom_webhook = Blueprint("hangouts_webhook", __name__)
 
         @custom_webhook.route("/", methods=["GET"])
