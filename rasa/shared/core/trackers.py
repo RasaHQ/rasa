@@ -651,17 +651,8 @@ class DialogueStateTracker:
         self.events.append(event)
         event.apply_to(self)
 
-        if domain and isinstance(event, (UserUttered, EntitiesAdded)):
-            if isinstance(event, UserUttered):
-                # Rather get entities from `parse_data` as
-                # `DefinePrevUserUtteredEntities` might have already affected the
-                # `UserUttered.entities` attribute (this might e.g. happen when the
-                # `InMemoryTrackerStore` is used).
-                entities = event.parse_data[ENTITIES]
-            else:
-                entities = event.entities
-
-            for e in domain.slots_for_entities(entities):
+        if domain and isinstance(event, EntitiesAdded):
+            for e in domain.slots_for_entities(event.entities):
                 self.update(e)
 
     def update_with_events(

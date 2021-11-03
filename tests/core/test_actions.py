@@ -1260,12 +1260,7 @@ async def test_action_extract_slots_predefined_mappings(
         domain,
     )
 
-    if new_user.entities:
-        # the slot gets filled with extracted entities during tracker.update
-        assert not updated_evts
-        assert tracker.get_slot(slot_name) == updated_value
-    else:
-        assert updated_evts == [SlotSet(slot_name, updated_value)]
+    assert updated_evts == [SlotSet(slot_name, updated_value)]
 
 
 async def test_action_extract_slots_with_from_trigger_mappings():
