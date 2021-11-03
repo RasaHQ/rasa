@@ -1,23 +1,22 @@
 import logging
+import google.auth.transport.requests
+import cachecontrol
+import requests
+
 from asyncio import CancelledError
 from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable, Union
 
+from google.oauth2 import id_token
 from sanic.response import HTTPResponse
 from sanic.exceptions import abort
-from oauth2client import client
-from oauth2client.crypt import AppIdentityError
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
 logger = logging.getLogger(__name__)
 
 CHANNEL_NAME = "hangouts"
-CERT_URI = (
-    "https://www.googleapis.com/service_accounts/"
-    "v1/metadata/x509/chat@system.gserviceaccount.com"
-)
 
 
 class HangoutsOutput(OutputChannel):
@@ -207,6 +206,16 @@ class HangoutsInput(InputChannel):
         self.hangouts_room_added_intent_name = hangouts_room_added_intent_name
         self.hangouts_user_added_intent_name = hangouts_removed_intent_name
 
+        # Google's Request obj (this is used to make HTTP requests) and cached
+        # session used to fetch Google's certs. Certs don't change frequently,
+        # so it makes sense to cache requests, rather than getting it on every
+        # message.
+        # see: https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/id_token.py#L15 # noqa: E501, W505
+        cached_session = cachecontrol.CacheControl(requests.session())
+        self.google_request = google.auth.transport.requests.Request(
+            session=cached_session
+        )
+
     @classmethod
     def name(cls) -> Text:
         return CHANNEL_NAME
@@ -254,15 +263,16 @@ class HangoutsInput(InputChannel):
         return self.name()
 
     def _check_token(self, bot_token: Text) -> None:
-        # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: E501, W505
+        # see https://developers.google.com/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: E501, W505
+        # and https://google-auth.readthedocs.io/en/latest/user-guide.html#identity-tokens # noqa: E501, W505
         try:
-            token = client.verify_id_token(
-                bot_token, self.project_id, cert_uri=CERT_URI
+            decoded_token = id_token.verify_token(
+                bot_token, self.google_request, audience=self.project_id
             )
+        except ValueError:
+            abort(401)
 
-            if token["iss"] != "chat@system.gserviceaccount.com":
-                abort(401)
-        except AppIdentityError:
+        if decoded_token["iss"] != "chat@system.gserviceaccount.com":
             abort(401)
 
     def blueprint(

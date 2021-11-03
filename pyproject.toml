@@ -123,6 +123,7 @@ aio-pika = "^6.7.1"
 pyTelegramBotAPI = "^3.7.3"
 tarsafe = "^0.0.3"
 google-auth = "^2.3.3"
+CacheControl = "^0.12.9"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
