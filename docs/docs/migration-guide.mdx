@@ -37,8 +37,8 @@ and policies with Rasa Open Source 3.0.
 
 :::caution
 
-Please read the updated guide on custom components [here](custom-components) before
-continuing to follow the step-by-step guide to migrate your own custom components.
+Please read the updated guide on custom graph components [here](custom-graph-components) before
+continuing to follow the step-by-step guide to migrate your own custom graph components.
 :::
 
 **Type Annotations**
@@ -46,8 +46,8 @@ continuing to follow the step-by-step guide to migrate your own custom component
 It is now required to use
 [type annotations](https://docs.python.org/3/library/typing.html) in your custom NLU
 components and policies. Rasa Open Source uses these type annotations to validate that
-your components are compatible and correctly configured. As outlined in the custom
-[components guide](custom-components) it is not allowed to use
+your graph components are compatible and correctly configured. As outlined in the custom
+[components guide](custom-graph-components) it is not allowed to use
 [Forward references](https://www.python.org/dev/peps/pep-0484/#forward-references).
 
 :::info Forward References with Python 3.7
@@ -152,8 +152,8 @@ featurizers itself.
 
 Policies are responsible for persisting themselves. Previously the `persist` method
 was called from the outside. Use the provided `model_storage` and `resource`
-(see [component persistence](custom-components#model-persistence) for more details)
-to persist your component at the end of the training and then return the `resource`
+(see [graph component persistence](custom-graph-components#model-persistence) for more details)
+to persist your graph component at the end of the training and then return the `resource`
 as result of your policy's `train` method.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-persistence" defaultValue="new">
@@ -317,9 +317,9 @@ constructor but instead returned by the static method `get_default_config`:
 
 If you were using a custom [end-to-end policy](stories#end-to-end-training) in Rasa
 Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
-events manually. If your component requires end-to-end features in Rasa Open Source 3
-you need to [register](custom-components#registering-components-with-the-model-configuration)
-your component with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
+events manually. If your policy requires end-to-end features in Rasa Open Source 3
+you need to [register](custom-graph-components#registering-components-with-the-model-configuration)
+your policy with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
 will be precomputed and passed into your policy during training and inference.
 
 :::caution
@@ -383,11 +383,11 @@ data actually contains [end-to-end training data](stories#end-to-end-training).
 
 **Registering a Policy**
 
-Before you can use your custom policy you have to register your component using the
-`DefaultV1Recipe.register` decorator. If your component requires end-to-end features
-specify the component type `POLICY_WITH_END_TO_END_SUPPORT`. Otherwise, use
+Before you can use your custom policy you have to register your policy using the
+`DefaultV1Recipe.register` decorator. If your policy requires end-to-end features
+specify the graph component type `POLICY_WITH_END_TO_END_SUPPORT`. Otherwise, use
 `POLICY_WITHOUT_END_TO_END_SUPPORT`. Specify `is_trainable=True` if the `train`
-method of your policy should be called during the training. If your component is only
+method of your policy should be called during the training. If your policy is only
 used during inference use `is_trainable=False`.
 
 
@@ -459,7 +459,7 @@ configuration.
 
 NLU components which previously inherited from one of the following classes additionally
 need to inherit from the
-[`GraphComponent` interface](custom-components#the-graphcomponent-interface):
+[`GraphComponent` interface](custom-graph-components#the-graphcomponent-interface):
 - `SparseFeaturizer`
 - `DenseFeaturizer`
 - `IntentClassifier`
@@ -521,8 +521,8 @@ The `EntityExtractor` class was renamed to `EntityExtractorMixing`:
 
 NLU components are no longer instantiated via their constructor. Instead, all NLU
 components have to override the `create` method of the
-[`GraphComponent` interface](custom-components#the-graphcomponent-interface). The
-passed in configuration is your components default configuration including any updates
+[`GraphComponent` interface](custom-graph-components#the-graphcomponent-interface). The
+passed in configuration is your NLU component's default configuration including any updates
 from your model configuration file.
 
 
@@ -566,9 +566,9 @@ from your model configuration file.
 NLU components are responsible for persisting themselves.
 Previously the `persist` method was called from the outside.
 You should use the provided `model_storage` and `resource`
-(see [component persistence](custom-components#model-persistence) for more details)
-to persist your component at the end of the training and then return the `resource`
-as result of your component's `train` method.
+(see [component persistence](custom-graph-components#model-persistence) for more details)
+to persist your NLU component at the end of the training and then return the `resource`
+as result of your NLU component's `train` method.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-persistence" defaultValue="new">
   <TabItem value="old">
@@ -618,13 +618,13 @@ as result of your component's `train` method.
 **Instantiating a Trained NLU Component**
 
 Similar as you had to use the `model_storage` and `resource`
-(see [component persistence](custom-components#model-persistence) for more details)
+(see [component persistence](custom-graph-components#model-persistence) for more details)
 to persist the NLU
-component in the previous step, you need to use these now to load the persisted
-component.
+component in the previous step, you need to use these to load the persisted
+NLU component.
 
 :::info
-It is no longer required to persist your component's config yourself. The config passed
+It is no longer required to persist your NLU component's config yourself. The config passed
 into `load` will contain the configuration which your model was trained with.
 :::
 
@@ -717,12 +717,12 @@ by the static method `get_default_config`:
 
 **Augmenting Training Data in an NLU Component**
 
-Components like [tokenizers](components#tokenizers) or
+NLU Components like [tokenizers](components#tokenizers) or
 [featurizers](components#featurizers) augment the training data with their
-output during the model training. Their output is required by components later in the
+output during the model training. Their output is required by NLU components later in the
 pipeline. Typically, featurizers require *tokenized* messages as well as intent
 classifiers require *featurized* training data to train themselves. Rasa Open Source
-3.0 makes these different purposes explicit. Previously both component training and
+3.0 makes these different purposes explicit. Previously both NLU component training and
 training data augmentation were done as part of the `train` method. In Rasa Open Source
 3.0 they are split in `train` and `process_training_data`:
 
@@ -794,18 +794,18 @@ message objects at the end of the `process` method.
 </Tabs>
 
 
-**Registering your Component**
+**Registering your NLU Component**
 
-Before you can use your custom NLU component you have to register your component using the
-`DefaultV1Recipe.register` decorator. The component types correspond to the existing
+Before you can use your custom NLU component you have to register your NLU component using the
+`DefaultV1Recipe.register` decorator. The NLU component types correspond to the existing
 parent classes:
 
 * `Tokenizer`: `ComponentType.MESSAGE_TOKENIZER`
 * `SparseFeaturizer` / `DenseFeaturizer`: `ComponentType.MESSAGE_FEATURIZER`
 * `IntentClassifier`: `ComponentType.INTENT_CLASSIFIER`
 * `EntityExtractor`: `ComponentType.ENTITY_EXTRACTOR`
-* If your component provides a pretrained model which then should be used by other
-  components during training and inference use `ComponentType.MODEL_LOADER`
+* If your NLU component provides a pretrained model which then should be used by other
+  NLU components during training and inference use `ComponentType.MODEL_LOADER`
 
 Specify `is_trainable=True` if the `train` method of your policy should be called
 during the training.
@@ -835,9 +835,9 @@ during the training.
   </TabItem>
 </Tabs>
 
-**Using a Model Provider**
+**Using a Model Provider With your NLU Component**
 
-If your component requires a pretrained model such as a [Spacy](components#spacynlp) or
+If your NLU component requires a pretrained model such as a [Spacy](components#spacynlp) or
 [Mitie](components#mitienlp) language model, specify this with the `model_from`
 parameter in the `register` decorator. The model will then be passed to your model's
 `train`, `process_training_data` and `process` methods:

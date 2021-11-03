@@ -1,15 +1,15 @@
 ---
-id: custom-components
-sidebar_label: Custom Components & Policies
-title: Custom Components & Policies
-abstract: You can extend Rasa Open Source with custom NLU components and policies. This page provides a guide on how to develop your own custom components.
+id: custom-graph-components
+sidebar_label: Custom Graph Components
+title: Custom Graph Components
+abstract: You can extend Rasa Open Source with custom NLU components and policies. This page provides a guide on how to develop your own custom graph components.
 ---
 
 Rasa Open Source provides a variety of [NLU components](components) and
-[policies](policies) out of the box. You can customize these out of the box
-components or create your own components from scratch by using custom components.
+[policies](policies) out of the box. You can customize them or create your
+own components from scratch by using custom graph components.
 
-To use your custom component with Rasa Open Source it has to fulfill the following
+To use your custom graph component with Rasa Open Source it has to fulfill the following
 requirements:
 - It has to implement the [`GraphComponent` interface](#the-graphcomponent-interface)
 - It has to be [registered](#registering-components-with-the-model-configuration)
@@ -22,6 +22,32 @@ requirements:
   [`from __future__ import annotations`](https://www.python.org/dev/peps/pep-0563/#enabling-the-future-behavior-in-python-3-7)
   to get rid of forward references.
 
+
+## Graph Components
+
+Rasa Open Source uses the passed in [model configuration](model-configuration) to build a
+[directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
+This graph describes the dependencies between the items in your model configuration and
+how data flows between them. This has two major benefits:
+
+- Rasa Open Source can use the computational graph to optimize the execution of your
+  model. Examples for this are efficient caching of training steps or executing
+  independent steps in parallel.
+- Rasa Open Source can represent different model architectures flexibly. As long as the
+  graph remains acyclic Rasa Open Source can in theory pass any data to any graph
+  component based on the model configuration without having to tie the underlying
+  software architecture to the used model architecture.
+
+When translating the model configuration to the computational graph
+[policies](policies) and [NLU components](components) become nodes within this graph.
+While there is a distinction between policies and NLU components in your model
+configuration the distinction is abstracted away when they are placed within the graph.
+At this point policies and NLU components become abstract *graph components*.
+In practice this is represented by the
+[`GraphComponent`](custom-graph-components#the-graphcomponent-interface)
+interface: Both policies and NLU components have to inherit from this interface to
+become compatible and executable for Rasa's graph.
+
 ## Getting Started
 Before you get started you have to decide whether you want to implement a custom
 [NLU component](components) or a [policy](policies). If you are implementing
@@ -31,7 +57,7 @@ a custom policy then we recommend extending the existing
 ```python
 from rasa.core.policies.policy import Policy
 
-# TODO: Correctly register your component
+# TODO: Correctly register your graph component
 @DefaultV1Recipe.register(
     [DefaultV1Recipe.ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT], is_trainable=True
 )
@@ -61,12 +87,12 @@ to implement the `GraphComponent` interface.
 ```
 
 ### `create`
-The `create` method is used to instantiate your component during training and has to be
+The `create` method is used to instantiate your graph component during training and has to be
 overridden. Rasa Open Source passes the following parameters when calling the method:
 
 - `config`: This is your model's default configuration merged with the
-   configuration provided to the component in the model configuration file.
-- `model_storage`: You can use this to persist and load your components. See the
+   configuration provided to the graph component in the model configuration file.
+- `model_storage`: You can use this to persist and load your graph components. See the
    [persistence](migration-guide#model-persistence) section for further details on its usage.
 - `resource`: This uniquely identifies your component within the `model_storage`.
    See the [persistence](migration-guide#model-persistence) section for further
@@ -76,73 +102,74 @@ overridden. Rasa Open Source passes the following parameters when calling the me
    - `model_id`: A unique identifier for the model used during inference. This
       parameter is `None` during training.
    - `should_add_diagnostic_data`: If `True` then additional diagnostic metadata
-      can be added to your component's predictions on top of the actual prediction.
-   - `is_finetuning`: If `True` then the component is trained using
+      can be added to your graph component's predictions on top of the actual prediction.
+   - `is_finetuning`: If `True` then the graph component is trained using
      [finetuning](command-line-interface#incremental-training).
    - `graph_schema`: The `graph_schema` describes the computational graph which is used
      to train your assistant or to make predictions with it.
    - `node_name`: The `node_name` is a unique identifier for the step in the graph
-     schema which is fulfilled by the called component
+     schema which is fulfilled by the called graph component
 
 ### `load`
-The `load` method is used to instantiate your component during inference. The default
+The `load` method is used to instantiate your graph component during inference. The default
 implementation of this method calls your `create` method. It is recommended to override
-this if your component
+this if your graph component
 [persists data as part of the training](migration-guide#model-persistence).
 See [`create`](#create) for a description of the single parameters.
 
 ### `get_default_config`
-The method `get_default_config` returns the default configuration for your component. Its
-default implementation returns an empty dictionary which implies that the component
+The method `get_default_config` returns the default configuration for your graph
+component. Its default implementation returns an empty dictionary which implies that
+the graph component
 does not have any configuration. Rasa Open Source will update the configuration given
 in the configuration file with the default configuration during runtime.
 
 ### `supported_languages`
-The method `supported_languages` specifies which languages a component supports.
+The method `supported_languages` specifies which languages a graph component supports.
 Rasa Open Source will use the `language` key in the model configuration file to
-validate that the component is valid for usage with the specified language.
-If a component returns `None` (this is the default implementation), it indicates
-that the component supports all languages which are not part of
+validate that the graph component is valid for usage with the specified language.
+If a graph component returns `None` (this is the default implementation), it indicates
+that the graph component supports all languages which are not part of
 `not_supported_languages`.
 
    Examples:
-   - `[]`: The component does not support any language
+   - `[]`: The graph component does not support any language
    - `None`: All languages are supported expect the languages defined in
      `not_supported_languages`
-   - `["en"]`: The component can only be used with English conversations.
+   - `["en"]`: The graph component can only be used with English conversations.
 
 ### `not_supported_languages`
 The method `not_supported_languages` specifies which languages your
-component does not support. Rasa Open Source will use the `language` key in the
-model configuration file to validate that your component is valid for usage with
-the specified language. If your component returns `None` (this is the default
+graph component does not support. Rasa Open Source will use the `language` key in the
+model configuration file to validate that your graph component is valid for usage with
+the specified language. If your graph component returns `None` (this is the default
 implementation), you indicate that it supports all languages which are specified in
 `supported_languages`.
 
    Examples:
    - `None` or `[]`: All languages specified in `supported_languages` are supported.
-   - `["en"]`: The component can be used with any language except English.
+   - `["en"]`: The graph component can be used with any language except English.
 
 ### `required_packages`
 The `required_packages` method indicates which Python packages need to
-be installed to be able to use this component. Rasa Open Source will raise an error
-during execution if your component is used without the required libraries being
-installed. By default this method returns an empty list which implies that your
+be installed to be able to use this graph component. Rasa Open Source will raise an error
+during execution if your graoh component is used without the required libraries being
+installed. By default, this method returns an empty list which implies that your graph
 component does not have any extra dependencies.
 
 Examples:
-- `[]`: No extra packages are required to use this component
+- `[]`: No extra packages are required to use this graph component
 - `["spacy"]`: The Python package `spacy` needs to be installed to be able to run
-  this component.
+  this graph component.
 
 ## Model Persistence
-Some components require persisting data during training which should be available
-to the component during inference time. A typical use case for this is storing model
+Some graph components require persisting data during training which should be available
+to the graph component during inference time. A typical use case for this is storing model
 weights. Rasa Open Source provides the
-`model_storage` and `resource` parameters to your components `create` and `load`
+`model_storage` and `resource` parameters to your graph component's `create` and `load`
 method for this purpose as shown in the snippet below. The `model_storage` provides
-access to data from all components. The `resource` allows you to uniquely identify
-your component's location in the model storage.
+access to data from all graph components. The `resource` allows you to uniquely identify
+your graph component's location in the model storage.
 
 
 ```python {6,7,16,17}
@@ -171,16 +198,17 @@ class MyComponent(GraphComponent):
 
 ### Writing to the Model Storage
 
-The snippet below illustrates how to write your component's data to the model storage.
+The snippet below illustrates how to write your graph component's data to the model
+storage.
 It is recommended to store `model_storage` and `resource` at initialization time and
-then use them at the end of your componen's `train` method to handle the persistence
-of your component.
+then use them at the end of your component's `train` method to handle the persistence
+of your graph component.
 
 The `self._model_storage.write_to(self._resource)` context manager provides a path to
 a directory where you can persist any data required by your
-component. Note that it is required to return your components `resource` at the end
-of your component's `train` method so that Rasa Open Source can cache the training
-results between trainings.
+graph component. Note that it is required to return your graph component's `resource`
+at the end of your graph component's `train` method so that Rasa Open Source can cache
+the training results between trainings.
 
 ```python
 class MyComponent(GraphComponent):
@@ -207,10 +235,10 @@ class MyComponent(GraphComponent):
         return cls(model_storage, resource, training_artifact=None)
 
     def train(self, training_data: TrainingData) -> Resource:
-        # Train your component
+        # Train your graph component
         ...
 
-        # Persist your component
+        # Persist your graph component
         with self._model_storage.write_to(self._resource) as directory_path:
             with open(directory_path / "artifact.json", "w") as file:
                 json.dump({"my": "training artifact"}, file)
@@ -223,10 +251,10 @@ class MyComponent(GraphComponent):
 
 ### Reading from the Model Storage
 
-When Rasa Open Source calls `load` to instantiate your component for
+When Rasa Open Source calls `load` to instantiate your graph component for
 inference you can use the counterpart `self._model_storage.read_from(resource)` to
 get access to the same directory. Using the provided path you can then load the
-persisted data and initialize your component with it. Note that the `model_storage`
+persisted data and initialize your graph component with it. Note that the `model_storage`
 will throw a `ValueError` in case no persisted data was found for the given `resource`.
 
 ```python
@@ -264,8 +292,9 @@ class MyComponent(GraphComponent):
 ```
 
 
-## Registering Components with the Model Configuration
-To make your component available to Rasa Open Source you have to register your component
+## Registering Graph Components with the Model Configuration
+To make your graph component available to Rasa Open Source you have to register your
+graph component
 with the model configuration. This is done with the `DefaultV1Recipe.register`
 decorator:
 
@@ -273,81 +302,81 @@ decorator:
 ```
 
 Rasa Open Source uses the information provided in the `register` decorator and the
-position of your component within the configuration file to schedule the execution
-of your component with its required data. The `DefaultV1Recipe.register` allows you
+position of your graph component within the configuration file to schedule the execution
+of your graph component with its required data. The `DefaultV1Recipe.register` allows you
 to specify the following details:
 
-- `component_types`: This specifies what purpose your component fulfills within the
-   assistant. It is possible to specify multiple types (e.g. if your component is both
+- `component_types`: This specifies what purpose your graph component fulfills within the
+   assistant. It is possible to specify multiple types (e.g. if your graph component is both
    intent classifier and entity extractor):
    * `ComponentType.MODEL_LOADER`: Component type for
-      [language models](components#language-models). Components of this type provide
-      pretrained models to other components' `train`, `process_training_data` and
+      [language models](components#language-models). Graph components of this type provide
+      pretrained models to other graph components' `train`, `process_training_data` and
       `process` methods if they have specified `model_from=<model loader name>`.
-      This component is run during training and
-      inference. Rasa Open Source will use the component's `provide` method to retrieve
-      the model which should be provided to dependent components.
+      This graph component is run during training and
+      inference. Rasa Open Source will use the graph component's `provide` method to
+      retrieve the model which should be provided to dependent graph components.
 
    * `ComponentType.MESSAGE_TOKENIZER`: Component type for
-      [tokenizers](components#tokenizers). This component is run during training and
-      inference. Rasa Open Source will use the component's `train` method if
+      [tokenizers](components#tokenizers). This graph component is run during training and
+      inference. Rasa Open Source will use the graph component's `train` method if
       `is_trainable=True` is specified. Rasa Open Source will use
       `process_training_data` for tokenizing training data examples and `process`
       to tokenize messages during inference.
 
    * `ComponentType.MESSAGE_FEATURIZER`: Component type for
-      [featurizers](components#featurizers). This component is run during training and
-      inference. Rasa Open Source will use the component's `train` method if
+      [featurizers](components#featurizers). This graph component is run during training and
+      inference. Rasa Open Source will use the graph component's `train` method if
       `is_trainable=True` is specified. Rasa Open Source will use
       `process_training_data` for featurizing training data examples and `process`
       to featurize messages during inference.
 
    * `ComponentType.INTENT_CLASSIFIER`: Component type for
-      [intent classifiers](components#intent-classifiers). This component is run only
-      during training if `is_trainable=True`. The component is always run during
+      [intent classifiers](components#intent-classifiers). This graph component is run only
+      during training if `is_trainable=True`. The graph component is always run during
       inference.
-      Rasa Open Source will use the component's `train` method if
+      Rasa Open Source will use the graph component's `train` method if
       `is_trainable=True` is specified. Rasa Open Source will use
-      the component's `process` method to classify the intent of messages during
+      the graph component's `process` method to classify the intent of messages during
       inference.
 
    * `ComponentType.ENTITY_EXTRACTOR`: Component type for
-      [entity extractors](components#entity-extractors). This component is run only
-      during training if `is_trainable=True`. The component is always run during
+      [entity extractors](components#entity-extractors). This graph component is run only
+      during training if `is_trainable=True`. The graph component is always run during
       inference.
-      Rasa Open Source will use the component's `train` method if
+      Rasa Open Source will use the graph component's `train` method if
       `is_trainable=True` is specified. Rasa Open Source will use
-      the component's `process` method to extract entities during inference.
+      the graph scomponent's `process` method to extract entities during inference.
 
    * `ComponentType.POLICY_WITHOUT_END_TO_END_SUPPORT`: Component type for
       [policies](policies) which don't require additional end-to-end features
       (see [end-to-end training](stories#end-to-end-training) for more information).
-      This component is run only during training if `is_trainable=True`.
-      The component is always run during inference.
-      Rasa Open Source will use the component's `train` method if
+      This graph component is run only during training if `is_trainable=True`.
+      The graph component is always run during inference.
+      Rasa Open Source will use the graph component's `train` method if
       `is_trainable=True` is specified. Rasa Open Source will use
-      the component's `predict_action_probabilities` to make predictions for the
+      the graph component's `predict_action_probabilities` to make predictions for the
       next action which should be run within a conversation.
 
    * `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`: Component type for
       [policies](policies) which require additional end-to-end features
       (see [end-to-end training](stories#end-to-end-training) for more information).
-      The end-to-end features are passed into the component's `train` and
+      The end-to-end features are passed into the graph component's `train` and
       `predict_action_probabilities` as `precomputations` parameter.
-      This component is run only during training if `is_trainable=True`.
-      The component is always run during inference.
-      Rasa Open Source will use the component's `train` method if
+      This graph component is run only during training if `is_trainable=True`.
+      The graph component is always run during inference.
+      Rasa Open Source will use the graph component's `train` method if
       `is_trainable=True` is specified. Rasa Open Source will use
-      the component's `predict_action_probabilities` to make predictions for the
+      the graph component's `predict_action_probabilities` to make predictions for the
       next action which should be run within a conversation.
 
-- `is_trainable`: Specifies if the component requires to train itself before it can
-   process training data for other dependent components or before it can make
+- `is_trainable`: Specifies if the graph component requires to train itself before it can
+   process training data for other dependent graph components or before it can make
    predictions
 
 - `model_from`: Specifies if a pretrained model needs to be provided to the `train`,
-  `process_training_data` and `process` methods of the component. Note that you still
-   need to make sure that the model provided component is part of your model
+  `process_training_data` and `process` methods of the graph component. Note that you
+   still need to make sure that the model provided graph component is part of your model
    configuration.
 
 ## Using Custom Components in your Model Configuration
@@ -379,7 +408,7 @@ policies:
 
 ### Message Metadata
 When you [define metadata for your intent examples in your training data](./training-data-format.mdx#training-examples),
-your component can access both the intent metadata and the intent example metadata during processing:
+your NLU component can access both the intent metadata and the intent example metadata during processing:
 
 ```python
 # in your component class
