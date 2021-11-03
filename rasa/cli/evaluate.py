@@ -133,10 +133,13 @@ def _run_markers(
             '<path-to-stats-folder>/statistics-per-session.csv'.
     """
     telemetry.track_markers_extraction_initiated(
-        strategy=strategy, only_extract=stats_file is not None, seed=seed, count=count,
+        strategy=strategy,
+        only_extract=stats_file_prefix is not None,
+        seed=seed,
+        count=count,
     )
 
-	domain = Domain.load(domain_path) if domain_path else None
+    domain = Domain.load(domain_path) if domain_path else None
     markers = Marker.from_path(config)
     if domain and not markers.validate_against_domain(domain):
         rasa.shared.utils.cli.print_error_and_exit(

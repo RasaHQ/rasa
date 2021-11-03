@@ -610,7 +610,7 @@ class Marker(ABC):
                 tracker_result = self.evaluate_events(tracker.events)
                 processed_trackers[tracker.sender_id] = tracker_result
 
-		processed_trackers_count = len(processed_trackers)
+        processed_trackers_count = len(processed_trackers)
         telemetry.track_markers_extracted(processed_trackers_count)
         Marker._save_results(output_file, processed_trackers)
 
@@ -627,7 +627,7 @@ class Marker(ABC):
                         meta_data_on_relevant_events_per_marker=session_result,
                     )
 
-			telemetry.track_markers_stats_computed(processed_trackers_count)
+            telemetry.track_markers_stats_computed(processed_trackers_count)
             if overall_stats_file:
                 stats.overall_statistic_to_csv(path=overall_stats_file)
             if session_stats_file:

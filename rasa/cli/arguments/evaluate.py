@@ -13,6 +13,7 @@ def set_markers_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--config",
         default="markers.yml",
+        nargs="?",
         type=str,
         help="The config file(s) containing marker definitions. This can be a single "
         "YAML file, or a directory that contains several files with marker "
