@@ -469,6 +469,21 @@
         "trackers_count"
       ]
     },
+    "Markers Parsed": {
+      "description": "Triggered when markers have been successfully parsed.",
+      "type": "object",
+      "section": "Markers Extraction",
+      "properties": {
+        "marker_count": {
+          "type": "integer",
+          "description": "Number of parsed markers."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "marker_count"
+      ]
+    },
     "Markers Stats Computed": {
       "description": "Triggered when marker stats has been computed.",
       "type": "object",

@@ -147,6 +147,10 @@ def _run_markers(
             "Please see errors listed above and fix before running again."
         )
 
+    # Subtract one to remove the virtual OR over all markers
+    num_markers = len(markers) - 1
+    telemetry.track_markers_parsed_count(num_markers)
+
     tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
 
     def _append_suffix(path: Optional[Path], suffix: Text) -> Optional[Path]:

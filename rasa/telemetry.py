@@ -97,6 +97,7 @@ TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
 TELEMETRY_MARKERS_EXTRACTION_INITIATED_EVENT = "Markers Extraction Initiated"
 TELEMETRY_MARKERS_EXTRACTED_EVENT = "Markers Extracted"
 TELEMETRY_MARKERS_STATS_COMPUTED_EVENT = "Markers Stats Computed"
+TELEMETRY_MARKERS_PARSED_COUNT = "Markers Parsed"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -1036,4 +1037,11 @@ def track_markers_extracted(trackers_count: int) -> None:
 def track_markers_stats_computed(trackers_count: int) -> None:
     _track(
         TELEMETRY_MARKERS_STATS_COMPUTED_EVENT, {"trackers_count": trackers_count},
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_parsed_count(marker_count: int) -> None:
+    _track(
+        TELEMETRY_MARKERS_PARSED_COUNT, {"marker_count": marker_count},
     )
