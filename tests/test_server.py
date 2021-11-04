@@ -22,7 +22,7 @@ from freezegun import freeze_time
 from unittest.mock import MagicMock
 from ruamel.yaml import StringIO
 from sanic import Sanic
-from sanic.testing import SanicASGITestClient
+from sanic_testing.testing import SanicASGITestClient
 
 import rasa
 import rasa.constants
@@ -129,7 +129,7 @@ def rasa_secured_app(rasa_server_secured: Sanic) -> SanicASGITestClient:
 
 @pytest.fixture
 def rasa_non_trained_secured_app(
-    rasa_non_trained_server_secured: Sanic,
+        rasa_non_trained_server_secured: Sanic,
 ) -> SanicASGITestClient:
     return rasa_non_trained_server_secured.asgi_client
 
@@ -160,31 +160,31 @@ async def test_root_secured(rasa_non_trained_secured_app: SanicASGITestClient):
 
 async def test_version(rasa_non_trained_app: SanicASGITestClient):
     _, response = await rasa_non_trained_app.get("/version")
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert content.get("version") == rasa.__version__
     assert (
-        content.get("minimum_compatible_version")
-        == rasa.constants.MINIMUM_COMPATIBLE_VERSION
+            content.get("minimum_compatible_version")
+            == rasa.constants.MINIMUM_COMPATIBLE_VERSION
     )
 
 
 async def test_status(rasa_app: SanicASGITestClient, trained_rasa_model: Text):
     _, response = await rasa_app.get("/status")
-    model_file = response.json()["model_file"]
+    model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "fingerprint" in response.json
     assert model_file == Path(trained_rasa_model).name
 
 
 async def test_status_nlu_only(
-    rasa_app_nlu: SanicASGITestClient, trained_nlu_model: Text
+        rasa_app_nlu: SanicASGITestClient, trained_nlu_model: Text
 ):
     _, response = await rasa_app_nlu.get("/status")
-    model_file = response.json()["model_file"]
+    model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
-    assert "model_file" in response.json()
+    assert "fingerprint" in response.json
+    assert "model_file" in response.json
     assert model_file == Path(trained_nlu_model).name
 
 
@@ -194,7 +194,7 @@ async def test_status_secured(rasa_secured_app: SanicASGITestClient):
 
 
 async def test_status_not_ready_agent(rasa_app: SanicASGITestClient):
-    rasa_app.app.agent = None
+    rasa_app.sanic_app.agent = None
     _, response = await rasa_app.get("/status")
     assert response.status == HTTPStatus.CONFLICT
 
@@ -206,7 +206,7 @@ def shared_statuses() -> DictProxy:
 
 @pytest.fixture
 def background_server(
-    shared_statuses: DictProxy, tmpdir: pathlib.Path, monkeypatch: MonkeyPatch
+        shared_statuses: DictProxy, tmpdir: pathlib.Path, monkeypatch: MonkeyPatch
 ) -> Generator[Process, None, None]:
     # Create a fake model archive which the mocked train function can return
 
@@ -245,7 +245,7 @@ def background_server(
 
 @pytest.fixture()
 def training_request(
-    shared_statuses: DictProxy, tmp_path: Path
+        shared_statuses: DictProxy, tmp_path: Path
 ) -> Generator[Process, None, None]:
     def send_request() -> None:
         payload = {}
@@ -290,15 +290,15 @@ def training_request(
 @pytest.mark.skipif("PYCHARM_HOSTED" in os.environ, reason="results in segfault")
 @pytest.mark.skip_on_windows
 def test_train_status_is_not_blocked_by_training(
-    background_server: Process, shared_statuses: DictProxy, training_request: Process
+        background_server: Process, shared_statuses: DictProxy, training_request: Process
 ):
     background_server.start()
 
     def is_server_ready() -> bool:
         try:
             return (
-                requests.get("http://localhost:5005/status").status_code
-                == HTTPStatus.OK
+                    requests.get("http://localhost:5005/status").status_code
+                    == HTTPStatus.OK
             )
         except Exception:
             return False
@@ -315,7 +315,7 @@ def test_train_status_is_not_blocked_by_training(
     # Wait until the blocking training function was called
     start = time.time()
     while (
-        shared_statuses.get("started_training") is not True and time.time() - start < 60
+            shared_statuses.get("started_training") is not True and time.time() - start < 60
     ):
         time.sleep(1)
 
@@ -377,7 +377,7 @@ async def test_parse(rasa_app: SanicASGITestClient, response_test: ResponseTest)
     _, response = await rasa_app.post(
         response_test.endpoint, json=response_test.payload
     )
-    rjs = response.json()
+    rjs = response.json
     assert response.status == HTTPStatus.OK
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
     assert rjs["entities"] == response_test.expected_response["entities"]
@@ -418,7 +418,7 @@ async def test_parse(rasa_app: SanicASGITestClient, response_test: ResponseTest)
     ],
 )
 async def test_parse_with_different_emulation_mode(
-    rasa_app: SanicASGITestClient, response_test: ResponseTest
+        rasa_app: SanicASGITestClient, response_test: ResponseTest
 ):
     _, response = await rasa_app.post(
         response_test.endpoint, json=response_test.payload
@@ -430,7 +430,7 @@ async def test_parse_without_nlu_model(rasa_app_core: SanicASGITestClient):
     _, response = await rasa_app_core.post("/model/parse", json={"text": "hello"})
     assert response.status == HTTPStatus.OK
 
-    rjs = response.json()
+    rjs = response.json
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
@@ -442,11 +442,11 @@ async def test_parse_on_invalid_emulation_mode(rasa_app: SanicASGITestClient,):
 
 
 async def test_train_nlu_success(
-    rasa_app: SanicASGITestClient,
-    stack_config_path: Text,
-    nlu_data_path: Text,
-    domain_path: Text,
-    tmp_path_factory: TempPathFactory,
+        rasa_app: SanicASGITestClient,
+        stack_config_path: Text,
+        nlu_data_path: Text,
+        domain_path: Text,
+        tmp_path_factory: TempPathFactory,
 ):
     domain_data = rasa.shared.utils.io.read_yaml_file(domain_path)
     config_data = rasa.shared.utils.io.read_yaml_file(stack_config_path)
@@ -480,11 +480,11 @@ async def test_train_nlu_success(
 
 
 async def test_train_core_success_with(
-    rasa_app: SanicASGITestClient,
-    stack_config_path: Text,
-    stories_path: Text,
-    domain_path: Text,
-    tmp_path_factory: TempPathFactory,
+        rasa_app: SanicASGITestClient,
+        stack_config_path: Text,
+        stories_path: Text,
+        domain_path: Text,
+        tmp_path_factory: TempPathFactory,
 ):
     payload = f"""
 {Path(domain_path).read_text()}
@@ -512,9 +512,9 @@ async def test_train_core_success_with(
 
 
 async def test_train_with_retrieval_events_success(
-    rasa_app: SanicASGITestClient,
-    stack_config_path: Text,
-    tmp_path_factory: TempPathFactory,
+        rasa_app: SanicASGITestClient,
+        stack_config_path: Text,
+        tmp_path_factory: TempPathFactory,
 ):
     payload = {}
 
@@ -552,7 +552,7 @@ async def test_train_with_retrieval_events_success(
 
 
 def assert_trained_model(
-    response_body: bytes, tmp_path_factory: TempPathFactory,
+        response_body: bytes, tmp_path_factory: TempPathFactory,
 ) -> None:
     # save model to temporary file
 
@@ -568,7 +568,7 @@ def assert_trained_model(
 
 
 async def test_train_with_yaml(
-    rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory,
+        rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory,
 ):
     training_data = """
 version: "2.0"
@@ -621,10 +621,10 @@ pipeline:
     "params", [{}, {"augmentation": 20, "num_threads": 2, "force_training": True}]
 )
 async def test_train_with_yaml_with_params(
-    monkeypatch: MonkeyPatch,
-    rasa_non_trained_app: SanicASGITestClient,
-    tmp_path: Path,
-    params: Dict,
+        monkeypatch: MonkeyPatch,
+        rasa_non_trained_app: SanicASGITestClient,
+        tmp_path: Path,
+        params: Dict,
 ):
     fake_model = Path(tmp_path) / "fake_model.tar.gz"
     fake_model.touch()
@@ -681,7 +681,7 @@ rule my rule
     [({}, False), ({"force_training": False}, False), ({"force_training": True}, True)],
 )
 def test_training_payload_from_yaml_force_training(
-    headers: Dict, expected: bool, tmp_path: Path
+        headers: Dict, expected: bool, tmp_path: Path
 ):
     request = Mock()
     request.body = b""
@@ -697,13 +697,13 @@ def test_training_payload_from_yaml_force_training(
         ({}, rasa.shared.constants.DEFAULT_MODELS_PATH),
         ({"save_to_default_model_directory": False}, ANY),
         (
-            {"save_to_default_model_directory": True},
-            rasa.shared.constants.DEFAULT_MODELS_PATH,
+                {"save_to_default_model_directory": True},
+                rasa.shared.constants.DEFAULT_MODELS_PATH,
         ),
     ],
 )
 def test_training_payload_from_yaml_save_to_default_model_directory(
-    headers: Dict, expected: Text, tmp_path: Path
+        headers: Dict, expected: Text, tmp_path: Path
 ):
     request = Mock()
     request.body = b""
@@ -725,7 +725,7 @@ async def xtest_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Te
 
     assert response.status == HTTPStatus.OK
 
-    js = response.json()
+    js = response.json
     assert set(js.keys()) == {
         "report",
         "precision",
@@ -745,7 +745,7 @@ async def xtest_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Te
 
 
 async def test_evaluate_stories_not_ready_agent(
-    rasa_non_trained_app: SanicASGITestClient, stories_path: Text
+        rasa_non_trained_app: SanicASGITestClient, stories_path: Text
 ):
     stories = rasa.shared.utils.io.read_file(stories_path)
 
@@ -755,7 +755,7 @@ async def test_evaluate_stories_not_ready_agent(
 
 
 async def test_evaluate_stories_end_to_end(
-    rasa_app: SanicASGITestClient, end_to_end_story_path: Text
+        rasa_app: SanicASGITestClient, end_to_end_story_path: Text
 ):
     stories = rasa.shared.utils.io.read_file(end_to_end_story_path)
 
@@ -766,7 +766,7 @@ async def test_evaluate_stories_end_to_end(
     )
 
     assert response.status == HTTPStatus.OK
-    js = response.json()
+    js = response.json
     assert set(js.keys()) == {
         "report",
         "precision",
@@ -796,7 +796,7 @@ async def test_evaluate_intent(rasa_app: SanicASGITestClient, nlu_data_path: Tex
     )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
@@ -822,7 +822,7 @@ async def test_evaluate_intent_without_body(rasa_app: SanicASGITestClient):
 
 
 async def test_evaluate_intent_on_just_nlu_model(
-    rasa_app_nlu: SanicASGITestClient, nlu_data_path: Text
+        rasa_app_nlu: SanicASGITestClient, nlu_data_path: Text
 ):
     nlu_data = rasa.shared.utils.io.read_file(nlu_data_path)
 
@@ -833,7 +833,7 @@ async def test_evaluate_intent_on_just_nlu_model(
     )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
@@ -841,10 +841,10 @@ async def test_evaluate_intent_on_just_nlu_model(
 
 
 async def test_evaluate_intent_with_model_param(
-    rasa_app: SanicASGITestClient, trained_nlu_model: Text, nlu_data_path: Text
+        rasa_app: SanicASGITestClient, trained_nlu_model: Text, nlu_data_path: Text
 ):
     _, response = await rasa_app.get("/status")
-    previous_model_file = response.json()["model_file"]
+    previous_model_file = response.json["model_file"]
 
     nlu_data = rasa.shared.utils.io.read_file(nlu_data_path)
 
@@ -855,21 +855,21 @@ async def test_evaluate_intent_with_model_param(
     )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
     }
 
     _, response = await rasa_app.get("/status")
-    assert previous_model_file == response.json()["model_file"]
+    assert previous_model_file == response.json["model_file"]
 
 
 async def test_evaluate_intent_with_model_server(
-    rasa_app: SanicASGITestClient,
-    trained_rasa_model: Text,
-    nlu_data_path: Text,
-    tear_down_scheduler: None,
+        rasa_app: SanicASGITestClient,
+        trained_rasa_model: Text,
+        nlu_data_path: Text,
+        tear_down_scheduler: None,
 ):
     production_model_server_url = (
         "https://example.com/webhooks/actions?model=production"
@@ -895,7 +895,7 @@ async def test_evaluate_intent_with_model_server(
         agent_with_model_server = await load_agent(
             model_server=EndpointConfig(production_model_server_url)
         )
-        rasa_app.app.agent = agent_with_model_server
+        rasa_app.sanic_app.agent = agent_with_model_server
 
         _, response = await rasa_app.post(
             f"/model/test/intents?model={test_model_server_url}",
@@ -904,13 +904,13 @@ async def test_evaluate_intent_with_model_server(
         )
 
     assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
+    assert set(response.json.keys()) == {
         "intent_evaluation",
         "entity_evaluation",
         "response_selection_evaluation",
     }
 
-    production_model_server = rasa_app.app.agent.model_server
+    production_model_server = rasa_app.sanic_app.agent.model_server
     # Assert that the model server URL for the test didn't override the production
     # model server URL
     assert production_model_server.url == production_model_server_url
@@ -919,9 +919,9 @@ async def test_evaluate_intent_with_model_server(
 
 
 async def test_cross_validation(
-    rasa_non_trained_app: SanicASGITestClient,
-    nlu_data_path: Text,
-    stack_config_path: Text,
+        rasa_non_trained_app: SanicASGITestClient,
+        nlu_data_path: Text,
+        stack_config_path: Text,
 ):
     nlu_data = Path(nlu_data_path).read_text()
     config = Path(stack_config_path).read_text()
@@ -935,7 +935,7 @@ async def test_cross_validation(
     )
 
     assert response.status == HTTPStatus.OK
-    response_body = response.json()
+    response_body = response.json
     for required_key in {
         "intent_evaluation",
         "entity_evaluation",
@@ -950,10 +950,10 @@ async def test_cross_validation(
 
 
 async def test_cross_validation_with_callback_success(
-    rasa_non_trained_app: SanicASGITestClient,
-    nlu_data_path: Text,
-    monkeypatch: MonkeyPatch,
-    stack_config_path: Text,
+        rasa_non_trained_app: SanicASGITestClient,
+        nlu_data_path: Text,
+        monkeypatch: MonkeyPatch,
+        stack_config_path: Text,
 ):
     nlu_data = Path(nlu_data_path).read_text()
     config = Path(stack_config_path).read_text()
@@ -1009,10 +1009,10 @@ async def test_cross_validation_with_callback_success(
 
 
 async def test_cross_validation_with_callback_error(
-    rasa_non_trained_app: SanicASGITestClient,
-    nlu_data_path: Text,
-    monkeypatch: MonkeyPatch,
-    stack_config_path: Text,
+        rasa_non_trained_app: SanicASGITestClient,
+        nlu_data_path: Text,
+        monkeypatch: MonkeyPatch,
+        stack_config_path: Text,
 ):
     nlu_data = Path(nlu_data_path).read_text()
     config = Path(stack_config_path).read_text()
@@ -1047,10 +1047,10 @@ async def test_cross_validation_with_callback_error(
 
 
 async def test_callback_unexpected_error(
-    rasa_non_trained_app: SanicASGITestClient,
-    nlu_data_path: Text,
-    monkeypatch: MonkeyPatch,
-    stack_config_path: Text,
+        rasa_non_trained_app: SanicASGITestClient,
+        nlu_data_path: Text,
+        monkeypatch: MonkeyPatch,
+        stack_config_path: Text,
 ):
     nlu_data = Path(nlu_data_path).read_text()
     config = Path(stack_config_path).read_text()
@@ -1106,7 +1106,7 @@ async def test_predict(rasa_app: SanicASGITestClient):
         json=data,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert "scores" in content
     assert "tracker" in content
@@ -1160,9 +1160,9 @@ async def test_replace_events_empty_request_body(rasa_app: SanicASGITestClient):
 
 @freeze_time("2018-01-01")
 async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     _, response = await rasa_app.get("/conversations/madeupid/tracker")
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert content["paused"] is False
     assert content["slots"] == {
@@ -1209,7 +1209,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
 
 @pytest.mark.parametrize("event", test_events)
 async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1226,11 +1226,11 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
         json=serialized_event,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    assert response.json() is not None
+    assert response.json is not None
     assert response.status == HTTPStatus.OK
 
     _, tracker_response = await rasa_app.get(f"/conversations/{sender_id}/tracker")
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
 
     assert len(tracker.get("events")) == 4
@@ -1246,7 +1246,7 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
 
 
 async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1263,7 +1263,7 @@ async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClien
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
     _, tracker_response = await rasa_app.get(f"/conversations/{sender_id}/tracker")
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
 
     deserialized_events = [Event.from_parameters(event) for event in tracker["events"]]
 
@@ -1273,7 +1273,7 @@ async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClien
 
 
 async def test_push_multiple_events(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     conversation_id = str(uuid.uuid1())
     conversation = f"/conversations/{conversation_id}"
 
@@ -1283,26 +1283,26 @@ async def test_push_multiple_events(rasa_app: SanicASGITestClient):
         json=events,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    assert response.json() is not None
+    assert response.json is not None
     assert response.status == HTTPStatus.OK
 
     _, tracker_response = await rasa_app.get(
         f"/conversations/{conversation_id}/tracker"
     )
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
 
     # there is an initial session start sequence at the beginning
     assert [
-        Event.from_parameters(event) for event in tracker.get("events")
-    ] == with_model_ids(session_start_sequence + test_events, model_id)
+               Event.from_parameters(event) for event in tracker.get("events")
+           ] == with_model_ids(session_start_sequence + test_events, model_id)
 
 
 @pytest.mark.parametrize(
     "params", ["?execute_side_effects=true&output_channel=callback", ""]
 )
 async def test_pushing_event_while_executing_side_effects(
-    rasa_server: Sanic, params: Text
+        rasa_server: Sanic, params: Text
 ):
     input_channel = CallbackInput(EndpointConfig("https://example.com/callback"))
     channel.register([input_channel], rasa_server, "/webhooks/")
@@ -1335,7 +1335,7 @@ async def test_pushing_event_while_executing_side_effects(
 
 
 async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.app.agent.model_id
+    model_id = rasa_app.sanic_app.agent.model_id
     conversation_id = str(uuid.uuid1())
     id_len = len(conversation_id) // 2
     conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
@@ -1347,19 +1347,19 @@ async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
         json=events,
         headers={"Content-Type": "application/json"},
     )
-    assert response.json() is not None
+    assert response.json is not None
     assert response.status == HTTPStatus.OK
 
     _, tracker_response = await rasa_app.get(
         f"/conversations/{conversation_id}/tracker"
     )
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
 
     # there is a session start sequence at the start
     assert [
-        Event.from_parameters(event) for event in tracker.get("events")
-    ] == with_model_ids(session_start_sequence + test_events, model_id)
+               Event.from_parameters(event) for event in tracker.get("events")
+           ] == with_model_ids(session_start_sequence + test_events, model_id)
 
 
 async def test_put_tracker(rasa_app: SanicASGITestClient):
@@ -1369,13 +1369,13 @@ async def test_put_tracker(rasa_app: SanicASGITestClient):
         json=data,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    content = response.json()
+    content = response.json
     assert response.status == HTTPStatus.OK
     assert len(content["events"]) == len(test_events)
     assert content["sender_id"] == "pushtracker"
 
     _, tracker_response = await rasa_app.get("/conversations/pushtracker/tracker")
-    tracker = tracker_response.json()
+    tracker = tracker_response.json
     assert tracker is not None
     evts = tracker.get("events")
     assert events.deserialise_events(evts) == test_events
@@ -1385,14 +1385,14 @@ async def test_predict_without_conversation_id(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post("/conversations/non_existent_id/predict")
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json()["message"] == "Conversation ID not found."
+    assert response.json["message"] == "Conversation ID not found."
 
 
 async def test_sorted_predict(rasa_app: SanicASGITestClient):
     await _create_tracker_for_sender(rasa_app, "sortedpredict")
 
     _, response = await rasa_app.post("/conversations/sortedpredict/predict")
-    scores = response.json()["scores"]
+    scores = response.json["scores"]
     sorted_scores = sorted(scores, key=lambda k: (-k["score"], k["action"]))
     assert scores == sorted_scores
 
@@ -1415,9 +1415,9 @@ async def test_get_tracker_with_jwt(rasa_secured_app: SanicASGITestClient):
     # {"user": {"username": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-        "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwic"
-        "m9sZSI6ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2u"
-        "QRre7IWTuIDrCn5AIw"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwic"
+                         "m9sZSI6ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2u"
+                         "QRre7IWTuIDrCn5AIw"
     }
     _, response = await rasa_secured_app.get(
         "/conversations/testadmin/tracker", headers=jwt_header
@@ -1432,9 +1432,9 @@ async def test_get_tracker_with_jwt(rasa_secured_app: SanicASGITestClient):
     # {"user": {"username": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-        "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb"
-        "2xlIjoidXNlciJ9fQ.JnMTLYd56qut2w9h7hRQlDm1n3l"
-        "HJHOxxC_w7TtwCrs"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb"
+                         "2xlIjoidXNlciJ9fQ.JnMTLYd56qut2w9h7hRQlDm1n3l"
+                         "HJHOxxC_w7TtwCrs"
     }
     _, response = await rasa_secured_app.get(
         "/conversations/testadmin/tracker", headers=jwt_header
@@ -1477,7 +1477,7 @@ def test_list_routes(empty_agent: Agent):
 async def test_unload_model_error(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.get("/status")
     assert response.status == HTTPStatus.OK
-    assert "model_file" in response.json() and response.json()["model_file"] is not None
+    assert "model_file" in response.json and response.json["model_file"] is not None
 
     _, response = await rasa_app.delete("/model")
     assert response.status == HTTPStatus.NO_CONTENT
@@ -1488,7 +1488,7 @@ async def test_get_domain(rasa_app: SanicASGITestClient):
         "/domain", headers={"accept": rasa.server.JSON_CONTENT_TYPE}
     )
 
-    content = response.json()
+    content = response.json
 
     assert response.status == HTTPStatus.OK
     assert "config" in content
@@ -1509,9 +1509,9 @@ async def test_load_model(rasa_app: SanicASGITestClient, trained_core_model: Tex
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "fingerprint" in response.json
 
-    old_fingerprint = response.json()["fingerprint"]
+    old_fingerprint = response.json["fingerprint"]
 
     data = {"model_file": trained_core_model}
     _, response = await rasa_app.put("/model", json=data)
@@ -1521,20 +1521,20 @@ async def test_load_model(rasa_app: SanicASGITestClient, trained_core_model: Tex
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "fingerprint" in response.json
 
-    assert old_fingerprint != response.json()["fingerprint"]
+    assert old_fingerprint != response.json["fingerprint"]
 
 
 async def test_load_model_from_model_server(
-    rasa_app: SanicASGITestClient, trained_core_model: Text, tear_down_scheduler: None
+        rasa_app: SanicASGITestClient, trained_core_model: Text, tear_down_scheduler: None
 ):
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json()
+    assert "fingerprint" in response.json
 
-    old_fingerprint = response.json()["fingerprint"]
+    old_fingerprint = response.json["fingerprint"]
 
     endpoint = EndpointConfig("https://example.com/model/trained_core_model")
     with open(trained_core_model, "rb") as f:
@@ -1559,13 +1559,13 @@ async def test_load_model_from_model_server(
             _, response = await rasa_app.get("/status")
 
             assert response.status == HTTPStatus.OK
-            assert "fingerprint" in response.json()
+            assert "fingerprint" in response.json
 
-            assert old_fingerprint != response.json()["fingerprint"]
+            assert old_fingerprint != response.json["fingerprint"]
 
 
 async def test_load_model_invalid_request_body(
-    rasa_non_trained_app: SanicASGITestClient,
+        rasa_non_trained_app: SanicASGITestClient,
 ):
     _, response = await rasa_non_trained_app.put("/model")
 
@@ -1573,7 +1573,7 @@ async def test_load_model_invalid_request_body(
 
 
 async def test_load_model_invalid_configuration(
-    rasa_non_trained_app: SanicASGITestClient,
+        rasa_non_trained_app: SanicASGITestClient,
 ):
     data = {"model_file": "some-random-path"}
     _, response = await rasa_non_trained_app.put("/model", json=data)
@@ -1589,7 +1589,7 @@ async def test_execute(rasa_app: SanicASGITestClient):
 
     assert response.status == HTTPStatus.OK
 
-    parsed_content = response.json()
+    parsed_content = response.json
     assert parsed_content["tracker"]
     assert parsed_content["messages"]
 
@@ -1601,7 +1601,7 @@ async def test_execute_without_conversation_id(rasa_app: SanicASGITestClient):
     )
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json()["message"] == "Conversation ID not found."
+    assert response.json["message"] == "Conversation ID not found."
 
 
 async def test_execute_with_missing_action_name(rasa_app: SanicASGITestClient):
@@ -1636,7 +1636,7 @@ async def test_trigger_intent(rasa_app: SanicASGITestClient):
 
     assert response.status == HTTPStatus.OK
 
-    parsed_content = response.json()
+    parsed_content = response.json
     assert parsed_content["tracker"]
     assert parsed_content["messages"]
 
@@ -1651,7 +1651,7 @@ async def test_trigger_intent_with_entity(rasa_app: SanicASGITestClient):
 
     assert response.status == HTTPStatus.OK
 
-    parsed_content = response.json()
+    parsed_content = response.json
     last_slot_set_event = [
         event
         for event in parsed_content["tracker"]["events"]
@@ -1695,14 +1695,14 @@ async def test_trigger_intent_with_not_existing_intent(rasa_app: SanicASGITestCl
         ([RestInput()], "slack", CollectingOutputChannel),
         ([RestInput()], "rest", CollectingOutputChannel),
         (
-            [RestInput(), SlackInput("test", slack_signing_secret="foobar")],
-            "slack",
-            SlackBot,
+                [RestInput(), SlackInput("test", slack_signing_secret="foobar")],
+                "slack",
+                SlackBot,
         ),
     ],
 )
 def test_get_output_channel(
-    input_channels: List[Text], output_channel_to_use: Text, expected_channel: Type
+        input_channels: List[Text], output_channel_to_use: Text, expected_channel: Type
 ):
     request = MagicMock()
     app = MagicMock()
@@ -1758,156 +1758,156 @@ def test_app_when_app_has_no_input_channels():
     # conversation with one session
     [
         (
-            [
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                UserUttered("hi", {"name": "greet"}),
-                ActionExecuted("utter_greet"),
-            ],
-            None,
-            True,
-            """version: "2.0"
-stories:
-- story: some-conversation-ID
-  steps:
-  - intent: greet
-    user: |-
-      hi
-  - action: utter_greet""",
+                [
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    UserUttered("hi", {"name": "greet"}),
+                    ActionExecuted("utter_greet"),
+                ],
+                None,
+                True,
+                """version: "2.0"
+    stories:
+    - story: some-conversation-ID
+      steps:
+      - intent: greet
+        user: |-
+          hi
+      - action: utter_greet""",
         ),
         # conversation with multiple sessions
         (
-            [
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                UserUttered("hi", {"name": "greet"}),
-                ActionExecuted("utter_greet"),
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                UserUttered("bye bye", {"name": "goodbye"}),
-                ActionExecuted("utter_goodbye"),
-            ],
-            None,
-            True,
-            """version: "2.0"
-stories:
-- story: some-conversation-ID, story 1
-  steps:
-  - intent: greet
-    user: |-
-      hi
-  - action: utter_greet
-- story: some-conversation-ID, story 2
-  steps:
-  - intent: goodbye
-    user: |-
-      bye bye
-  - action: utter_goodbye""",
+                [
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    UserUttered("hi", {"name": "greet"}),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    UserUttered("bye bye", {"name": "goodbye"}),
+                    ActionExecuted("utter_goodbye"),
+                ],
+                None,
+                True,
+                """version: "2.0"
+    stories:
+    - story: some-conversation-ID, story 1
+      steps:
+      - intent: greet
+        user: |-
+          hi
+      - action: utter_greet
+    - story: some-conversation-ID, story 2
+      steps:
+      - intent: goodbye
+        user: |-
+          bye bye
+      - action: utter_goodbye""",
         ),
         # conversation with multiple sessions, but setting `all_sessions=false`
         # means only the last one is returned
         (
-            [
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                UserUttered("hi", {"name": "greet"}),
-                ActionExecuted("utter_greet"),
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                UserUttered("bye bye", {"name": "goodbye"}),
-                ActionExecuted("utter_goodbye"),
-            ],
-            None,
-            False,
-            """version: "2.0"
-stories:
-- story: some-conversation-ID
-  steps:
-  - intent: goodbye
-    user: |-
-      bye bye
-  - action: utter_goodbye""",
+                [
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    UserUttered("hi", {"name": "greet"}),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    UserUttered("bye bye", {"name": "goodbye"}),
+                    ActionExecuted("utter_goodbye"),
+                ],
+                None,
+                False,
+                """version: "2.0"
+    stories:
+    - story: some-conversation-ID
+      steps:
+      - intent: goodbye
+        user: |-
+          bye bye
+      - action: utter_goodbye""",
         ),
         # the default for `all_sessions` is `false` - this test checks that
         # only the latest session is returned in that case
         (
-            [
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                UserUttered("hi", {"name": "greet"}),
-                ActionExecuted("utter_greet"),
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                UserUttered("bye bye", {"name": "goodbye"}),
-                ActionExecuted("utter_goodbye"),
-            ],
-            None,
-            None,
-            """version: "2.0"
-stories:
-- story: some-conversation-ID
-  steps:
-  - intent: goodbye
-    user: |-
-      bye bye
-  - action: utter_goodbye""",
+                [
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    UserUttered("hi", {"name": "greet"}),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    UserUttered("bye bye", {"name": "goodbye"}),
+                    ActionExecuted("utter_goodbye"),
+                ],
+                None,
+                None,
+                """version: "2.0"
+    stories:
+    - story: some-conversation-ID
+      steps:
+      - intent: goodbye
+        user: |-
+          bye bye
+      - action: utter_goodbye""",
         ),
         # `until` parameter means only the first session is returned
         (
-            [
-                ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
-                SessionStarted(timestamp=2),
-                UserUttered("hi", {"name": "greet"}, timestamp=3),
-                ActionExecuted("utter_greet", timestamp=4),
-                ActionExecuted(ACTION_SESSION_START_NAME, timestamp=5),
-                SessionStarted(timestamp=6),
-                UserUttered("bye bye", {"name": "goodbye"}, timestamp=7),
-                ActionExecuted("utter_goodbye", timestamp=8),
-            ],
-            4,
-            True,
-            """version: "2.0"
-stories:
-- story: some-conversation-ID
-  steps:
-  - intent: greet
-    user: |-
-      hi
-  - action: utter_greet""",
+                [
+                    ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
+                    SessionStarted(timestamp=2),
+                    UserUttered("hi", {"name": "greet"}, timestamp=3),
+                    ActionExecuted("utter_greet", timestamp=4),
+                    ActionExecuted(ACTION_SESSION_START_NAME, timestamp=5),
+                    SessionStarted(timestamp=6),
+                    UserUttered("bye bye", {"name": "goodbye"}, timestamp=7),
+                    ActionExecuted("utter_goodbye", timestamp=8),
+                ],
+                4,
+                True,
+                """version: "2.0"
+    stories:
+    - story: some-conversation-ID
+      steps:
+      - intent: greet
+        user: |-
+          hi
+      - action: utter_greet""",
         ),
         # empty conversation
         ([], None, True, 'version: "2.0"'),
         # Conversation with slot
         (
-            [
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                UserUttered("hi", {"name": "greet"}),
-                ActionExecuted("utter_greet"),
-                SlotSet(REQUESTED_SLOT, "some value"),
-            ],
-            None,
-            True,
-            """version: "2.0"
-stories:
-- story: some-conversation-ID
-  steps:
-  - intent: greet
-    user: |-
-      hi
-  - action: utter_greet
-  - slot_was_set:
-    - requested_slot: some value""",
+                [
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    UserUttered("hi", {"name": "greet"}),
+                    ActionExecuted("utter_greet"),
+                    SlotSet(REQUESTED_SLOT, "some value"),
+                ],
+                None,
+                True,
+                """version: "2.0"
+    stories:
+    - story: some-conversation-ID
+      steps:
+      - intent: greet
+        user: |-
+          hi
+      - action: utter_greet
+      - slot_was_set:
+        - requested_slot: some value""",
         ),
     ],
 )
 async def test_get_story(
-    rasa_app: SanicASGITestClient,
-    monkeypatch: MonkeyPatch,
-    conversation_events: List[Event],
-    until_time: Optional[float],
-    fetch_all_sessions: Optional[bool],
-    expected: Text,
+        rasa_app: SanicASGITestClient,
+        monkeypatch: MonkeyPatch,
+        conversation_events: List[Event],
+        until_time: Optional[float],
+        fetch_all_sessions: Optional[bool],
+        expected: Text,
 ):
     conversation_id = "some-conversation-ID"
 
@@ -1916,8 +1916,10 @@ async def test_get_story(
 
     tracker_store.save(tracker)
 
-    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
-    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store
+    )
 
     url = f"/conversations/{conversation_id}/story?"
 
@@ -1936,7 +1938,7 @@ async def test_get_story(
 
 
 async def test_get_story_without_conversation_id(
-    rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
+        rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
 ):
     conversation_id = "some-conversation-ID"
     url = f"/conversations/{conversation_id}/story"
@@ -1944,11 +1946,11 @@ async def test_get_story_without_conversation_id(
     _, response = await rasa_app.get(url)
 
     assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json()["message"] == "Conversation ID not found."
+    assert response.json["message"] == "Conversation ID not found."
 
 
 async def test_get_story_does_not_update_conversation_session(
-    rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
+        rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
 ):
     conversation_id = "some-conversation-ID"
 
@@ -1958,7 +1960,7 @@ async def test_get_story_does_not_update_conversation_session(
         session_expiration_time=1 / 60, carry_over_slots=True
     )
 
-    monkeypatch.setattr(rasa_app.app.agent.processor, "domain", domain)
+    monkeypatch.setattr(rasa_app.sanic_app.agent.processor, "domain", domain)
 
     # conversation contains one session that has expired
     now = time.time()
@@ -1972,14 +1974,16 @@ async def test_get_story_does_not_update_conversation_session(
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
     # the conversation session has expired
-    assert rasa_app.app.agent.processor._has_session_expired(tracker)
+    assert rasa_app.sanic_app.agent.processor._has_session_expired(tracker)
 
     tracker_store = InMemoryTrackerStore(domain)
 
     tracker_store.save(tracker)
 
-    monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
-    monkeypatch.setattr(rasa_app.app.agent.processor, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store
+    )
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
 
@@ -1987,8 +1991,8 @@ async def test_get_story_does_not_update_conversation_session(
 
     # expected story is returned
     assert (
-        response.content.decode().strip()
-        == """version: "2.0"
+            response.content.decode().strip()
+            == """version: "2.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -2009,59 +2013,59 @@ stories:
     "initial_tracker_events,events_to_append,expected_events",
     [
         (
-            # the tracker is initially empty, and no events are appended
-            # so we'll just expect the session start sequence with an `action_listen`
-            [],
-            [],
-            [
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                ActionExecuted(ACTION_LISTEN_NAME),
-            ],
+                # the tracker is initially empty, and no events are appended
+                # so we'll just expect the session start sequence with an `action_listen`
+                [],
+                [],
+                [
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
         ),
         (
-            # the tracker is initially empty, and a user utterance is appended
-            # we expect a tracker with a session start sequence and a user utterance
-            [],
-            [UserUttered("/greet", {"name": "greet", "confidence": 1.0})],
-            [
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                SessionStarted(),
-                ActionExecuted(ACTION_LISTEN_NAME),
-                UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
-            ],
+                # the tracker is initially empty, and a user utterance is appended
+                # we expect a tracker with a session start sequence and a user utterance
+                [],
+                [UserUttered("/greet", {"name": "greet", "confidence": 1.0})],
+                [
+                    ActionExecuted(ACTION_SESSION_START_NAME),
+                    SessionStarted(),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
+                ],
         ),
         (
-            # the tracker is initially empty, and a session start sequence is appended
-            # we'll just expect the session start sequence
-            [],
-            [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()],
-            [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()],
+                # the tracker is initially empty, and a session start sequence is appended
+                # we'll just expect the session start sequence
+                [],
+                [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()],
+                [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()],
         ),
         (
-            # the tracker already contains some events - we can simply append events
-            [
-                ActionExecuted(ACTION_LISTEN_NAME),
-                UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
-            ],
-            [ActionExecuted("utter_greet")],
-            [
-                ActionExecuted(ACTION_LISTEN_NAME),
-                UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
-                ActionExecuted("utter_greet"),
-            ],
+                # the tracker already contains some events - we can simply append events
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
+                ],
+                [ActionExecuted("utter_greet")],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered("/greet", {"name": "greet", "confidence": 1.0}),
+                    ActionExecuted("utter_greet"),
+                ],
         ),
     ],
 )
 async def test_update_conversation_with_events(
-    rasa_app: SanicASGITestClient,
-    monkeypatch: MonkeyPatch,
-    initial_tracker_events: List[Event],
-    events_to_append: List[Event],
-    expected_events: List[Event],
+        rasa_app: SanicASGITestClient,
+        monkeypatch: MonkeyPatch,
+        initial_tracker_events: List[Event],
+        events_to_append: List[Event],
+        expected_events: List[Event],
 ):
     conversation_id = "some-conversation-ID"
-    agent = rasa_app.app.agent
+    agent = rasa_app.sanic_app.agent
     tracker_store = agent.tracker_store
     domain = agent.domain
     model_id = agent.model_id
