@@ -206,7 +206,7 @@ def test_operator_and(negated: bool):
 
 
 @pytest.mark.parametrize("negated", [False, True])
-def test_operator_seq_track(negated: bool):
+def test_operator_seq(negated: bool):
     events_expected = [
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
         (ActionExecuted("unrelated event that does not interrupt the sequence"), False),
@@ -217,6 +217,31 @@ def test_operator_seq_track(negated: bool):
     ]
     events, expected = zip(*events_expected)
     sub_markers = [IntentDetectedMarker("1"), IntentDetectedMarker("2")]
+    marker = SequenceMarker(sub_markers, name="marker_name", negated=negated)
+    for event in events:
+        marker.track(event)
+    expected = list(expected)
+    if negated:
+        expected = [not applies for applies in expected]
+    assert marker.history == expected
+
+
+@pytest.mark.parametrize("negated", [False, True])
+def test_operator_seq_does_not_allow_overlap(negated: bool):
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "3"}), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "3"}), False),
+    ]
+    events, expected = zip(*events_expected)
+    sub_markers = [
+        IntentDetectedMarker("1"),
+        IntentDetectedMarker("2"),
+        IntentDetectedMarker("3"),
+    ]
     marker = SequenceMarker(sub_markers, name="marker_name", negated=negated)
     for event in events:
         marker.track(event)

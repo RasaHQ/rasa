@@ -65,17 +65,20 @@ class NotMarker(OperatorMarker):
 class SequenceMarker(OperatorMarker):
     """Checks that all sub-markers apply consecutively in the specified order.
 
-    Given a sequence of sub-markers `m_0, m_1,...,m_n`, the sequence marker applies
-    at the `i`-th event if all sub-markers successively apply at some previous event.
-    More precisely, the sub-markers apply at events  with indices `i_0,...,i_n`,
-    respectively, such that `i_0 < i_1 < ... < i_n <= i`.
+    The sequence marker application follows two rules:
+    (1) Given a sequence of sub-markers `m_0, m_1,...,m_n`, the sequence marker applies
+        at the `i`-th event if all sub-markers successively applied to some previous
+        events and the last sub-marker applies at the current `i`-th events.
+    (2) If the sequence marker applies at the `i`-th event, then for it's next
+        application the events up to the `i`-th event will be ignored.
+
     """
 
     def __init__(
         self, markers: List[Marker], negated: bool = False, name: Optional[Text] = None
     ) -> None:
         super().__init__(markers=markers, negated=negated, name=name)
-        self._progress: List[int] = list()
+        self._progress: int = 0
 
     @staticmethod
     def positive_tag() -> Text:
@@ -89,21 +92,13 @@ class SequenceMarker(OperatorMarker):
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         # Remember that all the sub-markers have been updated before this tracker.
         # Hence, whether the sub-markers apply to the current `event` is stored in the
-        # last item of their history. So we can...
-        # (1) Check whether we can continue a started sequence
-        for sequence_idx, sub_marker_idx in enumerate(self._progress):
-            next_sub_marker_idx = sub_marker_idx + 1
-            if self.sub_markers[next_sub_marker_idx].history[-1]:
-                self._progress[sequence_idx] = next_sub_marker_idx
-        # (2) If the first marker applies to the current time step, start a new
-        # sequence:
-        if self.sub_markers[0].history[-1]:
-            self._progress.append(0)
-        # (3) Check if any sequence is complete (where we exploit that, because of the
-        # "i_{j} < i_{j+1}"  condition, only one sequence in progress ccn be
-        # satisfied at one time step)
-        if self._progress and self._progress[0] == len(self.sub_markers) - 1:
-            self._progress.pop(0)
+        # last item of their history. Hence, to check if we made some progress in
+        # identifying a sequence, we can simply check:
+        if self.sub_markers[self._progress].history[-1]:
+            self._progress += 1
+        # If we were able to apply every sub-marker once, we reset our progress:
+        if self._progress == len(self.sub_markers):
+            self._progress = 0
             return True
         return False
 
