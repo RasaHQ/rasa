@@ -17,6 +17,10 @@ from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 logger = logging.getLogger(__name__)
 
 CHANNEL_NAME = "hangouts"
+CERTS_URL = (
+    "https://www.googleapis.com/service_accounts/"
+    "v1/metadata/x509/chat@system.gserviceaccount.com"
+)
 
 
 class HangoutsOutput(OutputChannel):
@@ -206,10 +210,10 @@ class HangoutsInput(InputChannel):
         self.hangouts_room_added_intent_name = hangouts_room_added_intent_name
         self.hangouts_user_added_intent_name = hangouts_removed_intent_name
 
-        # Google's Request obj (this is used to make HTTP requests) and cached
-        # session used to fetch Google's certs. Certs don't change frequently,
-        # so it makes sense to cache requests, rather than getting it on every
-        # message.
+        # Google's Request obj (this is used to make HTTP requests) uses cached
+        # session to fetch Google's service certs. Certs don't change frequently,
+        # so it makes sense to cache request body, rather than getting it again
+        # every message. Actual caching depends on response headers.
         # see: https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/id_token.py#L15 # noqa: E501, W505
         cached_session = cachecontrol.CacheControl(requests.session())
         self.google_request = google.auth.transport.requests.Request(
@@ -268,11 +272,13 @@ class HangoutsInput(InputChannel):
         # and https://google-auth.readthedocs.io/en/latest/user-guide.html#identity-tokens # noqa: E501, W505
         try:
             decoded_token = id_token.verify_token(
-                bot_token, self.google_request, audience=self.project_id
+                bot_token,
+                self.google_request,
+                audience=self.project_id,
+                certs_url=CERTS_URL,
             )
         except ValueError:
             abort(401)
-
         if decoded_token["iss"] != "chat@system.gserviceaccount.com":
             abort(401)
 
