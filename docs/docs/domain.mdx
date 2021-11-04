@@ -577,6 +577,8 @@ The slot mapping will not apply if the intent of the message is
 `excluded_intent`.
 
 A slot with `from_trigger_intent` mapping must always be listed in the form's `required_slots`.
+You can verify if your domain is compliant with this requirement by running
+CLI command [`rasa data validate`](./command-line-interface.mdx#rasa-data-validate).
 
 ```yaml-rasa
 slots:
@@ -626,12 +628,8 @@ if it is empty when the form is activated.
 
 ### Custom Slot Mappings
 
-You can define custom slot mappings using custom actions when none of the predefined mappings fit your use case.
-There are two options available through which you can achieve this:
-
-A) implementing a custom action inheriting from the `Action` interface from the Rasa SDK: In addition to adding the
-custom action name in the `actions` section of the domain, the custom slot mapping must specify the custom action
-which implements the desired logic. For example:
+You can define custom slot mappings using [slot validation actions](./slot-validation-actions.mdx) when none of the
+predefined mappings fit your use case. You must define this slot mapping to be of type `custom`, for example:
 
 ```yaml
 slots:
@@ -641,16 +639,6 @@ slots:
     - type: custom
       action: action_calculate_day_of_week
 ```
-
-B) implementing custom extraction and / or validation code in a custom action inheriting from the `ValidationAction`
-interface from the Rasa SDK: The name of the action is already implemented and should not be overridden:
-`action_validate_slot_mappings`. It is not required to specify this action name in the slot mapping, however you must
-add `action_validate_slot_mappings` to the list of actions in the domain.
-
-:::note
-Slots mapped to a form in the mapping `conditions` will be ignored by `ValidationAction` unless you override
-the `required_slots` method to include the slots you want to extract and / or validate.
-:::
 
 ### Initial slot values
 

@@ -1,0 +1,101 @@
+---
+id: slot-validation-actions
+sidebar_label: Slot Validation Actions
+title: Slot Validation Actions
+abstract: A slot validation action is a special type of custom action, designed to handle custom extraction and/or validation of slot values. This can be used to validate slots with predefined mappings or extract slots with custom mappings.
+---
+
+Rasa SDK provides three base classes that you can use to inherit from in order to define your custom slot extraction and
+validation code:
+
+## `Action` class
+
+You can use this class to build a [custom action](./custom-actions.mdx) that is limited to returning only
+`SlotSet` and `BotUttered` events. Any other event type will be filtered out by the default action
+[`action_extract_slots`](./default-actions.mdx#action_extract_slots).
+The name of the custom action will have to be specified in the `action` key of the
+[custom slot mapping](./domain.mdx#custom-slot-mappings) in the domain.
+Note that the action name must be listed in the domain `actions` section too.
+
+## `ValidationAction` class
+
+You can extend the `ValidationAction` in the Rasa SDK to define custom extraction and / or validation of slots that
+can be set or updated outside of a form context.
+With this option, you do not need to specify the `action` key in the [custom slot mapping](./domain.mdx#custom-slot-mappings).
+
+Note that you do not need to implement the `name` method in the custom action extending `ValidationAction`, since this
+is already provided: `action_validate_slot_mappings`. However this name must be added to the domain `actions` list.
+
+:::note
+Slots mapped to a form in the mapping `conditions` will be ignored by `ValidationAction` unless you override
+the `required_slots` method to include the slots you want to extract and / or validate.
+:::
+
+### Validation of Slots with Predefined Mappings
+
+You must write functions named `validate_<slot_name>` for every predefined slot that you need validated.
+
+In the following example, the value for slot `location` is capitalized only if the extracted value is of type string:
+
+```python
+from typing import Text, Any, Dict
+
+from rasa_sdk import Tracker, ValidationAction
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.types import DomainDict
+
+
+class ValidatePredefinedSlots(ValidationAction):
+    def validate_location(
+        self,
+        slot_value: Any,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: DomainDict,
+    ) -> Dict[Text, Any]:
+        """Validate location value."""
+        if isinstance(slot_value, str):
+            # validation succeeded, capitalize the value of the "location" slot
+            return {"location": slot_value.capitalize()}
+        else:
+            # validation failed, set this slot to None
+            return {"location": None}
+```
+
+### Extraction of Custom Slot Mappings
+
+In order to define custom extraction code, you must write an `extract_<slot_name>` method for every slot with a
+custom slot mapping.
+
+The following example shows the implementation of a custom action that extracts the slot `count_of_insults` to keep
+track of the user's attitude.
+
+```python
+from typing import Dict, Text, Any
+
+from rasa_sdk import Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.forms import ValidationAction
+
+
+class ValidateCustomSlotMappings(ValidationAction):
+    async def extract_count_of_insults(
+        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
+    ) -> Dict[Text, Any]:
+        intent_of_last_user_message = tracker.get_intent_of_latest_message()
+        current_count_of_insults = tracker.get_slot("count_of_insults")
+        if intent_of_last_user_message == "insult":
+           current_count_of_insults += 1
+
+        return {"count_of_insults": current_count_of_insults}
+```
+
+## `FormValidationAction` class
+
+If you prefer that certain custom slot mappings should only be set within the context of a form,
+make sure your custom action inherits from `FormValidationAction` rather than from `ValidationAction`.
+It is not required to use mapping conditions for custom slot mappings defined in a custom action extending
+`FormValidationAction`.
+Note that this custom action will only run if the form is activated.
+
+To learn more about how to implement this class, see Forms [Advanced Usage](./forms.mdx#advanced_usage).

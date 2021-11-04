@@ -329,6 +329,11 @@ to fully customize the validation process.
 
 ### Custom Slot Mappings
 
+:::caution Changed in 3.0
+The `slots_mapped_in_domain` argument provided to the `required_slots` method of `FormValidationAction`
+has been replaced by the `domain_slots` argument, please update your custom actions to the new argument name.
+:::
+
 If none of the predefined [Slot Mappings](./domain.mdx#slot-mappings) fit your use
 case, you can use the
 [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>` to write your own
@@ -371,12 +376,12 @@ class ValidateRestaurantForm(FormValidationAction):
 
     async def required_slots(
         self,
-        slots_mapped_in_domain: List[Text],
+        domain_slots: List[Text],
         dispatcher: "CollectingDispatcher",
         tracker: "Tracker",
         domain: "DomainDict",
-    ) -> Optional[List[Text]]:
-        required_slots = slots_mapped_in_domain + ["outdoor_seating"]
+    ) -> List[Text]:
+        required_slots = domain_slots + ["outdoor_seating"]
         return required_slots
 
     async def extract_outdoor_seating(
@@ -422,18 +427,18 @@ class ValidateRestaurantForm(FormValidationAction):
 
     async def required_slots(
         self,
-        slots_mapped_in_domain: List[Text],
+        domain_slots: List[Text],
         dispatcher: "CollectingDispatcher",
         tracker: "Tracker",
         domain: "DomainDict",
-    ) -> Optional[List[Text]]:
+    ) -> List[Text]:
         additional_slots = ["outdoor_seating"]
         if tracker.slots.get("outdoor_seating") is True:
             # If the user wants to sit outside, ask
             # if they want to sit in the shade or in the sun.
             additional_slots.append("shade_or_sun")
 
-        return additional_slots + slots_mapped_in_domain
+        return additional_slots + domain_slots
 ```
 
 ### The requested_slot slot
