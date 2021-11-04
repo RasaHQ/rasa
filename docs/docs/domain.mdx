@@ -743,19 +743,16 @@ call, or to start the conversation with a bot message. The docs on
 ## Config
 
 The `config` key in the domain file maintains the `store_entities_as_slots` parameter.
-When an entity is recognized by the NLU model and the entity name matches a slot name,
-`store_entities_as_slots` defines whether the entity value should be placed in that slot.
-By default, entities will auto-fill slots of the same name.
+When an entity is recognized by the NLU model and it matches the `from_entity` slot mapping, `store_entities_as_slots`
+defines whether the entity value should be placed in that slot.
+By default, this behaviour is switched on.
 
-You can turn off all slot auto-filling by setting the `store_entities_as_slots` parameter to `false`:
+You can turn off this functionality by setting the `store_entities_as_slots` parameter to `false`:
 
 ```yaml-rasa title="domain.yml"
 config:
   store_entities_as_slots: false
 ```
-
-You can also turn off this behavior for a specific slot using the [`auto_fill`](./domain.mdx#slot-auto-fill)
-parameter in that slot's definition.
 
 :::note looking for config.yml?
 If you're looking for information on the `config.yml` file, check out the docs on
