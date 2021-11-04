@@ -205,10 +205,11 @@ def test_operator_and(negated: bool):
     assert marker.history == expected
 
 
-@pytest.mark.parametrize("negated", [True, False])
+@pytest.mark.parametrize("negated", [False, True])
 def test_operator_seq_track(negated: bool):
     events_expected = [
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (ActionExecuted("unrelated event that does not interrupt the sequence"), False),
         (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
         (UserUttered(intent={INTENT_NAME_KEY: "3"}), False),
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
