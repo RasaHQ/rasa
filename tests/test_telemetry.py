@@ -81,7 +81,7 @@ async def test_events_schema(
 
     telemetry.track_nlu_model_test(TrainingData())
 
-    telemetry.track_markers_extraction_initiated("all", False, None, None)
+    telemetry.track_markers_extraction_initiated("all", False, False, None)
 
     telemetry.track_markers_extracted(1)
 

@@ -96,7 +96,7 @@ TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
 TELEMETRY_MARKERS_EXTRACTION_INITIATED_EVENT = "Markers Extraction Initiated"
 TELEMETRY_MARKERS_EXTRACTED_EVENT = "Markers Extracted"
-TELEMETRY_MARKERS_STATS_COMPUTED_EVENT = "Markers Stats Computed"
+TELEMETRY_MARKERS_STATS_COMPUTED_EVENT = "Markers Statistics Computed"
 TELEMETRY_MARKERS_PARSED_COUNT = "Markers Parsed"
 
 # used to calculate the context on the first call and cache it afterwards
