@@ -97,12 +97,12 @@ class ErrorResponse(Exception):
     """Common exception to handle failing API requests."""
 
     def __init__(
-            self,
-            status: Union[int, HTTPStatus],
-            reason: Text,
-            message: Text,
-            details: Any = None,
-            help_url: Optional[Text] = None,
+        self,
+        status: Union[int, HTTPStatus],
+        reason: Text,
+        message: Text,
+        details: Any = None,
+        help_url: Optional[Text] = None,
     ) -> None:
         """Creates error.
 
@@ -133,7 +133,7 @@ def _docs(sub_url: Text) -> Text:
 
 
 def ensure_loaded_agent(
-        app: Sanic, require_core_is_ready: bool = False
+    app: Sanic, require_core_is_ready: bool = False
 ) -> Callable[[Callable], Callable[..., Any]]:
     """Wraps a request handler ensuring there is a loaded and usable agent.
 
@@ -181,7 +181,7 @@ def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
 
 
 def requires_auth(
-        app: Sanic, token: Optional[Text] = None
+    app: Sanic, token: Optional[Text] = None
 ) -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler with token authentication."""
 
@@ -200,7 +200,7 @@ def requires_auth(
                 return None
 
         async def sufficient_scope(
-                request: Request, *args: Any, **kwargs: Any
+            request: Request, *args: Any, **kwargs: Any
         ) -> Optional[bool]:
             # This is a coroutine since `sanic-jwt==1.6`
             jwt_data = await rasa.utils.common.call_potential_coroutine(
@@ -222,7 +222,7 @@ def requires_auth(
 
         @wraps(f)
         async def decorated(
-                request: Request, *args: Any, **kwargs: Any
+            request: Request, *args: Any, **kwargs: Any
         ) -> response.HTTPResponse:
 
             provided = request.args.get("token", None)
@@ -232,7 +232,7 @@ def requires_auth(
                 result = f(request, *args, **kwargs)
                 return await result if isawaitable(result) else result
             elif app.config.get(
-                    "USE_JWT"
+                "USE_JWT"
             ) and await rasa.utils.common.call_potential_coroutine(
                 # This is a coroutine since `sanic-jwt==1.6`
                 request.app.ctx.auth.is_authenticated(request)
@@ -267,7 +267,7 @@ def requires_auth(
 
 
 def event_verbosity_parameter(
-        request: Request, default_verbosity: EventVerbosity
+    request: Request, default_verbosity: EventVerbosity
 ) -> EventVerbosity:
     """Create `EventVerbosity` object using request params if present."""
     event_verbosity_str = request.args.get(
@@ -287,10 +287,10 @@ def event_verbosity_parameter(
 
 
 def get_test_stories(
-        processor: "MessageProcessor",
-        conversation_id: Text,
-        until_time: Optional[float],
-        fetch_all_sessions: bool = False,
+    processor: "MessageProcessor",
+    conversation_id: Text,
+    until_time: Optional[float],
+    fetch_all_sessions: bool = False,
 ) -> Text:
     """Retrieves test stories from `processor` for all conversation sessions for
     `conversation_id`.
@@ -336,10 +336,10 @@ def get_test_stories(
 
 
 async def update_conversation_with_events(
-        conversation_id: Text,
-        processor: "MessageProcessor",
-        domain: Domain,
-        events: List[Event],
+    conversation_id: Text,
+    processor: "MessageProcessor",
+    domain: Domain,
+    events: List[Event],
 ) -> DialogueStateTracker:
     """Fetches or creates a tracker for `conversation_id` and appends `events` to it.
 
@@ -398,10 +398,10 @@ async def authenticate(_: Request) -> NoReturn:
 
 
 def create_ssl_context(
-        ssl_certificate: Optional[Text],
-        ssl_keyfile: Optional[Text],
-        ssl_ca_file: Optional[Text] = None,
-        ssl_password: Optional[Text] = None,
+    ssl_certificate: Optional[Text],
+    ssl_keyfile: Optional[Text],
+    ssl_ca_file: Optional[Text] = None,
+    ssl_password: Optional[Text] = None,
 ) -> Optional["SSLContext"]:
     """Create an SSL context if a proper certificate is passed.
 
@@ -460,10 +460,10 @@ def _create_emulator(mode: Optional[Text]) -> Emulator:
 
 
 async def _load_agent(
-        model_path: Optional[Text] = None,
-        model_server: Optional[EndpointConfig] = None,
-        remote_storage: Optional[Text] = None,
-        endpoints: Optional[AvailableEndpoints] = None,
+    model_path: Optional[Text] = None,
+    model_server: Optional[EndpointConfig] = None,
+    remote_storage: Optional[Text] = None,
+    endpoints: Optional[AvailableEndpoints] = None,
 ) -> Agent:
     try:
         loaded_agent = await rasa.core.agent.load_agent(
@@ -492,7 +492,7 @@ async def _load_agent(
 
 
 def configure_cors(
-        app: Sanic, cors_origins: Union[Text, List[Text], None] = ""
+    app: Sanic, cors_origins: Union[Text, List[Text], None] = ""
 ) -> None:
     """Configure CORS origins for the given app."""
 
@@ -533,7 +533,7 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
 
     @wraps(f)
     async def decorated_function(
-            request: Request, *args: Any, **kwargs: Any
+        request: Request, *args: Any, **kwargs: Any
     ) -> HTTPResponse:
         callback_url = request.args.get("callback_url")
         # Only process request asynchronously if the user specified a `callback_url`
@@ -595,7 +595,7 @@ def run_in_thread(f: Callable[..., Coroutine]) -> Callable:
 
     @wraps(f)
     async def decorated_function(
-            request: Request, *args: Any, **kwargs: Any
+        request: Request, *args: Any, **kwargs: Any
     ) -> HTTPResponse:
         # Use a sync wrapper for our `async` function as `run_in_executor` only supports
         # sync functions
@@ -628,13 +628,13 @@ def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
 
 
 def create_app(
-        agent: Optional["Agent"] = None,
-        cors_origins: Union[Text, List[Text], None] = "*",
-        auth_token: Optional[Text] = None,
-        response_timeout: int = DEFAULT_RESPONSE_TIMEOUT,
-        jwt_secret: Optional[Text] = None,
-        jwt_method: Text = "HS256",
-        endpoints: Optional[AvailableEndpoints] = None,
+    agent: Optional["Agent"] = None,
+    cors_origins: Union[Text, List[Text], None] = "*",
+    auth_token: Optional[Text] = None,
+    response_timeout: int = DEFAULT_RESPONSE_TIMEOUT,
+    jwt_secret: Optional[Text] = None,
+    jwt_method: Text = "HS256",
+    endpoints: Optional[AvailableEndpoints] = None,
 ) -> Sanic:
     """Class representing a Rasa HTTP server."""
     app = Sanic(__name__)
@@ -662,7 +662,7 @@ def create_app(
 
     @app.exception(ErrorResponse)
     async def handle_error_response(
-            request: Request, exception: ErrorResponse
+        request: Request, exception: ErrorResponse
     ) -> HTTPResponse:
         return response.json(exception.error_info, status=exception.status)
 
@@ -740,7 +740,7 @@ def create_app(
                 output_channel = _get_output_channel(request, tracker)
 
                 if rasa.utils.endpoints.bool_arg(
-                        request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False
+                    request, EXECUTE_SIDE_EFFECTS_QUERY_KEY, False
                 ):
                     await processor.execute_side_effects(
                         events, tracker, output_channel
@@ -1071,7 +1071,7 @@ def create_app(
     @ensure_loaded_agent(app, require_core_is_ready=True)
     @inject_temp_dir
     async def evaluate_stories(
-            request: Request, temporary_directory: Path
+        request: Request, temporary_directory: Path
     ) -> HTTPResponse:
         """Evaluate stories against the currently loaded model."""
         validate_request_body(
@@ -1103,7 +1103,7 @@ def create_app(
     @run_in_thread
     @inject_temp_dir
     async def evaluate_intents(
-            request: Request, temporary_directory: Path
+        request: Request, temporary_directory: Path
     ) -> HTTPResponse:
         """Evaluate intents against a Rasa model."""
         validate_request_body(
@@ -1151,7 +1151,7 @@ def create_app(
             )
 
     async def _evaluate_model_using_test_set(
-            model_path: Text, test_data_file: Text
+        model_path: Text, test_data_file: Text
     ) -> Dict:
         logger.info("Starting model evaluation using test set.")
 
@@ -1203,9 +1203,9 @@ def create_app(
         return evaluation_results
 
     def _get_evaluation_results(
-            intent_report: CVEvaluationResult,
-            entity_report: CVEvaluationResult,
-            response_selector_report: CVEvaluationResult,
+        intent_report: CVEvaluationResult,
+        entity_report: CVEvaluationResult,
+        response_selector_report: CVEvaluationResult,
     ) -> Dict[Text, Any]:
         eval_name_mapping = {
             "intent_evaluation": intent_report,
@@ -1366,7 +1366,7 @@ def create_app(
 
 
 def _get_output_channel(
-        request: Request, tracker: Optional[DialogueStateTracker]
+    request: Request, tracker: Optional[DialogueStateTracker]
 ) -> OutputChannel:
     """Returns the `OutputChannel` which should be used for the bot's responses.
 
@@ -1381,8 +1381,8 @@ def _get_output_channel(
     requested_output_channel = request.args.get(OUTPUT_CHANNEL_QUERY_KEY)
 
     if (
-            requested_output_channel == USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL
-            and tracker
+        requested_output_channel == USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL
+        and tracker
     ):
         requested_output_channel = tracker.get_latest_input_channel()
 
@@ -1398,7 +1398,7 @@ def _get_output_channel(
     # otherwise use `CollectingOutputChannel`
     return reduce(
         lambda output_channel_created_so_far, input_channel: (
-                input_channel.get_output_channel() or output_channel_created_so_far
+            input_channel.get_output_channel() or output_channel_created_so_far
         ),
         matching_channels,
         CollectingOutputChannel(),
@@ -1445,7 +1445,7 @@ def _validate_json_training_payload(rjs: Dict) -> None:
 
 
 def _training_payload_from_yaml(
-        request: Request, temp_dir: Path, file_name: Text = "data.yml"
+    request: Request, temp_dir: Path, file_name: Text = "data.yml"
 ) -> Dict[Text, Any]:
     logger.debug("Extracting YAML training data from request body.")
 
