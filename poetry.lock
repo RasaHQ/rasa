@@ -2178,27 +2178,20 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "2.8.2"
+version = "3.0.0rc1"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
 python-versions = ">=3.7,<3.10"
-develop = false
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
 requests = ">=2.23.0,<2.26.0"
-sanic = "^21.6.0"
-Sanic-Cors = "^1.0.0"
-typing-extensions = "^3.7.4"
-urllib3 = "^1.26.5"
+sanic = ">=21.6.0,<22.0.0"
+Sanic-Cors = ">=1.0.0,<2.0.0"
+typing-extensions = ">=3.7.4,<4.0.0"
+urllib3 = ">=1.26.5,<2.0.0"
 uvloop = {version = "<0.15.0", markers = "sys_platform != \"win32\""}
-
-[package.source]
-type = "git"
-url = "https://github.com/rasahq/rasa-sdk.git"
-reference = "main"
-resolved_reference = "07d90342522389cc2a1bd0594ff8ddd2075b9b76"
 
 [[package]]
 name = "redis"
@@ -2435,6 +2428,13 @@ description = "Core routing component for Sanic"
 category = "main"
 optional = false
 python-versions = "*"
+develop = false
+
+[package.source]
+type = "git"
+url = "https://github.com/wochinge/sanic-routing.git"
+reference = "fix-routing-with-multiple-path-params"
+resolved_reference = "978abab2baee0c952eb3ce389b87d23c8b93d2aa"
 
 [[package]]
 name = "sanic-testing"
@@ -3309,7 +3309,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.9"
-content-hash = "eabf12c23f86c431b2b5b61cd37990ee95ab2cf86ffcf8dd7a12896c0aabfd31"
+content-hash = "f00737fddd4745740f462c121625e7fc9fd4c2dcae6473b15f2d054b1a5ad23e"
 
 [metadata.files]
 absl-py = [
@@ -4882,7 +4882,10 @@ questionary = [
 randomname = [
     {file = "randomname-0.1.5.tar.gz", hash = "sha256:e10d14ea10895ee5bc417bdcc6d955e0b586f3bc67094ab87afcf8dcac23ab92"},
 ]
-rasa-sdk = []
+rasa-sdk = [
+    {file = "rasa-sdk-3.0.0rc1.tar.gz", hash = "sha256:b0994fa5dbe0c4a7418a95c5ce51ac50e34368195d6eb287a1ea9bd497460f17"},
+    {file = "rasa_sdk-3.0.0rc1-py3-none-any.whl", hash = "sha256:7a8fcd7c044a979c538106eb61dc4fa9f9b79575054fcbb3567923b71b008d5e"},
+]
 redis = [
     {file = "redis-3.5.3-py2.py3-none-any.whl", hash = "sha256:432b788c4530cfe16d8d943a09d40ca6c16149727e4afe8c2c9d5580c59d9f24"},
     {file = "redis-3.5.3.tar.gz", hash = "sha256:0e7e0cfca8660dea8b7d5cd8c4f6c5e29e11f31158c0b0ae91a397f00e5a05a2"},
@@ -5010,10 +5013,7 @@ sanic-plugin-toolkit = [
     {file = "sanic-plugin-toolkit-1.2.0.tar.gz", hash = "sha256:5d477e6c1832968d43c7112e1a445afc98153fa05236c4db32b68e2cfff86001"},
     {file = "sanic_plugin_toolkit-1.2.0-py3-none-any.whl", hash = "sha256:3ab62af7c2d3e73d37d217976ec11f3683bde588d647e883a42763a894058b50"},
 ]
-sanic-routing = [
-    {file = "sanic-routing-0.7.1.tar.gz", hash = "sha256:35b09a12aceecc4e295bddb0ed39cff90363dd1504f9831c6b0b01f6f026635d"},
-    {file = "sanic_routing-0.7.1-py3-none-any.whl", hash = "sha256:0c08f5f65a55fdca259d9149d89c39fd2377a651b408065fd643bdabdb6ba293"},
-]
+sanic-routing = []
 sanic-testing = [
     {file = "sanic-testing-0.7.0.tar.gz", hash = "sha256:8396507cdcc030f0b43a1b2419c04034be28bc6c466596e122e7bb407bb515b3"},
     {file = "sanic_testing-0.7.0-py3-none-any.whl", hash = "sha256:3e600981d830731c6108c9c2f12c577800c061c92787a1b1c9c8fa6a80960843"},
