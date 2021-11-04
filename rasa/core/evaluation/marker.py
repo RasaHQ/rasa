@@ -18,12 +18,12 @@ class AndMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "and"
+        return "AND"
 
     @staticmethod
     def negated_tag() -> Text:
         """Returns the tag to be used in a config file for the negated version."""
-        return "at_least_one_not"
+        return "AT_LEAST_ONE_NOT"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return all(marker.history[-1] for marker in self.sub_markers)
@@ -36,7 +36,7 @@ class OrMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "or"
+        return "OR"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return any(marker.history[-1] for marker in self.sub_markers)
@@ -49,7 +49,7 @@ class NotMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "not"
+        return "NOT"
 
     @staticmethod
     def expected_number_of_sub_markers() -> Optional[int]:
@@ -72,12 +72,7 @@ class SequenceMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "seq"
-
-    @staticmethod
-    def negated_tag() -> Text:
-        """Returns the tag to be used in a config file."""
-        return "not(seq)"
+        return "SEQ"
 
     def _to_str_with(self, tag: Text) -> Text:
         sub_markers_str = " -> ".join(str(marker) for marker in self.sub_markers)
@@ -107,12 +102,12 @@ class OccurrenceMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "at_least_once"
+        return "AT_LEAST_ONCE"
 
     @staticmethod
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
-        return "never"
+        return "NEVER"
 
     @staticmethod
     def expected_number_of_sub_markers() -> Optional[int]:
