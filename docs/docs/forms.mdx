@@ -141,14 +141,15 @@ write stories or rules for this case.
 ### Slot Mappings
 
 :::caution Changed in 3.0
-As of 3.0, [slot mappings](./domain.mdx#slot-mappings) can only be defined in the slots section of the domain.
-Please follow the migration guide to update your assistant.
+As of 3.0, [slot mappings](./domain.mdx#slot-mappings) are defined in the `slots` section of the domain.
+This change allows the same slot mapping to be reused across multiple forms, removing any unnecessary duplication.
+Please follow the [migration guide](./migration-guide.mdx#slot-mappings) to update your assistant.
 :::
 
 #### Unique entity mapping matching
 
-In `from_entity` mapping, when an extracted entity uniquely maps onto a slot,
-the slot will be filled even if this slot wasn't requested by the form.
+In `from_entity` mapping, when the attributes of an extracted entity (i.e, entity name, role, group) uniquely map
+onto a slot, the slot will be filled even if this slot wasn't requested by the form.
 The extracted entity will be ignored if the mapping is not unique.
 
 ```yaml-rasa
@@ -177,9 +178,9 @@ slots:
 forms:
   your_form:
     required_slots:
-        - departure_city
-        - arrival_city
-        - arrival_date
+    - departure_city
+    - arrival_city
+    - arrival_date
 ```
 
 In the example above, an entity `date` uniquely sets the slot `arrival_date`,
