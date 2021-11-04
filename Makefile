@@ -126,7 +126,7 @@ endif
 
 prepare-transformers:
 ifeq ($(OS),Windows_NT)
-    HOME_DIR=%HomeDrive%%HomePath%
+    HOME_DIR=%HOMEDRIVE%%HOMEPATH%
 else
     HOME_DIR=$(HOME)
 endif
