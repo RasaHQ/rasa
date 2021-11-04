@@ -475,33 +475,34 @@ stories:
 Slot Auto-fill functionality was removed in 3.0 and replaced with a new explicit mechanism of
 setting slots after every user message.
 You will need to explicitly define slot mappings for each slot in the `slots` section of `domain.yml`.
-In addition, stories must include the `slot_was_set` step.
-Please read through the migration guide to update your assistant.
+Please read through the [migration guide](./migration-guide.mdx#slot-mappings) to update your assistant.
 
 :::
 
 ### Slot Mappings
 
-Rasa Open Source comes with four predefined mappings to fill the slots of a form
+Rasa Open Source comes with four predefined mappings to fill slots
 based on the latest user message.
 
-Slots set by a custom action or policy should contain a mapping of type `custom`, you can
-find out more in [Custom Slot Mappings](./domain.mdx#custom-slot-mappings).
+In addition to the predefined mappings, you can define [custom slot mappings](./domain.mdx#custom-slot-mappings).
+All custom slot mappings should contain a mapping of type `custom`.
 
-Please see [Mapping Conditions](./domain.mdx#mapping-conditions) if you need to indicate that
-a slot mapping is applicable only within the context of a form.
+The default behavior is for slot mappings to apply after every user message, regardless of the dialogue context.
+To make a slot mapping apply only within the context of a form see [Mapping Conditions](./domain.mdx#mapping-conditions).
+
+Note that you can also define lists of intents for the optional parameters `intent` and `not_intent`.
 
 #### from_entity
 
-The `from_entity` mapping fills slots based on extracted entities.
-It will look for an entity called `entity_name` to fill a slot `slot_name`.
-If `intent_name` is `None`, the slot will be filled regardless of intent name.
-Otherwise, the slot will only be filled if the user's intent is `intent_name`.
+The `from_entity` slot mapping fills slots based on extracted entities.
+The following parameters are required:
+- `entity`: the entity that should fill the slot
 
-If `role_name` and/or `group_name` are provided, the role/group
-label of the entity also needs to match the given values. The slot mapping will not
-apply if the intent of the message is `excluded_intent`. Note that you can
-also define lists of intents for the parameters `intent` and `not_intent`.
+The following parameters are optional and can be used to further specify when the mapping applies:
+- `intent`: Only applies the mapping when this intent is predicted.
+- `not_intent`: Does not apply the mapping when this intent is predicted
+- `role`: Only applies the mapping if the extracted entity has this role
+- `group`: Only applies the mapping if the extracted entity belongs to this group.
 
 ```yaml-rasa
 entities:
@@ -525,12 +526,11 @@ is unique, unless the slot is requested. You can find out more in [Forms](./form
 
 #### from_text
 
-The `from_text` mapping will use the text of the next user utterance to fill the slot
+The `from_text` mapping will use the text of the last user utterance to fill the slot
 `slot_name`. If `intent_name` is `None`, the slot will be filled regardless of intent name.
 Otherwise, the slot will only be filled if the user's intent is `intent_name`.
 
 The slot mapping will not apply if the intent of the message is `excluded_intent`.
-Note that you can define lists of intents for the parameters `intent` and `not_intent`.
 
 ```yaml-rasa
 slots:
@@ -545,9 +545,19 @@ slots:
 #### from_intent
 
 The `from_intent` mapping will fill slot `slot_name` with value `my_value` if
-user intent is `intent_name` or `None`. The slot mapping will not
-apply if the intent of the message is `excluded_intent`. Note that you can
-also define lists of intents for the parameters `intent` and `not_intent`.
+user intent is `intent_name`. If you choose not to specify the parameter `intent`,
+the slot mapping will apply regardless of the intent of the message as long as
+the intent is not listed under `not_intent` parameter.
+
+The following parameter is required:
+- `value`: the value that fills the slot `slot_name`
+
+The following parameters are optional and can be used to further specify when the mapping applies:
+- `intent`: Only applies the mapping when this intent is predicted.
+- `not_intent`: Does not apply the mapping when this intent is predicted
+
+Note that if you choose not to define the parameter `intent`, the slot mapping will apply regardless of the intent
+of the message as long as the intent is not listed under the `not_intent` parameter.
 
 ```yaml-rasa
 slots:
@@ -565,11 +575,9 @@ slots:
 The `from_trigger_intent` mapping will fill slot `slot_name` with value `my_value`
 if a form is activated by a user message with intent `intent_name`.
 The slot mapping will not apply if the intent of the message is
-`excluded_intent`. Note that you can
-also define lists of intents for the parameters `intent` and `not_intent`.
+`excluded_intent`.
 
-A slot with `from_trigger_intent` mapping must always include mapping conditions
-and be listed in the form's `required_slots`.
+A slot with `from_trigger_intent` mapping must always be listed in the form's `required_slots`.
 
 ```yaml-rasa
 slots:
@@ -590,8 +598,8 @@ forms:
 
 ### Mapping Conditions
 
-If you prefer to extract and set a slot only within the context of a form, you can indicate
-the name of the form in the `conditions` key of a mapping. Conditions list the form name(s)
+To apply a slot mapping only within the context of a form, specify
+the name of the form in the `conditions` key of a slot mapping. Conditions list the form name(s)
 for which the mapping is applicable in the `active_loop` key.
 
 Conditions can also include the name of the `requested_slot`. If `requested_slot` is not mentioned,
@@ -612,9 +620,9 @@ slots:
 ```
 
 :::note
-If conditions are not included in a slot mapping, the slot is eligible to be set universally
-outside the context of any forms. However if a slot is also listed in a form's `required_slots`,
-the slot can also be requested by the form if unset at that moment.
+If `conditions` are not included in a slot mapping, the slot mapping will be applicable regardless of whether
+any form is active. As long as a slot is listed in a form's `required_slots`, the form will prompt for the slot
+if it is empty when the form is activated.
 :::
 
 ### Custom Slot Mappings
