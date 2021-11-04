@@ -1767,13 +1767,13 @@ def test_app_when_app_has_no_input_channels():
             None,
             True,
             """version: "2.0"
-    stories:
-    - story: some-conversation-ID
-      steps:
-      - intent: greet
-        user: |-
-          hi
-      - action: utter_greet""",
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet""",
         ),
         # conversation with multiple sessions
         (
@@ -1790,19 +1790,19 @@ def test_app_when_app_has_no_input_channels():
             None,
             True,
             """version: "2.0"
-    stories:
-    - story: some-conversation-ID, story 1
-      steps:
-      - intent: greet
-        user: |-
-          hi
-      - action: utter_greet
-    - story: some-conversation-ID, story 2
-      steps:
-      - intent: goodbye
-        user: |-
-          bye bye
-      - action: utter_goodbye""",
+stories:
+- story: some-conversation-ID, story 1
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet
+- story: some-conversation-ID, story 2
+  steps:
+  - intent: goodbye
+    user: |-
+      bye bye
+  - action: utter_goodbye""",
         ),
         # conversation with multiple sessions, but setting `all_sessions=false`
         # means only the last one is returned
@@ -1820,13 +1820,13 @@ def test_app_when_app_has_no_input_channels():
             None,
             False,
             """version: "2.0"
-    stories:
-    - story: some-conversation-ID
-      steps:
-      - intent: goodbye
-        user: |-
-          bye bye
-      - action: utter_goodbye""",
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: goodbye
+    user: |-
+      bye bye
+  - action: utter_goodbye""",
         ),
         # the default for `all_sessions` is `false` - this test checks that
         # only the latest session is returned in that case
@@ -1844,13 +1844,13 @@ def test_app_when_app_has_no_input_channels():
             None,
             None,
             """version: "2.0"
-    stories:
-    - story: some-conversation-ID
-      steps:
-      - intent: goodbye
-        user: |-
-          bye bye
-      - action: utter_goodbye""",
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: goodbye
+    user: |-
+      bye bye
+  - action: utter_goodbye""",
         ),
         # `until` parameter means only the first session is returned
         (
@@ -1867,13 +1867,13 @@ def test_app_when_app_has_no_input_channels():
             4,
             True,
             """version: "2.0"
-    stories:
-    - story: some-conversation-ID
-      steps:
-      - intent: greet
-        user: |-
-          hi
-      - action: utter_greet""",
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet""",
         ),
         # empty conversation
         ([], None, True, 'version: "2.0"'),
@@ -1889,15 +1889,15 @@ def test_app_when_app_has_no_input_channels():
             None,
             True,
             """version: "2.0"
-    stories:
-    - story: some-conversation-ID
-      steps:
-      - intent: greet
-        user: |-
-          hi
-      - action: utter_greet
-      - slot_was_set:
-        - requested_slot: some value""",
+stories:
+- story: some-conversation-ID
+  steps:
+  - intent: greet
+    user: |-
+      hi
+  - action: utter_greet
+  - slot_was_set:
+    - requested_slot: some value""",
         ),
     ],
 )
@@ -1917,7 +1917,9 @@ async def test_get_story(
     tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.agent, "tracker_store", tracker_store)
-    monkeypatch.setattr(rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store
+    )
 
     url = f"/conversations/{conversation_id}/story?"
 
@@ -1979,7 +1981,9 @@ async def test_get_story_does_not_update_conversation_session(
     tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.sanic_app.agent, "tracker_store", tracker_store)
-    monkeypatch.setattr(rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store
+    )
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
 
