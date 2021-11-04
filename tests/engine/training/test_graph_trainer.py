@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Callable, Dict, Optional, Text, Type
+from typing import Callable, Dict, Optional, Text, Type, Any
 from unittest.mock import Mock
 
 from _pytest.logging import LogCaptureFixture
@@ -15,6 +15,9 @@ from rasa.engine.graph import (
     GraphSchema,
     SchemaNode,
     GraphModelConfiguration,
+    GraphNode,
+    ExecutionContext,
+    GraphNodeHook,
 )
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -31,6 +34,7 @@ from tests.engine.graph_components_test_classes import (
     PersistableTestComponent,
     ProvideX,
     SubtractByX,
+    CacheableComponent,
 )
 
 
@@ -435,3 +439,103 @@ def test_graph_trainer_train_logging(
         "Starting to train component 'SubtractByX'.",
         "Finished training component 'SubtractByX'.",
     ]
+
+
+def test_graph_trainer_train_logging_with_cached_components(
+    tmp_path: Path,
+    temp_cache: TrainingCache,
+    train_with_schema: Callable,
+    caplog: LogCaptureFixture,
+):
+    input_file = tmp_path / "input_file.txt"
+    input_file.write_text("3")
+
+    train_schema = GraphSchema(
+        {
+            "input": SchemaNode(
+                needs={},
+                uses=ProvideX,
+                fn="provide",
+                constructor_name="create",
+                config={},
+            ),
+            "subtract": SchemaNode(
+                needs={"i": "input"},
+                uses=SubtractByX,
+                fn="subtract_x",
+                constructor_name="create",
+                config={"x": 1},
+                is_target=True,
+                is_input=False,
+            ),
+            "cache_able_node": SchemaNode(
+                needs={"suffix": "input"},
+                uses=CacheableComponent,
+                fn="run",
+                constructor_name="create",
+                config={},
+                is_target=True,
+                is_input=False,
+            ),
+        }
+    )
+
+    # Train to cache
+    train_with_schema(train_schema, temp_cache)
+
+    # Train a second time
+    with caplog.at_level(logging.INFO, logger="rasa.engine.training.hooks"):
+        train_with_schema(train_schema, temp_cache)
+
+        assert set(caplog.messages) == {
+            "Starting to train component 'SubtractByX'.",
+            "Finished training component 'SubtractByX'.",
+            "Restored component 'CacheableComponent' from cache.",
+        }
+
+
+@pytest.mark.parametrize(
+    "on_before, on_after",
+    [(lambda: True, lambda: 2 / 0), (lambda: 2 / 0, lambda: True)],
+)
+def test_exception_handling_for_on_before_hook(
+    on_before: Callable,
+    on_after: Callable,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+):
+    schema_node = SchemaNode(
+        needs={}, uses=ProvideX, fn="provide", constructor_name="create", config={},
+    )
+
+    class MyHook(GraphNodeHook):
+        def on_after_node(
+            self,
+            node_name: Text,
+            execution_context: ExecutionContext,
+            config: Dict[Text, Any],
+            output: Any,
+            input_hook_data: Dict,
+        ) -> None:
+            on_before()
+
+        def on_before_node(
+            self,
+            node_name: Text,
+            execution_context: ExecutionContext,
+            config: Dict[Text, Any],
+            received_inputs: Dict[Text, Any],
+        ) -> Dict:
+            on_after()
+            return {}
+
+    node = GraphNode.from_schema_node(
+        "some_node",
+        schema_node,
+        default_model_storage,
+        default_execution_context,
+        hooks=[MyHook()],
+    )
+
+    with pytest.raises(GraphComponentException):
+        node()

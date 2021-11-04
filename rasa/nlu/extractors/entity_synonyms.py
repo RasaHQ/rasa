@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.ENTITY_EXTRACTOR, is_trainable=True
 )
-class EntitySynonymMapperGraphComponent(GraphComponent, EntityExtractorMixin):
+class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
     """Maps entities to their synonyms if they appear in the training data."""
 
     SYNONYM_FILENAME = "synonyms.json"
@@ -58,7 +58,7 @@ class EntitySynonymMapperGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         synonyms: Optional[Dict[Text, Any]] = None,
-    ) -> EntitySynonymMapperGraphComponent:
+    ) -> EntitySynonymMapper:
         """Creates component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, synonyms)
 
@@ -96,9 +96,7 @@ class EntitySynonymMapperGraphComponent(GraphComponent, EntityExtractorMixin):
 
         if self.synonyms:
             with self._model_storage.write_to(self._resource) as storage:
-                entity_synonyms_file = (
-                    storage / EntitySynonymMapperGraphComponent.SYNONYM_FILENAME
-                )
+                entity_synonyms_file = storage / EntitySynonymMapper.SYNONYM_FILENAME
 
                 write_json_to_file(
                     entity_synonyms_file, self.synonyms, separators=(",", ": ")
@@ -113,14 +111,12 @@ class EntitySynonymMapperGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> EntitySynonymMapperGraphComponent:
+    ) -> EntitySynonymMapper:
         """Loads trained component (see parent class for full docstring)."""
         synonyms = None
         try:
             with model_storage.read_from(resource) as storage:
-                entity_synonyms_file = (
-                    storage / EntitySynonymMapperGraphComponent.SYNONYM_FILENAME
-                )
+                entity_synonyms_file = storage / EntitySynonymMapper.SYNONYM_FILENAME
 
                 if os.path.isfile(entity_synonyms_file):
                     synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)

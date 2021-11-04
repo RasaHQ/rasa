@@ -8,7 +8,7 @@ from rasa.shared.core.domain import Domain
 from rasa.engine.storage.resource import Resource
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandlerGraphComponent
+from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandler
 import pytest
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.nlu.constants import (
@@ -22,8 +22,8 @@ from rasa.shared.nlu.constants import (
 @pytest.fixture
 def regex_message_handler(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-) -> RegexMessageHandlerGraphComponent:
-    return RegexMessageHandlerGraphComponent.create(
+) -> RegexMessageHandler:
+    return RegexMessageHandler.create(
         config={},
         model_storage=default_model_storage,
         resource=Resource("unused"),
@@ -41,7 +41,7 @@ def regex_message_handler(
     ],
 )
 def test_process_does_not_do_anything(
-    regex_message_handler: RegexMessageHandlerGraphComponent, text: Text
+    regex_message_handler: RegexMessageHandler, text: Text
 ):
 
     message = Message(
@@ -80,7 +80,7 @@ def test_process_does_not_do_anything(
     ],
 )
 def test_regex_message_handler_adds_extractor_name(
-    regex_message_handler: RegexMessageHandlerGraphComponent, text: Text
+    regex_message_handler: RegexMessageHandler, text: Text
 ):
 
     message = Message(
@@ -99,4 +99,4 @@ def test_regex_message_handler_adds_extractor_name(
     for message in parsed_messages:
 
         for entity in message.get(ENTITIES):
-            assert entity[EXTRACTOR] == RegexMessageHandlerGraphComponent.__name__
+            assert entity[EXTRACTOR] == RegexMessageHandler.__name__

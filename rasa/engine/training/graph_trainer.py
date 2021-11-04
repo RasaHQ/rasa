@@ -85,7 +85,7 @@ class GraphTrainer:
             )
 
         hooks = [
-            LoggingHook(),
+            LoggingHook(pruned_schema=pruned_training_schema),
             TrainingHook(
                 cache=self._cache,
                 model_storage=self._model_storage,

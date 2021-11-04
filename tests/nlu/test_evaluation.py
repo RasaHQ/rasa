@@ -13,13 +13,9 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
 
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractorGraphComponent
-from rasa.nlu.extractors.mitie_entity_extractor import (
-    MitieEntityExtractorGraphComponent,
-)
-from rasa.nlu.extractors.spacy_entity_extractor import (
-    SpacyEntityExtractorGraphComponent,
-)
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from tests.conftest import AsyncMock
 
 import rasa.nlu.test
@@ -204,7 +200,7 @@ def test_determine_token_labels_throws_error():
         determine_token_labels(
             CH_correct_segmentation[0],
             [CH_correct_entity, CH_wrong_entity],
-            {CRFEntityExtractorGraphComponent.__name__},
+            {CRFEntityExtractor.__name__},
         )
 
 
@@ -224,10 +220,7 @@ def test_determine_token_labels_with_extractors():
     label = determine_token_labels(
         CH_correct_segmentation[0],
         [CH_correct_entity, CH_wrong_entity],
-        {
-            SpacyEntityExtractorGraphComponent.__name__,
-            MitieEntityExtractorGraphComponent.__name__,
-        },
+        {SpacyEntityExtractor.__name__, MitieEntityExtractor.__name__,},
     )
     assert label == "direction"
 
@@ -428,7 +421,7 @@ async def test_eval_data(
 
 
 @pytest.mark.timeout(
-    180, func_only=True
+    240, func_only=True
 )  # these can take a longer time than the default timeout
 async def test_run_cv_evaluation():
     td = rasa.shared.nlu.training_data.loading.load_data(
@@ -518,7 +511,7 @@ async def test_run_cv_evaluation_no_entities():
 
 
 @pytest.mark.timeout(
-    200, func_only=True
+    280, func_only=True
 )  # these can take a longer time than the default timeout
 async def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
@@ -584,7 +577,7 @@ async def test_run_cv_evaluation_with_response_selector():
         for intent_report in response_selection_results.evaluation["report"].values()
     )
 
-    diet_name = "DIETClassifierGraphComponent"
+    diet_name = "DIETClassifier"
     assert len(entity_results.train[diet_name]["Accuracy"]) == n_folds
     assert len(entity_results.train[diet_name]["Precision"]) == n_folds
     assert len(entity_results.train[diet_name]["F1-score"]) == n_folds

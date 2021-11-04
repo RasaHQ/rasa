@@ -9,6 +9,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -39,7 +40,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
     LABEL_SUB_KEY,
-    TEDPolicyGraphComponent as TEDPolicy,
+    TEDPolicy,
     TED,
     SEQUENCE_LENGTH,
     SEQUENCE,
@@ -138,7 +139,7 @@ logger = logging.getLogger(__name__)
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
 )
-class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
+class UnexpecTEDIntentPolicy(TEDPolicy):
     """`UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
 
     The difference is at a task level.
@@ -209,7 +210,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             NUM_NEG: 20,
             # Number of intents to store in ranking key of predicted action metadata.
             # Set this to `0` to include all intents.
-            RANKING_LENGTH: 10,
+            RANKING_LENGTH: LABEL_RANKING_LENGTH,
             # If 'True' scale loss inverse proportionally to the confidence
             # of the correct prediction
             SCALE_LOSS: True,
@@ -584,13 +585,14 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
 
         # Prediction through the policy is skipped if:
         # 1. If the tracker does not contain any event of type `UserUttered`
-        #    till now.
+        #    till now or the intent of such event is not in domain.
         # 2. There is at least one event of type `ActionExecuted`
         #    after the last `UserUttered` event.
-        if self._should_skip_prediction(tracker):
+        if self._should_skip_prediction(tracker, domain):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
-                f"as either there is no event of type `UserUttered` or "
+                f"as either there is no event of type `UserUttered`, "
+                f"event's intent is new and not in domain or "
                 f"there is an event of type `ActionExecuted` after "
                 f"the last `UserUttered`."
             )
@@ -627,14 +629,17 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         )
 
     @staticmethod
-    def _should_skip_prediction(tracker: DialogueStateTracker) -> bool:
+    def _should_skip_prediction(tracker: DialogueStateTracker, domain: Domain,) -> bool:
         """Checks if the policy should skip making a prediction.
 
         A prediction can be skipped if:
             1. There is no event of type `UserUttered` in the tracker.
-            2. There is an event of type `ActionExecuted` after the last
+            2. If the `UserUttered` event's intent is new and not in domain
+                (a new intent can be created from rasa interactive and not placed in
+                domain yet)
+            3. There is an event of type `ActionExecuted` after the last
                 `UserUttered` event. This is to prevent the dialogue manager
-                 from getting stuck in a prediction loop.
+                from getting stuck in a prediction loop.
                 For example, if the last `ActionExecuted` event
                 contained `action_unlikely_intent` predicted by
                 `UnexpecTEDIntentPolicy` and
@@ -652,6 +657,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             if isinstance(event, ActionExecuted):
                 return True
             elif isinstance(event, UserUttered):
+                if event.intent_name not in domain.intents:
+                    return True
                 return False
         # No event of type `ActionExecuted` and `UserUttered` means
         # that there is nothing for `UnexpecTEDIntentPolicy` to predict on.
@@ -895,7 +902,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         featurizer: TrackerFeaturizer,
         model: "IntentTED",
         model_utilities: Dict[Text, Any],
-    ) -> "UnexpecTEDIntentPolicyGraphComponent":
+    ) -> "UnexpecTEDIntentPolicy":
         return cls(
             config,
             model_storage,

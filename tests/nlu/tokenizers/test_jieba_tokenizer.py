@@ -7,7 +7,7 @@ from _pytest.tmpdir import TempPathFactory
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizerGraphComponent
+from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 
 import pytest
 
@@ -17,13 +17,10 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
 
 
-def create_jieba(config: Optional[Dict] = None) -> JiebaTokenizerGraphComponent:
+def create_jieba(config: Optional[Dict] = None) -> JiebaTokenizer:
     config = config if config else {}
-    return JiebaTokenizerGraphComponent.create(
-        {**JiebaTokenizerGraphComponent.get_default_config(), **config},
-        None,
-        None,
-        None,
+    return JiebaTokenizer.create(
+        {**JiebaTokenizer.get_default_config(), **config}, None, None, None,
     )
 
 
@@ -72,8 +69,8 @@ def test_jieba_load_and_persist_dictionary(
     component_config = {"dictionary_path": dictionary_directory}
 
     resource = Resource("jieba")
-    tk = JiebaTokenizerGraphComponent.create(
-        {**JiebaTokenizerGraphComponent.get_default_config(), **component_config},
+    tk = JiebaTokenizer.create(
+        {**JiebaTokenizer.get_default_config(), **component_config},
         default_model_storage,
         resource,
         default_execution_context,
@@ -83,14 +80,14 @@ def test_jieba_load_and_persist_dictionary(
 
     # The dictionary has not been persisted yet.
     with caplog.at_level(logging.DEBUG):
-        JiebaTokenizerGraphComponent.load(
-            {**JiebaTokenizerGraphComponent.get_default_config(), **component_config},
+        JiebaTokenizer.load(
+            {**JiebaTokenizer.get_default_config(), **component_config},
             default_model_storage,
             resource,
             default_execution_context,
         )
         assert any(
-            "Failed to load JiebaTokenizerGraphComponent from model storage." in message
+            "Failed to load JiebaTokenizer from model storage." in message
             for message in caplog.messages
         )
 
@@ -105,8 +102,8 @@ def test_jieba_load_and_persist_dictionary(
     dictionary_path.unlink()
     dictionary_directory.rmdir()
 
-    JiebaTokenizerGraphComponent.load(
-        {**JiebaTokenizerGraphComponent.get_default_config(), **component_config},
+    JiebaTokenizer.load(
+        {**JiebaTokenizer.get_default_config(), **component_config},
         default_model_storage,
         resource,
         default_execution_context,

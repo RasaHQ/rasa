@@ -450,16 +450,18 @@ def test_cache_exceeds_size_but_not_in_database(
     # Pretend we have a cache of size `max_cached_size`
     monkeypatch.setenv(CACHE_SIZE_ENV, str(max_cache_size))
 
+    cache = LocalTrainingCache()
+
     # Fill cache with something which is not in the cache metadata
-    sub_dir = tmp_path / "some dir"
+    sub_dir = cache._cache_location / "some dir"
     sub_dir.mkdir()
 
     # one subdirectory which needs deletion
     tests.conftest.create_test_file_with_size(sub_dir, max_cache_size)
     # one file which needs deletion
-    tests.conftest.create_test_file_with_size(tmp_path, max_cache_size)
-
-    cache = LocalTrainingCache()
+    test_file = tests.conftest.create_test_file_with_size(
+        cache._cache_location, max_cache_size
+    )
 
     # Cache an item
     fingerprint_key = uuid.uuid4().hex
@@ -473,6 +475,8 @@ def test_cache_exceeds_size_but_not_in_database(
     assert cache.get_cached_result(
         output_fingerprint, "some_node", default_model_storage
     )
+    assert not sub_dir.is_dir()
+    assert not test_file.is_file()
 
 
 def test_clean_up_of_cached_result_if_database_fails(

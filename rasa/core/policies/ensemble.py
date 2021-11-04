@@ -34,19 +34,19 @@ def is_not_in_training_data(
         `False` if and only if an action was predicted (i.e. `max_confidence` > 0) by
         a `MemoizationPolicy`
     """
-    from rasa.core.policies.rule_policy import RulePolicyGraphComponent
+    from rasa.core.policies.rule_policy import RulePolicy
     from rasa.core.policies.memoization import (
-        MemoizationPolicyGraphComponent,
-        AugmentedMemoizationPolicyGraphComponent,
+        MemoizationPolicy,
+        AugmentedMemoizationPolicy,
     )
 
     if not policy_name:
         return True
 
     memorizing_policies = [
-        RulePolicyGraphComponent.__name__,
-        MemoizationPolicyGraphComponent.__name__,
-        AugmentedMemoizationPolicyGraphComponent.__name__,
+        RulePolicy.__name__,
+        MemoizationPolicy.__name__,
+        AugmentedMemoizationPolicy.__name__,
     ]
     is_memorized = any(
         policy_name.endswith(f"_{memoizing_policy}")

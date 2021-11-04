@@ -6,7 +6,7 @@ import pytest
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.utils.mitie_utils import MitieNLPGraphComponent
+from rasa.nlu.utils.mitie_utils import MitieNLP
 import mitie
 
 from rasa.shared.exceptions import RasaException
@@ -15,8 +15,8 @@ from rasa.shared.exceptions import RasaException
 def test_provide(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
-    component = MitieNLPGraphComponent.create(
-        MitieNLPGraphComponent.get_default_config(),
+    component = MitieNLP.create(
+        MitieNLP.get_default_config(),
         default_model_storage,
         Resource("mitie"),
         default_execution_context,
@@ -38,7 +38,7 @@ def test_provide_different_path(
 ):
     new_path = shutil.copy(Path("data", "total_word_feature_extractor.dat"), tmp_path)
 
-    component = MitieNLPGraphComponent.create(
+    component = MitieNLP.create(
         {"model": new_path},
         default_model_storage,
         Resource("mitie"),
@@ -57,7 +57,7 @@ def test_invalid_path(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
 ):
     with pytest.raises(RasaException):
-        MitieNLPGraphComponent.create(
+        MitieNLP.create(
             {"model": "some-path"},
             default_model_storage,
             Resource("mitie"),

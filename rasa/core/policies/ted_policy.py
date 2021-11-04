@@ -2,8 +2,6 @@ from __future__ import annotations
 import logging
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.core.domain import Domain
 import shutil
 from pathlib import Path
 from collections import defaultdict
@@ -37,7 +35,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.core.policies.policy import (
     PolicyPrediction,
-    PolicyGraphComponent,
+    Policy,
     SupportedData,
 )
 from rasa.core.constants import (
@@ -52,9 +50,12 @@ from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.events import EntitiesAdded, Event
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.features import Features
 import rasa.shared.utils.io
 import rasa.utils.io
-import rasa.utils.train_utils
+from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.model_data import (
@@ -76,6 +77,7 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     LEARNING_RATE,
     RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     LOSS_TYPE,
     SIMILARITY_TYPE,
     NUM_NEG,
@@ -123,8 +125,6 @@ from rasa.utils.tensorflow.constants import (
     EPOCH_OVERRIDE,
 )
 
-from rasa.shared.nlu.training_data.features import Features
-
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIAL
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
 )
-class TEDPolicyGraphComponent(PolicyGraphComponent):
+class TEDPolicy(Policy):
     """Transformer Embedding Dialogue (TED) Policy.
 
     The model architecture is described in
@@ -253,10 +253,16 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             SIMILARITY_TYPE: AUTO,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
-            # Number of top actions to normalize scores for. Applicable with
-            # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-            # to turn off normalization.
-            RANKING_LENGTH: 10,
+            # Number of top actions for which confidences should be predicted.
+            # The number of  Set to `0` if confidences for all actions should be
+            # predicted. The confidences for all other actions will be set to 0.
+            RANKING_LENGTH: 0,
+            # Determines wether the confidences of the chosen top actions should be
+            # renormalized so that they sum up to 1. By default, we do not renormalize
+            # and return the confidences for the top actions as is.
+            # Note that renormalization only makes sense if confidences are generated
+            # via `softmax`.
+            RENORMALIZE_CONFIDENCES: False,
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
             # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -818,11 +824,15 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             confidences, similarities, domain
         )
 
-        if self.config[RANKING_LENGTH] > 0 and self.config[MODEL_CONFIDENCE] == SOFTMAX:
-            # TODO: This should be removed in 3.0 when softmax as
-            #  model confidence and normalization is completely deprecated.
-            confidence = rasa.utils.train_utils.normalize(
-                confidence, self.config[RANKING_LENGTH]
+        # rank and mask the confidence (if we need to)
+        ranking_length = self.config[RANKING_LENGTH]
+        if 0 < ranking_length < len(confidence):
+            renormalize = (
+                self.config[RENORMALIZE_CONFIDENCES]
+                and self.config[MODEL_CONFIDENCE] == SOFTMAX
+            )
+            _, confidence = train_utils.rank_and_mask(
+                confidence, ranking_length=ranking_length, renormalize=renormalize
             )
 
         optional_events = self._create_optional_event_for_entities(
@@ -1005,7 +1015,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> TEDPolicyGraphComponent:
+    ) -> TEDPolicy:
         """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
@@ -1027,7 +1037,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> TEDPolicyGraphComponent:
+    ) -> TEDPolicy:
         featurizer = TrackerFeaturizer.load(model_path)
 
         if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
@@ -1078,7 +1088,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         featurizer: TrackerFeaturizer,
         model: TED,
         model_utilities: Dict[Text, Any],
-    ) -> TEDPolicyGraphComponent:
+    ) -> TEDPolicy:
         return cls(
             config,
             model_storage,

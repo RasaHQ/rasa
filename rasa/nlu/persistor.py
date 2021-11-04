@@ -2,7 +2,6 @@ import abc
 import logging
 import os
 import shutil
-from tarsafe import TarSafe
 from typing import Optional, Text, Tuple, TYPE_CHECKING
 
 import rasa.shared.utils.common
@@ -99,12 +98,6 @@ class Persistor(abc.ABC):
 
         ext = ".tar.gz" if include_extension else ""
         return f"{model_name}{ext}"
-
-    @staticmethod
-    def _decompress(compressed_path: Text, target_path: Text) -> None:
-
-        with TarSafe.open(compressed_path, "r:gz") as tar:
-            tar.extractall(target_path)  # target dir will be created if it not exists
 
     @staticmethod
     def _copy(compressed_path: Text, target_path: Text) -> None:

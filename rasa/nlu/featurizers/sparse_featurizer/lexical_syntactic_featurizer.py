@@ -23,9 +23,9 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.tokenizers.spacy_tokenizer import (
     POS_TAG_KEY,
-    SpacyTokenizerGraphComponent,
+    SpacyTokenizer,
 )
-from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -48,7 +48,7 @@ FEATURES = "features"
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
-class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer, GraphComponent):
+class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
     """Extracts and encodes lexical syntactic features.
 
     Given a sequence of tokens, this featurizer produces a sequence of features
@@ -128,7 +128,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer, GraphComponent)
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
-        return [TokenizerGraphComponent]
+        return [Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -274,7 +274,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer, GraphComponent)
                 f"Expected training data to include tokens with part-of-speech tags"
                 f"because the given configuration includes part-of-speech features "
                 f"`pos` and/or `pos2`. "
-                f"Please add a {SpacyTokenizerGraphComponent.__name__} to your "
+                f"Please add a {SpacyTokenizer.__name__} to your "
                 f"configuration if you want to use the part-of-speech-features in the"
                 f"{self.__class__.__name__}. "
                 f"Continuing without the part-of-speech-features."
@@ -488,7 +488,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer, GraphComponent)
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> LexicalSyntacticFeaturizerGraphComponent:
+    ) -> LexicalSyntacticFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -500,7 +500,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer, GraphComponent)
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> LexicalSyntacticFeaturizerGraphComponent:
+    ) -> LexicalSyntacticFeaturizer:
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:

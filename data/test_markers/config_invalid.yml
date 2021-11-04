@@ -1,7 +1,0 @@
-markers:
-- marker: incorrectly_indented_yaml
-  condition:
-     - slot_1
-    - slot_2
-  - action_executed:
-      - action_1

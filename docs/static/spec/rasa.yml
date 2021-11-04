@@ -1551,6 +1551,7 @@ components:
       type: string
       description: Rasa config in plain text
       example: >-
+        recipe: default.v1
         language: en
 
         pipeline: supervised_embeddings
