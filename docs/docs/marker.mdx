@@ -2,15 +2,13 @@
 
 # Markers
 
-Markers allow you to describe points in a dialogue that you're interested in as a set of conditions that need to be met. 
+Markers allow you to describe points in a dialogue that you're interested in, as a set of conditions that need to be met. Internally in Rasa, a dialogue is represented as a sequence of events, which include bot actions that were executed, intents that were detected, and slots that were set. Marker conditions are thus written as a set of event conditions that need to be met. When they are met, we "mark" that point in the dialogue for further analysis or inspection.
 
-Internally in Rasa, a dialogue is represented as a sequence of events. Events include bot actions that have been executed, intents that have been detected, or slots that have been set. Marker conditions are thus written as a set of event conditions that need to be met. When they are met, we "mark" that point in the dialogue for further analysis or inspection.
+There are several applications for Markers. For example, they can be used to define your bot's "Key Performance Indicators" (KPIs), such as dialogue completion or task success. For [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/) (which helps users offset their carbon emissions from flying) dialogue completion can be defined as "all mandatory slots have been filled", while task success can be defined as "all mandatory slots have been filled and a carbon estimate has been successfully computed". Marking these events allows us to evaluate Carbon Bot's performance by quantifying how often it succeeds and how often it fails.
 
-There are several applications for Markers. For example, they can be used to define your bot's "Key Performance Indicators" (KPIs), such as dialogue completion or task success. For [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/) (which helps users offset their carbon emissions from flying) dialogue completion can be defined as "all mandatory slots have been filled", while task success can be defined as "all mandatory slots have been filled and a carbon estimate has been successfully computed". Marking these events allows you to evaluate your bot by quantifying how often it succeeds and how often it fails.  
+Markers also allow you to diagnose your dialogues by quantifying how frequently important events occur or do not occur. For example, we might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots, but not the `travel_flight_class`. We can define a marker to quantify how often this happens and surface the dialogues in which this occurs for further inspection.
 
-Markers also allow you to diagnose your dialogues by quantifying how frequently important events occur or do not occur. For example, we might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots, but not the `travel_flight_class`. We can define a marker to quantify how often this happens and surface the dialogues in which this occurs for further inspection.  
-
-Markers are defined using a simple `yaml` syntax. For example, here are markers that define dialogue completion and task success for Carbon Bot: 
+Markers are defined using a simple `yaml` syntax. For example, here are markers that define dialogue completion and task success for Carbon Bot:
 
 ```yaml
 marker_dialogue_completion:
@@ -33,17 +31,19 @@ marker_dialogue_completion:
   and:
     - slot_was_set: travel_departure
 	  - slot_was_set: travel_destination
-  	- not: 
+  	- not:
 			slot_was_set: travel_flight_class
 ```
 
 ## Defining Markers
 
-To describe the events that we're interested in, we provide `conditions` and `operators`. Conditions are simple expressions that describe an event, while operators allow you to combine events. 
+To describe the events that we're interested in, we provide `conditions` and `operators`.
+
+Conditions are simple expressions that describe an event, while operators allow you to combine events.
 
 ### Conditions
 
-We support the following conditions: 
+We support the following conditions:
 
 - `action_executed`: a bot action has been exectued.
 - `intent_detected`: a user intent has been detected.
@@ -57,7 +57,7 @@ As well as their negated version:
 
 ### Operators
 
-To combine events, we provide the following operators: 
+To combine events, we provide the following operators:
 
 - `and`: all sub-conditions applied.
 - `or`: any of the sub-conditions applied.
@@ -88,13 +88,13 @@ marker_mood_expressed_and_name_provided:
       - intent_detected: mood_great
 ```
 
-The top level contains unique user-specified names for each marker. This is a dictionary mapping marker names to marker definitions. 
+The top level contains unique user-specified names for each marker. This is a dictionary mapping marker names to marker definitions.
 
 Each marker definition can contain an arbitrary combination of `conditions` and `operators` that map to a valid sub-marker definition.
 
 Each `condition` maps a condition tag to a value. For example, in `marker_name_provided`, the tag `slot_`was`_set` is mapped to the slot `name` which exists in the `domain.yaml` file.
 
-Each `operator` is a dictionary mapping an operator tag (e.g., `and`) to a list of sub markers, which can be conditions or a nested operator-conditions definition (e.g., see `marker_mood_expressed_and_name_provided`). 
+Each `operator` is a dictionary mapping an operator tag (e.g., `and`) to a list of sub markers, which can be conditions or a nested operator-conditions definition (e.g., see `marker_mood_expressed_and_name_provided`).
 
 <aside>
 💡 **Note:** You cannot yet reuse an existing marker name in the definition of another marker.
@@ -115,9 +115,9 @@ rasa evaluate markers markers.yaml extracted_markers.csv all
 
 ### Extracted Markers
 
-We extract information about top-level markers which have user-specified names, and extract meta information about all the events where the markers applied. 
+We extract information about top-level markers which have user-specified names, and extract meta information about all the events where the markers applied.
 
-Because the `occurred` marker only checks whether or not the marker applied, we only extract meta information about the first occurrence. 
+Because the `occurred` marker only checks whether or not the marker applied, we only extract meta information about the first occurrence.
 
 We extract the following meta information:
 
@@ -146,7 +146,7 @@ extracted_markers.csv
 
 By default, the command above also computes some summary statistics about the meta information gathered. To disable the statistics computation, use the optional flag `--no-stats`.
 
-For each session and each marker, we are interested in the number of user turns which preceded the event at which the marker applied. 
+For each session and each marker, we are interested in the number of user turns which preceded the event at which the marker applied.
 
 Thus we compute the following:
 
@@ -155,7 +155,7 @@ Thus we compute the following:
     1. overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the respective marker applied in any session
     2. the number of sessions and the percentage of sessions where each marker applied at least once
 
-The results are stored in tabular format with the suffixes "-per-session.csv" and "-overall.csv". You can change the suffixes via the command line. 
+The results are stored in tabular format with the suffixes "-per-session.csv" and "-overall.csv". You can change the suffixes via the command line.
 
 Here is a sample output:
 
