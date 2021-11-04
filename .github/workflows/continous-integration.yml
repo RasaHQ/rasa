@@ -295,7 +295,6 @@ jobs:
           New-Item -Path $spacy_data_dir -Type Directory
         }
         make install-full
-        poetry run pip install transformers --no-binary :all:
         make prepare-tests-windows-gha
 
     - name: Add github workflow problem matchers
