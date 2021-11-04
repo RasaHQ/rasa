@@ -1,0 +1,276 @@
+# Markers docs
+
+# Markers
+
+Markers allow you to describe points in a dialogue that you're interested in as a set of conditions that need to be met. 
+
+Internally in Rasa, a dialogue is represented as a sequence of events. Events include bot actions that have been executed, intents that have been detected, or slots that have been set. Marker conditions are thus written as a set of event conditions that need to be met. When they are met, we "mark" that point in the dialogue for further analysis or inspection.
+
+There are several applications for Markers. For example, they can be used to define your bot's "Key Performance Indicators" (KPIs), such as dialogue completion or task success. For [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/) (which helps users offset their carbon emissions from flying) dialogue completion can be defined as "all mandatory slots have been filled", while task success can be defined as "all mandatory slots have been filled and a carbon estimate has been successfully computed". Marking these events allows you to evaluate your bot by quantifying how often it succeeds and how often it fails.  
+
+Markers also allow you to diagnose your dialogues by quantifying how frequently important events occur or do not occur. For example, we might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots, but not the `travel_flight_class`. We can define a marker to quantify how often this happens and surface the dialogues in which this occurs for further inspection.  
+
+Markers are defined using a simple `yaml` syntax. For example, here are markers that define dialogue completion and task success for Carbon Bot: 
+
+```yaml
+marker_dialogue_completion:
+  and:
+    - slot_was_set: travel_departure
+	  - slot_was_set: travel_destination
+  	- slot_was_set: travel_flight_class
+marker_task_success:
+  and:
+    - slot_was_set: travel_departure
+	  - slot_was_set: travel_destination
+  	- slot_was_set: travel_flight_class
+    - action_executed: provide_carbon_estimate
+```
+
+And here is a marker for surfacing dialogues where all mandatory slots are set except `travel_flight_class`:
+
+```yaml
+marker_dialogue_completion:
+  and:
+    - slot_was_set: travel_departure
+	  - slot_was_set: travel_destination
+  	- not: 
+			slot_was_set: travel_flight_class
+```
+
+## Defining Markers
+
+To describe the events that we're interested in, we provide `conditions` and `operators`. Conditions are simple expressions that describe an event, while operators allow you to combine events. 
+
+### Conditions
+
+We support the following conditions: 
+
+- `action_executed`: a bot action has been exectued.
+- `intent_detected`: a user intent has been detected.
+- `slot_was_set`: a slot has been set.
+
+As well as their negated version:
+
+- `action_not_executed`
+- `intent_not_detected`
+- `slot_was_not_set`
+
+### Operators
+
+To combine events, we provide the following operators: 
+
+- `and`: all sub-conditions applied.
+- `or`: any of the sub-conditions applied.
+- `not`: the sub-condition did not apply. `not` can have only 1 condition.
+- `seq`: the list of sub-conditions applied in the specified order with any number of events occurring in-between.
+- `occurred`: the listed sub-marker definition occurred at least once. Only the first occurrence will be marked.
+
+### Marker Configuration
+
+To define one or more marker, you need to specify a `yaml` configuration file. Here is an example:
+
+```yaml
+marker_name_provided:
+  slot_was_set: name
+marker_mood_expressed:
+  or:
+    - intent_detected: mood_unhappy
+    - intent_detected: mood_great
+marker_cheer_up:
+  seq:
+    - intent_detected: mood_unhappy
+    - action_executed: utter_cheer_up
+marker_mood_expressed_and_name_provided:
+  and:
+		- slot_was_set: name
+    - or:
+      - intent_detected: mood_unhappy
+      - intent_detected: mood_great
+```
+
+The top level contains unique user-specified names for each marker. This is a dictionary mapping marker names to marker definitions. 
+
+Each marker definition can contain an arbitrary combination of `conditions` and `operators` that map to a valid sub-marker definition.
+
+Each `condition` maps a condition tag to a value. For example, in `marker_name_provided`, the tag `slot_`was`_set` is mapped to the slot `name` which exists in the `domain.yaml` file.
+
+Each `operator` is a dictionary mapping an operator tag (e.g., `and`) to a list of sub markers, which can be conditions or a nested operator-conditions definition (e.g., see `marker_mood_expressed_and_name_provided`). 
+
+<aside>
+💡 **Note:** You cannot yet reuse an existing marker name in the definition of another marker.
+
+</aside>
+
+## Running the Markers script
+
+Markers are extracted from the dialogues already stored in your [tracker store](https://rasa.com/docs/rasa/next/tracker-stores). Once you've created your Marker definitions in the Makers configuration file, you can extract them by running the follow command:  ~~file called~~ 
+
+```jsx
+rasa evaluate markers markers.yaml extracted_markers.csv all
+```
+
+**Note:** `all` will cause the script to process all the trackers in your tracker store. To process a subset you can use a different tracker selection strategy (`first_n` or `sample`). Refer to the CLI  usage for details.
+
+**Note:** Each tracker in the tracker store can contain multiple sessions identified by a `sender_id`. When extracting markers and computing their statistics, each session is considered separately.
+
+### Extracted Markers
+
+We extract information about top-level markers which have user-specified names, and extract meta information about all the events where the markers applied. 
+
+Because the `occurred` marker only checks whether or not the marker applied, we only extract meta information about the first occurrence. 
+
+We extract the following meta information:
+
+1. the number of user turns (i.e., the number of `UserUttered` events) preceding the event at which a marker applied
+2. the index of the event at which a marker applied
+
+We output the extracted information in a `.csv` file that contains the following columns:
+
+- sender_id
+- session_idx
+- event_idx (where we index all events in the tracker, starting with index 0)
+- num_preceeding_user_turns
+- marker name
+
+Here is a sample output:
+
+```
+sender_id,session_idx,marker_name,event_id,num_preceding_user_turns
+1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,7,1
+2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,7,1
+```
+
+extracted_markers.csv
+
+### Computed statistics
+
+By default, the command above also computes some summary statistics about the meta information gathered. To disable the statistics computation, use the optional flag `--no-stats`.
+
+For each session and each marker, we are interested in the number of user turns which preceded the event at which the marker applied. 
+
+Thus we compute the following:
+
+1. **For each session and each marker** we compute "per-session statistics" which include the arithmetic mean, median, minimum, and maximum number of user turns preceding the event  at which the marker applied
+2. **For all sessions and for each marker** we compute
+    1. overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the respective marker applied in any session
+    2. the number of sessions and the percentage of sessions where each marker applied at least once
+
+The results are stored in tabular format with the suffixes "-per-session.csv" and "-overall.csv". You can change the suffixes via the command line. 
+
+Here is a sample output:
+
+```
+sender_id,session_idx,marker,statistic,value
+1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,count(number of preceding user turns),1
+2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,count(number of preceding user turns),1
+79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,count(number of preceding user turns),0
+1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,max(number of preceding user turns),1
+2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,max(number of preceding user turns),1
+79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,max(number of preceding user turns),nan
+1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,mean(number of preceding user turns),1.0
+2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,mean(number of preceding user turns),1.0
+79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,mean(number of preceding user turns),nan
+1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,median(number of preceding user turns),1.0
+2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,median(number of preceding user turns),1.0
+79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,median(number of preceding user turns),nan
+1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,min(number of preceding user turns),1
+2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,min(number of preceding user turns),1
+79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,min(number of preceding user turns),nan
+:
+```
+
+stats-per-session.csv
+
+```
+sender_id,session_idx,marker,statistic,value
+all,nan,-,total_number_of_sessions,3
+all,nan,marker_cheer_up,number_of_sessions_where_marker_applies_at_least_once,0
+all,nan,marker_cheer_up,percentage_of_sessions_where_marker_applies_at_least_once,0.0
+all,nan,marker_mood_expressed,number_of_sessions_where_marker_applies_at_least_once,2
+all,nan,marker_mood_expressed,percentage_of_sessions_where_marker_applies_at_least_once,66.667
+all,nan,marker_mood_expressed_and_name_provided,number_of_sessions_where_marker_applies_at_least_once,0
+all,nan,marker_mood_expressed_and_name_provided,percentage_of_sessions_where_marker_applies_at_least_once,0.0
+:
+```
+
+stats-overall.csv
+
+## Configuring the CLI command
+
+You can configure the marker extraction and statistics computation using the following arguments:
+
+```
+usage: rasa evaluate markers [-h] [-v] [-vv] [--quiet] [--config CONFIG]
+                             [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
+                             [--endpoints ENDPOINTS] [-d DOMAIN]
+                             output_filename {first_n,sample,all} ...
+
+positional arguments:
+  output_filename       The filename to write the extracted markers to (CSV format).
+  {first_n,sample,all}
+    first_n             Select trackers sequentially until N are taken.
+    sample              Select trackers by sampling N.
+    all                 Select all trackers.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --config CONFIG       The config file(s) containing marker definitions. This can be a single YAML
+                        file, or a directory that contains several files with marker definitions in
+                        it. The content of these files will be read and merged together. (default:
+                        markers.yml)
+  --no-stats            Do not compute summary statistics. (default: True)
+  --stats-file-prefix [STATS_FILE_PREFIX]
+                        The common file prefix of the files where we write out the compute
+                        statistics. More precisely, the file prefix must consist of a common path
+                        plus a common file prefix, to which suffixes `-overall.csv` and `-per-
+                        session.csv` will be added automatically. (default: stats)
+  --endpoints ENDPOINTS
+                        Configuration file for the tracker store as a yml file. (default:
+                        endpoints.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification. This can be a single YAML file, or a directory that
+                        contains several files with domain specifications in it. The content of
+                        these files will be read and merged together. (default: domain.yml)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default:
+                        None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default: None)usage: rasa evaluate markers [-h] [-v] [-vv] [--quiet] [--config CONFIG]
+                             [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
+                             [--endpoints ENDPOINTS] [-d DOMAIN]
+                             output_filename {first_n,sample,all} ...
+
+positional arguments:
+  output_filename       The filename to write the extracted markers to (CSV format).
+  {first_n,sample,all}
+    first_n             Select trackers sequentially until N are taken.
+    sample              Select trackers by sampling N.
+    all                 Select all trackers.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --config CONFIG       The config file(s) containing marker definitions. This can be a single YAML
+                        file, or a directory that contains several files with marker definitions in
+                        it. The content of these files will be read and merged together. (default:
+                        markers.yml)
+  --no-stats            Do not compute summary statistics. (default: True)
+  --stats-file-prefix [STATS_FILE_PREFIX]
+                        The common file prefix of the files where we write out the compute
+                        statistics. More precisely, the file prefix must consist of a common path
+                        plus a common file prefix, to which suffixes `-overall.csv` and `-per-
+                        session.csv` will be added automatically. (default: stats)
+  --endpoints ENDPOINTS
+                        Configuration file for the tracker store as a yml file. (default:
+                        endpoints.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification. This can be a single YAML file, or a directory that
+                        contains several files with domain specifications in it. The content of
+                        these files will be read and merged together. (default: domain.yml)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default:
+                        None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default: None)
+```
