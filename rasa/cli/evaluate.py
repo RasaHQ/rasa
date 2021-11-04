@@ -135,7 +135,7 @@ def _run_markers(
     telemetry.track_markers_extraction_initiated(
         strategy=strategy,
         only_extract=stats_file_prefix is not None,
-        seed=seed,
+        seed=seed is not None,
         count=count,
     )
 
