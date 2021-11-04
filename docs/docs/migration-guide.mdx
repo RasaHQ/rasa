@@ -29,7 +29,7 @@ to convert your data from Markdown to YAML. Please use the commands described
 ### Model Configuration
 
 It is required to specify the used `recipe` within the
-[model configuration](model-configuration). As of now Rasa Open Source only supports
+[model configuration](model-configuration.mdx). As of now Rasa Open Source only supports
 the `default.v1` recipe and will continue using this even if you don't specify this
 in the model configuration. To avoid breaking changes in the future it is recommended
 to specify `recipe: "default.v1"` at the top of your model configuration:
@@ -63,8 +63,8 @@ to specify `recipe: "default.v1"` at the top of your model configuration:
 
 ### Custom Policies and Custom Components
 
-Rasa Open Source 3.0 changed the way how [NLU components](components) and
-[policies](policies) are trained and run during inference. As part of these changes
+Rasa Open Source 3.0 changed the way how [NLU components](components.mdx) and
+[policies](policies.mdx) are trained and run during inference. As part of these changes
 the interfaces for NLU components and policies have been unified and adapted.
 
 The next sections outline which adaptions are required to run your custom NLU components
@@ -72,7 +72,7 @@ and policies with Rasa Open Source 3.0.
 
 :::caution
 
-Please read the updated guide on custom graph components [here](custom-graph-components) before
+Please read the updated guide on custom graph components [here](custom-graph-components.mdx) before
 continuing to follow the step-by-step guide to migrate your own custom graph components.
 :::
 
@@ -84,7 +84,7 @@ It is now required to use
 [type annotations](https://docs.python.org/3/library/typing.html) in custom NLU
 components and policies. Rasa Open Source uses these type annotations to validate that
 your graph components are compatible and correctly configured. As outlined in the custom
-[components guide](custom-graph-components) it is not allowed to use
+[components guide](custom-graph-components.mdx) it is not allowed to use
 [Forward references](https://www.python.org/dev/peps/pep-0484/#forward-references).
 
 :::info Forward References with Python 3.7
@@ -134,7 +134,7 @@ This guide leads you through the migration of a custom policy step by step.
 
 Policies are no longer instantiated via their constructor. Instead, all policies have
 to implement a `create` method. During the policy instantiation the configuration from
-the [model configuration](model-configuration) is passed in as a dictionary instead
+the [model configuration](model-configuration.mdx) is passed in as a dictionary instead
 of as separate parameters. Similarly, the`featurizers` are no longer instantiated
 outside of policies.
 Instead, the super class `rasa.core.policies.policy.Policy` instantiates the
@@ -190,7 +190,7 @@ featurizers itself.
 Policies used to be persisted by an outside call to the policy's `persist` method.
 With Rasa Open Source 3.0 policies are responsible for persisting themselves.
 Use the provided `model_storage` and `resource`
-(see [graph component persistence](custom-graph-components#model-persistence) for more details)
+(see [graph component persistence](custom-graph-components.mdx#model-persistence) for more details)
 to persist your graph component at the end of the training and then return the `resource`
 as result of your policy's `train` method.
 
@@ -353,16 +353,16 @@ constructor but instead returned by the static method `get_default_config`:
 
 **Using End-To-End Features in a Policy**
 
-If you were using a custom [end-to-end policy](stories#end-to-end-training) in Rasa
+If you were using a custom [end-to-end policy](stories.mdx#end-to-end-training) in Rasa
 Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
 events manually. If your policy requires end-to-end features in Rasa Open Source 3
-you need to [register](custom-graph-components#registering-components-with-the-model-configuration)
+you need to [register](custom-graph-components.mdx#registering-graph-components-with-the-model-configuration)
 your policy with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
 will be precomputed and passed into your policy during training and inference.
 
 :::caution
 End-To-End features will only be computed and provided to your policy if your training
-data actually contains [end-to-end training data](stories#end-to-end-training).
+data actually contains [end-to-end training data](stories.mdx#end-to-end-training).
 :::
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
@@ -457,11 +457,11 @@ used during inference use `is_trainable=False`.
 **Providing Rule-only Data to a Policy**
 
 Rasa Open Source allows excluding conversation parts which are completely handled by
-[rules](rules). In Rasa Open Source 2 the necessary information was passed onto the
+[rules](rules.mdx). In Rasa Open Source 2 the necessary information was passed onto the
 policies using the `set_shared_policy_states` method which set the policy attribute
 `_rule_only_data`. Rasa Open Source passes this data in via the
 `predict_action_probabilities` method. The passed `rule_only_data` can be `None`
-in case the [`RulePolicy`](policies#rule-policy) is not part of your model
+in case the [`RulePolicy`](policies.mdx#rule-policy) is not part of your model
 configuration.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-rule-only-data" defaultValue="new">
@@ -497,7 +497,7 @@ configuration.
 
 NLU components which previously inherited from one of the following classes additionally
 need to inherit from the
-[`GraphComponent` interface](custom-graph-components#the-graphcomponent-interface):
+[`GraphComponent` interface](custom-graph-components.mdx#the-graphcomponent-interface):
 - `SparseFeaturizer`
 - `DenseFeaturizer`
 - `IntentClassifier`
@@ -559,7 +559,7 @@ The `EntityExtractor` class was renamed to `EntityExtractorMixing`:
 
 NLU components are no longer instantiated via their constructor. Instead, all NLU
 components have to override the `create` method of the
-[`GraphComponent` interface](custom-graph-components#the-graphcomponent-interface). The
+[`GraphComponent` interface](custom-graph-components.mdx#the-graphcomponent-interface). The
 passed in configuration is your NLU component's default configuration including any updates
 from your model configuration file.
 
@@ -604,7 +604,7 @@ from your model configuration file.
 NLU components used to be persisted by an outside call to the NLU component's `persist` method.
 With Rasa Open Source 3.0 NLU components are responsible for persisting themselves.
 You should use the provided `model_storage` and `resource`
-(see [component persistence](custom-graph-components#model-persistence) for more details)
+(see [component persistence](custom-graph-components.mdx#model-persistence) for more details)
 to persist your NLU component at the end of the training and then return the `resource`
 as result of your NLU component's `train` method.
 
@@ -656,7 +656,7 @@ as result of your NLU component's `train` method.
 **Instantiating a Trained NLU Component**
 
 Similar as you had to use the `model_storage` and `resource`
-(see [component persistence](custom-graph-components#model-persistence) for more details)
+(see [component persistence](custom-graph-components.mdx#model-persistence) for more details)
 to persist the NLU
 component in the previous step, you need to use these to load the persisted
 NLU component.
@@ -755,8 +755,8 @@ by the static method `get_default_config`:
 
 **Augmenting Training Data in an NLU Component**
 
-NLU Components like [tokenizers](components#tokenizers) or
-[featurizers](components#featurizers) augment the training data with their
+NLU Components like [tokenizers](components.mdx#tokenizers) or
+[featurizers](components.mdx#featurizers) augment the training data with their
 output during the model training. Their output is required by NLU components later in the
 pipeline. Typically, featurizers require *tokenized* messages as well as intent
 classifiers require *featurized* training data to train themselves. Rasa Open Source
@@ -876,8 +876,8 @@ during the training.
 
 **Using a Model Provider With your NLU Component**
 
-If your NLU component requires a pretrained model such as a [Spacy](components#spacynlp) or
-[Mitie](components#mitienlp) language model you have to specify the NLU component which
+If your NLU component requires a pretrained model such as a [Spacy](components.mdx#spacynlp) or
+[Mitie](components.mdx#mitienlp) language model you have to specify the NLU component which
 provides this model in your model's pipeline before the NLU component which requires
 the model. In addition to this you now also need to specify the required model in the `model_from`
 parameter in the `register` decorator. The model will then be passed to your model's
