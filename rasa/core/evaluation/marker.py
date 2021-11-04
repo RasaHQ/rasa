@@ -144,12 +144,12 @@ class ActionExecutedMarker(ConditionMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "action_executed"
+        return "action"
 
     @staticmethod
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
-        return "action_not_executed"
+        return "not_action"
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.
@@ -182,12 +182,12 @@ class IntentDetectedMarker(ConditionMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "intent_detected"
+        return "intent"
 
     @staticmethod
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
-        return "intent_not_detected"
+        return "not_intent"
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.
@@ -221,12 +221,12 @@ class SlotSetMarker(ConditionMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "slot_is_set"
+        return "slot_was_set"
 
     @staticmethod
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
-        return "slot_is_not_set"
+        return "slot_was_not_set"
 
     def validate_against_domain(self, domain: Domain) -> bool:
         """Checks that this marker (and its children) refer to entries in the domain.

@@ -383,8 +383,8 @@ def test_operator_nested_randomly_all_sub_markers_track_events(
     ]
     for event in events:
         marker.track(event)
-    assert len([sub_marker for sub_marker in marker]) == expected_size
-    for sub_marker in marker:
+    assert len([sub_marker for sub_marker in marker.flatten()]) == expected_size
+    for sub_marker in marker.flatten():
         assert len(sub_marker.history) == len(events)
 
 
@@ -423,9 +423,9 @@ def test_operator_nested_randomly_all_sub_markers_track_events_and_apply_at_some
 
     # by design, every marker applies at some point / never
     if applies_at_some_point:
-        assert all([any(sub_marker.history) for sub_marker in marker])
+        assert all([any(sub_marker.history) for sub_marker in marker.flatten()])
     else:
-        assert all([not any(sub_marker.history) for sub_marker in marker])
+        assert all([not any(sub_marker.history) for sub_marker in marker.flatten()])
 
 
 def test_sessions_evaluated_separately():
@@ -519,7 +519,7 @@ def _collect_parameters(
 ) -> Set[Text]:
     return set(
         sub_marker.text
-        for sub_marker in marker
+        for sub_marker in marker.flatten()
         if isinstance(sub_marker, condition_type)
     )
 
