@@ -275,7 +275,7 @@ jobs:
           poetry run python -m spacy download de_core_news_md
 
       - name: Install ddtrace
-        if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: poetry run pip install -U ddtrace
 
       - name: Run test
