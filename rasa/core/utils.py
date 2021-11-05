@@ -127,7 +127,9 @@ def list_routes(app: Sanic) -> Dict[Text, Text]:
             options[arg] = f"[{arg}]"
 
         if not isinstance(route.handler, CompositionView):
-            handlers = [(list(route.methods)[0], route.name.replace("rasa.server.", ""))]
+            handlers = [
+                (list(route.methods)[0], route.name.replace("rasa.server.", ""))
+            ]
         else:
             handlers = [
                 (method, find_route(v.__name__, endpoint) or v.__name__)
