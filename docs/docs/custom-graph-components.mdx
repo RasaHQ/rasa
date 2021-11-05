@@ -151,9 +151,9 @@ implementation), you indicate that it supports all languages which are specified
    - `["en"]`: The graph component can be used with any language except English.
 
 ### `required_packages`
-The `required_packages` method indicates which Python packages need to
+The `required_packages` method indicates which extra Python packages need to
 be installed to be able to use this graph component. Rasa Open Source will raise an error
-during execution if your graoh component is used without the required libraries being
+during execution if your graph component is used without the required libraries being
 installed. By default, this method returns an empty list which implies that your graph
 component does not have any extra dependencies.
 
@@ -185,7 +185,7 @@ class MyComponent(GraphComponent):
         ...
 
     @classmethod
-    def create(
+    def load(
         cls,
         config: Dict[Text, Any],
         model_storage: ModelStorage,

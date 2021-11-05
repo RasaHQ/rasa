@@ -846,7 +846,7 @@ parent classes:
 * If your NLU component provides a pretrained model which then should be used by other
   NLU components during training and inference use `ComponentType.MODEL_LOADER`
 
-Specify `is_trainable=True` if the `train` method of your policy should be called
+Specify `is_trainable=True` if the `train` method of your component should be called
 during the training.
 
 
@@ -874,7 +874,7 @@ during the training.
   </TabItem>
 </Tabs>
 
-**Using a Model Provider With your NLU Component**
+**Using a Model Provider with your NLU Component**
 
 If your NLU component requires a pretrained model such as a [Spacy](components.mdx#spacynlp) or
 [Mitie](components.mdx#mitienlp) language model you have to specify the NLU component which
@@ -894,7 +894,7 @@ parameter in the `register` decorator. The model will then be passed to your mod
           cfg: Optional[RasaNLUModelConfig] = None,
           **kwargs: Any,
       ) -> None:
-          """Train the featurizer.
+          """Train the featurizer."""
           spacy_nlp = kwargs.get("spacy_nlp")
           ...
 
