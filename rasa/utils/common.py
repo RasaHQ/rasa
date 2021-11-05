@@ -19,11 +19,11 @@ from typing import (
     Set,
 )
 
+from socket import SOCK_DGRAM, SOCK_STREAM
 import numpy as np
-
 import rasa.utils.io
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
-from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
+from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -178,9 +178,14 @@ def update_tensorflow_log_level() -> None:
     logging.getLogger("tensorflow").propagate = False
 
 
-def update_sanic_log_level(log_file: Optional[Text] = None) -> None:
-    """Set the log level of sanic loggers to the log level specified in the environment
-    variable 'LOG_LEVEL_LIBRARIES'."""
+def update_sanic_log_level(
+    log_file: Optional[Text] = None,
+    use_syslog: Optional[bool] = False,
+    syslog_address: Optional[Text] = None,
+    syslog_port: Optional[int] = None,
+    syslog_protocol: Optional[Text] = None,
+) -> None:
+    """Set the log level to 'LOG_LEVEL_LIBRARIES' environment variable ."""
     from sanic.log import logger, error_logger, access_logger
 
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
@@ -201,6 +206,18 @@ def update_sanic_log_level(log_file: Optional[Text] = None) -> None:
         logger.addHandler(file_handler)
         error_logger.addHandler(file_handler)
         access_logger.addHandler(file_handler)
+    if use_syslog:
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)-5.5s] [%(process)d]" " %(message)s"
+        )
+        socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
+        syslog_handler = logging.handlers.SysLogHandler(
+            address=(syslog_address, syslog_port), socktype=socktype,
+        )
+        syslog_handler.setFormatter(formatter)
+        logger.addHandler(syslog_handler)
+        error_logger.addHandler(syslog_handler)
+        access_logger.addHandler(syslog_handler)
 
 
 def update_asyncio_log_level() -> None:
