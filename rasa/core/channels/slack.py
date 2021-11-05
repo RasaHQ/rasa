@@ -356,7 +356,7 @@ class SlackInput(InputChannel):
             )
 
             return response.text(
-                None, status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": 1}
+                None, status=HTTPStatus.CREATED, headers={"X-Slack-No-Retry": "1"}
             )
 
         if metadata is not None:
