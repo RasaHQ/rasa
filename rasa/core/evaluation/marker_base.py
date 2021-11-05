@@ -179,7 +179,7 @@ class Marker(ABC):
         self.history: List[bool] = []
         # Note: we allow negation here even though there might not be a negated tag
         # for 2 reasons: testing and the fact that the `MarkerRegistry`+`from_config`
-        # won't allow to create a negated marker if there is not negated tag.
+        # won't allow to create a negated marker if there is no negated tag.
         self.negated: bool = negated
 
     def __str__(self) -> Text:
@@ -250,17 +250,12 @@ class Marker(ABC):
         self.history = []
 
     @abstractmethod
-    def __iter__(self) -> Iterator[Marker]:
-        """Returns an iterator over all markers that are part of this marker.
+    def flatten(self) -> Iterator[Marker]:
+        """Returns an iterator over all conditions and operators used in this marker.
 
         Returns:
-            an iterator over all markers that are part of this marker
+            an iterator over all conditions and operators that are part of this marker
         """
-        ...
-
-    @abstractmethod
-    def __len__(self) -> int:
-        """Returns the count of all markers that are part of this marker."""
         ...
 
     @abstractmethod
@@ -447,10 +442,20 @@ class Marker(ABC):
                 try:
                     marker = Marker.from_config(marker_config, name=marker_name)
                 except InvalidMarkerConfig as e:
+                    # we don't re-raise here because the stack trace would only be
+                    # printed when we run rasa evaluate with --debug flag
                     raise InvalidMarkerConfig(
-                        f"Could not load marker {marker_name} from {yaml_file}"
-                    ) from e
+                        f"Could not load marker {marker_name} from {yaml_file}. "
+                        f"Reason: {str(e)}. "
+                    )
                 loaded_markers.append(marker)
+
+        # Reminder: We could also just create a dictionary of markers from this.
+        # However, if we want to allow re-using top-level markers (e.g.
+        # "custom_marker1 or custom_marker2" and/or optimize the marker evaluation such
+        # that e.g. the same condition is not instantiated (and evaluated) twice, then
+        # the current approach might be better (e.g. with a dictionary of markers one
+        # might expect the markers to be independent objects).
 
         # combine the markers
         marker = OrMarker(markers=loaded_markers)
@@ -732,20 +737,16 @@ class OperatorMarker(Marker, ABC):
             marker.track(event)
         super().track(event)
 
-    def __iter__(self) -> Iterator[Marker]:
+    def flatten(self) -> Iterator[Marker]:
         """Returns an iterator over all included markers, plus this marker itself.
 
         Returns:
             an iterator over all markers that are part of this marker
         """
         for marker in self.sub_markers:
-            for sub_marker in marker:
+            for sub_marker in marker.flatten():
                 yield sub_marker
         yield self
-
-    def __len__(self) -> int:
-        """Returns the count of all markers that are part of this marker."""
-        return len(self.sub_markers) + 1
 
     def reset(self) -> None:
         """Resets the history of this marker and all its sub-markers."""
@@ -799,18 +800,22 @@ class OperatorMarker(Marker, ABC):
             try:
                 sub_marker = Marker.from_config(sub_marker_config)
             except InvalidMarkerConfig as e:
+                # we don't re-raise here because the stack trace would only be
+                # printed when we run rasa evaluate with --debug flag
                 raise InvalidMarkerConfig(
                     f"Could not create sub-marker for operator '{tag}' from "
-                    f"{sub_marker_config}"
-                ) from e
+                    f"{sub_marker_config}. Reason: {str(e)}"
+                )
             collected_sub_markers.append(sub_marker)
         try:
             marker = operator_class(markers=collected_sub_markers, negated=is_negation)
         except InvalidMarkerConfig as e:
+            # we don't re-raise here because the stack trace would only be
+            # printed when we run rasa evaluate with --debug flag
             raise InvalidMarkerConfig(
                 f"Could not create operator '{tag}' with sub-markers "
-                f"{collected_sub_markers}"
-            ) from e
+                f"{collected_sub_markers}. Reason: {str(e)}"
+            )
         marker.name = name
         return marker
 
@@ -836,17 +841,13 @@ class ConditionMarker(Marker, ABC):
     def _to_str_with(self, tag: Text) -> Text:
         return f"({tag}: {self.text})"
 
-    def __iter__(self) -> Iterator[ConditionMarker]:
+    def flatten(self) -> Iterator[ConditionMarker]:
         """Returns an iterator that just returns this `AtomicMarker`.
 
         Returns:
             an iterator over all markers that are part of this marker, i.e. this marker
         """
         yield self
-
-    def __len__(self) -> int:
-        """Returns the count of all markers that are part of this marker."""
-        return 1
 
     def max_depth(self) -> int:
         """Gets the maximum depth from this point in the marker tree."""
