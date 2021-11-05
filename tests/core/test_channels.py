@@ -573,7 +573,9 @@ def test_register_channel_without_route():
     rasa.core.channels.channel.register([input_channel], app, route=None)
 
     routes_list = utils.list_routes(app)
-    assert routes_list["custom_webhook_RestInput.receive"].startswith("/webhook")
+    assert routes_list[
+        "tests.core.test_channels.custom_webhook_RestInput.receive"
+    ].startswith("/webhook")
 
 
 def test_channel_registration_with_absolute_url_prefix_overwrites_route():
@@ -593,8 +595,12 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     # Assure that an absolute url returned by `url_prefix` overwrites route parameter
     # given in `register`.
     routes_list = utils.list_routes(app)
-    assert routes_list["custom_webhook_RestInput.health"].startswith(test_route)
-    assert ignored_base_route not in routes_list.get("custom_webhook_RestInput.health")
+    assert routes_list[
+        "tests.core.test_channels.custom_webhook_RestInput.health"
+    ].startswith(test_route)
+    assert ignored_base_route not in routes_list.get(
+        "tests.core.test_channels.custom_webhook_RestInput.health"
+    )
 
 
 @pytest.mark.parametrize(
