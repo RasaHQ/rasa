@@ -443,3 +443,61 @@ Track when a user tests an nlu model.
 
 - `test_data` - Data used for testing
 
+#### track\_markers\_extraction\_initiated
+
+```python
+@ensure_telemetry_enabled
+track_markers_extraction_initiated(strategy: Text, only_extract: bool, seed: bool, count: Optional[int]) -> None
+```
+
+Track when a user tries to extract success markers.
+
+**Arguments**:
+
+- `strategy` - The strategy the user is using for tracker selection
+- `only_extract` - Indicates if the user is only extracting markers or also
+  producing stats
+- `seed` - Indicates if the user used a seed for this attempt
+- `count` - (Optional) The number of trackers the user is trying to select.
+
+#### track\_markers\_extracted
+
+```python
+@ensure_telemetry_enabled
+track_markers_extracted(trackers_count: int) -> None
+```
+
+Track when markers have been extracted by a user.
+
+**Arguments**:
+
+- `trackers_count` - The actual number of trackers processed
+
+#### track\_markers\_stats\_computed
+
+```python
+@ensure_telemetry_enabled
+track_markers_stats_computed(trackers_count: int) -> None
+```
+
+Track when stats over markers have been computed by a user.
+
+**Arguments**:
+
+- `trackers_count` - The actual number of trackers processed
+
+#### track\_markers\_parsed\_count
+
+```python
+@ensure_telemetry_enabled
+track_markers_parsed_count(marker_count: int, max_depth: int, branching_factor: int) -> None
+```
+
+Track when markers have been successfully parsed from config.
+
+**Arguments**:
+
+- `marker_count` - The number of markers found in the config
+- `max_depth` - The maximum depth of any marker in the config
+- `branching_factor` - The maximum number of children of any marker in the config.
+

@@ -121,6 +121,46 @@ Event properties:
 
 
 
+## Markers Extraction
+
+### Markers Extraction Initiated
+<span class="badge badge--primary">backend</span> Triggered when marker extraction has been initiated.
+Event properties:
+
+- `strategy` *(string)*: Strategy to use when selecting trackers to extract from.
+- `only_extract` *(boolean)*: Indicates if path to write out statistics hasn't been specified.
+- `seed` *(boolean)*: The seed to initialise the random number generator for use with the 'sample' strategy.
+- `count` *(integer,null)*: Number of trackers to extract from (for any strategy except 'all').
+
+
+
+### Markers Extracted
+<span class="badge badge--primary">backend</span> Triggered when markers have been extracted.
+Event properties:
+
+- `trackers_count` *(integer)*: Number of processed trackers.
+
+
+
+### Markers Parsed
+<span class="badge badge--primary">backend</span> Triggered when markers have been successfully parsed.
+Event properties:
+
+- `marker_count` *(integer)*: Number of parsed markers.
+- `max_depth` *(integer)*: Maximum depth of the parsed markers.
+- `branching_factor` *(integer)*: Maximum number of children of any of the parsed markers.
+
+
+
+### Markers Statistics Computed
+<span class="badge badge--primary">backend</span> Triggered when marker statistics have been computed.
+Event properties:
+
+- `trackers_count` *(integer)*: Number of processed trackers.
+
+
+
+
 ## Data Handling
 
 ### Training Data Split

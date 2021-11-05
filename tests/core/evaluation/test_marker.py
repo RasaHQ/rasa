@@ -619,6 +619,32 @@ def test_marker_from_path_only_reads_yamls(tmp_path: Path,):
 
 
 @pytest.mark.parametrize(
+    "configs",
+    [
+        {"my_marker1": {IntentDetectedMarker.positive_tag(): "this-intent"}},
+        {
+            "my_marker1": {IntentDetectedMarker.positive_tag(): "this-intent"},
+            "my_marker2": {IntentDetectedMarker.positive_tag(): "this-action"},
+        },
+    ],
+)
+def test_marker_from_path_adds_special_or_marker(tmp_path: Path, configs: Any):
+
+    yaml_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(
+        data=configs, target=yaml_file,
+    )
+    loaded = Marker.from_path(tmp_path)
+    assert isinstance(loaded, OrMarker)
+    assert loaded.name == Marker.ANY_MARKER
+    assert len(loaded.sub_markers) == len(configs)
+    assert all(
+        isinstance(sub_marker, IntentDetectedMarker)
+        for sub_marker in loaded.sub_markers
+    )
+
+
+@pytest.mark.parametrize(
     "path_config_tuples",
     [
         [  # two configs defining the same marker
@@ -656,3 +682,23 @@ def test_marker_from_path_raises(
         rasa.shared.utils.io.write_yaml(data=config, target=full_path)
     with pytest.raises(InvalidMarkerConfig):
         Marker.from_path(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "marker,expected_depth",
+    [
+        (
+            AndMarker(
+                markers=[
+                    SlotSetMarker("s1"),
+                    OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6"),]),
+                ],
+            ),
+            3,
+        ),
+        (SlotSetMarker("s1"), 1),
+        (AndMarker(markers=[SlotSetMarker("s1"), IntentDetectedMarker("6"),],), 2),
+    ],
+)
+def test_marker_depth(marker: Marker, expected_depth: int):
+    assert marker.max_depth() == expected_depth

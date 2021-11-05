@@ -190,6 +190,15 @@ Checks that this marker (and its children) refer to entries in the domain.
 
 - `domain` - The domain to check against
 
+#### max\_depth
+
+```python
+ | @abstractmethod
+ | max_depth() -> int
+```
+
+Gets the maximum depth from this point in the marker tree.
+
 #### evaluate\_events
 
 ```python
@@ -412,6 +421,14 @@ Checks that this marker (and its children) refer to entries in the domain.
 
 - `domain` - The domain to check against
 
+#### max\_depth
+
+```python
+ | max_depth() -> int
+```
+
+Gets the maximum depth from this point in the marker tree.
+
 #### from\_tag\_and\_sub\_config
 
 ```python
@@ -481,6 +498,14 @@ Returns an iterator that just returns this `AtomicMarker`.
 ```
 
 Returns the count of all markers that are part of this marker.
+
+#### max\_depth
+
+```python
+ | max_depth() -> int
+```
+
+Gets the maximum depth from this point in the marker tree.
 
 #### from\_tag\_and\_sub\_config
 
