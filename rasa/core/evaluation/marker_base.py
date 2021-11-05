@@ -442,9 +442,12 @@ class Marker(ABC):
                 try:
                     marker = Marker.from_config(marker_config, name=marker_name)
                 except InvalidMarkerConfig as e:
+                    # we don't re-raise here because the stack trace would only be
+                    # printed when we run rasa evaluate with --debug flag
                     raise InvalidMarkerConfig(
-                        f"Could not load marker {marker_name} from {yaml_file}"
-                    ) from e
+                        f"Could not load marker {marker_name} from {yaml_file}. "
+                        f"Reason: {str(e)}. "
+                    )
                 loaded_markers.append(marker)
 
         # Reminder: We could also just create a dictionary of markers from this.
@@ -797,18 +800,22 @@ class OperatorMarker(Marker, ABC):
             try:
                 sub_marker = Marker.from_config(sub_marker_config)
             except InvalidMarkerConfig as e:
+                # we don't re-raise here because the stack trace would only be
+                # printed when we run rasa evaluate with --debug flag
                 raise InvalidMarkerConfig(
                     f"Could not create sub-marker for operator '{tag}' from "
-                    f"{sub_marker_config}"
-                ) from e
+                    f"{sub_marker_config}. Reason: {str(e)}"
+                )
             collected_sub_markers.append(sub_marker)
         try:
             marker = operator_class(markers=collected_sub_markers, negated=is_negation)
         except InvalidMarkerConfig as e:
+            # we don't re-raise here because the stack trace would only be
+            # printed when we run rasa evaluate with --debug flag
             raise InvalidMarkerConfig(
                 f"Could not create operator '{tag}' with sub-markers "
-                f"{collected_sub_markers}"
-            ) from e
+                f"{collected_sub_markers}. Reason: {str(e)}"
+            )
         marker.name = name
         return marker
 

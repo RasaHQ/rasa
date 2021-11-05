@@ -693,7 +693,7 @@ def test_marker_from_path_adds_special_or_marker(tmp_path: Path, configs: Any):
                 "folder1/config2.yaml",
                 {"my_marker1": {IntentDetectedMarker.positive_tag(): "intent1"}},
             ),
-            ("folder2/config2.yaml", {"my_marker1": {"unknown-tag": "intent2"}}),
+            ("folder2/config2.yaml", {"my_marker2": {"unknown-tag": "intent2"}}),
         ],
     ],
 )
