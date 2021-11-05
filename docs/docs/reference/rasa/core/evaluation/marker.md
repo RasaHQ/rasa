@@ -83,24 +83,34 @@ class SequenceMarker(OperatorMarker)
 
 Checks that all sub-markers apply consecutively in the specified order.
 
-Given a sequence of sub-markers `m_0, m_1,...,m_n`, the sequence marker applies
-at the `i`-th event if sub-marker `m_{n-j}` applies at the `{i-j}`-th event
-for `j` in `[0,..,n]`.
+The sequence marker application follows two rules:
+(1) Given a sequence of sub-markers `m_0, m_1,...,m_n`, the sequence marker applies
+    at the `i`-th event if all sub-markers successively applied to some previous
+    events and the last sub-marker applies at the current `i`-th events.
+(2) If the sequence marker applies at the `i`-th event, then for it&#x27;s next
+    application the events up to the `i`-th event will be ignored.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(markers: List[Marker], negated: bool = False, name: Optional[Text] = None) -> None
+```
+
+Instantiate a new sequence marker.
+
+**Arguments**:
+
+- `markers` - the sub-markers listed in the expected order
+- `negated` - whether this marker should be negated (i.e. a negated marker
+  applies if and only if the non-negated marker does not apply)
+- `name` - a custom name that can be used to replace the default string
+  conversion of this marker
 
 #### positive\_tag
 
 ```python
  | @staticmethod
  | positive_tag() -> Text
-```
-
-Returns the tag to be used in a config file.
-
-#### negated\_tag
-
-```python
- | @staticmethod
- | negated_tag() -> Text
 ```
 
 Returns the tag to be used in a config file.

@@ -155,27 +155,18 @@ Updates the marker according to the given event.
 
 Clears the history of the marker.
 
-#### \_\_iter\_\_
+#### flatten
 
 ```python
  | @abstractmethod
- | __iter__() -> Iterator[Marker]
+ | flatten() -> Iterator[Marker]
 ```
 
-Returns an iterator over all markers that are part of this marker.
+Returns an iterator over all conditions and operators used in this marker.
 
 **Returns**:
 
-  an iterator over all markers that are part of this marker
-
-#### \_\_len\_\_
-
-```python
- | @abstractmethod
- | __len__() -> int
-```
-
-Returns the count of all markers that are part of this marker.
+  an iterator over all conditions and operators that are part of this marker
 
 #### validate\_against\_domain
 
@@ -381,10 +372,10 @@ All sub-markers will be updated before the compound marker itself is updated.
 
 - `event` - the next event of the conversation
 
-#### \_\_iter\_\_
+#### flatten
 
 ```python
- | __iter__() -> Iterator[Marker]
+ | flatten() -> Iterator[Marker]
 ```
 
 Returns an iterator over all included markers, plus this marker itself.
@@ -392,14 +383,6 @@ Returns an iterator over all included markers, plus this marker itself.
 **Returns**:
 
   an iterator over all markers that are part of this marker
-
-#### \_\_len\_\_
-
-```python
- | __len__() -> int
-```
-
-Returns the count of all markers that are part of this marker.
 
 #### reset
 
@@ -479,10 +462,10 @@ Instantiates an atomic marker.
 - `name` - a custom name that can be used to replace the default string
   conversion of this marker
 
-#### \_\_iter\_\_
+#### flatten
 
 ```python
- | __iter__() -> Iterator[ConditionMarker]
+ | flatten() -> Iterator[ConditionMarker]
 ```
 
 Returns an iterator that just returns this `AtomicMarker`.
@@ -490,14 +473,6 @@ Returns an iterator that just returns this `AtomicMarker`.
 **Returns**:
 
   an iterator over all markers that are part of this marker, i.e. this marker
-
-#### \_\_len\_\_
-
-```python
- | __len__() -> int
-```
-
-Returns the count of all markers that are part of this marker.
 
 #### max\_depth
 
