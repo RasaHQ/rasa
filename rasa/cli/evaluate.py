@@ -6,7 +6,7 @@ from rasa import telemetry
 from rasa.core.utils import AvailableEndpoints
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
-from rasa.core.evaluation.marker_base import Marker
+from rasa.core.evaluation.marker_base import Marker, OperatorMarker
 from rasa.shared.core.domain import Domain
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.evaluate as arguments
@@ -148,12 +148,15 @@ def _run_markers(
         )
 
     # Calculate telemetry
-    # Subtract one to remove the virtual OR over all markers
-    num_markers = len(markers) - 1
+    # All loaded markers are combined with one virtual OR over all markers
+    num_markers = len(markers.sub_markers)
     max_depth = markers.max_depth() - 1
     # Find maximum branching of marker
     branching_factor = max(
-        len(sub_marker) - 1 for marker in markers.sub_markers for sub_marker in marker
+        len(sub_marker.sub_markers)
+        for marker in markers.sub_markers
+        for sub_marker in marker.flatten()
+        if isinstance(sub_marker, OperatorMarker)
     )
 
     telemetry.track_markers_parsed_count(num_markers, max_depth, branching_factor)
