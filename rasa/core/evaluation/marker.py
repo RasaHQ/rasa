@@ -77,6 +77,15 @@ class SequenceMarker(OperatorMarker):
     def __init__(
         self, markers: List[Marker], negated: bool = False, name: Optional[Text] = None
     ) -> None:
+        """Instantiate a new sequence marker.
+
+        Args:
+            markers: the sub-markers listed in the expected order
+            negated: whether this marker should be negated (i.e. a negated marker
+                applies if and only if the non-negated marker does not apply)
+            name: a custom name that can be used to replace the default string
+                conversion of this marker
+        """
         super().__init__(markers=markers, negated=negated, name=name)
         self._progress: int = 0
 
