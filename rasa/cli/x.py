@@ -262,7 +262,7 @@ def _configure_logging(args: argparse.Namespace) -> None:
     configure_logging_and_warnings(
         log_level, warn_only_once=False, filter_repeated_logs=False
     )
-    configure_file_logging(logging.root, args.log_file)
+    configure_file_logging(logging.root, args.log_file, False)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
