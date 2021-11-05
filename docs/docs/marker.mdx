@@ -12,27 +12,27 @@ Markers are defined using a simple `yaml` syntax. For example, here are markers 
 
 ```yaml
 marker_dialogue_completion:
-  and:
-    - slot_was_set: travel_departure
-	- slot_was_set: travel_destination
-  	- slot_was_set: travel_flight_class
+    and:
+        - slot_was_set: travel_departure
+        - slot_was_set: travel_destination
+        - slot_was_set: travel_flight_class
 marker_task_success:
-  and:
-    - slot_was_set: travel_departure
-	- slot_was_set: travel_destination
-  	- slot_was_set: travel_flight_class
-    - action: provide_carbon_estimate
+    and:
+        - slot_was_set: travel_departure
+        - slot_was_set: travel_destination
+        - slot_was_set: travel_flight_class
+        - action: provide_carbon_estimate
 ```
 
 And here is a marker for surfacing dialogues where all mandatory slots are set except `travel_flight_class`:
 
 ```yaml
 marker_dialogue_completion:
-  and:
-    - slot_was_set: travel_departure
-	- slot_was_set: travel_destination
-  	- not:
-	  slot_was_set: travel_flight_class
+    and:
+        - slot_was_set: travel_departure
+        - slot_was_set: travel_destination
+        - not:
+            slot_was_set: travel_flight_class
 ```
 
 ## Defining Markers
@@ -72,24 +72,24 @@ To define one or more marker, you need to specify a `yaml` configuration file. H
 
 ```yaml
 marker_name_provided:
-  slot_was_set: name
+    slot_was_set: name
 marker_mood_expressed:
-  or:
-    - intent: mood_unhappy
-    - intent: mood_great
+    or:
+        - intent: mood_unhappy
+        - intent: mood_great
 marker_cheer_up:
-  seq:
-    - intent: mood_unhappy
-    - action: utter_cheer_up
+    seq:
+        - intent: mood_unhappy
+        - action: utter_cheer_up
 marker_bot_challenged:
-  at_least_once:
-    - intent: bot_challenge
+    at_least_once:
+        - intent: bot_challenge
 marker_mood_expressed_and_name_provided:
-  and:
-	- slot_was_set: name
-    - or:
-      - intent: mood_unhappy
-      - intent: mood_great
+    and:
+        - slot_was_set: name
+        - or:
+            - intent: mood_unhappy
+            - intent: mood_great
 ```
 
 The top level contains unique user-specified names for each marker. This is a dictionary mapping marker names to marker definitions.
