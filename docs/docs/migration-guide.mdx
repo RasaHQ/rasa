@@ -380,6 +380,10 @@ data actually contains [end-to-end training data](stories.mdx#end-to-end-trainin
           **kwargs: Any,
       ) -> None:
           ...
+          model_data, label_ids = self._prepare_for_training(
+              training_trackers, domain, interpreter, **kwargs
+          )
+          ...
 
       def predict_action_probabilities(
           self,
@@ -389,12 +393,16 @@ data actually contains [end-to-end training data](stories.mdx#end-to-end-trainin
           **kwargs: Any,
       ) -> PolicyPrediction:
           ...
+          tracker_state_features = self._featurize_tracker_for_e2e(
+              tracker, domain, interpreter
+          )
+          ...
   ```
 
   </TabItem>
   <TabItem value="new">
 
-  ```python {2,9,17}
+  ```python {2,9,13,21,27}
   @DefaultV1Recipe.register(
       DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
   )
@@ -406,6 +414,10 @@ data actually contains [end-to-end training data](stories.mdx#end-to-end-trainin
           precomputations: Optional[MessageContainerForCoreFeaturization] = None,
       ) -> Resource:
           ...
+          model_data, label_ids = self._prepare_for_training(
+            training_trackers, domain, precomputations,
+          )
+          ...
 
       def predict_action_probabilities(
           self,
@@ -415,6 +427,10 @@ data actually contains [end-to-end training data](stories.mdx#end-to-end-trainin
           rule_only_data: Optional[Dict[Text, Any]] = None,
           **kwargs: Any,
       ) -> PolicyPrediction:
+          ...
+          tracker_state_features = self._featurize_tracker(
+              tracker, domain, precomputations, rule_only_data=rule_only_data
+          )
           ...
   ```
 
