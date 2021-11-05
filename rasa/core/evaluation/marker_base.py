@@ -26,6 +26,7 @@ import rasa.shared.utils.common
 from rasa.shared.data import is_likely_yaml_file
 from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
+from rasa import telemetry
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.io import WriteRow
@@ -266,6 +267,11 @@ class Marker(ABC):
         """
         ...
 
+    @abstractmethod
+    def max_depth(self) -> int:
+        """Gets the maximum depth from this point in the marker tree."""
+        ...
+
     def evaluate_events(
         self, events: List[Event], recursive: bool = False
     ) -> List[SessionEvaluation]:
@@ -449,12 +455,8 @@ class Marker(ABC):
         # might expect the markers to be independent objects).
 
         # combine the markers
-        if len(loaded_markers) > 1:
-            marker = OrMarker(markers=loaded_markers)
-            marker.name = Marker.ANY_MARKER  # cannot be set via name parameter
-        else:
-            marker = loaded_markers[0]
-
+        marker = OrMarker(markers=loaded_markers)
+        marker.name = Marker.ANY_MARKER  # cannot be set via name parameter
         return marker
 
     @staticmethod
@@ -610,6 +612,9 @@ class Marker(ABC):
             if tracker:
                 tracker_result = self.evaluate_events(tracker.events)
                 processed_trackers[tracker.sender_id] = tracker_result
+
+        processed_trackers_count = len(processed_trackers)
+        telemetry.track_markers_extracted(processed_trackers_count)
         Marker._save_results(output_file, processed_trackers)
 
         # Compute and write statistics if requested.
@@ -624,6 +629,8 @@ class Marker(ABC):
                         session_idx=session_idx,
                         meta_data_on_relevant_events_per_marker=session_result,
                     )
+
+            telemetry.track_markers_stats_computed(processed_trackers_count)
             if overall_stats_file:
                 stats.overall_statistic_to_csv(path=overall_stats_file)
             if session_stats_file:
@@ -754,6 +761,10 @@ class OperatorMarker(Marker, ABC):
             marker.validate_against_domain(domain) for marker in self.sub_markers
         )
 
+    def max_depth(self) -> int:
+        """Gets the maximum depth from this point in the marker tree."""
+        return 1 + max(child.max_depth() for child in self.sub_markers)
+
     @staticmethod
     def from_tag_and_sub_config(
         tag: Text, sub_config: Any, name: Optional[Text] = None,
@@ -830,6 +841,10 @@ class ConditionMarker(Marker, ABC):
             an iterator over all markers that are part of this marker, i.e. this marker
         """
         yield self
+
+    def max_depth(self) -> int:
+        """Gets the maximum depth from this point in the marker tree."""
+        return 1
 
     @staticmethod
     def from_tag_and_sub_config(
