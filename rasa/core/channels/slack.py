@@ -513,7 +513,9 @@ class SlackInput(InputChannel):
                 metadata = self.get_metadata(request)
                 channel_id = metadata.get("out_channel")
                 thread_id = metadata.get("thread_id")
-                conversation_id = self.get_conversation_id(sender_id, channel_id, thread_id)
+                conversation_id = self.get_conversation_id(
+                    sender_id, channel_id, thread_id
+                )
 
                 if "challenge" in output:
                     return response.json(output.get("challenge"))
@@ -551,7 +553,9 @@ class SlackInput(InputChannel):
                         metadata = self.get_metadata(request)
                         channel_id = metadata.get("out_channel")
                         thread_id = metadata.get("thread_id")
-                        conversation_id = self.get_conversation_id(sender_id, channel_id, thread_id)
+                        conversation_id = self.get_conversation_id(
+                            sender_id, channel_id, thread_id
+                        )
                         return await self.process_message(
                             request, on_new_message, text, conversation_id, metadata
                         )
