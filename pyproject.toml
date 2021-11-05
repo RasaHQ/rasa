@@ -128,7 +128,7 @@ typing-utils = "^0.1.0"
 tarsafe = "^0.0.3"
 randomname = "^0.1.5"
 keras = "<2.7.0"
-sanic-routing = { git = "https://github.com/wochinge/sanic-routing.git", branch = "fix-routing-with-multiple-path-params" }
+sanic-routing = "0.7.2"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"

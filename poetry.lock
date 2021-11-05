@@ -180,7 +180,7 @@ tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>
 
 [[package]]
 name = "azure-core"
-version = "1.19.1"
+version = "1.20.0"
 description = "Microsoft Azure Core Library for Python"
 category = "dev"
 optional = false
@@ -259,14 +259,14 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.19.10"
+version = "1.19.11"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.6"
 
 [package.dependencies]
-botocore = ">=1.22.10,<1.23.0"
+botocore = ">=1.22.11,<1.23.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -275,7 +275,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.22.10"
+version = "1.22.11"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -805,7 +805,7 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2)"]
 
 [[package]]
 name = "google-auth"
-version = "2.3.3"
+version = "1.35.0"
 description = "Google Authentication Library"
 category = "main"
 optional = false
@@ -1767,11 +1767,11 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "py"
-version = "1.10.0"
+version = "1.11.0"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
 category = "dev"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "pyasn1"
@@ -2423,18 +2423,11 @@ sanic = "*"
 
 [[package]]
 name = "sanic-routing"
-version = "0.7.1"
+version = "0.7.2"
 description = "Core routing component for Sanic"
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
-
-[package.source]
-type = "git"
-url = "https://github.com/wochinge/sanic-routing.git"
-reference = "fix-routing-with-multiple-path-params"
-resolved_reference = "978abab2baee0c952eb3ce389b87d23c8b93d2aa"
 
 [[package]]
 name = "sanic-testing"
@@ -2744,7 +2737,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "tensorboard"
-version = "2.7.0"
+version = "2.6.0"
 description = "TensorBoard lets you watch Tensors Flow"
 category = "main"
 optional = false
@@ -2752,7 +2745,7 @@ python-versions = ">=3.6"
 
 [package.dependencies]
 absl-py = ">=0.4"
-google-auth = ">=1.6.3,<3"
+google-auth = ">=1.6.3,<2"
 google-auth-oauthlib = ">=0.4.1,<0.5"
 grpcio = ">=1.24.3"
 markdown = ">=2.6.8"
@@ -2781,7 +2774,7 @@ python-versions = "*"
 
 [[package]]
 name = "tensorflow"
-version = "2.6.1"
+version = "2.6.2"
 description = "TensorFlow is an open source machine learning framework for everyone."
 category = "main"
 optional = false
@@ -2796,14 +2789,14 @@ gast = "0.4.0"
 google-pasta = ">=0.2,<1.0"
 grpcio = ">=1.37.0,<2.0"
 h5py = ">=3.1.0,<3.2.0"
-keras = ">=2.6,<3.0"
+keras = ">=2.6.0,<2.7"
 keras-preprocessing = ">=1.1.2,<1.2.0"
 numpy = ">=1.19.2,<1.20.0"
 opt-einsum = ">=3.3.0,<3.4.0"
 protobuf = ">=3.9.2"
 six = ">=1.15.0,<1.16.0"
-tensorboard = ">=2.6,<3.0"
-tensorflow-estimator = "<2.7"
+tensorboard = ">=2.6.0,<2.7"
+tensorflow-estimator = ">=2.6.0,<2.7"
 termcolor = ">=1.1.0,<1.2.0"
 typing-extensions = ">=3.7.4,<3.8.0"
 wrapt = ">=1.12.1,<1.13.0"
@@ -3309,7 +3302,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.9"
-content-hash = "f00737fddd4745740f462c121625e7fc9fd4c2dcae6473b15f2d054b1a5ad23e"
+content-hash = "a601605115e5f16e2a8481f2bc70ab4f30da3c7f5cc49f5bac134533260a8416"
 
 [metadata.files]
 absl-py = [
@@ -3404,8 +3397,8 @@ attrs = [
     {file = "attrs-21.2.0.tar.gz", hash = "sha256:ef6aaac3ca6cd92904cdd0d83f629a15f18053ec84e6432106f7a4d04ae4f5fb"},
 ]
 azure-core = [
-    {file = "azure-core-1.19.1.zip", hash = "sha256:b6ad37a124d194bcece581f3b988d3a234f44a39c5bd62e2e47e03153586915b"},
-    {file = "azure_core-1.19.1-py2.py3-none-any.whl", hash = "sha256:38a23431098824840b4ed9bc3758ab14221e8e0236243fefe1392b6c2fc68aeb"},
+    {file = "azure-core-1.20.0.zip", hash = "sha256:7a1654d08b568abe847c72d9b084e7fdfff6baf11afa2cd1905f73cdf2f15447"},
+    {file = "azure_core-1.20.0-py2.py3-none-any.whl", hash = "sha256:1202c6600e991193d79ff1fdcdcc914e347746609404f960ce7e1bb8df1bec32"},
 ]
 azure-storage-blob = [
     {file = "azure-storage-blob-12.8.1.zip", hash = "sha256:eb37b50ddfb6e558b29f6c8c03b0666514e55d6170bf4624e7261a3af93c6401"},
@@ -3442,12 +3435,12 @@ blis = [
     {file = "blis-0.7.5.tar.gz", hash = "sha256:833e01e9eaff4c01aa6e049bbc1e6acb9eca6ee513d7b35b5bf135d49705ad33"},
 ]
 boto3 = [
-    {file = "boto3-1.19.10-py3-none-any.whl", hash = "sha256:57ee38d02772f44a52d2d836cee61d039d405f6eaefc68f92ae0d80e0260c097"},
-    {file = "boto3-1.19.10.tar.gz", hash = "sha256:79c982c5930f989292ca849b0caaa1ffeb9eb9d27c32992c3b2f6736b3b14ad2"},
+    {file = "boto3-1.19.11-py3-none-any.whl", hash = "sha256:54c8aecabc2d093c84751c874e9514e88454bcf2b9a2426282c889961842ed16"},
+    {file = "boto3-1.19.11.tar.gz", hash = "sha256:078f3d81b7f5f9bd4184ccc9948911058492992635a94f63adddeacf99a72cd7"},
 ]
 botocore = [
-    {file = "botocore-1.22.10-py3-none-any.whl", hash = "sha256:543cd69e9b248be942d181a097a4715312939ec998602a7b4b07e9fda36d30e9"},
-    {file = "botocore-1.22.10.tar.gz", hash = "sha256:dffa1e7e7e3a8da73bbdead3aeff7d52fd5a159a1a93b2896ac67b2aa79a461c"},
+    {file = "botocore-1.22.11-py3-none-any.whl", hash = "sha256:1db14865bb4390d6f49a898ffa84060ca02245186f8ee6671f4792e9e0b448b6"},
+    {file = "botocore-1.22.11.tar.gz", hash = "sha256:306f5db93f53012a02e6d6616a76f05900746608899395a427d8edef9916effc"},
 ]
 cached-property = [
     {file = "cached-property-1.5.2.tar.gz", hash = "sha256:9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130"},
@@ -3759,8 +3752,8 @@ google-api-core = [
     {file = "google_api_core-2.2.2-py2.py3-none-any.whl", hash = "sha256:e7853735d4f51f4212d6bf9750620d76fc0106c0f271be0c3f43b73501c7ddf9"},
 ]
 google-auth = [
-    {file = "google-auth-2.3.3.tar.gz", hash = "sha256:d83570a664c10b97a1dc6f8df87e5fdfff012f48f62be131e449c20dfc32630e"},
-    {file = "google_auth-2.3.3-py2.py3-none-any.whl", hash = "sha256:a348a50b027679cb7dae98043ac8dbcc1d7951f06d8387496071a1e05a2465c0"},
+    {file = "google-auth-1.35.0.tar.gz", hash = "sha256:b7033be9028c188ee30200b204ea00ed82ea1162e8ac1df4aa6ded19a191d88e"},
+    {file = "google_auth-1.35.0-py2.py3-none-any.whl", hash = "sha256:997516b42ecb5b63e8d80f5632c1a61dddf41d2a4c2748057837e06e00014258"},
 ]
 google-auth-oauthlib = [
     {file = "google-auth-oauthlib-0.4.6.tar.gz", hash = "sha256:a90a072f6993f2c327067bf65270046384cda5a8ecb20b94ea9a687f1f233a7a"},
@@ -4589,8 +4582,8 @@ psycopg2-binary = [
     {file = "psycopg2_binary-2.9.1-cp39-cp39-win_amd64.whl", hash = "sha256:b4d7679a08fea64573c969f6994a2631908bb2c0e69a7235648642f3d2e39a68"},
 ]
 py = [
-    {file = "py-1.10.0-py2.py3-none-any.whl", hash = "sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a"},
-    {file = "py-1.10.0.tar.gz", hash = "sha256:21b81bda15b66ef5e1a777a21c4dcd9c20ad3efd0b3f817e7a809035269e1bd3"},
+    {file = "py-1.11.0-py2.py3-none-any.whl", hash = "sha256:607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378"},
+    {file = "py-1.11.0.tar.gz", hash = "sha256:51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719"},
 ]
 pyasn1 = [
     {file = "pyasn1-0.4.8-py2.4.egg", hash = "sha256:fec3e9d8e36808a28efb59b489e4528c10ad0f480e57dcc32b4de5c9d8c9fdf3"},
@@ -5013,7 +5006,10 @@ sanic-plugin-toolkit = [
     {file = "sanic-plugin-toolkit-1.2.0.tar.gz", hash = "sha256:5d477e6c1832968d43c7112e1a445afc98153fa05236c4db32b68e2cfff86001"},
     {file = "sanic_plugin_toolkit-1.2.0-py3-none-any.whl", hash = "sha256:3ab62af7c2d3e73d37d217976ec11f3683bde588d647e883a42763a894058b50"},
 ]
-sanic-routing = []
+sanic-routing = [
+    {file = "sanic-routing-0.7.2.tar.gz", hash = "sha256:139ce88b3f054e7aa336e2ecc8459837092b103b275d3a97609a34092c55374d"},
+    {file = "sanic_routing-0.7.2-py3-none-any.whl", hash = "sha256:523034ffd07aca056040e08de438269c9a880722eee1ace3a32e4f74b394d9aa"},
+]
 sanic-testing = [
     {file = "sanic-testing-0.7.0.tar.gz", hash = "sha256:8396507cdcc030f0b43a1b2419c04034be28bc6c466596e122e7bb407bb515b3"},
     {file = "sanic_testing-0.7.0-py3-none-any.whl", hash = "sha256:3e600981d830731c6108c9c2f12c577800c061c92787a1b1c9c8fa6a80960843"},
@@ -5248,7 +5244,7 @@ tarsafe = [
     {file = "tarsafe-0.0.3.tar.gz", hash = "sha256:7acf73a11b576fcbb003b52adecf4706d6c3009c6af28a01fd21949235ffd806"},
 ]
 tensorboard = [
-    {file = "tensorboard-2.7.0-py3-none-any.whl", hash = "sha256:239f78a4a8dff200ce585a030c787773a8c1184d5c159252f5f85bac4e3c3b38"},
+    {file = "tensorboard-2.6.0-py3-none-any.whl", hash = "sha256:f7dac4cdfb52d14c9e3f74585ce2aaf8e6203620a864e51faf84988b09f7bbdb"},
 ]
 tensorboard-data-server = [
     {file = "tensorboard_data_server-0.6.1-py3-none-any.whl", hash = "sha256:809fe9887682d35c1f7d1f54f0f40f98bb1f771b14265b453ca051e2ce58fca7"},
@@ -5259,18 +5255,14 @@ tensorboard-plugin-wit = [
     {file = "tensorboard_plugin_wit-1.8.0-py3-none-any.whl", hash = "sha256:2a80d1c551d741e99b2f197bb915d8a133e24adb8da1732b840041860f91183a"},
 ]
 tensorflow = [
-    {file = "tensorflow-2.6.1-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:dd0036a6fdb78958dcab3bdc4b3df23d7b9ab80ca51c03f2a84b4d354bbf36a1"},
-    {file = "tensorflow-2.6.1-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:c2f00e7c874660b1f02efc7c581e96d64da762eb6e784be697e215cdfdb26a20"},
-    {file = "tensorflow-2.6.1-cp36-cp36m-win_amd64.whl", hash = "sha256:b47c987de5fb27f55184089e322e1180691170857a8bc9952f219fb0b13598d6"},
-    {file = "tensorflow-2.6.1-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:6f2dfc34e1a180c975e64ade21a7c60a752c8f96ddddb36a605f2bd0a13aeda3"},
-    {file = "tensorflow-2.6.1-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:7cbfdeb5122c1ea63653b01bb4ab4a457d0b8f14d00cdc888550e092e1142b8d"},
-    {file = "tensorflow-2.6.1-cp37-cp37m-win_amd64.whl", hash = "sha256:fa522c1061bcfbd4e16034d31e2b9740447447d6603adf8f17079c3036ed420c"},
-    {file = "tensorflow-2.6.1-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:47a91e2ede99ee6e94bab1367ba442e5ff39e761e63bd30ae0634c56aa90663d"},
-    {file = "tensorflow-2.6.1-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:9b4f6e70b70de53b90458aefa93fa5cdba479ce9ae14ba09d70fa2fc28f3bd5b"},
-    {file = "tensorflow-2.6.1-cp38-cp38-win_amd64.whl", hash = "sha256:2cb8e993f40474e63bb9c878dc2ebc9b9ae8d92e3d6b9a62275b9a0a57c355da"},
-    {file = "tensorflow-2.6.1-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:27ebfeedbdf275d92f544ccd1fdba65b266c2c42b0551bbe769f506e8e17a878"},
-    {file = "tensorflow-2.6.1-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:e05a51a11a94714d875bd7c93e1d3b405edeb31e677dd3ec537bb1edf10719ff"},
-    {file = "tensorflow-2.6.1-cp39-cp39-win_amd64.whl", hash = "sha256:839e6e7d49089ddc544591bd830f82f3e12137ecc4db5a4bd59ebf0b58cf52c0"},
+    {file = "tensorflow-2.6.2-cp36-cp36m-macosx_10_11_x86_64.whl", hash = "sha256:9c85ba08cd08dbf3ba09720e03672da3ccdf969377be85d03bc24b5fe3ca8c21"},
+    {file = "tensorflow-2.6.2-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:423e814557ddd1562a01a78925362bb25b47bafd4f840f22dae34033945beffd"},
+    {file = "tensorflow-2.6.2-cp37-cp37m-macosx_10_11_x86_64.whl", hash = "sha256:16dc1ee49dd8b761577f8abd914a2836647de393b17fe140885f72acd8483e96"},
+    {file = "tensorflow-2.6.2-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:902b233337538e89752f019b3c16b23dff4915f6d3666c35ec029ab4641e9f1c"},
+    {file = "tensorflow-2.6.2-cp38-cp38-macosx_10_11_x86_64.whl", hash = "sha256:caffa6d919b428901e224f778206d5bac4b553dadc1301409781af971b06e000"},
+    {file = "tensorflow-2.6.2-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:6da1ca578c061d6072829777d121a0b755d3d50770b4ea3879cdb5eba28dee03"},
+    {file = "tensorflow-2.6.2-cp39-cp39-macosx_10_11_x86_64.whl", hash = "sha256:50e216f3c8512d27d41d24b8990faa2d8a408196cf53342703c26ff5e2cf0ab0"},
+    {file = "tensorflow-2.6.2-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:ec08a181a587504ccde13960d47a687e8155c4d1f24750801db9da41d95e7722"},
 ]
 tensorflow-addons = [
     {file = "tensorflow_addons-0.14.0-cp36-cp36m-macosx_10_13_x86_64.whl", hash = "sha256:ae5e767a1f442a5c258385c72b9c6ec203a73708cfe825b13859ea0b074b06f8"},
