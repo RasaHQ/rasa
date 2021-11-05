@@ -19,12 +19,12 @@ class AndMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "AND"
+        return "and"
 
     @staticmethod
     def negated_tag() -> Text:
         """Returns the tag to be used in a config file for the negated version."""
-        return "AT_LEAST_ONE_NOT"
+        return "at_least_one_not"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return all(marker.history[-1] for marker in self.sub_markers)
@@ -37,7 +37,7 @@ class OrMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "OR"
+        return "or"
 
     def _non_negated_version_applies_at(self, event: Event) -> bool:
         return any(marker.history[-1] for marker in self.sub_markers)
@@ -50,7 +50,7 @@ class NotMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "NOT"
+        return "not"
 
     @staticmethod
     def expected_number_of_sub_markers() -> Optional[int]:
@@ -83,7 +83,7 @@ class SequenceMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "SEQ"
+        return "seq"
 
     def _to_str_with(self, tag: Text) -> Text:
         sub_markers_str = " -> ".join(str(marker) for marker in self.sub_markers)
@@ -114,12 +114,12 @@ class OccurrenceMarker(OperatorMarker):
     @staticmethod
     def positive_tag() -> Text:
         """Returns the tag to be used in a config file."""
-        return "AT_LEAST_ONCE"
+        return "at_least_once"
 
     @staticmethod
     def negated_tag() -> Optional[Text]:
         """Returns the tag to be used in a config file for the negated version."""
-        return "NEVER"
+        return "never"
 
     @staticmethod
     def expected_number_of_sub_markers() -> Optional[int]:
