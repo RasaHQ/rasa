@@ -52,7 +52,8 @@ become compatible and executable for Rasa's graph.
 Before you get started you have to decide whether you want to implement a custom
 [NLU component](components.mdx) or a [policy](policies.mdx). If you are implementing
 a custom policy then we recommend extending the existing
-`rasa.core.policies.policy.Policy` class.
+`rasa.core.policies.policy.Policy` class which already implements the `GraphComponent`
+interface.
 
 ```python
 from rasa.core.policies.policy import Policy
@@ -374,8 +375,10 @@ to specify the following details:
    process training data for other dependent graph components or before it can make
    predictions
 
-- `model_from`: Specifies if a pretrained model needs to be provided to the `train`,
-  `process_training_data` and `process` methods of the graph component. Note that you
+- `model_from`: Specifies if a pretrained
+   [language model](components.mdx#language-models) needs to be provided to the `train`,
+  `process_training_data` and `process` methods of the graph component. These methods
+   have to support the parameter `model` to receive the language model. Note that you
    still need to make sure that the model provided graph component is part of your model
    configuration.
 

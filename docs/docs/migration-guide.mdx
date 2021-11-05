@@ -151,7 +151,8 @@ featurizers itself.
           priority: int = DEFAULT_POLICY_PRIORITY,
           max_history: Optional[int] = None,
       ) -> None:
-      ...
+          super().__init__(featurizer, priority, **kwargs)
+          ...
   ```
 
   </TabItem>
@@ -166,8 +167,9 @@ featurizers itself.
           max_history: Optional[int] = None,
       ) -> None:
           super().__init__(
-            config, model_storage, resource, execution_context
+            config, model_storage, resource, execution_context, featurizer
           )
+          ...
       ...
 
     @classmethod
@@ -502,6 +504,7 @@ need to inherit from the
 - `DenseFeaturizer`
 - `IntentClassifier`
 - `EntityExtractor`
+- `Component`
 
 This snippet shows the required changes:
 
