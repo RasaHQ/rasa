@@ -128,11 +128,11 @@ typing-utils = "^0.1.0"
 tarsafe = "^0.0.3"
 randomname = "^0.1.5"
 keras = "<2.7.0"
-sanic-routing = "0.7.2"
+sanic-routing = "^0.7.2"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
-pytest-sanic = "^1.8.1"
+pytest-sanic = { git = "https://github.com/wochinge/pytest-sanic", branch = "fix-signal-issue" }
 pytest-asyncio = "^0.14.0"
 pytest-xdist = "^2.2.1"
 pytest = "^6.2.2"
