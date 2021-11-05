@@ -14,12 +14,12 @@ Markers are defined using a simple `yaml` syntax. For example, here are markers 
 marker_dialogue_completion:
   and:
     - slot_was_set: travel_departure
-	  - slot_was_set: travel_destination
+	- slot_was_set: travel_destination
   	- slot_was_set: travel_flight_class
 marker_task_success:
   and:
     - slot_was_set: travel_departure
-	  - slot_was_set: travel_destination
+	- slot_was_set: travel_destination
   	- slot_was_set: travel_flight_class
     - action: provide_carbon_estimate
 ```
@@ -30,9 +30,9 @@ And here is a marker for surfacing dialogues where all mandatory slots are set e
 marker_dialogue_completion:
   and:
     - slot_was_set: travel_departure
-	  - slot_was_set: travel_destination
+	- slot_was_set: travel_destination
   	- not:
-			slot_was_set: travel_flight_class
+	  slot_was_set: travel_flight_class
 ```
 
 ## Defining Markers
@@ -86,7 +86,7 @@ marker_bot_challenged:
     - intent: bot_challenge
 marker_mood_expressed_and_name_provided:
   and:
-		- slot_was_set: name
+	- slot_was_set: name
     - or:
       - intent: mood_unhappy
       - intent: mood_great
