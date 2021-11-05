@@ -312,16 +312,45 @@ def test_slack_init_token_channel_parameters():
     ch = SlackInput("xoxb-test", "test", slack_signing_secret="foobar")
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
+    assert ch.conversation_id_config == "sender_id"
 
+def test_slack_init_token_channel_conversation_id_parameters():
+    ch = SlackInput(
+        "xoxb-test", "test", slack_signing_secret="foobar", conversation_id_config="channel_id"
+    )
+    assert ch.slack_token == "xoxb-test"
+    assert ch.slack_channel == "test"
+    assert ch.conversation_id_config == "channel_id"
 
 def test_slack_init_token_channel_threads_parameters():
     ch = SlackInput(
-        "xoxb-test", "test", slack_signing_secret="foobar", use_threads=True
+        "xoxb-test", "test", slack_signing_secret="foobar", use_threads=True, conversation_id_config="thread_id"
     )
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
     assert ch.use_threads is True
+    assert ch.conversation_id_config == "thread_id"
 
+def test_get_conversation_id_sender_id():
+    ch = SlackInput(
+        "xoxb-test", "test", slack_signing_secret="foobar", use_threads=True, conversation_id_config="sender_id"
+    )
+    conversation_id = ch.get_conversation_id("test_sender_id", "test_channel_id", "test_thread_id")
+    assert conversation_id == "test_sender_id"
+
+def test_get_conversation_id_channel_id():
+    ch = SlackInput(
+        "xoxb-test", "test", slack_signing_secret="foobar", use_threads=True, conversation_id_config="channel_id"
+    )
+    conversation_id = ch.get_conversation_id("test_sender_id", "test_channel_id", "test_thread_id")
+    assert conversation_id == "test_sender_id_test_channel_id"
+
+def test_get_conversation_id_thread_id():
+    ch = SlackInput(
+        "xoxb-test", "test", slack_signing_secret="foobar", use_threads=True, conversation_id_config="thread_id"
+    )
+    conversation_id = ch.get_conversation_id("test_sender_id", "test_channel_id", "test_thread_id")
+    assert conversation_id == "test_sender_id_test_channel_id_test_thread_id"
 
 def test_is_slack_message_none():
     payload = {}
