@@ -184,7 +184,7 @@ class SlackInput(InputChannel):
             slack_signing_secret: Slack creates a unique string for your app and
                 shares it with you. This allows us to verify requests from Slack
                 with confidence by verifying signatures using your signing secret.
-            conversation_id: conversation id for slack conversations.
+            conversation_id_config: conversation id config for slack conversations.
                 sender_id allows 1 conversation per user (across channels)
                 channel_id allows 1 conversation per user per channel
                 thread_id allows 1 conversation per user per thread
