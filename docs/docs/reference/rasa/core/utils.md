@@ -5,7 +5,7 @@ title: rasa.core.utils
 #### configure\_file\_logging
 
 ```python
-configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text]) -> None
+configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text], use_syslog: Optional[bool], syslog_address: Optional[Text] = None, syslog_port: Optional[int] = None, syslog_protocol: Optional[Text] = None) -> None
 ```
 
 Configure logging to a file.
@@ -14,6 +14,10 @@ Configure logging to a file.
 
 - `logger_obj` - Logger object to configure.
 - `log_file` - Path of log file to write to.
+- `use_syslog` - Add syslog as a logger.
+- `syslog_address` - Adress of the syslog server.
+- `syslog_port` - Port of the syslog server.
+- `syslog_protocol` - Protocol with the syslog server
 
 #### one\_hot
 

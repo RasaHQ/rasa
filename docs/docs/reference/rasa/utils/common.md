@@ -65,11 +65,10 @@ Sets Tensorflow log level based on env variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
 #### update\_sanic\_log\_level
 
 ```python
-update_sanic_log_level(log_file: Optional[Text] = None) -> None
+update_sanic_log_level(log_file: Optional[Text] = None, use_syslog: Optional[bool] = False, syslog_address: Optional[Text] = None, syslog_port: Optional[int] = None, syslog_protocol: Optional[Text] = None) -> None
 ```
 
-Set the log level of sanic loggers to the log level specified in the environment
-variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
+Set the log level to &#x27;LOG_LEVEL_LIBRARIES&#x27; environment variable .
 
 #### update\_asyncio\_log\_level
 
