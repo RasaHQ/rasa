@@ -3,6 +3,7 @@
     "Model Training",
     "Model Testing",
     "Model Serving",
+    "Markers Extraction",
     "Data Handling",
     "Miscellaneous"
   ],
@@ -421,6 +422,91 @@
         "num_lookup_tables",
         "num_synonyms",
         "num_regexes"
+      ]
+    },
+    "Markers Extraction Initiated": {
+      "description": "Triggered when marker extraction has been initiated.",
+      "type": "object",
+      "section": "Markers Extraction",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "Strategy to use when selecting trackers to extract from."
+        },
+        "only_extract": {
+          "type": "boolean",
+          "description": "Indicates if path to write out statistics hasn't been specified."
+        },
+        "seed": {
+          "type": "boolean",
+          "description": "The seed to initialise the random number generator for use with the 'sample' strategy."
+        },
+        "count": {
+          "type": ["integer", "null"],
+          "description": "Number of trackers to extract from (for any strategy except 'all')."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "strategy",
+        "only_extract",
+        "seed",
+        "count"
+      ]
+    },
+    "Markers Extracted": {
+      "description": "Triggered when markers have been extracted.",
+      "type": "object",
+      "section": "Markers Extraction",
+      "properties": {
+        "trackers_count": {
+          "type": "integer",
+          "description": "Number of processed trackers."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "trackers_count"
+      ]
+    },
+    "Markers Parsed": {
+      "description": "Triggered when markers have been successfully parsed.",
+      "type": "object",
+      "section": "Markers Extraction",
+      "properties": {
+        "marker_count": {
+          "type": "integer",
+          "description": "Number of parsed markers."
+        },
+        "max_depth": {
+          "type": "integer",
+          "description": "Maximum depth of the parsed markers."
+        },
+        "branching_factor": {
+          "type": "integer",
+          "description": "Maximum number of children of any of the parsed markers."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "marker_count",
+        "max_depth",
+        "branching_factor"
+      ]
+    },
+    "Markers Statistics Computed": {
+      "description": "Triggered when marker statistics have been computed.",
+      "type": "object",
+      "section": "Markers Extraction",
+      "properties": {
+        "trackers_count": {
+          "type": "integer",
+          "description": "Number of processed trackers."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "trackers_count"
       ]
     }
   }
