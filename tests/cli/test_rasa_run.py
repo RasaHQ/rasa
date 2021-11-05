@@ -18,8 +18,11 @@ def test_run_help(run: Callable[..., RunResult]):
     output = run("run", "--help")
 
     help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
-                [--endpoints ENDPOINTS] [-i INTERFACE] [-p PORT]
-                [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
+                [--use-syslog] [--syslog-address SYSLOG_ADDRESS]
+                [--syslog-port SYSLOG_PORT]
+                [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
+                [-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
+                [--cors [CORS [CORS ...]]] [--enable-api]
                 [--response-timeout RESPONSE_TIMEOUT]
                 [--remote-storage REMOTE_STORAGE]
                 [--ssl-certificate SSL_CERTIFICATE]
