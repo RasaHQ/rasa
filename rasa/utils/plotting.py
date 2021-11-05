@@ -34,7 +34,7 @@ def _fix_matplotlib_backend() -> None:
             # we'll try to import it and if it fails we will use a different backend
             import tkinter  # noqa: 401
         except (ImportError, ModuleNotFoundError):
-            logger.debug("Setting matplotlib backend to 'agg'!")
+            logger.debug("Setting matplotlib backend to 'agg'")
             matplotlib.use("agg")
 
     # if no backend is set by default, we'll try to set it up manually
