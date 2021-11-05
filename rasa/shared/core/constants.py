@@ -1,4 +1,5 @@
 import rasa.shared.constants as constants
+from rasa.shared.core.slot_mappings import SlotMapping
 
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
@@ -23,7 +24,6 @@ ACTION_RESTART_NAME = "action_restart"
 ACTION_SESSION_START_NAME = "action_session_start"
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 ACTION_DEACTIVATE_LOOP_NAME = "action_deactivate_loop"
-LEGACY_ACTION_DEACTIVATE_LOOP_NAME = "action_deactivate_form"
 ACTION_REVERT_FALLBACK_EVENTS_NAME = "action_revert_fallback_events"
 ACTION_DEFAULT_ASK_AFFIRMATION_NAME = "action_default_ask_affirmation"
 ACTION_DEFAULT_ASK_REPHRASE_NAME = "action_default_ask_rephrase"
@@ -31,6 +31,8 @@ ACTION_BACK_NAME = "action_back"
 ACTION_TWO_STAGE_FALLBACK_NAME = "action_two_stage_fallback"
 ACTION_UNLIKELY_INTENT_NAME = "action_unlikely_intent"
 RULE_SNIPPET_ACTION_NAME = "..."
+ACTION_EXTRACT_SLOTS = "action_extract_slots"
+ACTION_VALIDATE_SLOT_MAPPINGS = "action_validate_slot_mappings"
 
 DEFAULT_ACTION_NAMES = [
     ACTION_LISTEN_NAME,
@@ -45,6 +47,7 @@ DEFAULT_ACTION_NAMES = [
     ACTION_UNLIKELY_INTENT_NAME,
     ACTION_BACK_NAME,
     RULE_SNIPPET_ACTION_NAME,
+    ACTION_EXTRACT_SLOTS,
 ]
 
 # rules allow setting a value of slots or active_loops to None;
@@ -74,6 +77,25 @@ SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
 SLOT_LAST_OBJECT = "knowledge_base_last_object"
 SLOT_LAST_OBJECT_TYPE = "knowledge_base_last_object_type"
 DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
+
+DEFAULT_SLOT_NAMES = {
+    REQUESTED_SLOT,
+    SESSION_START_METADATA_SLOT,
+    SLOT_LISTED_ITEMS,
+    SLOT_LAST_OBJECT,
+    SLOT_LAST_OBJECT_TYPE,
+}
+
+PREDEFINED_MAPPINGS = {
+    str(SlotMapping.FROM_ENTITY),
+    str(SlotMapping.FROM_INTENT),
+    str(SlotMapping.FROM_TEXT),
+    str(SlotMapping.FROM_TRIGGER_INTENT),
+}
+
+SLOT_MAPPINGS = "mappings"
+MAPPING_CONDITIONS = "conditions"
+MAPPING_TYPE = "type"
 
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a `SubState`

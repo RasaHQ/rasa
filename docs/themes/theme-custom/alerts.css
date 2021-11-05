@@ -1,0 +1,5 @@
+.admonition-info, .alert--info {
+    color: rgb(25, 60, 71) !important;
+    background-color: rgb(238, 249, 253) !important;
+    border-left: 8px solid rgb(76, 179, 212) !important;
+}

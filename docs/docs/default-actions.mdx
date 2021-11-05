@@ -133,10 +133,6 @@ class ActionSessionStart(Action):
         return [SessionStarted(), ActionExecuted("action_listen")]
 ```
 
-:::info New in 2.3
-The slot `session_started_metadata` was added.
-:::
-
 ## action_default_fallback
 
 This action undoes the last user-bot interaction and sends the `utter_default` response if it is defined.
@@ -152,13 +148,6 @@ If you wish to reset all slots, we recommend using a custom action
 that returns the [`AllSlotsReset`](https://rasa.com/docs/rasa/reference/rasa/shared/core/events#allslotsreset-objects) event after form deactivation.
 :::
 
-## action_revert_fallback_events
-
-:::caution Deprecated!
-The `action_revert_fallback_events` action is deprecated since the 2.0 release.
-The [`action_two_stage_fallback`](./default-actions.mdx#action_two_stage_fallback) action
-now handles all [two-stage fallback behavior](./fallback-handoff.mdx)
-:::
 
 ## action_two_stage_fallback
 
@@ -193,10 +182,6 @@ action to instruct Rasa Open Source to use the deprecated `FormAction` which is 
 the Rasa SDK.
 
 ## action_unlikely_intent
-
-:::info New in 2.8
-`action_unlikely_intent` was added together with `UnexpecTEDIntentPolicy`.
-:::
 
 Rasa Open Source triggers `action_unlikely_intent` via [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy).
 You can control how often this action is predicted by tuning the [`tolerance`](./policies.mdx#unexpected-intent-policy)

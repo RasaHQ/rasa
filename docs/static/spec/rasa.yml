@@ -480,8 +480,7 @@ paths:
       requestBody:
         required: true
         description: >-
-          The training data can either be in YAML format or a JSON
-          which contains Rasa training data in YAML format for each required key.
+          The training data should be in YAML format.
         content:
           application/json:
             schema:
@@ -1552,6 +1551,7 @@ components:
       type: string
       description: Rasa config in plain text
       example: >-
+        recipe: default.v1
         language: en
 
         pipeline: supervised_embeddings

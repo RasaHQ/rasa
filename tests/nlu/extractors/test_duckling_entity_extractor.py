@@ -1,11 +1,40 @@
+from typing import Callable, Dict, Text, Any
+
+import pytest
 import responses
 
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.extractors.duckling_entity_extractor import DucklingEntityExtractor
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 
 
-def test_duckling_entity_extractor(component_builder):
+@pytest.fixture()
+def create_duckling(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+) -> Callable[[Dict[Text, Any]], DucklingEntityExtractor]:
+    def inner(config: Dict[Text, Any]) -> DucklingEntityExtractor:
+        return DucklingEntityExtractor.create(
+            config={
+                **DucklingEntityExtractor.get_default_config(),
+                "url": "http://localhost:8000",
+                **config,
+            },
+            model_storage=default_model_storage,
+            execution_context=default_execution_context,
+            resource=Resource("duckling"),
+        )
+
+    return inner
+
+
+def test_duckling_entity_extractor_with_multiple_extracted_dates(
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor]
+):
+    duckling = create_duckling({"dimensions": ["time"], "timezone": "UTC"})
+
     with responses.RequestsMock() as rsps:
         rsps.add(
             responses.POST,
@@ -110,19 +139,20 @@ def test_duckling_entity_extractor(component_builder):
             ],
         )
 
-        _config = RasaNLUModelConfig(
-            {"pipeline": [{"name": "DucklingEntityExtractor"}]}
-        )
-        _config.set_component_attr(
-            0, dimensions=["time"], timezone="UTC", url="http://localhost:8000"
-        )
-        duckling = component_builder.create_component(_config.for_component(0), _config)
-        message = Message(data={TEXT: "Today is the 5th of May. Let us meet tomorrow."})
-        duckling.process(message)
-        entities = message.get("entities")
+        messages = [
+            Message(data={TEXT: "Today is the 5th of May. Let us meet tomorrow."})
+        ]
+        parsed_messages = duckling.process(messages)
+
+        assert len(parsed_messages) == 1
+        entities = parsed_messages[0].get("entities")
         assert len(entities) == 4
 
-    # Test duckling with a defined date
+
+def test_duckling_entity_extractor_with_one_extracted_date(
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor]
+):
+    duckling = create_duckling({"dimensions": ["time"], "timezone": "UTC"})
 
     with responses.RequestsMock() as rsps:
         rsps.add(
@@ -152,23 +182,20 @@ def test_duckling_entity_extractor(component_builder):
         )
 
         # 1381536182 == 2013/10/12 02:03:02
-        message = Message(data={TEXT: "Let us meet tomorrow."}, time="1381536182")
-        duckling.process(message)
-        entities = message.get("entities")
+        messages = [Message(data={TEXT: "Let us meet tomorrow."}, time=1381536182)]
+        duckling.process(messages)
+
+        assert len(messages) == 1
+        entities = messages[0].get("entities")
         assert len(entities) == 1
         assert entities[0]["text"] == "tomorrow"
         assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
 
-        # Test dimension filtering includes only specified dimensions
-        _config = RasaNLUModelConfig(
-            {"pipeline": [{"name": "DucklingEntityExtractor"}]}
-        )
-        _config.set_component_attr(
-            0, dimensions=["number"], url="http://localhost:8000"
-        )
-        duckling_number = component_builder.create_component(
-            _config.for_component(0), _config
-        )
+
+def test_duckling_entity_extractor_dimension_filtering(
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractor]
+):
+    duckling_number = create_duckling({"dimensions": ["number"]})
 
     with responses.RequestsMock() as rsps:
         rsps.add(
@@ -203,30 +230,10 @@ def test_duckling_entity_extractor(component_builder):
             ],
         )
 
-        message = Message(data={TEXT: "Yesterday there were 5 people in a room"})
-        duckling_number.process(message)
-        entities = message.get("entities")
-
+        messages = [Message(data={TEXT: "Yesterday there were 5 people in a room"})]
+        duckling_number.process(messages)
+        assert len(messages) == 1
+        entities = messages[0].get("entities")
         assert len(entities) == 1
         assert entities[0]["text"] == "5"
         assert entities[0]["value"] == 5
-
-
-def test_duckling_entity_extractor_and_synonyms(component_builder):
-    _config = RasaNLUModelConfig(
-        {
-            "pipeline": [
-                {"name": "DucklingEntityExtractor"},
-                {"name": "EntitySynonymMapper"},
-            ]
-        }
-    )
-    _config.set_component_attr(0, dimensions=["number"])
-    duckling = component_builder.create_component(_config.for_component(0), _config)
-    synonyms = component_builder.create_component(_config.for_component(1), _config)
-    message = Message(data={TEXT: "He was 6 feet away"})
-    duckling.process(message)
-    # checks that the synonym processor
-    # can handle entities that have int values
-    synonyms.process(message)
-    assert message is not None

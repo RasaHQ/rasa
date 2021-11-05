@@ -30,15 +30,25 @@ The following example form `restaurant_form` will fill the slot
 `cuisine` from an extracted entity `cuisine` and slot `num_people` from entity `number`.
 
 ```yaml-rasa
+entities:
+- cuisine
+- number
+slots:
+  cuisine:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: cuisine
+  num_people:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: number
 forms:
   restaurant_form:
     required_slots:
-        cuisine:
-          - type: from_entity
-            entity: cuisine
-        num_people:
-          - type: from_entity
-            entity: number
+        - cuisine
+        - num_people
 ```
 
 You can define a list of intents to ignore for the whole form under the 
@@ -50,30 +60,28 @@ the intent is `chitchat`, then you would need to define the following (after the
 name and under the `ignored_intents` keyword):
 
 ```yaml-rasa
+entities:
+- cuisine
+- number
+slots:
+  cuisine:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: cuisine
+  num_people:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: number
 forms:
   restaurant_form:
     ignored_intents: 
     - chitchat
     required_slots:
-        cuisine:
-          - type: from_entity
-            entity: cuisine
-        num_people:
-          - type: from_entity
-            entity: number
+        - cuisine
+        - num_people
 ```
-
-:::caution Deprecated in 2.6
-The `required_slots` keyword was introduced. The following syntax is deprecated and will be removed in 3.0.0:
-```yaml-rasa title="domain.yml"
-forms:
-  restaurant_form:
-    # this format is deprecated
-    cuisine:
-      - type: from_entity
-        entity: cuisine
-```
-:::
 
 Once the form action gets called for the first time, the form gets activated and will
 prompt the user for the next required slot value. It does this by
@@ -152,16 +160,22 @@ apply if the intent of the message is `excluded_intent`. Note that you can
 also define lists of intents for the parameters `intent` and `not_intent`.
 
 ```yaml-rasa
+entities:
+- entity_name
+slots:
+  slot_name:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: entity_name
+      role: role_name
+      group: group name
+      intent: intent_name
+      not_intent: excluded_intent
 forms:
   your_form:
     required_slots:
-        slot_name:
-        - type: from_entity
-          entity: entity_name
-          role: role_name
-          group: group name
-          intent: intent_name
-          not_intent: excluded_intent
+        - slot_name
 ```
 
 In `from_entity` mapping, when an extracted entity uniquely maps onto a slot,
@@ -169,24 +183,34 @@ the slot will be filled even if this slot wasn't requested by the form.
 The extracted entity will be ignored if the mapping is not unique.
 
 ```yaml-rasa
+slots:
+  departure_city:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: city
+      role: from
+    - type: from_entity
+      entity: city
+  arrival_city:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: city
+      role: to
+    - type: from_entity
+      entity: city
+  arrival_date:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: date
 forms:
   your_form:
     required_slots:
-        departure_city:
-          - type: from_entity
-            entity: city
-            role: from
-          - type: from_entity
-            entity: city
-        arrival_city:
-          - type: from_entity
-            entity: city
-            role: to
-          - type: from_entity
-            entity: city
-        arrival_date:
-          - type: from_entity
-            entity: date
+        - departure_city
+        - arrival_city
+        - arrival_date
 ```
 
 In the example above, an entity `date` uniquely sets the slot `arrival_date`,
@@ -209,13 +233,17 @@ The slot mapping will not apply if the intent of the message is `excluded_intent
 Note that you can define lists of intents for the parameters `intent` and `not_intent`.
 
 ```yaml-rasa
+slots:
+  slot_name:
+    type: text
+    mappings:
+    - type: from_text
+      intent: intent_name
+      not_intent: excluded_intent
 forms:
   your_form:
     required_slots:
-        slot_name:
-        - type: from_text
-          intent: intent_name
-          not_intent: excluded_intent
+        - slot_name
 ```
 
 #### from_intent
@@ -232,14 +260,18 @@ mapping.
 :::
 
 ```yaml-rasa
+slots:
+  slot_name:
+    type: any
+    mappings:
+    - type: from_intent
+      value: my_value
+      intent: intent_name
+      not_intent: excluded_intent
 forms:
   your_form:
     required_slots:
-        slot_name:
-        - type: from_intent
-          value: my_value
-          intent: intent_name
-          not_intent: excluded_intent
+        - slot_name
 ```
 
 #### from_trigger_intent
@@ -251,14 +283,18 @@ The slot mapping will not apply if the intent of the message is
 also define lists of intents for the parameters `intent` and `not_intent`.
 
 ```yaml-rasa
+slots:
+  slot_name:
+    type: any
+    mappings:
+    - type: from_trigger_intent
+      value: my_value
+      intent: intent_name
+      not_intent: excluded_intent
 forms:
   your_form:
     required_slots:
-        slot_name:
-        - type: from_trigger_intent
-          value: my_value
-          intent: intent_name
-          not_intent: excluded_intent
+        - slot_name
 ```
 
 ### Writing Stories / Rules for Unhappy Form Paths
@@ -338,11 +374,6 @@ Forms are fully customizable using [Custom Actions](./actions.mdx#custom-actions
 After extracting a slot value from user input, you can validate the extracted slots.
 By default Rasa Open Source only validates if any slot was filled after requesting
 a slot.
-
-:::caution Changed in 2.1
-Forms no longer raise `ActionExecutionRejection` if nothing is extracted from the user’s
-utterance for any of the required slots.
-:::
 
 You can implement a [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>`
 to validate any extracted slots. Make sure to add this action to the `actions`
