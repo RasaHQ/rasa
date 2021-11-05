@@ -8,7 +8,7 @@ abstract: Markers are logical expressions that allow you to describe points in t
 
 :::caution
 
-This feature is currently experimental and might change or be removed in the future. Share your feedback in the forum to help us make it ready for production.
+This feature is currently experimental and might change or be removed in the future. Share your feedback in the forum to help us make it production-ready.
 
 :::
 
@@ -123,9 +123,10 @@ Markers are extracted from the dialogues already stored in your [tracker store](
 rasa evaluate markers markers.yaml extracted_markers.csv all
 ```
 
-**Note:** `all` will cause the script to process all the trackers in your tracker store. To process a subset you can use a different tracker selection strategy, either `first_n` or `sample`. Refer to the CLI usage for details.
+The argument `all` will cause the script to process all the trackers in your tracker store. To process a subset you can use a different tracker selection strategy, either `first_n` or `sample`. Refer to the CLI usage for details.
 
-**Note:** Each tracker in the tracker store can contain multiple sessions identified by a `sender_id`. When extracting markers and computing their statistics, each session is considered separately.
+Each tracker in the tracker store can contain multiple sessions identified by a `sender_id`. When extracting markers and computing their statistics, each session is considered separately.
+
 
 ### Extracted Markers
 
