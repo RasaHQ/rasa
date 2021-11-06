@@ -1,5 +1,4 @@
 from sanic.__version__ import __version__
 from sanic.app import Sanic
-from sanic.blueprints import Blueprint
 
-__all__ = ["Sanic", "Blueprint", "__version__"]
+__all__ = ["Sanic", "__version__"]

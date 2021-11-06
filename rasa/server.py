@@ -75,9 +75,11 @@ if TYPE_CHECKING:
     from rasa.core.processor import MessageProcessor
     from mypy_extensions import Arg, VarArg, KwArg
 
+    SanicResponse = Union[
+        response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
+    ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
-        response.BaseHTTPResponse,
+        [Arg(Request, "request"), VarArg(), KwArg()], SanicResponse,  # noqa: F821
     ]
 
 
@@ -164,7 +166,7 @@ def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
 
     def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
-        def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
+        def decorated(request: Request, *args: Any, **kwargs: Any) -> "SanicResponse":
             conversation_id = kwargs["conversation_id"]
             if request.app.agent.tracker_store.exists(conversation_id):
                 return f(request, *args, **kwargs)
@@ -202,7 +204,7 @@ def requires_auth(
         ) -> Optional[bool]:
             # This is a coroutine since `sanic-jwt==1.6`
             jwt_data = await rasa.utils.common.call_potential_coroutine(
-                request.app.auth.extract_payload(request)
+                request.app.ctx.auth.extract_payload(request)
             )
 
             user = jwt_data.get("user", {})
@@ -221,27 +223,23 @@ def requires_auth(
         @wraps(f)
         async def decorated(
             request: Request, *args: Any, **kwargs: Any
-        ) -> response.BaseHTTPResponse:
+        ) -> response.HTTPResponse:
 
             provided = request.args.get("token", None)
 
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 result = f(request, *args, **kwargs)
-                if isawaitable(result):
-                    result = await result
-                return result
+                return await result if isawaitable(result) else result
             elif app.config.get(
                 "USE_JWT"
             ) and await rasa.utils.common.call_potential_coroutine(
                 # This is a coroutine since `sanic-jwt==1.6`
-                request.app.auth.is_authenticated(request)
+                request.app.ctx.auth.is_authenticated(request)
             ):
                 if await sufficient_scope(request, *args, **kwargs):
                     result = f(request, *args, **kwargs)
-                    if isawaitable(result):
-                        result = await result
-                    return result
+                    return await result if isawaitable(result) else result
                 raise ErrorResponse(
                     HTTPStatus.FORBIDDEN,
                     "NotAuthorized",
@@ -253,9 +251,7 @@ def requires_auth(
             elif token is None and app.config.get("USE_JWT") is None:
                 # authentication is disabled
                 result = f(request, *args, **kwargs)
-                if isawaitable(result):
-                    result = await result
-                return result
+                return await result if isawaitable(result) else result
             raise ErrorResponse(
                 HTTPStatus.UNAUTHORIZED,
                 "NotAuthenticated",
@@ -548,7 +544,7 @@ def async_if_callback_url(f: Callable[..., Coroutine]) -> Callable:
         async def wrapped() -> None:
             try:
                 result: HTTPResponse = await f(request, *args, **kwargs)
-                payload = dict(
+                payload: Dict[Text, Any] = dict(
                     data=result.body, headers={"Content-Type": result.content_type}
                 )
                 logger.debug(
