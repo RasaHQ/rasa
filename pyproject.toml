@@ -167,8 +167,8 @@ sanic-testing = "^0.7.0"
 [tool.poetry.extras]
 spacy = [ "spacy",]
 jieba = [ "jieba",]
-transformers = [ "transformers", "tokenizers",]
-full = [ "spacy", "transformers", "tokenizers", "jieba",]
+transformers = [ "tokenizers", "transformers",]
+full = [ "spacy", "tokenizers", "transformers", "jieba",]
 gh-release-notes = [ "github3.py",]
 
 [tool.poetry.scripts]
