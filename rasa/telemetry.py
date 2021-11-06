@@ -94,6 +94,10 @@ TELEMETRY_RASA_X_LOCAL_STARTED_EVENT = "Rasa X Local Started"
 TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
+TELEMETRY_MARKERS_EXTRACTION_INITIATED_EVENT = "Markers Extraction Initiated"
+TELEMETRY_MARKERS_EXTRACTED_EVENT = "Markers Extracted"
+TELEMETRY_MARKERS_STATS_COMPUTED_EVENT = "Markers Statistics Computed"
+TELEMETRY_MARKERS_PARSED_COUNT = "Markers Parsed"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -1003,5 +1007,74 @@ def track_nlu_model_test(test_data: "TrainingData") -> None:
             "num_lookup_tables": len(test_data.lookup_tables),
             "num_synonyms": len(test_data.entity_synonyms),
             "num_regexes": len(test_data.regex_features),
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_extraction_initiated(
+    strategy: Text, only_extract: bool, seed: bool, count: Optional[int],
+) -> None:
+    """Track when a user tries to extract success markers.
+
+    Args:
+        strategy: The strategy the user is using for tracker selection
+        only_extract: Indicates if the user is only extracting markers or also
+                      producing stats
+        seed: Indicates if the user used a seed for this attempt
+        count: (Optional) The number of trackers the user is trying to select.
+    """
+    _track(
+        TELEMETRY_MARKERS_EXTRACTION_INITIATED_EVENT,
+        {
+            "strategy": strategy,
+            "only_extract": only_extract,
+            "seed": seed,
+            "count": count,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_extracted(trackers_count: int) -> None:
+    """Track when markers have been extracted by a user.
+
+    Args:
+        trackers_count: The actual number of trackers processed
+    """
+    _track(
+        TELEMETRY_MARKERS_EXTRACTED_EVENT, {"trackers_count": trackers_count},
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_stats_computed(trackers_count: int) -> None:
+    """Track when stats over markers have been computed by a user.
+
+    Args:
+        trackers_count: The actual number of trackers processed
+    """
+    _track(
+        TELEMETRY_MARKERS_STATS_COMPUTED_EVENT, {"trackers_count": trackers_count},
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_parsed_count(
+    marker_count: int, max_depth: int, branching_factor: int
+) -> None:
+    """Track when markers have been successfully parsed from config.
+
+    Args:
+        marker_count: The number of markers found in the config
+        max_depth: The maximum depth of any marker in the config
+        branching_factor: The maximum number of children of any marker in the config.
+    """
+    _track(
+        TELEMETRY_MARKERS_PARSED_COUNT,
+        {
+            "marker_count": marker_count,
+            "max_depth": max_depth,
+            "branching_factor": branching_factor,
         },
     )

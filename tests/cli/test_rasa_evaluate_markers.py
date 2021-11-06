@@ -114,7 +114,7 @@ def test_markers_cli_results_save_correctly(
     )
 
     markers_path = write_markers_config_to_yaml(
-        tmp_path, {"marker1": {"slot_is_set": "2"}, "marker2": {"slot_is_set": "7"}}
+        tmp_path, {"marker1": {"slot_was_set": "2"}, "marker2": {"slot_was_set": "7"}}
     )
 
     results_path = tmp_path / "results.csv"
