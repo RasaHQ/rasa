@@ -796,7 +796,6 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
         "model_name": "bert",
         "model_weights": "bert-base-chinese",
     }
-
     lm_featurizer = create_language_model_featurizer(config)
 
     message = Message.build(text=text)
