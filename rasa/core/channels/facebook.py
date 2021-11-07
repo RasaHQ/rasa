@@ -45,6 +45,7 @@ class Messenger:
             "message" in message
             and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "audio"
+            and not message["message"].get("is_echo")
         )
 
     @staticmethod
@@ -54,6 +55,7 @@ class Messenger:
             "message" in message
             and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "image"
+            and not message["message"].get("is_echo")
         )
 
     @staticmethod
@@ -63,6 +65,7 @@ class Messenger:
             "message" in message
             and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "video"
+            and not message["message"].get("is_echo")
         )
 
     @staticmethod
@@ -72,6 +75,7 @@ class Messenger:
             "message" in message
             and "attachments" in message["message"]
             and message["message"]["attachments"][0]["type"] == "file"
+            and not message["message"].get("is_echo")
         )
 
     @staticmethod
