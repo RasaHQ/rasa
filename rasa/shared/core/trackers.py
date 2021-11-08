@@ -58,7 +58,6 @@ from rasa.shared.core.events import (
     ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
-    EntitiesAdded,
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
@@ -650,10 +649,6 @@ class DialogueStateTracker:
 
         self.events.append(event)
         event.apply_to(self)
-
-        if domain and isinstance(event, EntitiesAdded):
-            for e in domain.slots_for_entities(event.entities):
-                self.update(e)
 
     def update_with_events(
         self,

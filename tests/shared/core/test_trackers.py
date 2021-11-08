@@ -1422,10 +1422,6 @@ async def test_fill_slots_for_policy_entities():
         slots=domain.slots,
     )
 
-    # Slots are correctly set
-    assert tracker.slots[nlu_entity].value == nlu_entity_value
-    assert tracker.slots[policy_entity].value == policy_entity_value
-
     expected_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(
@@ -1457,6 +1453,10 @@ async def test_fill_slots_for_policy_entities():
         domain,
     )
     tracker.update_with_events(events, domain)
+
+    # Slots are correctly set
+    assert tracker.slots[nlu_entity].value == nlu_entity_value
+    assert tracker.slots[policy_entity].value == policy_entity_value
 
     for actual, expected in zip(tracker.events, expected_events):
         assert actual == expected
