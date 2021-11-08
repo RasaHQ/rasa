@@ -139,7 +139,7 @@ class SlackInput(InputChannel):
             credentials.get("errors_ignore_retry", None),
             credentials.get("use_threads", False),
             credentials.get("slack_signing_secret", ""),
-            credentials.get("conversation_id_config", "sender_id"),
+            credentials.get("conversation_granularity", "sender"),
         )
 
     def __init__(
@@ -152,7 +152,7 @@ class SlackInput(InputChannel):
         errors_ignore_retry: Optional[List[Text]] = None,
         use_threads: Optional[bool] = False,
         slack_signing_secret: Text = "",
-        conversation_id_config: Optional[Text] = "sender_id",
+        conversation_granularity: Optional[Text] = "sender",
     ) -> None:
         """Create a Slack input channel.
 
@@ -184,10 +184,10 @@ class SlackInput(InputChannel):
             slack_signing_secret: Slack creates a unique string for your app and
                 shares it with you. This allows us to verify requests from Slack
                 with confidence by verifying signatures using your signing secret.
-            conversation_id_config: conversation id config for slack conversations.
-                sender_id allows 1 conversation per user (across channels)
-                channel_id allows 1 conversation per user per channel
-                thread_id allows 1 conversation per user per thread
+            conversation_granularity: conversation granularity for slack conversations.
+                sender allows 1 conversation per user (across channels)
+                channel allows 1 conversation per user per channel
+                thread allows 1 conversation per user per thread
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel
@@ -197,7 +197,7 @@ class SlackInput(InputChannel):
         self.retry_num_header = slack_retry_number_header
         self.use_threads = use_threads
         self.slack_signing_secret = slack_signing_secret
-        self.conversation_id_config = conversation_id_config
+        self.conversation_granularity = conversation_granularity
 
         self._validate_credentials()
 
@@ -574,9 +574,9 @@ class SlackInput(InputChannel):
 
     def get_conversation_id(self, sender_id, channel_id, thread_id):
         conversation_id = sender_id
-        if self.conversation_id_config == "channel_id":
+        if self.conversation_granularity == "channel":
             conversation_id = sender_id + "_" + channel_id
-        if self.conversation_id_config == "thread_id":
+        if self.conversation_granularity == "thread":
             conversation_id = sender_id + "_" + channel_id + "_" + thread_id
         return conversation_id
 
