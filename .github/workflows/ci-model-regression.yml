@@ -167,7 +167,7 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
+      - uses: GoogleCloudPlatform/github-actions@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -780,7 +780,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
+      - uses: GoogleCloudPlatform/github-actions@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
