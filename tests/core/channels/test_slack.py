@@ -312,19 +312,19 @@ def test_slack_init_token_channel_parameters():
     ch = SlackInput("xoxb-test", "test", slack_signing_secret="foobar")
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
-    assert ch.conversation_id_config == "sender_id"
+    assert ch.conversation_granularity == "sender"
 
 
-def test_slack_init_token_channel_conversation_id_parameters():
+def test_slack_init_token_channel_conversation_granularity_parameters():
     ch = SlackInput(
         "xoxb-test",
         "test",
         slack_signing_secret="foobar",
-        conversation_id_config="channel_id",
+        conversation_granularity="channel",
     )
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
-    assert ch.conversation_id_config == "channel_id"
+    assert ch.conversation_granularity == "channel"
 
 
 def test_slack_init_token_channel_threads_parameters():
@@ -333,12 +333,12 @@ def test_slack_init_token_channel_threads_parameters():
         "test",
         slack_signing_secret="foobar",
         use_threads=True,
-        conversation_id_config="thread_id",
+        conversation_granularity="thread",
     )
     assert ch.slack_token == "xoxb-test"
     assert ch.slack_channel == "test"
     assert ch.use_threads is True
-    assert ch.conversation_id_config == "thread_id"
+    assert ch.conversation_granularity == "thread"
 
 
 def test_get_conversation_id_sender_id():
@@ -347,7 +347,7 @@ def test_get_conversation_id_sender_id():
         "test",
         slack_signing_secret="foobar",
         use_threads=True,
-        conversation_id_config="sender_id",
+        conversation_granularity="sender",
     )
     conversation_id = ch.get_conversation_id(
         "test_sender_id", "test_channel_id", "test_thread_id"
@@ -361,7 +361,7 @@ def test_get_conversation_id_channel_id():
         "test",
         slack_signing_secret="foobar",
         use_threads=True,
-        conversation_id_config="channel_id",
+        conversation_granularity="channel",
     )
     conversation_id = ch.get_conversation_id(
         "test_sender_id", "test_channel_id", "test_thread_id"
@@ -375,7 +375,7 @@ def test_get_conversation_id_thread_id():
         "test",
         slack_signing_secret="foobar",
         use_threads=True,
-        conversation_id_config="thread_id",
+        conversation_granularity="thread",
     )
     conversation_id = ch.get_conversation_id(
         "test_sender_id", "test_channel_id", "test_thread_id"
