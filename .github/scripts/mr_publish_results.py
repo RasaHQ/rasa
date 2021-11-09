@@ -35,7 +35,7 @@ def send_to_datadog(context):
     print(tags)
     tags_list = [f'{k}:{v}' for k, v in tags.items()]
     options = {
-        'statsd_host': 'localhost',  #'127.0.0.1',
+        'statsd_host': '127.0.0.1',  # 'localhost',
         'statsd_port': 8125,
         'statsd_constant_tags': tags_list + ['branch:invented2'],
     }
