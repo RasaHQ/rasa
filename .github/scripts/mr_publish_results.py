@@ -26,11 +26,13 @@ task_mapping = {
 
 
 def send_to_datadog(context):
+    print("send_to_datadog")
     # Initialize
     tags = {
         "dataset": os.environ["DATASET_NAME"],
         "config": os.environ["CONFIG"],
     }
+    print(tags)
     tags_list = [f'{k}:{v}' for k, v in tags.items()]
     options = {
         'statsd_host': 'localhost',  #'127.0.0.1',
@@ -45,7 +47,7 @@ def send_to_datadog(context):
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
         "total_run_time": os.environ["TOTAL_RUN_TIME"],
     }
-
+    print(metrics)
     for metric_name, metric_value in metrics.items():
         statsd.gauge(f'{metric_name}.gauge', metric_value, tags=["environment:dev"])
 
