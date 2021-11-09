@@ -15,30 +15,25 @@ jobs:
 
     steps:
     - name: Run DataDog Agent
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
       run: |
         docker run -d --name dd_agent -p 8125:8125/udp -p 8126:8126 -v /var/run/docker.sock:/var/run/docker.sock:ro -v /proc/:/host/proc/:ro -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro -e "DD_HOSTNAME=none"  -e DD_API_KEY=${{ secrets.DD_API_KEY }} -e DD_SITE="datadoghq.eu" -e DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true -e "DD_INSIDE_CI=true" -e GITHUB_ACTIONS=true -e CI=true gcr.io/datadoghq/agent:7
         docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
         docker port dd_agent
 
     - name: Checkout git repository 🕝
-      if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
-      if: needs.changes.outputs.backend == 'true'
       uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.backend == 'true'
       run: |
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
-      if: needs.changes.outputs.backend == 'true'
       uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
