@@ -24,6 +24,18 @@ task_mapping = {
     "story_report.json": "Story Prediction",
 }
 
+def transform_to_seconds(duration: str) -> float:
+    tmp = duration.split('m')
+    if len(tmp) == 2:
+        minutes = int(tmp[0])
+        seconds = float(tmp[1].rstrip('s'))
+        overall_seconds = minutes * 60 + seconds
+    elif len(tmp) == 1:
+        overall_seconds = float(tmp[0].rstrip('s'))
+    else:
+        raise Exception(f'Unsupported duration: {duration}')
+    return overall_seconds
+
 
 def send_to_datadog(context):
     print("send_to_datadog")
@@ -49,7 +61,8 @@ def send_to_datadog(context):
     }
     print(metrics)
     for metric_name, metric_value in metrics.items():
-        statsd.gauge(f'{metric_name}.gauge', 6, tags=["environment:dev"])
+        overall_seconds = transform_to_seconds(metric_value)
+        statsd.gauge(f'{metric_name}.gauge', overall_seconds, tags=["environment:dev"])
 
 
 def send_to_segment(context):

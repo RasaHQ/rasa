@@ -307,7 +307,7 @@ jobs:
             echo "3"
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
             # poetry run ddtrace-run rasa test nlu -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
-            sleep 6
+            sleep 61
             echo "4"
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
