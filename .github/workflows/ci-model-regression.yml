@@ -145,7 +145,7 @@ jobs:
       - name: Run DataDog Agent
         # if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
         run: |
-          docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
+          docker run -d --name dd_agent -p 8125:8125/udp -v /var/run/docker.sock:/var/run/docker.sock:ro -v /proc/:/host/proc/:ro -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro -e DD_API_KEY=${{ secrets.DD_API_KEY }} -e DD_SITE="datadoghq.eu" -e DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true -e "DD_INSIDE_CI=true" -e GITHUB_ACTIONS=true -e CI=true gcr.io/datadoghq/agent:7
           docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
           docker port dd_agent
       - name: Checkout
@@ -274,9 +274,9 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
-      - name: Install ddtrace
+      - name: Install ddtrace and datadog
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U ddtrace
+        run: poetry run pip install -U ddtrace datadog
 
       - name: Run test
         id: run_test
@@ -344,6 +344,9 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
+          DD_ENV: regression-tests # ${{ matrix.test }}
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python

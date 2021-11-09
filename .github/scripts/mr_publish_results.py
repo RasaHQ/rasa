@@ -5,6 +5,9 @@ import datetime
 import json
 import os
 
+from datadog import initialize, statsd
+
+
 IS_EXTERNAL = os.environ["IS_EXTERNAL"]
 DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 EXTERNAL_DATASET_REPOSITORY_BRANCH = None
@@ -20,6 +23,31 @@ task_mapping = {
     "response_selection_report.json": "Response Selection",
     "story_report.json": "Story Prediction",
 }
+
+
+def send_to_datadog(context):
+    # Initialize
+    tags = {
+        "dataset": os.environ["DATASET_NAME"],
+        "config": os.environ["CONFIG"],
+    }
+    tags_list = [f'{k}:{v}' for k, v in tags.items()]
+    options = {
+        'statsd_host': 'localhost',  #'127.0.0.1',
+        'statsd_port': 8125,
+        'statsd_constant_tags': tags_list + ['branch:invented2'],
+    }
+    initialize(**options)
+
+    # Send  metrics
+    metrics = {
+        "test_run_time": os.environ["TEST_RUN_TIME"],
+        "train_run_time": os.environ["TRAIN_RUN_TIME"],
+        "total_run_time": os.environ["TOTAL_RUN_TIME"],
+    }
+
+    for metric_name, metric_value in metrics.items():
+        statsd.gauge(f'{metric_name}.gauge', metric_value, tags=["environment:dev"])
 
 
 def send_to_segment(context):
@@ -86,6 +114,8 @@ def push_results(file_name, file):
     result["file_name"] = file_name
     result["task"] = task_mapping[file_name]
     send_to_segment(result)
+
+    send_to_datadog(result)
 
 
 if __name__ == "__main__":
