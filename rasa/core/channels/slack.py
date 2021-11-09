@@ -575,9 +575,9 @@ class SlackInput(InputChannel):
 
     def get_conversation_id(self, sender_id, channel_id, thread_id):
         conversation_id = sender_id
-        if self.conversation_granularity == "channel":
+        if self.conversation_granularity == "channel" and channel_id is not None:
             conversation_id = sender_id + "_" + channel_id
-        if self.conversation_granularity == "thread":
+        if self.conversation_granularity == "thread" and channel_id is not None and thread_id is not None:
             conversation_id = sender_id + "_" + channel_id + "_" + thread_id
         return conversation_id
 
