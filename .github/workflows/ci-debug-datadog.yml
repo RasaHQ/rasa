@@ -1,7 +1,9 @@
 name: Debug datadog
 
 on:
-  push
+  push:
+    branches-ignore:
+      - '**'
 
 jobs:
   test:
