@@ -71,7 +71,7 @@ def send_to_datadog(context):
     options = {
         'statsd_host': '127.0.0.1',  # 'localhost',
         'statsd_port': 8125,
-        'statsd_constant_tags': tags_list + ['branch:invented2'],
+        'statsd_constant_tags': tags_list,
     }
     initialize(**options)
 
