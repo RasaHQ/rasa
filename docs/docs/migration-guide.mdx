@@ -1018,7 +1018,7 @@ class TrainingDataImporter:
 Due to changes in the model architecture the behavior of `rasa train --dry-run` changed.
 The exit codes now have the following meaning:
 
-* `0 means that the model does not require an expensive retraining. However, the
+* `0` means that the model does not require an expensive retraining. However, the
   responses might still require updating by running `rasa train`
 * `1` means that one or multiple components require to be retrained.
 * `8` means that the `--force` flag was used and hence any cached results are ignored
