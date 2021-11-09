@@ -7,18 +7,17 @@ from rasa.cli.arguments.default_arguments import (
     add_data_param,
     add_domain_param,
 )
-from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH
+from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH, DEFAULT_DOMAIN_PATH
 
 
 def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> None:
+    """Sets convert command arguments."""
     parser.add_argument(
         "-f",
         "--format",
         default="yaml",
         choices=["json", "yaml"],
-        help="Output format the training data should be converted into. "
-        "Note: currently training data can be converted to 'yaml' format "
-        "only from 'md' format",
+        help="Output format the training data should be converted into.",
     )
 
     add_data_param(parser, required=True, data_type=data_type)
@@ -26,7 +25,7 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> N
     add_out_param(
         parser,
         default=DEFAULT_CONVERTED_DATA_PATH,
-        help_text="File (for `json` and `md`) or existing path (for `yaml`) "
+        help_text="File (for `json`) or existing path (for `yaml`) "
         "where to save training data in Rasa format.",
     )
 
@@ -67,3 +66,14 @@ def set_validator_arguments(parser: argparse.ArgumentParser) -> None:
     )
     add_domain_param(parser)
     add_data_param(parser)
+
+
+def set_migrate_arguments(parser: argparse.ArgumentParser) -> None:
+    """Sets migrate command arguments."""
+    add_domain_param(parser)
+
+    add_out_param(
+        parser,
+        default=DEFAULT_DOMAIN_PATH,
+        help_text="Path (for `yaml`) where to save migrated domain in Rasa 3.0 format.",
+    )

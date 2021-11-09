@@ -57,8 +57,24 @@ jobs:
           curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           chmod 755 gomplate
 
+      - name: Get TensorFlow version
+        run: |-
+          # Read TF version from poetry.lock file
+          pip install toml
+          TF_VERSION=$(scripts/read_tensorflow_version.sh)
+          echo "TensorFlow version: $TF_VERSION"
+          echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
+
+       # Use compatible CUDA/cuDNN with the given TF version
+      - name: Prepare GitHub runner image tag
+        run: |-
+          GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
+          echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
+          echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
+
       - name: Render deployment template
         run: |-
+          export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
           export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
@@ -147,6 +163,12 @@ jobs:
             echo "DATASET_DIR=dataset" >> $GITHUB_ENV
             test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
               && echo "::set-output name=is_config_exists::false" && exit 0)
+          fi
+
+          # Skip job if dataset is Hermit and config is BERT + DIET(seq) + ResponseSelector(t2t) or Sparse + BERT + DIET(seq) + ResponseSelector(t2t)
+          if [[ "${{ matrix.dataset }}" == "Hermit" && "${{ matrix.config }}" =~ "BERT + DIET(seq) + ResponseSelector(t2t)" ]]; then
+            echo "::warning::This ${{ matrix.dataset }} dataset / ${{ matrix.config }} config is currently being skipped due to OOM associated with the upgrade to TF 2.6." \
+              && echo "::set-output name=is_config_exists::false" && exit 0
           fi
 
           # Skip job if a given type is not available for a given dataset
@@ -238,7 +260,6 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          TF_DETERMINISTIC_OPS: 1 # Run GPUs in a deterministic mode
         run: |-
           poetry run rasa --version
 
@@ -354,7 +375,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure()  && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@e74cd4e48f4452e8158dc4f8bcfc780ae6203364  # v3
+        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9  # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -511,7 +532,7 @@ jobs:
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@e74cd4e48f4452e8158dc4f8bcfc780ae6203364 #v3
+        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took

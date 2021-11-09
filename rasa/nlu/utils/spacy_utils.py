@@ -7,13 +7,12 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import DENSE_FEATURIZABLE_ATTRIBUTES, SPACY_DOCS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-import rasa.nlu.utils._spacy_utils
-import rasa.utils.train_utils
 from rasa.nlu.model import InvalidModelError
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 
@@ -23,14 +22,10 @@ if typing.TYPE_CHECKING:
     from spacy.language import Language  # noqa: F401
     from spacy.tokens import Doc
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-SpacyNLP = rasa.nlu.utils._spacy_utils.SpacyNLP
-
 
 @dataclasses.dataclass
 class SpacyModel:
-    """Wraps `SpacyModelProvider` output to make it fingerprintable."""
+    """Wraps `SpacyNLP` output to make it fingerprintable."""
 
     model: Language
     model_name: Text
@@ -47,22 +42,40 @@ class SpacyModel:
         return str(self.model_name)
 
 
-class SpacyModelProvider(GraphComponent):
+@DefaultV1Recipe.register(
+    [
+        DefaultV1Recipe.ComponentType.MODEL_LOADER,
+        DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER,
+    ],
+    is_trainable=False,
+    model_from="SpacyNLP",
+)
+class SpacyNLP(GraphComponent):
     """Component which provides the common loaded SpaCy model to others.
 
     This is used to avoid loading the SpaCy model multiple times. Instead the Spacy
     model is only loaded once and then shared by depending components.
     """
 
-    def __init__(
-        self, model: Optional[Language] = None, model_name: Optional[Text] = None,
-    ) -> None:
-        """Initializes a `SpacyModelProvider`."""
+    def __init__(self, model: SpacyModel, config: Dict[Text, Any]) -> None:
+        """Initializes a `SpacyNLP`."""
         self._model = model
-        self._model_name = model_name
+        self._config = config
 
     @staticmethod
-    def load_model(spacy_model_name: Text) -> Language:
+    def get_default_config() -> Dict[Text, Any]:
+        """Default config."""
+        return {
+            # when retrieving word vectors, this will decide if the casing
+            # of the word is relevant. E.g. `hello` and `Hello` will
+            # retrieve the same vector, if set to `False`. For some
+            # applications and models it makes sense to differentiate
+            # between these two words, therefore setting this to `True`.
+            "case_sensitive": False,
+        }
+
+    @staticmethod
+    def load_model(spacy_model_name: Text) -> SpacyModel:
         """Try loading the model, catching the OSError if missing."""
         import spacy
 
@@ -77,7 +90,8 @@ class SpacyModelProvider(GraphComponent):
             )
 
         try:
-            return spacy.load(spacy_model_name, disable=["parser"])
+            language = spacy.load(spacy_model_name, disable=["parser"])
+            return SpacyModel(model=language, model_name=spacy_model_name)
         except OSError:
             raise InvalidModelError(
                 f"Please confirm that {spacy_model_name} is an available spaCy model. "
@@ -98,7 +112,7 @@ class SpacyModelProvider(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> SpacyModelProvider:
+    ) -> SpacyNLP:
         """Creates component (see parent class for full docstring)."""
         spacy_model_name = config.get("model")
 
@@ -106,8 +120,8 @@ class SpacyModelProvider(GraphComponent):
 
         model = cls.load_model(spacy_model_name)
 
-        cls.ensure_proper_language_model(model)
-        return cls(model, spacy_model_name)
+        cls.ensure_proper_language_model(model.model)
+        return cls(model, config)
 
     @staticmethod
     def ensure_proper_language_model(nlp: Optional[Language]) -> None:
@@ -133,43 +147,7 @@ class SpacyModelProvider(GraphComponent):
 
     def provide(self) -> SpacyModel:
         """Provides the loaded SpaCy model."""
-        return SpacyModel(model=self._model, model_name=self._model_name)
-
-
-class SpacyPreprocessor(GraphComponent):
-    """Processes messages using SpaCy for use by SpacyTokenizer and SpacyFeaturizer."""
-
-    @staticmethod
-    def get_default_config() -> Dict[Text, Any]:
-        """Default config for SpacyPreprocessor."""
-        return {
-            # when retrieving word vectors, this will decide if the casing
-            # of the word is relevant. E.g. `hello` and `Hello` will
-            # retrieve the same vector, if set to `False`. For some
-            # applications and models it makes sense to differentiate
-            # between these two words, therefore setting this to `True`.
-            "case_sensitive": False,
-        }
-
-    def __init__(self, config: Dict[Text, Any]) -> None:
-        """Initializes a `SpacyPreprocessor`."""
-        self._config = config
-
-    @classmethod
-    def required_packages(cls) -> List[Text]:
-        """Lists required dependencies (see parent class for full docstring)."""
-        return ["spacy"]
-
-    @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> SpacyPreprocessor:
-        """Creates component for training see parent class for full docstring)."""
-        return cls(config)
+        return self._model
 
     def _doc_for_text(self, model: Language, text: Text) -> Doc:
         """Makes a SpaCy doc object from a string of text."""
@@ -290,10 +268,10 @@ class SpacyPreprocessor(GraphComponent):
         return attribute_docs
 
     def process_training_data(
-        self, training_data: TrainingData, spacy_model: SpacyModel
-    ) -> None:
+        self, training_data: TrainingData, model: SpacyModel
+    ) -> TrainingData:
         """Adds SpaCy tokens and features to training data messages."""
-        model = spacy_model.model
+        model = model.model
 
         attribute_docs = self._docs_for_training_data(model, training_data)
 
@@ -307,9 +285,11 @@ class SpacyPreprocessor(GraphComponent):
                     # in preprocess method
                     example.set(SPACY_DOCS[attribute], example_attribute_doc)
 
-    def process(self, messages: List[Message], spacy_model: SpacyModel) -> None:
+        return training_data
+
+    def process(self, messages: List[Message], model: SpacyModel) -> List[Message]:
         """Adds SpaCy tokens and features to messages."""
-        model = spacy_model.model
+        model = model.model
         for message in messages:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 if message.get(attribute):
@@ -317,3 +297,5 @@ class SpacyPreprocessor(GraphComponent):
                         SPACY_DOCS[attribute],
                         self._doc_for_text(model, message.get(attribute)),
                     )
+
+        return messages

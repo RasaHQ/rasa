@@ -608,12 +608,12 @@ are easier to read and write.
 
 #### OR statement
 
-`or` steps are ways to handle multiple intents the same way,
+`or` steps are ways to handle multiple intents or slot events the same way,
 without writing a separate story for each intent. For example, if you ask the user to
 confirm something, you might want to treat the `affirm` and `thankyou` intents in the
 same way. Stories with `or` steps will be converted into multiple
-separate stories at training time. For example, the following story would be converted
-to two stories at training time:
+separate stories at training time.
+For example, the following story would be converted to two stories at training time:
 
 ```yaml-rasa {6-8}
 stories:
@@ -625,6 +625,26 @@ stories:
     - intent: affirm
     - intent: thanks
   - action: action_signup_newsletter
+```
+
+You can also use `or` statements with slot events.
+The following means the story requires that the current value for
+the `name` slot is set and is either `joe` or `bob`. This story
+would be converted to two stories at training time.
+
+```yaml-rasa {6-8}
+stories:
+- story:
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: tell_name
+  - or:
+    - slot_was_set:
+        - name: joe
+    - slot_was_set:
+        - name: bob
+  # ... next actions
 ```
 
 Just like checkpoints, OR statements can be useful, but if you are using a lot of them,
@@ -694,7 +714,7 @@ If you want to know more about testing head over to
 
 ## End-to-end Training
 
-:::caution experimental feature
+:::info New in 2.2
 End-to-end training is an experimental feature.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.

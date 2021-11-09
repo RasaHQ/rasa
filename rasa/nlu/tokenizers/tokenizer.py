@@ -2,9 +2,11 @@ import abc
 import logging
 import re
 
-from typing import Text, List, Dict, Any
+from typing import Text, List, Dict, Any, Optional
 
-from rasa.engine.graph import GraphComponent
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
@@ -14,17 +16,78 @@ from rasa.shared.nlu.constants import (
     RESPONSE_IDENTIFIER_DELIMITER,
     ACTION_NAME,
 )
-from rasa.nlu.tokenizers._tokenizer import Tokenizer, Token
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
 
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-Tokenizer = Tokenizer
-Token = Token
+class Token:
+    """Used by `Tokenizers` which split a single message into multiple `Token`s."""
+
+    def __init__(
+        self,
+        text: Text,
+        start: int,
+        end: Optional[int] = None,
+        data: Optional[Dict[Text, Any]] = None,
+        lemma: Optional[Text] = None,
+    ) -> None:
+        """Create a `Token`.
+
+        Args:
+            text: The token text.
+            start: The start index of the token within the entire message.
+            end: The end index of the token within the entire message.
+            data: Additional token data.
+            lemma: An optional lemmatized version of the token text.
+        """
+        self.text = text
+        self.start = start
+        self.end = end if end else start + len(text)
+
+        self.data = data if data else {}
+        self.lemma = lemma or text
+
+    def set(self, prop: Text, info: Any) -> None:
+        """Set property value."""
+        self.data[prop] = info
+
+    def get(self, prop: Text, default: Optional[Any] = None) -> Any:
+        """Returns token value."""
+        return self.data.get(prop, default)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Token):
+            return NotImplemented
+        return (self.start, self.end, self.text, self.lemma) == (
+            other.start,
+            other.end,
+            other.text,
+            other.lemma,
+        )
+
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, Token):
+            return NotImplemented
+        return (self.start, self.end, self.text, self.lemma) < (
+            other.start,
+            other.end,
+            other.text,
+            other.lemma,
+        )
+
+    def __repr__(self) -> Text:
+        return f"<Token object value='{self.text}' start={self.start} end={self.end} \
+        at {hex(id(self))}>"
+
+    def fingerprint(self) -> Text:
+        """Returns a stable hash for this Token."""
+        return rasa.shared.utils.io.deep_container_fingerprint(
+            [self.text, self.start, self.end, self.lemma, self.data]
+        )
 
 
-class TokenizerGraphComponent(GraphComponent, abc.ABC):
+class Tokenizer(GraphComponent, abc.ABC):
     """Base class for tokenizers."""
 
     def __init__(self, config: Dict[Text, Any]) -> None:
@@ -35,10 +98,21 @@ class TokenizerGraphComponent(GraphComponent, abc.ABC):
         # split symbol for intents
         self.intent_split_symbol = config["intent_split_symbol"]
         # token pattern to further split tokens
-        token_pattern = config["token_pattern"]
+        token_pattern = config.get("token_pattern")
         self.token_pattern_regex = None
         if token_pattern:
             self.token_pattern_regex = re.compile(token_pattern)
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> GraphComponent:
+        """Creates a new component (see parent class for full docstring)."""
+        return cls(config)
 
     @abc.abstractmethod
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:

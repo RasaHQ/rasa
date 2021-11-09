@@ -262,7 +262,6 @@ async def test_kafka_broker_from_config():
         topic="topic",
         partition_by_sender=True,
         security_protocol="SASL_PLAINTEXT",
-        convert_intent_id_to_string=True,
     )
 
     assert actual.url == expected.url
@@ -271,54 +270,6 @@ async def test_kafka_broker_from_config():
     assert actual.sasl_mechanism == expected.sasl_mechanism
     assert actual.topic == expected.topic
     assert actual.partition_by_sender == expected.partition_by_sender
-    assert actual.convert_intent_id_to_string == expected.convert_intent_id_to_string
-
-
-async def test_kafka_broker_convert_intent_id_to_string():
-    user_event = {
-        "timestamp": 1517821726.200036,
-        "metadata": {},
-        "parse_data": {
-            "entities": [],
-            "intent": {"confidence": 0.54, "name": "greet", "id": 7703045398849936579},
-            "message_id": "987654321",
-            "metadata": {},
-            "text": "/greet",
-            "intent_ranking": [
-                {"confidence": 0.54, "name": "greet", "id": 7703045398849936579},
-                {"confidence": 0.31, "name": "goodbye", "id": -5127945386715371244},
-                {"confidence": 0.15, "name": "default", "id": 1699173715362944540},
-            ],
-        },
-        "event": "user",
-        "text": "/greet",
-        "input_channel": "rest",
-        "message_id": "987654321",
-    }
-    actual = KafkaEventBroker(
-        "localhost",
-        sasl_username="username",
-        sasl_password="password",
-        sasl_mechanism="PLAIN",
-        topic="topic",
-        partition_by_sender=True,
-        security_protocol="SASL_PLAINTEXT",
-        convert_intent_id_to_string=True,
-    )
-
-    converted_user_event = actual._convert_intent_id_to_string(user_event)
-    intent_ranking = user_event["parse_data"]["intent_ranking"]
-    converted_intent_ranking = converted_user_event["parse_data"]["intent_ranking"]
-
-    assert converted_user_event["parse_data"]["intent"]["id"] == str(
-        user_event["parse_data"]["intent"]["id"]
-    )
-    assert all(
-        converted_parse_data["id"] == str(parse_data["id"])
-        for parse_data, converted_parse_data in zip(
-            intent_ranking, converted_intent_ranking
-        )
-    )
 
 
 @pytest.mark.parametrize(

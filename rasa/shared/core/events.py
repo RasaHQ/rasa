@@ -56,7 +56,9 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_CONFIDENCE,
     ENTITY_ATTRIBUTE_END,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
 )
+
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
@@ -456,7 +458,6 @@ class UserUttered(Event):
             "message_id": self.message_id,
             "metadata": self.metadata,
         }
-
         if parse_data:
             self.parse_data.update(**parse_data)
 
@@ -489,6 +490,11 @@ class UserUttered(Event):
         """Returns intent name or `None` if no intent."""
         return self.intent.get(INTENT_NAME_KEY)
 
+    @property
+    def full_retrieval_intent_name(self) -> Optional[Text]:
+        """Returns full retrieval intent name or `None` if no retrieval intent."""
+        return self.intent.get(FULL_RETRIEVAL_INTENT_NAME_KEY)
+
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, UserUttered):
@@ -497,11 +503,13 @@ class UserUttered(Event):
         return (
             self.text,
             self.intent_name,
-            [jsonpickle.encode(ent) for ent in self.entities],
+            [
+                jsonpickle.encode(sorted(ent)) for ent in self.entities
+            ],  # TODO: test? Or fix in regex_message_handler?
         ) == (
             other.text,
             other.intent_name,
-            [jsonpickle.encode(ent) for ent in other.entities],
+            [jsonpickle.encode(sorted(ent)) for ent in other.entities],
         )
 
     def __str__(self) -> Text:
@@ -1563,7 +1571,7 @@ class ActionExecuted(Event):
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
                 parameters.get("action_text"),
-                parameters.get("hide_rule_turn"),
+                parameters.get("hide_rule_turn", False),
             )
         ]
 

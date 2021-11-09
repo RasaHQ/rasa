@@ -176,6 +176,13 @@
   from = "/docs/rasa/prototype-an-assistant"
   to = "/docs/rasa/playground/"
 
+# Redirects for latest version permalinks
+# this needs to be updated when we cut a new version
+[[redirects]]
+  from = "/docs/rasa/2.x/*"
+  to = "/docs/rasa/:splat"
+# end permalink section
+
 # FIXME: this requires some feedback as to the 404, like in the website
 [[redirects]]
   from = "/docs/rasa/*"

@@ -3,7 +3,6 @@ import collections
 import json
 import logging
 import os
-from enum import Enum
 from pathlib import Path
 from typing import (
     Any,
@@ -32,15 +31,22 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
 )
 import rasa.shared.core.constants
+from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
+from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
+from rasa.shared.core.constants import MAPPING_CONDITIONS
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
+)
 
 
 if TYPE_CHECKING:
@@ -85,18 +91,6 @@ SubState = Dict[Text, SubStateValue]
 State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
-
-
-def _mark_conditional_response_variations_warning(
-    responses: Dict[Text, List[Dict[Text, Any]]]
-) -> None:
-    for response_variations in responses.values():
-        for variation in response_variations:
-            if RESPONSE_CONDITION in variation:
-                rasa.shared.utils.common.mark_as_experimental_feature(
-                    "conditional response variation feature"
-                )
-                break
 
 
 class InvalidDomain(RasaException):
@@ -201,13 +195,17 @@ class Domain:
             The instantiated `Domain` object.
         """
         responses = data.get(KEY_RESPONSES, {})
-        slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
+
+        domain_slots = data.get(KEY_SLOTS, {})
+        rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots)
+        slots = cls.collect_slots(domain_slots)
+
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
-        forms = data.get(KEY_FORMS, {})
 
-        _validate_slot_mappings(forms)
+        forms = data.get(KEY_FORMS, {})
+        _validate_forms(forms)
 
         return cls(
             intents,
@@ -607,8 +605,6 @@ class Domain:
         action_names += overridden_form_actions
 
         self.responses = responses
-        # if domain has conditions, logs experimental feature warning
-        _mark_conditional_response_variations_warning(self.responses)
 
         self.action_texts = action_texts or []
         self.session_config = session_config
@@ -692,7 +688,7 @@ class Domain:
             forms: Parsed content of the `forms` section in the domain.
 
         Returns:
-            The form names, a mapping of form names and slot mappings, and custom
+            The form names, a mapping of form names and required slots, and custom
             actions.
             Returning custom actions for each forms means that Rasa Open Source should
             not use the default `FormAction` for the forms, but rather a custom action
@@ -790,6 +786,7 @@ class Domain:
             self.slots.append(
                 TextSlot(
                     rasa.shared.core.constants.REQUESTED_SLOT,
+                    mappings=[],
                     influence_conversation=False,
                 )
             )
@@ -820,11 +817,13 @@ class Domain:
             ]
             for slot in knowledge_base_slots:
                 if slot not in slot_names:
-                    self.slots.append(TextSlot(slot, influence_conversation=False))
+                    self.slots.append(
+                        TextSlot(slot, mappings=[], influence_conversation=False)
+                    )
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
+            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[])
         )
 
     def index_for_action(self, action_name: Text) -> int:
@@ -1018,19 +1017,25 @@ class Domain:
             omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
-            a dictionary mapping slot names to their featurization
+            a mapping of slot names to their featurization
         """
         slots: Dict[Text, Union[Text, Tuple[float]]] = {}
         for slot_name, slot in tracker.slots.items():
+            # If the slot doesn't influence conversations, slot.as_feature() will return
+            # a result that evaluates to False, meaning that the slot shouldn't be
+            # included in featurised sub-states.
+            # Note that this condition checks if the slot itself is None. An unset slot
+            # will be a Slot object and its `value` attribute will be None.
             if slot is not None and slot.as_feature():
                 if omit_unset_slots and not slot.has_been_set:
                     continue
                 if slot.value == rasa.shared.core.constants.SHOULD_NOT_BE_SET:
                     slots[slot_name] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
                 elif any(slot.as_feature()):
-                    # only add slot if some of the features are not zero
+                    # Only include slot in featurised sub-state if the slot is not
+                    # unset, i.e. is set to some actual value and has been successfully
+                    # featurized, and hence has at least one non-zero feature.
                     slots[slot_name] = tuple(slot.as_feature())
-
         return slots
 
     @staticmethod
@@ -1202,7 +1207,7 @@ class Domain:
         return states
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
-        """Creates slot events for entities if auto-filling is enabled.
+        """Creates slot events for entities if from_entity mapping matches.
 
         Args:
             entities: The list of entities.
@@ -1212,20 +1217,33 @@ class Domain:
         """
         if self.store_entities_as_slots:
             slot_events = []
+
             for slot in self.slots:
-                if slot.auto_fill:
-                    matching_entities = [
-                        entity.get("value")
-                        for entity in entities
-                        if entity.get("entity") == slot.name
-                    ]
-                    if matching_entities:
-                        if slot.type_name == "list":
-                            slot_events.append(SlotSet(slot.name, matching_entities))
-                        else:
-                            slot_events.append(
-                                SlotSet(slot.name, matching_entities[-1])
-                            )
+                matching_entities = []
+
+                for mapping in slot.mappings:
+                    if mapping.get("type") != str(
+                        SlotMapping.FROM_ENTITY
+                    ) or mapping.get(MAPPING_CONDITIONS):
+                        continue
+
+                    for entity in entities:
+                        if (
+                            entity.get(ENTITY_ATTRIBUTE_TYPE)
+                            == mapping.get(ENTITY_ATTRIBUTE_TYPE)
+                            and entity.get(ENTITY_ATTRIBUTE_ROLE)
+                            == mapping.get(ENTITY_ATTRIBUTE_ROLE)
+                            and entity.get(ENTITY_ATTRIBUTE_GROUP)
+                            == mapping.get(ENTITY_ATTRIBUTE_GROUP)
+                        ):
+                            matching_entities.append(entity.get("value"))
+
+                if matching_entities:
+                    if isinstance(slot, ListSlot):
+                        slot_events.append(SlotSet(slot.name, matching_entities))
+                    else:
+                        slot_events.append(SlotSet(slot.name, matching_entities[-1]))
+
             return slot_events
         else:
             return []
@@ -1418,8 +1436,6 @@ class Domain:
         for slot in domain_data[KEY_SLOTS].values():
             if slot["initial_value"] is None:
                 del slot["initial_value"]
-            if slot["auto_fill"]:
-                del slot["auto_fill"]
             if slot["type"].startswith("rasa.shared.core.slots"):
                 slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 
@@ -1702,7 +1718,7 @@ class Domain:
         return self.as_dict() == Domain.empty().as_dict()
 
     @staticmethod
-    def is_domain_file(filename: Text) -> bool:
+    def is_domain_file(filename: Union[Text, Path]) -> bool:
         """Checks whether the given file path is a Rasa domain file.
 
         Args:
@@ -1733,88 +1749,55 @@ class Domain:
 
         return any(key in content for key in ALL_DOMAIN_KEYS)
 
-    def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
-        """Retrieve the slot mappings for a form which are defined in the domain.
-
-        Options:
-        - an extracted entity
-        - intent: value pairs
-        - trigger_intent: value pairs
-        - a whole message
-        or a list of them, where the first match will be picked
+    def required_slots_for_form(self, form_name: Text) -> List[Text]:
+        """Retrieve the list of required slot names for a form defined in the domain.
 
         Args:
             form_name: The name of the form.
 
         Returns:
-            The slot mapping or an empty dictionary in case no mapping was found.
+            The list of slot names or an empty list if no form was found.
         """
         form = self.forms.get(form_name)
         if form:
             return form[REQUIRED_SLOTS_KEY]
 
-        return {}
+        return []
 
+    def count_slot_mapping_statistics(self) -> Tuple[int, int, int]:
+        """Counts the total number of slot mappings and custom slot mappings.
 
-class SlotMapping(Enum):
-    """Defines the available slot mappings."""
-
-    FROM_ENTITY = 0
-    FROM_INTENT = 1
-    FROM_TRIGGER_INTENT = 2
-    FROM_TEXT = 3
-
-    def __str__(self) -> Text:
-        """Returns a string representation of the object."""
-        return self.name.lower()
-
-    @staticmethod
-    def validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None:
-        """Validates a slot mapping.
-
-        Args:
-            mapping: The mapping which is validated.
-            form_name: The name of the form which uses this slot mapping.
-            slot_name: The name of the slot which is mapped by this mapping.
-
-        Raises:
-            InvalidDomain: In case the slot mapping is not valid.
+        Returns:
+            A triple of integers where the first entry is the total number of mappings,
+            the second entry is the total number of custom mappings, and the third entry
+            is the total number of mappings which have conditions attached.
         """
-        if not isinstance(mapping, dict):
-            raise InvalidDomain(
-                f"Please make sure that the slot mappings for slot '{slot_name}' in "
-                f"your form '{form_name}' are valid dictionaries. Please see "
-                f"{DOCS_URL_FORMS} for more information."
-            )
+        total_mappings = 0
+        custom_mappings = 0
+        conditional_mappings = 0
 
-        validations = {
-            str(SlotMapping.FROM_ENTITY): ["entity"],
-            str(SlotMapping.FROM_INTENT): ["value"],
-            str(SlotMapping.FROM_TRIGGER_INTENT): ["value"],
-            str(SlotMapping.FROM_TEXT): [],
-        }
+        for slot in self.slots:
+            total_mappings += len(slot.mappings)
+            for mapping in slot.mappings:
+                if mapping.get("type") == str(SlotMapping.CUSTOM):
+                    custom_mappings += 1
 
-        mapping_type = mapping.get("type")
-        required_keys = validations.get(mapping_type)
+                if "conditions" in mapping:
+                    conditional_mappings += 1
 
-        if required_keys is None:
-            raise InvalidDomain(
-                f"Your form '{form_name}' uses an invalid slot mapping of type "
-                f"'{mapping_type}' for slot '{slot_name}'. Please see "
-                f"{DOCS_URL_FORMS} for more information."
-            )
+        return (total_mappings, custom_mappings, conditional_mappings)
 
-        for required_key in required_keys:
-            if mapping.get(required_key) is None:
-                raise InvalidDomain(
-                    f"You need to specify a value for the key "
-                    f"'{required_key}' in the slot mapping of type '{mapping_type}' "
-                    f"for slot '{slot_name}' in the form '{form_name}'. Please see "
-                    f"{DOCS_URL_FORMS} for more information."
-                )
+    def __repr__(self) -> Text:
+        """Returns text representation of object."""
+        return (
+            f"{self.__class__.__name__}: {len(self.action_names_or_texts)} actions, "
+            f"{len(self.intent_properties)} intents, {len(self.responses)} responses, "
+            f"{len(self.slots)} slots, "
+            f"{len(self.entities)} entities, {len(self.form_names)} forms"
+        )
 
 
-def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
+def _validate_forms(forms: Union[Dict, List]) -> None:
     if not isinstance(forms, dict):
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
@@ -1833,29 +1816,6 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
         if IGNORED_INTENTS in form_data and REQUIRED_SLOTS_KEY not in form_data:
             raise InvalidDomain(
                 f"If you use the `{IGNORED_INTENTS}` parameter in your form, then "
-                f"the keyword `{REQUIRED_SLOTS_KEY}` should precede the definition "
-                f"of your slot mappings. Please see {DOCS_URL_FORMS} "
-                f"for more information."
+                f"the keyword `{REQUIRED_SLOTS_KEY}` is required. "
+                f"Please see {DOCS_URL_FORMS} for more information."
             )
-
-        slots = forms[form_name].get(REQUIRED_SLOTS_KEY, {})
-
-        if not isinstance(slots, Dict):
-            raise InvalidDomain(
-                f"The slots for form '{form_name}' were specified "
-                f"as '{type(slots)}'. They need to be specified "
-                f"as dictionary. Please see {DOCS_URL_FORMS} "
-                f"for more information."
-            )
-
-        for slot_name, slot_mappings in slots.items():
-            if not isinstance(slot_mappings, list):
-                raise InvalidDomain(
-                    f"The slot mappings for slot '{slot_name}' in "
-                    f"form '{form_name}' have type '{type(slot_mappings)}'. "
-                    f"It is required to provide a list of slot "
-                    f"mappings. Please see {DOCS_URL_FORMS} "
-                    f"for more information."
-                )
-            for slot_mapping in slot_mappings:
-                SlotMapping.validate(slot_mapping, form_name, slot_name)

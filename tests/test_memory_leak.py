@@ -13,7 +13,6 @@ import pytest
 
 import rasa
 import rasa.shared.utils.io
-from rasa.nlu.config import RasaNLUModelConfig
 
 PROFILING_INTERVAL = 0.1
 
@@ -57,7 +56,7 @@ class MemoryLeakTest(abc.ABC):
     def function_to_profile(self) -> None:
         raise NotImplementedError
 
-    @pytest.mark.timeout(600, func_only=True)
+    @pytest.mark.timeout(720, func_only=True)
     def test_for_memory_leak(
         self, name_for_dumped_files: Text, tmp_path: Path,
     ) -> None:
@@ -156,7 +155,7 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 1700
+        return 2000
 
     def function_to_profile(self) -> None:
         import rasa.model_training
@@ -192,42 +191,40 @@ class TestCRFDenseFeaturesLeak(MemoryLeakTest):
     def function_to_profile(self) -> None:
         import rasa.model_training
 
-        config = RasaNLUModelConfig(
-            {
-                "pipeline": [
-                    {"name": "SpacyNLP"},
-                    {"name": "SpacyTokenizer"},
-                    {"name": "SpacyFeaturizer"},
-                    {
-                        "name": "CRFEntityExtractor",
-                        "features": [
-                            ["pos", "pos2"],
-                            [
-                                "bias",
-                                "prefix5",
-                                "prefix2",
-                                "suffix5",
-                                "suffix3",
-                                "suffix2",
-                                "pos",
-                                "pos2",
-                                "digit",
-                                "text_dense_features",
-                            ],
-                            ["pos", "pos2"],
+        config = {
+            "pipeline": [
+                {"name": "SpacyNLP"},
+                {"name": "SpacyTokenizer"},
+                {"name": "SpacyFeaturizer"},
+                {
+                    "name": "CRFEntityExtractor",
+                    "features": [
+                        ["pos", "pos2"],
+                        [
+                            "bias",
+                            "prefix5",
+                            "prefix2",
+                            "suffix5",
+                            "suffix3",
+                            "suffix2",
+                            "pos",
+                            "pos2",
+                            "digit",
+                            "text_dense_features",
                         ],
-                    },
-                ]
-            }
-        )
+                        ["pos", "pos2"],
+                    ],
+                },
+            ]
+        }
 
         with tempfile.TemporaryDirectory() as temp_dir:
             config_for_test = Path(temp_dir) / "test_config.yml"
-            rasa.shared.utils.io.write_yaml(config.as_dict(), config_for_test)
+            rasa.shared.utils.io.write_yaml(config, config_for_test)
 
             rasa.model_training.train_nlu(
-                config_for_test,
-                Path("data", "test_nlu_no_responses", "sara_nlu_data.yml"),
+                str(config_for_test),
+                str(Path("data", "test_nlu_no_responses", "sara_nlu_data.yml")),
                 output=temp_dir,
             )
 

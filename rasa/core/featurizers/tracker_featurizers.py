@@ -9,7 +9,6 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
 import numpy as np
 
-
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
@@ -27,21 +26,10 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
-from rasa.core.featurizers import _tracker_featurizers
 
 FEATURIZER_FILE = "featurizer.json"
 
 logger = logging.getLogger(__name__)
-
-# All code outside this module will continue to use the old `tracker_featurizer` module
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-TrackerFeaturizer = _tracker_featurizers.TrackerFeaturizer
-MaxHistoryTrackerFeaturizer = _tracker_featurizers.MaxHistoryTrackerFeaturizer
-IntentMaxHistoryTrackerFeaturizer = (
-    _tracker_featurizers.IntentMaxHistoryTrackerFeaturizer
-)
-FullDialogueTrackerFeaturizer = _tracker_featurizers.FullDialogueTrackerFeaturizer
 
 
 class InvalidStory(RasaException):
@@ -60,7 +48,7 @@ class InvalidStory(RasaException):
         return self.message
 
 
-class TrackerFeaturizer2:
+class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
@@ -210,67 +198,6 @@ class TrackerFeaturizer2:
                 # remove text features to only use intent
                 if state.get(USER, {}).get(INTENT) and state.get(USER, {}).get(TEXT):
                     del state[USER][TEXT]
-
-    def training_states_actions_and_entities(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain,
-        omit_unset_slots: bool = False,
-        ignore_action_unlikely_intent: bool = False,
-    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms trackers to states, actions, and entity data.
-
-        Args:
-            trackers: The trackers to transform.
-            domain: The domain.
-            omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
-                 from training states.
-
-        Returns:
-            Trackers as states, actions, and entity data.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "'training_states_actions_and_entities' is being deprecated in favor of "
-            "'training_states_labels_and_entities'."
-        )
-        return self.training_states_labels_and_entities(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots,
-            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
-        )
-
-    def training_states_and_actions(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain,
-        omit_unset_slots: bool = False,
-        ignore_action_unlikely_intent: bool = False,
-    ) -> Tuple[List[List[State]], List[List[Text]]]:
-        """Transforms trackers to states and actions.
-
-        Args:
-            trackers: The trackers to transform.
-            domain: The domain.
-            omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
-                from training states.
-
-        Returns:
-            Trackers as states and actions.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "'training_states_and_actions' is being deprecated in favor of "
-            "'training_states_and_labels'."
-        )
-
-        return self.training_states_and_labels(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots,
-            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
-        )
 
     def training_states_and_labels(
         self,
@@ -524,7 +451,7 @@ class TrackerFeaturizer2:
         )
 
     @staticmethod
-    def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer2]:
+    def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer]:
         """Loads the featurizer from file.
 
         Args:
@@ -563,7 +490,7 @@ class TrackerFeaturizer2:
         ]
 
 
-class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2):
+class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     """Creates full dialogue training data for time distributed architectures.
 
     Creates training data that uses each time output for prediction.
@@ -701,7 +628,7 @@ class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2):
         return trackers_as_states
 
 
-class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2):
+class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     """Truncates the tracker history into `max_history` long sequences.
 
     Creates training data from trackers where actions are the output prediction
@@ -942,7 +869,7 @@ class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2):
         return trackers_as_states
 
 
-class IntentMaxHistoryTrackerFeaturizer2(MaxHistoryTrackerFeaturizer2):
+class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     """Truncates the tracker history into `max_history` long sequences.
 
     Creates training data from trackers where intents are the output prediction

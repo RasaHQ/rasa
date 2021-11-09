@@ -3,16 +3,12 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from unittest.mock import Mock
-from typing import Callable, List, Optional, Text, Dict, Any
-from _pytest.monkeypatch import MonkeyPatch
+from typing import Callable, List, Optional, Text, Dict, Any, Tuple
 
-from rasa.engine.graph import ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu import registry
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.nlu.constants import (
@@ -28,6 +24,7 @@ from rasa.utils.tensorflow.constants import (
     RANKING_LENGTH,
     EPOCHS,
     MASKED_LM,
+    RENORMALIZE_CONFIDENCES,
     TENSORBOARD_LOG_LEVEL,
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
@@ -38,15 +35,18 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
-    LINEAR_NORM,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.classifiers.diet_classifier import (
-    DIETClassifierGraphComponent as DIETClassifier,
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    CountVectorsFeaturizer,
 )
+from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
+    LexicalSyntacticFeaturizer,
+)
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
@@ -109,7 +109,11 @@ def create_train_load_and_process_diet(
 
 @pytest.fixture()
 def train_load_and_process_diet(
-    nlu_data_path: Text, create_diet: Callable[..., DIETClassifier],
+    nlu_data_path: Text,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
+    default_model_storage: ModelStorage,
 ) -> Callable[..., Message]:
     def inner(
         diet: DIETClassifier,
@@ -121,26 +125,16 @@ def train_load_and_process_diet(
 
         if not pipeline:
             pipeline = [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {"component": WhitespaceTokenizer},
+                {"component": CountVectorsFeaturizer},
             ]
 
-        loaded_pipeline = [
-            registry.get_component_class(component.pop("name"))(component)
-            for component in copy.deepcopy(pipeline)
-        ]
-
-        importer = RasaFileImporter(training_data_paths=[training_data])
-        training_data = importer.get_nlu_data()
-
-        for component in loaded_pipeline:
-            component.train(training_data)
+        training_data, loaded_pipeline = train_and_preprocess(pipeline, training_data)
 
         diet.train(training_data=training_data)
 
         message = Message(data={TEXT: message_text})
-        for component in loaded_pipeline:
-            component.process(message)
+        message = process_message(loaded_pipeline, message)
 
         message2 = copy.deepcopy(message)
 
@@ -271,13 +265,13 @@ def test_model_data_signature_with_entities(
     messages: List[Message],
     entity_expected: bool,
     create_diet: Callable[..., DIETClassifier],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     classifier = create_diet({"BILOU_flag": False})
     training_data = TrainingData(messages)
 
     # create tokens for entity parsing inside DIET
-    tokenizer = WhitespaceTokenizer()
-    tokenizer.train(training_data)
+    whitespace_tokenizer.process_training_data(training_data)
 
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()
@@ -285,25 +279,25 @@ def test_model_data_signature_with_entities(
 
 
 @pytest.mark.skip_on_windows
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(240, func_only=True)
 async def test_train_persist_load_with_different_settings_non_windows(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
 ):
     pipeline = [
         {
-            "name": "WhitespaceTokenizer",
+            "component": WhitespaceTokenizer,
             "intent_tokenization_flag": True,
             "intent_split_symbol": "+",
         },
-        {"name": "CountVectorsFeaturizer"},
+        {"component": CountVectorsFeaturizer},
     ]
     config = {MASKED_LM: True, EPOCHS: 1}
     create_train_load_and_process_diet(config, pipeline)
     create_diet(config, load=True, finetune=True)
 
 
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(240, func_only=True)
 async def test_train_persist_load_with_different_settings(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
@@ -313,7 +307,7 @@ async def test_train_persist_load_with_different_settings(
     create_diet(config, load=True, finetune=True)
 
 
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(210, func_only=True)
 async def test_train_persist_load_with_only_entity_recognition(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
@@ -342,35 +336,47 @@ async def test_train_persist_load_with_only_intent_classification(
     "classifier_params, data_path, output_length, output_should_sum_to_1",
     [
         (
-            {RANDOM_SEED: 42, EPOCHS: 1},
-            "data/test/many_intents.yml",
-            10,
-            True,
-        ),  # default config
-        (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1},
+            {},
             "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
             False,
-        ),  # no normalization
+        ),  # (num_intents > default ranking_length)
         (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 3, EPOCHS: 1},
-            "data/test/many_intents.yml",
-            3,
-            True,
-        ),  # lower than default ranking_length
-        (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 12, EPOCHS: 1},
+            {RENORMALIZE_CONFIDENCES: True},
             "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
-            False,
-        ),  # higher than default ranking_length
+            True,
+        ),  # (num_intents > default ranking_length) + renormalize
         (
-            {RANDOM_SEED: 42, EPOCHS: 1},
+            {RANKING_LENGTH: 0},
+            "data/test/many_intents.yml",
+            16,
+            True,
+        ),  # (ranking_length := num_intents)
+        (
+            {RANKING_LENGTH: 0, RENORMALIZE_CONFIDENCES: True},
+            "data/test/many_intents.yml",
+            16,
+            True,
+        ),  # (ranking_length := num_intents) + (unnecessary) renormalize
+        (
+            {RANKING_LENGTH: LABEL_RANKING_LENGTH + 1},
+            "data/test/many_intents.yml",
+            LABEL_RANKING_LENGTH + 1,
+            False,
+        ),  # (num_intents > specified ranking_length)
+        (
+            {RANKING_LENGTH: LABEL_RANKING_LENGTH + 1, RENORMALIZE_CONFIDENCES: True},
+            "data/test/many_intents.yml",
+            LABEL_RANKING_LENGTH + 1,
+            True,
+        ),  # (num_intents > specified ranking_length) + renormalize
+        (
+            {},
             "data/test_moodbot/data/nlu.yml",
             7,
             True,
-        ),  # less intents than default ranking_length
+        ),  # (num_intents < default ranking_length)
     ],
 )
 async def test_softmax_normalization(
@@ -380,6 +386,9 @@ async def test_softmax_normalization(
     output_should_sum_to_1,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
+    classifier_params[RANDOM_SEED] = 42
+    classifier_params[EPOCHS] = 1
+    classifier_params[EVAL_NUM_EPOCHS] = 1
 
     parsed_message = create_train_load_and_process_diet(
         classifier_params, training_data=data_path
@@ -399,54 +408,22 @@ async def test_softmax_normalization(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
-async def test_inner_linear_normalization(
-    monkeypatch: MonkeyPatch, create_train_load_and_process_diet: Callable[..., Message]
-):
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
-    parsed_message = create_train_load_and_process_diet(
-        {
-            RANDOM_SEED: 42,
-            EPOCHS: 1,
-            MODEL_CONFIDENCE: LINEAR_NORM,
-            RANKING_LENGTH: -1,
-        },
-    )
-    parse_data = parsed_message.data
-    intent_ranking = parse_data.get("intent_ranking")
-
-    # check whether normalization had the expected effect
-    output_sums_to_1 = sum(
-        [intent.get("confidence") for intent in intent_ranking]
-    ) == pytest.approx(1)
-    assert output_sums_to_1
-
-    # check whether the normalization of rankings is reflected in intent prediction
-    assert parse_data.get("intent") == intent_ranking[0]
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
-
-
 async def test_margin_loss_is_not_normalized(
-    monkeypatch: MonkeyPatch, create_train_load_and_process_diet: Callable[..., Message]
+    create_train_load_and_process_diet: Callable[..., Message]
 ):
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
 
     parsed_message = create_train_load_and_process_diet(
-        {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1},
+        {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, EVAL_NUM_EPOCHS: 1},
         training_data="data/test/many_intents.yml",
     )
     parse_data = parsed_message.data
     intent_ranking = parse_data.get("intent_ranking")
 
-    # check that the output was not normalized
-    mock.normalize.assert_not_called()
-
     # check that the output was correctly truncated
     assert len(intent_ranking) == LABEL_RANKING_LENGTH
+
+    # check that output was not normalized
+    assert [item["confidence"] for item in intent_ranking] != pytest.approx(1)
 
     # make sure top ranking is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
@@ -458,12 +435,18 @@ async def test_set_random_seed(
 ):
     """test if train result is the same for two runs of tf embedding"""
 
-    parsed_message1 = create_train_load_and_process_diet({RANDOM_SEED: 1, EPOCHS: 1},)
+    parsed_message1 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+    )
 
-    parsed_message2 = create_train_load_and_process_diet({RANDOM_SEED: 1, EPOCHS: 1},)
+    parsed_message2 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+    )
 
     # Different random seed
-    parsed_message3 = create_train_load_and_process_diet({RANDOM_SEED: 2, EPOCHS: 1},)
+    parsed_message3 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1},
+    )
 
     assert (
         parsed_message1.data["intent"]["confidence"]
@@ -486,9 +469,9 @@ async def test_train_tensorboard_logging(
     assert not tensorboard_log_dir.exists()
 
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
+        {"component": WhitespaceTokenizer},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 3,
             "max_ngram": 17,
@@ -502,7 +485,7 @@ async def test_train_tensorboard_logging(
             EPOCHS: 1,
             TENSORBOARD_LOG_LEVEL: log_level,
             TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
-            MODEL_CONFIDENCE: "linear_norm",
+            MODEL_CONFIDENCE: "softmax",
             CONSTRAIN_SIMILARITIES: True,
             EVAL_NUM_EXAMPLES: 15,
             EVAL_NUM_EPOCHS: 1,
@@ -614,7 +597,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(300, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params: Dict[Text, Any],
     create_train_load_and_process_diet: Callable[..., Message],
@@ -699,12 +682,12 @@ async def test_adjusting_layers_incremental_training(
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizer},
+        {"component": LexicalSyntacticFeaturizer},
+        {"component": RegexFeaturizer},
+        {"component": CountVectorsFeaturizer},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
@@ -844,12 +827,12 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     train_load_and_process_diet: Callable[..., Message],
 ):
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizer},
+        {"component": LexicalSyntacticFeaturizer},
+        {"component": RegexFeaturizer},
+        {"component": CountVectorsFeaturizer},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
