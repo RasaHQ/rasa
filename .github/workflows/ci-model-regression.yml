@@ -350,7 +350,6 @@ jobs:
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace
         run: |-
-          poetry run python run_metric.py
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
