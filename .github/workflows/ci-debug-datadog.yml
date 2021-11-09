@@ -65,4 +65,4 @@ jobs:
         DD_SERVICE: rasa
         DD_ARGS: --ddtrace
       run: |
-        python run_metric.py
+        poetry run python run_metric.py
