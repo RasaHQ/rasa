@@ -115,10 +115,9 @@ def push_results(file_name, file):
     result["task"] = task_mapping[file_name]
     send_to_segment(result)
 
-    send_to_datadog(result)
-
 
 if __name__ == "__main__":
+    send_to_datadog(None)
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
             if any(f.endswith(valid_name) for valid_name in task_mapping.keys()):
