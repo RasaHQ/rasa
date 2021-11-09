@@ -64,6 +64,7 @@ def send_to_datadog(context):
         "github_sha": os.environ["GITHUB_SHA"],
         "github_event": os.environ["GITHUB_EVENT_NAME"],
         "type": os.environ["TYPE"],
+        "branch": os.environ["BRANCH"],
     }
     print(tags)
     tags_list = [f'{k}:{v}' for k, v in tags.items()]
