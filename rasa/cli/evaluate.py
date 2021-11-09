@@ -2,10 +2,11 @@ import argparse
 from typing import List, Text, Optional
 from pathlib import Path
 
+from rasa import telemetry
 from rasa.core.utils import AvailableEndpoints
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
-from rasa.core.evaluation.marker_base import Marker
+from rasa.core.evaluation.marker_base import Marker, OperatorMarker
 from rasa.shared.core.domain import Domain
 from rasa.cli import SubParsersAction
 import rasa.cli.arguments.evaluate as arguments
@@ -131,6 +132,13 @@ def _run_markers(
             computed per session will be stored in
             '<path-to-stats-folder>/statistics-per-session.csv'.
     """
+    telemetry.track_markers_extraction_initiated(
+        strategy=strategy,
+        only_extract=stats_file_prefix is not None,
+        seed=seed is not None,
+        count=count,
+    )
+
     domain = Domain.load(domain_path) if domain_path else None
     markers = Marker.from_path(config)
     if domain and not markers.validate_against_domain(domain):
@@ -138,6 +146,23 @@ def _run_markers(
             "Validation errors were found in the markers definition. "
             "Please see errors listed above and fix before running again."
         )
+
+    # Calculate telemetry
+    # All loaded markers are combined with one virtual OR over all markers
+    num_markers = len(markers.sub_markers)
+    max_depth = markers.max_depth() - 1
+    # Find maximum branching of marker
+    branching_factor = max(
+        (
+            len(sub_marker.sub_markers)
+            for marker in markers.sub_markers
+            for sub_marker in marker.flatten()
+            if isinstance(sub_marker, OperatorMarker)
+        ),
+        default=0,
+    )
+
+    telemetry.track_markers_parsed_count(num_markers, max_depth, branching_factor)
 
     tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
 

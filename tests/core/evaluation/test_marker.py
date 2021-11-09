@@ -205,10 +205,11 @@ def test_operator_and(negated: bool):
     assert marker.history == expected
 
 
-@pytest.mark.parametrize("negated", [True, False])
-def test_operator_seq_track(negated: bool):
+@pytest.mark.parametrize("negated", [False, True])
+def test_operator_seq(negated: bool):
     events_expected = [
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (ActionExecuted("unrelated event that does not interrupt the sequence"), False),
         (UserUttered(intent={INTENT_NAME_KEY: "2"}), True),
         (UserUttered(intent={INTENT_NAME_KEY: "3"}), False),
         (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
@@ -216,6 +217,31 @@ def test_operator_seq_track(negated: bool):
     ]
     events, expected = zip(*events_expected)
     sub_markers = [IntentDetectedMarker("1"), IntentDetectedMarker("2")]
+    marker = SequenceMarker(sub_markers, name="marker_name", negated=negated)
+    for event in events:
+        marker.track(event)
+    expected = list(expected)
+    if negated:
+        expected = [not applies for applies in expected]
+    assert marker.history == expected
+
+
+@pytest.mark.parametrize("negated", [False, True])
+def test_operator_seq_does_not_allow_overlap(negated: bool):
+    events_expected = [
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "1"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "2"}), False),
+        (UserUttered(intent={INTENT_NAME_KEY: "3"}), True),
+        (UserUttered(intent={INTENT_NAME_KEY: "3"}), False),
+    ]
+    events, expected = zip(*events_expected)
+    sub_markers = [
+        IntentDetectedMarker("1"),
+        IntentDetectedMarker("2"),
+        IntentDetectedMarker("3"),
+    ]
     marker = SequenceMarker(sub_markers, name="marker_name", negated=negated)
     for event in events:
         marker.track(event)
@@ -383,8 +409,8 @@ def test_operator_nested_randomly_all_sub_markers_track_events(
     ]
     for event in events:
         marker.track(event)
-    assert len([sub_marker for sub_marker in marker]) == expected_size
-    for sub_marker in marker:
+    assert len([sub_marker for sub_marker in marker.flatten()]) == expected_size
+    for sub_marker in marker.flatten():
         assert len(sub_marker.history) == len(events)
 
 
@@ -423,9 +449,9 @@ def test_operator_nested_randomly_all_sub_markers_track_events_and_apply_at_some
 
     # by design, every marker applies at some point / never
     if applies_at_some_point:
-        assert all([any(sub_marker.history) for sub_marker in marker])
+        assert all([any(sub_marker.history) for sub_marker in marker.flatten()])
     else:
-        assert all([not any(sub_marker.history) for sub_marker in marker])
+        assert all([not any(sub_marker.history) for sub_marker in marker.flatten()])
 
 
 def test_sessions_evaluated_separately():
@@ -519,7 +545,7 @@ def _collect_parameters(
 ) -> Set[Text]:
     return set(
         sub_marker.text
-        for sub_marker in marker
+        for sub_marker in marker.flatten()
         if isinstance(sub_marker, condition_type)
     )
 
@@ -619,6 +645,32 @@ def test_marker_from_path_only_reads_yamls(tmp_path: Path,):
 
 
 @pytest.mark.parametrize(
+    "configs",
+    [
+        {"my_marker1": {IntentDetectedMarker.positive_tag(): "this-intent"}},
+        {
+            "my_marker1": {IntentDetectedMarker.positive_tag(): "this-intent"},
+            "my_marker2": {IntentDetectedMarker.positive_tag(): "this-action"},
+        },
+    ],
+)
+def test_marker_from_path_adds_special_or_marker(tmp_path: Path, configs: Any):
+
+    yaml_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(
+        data=configs, target=yaml_file,
+    )
+    loaded = Marker.from_path(tmp_path)
+    assert isinstance(loaded, OrMarker)
+    assert loaded.name == Marker.ANY_MARKER
+    assert len(loaded.sub_markers) == len(configs)
+    assert all(
+        isinstance(sub_marker, IntentDetectedMarker)
+        for sub_marker in loaded.sub_markers
+    )
+
+
+@pytest.mark.parametrize(
     "path_config_tuples",
     [
         [  # two configs defining the same marker
@@ -641,7 +693,7 @@ def test_marker_from_path_only_reads_yamls(tmp_path: Path,):
                 "folder1/config2.yaml",
                 {"my_marker1": {IntentDetectedMarker.positive_tag(): "intent1"}},
             ),
-            ("folder2/config2.yaml", {"my_marker1": {"unknown-tag": "intent2"}}),
+            ("folder2/config2.yaml", {"my_marker2": {"unknown-tag": "intent2"}}),
         ],
     ],
 )
@@ -656,3 +708,23 @@ def test_marker_from_path_raises(
         rasa.shared.utils.io.write_yaml(data=config, target=full_path)
     with pytest.raises(InvalidMarkerConfig):
         Marker.from_path(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "marker,expected_depth",
+    [
+        (
+            AndMarker(
+                markers=[
+                    SlotSetMarker("s1"),
+                    OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6"),]),
+                ],
+            ),
+            3,
+        ),
+        (SlotSetMarker("s1"), 1),
+        (AndMarker(markers=[SlotSetMarker("s1"), IntentDetectedMarker("6"),],), 2),
+    ],
+)
+def test_marker_depth(marker: Marker, expected_depth: int):
+    assert marker.max_depth() == expected_depth
