@@ -332,6 +332,11 @@ jobs:
         with:
           name: report.json
 
+      - name: Extract branch name
+        shell: bash
+        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
+        id: extract_branch
+
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
@@ -346,7 +351,7 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
-          BRANCH: ${GITHUB_REF_NAME}
+          BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DD_ENV: regression-tests # ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace
