@@ -49,7 +49,7 @@ def send_to_datadog(context):
     }
     print(metrics)
     for metric_name, metric_value in metrics.items():
-        statsd.gauge(f'{metric_name}.gauge', metric_value, tags=["environment:dev"])
+        statsd.gauge(f'{metric_name}.gauge', 6, tags=["environment:dev"])
 
 
 def send_to_segment(context):
