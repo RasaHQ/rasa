@@ -25,15 +25,23 @@ task_mapping = {
 }
 
 def transform_to_seconds(duration: str) -> float:
-    tmp = duration.split('m')
-    if len(tmp) == 2:
-        minutes = int(tmp[0])
-        seconds = float(tmp[1].rstrip('s'))
-        overall_seconds = minutes * 60 + seconds
-    elif len(tmp) == 1:
-        overall_seconds = float(tmp[0].rstrip('s'))
+    h_split = duration.split('h')
+    if len(h_split) == 1:
+        rest = h_split[0]
+        hours = 0
+    else:
+        hours = int(h_split[0])
+        rest = h_split[1]
+    m_split = rest.split('m')
+    if len(m_split) == 2:
+        minutes = int(m_split[0])
+        seconds = float(m_split[1].rstrip('s'))
+    elif len(m_split) == 1:
+        minutes = 0
+        seconds = float(m_split[0].rstrip('s'))
     else:
         raise Exception(f'Unsupported duration: {duration}')
+    overall_seconds = hours * 60 * 60 + minutes * 60 + seconds
     return overall_seconds
 
 
