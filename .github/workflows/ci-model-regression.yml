@@ -346,7 +346,7 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
-          BRANCH: ${{ github.head_ref }}
+          BRANCH: ${GITHUB_REF_NAME}
           DD_ENV: regression-tests # ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace
