@@ -566,6 +566,7 @@ jobs:
 
         run: |-
           poetry run rasa --version
+
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
           cd ${{ github.workspace }}
 
