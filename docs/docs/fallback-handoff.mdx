@@ -91,6 +91,7 @@ for what the bot should do when `nlu_fallback` is predicted.
 To use the FallbackClassifier, add it to your NLU pipeline:
 
 ```yaml-rasa title="config.yml"
+recipe: default.v1
 pipeline:
 # other components
 - name: FallbackClassifier
@@ -244,6 +245,7 @@ Add FallbackClassifier to your pipeline and the [RulePolicy](./policies.mdx#rule
 to your policy configuration:
 
 ```yaml title="config.yml"
+recipe: default.v1
 pipeline:
 # other components
 - name: FallbackClassifier
