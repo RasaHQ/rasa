@@ -125,7 +125,9 @@ does not have any configuration. Rasa Open Source will update the default config
 in the configuration file at runtime.
 
 ### `supported_languages`
-The method `supported_languages` specifies which languages a graph component supports.
+The method `supported_languages` specifies which
+[languages](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
+a graph component supports.
 Rasa Open Source will use the `language` key in the model configuration file to
 validate that the graph component is valid for usage with the specified language.
 If a graph component returns `None` (this is the default implementation), it indicates
@@ -139,7 +141,7 @@ that the graph component supports all languages which are not part of
    - `["en"]`: The graph component can only be used with English conversations.
 
 ### `not_supported_languages`
-The method `not_supported_languages` specifies which languages your
+The method `not_supported_languages` specifies which [languages](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) your
 graph component does not support. Rasa Open Source will use the `language` key in the
 model configuration file to validate that your graph component is valid for usage with
 the specified language. If your graph component returns `None` (this is the default
