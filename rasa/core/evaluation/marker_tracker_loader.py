@@ -96,4 +96,4 @@ class MarkerTrackerLoader:
 
         keys = self.strategy(stored_keys, self.count)
         for sender in keys:
-            yield self.tracker_store.retrieve(sender)
+            yield self.tracker_store.retrieve_full_tracker(sender)
