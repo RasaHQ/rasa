@@ -8,6 +8,7 @@ import os
 from datadog import initialize, statsd
 
 
+METRIC_PREFIX = "rasa.perf.benchmark."
 IS_EXTERNAL = os.environ["IS_EXTERNAL"]
 DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 EXTERNAL_DATASET_REPOSITORY_BRANCH = None
@@ -82,7 +83,7 @@ def send_to_datadog(context):
     }
     for metric_name, metric_value in metrics.items():
         overall_seconds = transform_to_seconds(metric_value)
-        statsd.gauge(f"{metric_name}.gauge", overall_seconds, tags=["environment:dev"])
+        statsd.gauge(f"{METRIC_PREFIX}{metric_name}.gauge", overall_seconds, tags=["environment:dev"])
 
 
 def send_to_segment(context):
