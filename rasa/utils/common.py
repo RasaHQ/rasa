@@ -42,6 +42,7 @@ EXPECTED_WARNINGS = [
         "Converting sparse IndexedSlices.* to a dense Tensor of unknown "
         "shape. This may consume a large amount of memory.",
     ),
+    (UserWarning, "Slot auto-fill has been removed in 3.0 .*",),
 ]
 
 
