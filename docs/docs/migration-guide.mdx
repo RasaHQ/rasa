@@ -615,12 +615,13 @@ from your model configuration file.
 
 **Persisting a Trained NLU Component**
 
-NLU components used to be persisted by an outside call to the NLU component's `persist` method.
+NLU components used to be persisted by a call to the NLU component's `persist` method
+from outside the NLU component itself.
 With Rasa Open Source 3.0 NLU components are responsible for persisting themselves.
-You should use the provided `model_storage` and `resource`
-(see [component persistence](custom-graph-components.mdx#model-persistence) for more details)
+Use the provided `model_storage` and `resource` parameters
 to persist your NLU component at the end of the training and then return the `resource`
 as result of your NLU component's `train` method.
+See [component persistence](custom-graph-components.mdx#model-persistence) for more details.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-persistence" defaultValue="new">
   <TabItem value="old">
@@ -669,16 +670,11 @@ as result of your NLU component's `train` method.
 
 **Instantiating a Trained NLU Component**
 
-Similar as you had to use the `model_storage` and `resource`
-(see [component persistence](custom-graph-components.mdx#model-persistence) for more details)
-to persist the NLU
-component in the previous step, you need to use these to load the persisted
-NLU component.
+Previously NLU components had to persist their own configuration. Now the config passed
+into `load` will automatically contain the configuration which your model was trained with.
+To instantiate a persisted NLU component, you need to use `model_storage` and `resource` in your NLU component's
+`load` method.
 
-:::info
-It is no longer required to persist your NLU component's config yourself. The config passed
-into `load` will contain the configuration which your model was trained with.
-:::
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-loading" defaultValue="new">
   <TabItem value="old">
