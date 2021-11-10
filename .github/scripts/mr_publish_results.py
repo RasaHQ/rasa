@@ -24,23 +24,24 @@ task_mapping = {
     "story_report.json": "Story Prediction",
 }
 
+
 def transform_to_seconds(duration: str) -> float:
-    h_split = duration.split('h')
+    h_split = duration.split("h")
     if len(h_split) == 1:
         rest = h_split[0]
         hours = 0
     else:
         hours = int(h_split[0])
         rest = h_split[1]
-    m_split = rest.split('m')
+    m_split = rest.split("m")
     if len(m_split) == 2:
         minutes = int(m_split[0])
-        seconds = float(m_split[1].rstrip('s'))
+        seconds = float(m_split[1].rstrip("s"))
     elif len(m_split) == 1:
         minutes = 0
-        seconds = float(m_split[0].rstrip('s'))
+        seconds = float(m_split[0].rstrip("s"))
     else:
-        raise Exception(f'Unsupported duration: {duration}')
+        raise Exception(f"Unsupported duration: {duration}")
     overall_seconds = hours * 60 * 60 + minutes * 60 + seconds
     return overall_seconds
 
@@ -67,11 +68,11 @@ def send_to_datadog(context):
         "branch": os.environ["BRANCH"],
     }
     print(tags)
-    tags_list = [f'{k}:{v}' for k, v in tags.items()]
+    tags_list = [f"{k}:{v}" for k, v in tags.items()]
     options = {
-        'statsd_host': '127.0.0.1',  # 'localhost',
-        'statsd_port': 8125,
-        'statsd_constant_tags': tags_list,
+        "statsd_host": "127.0.0.1",  # 'localhost',
+        "statsd_port": 8125,
+        "statsd_constant_tags": tags_list,
     }
     initialize(**options)
 
@@ -84,7 +85,7 @@ def send_to_datadog(context):
     print(metrics)
     for metric_name, metric_value in metrics.items():
         overall_seconds = transform_to_seconds(metric_value)
-        statsd.gauge(f'{metric_name}.gauge', overall_seconds, tags=["environment:dev"])
+        statsd.gauge(f"{metric_name}.gauge", overall_seconds, tags=["environment:dev"])
 
 
 def send_to_segment(context):
