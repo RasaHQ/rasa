@@ -746,6 +746,10 @@ class MessageProcessor:
                 break
 
             if prediction.is_end_to_end_prediction:
+                logger.debug(
+                    f"An end-to-end prediction was made which has triggered the 2nd "
+                    f"execution of the default action '{ACTION_EXTRACT_SLOTS}'."
+                )
                 tracker = await self._run_action_extract_slots(output_channel, tracker)
 
             should_predict_another_action = await self._run_action(
