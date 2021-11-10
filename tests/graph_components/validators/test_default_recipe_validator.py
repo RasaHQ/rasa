@@ -732,6 +732,7 @@ def test_core_warn_if_data_but_no_policy(
             validator.validate(importer)
         assert len(records) == 1
     else:
+        # QUESTION - should this be removed? Is this for when user on 3.0 uses slot auto-fill
         with pytest.warns(
             UserWarning, match="Slot auto-fill has been removed in 3.0"
         ) as records:
@@ -998,6 +999,7 @@ def test_no_warnings_with_default_project(tmp_path: Path):
     )
     validator = DefaultV1RecipeValidator(graph_config.train_schema)
 
+    # QUESTION - should this be removed? Is this for when user on 3.0 uses slot auto-fill
     with pytest.warns(
         UserWarning, match="Slot auto-fill has been removed in 3.0"
     ) as records:

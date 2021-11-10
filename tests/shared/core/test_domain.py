@@ -322,6 +322,7 @@ slots: {{}}
         domain = Domain.from_yaml(test_yaml)
         actual_yaml = domain.as_yaml()
 
+    # QUESTION - should this be removed? Is this for when user on 3.0 uses slot auto-fill?
     assert (
         "Slot auto-fill has been removed in 3.0"
         " and replaced with a new explicit mechanism to set slots. "

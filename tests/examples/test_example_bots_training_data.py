@@ -42,6 +42,8 @@ from rasa.shared.importers.importer import TrainingDataImporter
         ),
     ],
 )
+
+# QUESTION - should this be removed? Is this for when user on 3.0 uses slot auto-fill
 def test_example_bot_training_data_raises_only_auto_fill_warning(
     config_file: Text, domain_file: Text, data_folder: Text
 ):
@@ -63,6 +65,7 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
     assert record[0].message.args[0] == record[1].message.args[0]
 
 
+# QUESTION - should this be removed? Is this for when user on 3.0 uses slot auto-fill
 def test_example_bot_training_on_initial_project(tmp_path: Path):
     # we need to test this one separately, as we can't test it in place
     # configuration suggestions would otherwise change the initial file
