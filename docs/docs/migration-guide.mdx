@@ -469,10 +469,12 @@ used during inference use `is_trainable=False`.
 
 **Providing Rule-only Data to a Policy**
 
-Rasa Open Source allows excluding conversation parts which are completely handled by
-[rules](rules.mdx). In Rasa Open Source 2 the necessary information was passed onto the
+Rasa Open Source allows excluding [forms](forms.mdx) or [slots](domain.mdx#slots) which
+are completely handled by
+[rules](rules.mdx) from becoming features in other policies.
+In Rasa Open Source 2 this information was passed onto the
 policies using the `set_shared_policy_states` method which set the policy attribute
-`_rule_only_data`. Rasa Open Source passes this data in via the
+`_rule_only_data`. Rasa Open Source passes the names of rule-only slots and forms via the
 `predict_action_probabilities` method. The passed `rule_only_data` can be `None`
 in case the [`RulePolicy`](policies.mdx#rule-policy) is not part of your model
 configuration.
