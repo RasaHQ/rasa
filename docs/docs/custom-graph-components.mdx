@@ -72,8 +72,8 @@ skeleton:
 ```python (docs/sources/data/test_classes/nlu_component_skeleton.py)
 ```
 :::note custom tokenizers
-If you create a custom tokenizer you should implement the methods of
-`rasa.nlu.tokenizers.tokenizer.Tokenizer`. The `train` and `process` methods are
+If you create a custom tokenizer you should extend the 
+`rasa.nlu.tokenizers.tokenizer.Tokenizer` class. The `train` and `process` methods are
 already implemented so you only need to overwrite the `tokenize` method.
 
 :::
@@ -81,8 +81,7 @@ already implemented so you only need to overwrite the `tokenize` method.
 
 
 ## The `GraphComponent` interface
-To run your custom NLU component or policy with Rasa Open Source it has
-to implement the `GraphComponent` interface.
+To run your custom NLU component or policy with Rasa Open Source it must implement the `GraphComponent` interface.
 
 ```python (docs/sources/data/test_classes/graph_component_interface.py)
 ```
@@ -91,11 +90,11 @@ to implement the `GraphComponent` interface.
 The `create` method is used to instantiate your graph component during training and has to be
 overridden. Rasa Open Source passes the following parameters when calling the method:
 
-- `config`: This is your model's default configuration merged with the
+- `config`: This is your component's default configuration merged with the
    configuration provided to the graph component in the model configuration file.
-- `model_storage`: You can use this to persist and load your graph components. See
+- `model_storage`: You can use this to persist and load your graph component. See the
    [model persistence](#model-persistence) section for further details on its usage.
-- `resource`: This uniquely identifies your component within the `model_storage`.
+- `resource`: The unique identifier of your component within the `model_storage`.
    See the [model persistence](#model-persistence) section for further
    details on its usage.
 - `execution_context`: This provides additional information about the current
@@ -103,8 +102,8 @@ overridden. Rasa Open Source passes the following parameters when calling the me
    - `model_id`: A unique identifier for the model used during inference. This
       parameter is `None` during training.
    - `should_add_diagnostic_data`: If `True` then additional diagnostic metadata
-      can be added to your graph component's predictions on top of the actual prediction.
-   - `is_finetuning`: If `True` then the graph component is trained using
+      should be added to your graph component's predictions on top of the actual prediction.
+   - `is_finetuning`: If `True` then the graph component can be trained using
      [finetuning](command-line-interface.mdx#incremental-training).
    - `graph_schema`: The `graph_schema` describes the computational graph which is used
      to train your assistant or to make predictions with it.
@@ -116,7 +115,7 @@ The `load` method is used to instantiate your graph component during inference. 
 implementation of this method calls your `create` method. It is recommended to override
 this if your graph component
 [persists data as part of the training](#model-persistence).
-See [`create`](#create) for a description of the single parameters.
+See [`create`](#create) for a description of the individual parameters.
 
 ### `get_default_config`
 The method `get_default_config` returns the default configuration for your graph
@@ -153,19 +152,18 @@ implementation), you indicate that it supports all languages which are specified
 
 ### `required_packages`
 The `required_packages` method indicates which extra Python packages need to
-be installed to be able to use this graph component. Rasa Open Source will raise an error
-during execution if your graph component is used without the required libraries being
-installed. By default, this method returns an empty list which implies that your graph
+be installed to use this graph component. Rasa Open Source will raise an error
+during execution if the required libraries are not found at runtime. By default, this method returns an empty list which implies that your graph
 component does not have any extra dependencies.
 
 Examples:
 - `[]`: No extra packages are required to use this graph component
-- `["spacy"]`: The Python package `spacy` needs to be installed to be able to run
+- `["spacy"]`: The Python package `spacy` needs to be installed to use
   this graph component.
 
 ## Model Persistence
 Some graph components require persisting data during training which should be available
-to the graph component during inference time. A typical use case for this is storing model
+to the graph component at inference time. A typical use case is storing model
 weights. Rasa Open Source provides the
 `model_storage` and `resource` parameters to your graph component's `create` and `load`
 method for this purpose as shown in the snippet below. The `model_storage` provides
@@ -205,11 +203,11 @@ It is recommended to store `model_storage` and `resource` at initialization time
 then use them at the end of your component's `train` method to handle the persistence
 of your graph component.
 
+Your graph component's train method must return the value of `resource` so that Rasa Open Source can cache
+the training results between trainings.
 The `self._model_storage.write_to(self._resource)` context manager provides a path to
 a directory where you can persist any data required by your
-graph component. Note that it is required to return your graph component's `resource`
-at the end of your graph component's `train` method so that Rasa Open Source can cache
-the training results between trainings.
+graph component. 
 
 ```python
 class MyComponent(GraphComponent):
@@ -252,9 +250,7 @@ class MyComponent(GraphComponent):
 
 ### Reading from the Model Storage
 
-When Rasa Open Source calls `load` to instantiate your graph component for
-inference you can use the counterpart `self._model_storage.read_from(resource)` to
-get access to the same directory. Using the provided path you can then load the
+Rasa Open Source will call the `load` method of your graph component to instantiate it for inference. You can use the context manager `self._model_storage.read_from(resource)` to get a path to the directory where your graph component's data was persisted. Using the provided path you can then load the
 persisted data and initialize your graph component with it. Note that the `model_storage`
 will throw a `ValueError` in case no persisted data was found for the given `resource`.
 
@@ -304,7 +300,7 @@ decorator:
 
 Rasa Open Source uses the information provided in the `register` decorator and the
 position of your graph component within the configuration file to schedule the execution
-of your graph component with its required data. The `DefaultV1Recipe.register` allows you
+of your graph component with its required data. The `DefaultV1Recipe.register` decorator allows you
 to specify the following details:
 
 - `component_types`: This specifies what purpose your graph component fulfills within the
@@ -383,7 +379,7 @@ to specify the following details:
    configuration.
 
 ## Using Custom Components in your Model Configuration
-You can use custom components like any other NLU component or policy within your
+You can use custom graph components like any other NLU component or policy within your
 [model configuration](model-configuration.mdx). The only change is that you have to specify
 the full module name instead of the class name only. The full module name depends on
 your module's location in relation to the specified

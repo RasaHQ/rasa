@@ -30,8 +30,8 @@ to convert your data from Markdown to YAML. Please use the commands described
 
 It is required to specify the used `recipe` within the
 [model configuration](model-configuration.mdx). As of now Rasa Open Source only supports
-the `default.v1` recipe and will continue using this even if you don't specify this
-in the model configuration. To avoid breaking changes in the future it is recommended
+the `default.v1` recipe and will continue using it even if you don't specify a recipe
+in the model configuration. To avoid breaking changes in the future you should
 to specify `recipe: "default.v1"` at the top of your model configuration:
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-config" defaultValue="new">
@@ -85,7 +85,7 @@ It is now required to use
 components and policies. Rasa Open Source uses these type annotations to validate that
 your graph components are compatible and correctly configured. As outlined in the custom
 [components guide](custom-graph-components.mdx) it is not allowed to use
-[Forward references](https://www.python.org/dev/peps/pep-0484/#forward-references).
+[forward references](https://www.python.org/dev/peps/pep-0484/#forward-references).
 
 :::info Forward References with Python 3.7
 Use the
@@ -189,12 +189,11 @@ featurizers itself.
 
 **Persisting a Trained Policy**
 
-Policies used to be persisted by an outside call to the policy's `persist` method.
+Policies used to be persisted by a call to the policy's `persist` method from outside the policy itself.
 With Rasa Open Source 3.0 policies are responsible for persisting themselves.
-Use the provided `model_storage` and `resource`
-(see [graph component persistence](custom-graph-components.mdx#model-persistence) for more details)
+Use the provided `model_storage` and `resource` parameters
 to persist your graph component at the end of the training and then return the `resource`
-as result of your policy's `train` method.
+as result of your policy's `train` method. See [graph component persistence](custom-graph-components.mdx#model-persistence) for more details.
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-persistence" defaultValue="new">
   <TabItem value="old">
@@ -252,14 +251,11 @@ as result of your policy's `train` method.
 
 **Instantiating a Trained Policy**
 
-Similar as you had to use the `model_storage` and `resource` to persist the policy
-in the previous step, you need to use `model_storage` and `resource` in your policy's
-`load` method to instantiate it.
-
-:::info
-It is no longer required to persist your policy's configuration yourself. The config passed
+Previously policies had to persist their own configuration. Now the config passed
 into `load` will automatically contain the configuration which your model was trained with.
-:::
+
+To instantiate a persisted policy, you need to use `model_storage` and `resource` in your policy's
+`load` method. 
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-loading" defaultValue="new">
   <TabItem value="old">
@@ -355,11 +351,10 @@ constructor but instead returned by the static method `get_default_config`:
 
 **Using End-To-End Features in a Policy**
 
-If you were using a custom [end-to-end policy](stories.mdx#end-to-end-training) in Rasa
+To use a custom [end-to-end policy](stories.mdx#end-to-end-training) in Rasa
 Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
-events manually. If your policy requires end-to-end features in Rasa Open Source 3
-you need to [register](custom-graph-components.mdx#registering-graph-components-with-the-model-configuration)
-your policy with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
+events manually. In Rasa Open Source 3.0, 
+you need to [register](custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
 will be precomputed and passed into your policy during training and inference.
 
 :::caution
@@ -547,7 +542,7 @@ This snippet shows the required changes:
 
 ** Inheriting from `EntityExtractorMixin` instead of `EntityExtractor`**
 
-The `EntityExtractor` class was renamed to `EntityExtractorMixing`:
+The `EntityExtractor` class was renamed to `EntityExtractorMixin`:
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-entity-extractor" defaultValue="new">
   <TabItem value="old">
@@ -777,11 +772,11 @@ by the static method `get_default_config`:
 NLU Components like [tokenizers](components.mdx#tokenizers) or
 [featurizers](components.mdx#featurizers) augment the training data with their
 output during the model training. Their output is required by NLU components later in the
-pipeline. Typically, featurizers require *tokenized* messages as well as intent
+pipeline. Typically, featurizers require *tokenized* messages and intent
 classifiers require *featurized* training data to train themselves. Rasa Open Source
 3.0 makes these different purposes explicit. Previously both NLU component training and
 training data augmentation were done as part of the `train` method. In Rasa Open Source
-3.0 they are split in `train` and `process_training_data`:
+3.0 they are split into `train` and `process_training_data`:
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-component-train-process-split" defaultValue="new">
   <TabItem value="old">
@@ -824,7 +819,7 @@ training data augmentation were done as part of the `train` method. In Rasa Open
 
 NLU components used to receive a single `Message` object during inference.
 Starting with Rasa Open Source 3.0 all NLU components have to support a list of
-messages during inference. Unless your model supports batch predictions the easiest
+messages during inference. Unless your component supports batch predictions the easiest
 way to handle this is to loop over the messages. It is also required to return the
 message objects at the end of the `process` method.
 
@@ -862,11 +857,11 @@ parent classes:
 * `SparseFeaturizer` / `DenseFeaturizer`: `ComponentType.MESSAGE_FEATURIZER`
 * `IntentClassifier`: `ComponentType.INTENT_CLASSIFIER`
 * `EntityExtractor`: `ComponentType.ENTITY_EXTRACTOR`
-* If your NLU component provides a pretrained model which then should be used by other
+* If your NLU component provides a pretrained model which should be used by other
   NLU components during training and inference use `ComponentType.MODEL_LOADER`
 
 Specify `is_trainable=True` if the `train` method of your component should be called
-during the training.
+during training.
 
 
 <Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-nlu-register" defaultValue="new">
@@ -898,7 +893,7 @@ during the training.
 If your NLU component requires a pretrained model such as a [Spacy](components.mdx#spacynlp) or
 [Mitie](components.mdx#mitienlp) language model you have to specify the NLU component which
 provides this model in your model's pipeline before the NLU component which requires
-the model. In addition to this you now also need to specify the required model in the `model_from`
+the model. In addition to this you now also need to specify the model loading component in the `model_from`
 parameter in the `register` decorator. The model will then be passed to your model's
 `train`, `process_training_data` and `process` methods:
 
