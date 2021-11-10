@@ -573,14 +573,20 @@ class SlackInput(InputChannel):
 
         return slack_webhook
 
-    def _get_conversation_id(self, sender_id, channel_id, thread_id):
+    def _get_conversation_id(
+        self,
+        sender_id: Optional[Text],
+        channel_id: Optional[Text],
+        thread_id: Optional[Text],
+    ) -> Optional[Text]:
         conversation_id = sender_id
-        if self.conversation_granularity == "channel" and channel_id is not None:
+        if self.conversation_granularity == "channel" and sender_id and channel_id:
             conversation_id = sender_id + "_" + channel_id
         if (
             self.conversation_granularity == "thread"
-            and channel_id is not None
-            and thread_id is not None
+            and sender_id
+            and channel_id
+            and thread_id
         ):
             conversation_id = sender_id + "_" + channel_id + "_" + thread_id
         return conversation_id
