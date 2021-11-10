@@ -47,7 +47,6 @@ def transform_to_seconds(duration: str) -> float:
 
 
 def send_to_datadog(context):
-    print("send_to_datadog")
     # Initialize
     tags = {
         "dataset": os.environ["DATASET_NAME"],
@@ -67,10 +66,9 @@ def send_to_datadog(context):
         "type": os.environ["TYPE"],
         "branch": os.environ["BRANCH"],
     }
-    print(tags)
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
     options = {
-        "statsd_host": "127.0.0.1",  # 'localhost',
+        "statsd_host": "127.0.0.1",
         "statsd_port": 8125,
         "statsd_constant_tags": tags_list,
     }
@@ -82,7 +80,6 @@ def send_to_datadog(context):
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
         "total_run_time": os.environ["TOTAL_RUN_TIME"],
     }
-    print(metrics)
     for metric_name, metric_value in metrics.items():
         overall_seconds = transform_to_seconds(metric_value)
         statsd.gauge(f"{metric_name}.gauge", overall_seconds, tags=["environment:dev"])
