@@ -199,12 +199,6 @@ jobs:
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
-      - name: Run DataDog Agent
-        run: |
-          docker run -d --name dd_agent -p 8125:8125/udp -p 8126:8126 -v /var/run/docker.sock:/var/run/docker.sock:ro -v /proc/:/host/proc/:ro -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro -e DD_API_KEY=${{ secrets.DD_API_KEY }} -e DD_SITE="datadoghq.eu" -e DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e GITHUB_ACTIONS=true -e CI=true gcr.io/datadoghq/agent:7
-          docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
-          docker port dd_agent
-
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -331,10 +325,6 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
-      - name: Install ddtrace and datadog
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U ddtrace datadog
-
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
@@ -346,9 +336,6 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          DD_ENV: regression-tests # ${{ matrix.test }}
-          DD_SERVICE: rasa
-          DD_ARGS: --ddtrace
         run: |-
           poetry run rasa --version
 
@@ -360,23 +347,21 @@ jobs:
           fi
 
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
-            # poetry run ddtrace-run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
-            sleep 2
+            poetry run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            # poetry run ddtrace-run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
-            sleep 3
+            poetry run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
           elif [[ "${{ matrix.type }}" == "core" ]]; then
-            poetry run ddtrace-run rasa train core --quiet -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
+            poetry run rasa train core --quiet -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            poetry run ddtrace-run rasa test core -s ${DATASET_DIR}/${DATASET}/${TEST_DIR} --out ${{ github.workspace }}/results/${{ matrix.dataset }}/${CONFIG}
+            poetry run rasa test core -s ${DATASET_DIR}/${DATASET}/${TEST_DIR} --out ${{ github.workspace }}/results/${{ matrix.dataset }}/${CONFIG}
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
@@ -390,11 +375,6 @@ jobs:
         continue-on-error: true
         with:
           name: report.json
-
-      - name: Extract branch name
-        shell: bash
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
-        id: extract_branch
 
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -410,10 +390,6 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
-          BRANCH: ${{ steps.extract_branch.outputs.branch }}
-          DD_ENV: regression-tests
-          DD_SERVICE: rasa
-          DD_ARGS: --ddtrace
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
