@@ -46,25 +46,6 @@ parse_last_positional_argument_as_model_path() -> None
 
 Fixes the parsing of a potential positional model path argument.
 
-#### create\_output\_path
-
-```python
-create_output_path(output_path: Text = DEFAULT_MODELS_PATH, prefix: Text = "", fixed_name: Optional[Text] = None) -> Text
-```
-
-Creates an output path which includes the current timestamp.
-
-**Arguments**:
-
-- `output_path` - The path where the model should be stored.
-- `fixed_name` - Name of the model.
-- `prefix` - A prefix which should be included in the output path.
-  
-
-**Returns**:
-
-  The generated output path, e.g. &quot;20191201-103002.tar.gz&quot;.
-
 #### button\_to\_string
 
 ```python
