@@ -237,9 +237,6 @@ class MessageProcessor:
             )
 
             action_session_start = self._get_action(ACTION_SESSION_START_NAME)
-            # QUESTION - should this be removed as part of issue #9777?
-            # It's a comment, but I'm not sure if the TODO has actually been done?
-
             # TODO: Remove in 3.0.0 and describe migration to `session_start_metadata`
             # slot in migration guide.
             if isinstance(
