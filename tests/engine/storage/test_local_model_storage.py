@@ -1,15 +1,18 @@
+import uuid
 from datetime import datetime
 from pathlib import Path
 
 import freezegun
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 
 import rasa.shared.utils.io
 from rasa.engine.graph import SchemaNode, GraphSchema, GraphModelConfiguration
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.storage.resource import Resource
+from rasa.exceptions import UnsupportedModelError
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.autoconfig import TrainingType
 from tests.engine.graph_components_test_classes import PersistableTestComponent
@@ -134,6 +137,66 @@ def test_create_model_package(
 
     persisted_resources = load_model_storage_dir.glob("*")
     assert list(persisted_resources) == [Path(load_model_storage_dir, "resource1")]
+
+
+def test_read_unsupported_model(
+    monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory, domain: Domain,
+):
+    train_model_storage = LocalModelStorage(
+        tmp_path_factory.mktemp("train model storage")
+    )
+    graph_schema = GraphSchema(nodes={})
+
+    persisted_model_dir = tmp_path_factory.mktemp("persisted models")
+    archive_path = persisted_model_dir / "my-model.tar.gz"
+
+    # Create outdated model meta data
+    trained_at = datetime.utcnow()
+    model_configuration = GraphModelConfiguration(
+        graph_schema, graph_schema, TrainingType.BOTH, None, None, "nlu"
+    )
+    outdated_model_meta_data = ModelMetadata(
+        trained_at=trained_at,
+        rasa_open_source_version=rasa.__version__,  # overwrite later to avoid error
+        model_id=uuid.uuid4().hex,
+        domain=domain,
+        train_schema=model_configuration.train_schema,
+        predict_schema=model_configuration.predict_schema,
+        training_type=model_configuration.training_type,
+        project_fingerprint=rasa.model.project_fingerprint(),
+        language=model_configuration.language,
+        core_target=model_configuration.core_target,
+        nlu_target=model_configuration.nlu_target,
+    )
+    old_version = "0.0.1"
+    outdated_model_meta_data.rasa_open_source_version = old_version
+
+    # Package model - and inject the outdated model meta data
+    monkeypatch.setattr(
+        LocalModelStorage,
+        "_create_model_metadata",
+        lambda *args, **kwargs: outdated_model_meta_data,
+    )
+    with freezegun.freeze_time(trained_at):
+        train_model_storage.create_model_package(
+            model_archive_path=archive_path,
+            model_configuration=model_configuration,
+            domain=domain,
+        )
+
+    # Unpack and inspect packaged model
+    load_model_storage_dir = tmp_path_factory.mktemp("load model storage")
+
+    expected_message = (
+        f"The model version is trained using Rasa Open Source "
+        f"{old_version} and is not compatible with your current "
+        f"installation .*"
+    )
+    with pytest.raises(UnsupportedModelError, match=expected_message):
+        LocalModelStorage.metadata_from_archive(archive_path)
+
+    with pytest.raises(UnsupportedModelError, match=expected_message):
+        LocalModelStorage.from_model_archive(load_model_storage_dir, archive_path)
 
 
 def test_create_package_with_non_existing_parent(tmp_path: Path):

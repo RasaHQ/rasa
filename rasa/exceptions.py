@@ -3,6 +3,10 @@ from typing import Text
 from rasa.shared.exceptions import RasaException
 
 
+class UnsupportedModelError(RasaException):
+    """Raised when a model is too old to be loaded."""
+
+
 class ModelNotFound(RasaException):
     """Raised when a model is not found in the path provided by the user."""
 
