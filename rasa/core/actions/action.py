@@ -533,10 +533,8 @@ class ActionSessionStart(Action):
     session.
     """
 
-    # Optional arbitrary metadata that can be passed to the SessionStarted event.
-    metadata: Optional[Dict[Text, Any]] = None
-
     def name(self) -> Text:
+        """Returns action start name."""
         return ACTION_SESSION_START_NAME
 
     @staticmethod
