@@ -201,9 +201,9 @@ class MyComponent(GraphComponent):
 
 The snippet below illustrates how to write your graph component's data to the model
 storage.
-It is recommended to store `model_storage` and `resource` at initialization time and
-then use them at the end of your component's `train` method to handle the persistence
-of your graph component.
+To persist your graph component after training, the `train` method will need to access
+to the values of `model_storage` and `resource`. Therefore, you should store the value
+s of `model_storage` and `resource` at initialization time.
 
 Your graph component's train method must return the value of `resource` so that Rasa Open Source can cache
 the training results between trainings.
