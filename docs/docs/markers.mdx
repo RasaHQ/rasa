@@ -49,7 +49,7 @@ marker_dialogue_completion:
 
 To describe the events that we're interested in, we provide `conditions` and `operators`.
 
-Conditions are simple expressions that describe an event, and are used like to variables in a logical expression, for example `action: utter_greet`. Operators allow you to combine conditions or sub-marker definitions which include nested operators and conditions.
+Conditions are simple expressions that describe an event, and are used like variables in a logical expression, for example `action: utter_greet`. Operators allow you to combine conditions or sub-marker definitions which include nested operators and conditions.
 
 ### Conditions
 
@@ -117,10 +117,10 @@ You cannot yet reuse an existing marker name in the definition of another marker
 
 ## Running the Markers script
 
-Markers are extracted from the dialogues already stored in your [tracker store](https://rasa.com/docs/rasa/next/tracker-stores). Once you've created your Marker definitions in the Makers configuration file, you can extract them by running the follow command:
+Markers are extracted from the dialogues already stored in your [tracker store](https://rasa.com/docs/rasa/next/tracker-stores). Once you've created your Marker definitions in the Markers configuration file, you can extract them by running the following command:
 
 ```bash
-rasa evaluate markers markers.yaml extracted_markers.csv all
+rasa evaluate markers --config markers.yaml extracted_markers.csv all
 ```
 
 The argument `all` will cause the script to process all the trackers in your tracker store. To process a subset you can use a different tracker selection strategy, either `first_n` or `sample`. Refer to the CLI usage for details.
@@ -165,7 +165,7 @@ For each session and each marker, we are interested in the number of user turns 
 
 Thus we compute the following:
 
-1. **For each session and each marker** we compute "per-session statistics" which include the arithmetic mean, median, minimum, and maximum number of user turns preceding the event  at which the marker applied
+1. **For each session and each marker** we compute "per-session statistics" which include the arithmetic mean, median, minimum, and maximum number of user turns preceding the event at which the marker applied
 2. **For all sessions and for each marker** we compute
     1. overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the respective marker applied in any session
     2. the number of sessions and the percentage of sessions where each marker applied at least once
