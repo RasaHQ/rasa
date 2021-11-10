@@ -349,7 +349,7 @@ def test_get_conversation_id_sender_id():
         use_threads=True,
         conversation_granularity="sender",
     )
-    conversation_id = ch.get_conversation_id(
+    conversation_id = ch._get_conversation_id(
         "test_sender_id", "test_channel_id", "test_thread_id"
     )
     assert conversation_id == "test_sender_id"
@@ -363,10 +363,10 @@ def test_get_conversation_id_channel_id():
         use_threads=True,
         conversation_granularity="channel",
     )
-    conversation_id = ch.get_conversation_id("test_sender_id", "test_channel_id", None)
+    conversation_id = ch._get_conversation_id("test_sender_id", "test_channel_id", None)
     assert conversation_id == "test_sender_id_test_channel_id"
 
-    conversation_id = ch.get_conversation_id("test_sender_id", None, "test_thread_id")
+    conversation_id = ch._get_conversation_id("test_sender_id", None, "test_thread_id")
     assert conversation_id == "test_sender_id"
 
 
@@ -378,18 +378,18 @@ def test_get_conversation_id_thread_id():
         use_threads=True,
         conversation_granularity="thread",
     )
-    conversation_id = ch.get_conversation_id(
+    conversation_id = ch._get_conversation_id(
         "test_sender_id", "test_channel_id", "test_thread_id"
     )
     assert conversation_id == "test_sender_id_test_channel_id_test_thread_id"
 
-    conversation_id = ch.get_conversation_id("test_sender_id", None, "test_thread_id")
+    conversation_id = ch._get_conversation_id("test_sender_id", None, "test_thread_id")
     assert conversation_id == "test_sender_id"
 
-    conversation_id = ch.get_conversation_id("test_sender_id", "test_channel_id", None)
+    conversation_id = ch._get_conversation_id("test_sender_id", "test_channel_id", None)
     assert conversation_id == "test_sender_id"
 
-    conversation_id = ch.get_conversation_id("test_sender_id", None, None)
+    conversation_id = ch._get_conversation_id("test_sender_id", None, None)
     assert conversation_id == "test_sender_id"
 
 

@@ -513,7 +513,7 @@ class SlackInput(InputChannel):
                 metadata = self.get_metadata(request)
                 channel_id = metadata.get("out_channel")
                 thread_id = metadata.get("thread_id")
-                conversation_id = self.get_conversation_id(
+                conversation_id = self._get_conversation_id(
                     sender_id, channel_id, thread_id
                 )
 
@@ -553,7 +553,7 @@ class SlackInput(InputChannel):
                         metadata = self.get_metadata(request)
                         channel_id = metadata.get("out_channel")
                         thread_id = metadata.get("thread_id")
-                        conversation_id = self.get_conversation_id(
+                        conversation_id = self._get_conversation_id(
                             sender_id, channel_id, thread_id
                         )
                         return await self.process_message(
@@ -572,7 +572,7 @@ class SlackInput(InputChannel):
 
         return slack_webhook
 
-    def get_conversation_id(self, sender_id, channel_id, thread_id):
+    def _get_conversation_id(self, sender_id, channel_id, thread_id):
         conversation_id = sender_id
         if self.conversation_granularity == "channel" and channel_id is not None:
             conversation_id = sender_id + "_" + channel_id
