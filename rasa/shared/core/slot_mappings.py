@@ -168,10 +168,6 @@ class SlotMapping(Enum):
         return slot_fulfils_entity_mapping
 
 
-# QUESTION - should this be removed, the message updated,
-# or is this for when user on 3.0 uses slot auto-fill, so it should stay?
-
-
 def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     """Raises InvalidDomain exception if slot mappings are invalid."""
     rasa.shared.utils.io.raise_warning(
