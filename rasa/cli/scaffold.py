@@ -7,6 +7,7 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.shell import shell
 from rasa.cli.utils import create_output_path
+from rasa.cli.telemetry import inform_about_telemetry
 from rasa.shared.utils.cli import print_success, print_error_and_exit
 from rasa.shared.constants import (
     DOCS_BASE_URL,
@@ -236,3 +237,15 @@ def run(args: argparse.Namespace) -> None:
     telemetry.track_project_init(path)
 
     init_project(args, path)
+
+    print_telemetry_info(args)
+
+
+def print_telemetry_info(args: argparse.Namespace) -> None:
+    """Print telemetry information to user.
+
+    Args:
+        args: namespace to print
+    """
+    print("Just for you to know! 👇🏽")
+    inform_about_telemetry(args)
