@@ -557,7 +557,7 @@ class ActionSessionStart(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        _events: List[Event] = [SessionStarted(metadata=self.metadata)]
+        _events: List[Event] = [SessionStarted()]
 
         if domain.session_config.carry_over_slots:
             _events.extend(self._slot_set_events_from_tracker(tracker))
