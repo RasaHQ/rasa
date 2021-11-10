@@ -45,7 +45,7 @@ jobs:
         sudo chmod +x /usr/local/bin/gomplate
 
     - name: Find a comment with configuration
-      uses: tczekajlo/find-comment@master
+      uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
       id: fc_config
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -100,7 +100,7 @@ jobs:
         body: ${{ steps.fc_config.outputs.comment-body }}
 
     - name: Find a comment with configuration - update
-      uses: tczekajlo/find-comment@master
+      uses: tczekajlo/find-comment@16228d0f2100e06ea9bf8c0e7fe7287b7c6b531d
       id: fc_config_update
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -306,7 +306,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -525,7 +525,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@09236184f6c1ab47c0dc9c1001c7fe200cf2afb0 # v7
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -666,7 +666,7 @@ jobs:
           echo "::set-output name=result::$OUTPUT"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v1
+        uses: marocchino/sticky-pull-request-comment@6804b5ad49d19c10c9ae7cf5057352f7ff333f31 # v1.6.0
         if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -680,7 +680,7 @@ jobs:
 
       - name: Remove 'status:model-regression-tests' label
         continue-on-error: true
-        uses: buildsville/add-remove-label@v1
+        uses: buildsville/add-remove-label@6008d7bd99d3baeb7c04033584e68f8ec80b198b # v1.0
         with:
           token: ${{secrets.GITHUB_TOKEN}}
           label: 'status:model-regression-tests'
@@ -688,7 +688,7 @@ jobs:
 
       - name: Remove 'runner:gpu' label
         continue-on-error: true
-        uses: buildsville/add-remove-label@v1
+        uses: buildsville/add-remove-label@6008d7bd99d3baeb7c04033584e68f8ec80b198b # v1.0
         with:
           token: ${{secrets.GITHUB_TOKEN}}
           label: 'runner:gpu'
@@ -742,7 +742,7 @@ jobs:
           echo "::set-output name=result::$OUTPUT"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v1
+        uses: marocchino/sticky-pull-request-comment@6804b5ad49d19c10c9ae7cf5057352f7ff333f31 # v1.6.0
         if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -756,7 +756,7 @@ jobs:
 
       - name: Remove 'status:model-regression-tests' label
         continue-on-error: true
-        uses: buildsville/add-remove-label@v1
+        uses: buildsville/add-remove-label@6008d7bd99d3baeb7c04033584e68f8ec80b198b # v1.0
         with:
           token: ${{secrets.GITHUB_TOKEN}}
           label: 'status:model-regression-tests'
@@ -764,7 +764,7 @@ jobs:
 
       - name: Remove 'runner:gpu' label
         continue-on-error: true
-        uses: buildsville/add-remove-label@v1
+        uses: buildsville/add-remove-label@6008d7bd99d3baeb7c04033584e68f8ec80b198b # v1.0
         with:
           token: ${{secrets.GITHUB_TOKEN}}
           label: 'runner:gpu'
