@@ -12,15 +12,22 @@ This feature is currently experimental and might change or be removed in the fut
 
 :::
 
-Markers allow you to describe points in a dialogue that you are interested in identifying.
+Markers are conditions that allow you to describe and mark points of interest in dialogues. In Rasa, a dialogue or a user interaction is represented as a sequence of events,
+which include bot actions that were executed, intents that were detected, and slots that were set.
+Markers allow you to describe conditions over such events. When these conditions are met, the dialogues are `marked` for further analysis or inspection.
 
-In Rasa, a dialogue is represented as a sequence of events, which include bot actions that were executed (`ActionExecuted`), intents that were detected (`UserUttered`), and slots that were set (`SlotSet`). A point of interest in a dialogue can thus be expressed as a logical expression that can be evaluated against the sequence of dialogue events. When this logical expression is met, we "mark" that point in the dialogue for further analysis or inspection.
+There are several applications for Markers. For example, they can be used to define your bot's Key Performance Indicators (KPIs),
+such as dialogue completion or task success. Take [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/)
+for example, which helps users offset their carbon emissions from flying. For Carbon Bot, you might define dialogue completion as "all mandatory slots have been filled",
+and task success as "all mandatory slots have been filled and a carbon estimate has been successfully computed".
+Marking when these important events occur allows you to quantify Carbon Bot's success rate.
 
-There are several applications for Markers. For example, they can be used to define your bot's Key Performance Indicators (KPIs), such as dialogue completion or task success. For [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/) (which helps users offset their carbon emissions from flying) dialogue completion can be defined as "all mandatory slots have been filled", while task success can be defined as "all mandatory slots have been filled and a carbon estimate has been successfully computed". Marking these events allows us to evaluate Carbon Bot's performance by quantifying how often it succeeds and how often it fails.
+Markers also allow you to diagnose your dialogues by surfacing important events for further inspection.
+For example, you might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots,
+but fails to set the `travel_flight_class` slot. You can define a marker to quantify how often this behavior occurs
+and surface relevant dialogues for review as part of [Conversation Driven Development (CDD)](https://rasa.com/blog/conversation-driven-development-a-better-approach-to-building-ai-assistants/).
 
-Markers also allow you to diagnose your dialogues by surfacing important events for further inspection. For example, we might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots, but not the `travel_flight_class`. We can define a marker to quantify how often this scenario occurs and surface relevant dialogues for review as part of [Conversation Driven Development (CDD)](https://rasa.com/blog/conversation-driven-development-a-better-approach-to-building-ai-assistants/).
-
-Markers are defined using a `YAML` syntax. For example, here are markers that define dialogue completion and task success for Carbon Bot:
+Marker definitions are written in `YAML`. For example, here are markers that define dialogue completion and task success for Carbon Bot:
 
 ```yaml
 marker_dialogue_completion:
@@ -39,7 +46,7 @@ marker_task_success:
 And here is a marker for surfacing dialogues where all mandatory slots are set except `travel_flight_class`:
 
 ```yaml
-marker_dialogue_incomplete:
+marker_dialogue_mandatory_slot_failure:
     and:
         - slot_was_set: travel_departure
         - slot_was_set: travel_destination
@@ -47,11 +54,13 @@ marker_dialogue_incomplete:
             slot_was_set: travel_flight_class
 ```
 
+The next sections explain how write marker definitions, how to apply them to your existing dialogues, and what the output format looks like.
+
 ## Defining Markers
 
 Markers are defined in a marker configuration file written in `YAML`.
-Each marker should have a *unique identifier*, and consists of at least one *event condition*.
-Markers can also contain *operators*, which allow you to express more nuanced behavior or
+Each marker should have a **unique identifier**, and consists of at least one **event condition**.
+Markers can also contain **operators**, which allow you to express more nuanced behavior or
 combine event conditions.
 
 Consider the following marker definition:
@@ -61,7 +70,7 @@ marker_mood_expressed:
         - intent: mood_unhappy
         - intent: mood_great
 ```
-The unique marker identifier is `marker_mood_expressed`. The marker definition contains one operator, `or`,
+The unique marker identifier is `marker_mood_expressed`. This marker definition contains one operator, `or`,
 and two event conditions, `intent: mood_unhappy` and `intent: mood_great`.
 
 ### Event Conditions
@@ -91,7 +100,7 @@ The following operators are supported:
 
 ### Marker Configuration
 
-Here is an example of a marker configuration file containing several marker definitions. The example is created for mood bot, with a new slot `name` (to illustrate the use of the label `slot_was_set`):
+Here is an example of a marker configuration file containing several marker definitions. The example is created for mood bot, with a new slot `name` to illustrate the use of the label `slot_was_set`:
 
 ```yaml
 marker_name_provided:
@@ -122,15 +131,15 @@ marker_mood_expressed_and_name_not_provided:
 ```
 Note the following:
 
-- Each marker has a unique identifier, such as `marker_name_provided`.
+- Each marker has a unique identifier, or name, such as `marker_name_provided`.
 
 - A marker definition can contain a single condition, as shown in `marker_name_provided`.
 
-- Marker definitions can contain a single operator with nested conditions, as shown in `marker_mood_expressed`, `marker_cheer_up_failed`, `marker_bot_not_challenged`, and `marker_cheer_up_attempt`.
+- A marker definition can contain a single operator with nested conditions, as shown in `marker_mood_expressed`, `marker_cheer_up_failed`, `marker_bot_not_challenged`, and `marker_cheer_up_attempt`.
 
 - A marker definition can contain nested operators, as shown in `marker_mood_expressed_and_name_not_provided`.
 
-- The values assigned to the event conditions should exist in your bot's `domain.yml` file. For example, in `marker_mood_expressed`, the intents `mood_unhappy` and `mood_unhappy` must exist the mood bot's `domain.yml` file.
+- The values assigned to event conditions must be valid according to your bot's `domain.yml` file. For example, in `marker_mood_expressed`, the intents `mood_unhappy` and `mood_unhappy` are both intents listed in the mood bot's `domain.yml` file.
 
 :::note
 You cannot yet reuse an existing marker name in the definition of another marker.
@@ -138,33 +147,36 @@ You cannot yet reuse an existing marker name in the definition of another marker
 
 ## Extracting Markers
 
-Markers are extracted from dialogues already stored a tracker store. To learn about how to store conversations with your bot in a tracker store, read the [Tracker Store](https://rasa.com/docs/rasa/next/tracker-stores) page.
+Markers are extracted from dialogues already stored a tracker store. To learn how to store interactions with your bot in a tracker store, read the [Tracker Store](https://rasa.com/docs/rasa/next/tracker-stores) page.
 
 Once you've created your marker definitions in the marker configuration file, and have stored some dialogues in your tracker store, you can apply your markers to your trackers by running the following command:
 
 ```bash
-rasa evaluate markers all --config markers.yml extracted_markers.csv
+rasa evaluate markers all extracted_markers.csv
 ```
 
-This script will process the marker definitions provided in the `marker.yml` file, and will output the extracted markers in `extracted_markers.csv`.
+This script will process the marker definitions provided in the `marker.yml` file. To specify a different marker configuration file, use the optional `--config` argument.
 
-By default, the script will validate the marker definitions in `marker.yml` against your bot's `domain.yml` file. To specify a different domain filename, use the optional `--domain` argument.
+By default, the script will validate the marker definitions against your bot's `domain.yml` file. To specify a different domain file, use the optional `--domain` argument.
 
-By default, the script will retrieve the tracker store specified in your bot's `endpoint.yml` file. However, you can specify a different endpoint filename using the optional `--endpoint` argument.
+By default, the script will retrieve the tracker store specified in your bot's `endpoint.yml` file. However, you can specify a different endpoint file using the optional `--endpoint` argument.
 
-The script provides three tracker loading strategies: `all`, `sample_n`, and `first_n`. The option `all` will process all the trackers in your tracker store. The other two strategies process a subset of `N` trackers from all trackers, either sequentially (by using `first_n`) or by sampling uniformly without replacement (by using `sample_n`). The sampling strategy also allows you to set the random seed.
-For more information on usage of each strategy, type (replacing `<strategy>` with one of `all`, `first_n`, and `sample_n`):
+The script provides three tracker loading strategies: `all`, `sample_n`, and `first_n`. The option `all` will process all the trackers in your tracker store. The other two strategies process a subset of `N` trackers from all trackers, either sequentially (by using `first_n`), or by sampling uniformly without replacement (by using `sample_n`). The sampling strategy also allows you to set the random seed.
+For more information on the usage of each strategy, type the following:
 ```bash
 rasa evaluate markers <strategy> --help
 ```
+replacing `<strategy>` with one of: `all`, `first_n`, and `sample_n`.
 
 Each tracker in the tracker store can contain multiple sessions. The script will process each session separately, indexing them by `session_idx`.
 
-The script above will output the extracted markers in the `extracted_markers.csv`. It will also compute overall summary statistics and per-session summary statistics and output them in the files `stats-overall.csv` and `stats-per-session.csv`. You can change prefix `stats` in the file names using the optional argument `--stats-file-prefix `. For example, typing:
+The script above will output the extracted markers in the specified output file: `extracted_markers.csv`. It will also compute overall summary statistics and per-session summary statistics and output them in the files `stats-overall.csv` and `stats-per-session.csv`.
+You can change prefix `stats` in the file names using the optional argument `--stats-file-prefix `.
+For example, the following script will produce the files: `marker-statistics-overall.csv` and `marker-statistics-per-session.csv`:
 ```bash
-rasa evaluate markers all --config markers.yml --stats-file-prefix "marker-statistics" extracted_markers.csv
+rasa evaluate markers all --stats-file-prefix "marker-statistics" extracted_markers.csv
 ```
-will produce the files: `marker-statistics-overall.csv` and `marker-statistics-per-session.csv`.
+
 
 The next two sections give more detail about the extracted markers and computed statistics.
 
@@ -172,21 +184,19 @@ The next two sections give more detail about the extracted markers and computed 
 ### Extracted Markers
 
 For each marker defined in the marker configuration file, the following information is extracted:
-1. The number of user turns (i.e., the number of `UserUttered` events) preceding the event at which a marker applied.
+1. The number of user turns preceding the event at which a marker applied. Each `UserUttered` event is treated as a user turn.
 2. The index of the event at which a marker applied.
 
 For the `at_least_once` marker, the information above will only be extracted for the first occurrence.
 
 The extracted markers will be output to the `.csv` file you specify in the script, for example, `extracted_markers.csv` (in the script above).
-The extracted markers file contains the following columns:
+The extracted markers output file contains the following columns:
 
 - `sender_id`: taken from the trackers.
 - `session_idx`: an integer indexing sessions, starting with `0`.
 - `marker`: the unique identifier you specified for the marker.
 - `event_idx`: an integer indexing events, starting with `0`.
 - `num_preceding_user_turns`: an integer specifying the number of user turns which preceded the event at which the marker applied.
-
-Because events contain many system actions, the `num_preceding_user_turns` gives a better indication of how long the dialogue took to reach a point of interest, focussing on the perspective of your end user.
 
 Here is a sample of the extracted markers output file:
 
@@ -205,12 +215,12 @@ The script computes the following statistics:
 
 1. **For each session and each marker**: "per-session statistics" which include the arithmetic mean, median, minimum, and maximum number of user turns preceding the event at which the marker applied.
 2. **For all sessions and for each marker**:
-    1. overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the marker applied in any session.
-    2. the number of sessions and the percentage of sessions where each marker applied at least once.
+    1. Overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the marker applied in any session.
+    2. The number of sessions and the percentage of sessions where each marker applied at least once.
 
 The results are stored in tabular format in `stats-overall.csv` and `stats-per-session.csv`.
 
-Both files contian the following columns:
+Both files contain the following columns:
 
 - `sender_id`: taken from the trackers.
 - `session_idx`: an integer indexing sessions, starting with `0`.
@@ -239,7 +249,7 @@ sender_id,session_idx,marker,statistic,value
 79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,min(number of preceding user turns),nan
 :
 ```
-Nore that some statistics will be `nan`, for example if a marker never occurred, then the number of preceding user turns will be `nan`.
+Note that some statistics will be `nan`, for example if a marker never occurred, then the number of preceding user turns will be `nan`.
 
 Here is a sample `stats-overall.csv` output.
 
