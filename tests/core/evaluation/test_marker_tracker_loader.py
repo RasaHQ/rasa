@@ -4,7 +4,7 @@ from rasa.shared.core.events import UserUttered, SessionStarted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import RasaException
-from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
+from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader, STRATEGY_ALL
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore, SQLTrackerStore
 
 
@@ -38,7 +38,7 @@ def test_load_sessions(tmp_path):
     )
     store.save(tracker)
 
-    loader = MarkerTrackerLoader(store, "all")
+    loader = MarkerTrackerLoader(store, STRATEGY_ALL)
     result = list(loader.load())
     assert len(result) == 1  # contains only one tracker
     assert len(result[0].events) == len(tracker.events)
