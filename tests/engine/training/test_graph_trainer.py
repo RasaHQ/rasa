@@ -8,7 +8,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 import pytest
 
-from rasa.engine.caching import TrainingCache
+from rasa.engine.caching import LocalTrainingCache, TrainingCache
 from rasa.engine.exceptions import GraphComponentException
 from rasa.engine.graph import (
     GraphComponent,
@@ -492,6 +492,136 @@ def test_graph_trainer_train_logging_with_cached_components(
             "Finished training component 'SubtractByX'.",
             "Restored component 'CacheableComponent' from cache.",
         }
+
+
+def test_resources_fingerprints_are_unique_when_cached(
+    tmp_path: Path,
+    temp_cache: LocalTrainingCache,
+    train_with_schema: Callable,
+    caplog: LogCaptureFixture,
+):
+    train_schema = GraphSchema(
+        {
+            "train": SchemaNode(
+                needs={},
+                uses=PersistableTestComponent,
+                fn="train",
+                constructor_name="create",
+                config={"test_value": "4"},
+                is_target=True,
+            ),
+            "process": SchemaNode(
+                needs={"resource": "train"},
+                uses=PersistableTestComponent,
+                fn="run_inference",
+                constructor_name="load",
+                config={},
+            ),
+            "assert_node": SchemaNode(
+                needs={"i": "process"},
+                uses=AssertComponent,
+                fn="run_assert",
+                constructor_name="create",
+                config={"value_to_assert": "4"},
+                is_target=True,
+            ),
+        }
+    )
+
+    # Train to cache
+    train_with_schema(train_schema, temp_cache)
+
+    train_schema.nodes["train"].config["test_value"] = "5"
+    train_schema.nodes["assert_node"].config["value_to_assert"] = "5"
+
+    train_with_schema(train_schema, temp_cache)
+
+    # import sqlalchemy as sa
+    # with temp_cache._sessionmaker.begin() as session:
+    #     query_for_most_recently_used_entry = (
+    #         sa.select(temp_cache.CacheEntry)
+    #         .where(
+    #             temp_cache.CacheEntry.result_type
+    #             == "rasa.engine.storage.resource.Resource"
+    #         )
+    #         .order_by(temp_cache.CacheEntry.last_used.desc())
+    #     )
+    #     entry = session.execute(query_for_most_recently_used_entry).scalars().first()
+    #     entry.output_fingerprint_key = "blurp"
+
+    # delete_query = sa.delete(temp_cache.CacheEntry).where(
+    #     temp_cache.CacheEntry.fingerprint_key == entry.fingerprint_key
+    # )
+    # session.execute(delete_query)
+
+    # This breaks when Resources use the node name as a fingerprint.
+    # This is because the resource for the first run is retrieved from the cache which
+    # returns 4 whereas it should be the second resource which returns 5, and the schema
+    # assert_node expects 5 now.
+    train_with_schema(train_schema, temp_cache)
+
+    # Train a second time
+    # with caplog.at_level(logging.INFO, logger="rasa.engine.training.hooks"):
+    #     train_with_schema(train_schema, temp_cache)
+    #
+    # assert set(caplog.messages) == {
+    #     "Starting to train component 'SubtractByX'.",
+    #     "Finished training component 'SubtractByX'.",
+    #     "Restored component 'CacheableComponent' from cache.",
+    # }
+
+
+def test_resources_fingerprints_remain_after_being_cached(
+    tmp_path: Path,
+    temp_cache: LocalTrainingCache,
+    train_with_schema: Callable,
+    caplog: LogCaptureFixture,
+):
+    train_schema = GraphSchema(
+        {
+            "train": SchemaNode(
+                needs={},
+                uses=PersistableTestComponent,
+                fn="train",
+                constructor_name="create",
+                config={"test_value": "4"},
+                is_target=True,
+            ),
+            "process": SchemaNode(
+                needs={"resource": "train"},
+                uses=PersistableTestComponent,
+                fn="run_inference",
+                constructor_name="load",
+                config={},
+                is_target=True,
+            ),
+        }
+    )
+
+    # Train to cache
+    train_with_schema(train_schema, temp_cache)
+
+    import sqlalchemy as sa
+
+    with temp_cache._sessionmaker.begin() as session:
+        query_for_most_recently_used_entry = sa.select(temp_cache.CacheEntry).order_by(
+            temp_cache.CacheEntry.last_used.desc()
+        )
+        entry = session.execute(query_for_most_recently_used_entry).scalars().first()
+        fingerprint_key = entry.fingerprint_key
+        delete_query = sa.delete(temp_cache.CacheEntry).where(
+            temp_cache.CacheEntry.fingerprint_key == fingerprint_key
+        )
+        session.execute(delete_query)
+
+    train_with_schema(train_schema, temp_cache)
+
+    with temp_cache._sessionmaker.begin() as session:
+        query_for_most_recently_used_entry = sa.select(temp_cache.CacheEntry).order_by(
+            temp_cache.CacheEntry.last_used.desc()
+        )
+        entry = session.execute(query_for_most_recently_used_entry).scalars().first()
+        assert entry.fingerprint_key == fingerprint_key
 
 
 @pytest.mark.parametrize(

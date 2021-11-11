@@ -124,7 +124,11 @@ class Cacheable(Protocol):
 
     @classmethod
     def from_cache(
-        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+        cls,
+        node_name: Text,
+        directory: Path,
+        model_storage: ModelStorage,
+        output_fingerprint: Text,
     ) -> Cacheable:
         """Loads `Cacheable` from cache.
 
@@ -407,7 +411,11 @@ class LocalTrainingCache(TrainingCache):
             return None
 
         return self._load_from_cache(
-            result_location, result_type, node_name, model_storage
+            result_location,
+            result_type,
+            node_name,
+            model_storage,
+            output_fingerprint_key,
         )
 
     def _get_cached_result(
@@ -434,6 +442,7 @@ class LocalTrainingCache(TrainingCache):
         result_type: Text,
         node_name: Text,
         model_storage: ModelStorage,
+        output_fingerprint_key,
     ) -> Optional[Cacheable]:
         try:
             module = rasa.shared.utils.common.class_from_module_path(result_type)
@@ -446,7 +455,9 @@ class LocalTrainingCache(TrainingCache):
                 )
                 return None
 
-            return module.from_cache(node_name, path_to_cached, model_storage)
+            return module.from_cache(
+                node_name, path_to_cached, model_storage, output_fingerprint_key
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to restore cached output of type '{result_type}' from "

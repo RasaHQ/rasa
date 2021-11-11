@@ -3,7 +3,7 @@ import logging
 import typing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Text
+from typing import Text, Optional
 
 import rasa.utils.common
 import rasa.utils.io
@@ -19,10 +19,15 @@ class Resource:
     """Represents a persisted graph component in the graph."""
 
     name: Text
+    output_fingerprint: Optional[Text] = None
 
     @classmethod
     def from_cache(
-        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+        cls,
+        node_name: Text,
+        directory: Path,
+        model_storage: ModelStorage,
+        output_fingerprint: Text,
     ) -> Resource:
         """Loads a `Resource` from the cache.
 
@@ -39,7 +44,7 @@ class Resource:
         """
         logger.debug(f"Loading resource '{node_name}' from cache.")
 
-        resource = Resource(node_name)
+        resource = Resource(node_name, output_fingerprint=output_fingerprint)
         if not any(directory.glob("*")):
             logger.debug(f"Cached resource for '{node_name}' was empty.")
             return resource
@@ -86,4 +91,4 @@ class Resource:
         Returns:
             Fingerprint for `Resource`.
         """
-        return self.name
+        return self.output_fingerprint if self.output_fingerprint else ""

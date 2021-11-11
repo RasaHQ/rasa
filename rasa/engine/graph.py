@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple
+import uuid
 
 from rasa.engine.exceptions import (
     GraphComponentException,
@@ -413,7 +414,8 @@ class GraphNode:
             return self._existing_resource
 
         # The component gets a chance to persist itself
-        return Resource(self._node_name)
+        return Resource(self._node_name, output_fingerprint=uuid.uuid4().hex)
+        # return Resource(self._node_name)
 
     def __call__(
         self, *inputs_from_previous_nodes: Tuple[Text, Any]
