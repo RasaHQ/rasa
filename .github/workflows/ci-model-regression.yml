@@ -426,7 +426,7 @@ jobs:
       ACCELERATOR_TYPE: "CPU"
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1
+      max-parallel: 3
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
     if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
