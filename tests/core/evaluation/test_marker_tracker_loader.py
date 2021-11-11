@@ -1,10 +1,11 @@
-from rasa.shared.core.events import UserUttered
+import pytest
+import os
+from rasa.shared.core.events import UserUttered, SessionStarted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import RasaException
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
-from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
-import pytest
+from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore, SQLTrackerStore
 
 
 @pytest.fixture
@@ -18,6 +19,38 @@ def marker_trackerstore() -> TrackerStore:
         store.save(tracker)
 
     return store
+
+
+@pytest.fixture
+def multi_session_tracker() -> [TrackerStore, str]:
+    """Sets up a TrackerStore with 1 tracker with 2 sessions."""
+    temp_db = "temp.db"
+    if os.path.isfile(temp_db):
+        os.remove(temp_db)
+    domain = Domain.empty()
+    store = SQLTrackerStore(domain, db=temp_db)
+    tracker = DialogueStateTracker("test123", None)
+    tracker.update_with_events(
+        [
+            UserUttered("0"),
+            UserUttered("1"),
+            SessionStarted(),
+            UserUttered("2"),
+            UserUttered("3"),
+        ],
+        domain,
+    )
+    store.save(tracker)
+    return store, temp_db
+
+
+def test_load_sessions(multi_session_tracker):
+    """Tests loading a tracker with multiple sessions."""
+    loader = MarkerTrackerLoader(multi_session_tracker[0], "all")
+    result = list(loader.load())
+    assert len(result) == 1
+    assert len(result[0].events) == 5
+    os.remove(multi_session_tracker[1])
 
 
 def test_load_sample(marker_trackerstore: TrackerStore):
