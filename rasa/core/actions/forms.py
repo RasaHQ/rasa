@@ -363,17 +363,21 @@ class FormAction(LoopAction):
         )
         slot_values = {}
 
+        required_slots = set(self.required_slots(domain))
+
+        # add dynamic slots requested by dynamic forms
+        if self.get_slot_to_fill(tracker):
+            required_slots.add(self.get_slot_to_fill(tracker))
+
         for event in events_since_last_user_uttered:
             if not tracker.active_loop:
                 # pre-filled slots were already validated at form activation
                 break
 
-            if event.key in self.required_slots(
-                domain
-            ) or event.key == self.get_slot_to_fill(tracker):
-                slot_values = self._update_slot_values(
-                    event, tracker, domain, slot_values
-                )
+            if event.key not in required_slots:
+                continue
+
+            slot_values = self._update_slot_values(event, tracker, domain, slot_values)
 
         return slot_values
 
