@@ -18,99 +18,90 @@
 
 <hr />
 
-💡 **Rasa Open Source 3.0 is coming up!** 💡
+💡 **Rasa 오픈 소스 3.0이 출시됩니다!** 💡
 
-[2.8](https://github.com/RasaHQ/rasa/milestone/39) will be the last minor in the 2.x series, as we need to pause releasing minors while we work on architectural changes in 3.0. You can still contribute new features and improvements which we plan to release together with 3.0. Read more
-about [our contributor guidelines](#how-to-contribute).
 
-We plan to ship alpha releases and release candidates over the next few months in order to get early feedback. Stay tuned!
+3.0의 아키텍처 변경 작업을 수행하는 동안 마이너 릴리즈를 잠시 중단해야 하기 때문에 [2.8](https://github.com/RasaHQ/rasa/milestone/39)은 2.x 시리즈의 마지막 마이너 버전이 될 것입니다. 당신은 3.0과 함께 출시할 예정인 새로운 기능과 개선 사항에 계속 기여할 수 있습니다. [컨트리뷰터 가이드라인](#how-to-contribute)에 대해서 자세히 알아보세요.
 
-3.0의 아키텍처 변경 작업을 수행하는 동안 마이너 릴리즈를 잠시 중단해야 하기 때문에 2.8은 2.x 시리즈의 마지막 마이너 버전이 될 것입니다. 당신은 3.0과 함께 출시할 예정인 새로운 기능과 개선 사항에 계속 기여할 수 있습니다. 우리의 컨트리뷰터 가이드라인에 대해서 자세히 알아보세요.
+빠른 피드백을 받기 위해 앞으로 몇 달 동안 알파 릴리즈와 릴리즈 후보를 출시할 계획입니다. 계속 지켜봐 주세요!
 <hr />
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
+Rasa는 텍스트 및 음성 기반 대화를 자동화하는 오픈소스 머신러닝 프레임워크입니다. Rasa를 사용하면 다음과 같은 상황별 기능을 구축할 수 있습니다:<br/><br/>
+- 페이스북 메신저(Facebook Messenger)<br />
+- 슬랙(Slack)<br />
+- 구글 행아웃(Google Hangouts)<br />
+- 웹엑스 팀즈 (Webex Teams)<br />
+- 마이크로소프트 봇 프레임워크(Microsoft Bot Framework)<br />
+- 로켓챗(Rocket.chat)<br />
+- 매터모스트(Mattermost)<br />
+- 텔레그램(Telegram)<br />
+- 트윌리오(Twilio)<br />
+- 나만의 맞춤 대화 채널<br /><br />
 
-Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
-- Facebook Messenger
-- Slack
-- Google Hangouts
-- Webex Teams
-- Microsoft Bot Framework
-- Rocket.Chat
-- Mattermost
-- Telegram
-- Twilio
-- Your own custom conversational channels
 
-or voice assistants as:
-- Alexa Skills
-- Google Home Actions
+또는 다음과 같은 음성 비서를 구축할 수 있습니다:
+- 알렉사 스킬(Alexa Skills)
+- 구글 홈 액션(Google Home Actions)
 
-Rasa helps you build contextual assistants capable of having layered conversations with
-lots of back-and-forth. In order for a human to have a meaningful exchange with a contextual
-assistant, the assistant needs to be able to use context to build on things that were previously
-discussed – Rasa enables you to build assistants that can do this in a scalable way.
+Rasa는 많은 대화를 주고받을 수 있는 상황별 어시스턴트를 구축하는 데 도움이 됩니다.사람이 상황에 따라 비서와 의미 있는 교환을 하려면 비서가 상황을 이용하여 이전에 논의된 내용을 구축할 수 있어야 합니다. Rasa를 사용하면 확장 가능한 방식으로 이를 수행할 수 있는 비서를 구축할 수 있습니다.
 
-There's a lot more background information in this
-[blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
+이 [블로그 게시물](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a)에는 더 많은 배경 정보를 확인할 수 있습니다. 
+
 
 ---
-- **What does Rasa do? 🤔**
-  [Check out our Website](https://rasa.com/)
+- **Rasa는 무엇을 하나요? 🤔**
+  [우리 웹사이트를 확인하세요](https://rasa.com/)
 
-- **I'm new to Rasa 😄**
-  [Get Started with Rasa](https://rasa.com/docs/getting-started/)
+- **나는 Rasa를 처음 사용합니다 😄**
+  [Rasa 시작하기](https://rasa.com/docs/getting-started/)
 
-- **I'd like to read the detailed docs 🤓**
-  [Read The Docs](https://rasa.com/docs/)
+- **자세한 문서를 읽어보고 싶습니다 🤓**
+  [문서 읽어보기](https://rasa.com/docs/)
 
-- **I'm ready to install Rasa 🚀**
-  [Installation](https://rasa.com/docs/rasa/user-guide/installation/)
+- **Rasa를 설치할 준비가 되었습니다 🚀**
+  [설치](https://rasa.com/docs/rasa/user-guide/installation/)
 
-- **I want to learn how to use Rasa 🚀**
-  [Tutorial](https://rasa.com/docs/rasa/user-guide/rasa-tutorial/)
+- **Rasa 사용법을 배우고 싶어요 🚀**
+  [튜토리얼](https://rasa.com/docs/rasa/user-guide/rasa-tutorial/)
 
-- **I have a question ❓**
-  [Rasa Community Forum](https://forum.rasa.com/)
+- **질문이 있어요 ❓**
+  [Rasa 커뮤니티 포럼](https://forum.rasa.com/)
 
-- **I would like to contribute 🤗**
-  [How to Contribute](#how-to-contribute)
+- **기여하고 싶어요 🤗**
+  [기여 방법](#how-to-contribute)
 
 ---
-## Where to get help
+## 도움을 받을 수 있는 곳
 
-There is extensive documentation in the [Rasa Docs](https://rasa.com/docs/rasa).
-Make sure to select the correct version so you are looking at
-the docs for the version you installed.
+[Rasa Docs](https://rasa.com/docs/rasa).에는 광범위한 문서들이 있습니다. 설치한 버전에 대한 문서를 볼 수 있도록 올바른 버전을 선택했는지 확인하세요.
 
-Please use [Rasa Community Forum](https://forum.rasa.com) for quick answers to
-questions.
+질문에 대한 빠른 답변은 [Rasa 커뮤니티 포럼](https://forum.rasa.com)을 이용해주세요.
 
-### README Contents:
-- [How to contribute](#how-to-contribute)
-- [Development Internals](#development-internals)
-- [Releases](#releases)
-- [License](#license)
+### README 내용:
+- [기여하는 방법](#how-to-contribute)
+- [개발 내부 내용](#development-internals)
+- [출시](#releases)
+- [라이센스](#license)
 
-### How to contribute
-We are very happy to receive and merge your contributions into this repository!
+### how-to-contribute
+우리는 귀하의 기여를 이 레포지토리에 merge할 수 있게 되어 매우 기쁩니다!
 
-To contribute via pull request, follow these steps:
+pull 요청을 통해 기여하려면 다음 단계를 따르세요:
 
-1. Create an issue describing the feature you want to work on (or
-   have a look at the [contributor board](https://github.com/orgs/RasaHQ/projects/23))
-2. Write your code, tests and documentation, and format them with ``black``
-3. Create a pull request describing your changes
 
-For more detailed instructions on how to contribute code, check out these [code contributor guidelines](CONTRIBUTING.md).
+1. 작업하려는 기능을 설명하는 issue를 만듭니다 (또는
+    [컨트리뷰터 보드](https://github.com/orgs/RasaHQ/projects/23)을 참조하세요.)
+2. 코드, 테스트 및 문서를 작성하고 ``black``으로 형식을 지정합니다
+3. 변경 사항을 설명하는 pull request를 생성합니다
 
-You can find more information about how to contribute to Rasa (in lots of
-different ways!) [on our website.](http://rasa.com/community/contribute).
+코드를 기여하는 방법에 대한 자세한 지침은 [코드 컨트리뷰터 가이드라인](CONTRIBUTING.md)을 확인하세요.
 
-Your pull request will be reviewed by a maintainer, who will get
-back to you about any necessary changes or questions. You will
-also be asked to sign a
-[Contributor License Agreement](https://cla-assistant.io/RasaHQ/rasa).
+[저희 웹사이트](http://rasa.com/community/contribute)에서 Rasa에 기여하는 방법에 대한 자세한 정보를 찾을 수 있습니다. (
+다른 많은 방법들도 가능합니다!) 
+
+귀하의 풀 리퀘스트에 대한 검토는 유지 보수 담당자가 진행하며, 담당자가 필요한 변경 사항이나 질문에 대해 회신해 드릴 것입니다. 
+또한 [컨트리뷰터 라이센스 계약](https://cla-assistant.io/RasaHQ/rasa)에 귀하의 서명을 요청할 것입니다.
 
 
 ## Development Internals
