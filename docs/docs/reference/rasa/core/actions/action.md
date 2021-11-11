@@ -400,6 +400,14 @@ Applies a conversation session start.
 Takes all `SlotSet` events from the previous session and applies them to the new
 session.
 
+#### name
+
+```python
+ | name() -> Text
+```
+
+Returns action start name.
+
 #### run
 
 ```python
