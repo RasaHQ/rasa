@@ -21,12 +21,10 @@ def marker_trackerstore() -> TrackerStore:
     return store
 
 
-@pytest.fixture
-def multi_session_tracker() -> TrackerStore:
-    """Sets up a TrackerStore with 1 tracker with 2 sessions."""
-    temp_db = "temp.db"
+def test_load_sessions(tmp_path):
+    """Tests loading a tracker with multiple sessions."""
     domain = Domain.empty()
-    store = SQLTrackerStore(domain, db=temp_db)
+    store = SQLTrackerStore(domain, db=os.path.join(tmp_path, "temp.db"))
     tracker = DialogueStateTracker("test123", None)
     tracker.update_with_events(
         [
@@ -39,16 +37,11 @@ def multi_session_tracker() -> TrackerStore:
         domain,
     )
     store.save(tracker)
-    yield store
-    os.remove(temp_db)
 
-
-def test_load_sessions(multi_session_tracker):
-    """Tests loading a tracker with multiple sessions."""
-    loader = MarkerTrackerLoader(multi_session_tracker, "all")
+    loader = MarkerTrackerLoader(store, "all")
     result = list(loader.load())
-    assert len(result) == 1
-    assert len(result[0].events) == 5
+    assert len(result) == 1  # contains only one tracker
+    assert len(result[0].events) == len(tracker.events)
 
 
 def test_load_sample(marker_trackerstore: TrackerStore):
