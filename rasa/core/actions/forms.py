@@ -368,7 +368,12 @@ class FormAction(LoopAction):
                 # pre-filled slots were already validated at form activation
                 break
 
-            slot_values = self._update_slot_values(event, tracker, domain, slot_values)
+            if event.key in self.required_slots(
+                domain
+            ) or event.key == self.get_slot_to_fill(tracker):
+                slot_values = self._update_slot_values(
+                    event, tracker, domain, slot_values
+                )
 
         return slot_values
 
