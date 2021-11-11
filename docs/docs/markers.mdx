@@ -12,7 +12,9 @@ This feature is currently experimental and might change or be removed in the fut
 
 :::
 
-Markers allow you to describe points in a dialogue that you are interested in identifying. In Rasa, a dialogue is represented as a sequence of events, which include bot actions that were executed (`ActionExecuted`), intents that were detected (`UserUttered`), and slots that were set (`SlotSet`). A point of interest in a dialogue can thus be expressed as a logical expression that can be evaluated against the sequence of dialogue events. When this logical expression is met, we "mark" that point in the dialogue for further analysis or inspection.
+Markers allow you to describe points in a dialogue that you are interested in identifying.
+
+In Rasa, a dialogue is represented as a sequence of events, which include bot actions that were executed (`ActionExecuted`), intents that were detected (`UserUttered`), and slots that were set (`SlotSet`). A point of interest in a dialogue can thus be expressed as a logical expression that can be evaluated against the sequence of dialogue events. When this logical expression is met, we "mark" that point in the dialogue for further analysis or inspection.
 
 There are several applications for Markers. For example, they can be used to define your bot's Key Performance Indicators (KPIs), such as dialogue completion or task success. For [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/) (which helps users offset their carbon emissions from flying) dialogue completion can be defined as "all mandatory slots have been filled", while task success can be defined as "all mandatory slots have been filled and a carbon estimate has been successfully computed". Marking these events allows us to evaluate Carbon Bot's performance by quantifying how often it succeeds and how often it fails.
 
@@ -47,7 +49,7 @@ marker_dialogue_incomplete:
 
 ## Defining Markers
 
-Markers are defined in a markers configuration file written in `YAML`.
+Markers are defined in a marker configuration file written in `YAML`.
 Each marker should have a *unique identifier*, and consists of at least one *event condition*.
 Markers can also contain *operators*, which allow you to express more nuanced behavior or
 combine event conditions.
@@ -138,7 +140,7 @@ You cannot yet reuse an existing marker name in the definition of another marker
 
 Markers are extracted from dialogues already stored a tracker store. To learn about how to store conversations with your bot in a tracker store, read the [Tracker Store](https://rasa.com/docs/rasa/next/tracker-stores) page.
 
-Once you've created your Marker definitions in the Markers configuration file, you can extract them by running the following command:
+Once you've created your marker definitions in the marker configuration file, and have stored some dialogues in your tracker store, you can apply your markers to your trackers by running the following command:
 
 ```bash
 rasa evaluate markers all --config markers.yml extracted_markers.csv
