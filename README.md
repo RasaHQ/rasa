@@ -134,7 +134,7 @@ pyenv local 3.7.9  # 현재 프로젝트에 대해 파이썬 3.7.9 활성화
 ```
 *주의*: 특정 버전의 파이썬을 설치하는 데 문제가 있는 경우 지원되는 다른 버전을 사용하십시오.
 
-기본적으로, Poetry는 현재 활성화된 파이썬 버전을 사용하여 현재 프로젝트의 가상 환경을 자동으로 생성하려고 시도 할 것입니다. 가상 환경을 수동으로 만들고 활성화할 수도 있습니다. — 이 경우, Poetry는 그것을 dependency를 설치하는데 사용해야 합니다. 예를 들어:
+기본적으로, Poetry는 현재 활성화된 파이썬 버전을 사용하여 현재 프로젝트의 가상 환경을 자동으로 생성하려고 시도 할 것입니다. 가상 환경을 수동으로 만들고 활성화할 수도 있습니다. — 이 경우, Poetry는 그것을 dependencies를 설치하는데 사용해야 합니다. 예를 들어:
 
 ```bash
 python -m venv .venv
@@ -149,18 +149,18 @@ poetry env info
 
 ### 원본에서 빌드
 
-편집 가능한 모드에서 dependency와 `rasa`를 설치하려면
+편집 가능한 모드에서 dependencies와 `rasa`를 설치하려면
 
 ```bash
 make install
 ```
 
-*macOS 유저라면*: macOS Big Sur에 dependency에 대한 몇가지 컴파일러 문제가 있습니다.
+*macOS 유저라면*: macOS Big Sur에 dependencies에 대한 몇가지 컴파일러 문제가 있습니다.
 . 설치 전에 `export SYSTEM_VERSION_COMPAT=1` 사용하면 도움이 될 것입니다.
 
 ### documentation 실행 및 변경
 
-먼저, 필요한 모든 dependency를 설치하십시오:
+먼저, 필요한 모든 dependencies를 설치하십시오:
 
 ```bash
 make install install-docs
