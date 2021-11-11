@@ -18,7 +18,7 @@ There are several applications for Markers. For example, they can be used to def
 
 Markers also allow you to diagnose your dialogues by surfacing important events for further inspection. For example, we might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots, but not the `travel_flight_class`. We can define a marker to quantify how often this scenario occurs and surface relevant dialogues for review as part of [Conversation Driven Development (CDD)](https://rasa.com/blog/conversation-driven-development-a-better-approach-to-building-ai-assistants/).
 
-Markers are defined using a simple `yaml` syntax. For example, here are markers that define dialogue completion and task success for Carbon Bot:
+Markers are defined using a `YAML` syntax. For example, here are markers that define dialogue completion and task success for Carbon Bot:
 
 ```yaml
 marker_dialogue_completion:
@@ -47,9 +47,9 @@ marker_dialogue_incomplete:
 
 ## Defining Markers
 
-Markers are defined in a markers configuration file written in `yaml`.
-Each marker should have a unique identifier, and consists of at least one event condition.
-Markers can also contain operators, which allow you to express more precise behavior or
+Markers are defined in a markers configuration file written in `YAML`.
+Each marker should have a *unique identifier*, and consists of at least one *event condition*.
+Markers can also contain *operators*, which allow you to express more nuanced behavior or
 combine event conditions.
 
 Consider the following marker definition:
@@ -60,11 +60,11 @@ marker_mood_expressed:
         - intent: mood_great
 ```
 The unique marker identifier is `marker_mood_expressed`. The marker definition contains one operator, `or`,
-and two event conditions `intent: mood_unhappy` and `intent: mood_great`.
+and two event conditions, `intent: mood_unhappy` and `intent: mood_great`.
 
-### Event conditions
+### Event Conditions
 
-The following event conditions labels are supported:
+The following event condition labels are supported:
 
 - `action`: the specified bot action was executed.
 - `intent`: the specified user intent was detected.
@@ -85,11 +85,11 @@ The following operators are supported:
 - `not`: the condition did not apply. `not` only accepts 1 condition.
 - `seq`: the list of conditions applied in the specified order, with any number of events occurring in-between.
 - `at_least_once`: the listed marker definitions occurred at least once. Only the first occurrence will be marked.
-- `never`: the listed conditions definitions never occurred.
+- `never`: the listed marker definitions never occurred.
 
 ### Marker Configuration
 
-Markers are defined in a markers configuration file written in `yaml`. Here is an example created using mood bot with a new slot `name`:
+Here is an example of a marker configuration file containing several marker definitions. The example is created for mood bot, with a new slot `name` (to illustrate the use of the label `slot_was_set`):
 
 ```yaml
 marker_name_provided:
@@ -118,50 +118,75 @@ marker_mood_expressed_and_name_not_provided:
             - intent: mood_unhappy
             - intent: mood_great
 ```
-Note how each marker has a unique identifier, for example `marker_name_provided`.
-A marker definition can contain a single condition, as shown in `marker_name_provided`.
-Marker definitions can contain a single operator with nested conditions, as shown in `marker_mood_expressed`, `marker_cheer_up`, `marker_bot_not_challenged`, and `marker_faq`,
-or multiple nested operators, as shown in `marker_mood_expressed_and_name_not_provided`.
+Note the following:
 
-Note that the values assigned the event conditions should exist in your bot's `domain.yml` file. For example, in `marker_mood_expressed`, the intents `mood_unhappy` and `mood_unhappy` exist the mood bot's `domain.yml` file.
+- Each marker has a unique identifier, such as `marker_name_provided`.
+
+- A marker definition can contain a single condition, as shown in `marker_name_provided`.
+
+- Marker definitions can contain a single operator with nested conditions, as shown in `marker_mood_expressed`, `marker_cheer_up_failed`, `marker_bot_not_challenged`, and `marker_cheer_up_attempt`.
+
+- A marker definition can contain nested operators, as shown in `marker_mood_expressed_and_name_not_provided`.
+
+- The values assigned to the event conditions should exist in your bot's `domain.yml` file. For example, in `marker_mood_expressed`, the intents `mood_unhappy` and `mood_unhappy` must exist the mood bot's `domain.yml` file.
 
 :::note
 You cannot yet reuse an existing marker name in the definition of another marker.
 :::
 
-## Extracting markers
+## Extracting Markers
 
-Markers are extracted from the dialogues already stored in your [tracker store](https://rasa.com/docs/rasa/next/tracker-stores). Once you've created your Marker definitions in the Markers configuration file, you can extract them by running the following command:
+Markers are extracted from dialogues already stored a tracker store. To learn about how to store conversations with your bot in a tracker store, read the [Tracker Store](https://rasa.com/docs/rasa/next/tracker-stores) page.
+
+Once you've created your Marker definitions in the Markers configuration file, you can extract them by running the following command:
 
 ```bash
-rasa evaluate markers --config markers.yaml output.csv all
+rasa evaluate markers all --config markers.yml extracted_markers.csv
 ```
 
-The argument `all` will cause the script to process all the trackers in your tracker store. To process a subset you can use a different tracker selection strategy, either `first_n` or `sample`. Refer to the CLI usage for details.
+This script will process the marker definitions provided in the `marker.yml` file, and will output the extracted markers in `extracted_markers.csv`.
 
-Each tracker in the tracker store can contain multiple sessions identified by a `sender_id`. When extracting markers and computing their statistics, each session is considered separately.
+By default, the script will validate the marker definitions in `marker.yml` against your bot's `domain.yml` file. To specify a different domain filename, use the optional `--domain` argument.
+
+By default, the script will retrieve the tracker store specified in your bot's `endpoint.yml` file. However, you can specify a different endpoint filename using the optional `--endpoint` argument.
+
+The script provides three tracker loading strategies: `all`, `sample_n`, and `first_n`. The option `all` will process all the trackers in your tracker store. The other two strategies process a subset of `N` trackers from all trackers, either sequentially (by using `first_n`) or by sampling uniformly without replacement (by using `sample_n`). The sampling strategy also allows you to set the random seed.
+For more information on usage of each strategy, type (replacing `<strategy>` with one of `all`, `first_n`, and `sample_n`):
+```bash
+rasa evaluate markers <strategy> --help
+```
+
+Each tracker in the tracker store can contain multiple sessions. The script will process each session separately, indexing them by `session_idx`.
+
+The script above will output the extracted markers in the `extracted_markers.csv`. It will also compute overall summary statistics and per-session summary statistics and output them in the files `stats-overall.csv` and `stats-per-session.csv`. You can change prefix `stats` in the file names using the optional argument `--stats-file-prefix `. For example, typing:
+```bash
+rasa evaluate markers all --config markers.yml --stats-file-prefix "marker-statistics" extracted_markers.csv
+```
+will produce the files: `marker-statistics-overall.csv` and `marker-statistics-per-session.csv`.
+
+The next two sections give more detail about the extracted markers and computed statistics.
 
 
 ### Extracted Markers
 
-We extract information about top-level markers which have user-specified names, and extract meta information about all the events where the markers applied.
+For each marker defined in the marker configuration file, the following information is extracted:
+1. The number of user turns (i.e., the number of `UserUttered` events) preceding the event at which a marker applied.
+2. The index of the event at which a marker applied.
 
-For the `at_least_once` marker we only extract meta information about the first occurrence.
+For the `at_least_once` marker, the information above will only be extracted for the first occurrence.
 
-We extract the following meta information:
+The extracted markers will be output to the `.csv` file you specify in the script, for example, `extracted_markers.csv` (in the script above).
+The extracted markers file contains the following columns:
 
-1. the number of user turns (i.e., the number of `UserUttered` events) preceding the event at which a marker applied
-2. the index of the event at which a marker applied
+- `sender_id`
+- `session_idx`: sessions are indexed starting with `0`.
+- `marker name`
+- `event_idx`: tracker events are indexed starting with index `0`.
+- `num_preceding_user_turns`: the number of user turns which preceded the event at which the marker applied.
 
-We output the extracted information in a `.csv` file that contains the following columns:
+Because events contain many system actions, the `num_preceding_user_turns` gives a better indication of how long the dialogue took to reach a point of interest, focussing on the perspective of your end user.
 
-- sender_id
-- session_idx
-- marker name
-- event_idx (where we index all events in the tracker, starting with index 0)
-- num_preceeding_user_turns
-
-Here is a sample output:
+Here is a sample of the extracted markers output file:
 
 ```
 sender_id,session_idx,marker_name,event_id,num_preceding_user_turns
@@ -169,24 +194,20 @@ sender_id,session_idx,marker_name,event_id,num_preceding_user_turns
 2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,7,1
 ```
 
-extracted_markers.csv
+### Computed Statistics
 
-### Computed statistics
+By default, the script computes summary statistics about the information gathered. To disable the statistics computation, use the optional flag `--no-stats`.
 
-By default, the command above also computes summary statistics about the meta information gathered. To disable the statistics computation, use the optional flag `--no-stats`.
+The script computes the following statistics:
 
-For each session and each marker, we are interested in the number of user turns which preceded the event at which the marker applied.
+1. **For each session and each marker**: "per-session statistics" which include the arithmetic mean, median, minimum, and maximum number of user turns preceding the event at which the marker applied.
+2. **For all sessions and for each marker**:
+    1. overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the marker applied in any session.
+    2. the number of sessions and the percentage of sessions where each marker applied at least once.
 
-Thus we compute the following:
+The results are stored in tabular format in `stats-overall.csv` and `stats-per-session.csv`.
 
-1. **For each session and each marker** we compute "per-session statistics" which include the arithmetic mean, median, minimum, and maximum number of user turns preceding the event at which the marker applied
-2. **For all sessions and for each marker** we compute
-    1. overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the respective marker applied in any session
-    2. the number of sessions and the percentage of sessions where each marker applied at least once
-
-The results are stored in tabular format with the suffixes in the files `stats-overall.csv` and `stats-per-session.csv`. You can change the prefix `stats` via the command line.
-
-Here is a sample output:
+Here is a sample `stats-per-session.csv` output:
 
 ```
 sender_id,session_idx,marker,statistic,value
@@ -208,7 +229,7 @@ sender_id,session_idx,marker,statistic,value
 :
 ```
 
-stats-per-session.csv
+Here is a sample `stats-overall.csv` output:
 
 ```
 sender_id,session_idx,marker,statistic,value
@@ -221,8 +242,6 @@ all,nan,marker_mood_expressed_and_name_provided,number_of_sessions_where_marker_
 all,nan,marker_mood_expressed_and_name_provided,percentage_of_sessions_where_marker_applies_at_least_once,0.0
 :
 ```
-
-stats-overall.csv
 
 ## Configuring the CLI command
 
