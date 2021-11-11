@@ -2,8 +2,8 @@
 id: markers
 sidebar_label: Markers
 title: Markers
-description: Read more about how to mark points of interest in dialogues using logical expressions.
-abstract: Markers are logical expressions that allow you to describe points in the dialogue that you are interested in. 
+description: Find out how to mark points of interest in dialogues using Marker conditions.
+abstract: Markers are conditions that allow you to describe and mark points of interest in user interactions.
 ---
 
 :::caution
@@ -37,7 +37,7 @@ marker_task_success:
 And here is a marker for surfacing dialogues where all mandatory slots are set except `travel_flight_class`:
 
 ```yaml
-marker_dialogue_completion:
+marker_dialogue_incomplete:
     and:
         - slot_was_set: travel_departure
         - slot_was_set: travel_destination
@@ -47,19 +47,30 @@ marker_dialogue_completion:
 
 ## Defining Markers
 
-To describe the events that we're interested in, we provide `conditions` and `operators`.
+Markers are defined in a markers configuration file written in `yaml`.
+Each marker should have a unique identifier, and consists of at least one event condition.
+Markers can also contain operators, which allow you to express more complex behavior or
+combine event conditions.
 
-Conditions are simple expressions that describe an event, and are used like variables in a logical expression, for example `action: utter_greet`. Operators allow you to combine conditions or sub-marker definitions which include nested operators and conditions.
+Consider the following marker definition:
+```yaml
+marker_mood_expressed:
+    or:
+        - intent: mood_unhappy
+        - intent: mood_great
+```
+The unique marker identified is `marker_mood_expressed`. The marker definition contains one operator, `or`,
+and two event conditions `intent: mood_unhappy` and `intent: mood_great`.
 
-### Conditions
+### Event conditions
 
-We support the following conditions:
+The following event conditions are supported:
 
 - `action`: the specified bot action was executed.
 - `intent`: the specified user intent was detected.
 - `slot_was_set`: the specified slot was set.
 
-We also support their negated forms:
+as well as their negated forms:
 
 - `not_action`: the event is not an `ActionExecuted` with the specified action.
 - `not_intent`: the event is not a `UserUttered` with the specified intent.
@@ -67,18 +78,18 @@ We also support their negated forms:
 
 ### Operators
 
-To combine conditions, we provide the following operators:
+The following operators are supported:
 
-- `and`: all sub-conditions applied.
-- `or`: any of the sub-conditions applied.
-- `not`: the sub-condition did not apply. `not` can have only 1 condition.
-- `seq`: the list of sub-conditions applied in the specified order with any number of events occurring in-between.
-- `at_least_once`: the listed sub-marker definitions occurred at least once. Only the first occurrence will be marked.
-- `never`: the listed sub-marker definitions never occurred.
+- `and`: all listed conditions applied.
+- `or`: any of the listed conditions applied.
+- `not`: the condition did not apply. `not` can have only 1 condition.
+- `seq`: the list of conditions applied in the specified order, with any number of events occurring in-between.
+- `at_least_once`: the listed marker definitions occurred at least once. Only the first occurrence will be marked.
+- `never`: the listed conditions definitions never occurred.
 
 ### Marker Configuration
 
-To define one or more marker, you need to specify a `yaml` configuration file. Here is an example:
+Markers are defined in a markers configuration file written in `yaml`. Here is an example created using mood bot with a new slot `name`:
 
 ```yaml
 marker_name_provided:
@@ -91,36 +102,37 @@ marker_cheer_up:
     seq:
         - intent: mood_unhappy
         - action: utter_cheer_up
-marker_bot_challenged:
-    at_least_once:
+marker_bot_not_challenged:
+    never:
         - intent: bot_challenge
-marker_mood_expressed_and_name_provided:
+marker_faq:
+    at_least_once:
+        - intent: faq
+marker_mood_expressed_and_name_not_provided:
     and:
-        - slot_was_set: name
+        - not:
+            slot_was_set: name
         - or:
             - intent: mood_unhappy
             - intent: mood_great
 ```
+Note how each marker has a unique identifier, for example `marker_name_provided`.
+A marker definition can contain a single condition, as shown in `marker_name_provided`.
+Marker definitions can contain a single operator with nested conditions, as shown in `marker_mood_expressed`, `marker_cheer_up`, `marker_bot_not_challenged`, and `marker_faq`,
+or multiple nested operators, as shown in `marker_mood_expressed_and_name_not_provided`.
 
-The top level contains unique user-specified names for each marker. This is a dictionary mapping marker names to marker definitions.
-
-Each marker definition can contain an arbitrary combination of `conditions` and `operators` that map to a valid sub-marker definition.
-
-Each `condition` maps a condition tag to a value. For example, in `marker_name_provided`, the tag `slot_was_set` is mapped to the slot `name` which exists in the `domain.yaml` file.
-
-Each `operator` is a dictionary mapping an operator tag (e.g., `and`) to a list of sub markers, which can be conditions or a nested operator-conditions definition (e.g., see `marker_mood_expressed_and_name_provided`).
+Note that the values assigned the event conditions should exist in your bot's `domain.yml` file. For example, in `marker_mood_expressed`, the intents `mood_unhappy` and `mood_unhappy` exist the mood bot's `domain.yml` file.
 
 :::note
 You cannot yet reuse an existing marker name in the definition of another marker.
-
 :::
 
-## Running the Markers script
+## Extracting markers
 
 Markers are extracted from the dialogues already stored in your [tracker store](https://rasa.com/docs/rasa/next/tracker-stores). Once you've created your Marker definitions in the Markers configuration file, you can extract them by running the following command:
 
 ```bash
-rasa evaluate markers --config markers.yaml extracted_markers.csv all
+rasa evaluate markers --config markers.yaml output.csv all
 ```
 
 The argument `all` will cause the script to process all the trackers in your tracker store. To process a subset you can use a different tracker selection strategy, either `first_n` or `sample`. Refer to the CLI usage for details.
