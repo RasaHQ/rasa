@@ -116,7 +116,7 @@ also be asked to sign a
 
 ### Poetry 설치
 
-Rasa는 패키징과 의존성 관리를 위해 Poetry를 사용합니다. 소스에서 만들고 싶다면, 먼저 Poetry를 설치해야 합니다. 설치 방법:
+Rasa는 패키징과 의존성 관리를 위해 Poetry를 사용합니다. 원본에서 빌드하고 싶다면, 먼저 Poetry를 설치해야 합니다. 설치 방법:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
@@ -134,7 +134,7 @@ pyenv local 3.7.9  # 현재 프로젝트에 대해 파이썬 3.7.9 활성화
 ```
 *주의*: 특정 버전의 파이썬을 설치하는 데 문제가 있는 경우 지원되는 다른 버전을 사용하십시오.
 
-기본적으로, Poetry는 현재 활성화된 파이썬 버전을 사용하여 현재 프로젝트의 가상 환경을 자동으로 생성하려고 시도 할 것입니다. 가상 환경을 수동으로 만들고 활성화할 수도 있습니다. — 이 경우, Poetry는 그것을 dependency을 설치하는데 사용해야 합니다. 예를 들어:
+기본적으로, Poetry는 현재 활성화된 파이썬 버전을 사용하여 현재 프로젝트의 가상 환경을 자동으로 생성하려고 시도 할 것입니다. 가상 환경을 수동으로 만들고 활성화할 수도 있습니다. — 이 경우, Poetry는 그것을 dependency를 설치하는데 사용해야 합니다. 예를 들어:
 
 ```bash
 python -m venv .venv
@@ -147,7 +147,7 @@ source .venv/bin/activate
 poetry env info
 ```
 
-### 원본에서 작성??
+### 원본에서 빌드
 
 편집 가능한 모드에서 dependency와 `rasa`를 설치하려면
 
@@ -260,7 +260,7 @@ make build-docker
 `pip install pre-commit`을 통해 설치하고 루트 폴더에서 `pre-commit install`을 실행하면 됩니다.
 이렇게 하면 모든 커밋에서 파일을 재구성하는 후크가 저장소에 추가됩니다.
 
-수동으로 설정하려면 `poetry install`를 통해 black을 설치하십시오.
+수동으로 설정하려면 `poetry install`을 통해 black을 설치하십시오.
 파일을 다시 포맷하려면 아래 코드를 실행하십시오.
 ```
 make formatter
