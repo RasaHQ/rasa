@@ -5,6 +5,10 @@ from typing import Any, Iterable, Iterator, List, Text, Optional
 from rasa.core.tracker_store import TrackerStore
 import rasa.shared.utils.io
 
+STRATEGY_ALL = "all"
+STRATEGY_FIRST_N = "first_n"
+STRATEGY_SAMPLE = "sample"
+
 
 def strategy_all(keys: List[Text], count: int) -> Iterable[Text]:
     """Selects all keys from the set of keys."""
@@ -96,4 +100,4 @@ class MarkerTrackerLoader:
 
         keys = self.strategy(stored_keys, self.count)
         for sender in keys:
-            yield self.tracker_store.retrieve(sender)
+            yield self.tracker_store.retrieve_full_tracker(sender)
