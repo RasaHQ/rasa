@@ -114,184 +114,172 @@ also be asked to sign a
 
 ## Development Internals
 
-### Installing Poetry
+### Poetry 설치
 
-Rasa uses Poetry for packaging and dependency management. If you want to build it from source,
-you have to install Poetry first. This is how it can be done:
+Rasa는 패키징과 의존성 관리를 위해 Poetry를 사용합니다. 소스에서 만들고 싶다면, 먼저 Poetry를 설치해야 합니다. 설치 방법:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 ```
 
-There are several other ways to install Poetry. Please, follow
-[the official guide](https://python-poetry.org/docs/#installation) to see all possible options.
+Poetry를 설치하는 몇 가지 다른 방법도 있습니다. 가능한 모든 옵션을 보려면 [공식 가이드](https://python-poetry.org/docs/#installation)를 확인하십시오.
 
-### Managing environments
+### 환경 관리
 
-The official [Poetry guide](https://python-poetry.org/docs/managing-environments/) suggests to use
-[pyenv](https://github.com/pyenv/pyenv) or any other similar tool to easily switch between Python versions.
-This is how it can be done:
+공식 [Poetry 가이드](https://python-poetry.org/docs/managing-environments/)에서는 파이썬 버전 간에 쉽게 전환할 수 있도록 [pyenv](https://github.com/pyenv/pyenv) 또는 다른 비슷한 도구를 사용할 것을 제안합니다. 설치 방법: 
 
 ```bash
 pyenv install 3.7.9
-pyenv local 3.7.9  # Activate Python 3.7.9 for the current project
+pyenv local 3.7.9  # 현재 프로젝트에 대해 파이썬 3.7.9 활성화
 ```
-*Note*: If you have trouble installing a specific version of python on your system
-it might be worth trying other supported versions.
+*주의*: 특정 버전의 파이썬을 설치하는 데 문제가 있는 경우 지원되는 다른 버전을 사용하십시오.
 
-By default, Poetry will try to use the currently activated Python version to create the virtual environment
-for the current project automatically. You can also create and activate a virtual environment manually — in this
-case, Poetry should pick it up and use it to install the dependencies. For example:
+기본적으로, Poetry는 현재 활성화된 파이썬 버전을 사용하여 현재 프로젝트의 가상 환경을 자동으로 생성하려고 시도 할 것입니다. 가상 환경을 수동으로 만들고 활성화할 수도 있습니다. — 이 경우, Poetry는 그것을 dependency을 설치하는데 사용해야 합니다. 예를 들어:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
 
-You can make sure that the environment is picked up by executing
+실행을 통해 환경이 선택되었는지 확인할 수 있습니다
 
 ```bash
 poetry env info
 ```
 
-### Building from source
+### 원본에서 작성??
 
-To install dependencies and `rasa` itself in editable mode execute
+편집 가능한 모드에서 dependency와 `rasa`를 설치하려면
 
 ```bash
 make install
 ```
 
-*Note for macOS users*: under macOS Big Sur we've seen some compiler issues for 
-dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped. 
+*macOS 유저라면*: macOS Big Sur에 dependency에 대한 몇가지 컴파일러 문제가 있습니다.
+. 설치 전에 `export SYSTEM_VERSION_COMPAT=1` 사용하면 도움이 될 것입니다.
 
-### Running and changing the documentation
+### documentation 실행 및 변경
 
-First of all, install all the required dependencies:
+먼저, 필요한 모든 dependency를 설치하십시오:
 
 ```bash
 make install install-docs
 ```
 
-After the installation has finished, you can run and view the documentation
-locally using:
+설치가 완료되면 아래 코드를 사용하여 문서를 실행하고 볼 수 있습니다.
 
 ```bash
 make livedocs
 ```
 
-It should open a new tab with the local version of the docs in your browser;
-if not, visit http://localhost:3000 in your browser.
-You can now change the docs locally and the web page will automatically reload
-and apply your changes.
+브라우저에 있는 문서의 로컬 버전으로 새 탭을 열여야 합니다;
+열지 못했다면, 브라우저에서 http://localhost:3000 에 접속하십시오.
+이제 문서를 로컬에서 변경할 수 있으며 웹 페이지가 자동으로 로드되어 변경 내용을 적용합니다.
 
-### Running the Tests
+### 테스트 실행
 
-In order to run the tests, make sure that you have the development requirements installed:
+테스트를 실행하려면, 먼저 개발 요구 사항이 설치되어 있는지 확인하십시오:
 
 ```bash
-make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
-make prepare-tests-macos  # Only on macOS
+make prepare-tests-ubuntu # Ubuntu, Debian based systems에서만
+make prepare-tests-macos  # macOS에서만
 ```
 
-Then, run the tests:
+그리고, 테스트를 실행하세요:
 
 ```bash
 make test
 ```
 
-They can also be run at multiple jobs to save some time:
+시간을 절약하기 위해 여러 작업을 실행할 수 있습니다:
 
 ```bash
 JOBS=[n] make test
 ```
 
-Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
+`[n]`은 원하는 작업의 개수입니다. 생략할 경우, `[n]`은 pytest를 통해 자동으로 선택됩니다.
 
 
-### Running the Integration Tests
+### 통합 테스트 실행
 
-In order to run the integration tests, make sure that you have the development requirements installed:
+통합 테스트를 실행하려면, 개발 요구 사항이 설치되어 있는지 확인해야 합니다:
 
 ```bash
-make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
-make prepare-tests-macos  # Only on macOS
+make prepare-tests-ubuntu # Ubuntu, Debian based systems에서만
+make prepare-tests-macos  # macOS에서만
 ```
 
-Then, you'll need to start services with the following command which uses
-[Docker Compose](https://docs.docker.com/compose/install/):
+그런 다음, [Docker Compose](https://docs.docker.com/compose/install/)를 사용하는 다음 명령으로 서비스를 시작해야 합니다:
 
 ```bash
 make run-integration-containers
 ```
 
-Finally, you can run the integration tests like this:
+마지막으로, 다음과 같은 통합 테스트를 실행할 수 있습니다:
 
 ```bash
 make test-integration
 ```
 
 
-### Resolving merge conflicts
+### 병합 충돌 해결
 
-Poetry doesn't include any solution that can help to resolve merge conflicts in
-the lock file `poetry.lock` by default.
-However, there is a great tool called [poetry-merge-lock](https://poetry-merge-lock.readthedocs.io/en/latest/).
-Here is how you can install it:
+Poetry에는 기본적으로 잠금 파일 `poetry.lock`의 병합 충돌을 해결하는 데 도움이 되는 솔루션이 포함되어 있지 않습니다.
+그러나, [poetry-merge-lock](https://poetry-merge-lock.readthedocs.io/en/latest/)라는 좋은 도구가 있습니다.
+설치 방법입니다:
 
 ```bash
 pip install poetry-merge-lock
 ```
 
-Just execute this command to resolve merge conflicts in `poetry.lock` automatically:
+`poetry.lock`에서 병합 충돌을 자동으로 해결하려면 이 명령을 실행하십시오:
 
 ```bash
 poetry-merge-lock
 ```
 
-### Build a Docker image locally
+### 도커 이미지 로컬 작성
 
-In order to build a Docker image on your local machine execute the following command:
+로컬 컴퓨터에 도커 이미지를 작성하려면 다음 명령을 실행하십시오:
 
 ```bash
 make build-docker
 ```
 
-The Docker image is available on your local machine as `rasa:localdev`.
+도커 이미지는 로컬 컴퓨터에서 `rasa:localdev`로 사용할 수 있습니다.
 
-### Code Style
+### 코드 스타일
 
-To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black).
-To ensure our type annotations are correct we use the type checker [pytype](https://github.com/google/pytype).
-If your code is not formatted properly or doesn't type check, GitHub will fail to build.
+표준화된 코드 스타일을 위해 포맷터 [black](https://github.com/ambv/black)을 사용합니다.
+유형 주석이 올바른지 확인하기 위해 [pytype](https://github.com/google/pytype)을 사용합니다.
+당신의 코드가 제대로 포맷되지 않았거나 Check되지 않았다면, GitHub가 빌드할 수 없습니다.
 
-#### Formatting
+#### 서식 설정
 
-If you want to automatically format your code on every commit, you can use [pre-commit](https://pre-commit.com/).
-Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
-This will add a hook to the repository, which reformats files on every commit.
+모든 커밋에서 코드를 자동으로 포맷하려면 [pre-commit](https://pre-commit.com/)을 사용하십시오.
+`pip install pre-commit`을 통해 설치하고 루트 폴더에서 `pre-commit install`을 실행하면 됩니다.
+이렇게 하면 모든 커밋에서 파일을 재구성하는 후크가 저장소에 추가됩니다.
 
-If you want to set it up manually, install black via `poetry install`.
-To reformat files execute
+수동으로 설정하려면 `poetry install`를 통해 black을 설치하십시오.
+파일을 다시 포맷하려면 아래 코드를 실행하십시오.
 ```
 make formatter
 ```
 
-#### Type Checking
+#### 유형 확인
 
-If you want to check types on the codebase, install `mypy` using `poetry install`.
-To check the types execute
+코드베이스에서 타입을 확인하려면 `poetry install`을 사용하여 `mypy`을 설치하십시오.
+타입을 확인하려면 아래 코드를 실행하십시오.
 ```
 make types
 ```
 
-### Deploying documentation updates
+### 문서 업데이트 배포
 
-We use `Docusaurus v2` to build docs for tagged versions and for the `main` branch.
-The static site that gets built is pushed to the `documentation` branch of this repo.
+우리는 `Docusaurus v2`를 사용하여 태그가 지정된 버전과 `main` 브랜치에 대한 문서를 작성합니다.
+빌드되는 정적 사이트는 이 저장소의 `documentation` 브랜치로 푸시됩니다.
 
-We host the site on netlify. On `main` branch builds (see `.github/workflows/documentation.yml`), we push the built docs to
-the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
+우리는 netlify로 사이트를 주최합니다. `main` 브랜치 빌드에서 (`.github/workflows/documentation.yml`를 확인하세요), 우리는 빌드된 문서를 `documentation` 브랜치로 푸시합니다. Netlify는 해당 브랜치가 변경될 때마다 자동으로 문서 페이지를 다시 배포합니다
 
 ## Releases
 ### Release Timeline for Minor Releases
