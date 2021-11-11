@@ -180,11 +180,11 @@ For the `at_least_once` marker, the information above will only be extracted for
 The extracted markers will be output to the `.csv` file you specify in the script, for example, `extracted_markers.csv` (in the script above).
 The extracted markers file contains the following columns:
 
-- `sender_id`
-- `session_idx`: sessions are indexed starting with `0`.
-- `marker name`
-- `event_idx`: tracker events are indexed starting with index `0`.
-- `num_preceding_user_turns`: the number of user turns which preceded the event at which the marker applied.
+- `sender_id`: taken from the trackers.
+- `session_idx`: an integer indexing sessions, starting with `0`.
+- `marker`: the unique identifier you specified for the marker.
+- `event_idx`: an integer indexing events, starting with `0`.
+- `num_preceding_user_turns`: an integer specifying the number of user turns which preceded the event at which the marker applied.
 
 Because events contain many system actions, the `num_preceding_user_turns` gives a better indication of how long the dialogue took to reach a point of interest, focussing on the perspective of your end user.
 
@@ -194,6 +194,7 @@ Here is a sample of the extracted markers output file:
 sender_id,session_idx,marker_name,event_id,num_preceding_user_turns
 1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,7,1
 2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,7,1
+:
 ```
 
 ### Computed Statistics
@@ -208,6 +209,14 @@ The script computes the following statistics:
     2. the number of sessions and the percentage of sessions where each marker applied at least once.
 
 The results are stored in tabular format in `stats-overall.csv` and `stats-per-session.csv`.
+
+Both files contian the following columns:
+
+- `sender_id`: taken from the trackers.
+- `session_idx`: an integer indexing sessions, starting with `0`.
+- `marker`: the unique identifier you specified for the marker.
+- `statistic`: a description of the statistic computed.
+- `value`: an integer or float value represented the computed statistic.
 
 Here is a sample `stats-per-session.csv` output:
 
@@ -230,8 +239,9 @@ sender_id,session_idx,marker,statistic,value
 79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,min(number of preceding user turns),nan
 :
 ```
+Nore that some statistics will be `nan`, for example if a marker never occurred, then the number of preceding user turns will be `nan`.
 
-Here is a sample `stats-overall.csv` output:
+Here is a sample `stats-overall.csv` output.
 
 ```
 sender_id,session_idx,marker,statistic,value
@@ -244,6 +254,8 @@ all,nan,marker_mood_expressed_and_name_provided,number_of_sessions_where_marker_
 all,nan,marker_mood_expressed_and_name_provided,percentage_of_sessions_where_marker_applies_at_least_once,0.0
 :
 ```
+Note that because each row computes a statistics over all session, the `sender_id` is equal to `all`,
+and the `session_idx` is equal to `nan`.
 
 ## Configuring the CLI command
 
