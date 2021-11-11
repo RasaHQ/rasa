@@ -25,6 +25,7 @@ about [our contributor guidelines](#how-to-contribute).
 
 We plan to ship alpha releases and release candidates over the next few months in order to get early feedback. Stay tuned!
 
+3.0의 아키텍처 변경 작업을 수행하는 동안 마이너 릴리즈를 잠시 중단해야 하기 때문에 2.8은 2.x 시리즈의 마지막 마이너 버전이 될 것입니다. 당신은 3.0과 함께 출시할 예정인 새로운 기능과 개선 사항에 계속 기여할 수 있습니다. 우리의 컨트리뷰터 가이드라인에 대해서 자세히 알아보세요.
 <hr />
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
