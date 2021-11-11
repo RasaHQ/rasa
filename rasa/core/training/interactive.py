@@ -15,6 +15,7 @@ from typing import (
     Tuple,
     Union,
     Set,
+    cast,
 )
 
 from sanic import Sanic, response
@@ -35,7 +36,7 @@ import rasa.shared.utils.io
 import rasa.cli.utils
 import rasa.shared.data
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
-from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.shared.nlu.training_data.loading import RASA, RASA_YAML
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -60,7 +61,6 @@ from rasa.shared.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-import rasa.core.interpreter
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
@@ -89,6 +89,8 @@ from rasa.shared.nlu.training_data.message import Message
 # run the interactive learning and check if your part of the "ui"
 # still works.
 import rasa.utils.io as io_utils
+
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 
@@ -148,9 +150,8 @@ async def send_message(
     conversation_id: Text,
     message: Text,
     parse_data: Optional[Dict[Text, Any]] = None,
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Send a user message to a conversation."""
-
     payload = {
         "sender": UserUttered.type_name,
         "text": message,
@@ -166,25 +167,22 @@ async def send_message(
 
 async def request_prediction(
     endpoint: EndpointConfig, conversation_id: Text
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Request the next action prediction from core."""
-
     return await endpoint.request(
         method="post", subpath=f"/conversations/{conversation_id}/predict"
     )
 
 
-async def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
+async def retrieve_domain(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the domain from core."""
-
     return await endpoint.request(
         method="get", subpath="/domain", headers={"Accept": "application/json"}
     )
 
 
-async def retrieve_status(endpoint: EndpointConfig) -> Dict[Text, Any]:
+async def retrieve_status(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the status from core."""
-
     return await endpoint.request(method="get", subpath="/status")
 
 
@@ -194,11 +192,14 @@ async def retrieve_tracker(
     verbosity: EventVerbosity = EventVerbosity.ALL,
 ) -> Dict[Text, Any]:
     """Retrieve a tracker from core."""
-
     path = f"/conversations/{conversation_id}/tracker?include_events={verbosity.name}"
-    return await endpoint.request(
+    result = await endpoint.request(
         method="get", subpath=path, headers={"Accept": "application/json"}
     )
+
+    # If the request wasn't successful the previous call had already raised. Hence,
+    # we can be sure we have the tracker in the right format.
+    return cast(Dict[Text, Any], result)
 
 
 async def send_action(
@@ -208,9 +209,8 @@ async def send_action(
     policy: Optional[Text] = None,
     confidence: Optional[float] = None,
     is_new_action: bool = False,
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Log an action to a conversation."""
-
     payload = ActionExecuted(action_name, policy, confidence).as_dict()
 
     subpath = f"/conversations/{conversation_id}/execute"
@@ -252,9 +252,8 @@ async def send_event(
     endpoint: EndpointConfig,
     conversation_id: Text,
     evt: Union[List[Dict[Text, Any]], Dict[Text, Any]],
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Log an event to a conversation."""
-
     subpath = f"/conversations/{conversation_id}/tracker/events"
 
     return await endpoint.request(json=evt, method="post", subpath=subpath)
@@ -262,7 +261,6 @@ async def send_event(
 
 def format_bot_output(message: BotUttered) -> Text:
     """Format a bot response to be displayed in the history table."""
-
     # First, add text to output
     output = message.text or ""
 
@@ -271,13 +269,13 @@ def format_bot_output(message: BotUttered) -> Text:
     if not data:
         return output
 
-    if data.get("image"):
-        output += "\nImage: " + data.get("image")
+    if "image" in data and data["image"] is not None:
+        output += "\nImage: " + data["image"]
 
-    if data.get("attachment"):
-        output += "\nAttachment: " + data.get("attachment")
+    if "attachment" in data and data["attachment"] is not None:
+        output += "\nAttachment: " + data["attachment"]
 
-    if data.get("buttons"):
+    if "buttons" in data and data["buttons"] is not None:
         output += "\nButtons:"
         choices = rasa.cli.utils.button_choices_from_message_data(
             data, allow_free_text_input=True
@@ -285,15 +283,15 @@ def format_bot_output(message: BotUttered) -> Text:
         for choice in choices:
             output += "\n" + choice
 
-    if data.get("elements"):
+    if "elements" in data and data["elements"] is not None:
         output += "\nElements:"
-        for idx, element in enumerate(data.get("elements")):
+        for idx, element in enumerate(data["elements"]):
             element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
 
-    if data.get("quick_replies"):
+    if "quick_replies" in data and data["quick_replies"] is not None:
         output += "\nQuick replies:"
-        for idx, element in enumerate(data.get("quick_replies")):
+        for idx, element in enumerate(data["quick_replies"]):
             element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
     return output
@@ -301,7 +299,6 @@ def format_bot_output(message: BotUttered) -> Text:
 
 def latest_user_message(events: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]:
     """Return most recent user message."""
-
     for i, e in enumerate(reversed(events)):
         if e.get("event") == UserUttered.type_name:
             return e
@@ -374,7 +371,6 @@ async def _request_free_text_action(
 async def _request_free_text_utterance(
     conversation_id: Text, endpoint: EndpointConfig, action: Text
 ) -> Text:
-
     question = questionary.text(
         message=(f"Please type the message for your new bot response '{action}':"),
         validate=io_utils.not_empty_validator("Please enter a response"),
@@ -650,16 +646,16 @@ async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
         # this is also the default answer if the user presses Ctrl-C
         await _write_data_to_file(conversation_id, endpoint)
         raise Abort()
-    elif answer == "continue":
-        # in this case we will just return, and the original
-        # question will get asked again
-        return True
     elif answer == "undo":
         raise UndoLastStep()
     elif answer == "fork":
         raise ForkTracker()
     elif answer == "restart":
         raise RestartConversation()
+    else:  # `continue` or no answer
+        # in this case we will just return, and the original
+        # question will get asked again
+        return True
 
 
 async def _request_action_from_user(
@@ -670,10 +666,7 @@ async def _request_action_from_user(
     await _print_history(conversation_id, endpoint)
 
     choices = [
-        {
-            "name": f'{a.get("score"):03.2f} {a.get("action"):40}',
-            "value": a.get("action"),
-        }
+        {"name": f'{a["score"]:03.2f} {a["action"]:40}', "value": a["action"],}
         for a in predictions
     ]
 
@@ -726,8 +719,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will append the stories)",
             default=PATHS["stories"],
             validate=io_utils.file_type_validator(
-                rasa.shared.data.MARKDOWN_FILE_EXTENSIONS
-                + rasa.shared.data.YAML_FILE_EXTENSIONS,
+                rasa.shared.data.YAML_FILE_EXTENSIONS,
                 "Please provide a valid export path for the stories, "
                 "e.g. 'stories.yml'.",
             ),
@@ -810,18 +802,12 @@ def _write_stories_to_file(
     from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
         YAMLStoryWriter,
     )
-    from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
-        MarkdownStoryWriter,
-    )
 
     sub_conversations = _split_conversation_at_restarts(events)
-
     io_utils.create_path(export_story_path)
 
     if rasa.shared.data.is_likely_yaml_file(export_story_path):
         writer = YAMLStoryWriter()
-    else:
-        writer = MarkdownStoryWriter()
 
     should_append_stories = False
     if os.path.exists(export_story_path):
@@ -890,8 +876,6 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
     nlu_format = _get_nlu_target_format(export_nlu_path)
     if nlu_format == RASA_YAML:
         stringified_training_data = nlu_data.nlu_as_yaml()
-    elif nlu_format == MARKDOWN:
-        stringified_training_data = nlu_data.nlu_as_markdown()
     else:
         stringified_training_data = nlu_data.nlu_as_json()
 
@@ -901,11 +885,9 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 def _get_nlu_target_format(export_path: Text) -> Text:
     guessed_format = loading.guess_format(export_path)
 
-    if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
+    if guessed_format not in {RASA, RASA_YAML}:
         if rasa.shared.data.is_likely_json_file(export_path):
             guessed_format = RASA
-        elif rasa.shared.data.is_likely_markdown_file(export_path):
-            guessed_format = MARKDOWN
         elif rasa.shared.data.is_likely_yaml_file(export_path):
             guessed_format = RASA_YAML
 
@@ -1442,7 +1424,7 @@ async def _plot_trackers(
     if unconfirmed:
         event_sequences[-1].extend(unconfirmed)
 
-    graph = await visualize_neighborhood(
+    graph = visualize_neighborhood(
         event_sequences[-1], event_sequences, output_file=None, max_history=2
     )
 
@@ -1496,7 +1478,7 @@ async def record_messages(
         num_messages = 0
 
         if not skip_visualization:
-            events_including_current_user_id = await _get_tracker_events_to_plot(
+            events_including_current_user_id = _get_tracker_events_to_plot(
                 domain, file_importer, conversation_id
             )
 
@@ -1561,10 +1543,10 @@ async def record_messages(
         raise
 
 
-async def _get_tracker_events_to_plot(
+def _get_tracker_events_to_plot(
     domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text
 ) -> List[Union[Text, Deque[Event]]]:
-    training_trackers = await _get_training_trackers(file_importer, domain)
+    training_trackers = _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
         rasa.shared.utils.cli.print_warning(
@@ -1582,12 +1564,12 @@ async def _get_tracker_events_to_plot(
     return training_data_events + [conversation_id]
 
 
-async def _get_training_trackers(
+def _get_training_trackers(
     file_importer: TrainingDataImporter, domain: Dict[str, Any]
-) -> List[DialogueStateTracker]:
+) -> List[TrackerWithCachedStates]:
     from rasa.core import training
 
-    return await training.load_data(
+    return training.load_data(
         file_importer,
         Domain.from_dict(domain),
         augmentation_factor=0,
@@ -1641,15 +1623,15 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
-    def visualisation_html(request: Request) -> HTTPResponse:
-        return response.file(visualization.visualization_html_path())
+    async def visualisation_html(request: Request) -> HTTPResponse:
+        return await response.file(visualization.visualization_html_path())
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request: Request,) -> HTTPResponse:
+    async def visualisation_png(request: Request,) -> HTTPResponse:
         try:
             headers = {"Cache-Control": "no-cache"}
-            return response.file(os.path.abspath(image_path), headers=headers)
+            return await response.file(os.path.abspath(image_path), headers=headers)
         except FileNotFoundError:
             return response.text("", 404)
 
@@ -1717,7 +1699,7 @@ def calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int:
     Chinese, Japanese and Korean characters are often broader than ascii
     characters:
     abcdefgh (8 chars)
-    我要去北京 (5 chars, roughly same visible width)
+    æˆ‘è¦åŽ»åŒ—äº¬ (5 chars, roughly same visible width)
 
     We need to account for that otherwise the wrapping doesn't work
     appropriately for long strings and the table overflows and creates

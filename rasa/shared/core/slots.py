@@ -27,9 +27,9 @@ class Slot:
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
         """Create a Slot.
@@ -37,18 +37,17 @@ class Slot:
         Args:
             name: The name of the slot.
             initial_value: The initial value of the slot.
+            mappings: List containing slot mappings.
             value_reset_delay: After how many turns the slot should be reset to the
                 initial_value. This is behavior is currently not implemented.
-            auto_fill: `True` if the slot should be filled automatically by entities
-                with the same name.
             influence_conversation: If `True` the slot will be featurized and hence
                 influence the predictions of the dialogue polices.
         """
         self.name = name
+        self.mappings = mappings
         self._value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
-        self.auto_fill = auto_fill
         self.influence_conversation = influence_conversation
         self._has_been_set = False
 
@@ -142,29 +141,48 @@ class Slot:
             )
 
     def persistence_info(self) -> Dict[str, Any]:
+        """Returns relevant information to persist this slot."""
         return {
             "type": rasa.shared.utils.common.module_path_from_instance(self),
             "initial_value": self.initial_value,
-            "auto_fill": self.auto_fill,
             "influence_conversation": self.influence_conversation,
+            "mappings": self.mappings,
         }
+
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the slot which is stable across python runs.
+
+        Returns:
+            fingerprint of the slot
+        """
+        data = {"slot_name": self.name, "slot_value": self.value}
+        data.update(self.persistence_info())
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
 
 
 class FloatSlot(Slot):
+    """A slot storing a float value."""
+
     type_name = "float"
 
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Optional[float] = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
         max_value: float = 1.0,
         min_value: float = 0.0,
         influence_conversation: bool = True,
     ) -> None:
+        """Creates a FloatSlot.
+
+        Raises:
+            InvalidSlotConfigError, if the min-max range is invalid.
+            UserWarning, if initial_value is outside the min-max range.
+        """
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, influence_conversation,
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -276,72 +294,23 @@ class ListSlot(Slot):
         super(ListSlot, self.__class__).value.fset(self, value)
 
 
-class UnfeaturizedSlot(Slot):
-    """Deprecated slot type to represent slots which don't influence conversations."""
-
-    type_name = "unfeaturized"
-
-    def __init__(
-        self,
-        name: Text,
-        initial_value: Any = None,
-        value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
-        influence_conversation: bool = False,
-    ) -> None:
-        """Creates unfeaturized slot.
-
-        Args:
-            name: The name of the slot.
-            initial_value: Its initial value.
-            value_reset_delay: After how many turns the slot should be reset to the
-                initial_value. This is behavior is currently not implemented.
-            auto_fill: `True` if it should be auto-filled by entities with the same
-                name.
-            influence_conversation: `True` if it should be featurized. Only `False`
-                is allowed. Any other value will lead to a `InvalidSlotConfigError`.
-        """
-        if influence_conversation:
-            raise InvalidSlotConfigError(
-                f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
-                f"Please use a different slot type for slot '{name}' instead. See the "
-                f"documentation for more information: {DOCS_URL_SLOTS}"
-            )
-
-        rasa.shared.utils.io.raise_warning(
-            f"{UnfeaturizedSlot.__name__} is deprecated "
-            f"and will be removed in Rasa Open Source "
-            f"3.0. Please change the type and configure the 'influence_conversation' "
-            f"flag for slot '{name}' instead.",
-            docs=DOCS_URL_SLOTS,
-            category=FutureWarning,
-        )
-
-        super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
-        )
-
-    def _as_feature(self) -> List[float]:
-        return []
-
-    def _feature_dimensionality(self) -> int:
-        return 0
-
-
 class CategoricalSlot(Slot):
+    """Slot type which can be used to branch conversations based on its value."""
+
     type_name = "categorical"
 
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         values: Optional[List[Any]] = None,
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
+        """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, influence_conversation,
         )
         if values and None in values:
             rasa.shared.utils.io.raise_warning(
@@ -422,19 +391,27 @@ class CategoricalSlot(Slot):
 
 
 class AnySlot(Slot):
-    """Slot which can be used to store any value. Users need to create a subclass of
-    `Slot` in case the information is supposed to get featurized."""
+    """Slot which can be used to store any value.
+
+    Users need to create a subclass of `Slot` in case
+    the information is supposed to get featurized.
+    """
 
     type_name = "any"
 
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
         influence_conversation: bool = False,
     ) -> None:
+        """Creates an `Any  Slot` (see parent class for detailed docstring).
+
+        Raises:
+            InvalidSlotConfigError, if slot is featurized.
+        """
         if influence_conversation:
             raise InvalidSlotConfigError(
                 f"An {AnySlot.__name__} cannot be featurized. "
@@ -445,7 +422,7 @@ class AnySlot(Slot):
             )
 
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, influence_conversation,
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -457,6 +434,5 @@ class AnySlot(Slot):
             self.name == other.name
             and self.initial_value == other.initial_value
             and self._value_reset_delay == other._value_reset_delay
-            and self.auto_fill == other.auto_fill
             and self.value == other.value
         )

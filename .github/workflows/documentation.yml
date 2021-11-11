@@ -7,6 +7,11 @@ on:
     tags:
     - '**'
 
+concurrency:
+  # group workflow runs based on the branch or the tag ref
+  group: documentation-${{ github.ref }}
+  cancel-in-progress: true
+
 # SECRETS
 # - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)
 #                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
@@ -17,7 +22,7 @@ env:
   DOCS_BRANCH: documentation
   TAG_NAME: ${GITHUB_REF#refs/tags/}
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
-  IS_MASTER_BRANCH: ${{ github.ref == 'refs/heads/main' }}
+  IS_MAIN_BRANCH: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
   evaluate_release_tag:
@@ -62,14 +67,14 @@ jobs:
     # - the latest major (when 3.0 is out, the latest major is 3.0)
     # - the previous major (when 3.0 is out, the previous major is 2.0, the latest minor on this version being 2.8)
     - name: Check if it's a micro tag for the latest minor
-      if: env.IS_TAG_BUILD == 'true'
+      if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
       id: check_tag
       run: |
         IS_LATEST_VERSION=${{ steps.rasa_get_version.outputs.is_latest_version }}
 
         # the latest major (when 3.0 is out, the latest major is 3.0)
         # build docs on push to the main branch
-        if [[ "${IS_LATEST_VERSION}" == "true" || "${IS_MASTER_BRANCH}" == "true" ]]; then
+        if [[ "${IS_LATEST_VERSION}" == "true" || "${IS_MAIN_BRANCH}" == "true" ]]; then
           echo "::set-output name=build_docs::true"
           exit 0
         fi
@@ -105,7 +110,7 @@ jobs:
         python-version: 3.7
 
     - name: Set up Node 12.x 🦙
-      uses: actions/setup-node@v2.2.0
+      uses: actions/setup-node@v2.3.0
       with:
         node-version: '12.x'
 
@@ -115,7 +120,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -123,8 +128,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.6-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-3.6-non-full
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-3.7-non-full
 
     - name: Load Yarn Cached Packages ⬇
       uses: actions/cache@v1

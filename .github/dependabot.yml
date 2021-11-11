@@ -26,9 +26,10 @@ updates:
       time: '13:00'
     pull-request-branch-name:
       separator: "-"
-    open-pull-requests-limit: 10
+    # currently disabled because we cannot update the docs theme and its dependencies
+    open-pull-requests-limit: 0
     reviewers:
-      - RasaHQ/enable-squad
+      - "m-vdb"
     labels:
       - type:dependencies
 

@@ -1,17 +1,51 @@
-from typing import Any, Text, Dict, List
+import copy
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.storage import ModelStorage
+from typing import Any, Text, Dict, List, Callable
 
 import pytest
 
+from rasa.engine.storage.resource import Resource
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.constants import ENTITIES, TEXT, INTENT
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
+    TEXT,
+    INTENT,
+    EXTRACTOR,
+)
 from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 
 
+@pytest.fixture()
+def create_or_load_extractor(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+) -> Callable[..., RegexEntityExtractor]:
+    def inner(config: Dict[Text, Any], load: bool = False) -> RegexEntityExtractor:
+        if load:
+            constructor = RegexEntityExtractor.load
+        else:
+            constructor = RegexEntityExtractor.create
+        return constructor(
+            config=config,
+            model_storage=default_model_storage,
+            resource=Resource("regex"),
+            execution_context=default_execution_context,
+        )
+
+    return inner
+
+
 @pytest.mark.parametrize(
-    "text, lookup, expected_entities",
+    "config, text, lookup, expected_entities, test_loading",
     [
         (
+            # default config
+            {},
             "Berlin and London are cities.",
             [
                 {
@@ -21,22 +55,24 @@ from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
             ],
             [
                 {
-                    "entity": "city",
-                    "value": "Berlin",
-                    "start": 0,
-                    "end": 6,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "Berlin",
+                    ENTITY_ATTRIBUTE_START: 0,
+                    ENTITY_ATTRIBUTE_END: 6,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
-                    "entity": "city",
-                    "value": "London",
-                    "start": 11,
-                    "end": 17,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "London",
+                    ENTITY_ATTRIBUTE_START: 11,
+                    ENTITY_ATTRIBUTE_END: 17,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
+            True,  # test loading
         ),
         (
+            {},
             "Sophie is visiting Thomas in Berlin.",
             [
                 {
@@ -47,22 +83,24 @@ from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
             ],
             [
                 {
-                    "entity": "city",
-                    "value": "Berlin",
-                    "start": 29,
-                    "end": 35,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "Berlin",
+                    ENTITY_ATTRIBUTE_START: 29,
+                    ENTITY_ATTRIBUTE_END: 35,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
-                    "entity": "person",
-                    "value": "Sophie",
-                    "start": 0,
-                    "end": 6,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "person",
+                    ENTITY_ATTRIBUTE_VALUE: "Sophie",
+                    ENTITY_ATTRIBUTE_START: 0,
+                    ENTITY_ATTRIBUTE_END: 6,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
+            False,
         ),
         (
+            {},
             "Rasa is great.",
             [
                 {
@@ -72,67 +110,33 @@ from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
                 {"name": "person", "elements": ["Max", "John", "Sophie", "Lisa"]},
             ],
             [],
+            False,
         ),
-    ],
-)
-def test_process(
-    text: Text,
-    lookup: List[Dict[Text, List[Text]]],
-    expected_entities: List[Dict[Text, Any]],
-):
-    message = Message(data={TEXT: text})
-
-    training_data = TrainingData()
-    training_data.lookup_tables = lookup
-    training_data.training_examples = [
-        Message(
-            data={
-                TEXT: "Hi Max!",
-                INTENT: "greet",
-                ENTITIES: [{"entity": "person", "value": "Max"}],
-            }
-        ),
-        Message(
-            data={
-                TEXT: "I live in Berlin",
-                INTENT: "inform",
-                ENTITIES: [{"entity": "city", "value": "Berlin"}],
-            }
-        ),
-    ]
-
-    entity_extractor = RegexEntityExtractor()
-    entity_extractor.train(training_data)
-    entity_extractor.process(message)
-
-    entities = message.get(ENTITIES)
-    assert entities == expected_entities
-
-
-@pytest.mark.parametrize(
-    "text, lookup, expected_entities",
-    [
+        # not using word boundaries
         (
+            {"use_word_boundaries": False},
             "北京和上海都是大城市。",
             [{"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],}],
             [
                 {
-                    "entity": "city",
-                    "value": "北京",
-                    "start": 0,
-                    "end": 2,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "北京",
+                    ENTITY_ATTRIBUTE_START: 0,
+                    ENTITY_ATTRIBUTE_END: 2,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
-                    "entity": "city",
-                    "value": "上海",
-                    "start": 3,
-                    "end": 5,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "上海",
+                    ENTITY_ATTRIBUTE_START: 3,
+                    ENTITY_ATTRIBUTE_END: 5,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
+            True,  # test loading
         ),
         (
+            {"use_word_boundaries": False},
             "小明正要去北京拜访老李。",
             [
                 {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
@@ -140,71 +144,36 @@ def test_process(
             ],
             [
                 {
-                    "entity": "city",
-                    "value": "北京",
-                    "start": 5,
-                    "end": 7,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "北京",
+                    ENTITY_ATTRIBUTE_START: 5,
+                    ENTITY_ATTRIBUTE_END: 7,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
-                    "entity": "person",
-                    "value": "小明",
-                    "start": 0,
-                    "end": 2,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "person",
+                    ENTITY_ATTRIBUTE_VALUE: "小明",
+                    ENTITY_ATTRIBUTE_START: 0,
+                    ENTITY_ATTRIBUTE_END: 2,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
+            True,
         ),
         (
+            {"use_word_boundaries": False},
             "Rasa 真好用。",
             [
                 {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
                 {"name": "person", "elements": ["小明", "小红", "小王", "小李"]},
             ],
             [],
+            False,
         ),
-    ],
-)
-def test_process_without_use_word_boundaries(
-    text: Text,
-    lookup: List[Dict[Text, List[Text]]],
-    expected_entities: List[Dict[Text, Any]],
-):
-    message = Message(data={TEXT: text})
-
-    training_data = TrainingData()
-    training_data.lookup_tables = lookup
-    training_data.training_examples = [
-        Message(
-            data={
-                TEXT: "Hi Max!",
-                INTENT: "greet",
-                ENTITIES: [{"entity": "person", "value": "Max"}],
-            }
-        ),
-        Message(
-            data={
-                TEXT: "I live in Berlin",
-                INTENT: "inform",
-                ENTITIES: [{"entity": "city", "value": "Berlin"}],
-            }
-        ),
-    ]
-
-    entity_extractor = RegexEntityExtractor({"use_word_boundaries": False})
-    entity_extractor.train(training_data)
-    entity_extractor.process(message)
-
-    entities = message.get(ENTITIES)
-    assert entities == expected_entities
-
-
-@pytest.mark.parametrize(
-    "text, case_sensitive, lookup, expected_entities",
-    [
+        # case sensitivity
         (
+            {"case_sensitive": True},
             "berlin and London are cities.",
-            True,
             [
                 {
                     "name": "city",
@@ -213,17 +182,18 @@ def test_process_without_use_word_boundaries(
             ],
             [
                 {
-                    "entity": "city",
-                    "value": "London",
-                    "start": 11,
-                    "end": 17,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "London",
+                    ENTITY_ATTRIBUTE_START: 11,
+                    ENTITY_ATTRIBUTE_END: 17,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 }
             ],
+            True,
         ),
         (
+            {"case_sensitive": False},
             "berlin and London are cities.",
-            False,
             [
                 {
                     "name": "city",
@@ -232,30 +202,36 @@ def test_process_without_use_word_boundaries(
             ],
             [
                 {
-                    "entity": "city",
-                    "value": "berlin",
-                    "start": 0,
-                    "end": 6,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "berlin",
+                    ENTITY_ATTRIBUTE_START: 0,
+                    ENTITY_ATTRIBUTE_END: 6,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
                 {
-                    "entity": "city",
-                    "value": "London",
-                    "start": 11,
-                    "end": 17,
-                    "extractor": "RegexEntityExtractor",
+                    ENTITY_ATTRIBUTE_TYPE: "city",
+                    ENTITY_ATTRIBUTE_VALUE: "London",
+                    ENTITY_ATTRIBUTE_START: 11,
+                    ENTITY_ATTRIBUTE_END: 17,
+                    EXTRACTOR: RegexEntityExtractor.__name__,
                 },
             ],
+            False,
         ),
     ],
 )
-def test_lowercase(
+def test_train_and_process(
+    create_or_load_extractor: Callable[..., RegexEntityExtractor],
+    config: Dict[Text, Any],
     text: Text,
-    case_sensitive: bool,
     lookup: List[Dict[Text, List[Text]]],
     expected_entities: List[Dict[Text, Any]],
+    test_loading: bool,
 ):
     message = Message(data={TEXT: text})
+    if test_loading:
+        message_copy = copy.deepcopy(message)
+
     training_data = TrainingData()
     training_data.lookup_tables = lookup
     training_data.training_examples = [
@@ -275,17 +251,43 @@ def test_lowercase(
         ),
     ]
 
-    entity_extractor = RegexEntityExtractor({"case_sensitive": case_sensitive})
+    entity_extractor = create_or_load_extractor(config)
     entity_extractor.train(training_data)
-    entity_extractor.process(message)
-
+    entity_extractor.process([message])
     entities = message.get(ENTITIES)
     assert entities == expected_entities
 
+    if test_loading:
+        loaded_entity_extractor = create_or_load_extractor(config, load=True)
+        loaded_entity_extractor.process([message_copy])
+        loaded_entity_extractor.patterns == entity_extractor.patterns
 
-def test_do_not_overwrite_any_entities():
+
+def test_train_process_and_load_with_empty_model(
+    create_or_load_extractor: Callable[..., RegexEntityExtractor],
+):
+    extractor = create_or_load_extractor({})
+    with pytest.warns(UserWarning):
+        extractor.train(TrainingData([]))
+    with pytest.warns(UserWarning):
+        extractor.process(Message(data={TEXT: "arbitrary"}))
+    with pytest.warns(UserWarning):
+        create_or_load_extractor({}, load=True)
+
+
+def test_process_does_not_overwrite_any_entities(
+    create_or_load_extractor: Callable[..., RegexEntityExtractor],
+):
+
+    pre_existing_entity = {
+        ENTITY_ATTRIBUTE_TYPE: "person",
+        ENTITY_ATTRIBUTE_VALUE: "Max",
+        ENTITY_ATTRIBUTE_START: 0,
+        ENTITY_ATTRIBUTE_END: 3,
+        EXTRACTOR: "other extractor",
+    }
     message = Message(data={TEXT: "Max lives in Berlin.", INTENT: "infrom"})
-    message.set(ENTITIES, [{"entity": "person", "value": "Max", "start": 0, "end": 3}])
+    message.set(ENTITIES, [copy.deepcopy(pre_existing_entity)])
 
     training_data = TrainingData()
     training_data.training_examples = [
@@ -293,14 +295,18 @@ def test_do_not_overwrite_any_entities():
             data={
                 TEXT: "Hi Max!",
                 INTENT: "greet",
-                ENTITIES: [{"entity": "person", "value": "Max"}],
+                ENTITIES: [
+                    {ENTITY_ATTRIBUTE_TYPE: "person", ENTITY_ATTRIBUTE_VALUE: "Max"}
+                ],
             }
         ),
         Message(
             data={
                 TEXT: "I live in Berlin",
                 INTENT: "inform",
-                ENTITIES: [{"entity": "city", "value": "Berlin"}],
+                ENTITIES: [
+                    {ENTITY_ATTRIBUTE_TYPE: "city", ENTITY_ATTRIBUTE_VALUE: "Berlin"}
+                ],
             }
         ),
     ]
@@ -308,18 +314,18 @@ def test_do_not_overwrite_any_entities():
         {"name": "city", "elements": ["London", "Berlin", "Amsterdam"]}
     ]
 
-    entity_extractor = RegexEntityExtractor()
+    entity_extractor = create_or_load_extractor(config={})
     entity_extractor.train(training_data)
-    entity_extractor.process(message)
+    entity_extractor.process([message])
 
     entities = message.get(ENTITIES)
     assert entities == [
-        {"entity": "person", "value": "Max", "start": 0, "end": 3},
+        pre_existing_entity,
         {
-            "entity": "city",
-            "value": "Berlin",
-            "start": 13,
-            "end": 19,
-            "extractor": "RegexEntityExtractor",
+            ENTITY_ATTRIBUTE_TYPE: "city",
+            ENTITY_ATTRIBUTE_VALUE: "Berlin",
+            ENTITY_ATTRIBUTE_START: 13,
+            ENTITY_ATTRIBUTE_END: 19,
+            EXTRACTOR: RegexEntityExtractor.__name__,
         },
     ]

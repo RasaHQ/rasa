@@ -1,8 +1,13 @@
 import functools
+import json
+from json import JSONDecodeError
 import logging
 from pathlib import Path
+import re
+from re import Match, Pattern
 from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
+from rasa.shared.core.domain import Domain
 import rasa.shared.data
 from rasa.shared.core.slots import TextSlot, ListSlot
 from rasa.shared.exceptions import YamlException
@@ -10,10 +15,18 @@ import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import (
     ENTITIES,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT,
     INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
     ACTION_TEXT,
+    TEXT,
+    EXTRACTOR,
 )
 from rasa.shared.nlu.training_data import entities_parser
 import rasa.shared.utils.validation
@@ -73,13 +86,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             A new reader instance.
         """
-        return cls(
-            reader.domain,
-            reader.template_variables,
-            reader.use_e2e,
-            reader.source_name,
-            reader._is_used_for_training,
-        )
+        return cls(reader.domain, reader.source_name)
 
     def read_from_file(
         self, filename: Union[Text, Path], skip_validation: bool = False
@@ -338,26 +345,48 @@ class YAMLStoryReader(StoryReader):
             )
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
-        utterances = []
+        events: List = []
 
-        for utterance in step.get(KEY_OR):
-            if KEY_USER_INTENT in utterance.keys():
-                utterance = self._parse_raw_user_utterance(utterance)
+        for item in step.get(KEY_OR):
+            if KEY_USER_INTENT in item.keys():
+                utterance = self._parse_raw_user_utterance(item)
                 if utterance:
-                    utterances.append(utterance)
+                    events.append(utterance)
+            elif KEY_CHECKPOINT_SLOTS in item.keys():
+                for slot in item.get(KEY_CHECKPOINT_SLOTS, []):
+                    if isinstance(slot, dict):
+                        for key, value in slot.items():
+                            parsed_events = self._parse_events(
+                                SlotSet.type_name, {key: value}
+                            )
+                            events.extend(parsed_events)
+                    elif isinstance(slot, str):
+                        parsed_events = self._parse_events(
+                            SlotSet.type_name, {slot: self._slot_default_value(slot)}
+                        )
+                        events.extend(parsed_events)
+                    else:
+                        rasa.shared.utils.io.raise_warning(
+                            f"Issue found in '{self.source_name}':\n"
+                            f"Invalid slot: \n{slot}\n"
+                            f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
+                            f"YAML dictionaries or Strings. "
+                            f"The checkpoint will be skipped.",
+                            docs=self._get_docs_link(),
+                        )
+                        return
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}': \n"
-                    f"`OR` statement can only have '{KEY_USER_INTENT}' "
+                    f"`OR` statement can have '{KEY_USER_INTENT}' or '{KEY_SLOT_NAME}'"
                     f"as a sub-element. This step will be skipped:\n"
-                    f"'{utterance}'\n",
+                    f"'{item}'\n",
                     docs=self._get_docs_link(),
                 )
                 return
 
-        self.current_step_builder.add_user_messages(
-            utterances, self._is_used_for_training
-        )
+        if events:
+            self.current_step_builder.add_events(events)
 
     def _user_intent_from_step(
         self, step: Dict[Text, Any]
@@ -409,8 +438,6 @@ class YAMLStoryReader(StoryReader):
         return (base_intent, user_intent) if response_key else (base_intent, None)
 
     def _parse_raw_user_utterance(self, step: Dict[Text, Any]) -> Optional[UserUttered]:
-        from rasa.shared.nlu.interpreter import RegexInterpreter
-
         intent_name, full_retrieval_intent = self._user_intent_from_step(step)
         intent = {
             INTENT_NAME_KEY: intent_name,
@@ -424,8 +451,8 @@ class YAMLStoryReader(StoryReader):
             plain_text = entities_parser.replace_entities(user_message)
 
             if plain_text.startswith(INTENT_MESSAGE_PREFIX):
-                entities = (
-                    RegexInterpreter().synchronous_parse(plain_text).get(ENTITIES, [])
+                entities = self.unpack_regex_message(Message({TEXT: plain_text})).get(
+                    ENTITIES, []
                 )
         else:
             raw_entities = step.get(KEY_ENTITIES, [])
@@ -437,7 +464,7 @@ class YAMLStoryReader(StoryReader):
     @staticmethod
     def _parse_raw_entities(
         raw_entities: Union[List[Dict[Text, Text]], List[Text]]
-    ) -> List[Dict[Text, Text]]:
+    ) -> List[Dict[Text, Optional[Text]]]:
         final_entities = []
         for entity in raw_entities:
             if isinstance(entity, dict):
@@ -468,7 +495,6 @@ class YAMLStoryReader(StoryReader):
         return final_entities
 
     def _parse_slot(self, step: Dict[Text, Any]) -> None:
-
         for slot in step.get(KEY_CHECKPOINT_SLOTS, []):
             if isinstance(slot, dict):
                 for key, value in slot.items():
@@ -554,6 +580,234 @@ class YAMLStoryReader(StoryReader):
                 slots_dict[key] = value
 
         self._add_checkpoint(checkpoint_name, slots_dict)
+
+    @staticmethod
+    def _regex_message_pattern() -> Pattern:
+        """Builds the pattern that matches `TEXT`s of messages that need to be unpacked.
+
+        Returns:
+            pattern with named groups
+        """
+        return re.compile(
+            f"^{INTENT_MESSAGE_PREFIX}"
+            f"(?P<{INTENT_NAME_KEY}>[^{{@]+)"  # "{{" is a masked "{" in an f-string
+            f"(?P<{PREDICTED_CONFIDENCE_KEY}>@[0-9.]+)?"
+            f"(?P<{ENTITIES}>{{.+}})?"  # "{{" is a masked "{" in an f-string
+            f"(?P<rest>.*)"
+        )
+
+    @staticmethod
+    def unpack_regex_message(
+        message: Message,
+        domain: Optional[Domain] = None,
+        entity_extractor_name: Optional[Text] = None,
+    ) -> Message:
+        """Unpacks the message if `TEXT` contains an encoding of attributes.
+
+        Args:
+            message: some message
+            domain: the domain
+            entity_extractor_name: An extractor name which should be added for the
+                entities.
+
+        Returns:
+            the given message if that message does not need to be unpacked, and a new
+            message with the extracted attributes otherwise
+        """
+        user_text = message.get(TEXT).strip()
+
+        # If the prefix doesn't match, we don't even need to try to match the pattern.
+        if not user_text.startswith(INTENT_MESSAGE_PREFIX):
+            return message
+
+        # Try to match the pattern.
+        match = YAMLStoryReader._regex_message_pattern().match(user_text)
+
+        # If it doesn't match, then (potentially) something went wrong, because the
+        # message text did start with the special prefix -- however, a user might
+        # just have decided to start their text this way.
+        if not match:
+            logger.warning(f"Failed to parse intent end entities from '{user_text}'.")
+            return message
+
+        # Extract attributes from the match - and validate it via the domain.
+        intent_name = YAMLStoryReader._intent_name_from_regex_match(match, domain)
+        confidence = YAMLStoryReader._confidences_from_regex_match(match)
+        entities = YAMLStoryReader._entities_from_regex_match(
+            match, domain, entity_extractor_name
+        )
+
+        # The intent name is *not* optional, but during parsing we might find out
+        # that the given intent is unknown (and warn). In this case, stop here.
+        if intent_name is None:
+            return message
+
+        if match.group("rest"):
+            rasa.shared.utils.io.raise_warning(
+                f"Failed to parse arguments in line '{match.string}'. "
+                f"Failed to interpret some parts. "
+                f"Continuing without {match.group('rest')}. ",
+                docs=DOCS_URL_STORIES,
+            )
+
+        # Add the results to the message.
+        intent_data = {
+            INTENT_NAME_KEY: intent_name,
+            PREDICTED_CONFIDENCE_KEY: confidence,
+        }
+        intent_ranking = [
+            {INTENT_NAME_KEY: intent_name, PREDICTED_CONFIDENCE_KEY: confidence,}
+        ]
+        message_data = {}
+        message_data[TEXT] = user_text
+        message_data[INTENT] = intent_data
+        message_data[INTENT_RANKING_KEY] = intent_ranking
+        message_data[ENTITIES] = entities
+        return Message(message_data, output_properties=set(message_data.keys()))
+
+    @staticmethod
+    def _intent_name_from_regex_match(match: Match, domain: Domain) -> Optional[Text]:
+        intent_name = match.group(INTENT_NAME_KEY).strip()
+        if domain and intent_name not in domain.intents:
+            rasa.shared.utils.io.raise_warning(
+                f"Failed to parse arguments in line '{match.string}'. "
+                f"Expected the intent to be one of [{domain.intents}] "
+                f"but found {intent_name}."
+                f"Continuing with given line as user text.",
+                docs=DOCS_URL_STORIES,
+            )
+            intent_name = None
+        return intent_name
+
+    @staticmethod
+    def _entities_from_regex_match(
+        match: Match, domain: Domain, extractor_name: Optional[Text]
+    ) -> List[Dict[Text, Any]]:
+        """Extracts the optional entity information from the given pattern match.
+
+        If no entities are specified or if the extraction fails, then an empty list
+        is returned.
+
+        Args:
+            match: a match produced by `self.pattern`
+            domain: the domain
+            extractor_name: A extractor name which should be added for the entities
+
+        Returns:
+            some list of entities
+        """
+        entities_str = match.group(ENTITIES)
+        if entities_str is None:
+            return []
+
+        try:
+            parsed_entities = json.loads(entities_str)
+            if not isinstance(parsed_entities, dict):
+                raise ValueError(
+                    f"Parsed value isn't a json object "
+                    f"(instead parser found '{type(parsed_entities)}')"
+                )
+        except (JSONDecodeError, ValueError) as e:
+            rasa.shared.utils.io.raise_warning(
+                f"Failed to parse arguments in line '{match.string}'. "
+                f"Failed to decode parameters as a json object (dict). "
+                f"Make sure the intent is followed by a proper json object (dict). "
+                f"Continuing without entities. "
+                f"Error: {e}",
+                docs=DOCS_URL_STORIES,
+            )
+            parsed_entities = dict()
+
+        # validate the given entity types
+        if domain:
+            entity_types = set(parsed_entities.keys())
+            unknown_entity_types = entity_types.difference(domain.entities)
+            if unknown_entity_types:
+                rasa.shared.utils.io.raise_warning(
+                    f"Failed to parse arguments in line '{match.string}'. "
+                    f"Expected entities from {domain.entities} "
+                    f"but found {unknown_entity_types}. "
+                    f"Continuing without unknown entity types. ",
+                    docs=DOCS_URL_STORIES,
+                )
+                parsed_entities = {
+                    key: value
+                    for key, value in parsed_entities.items()
+                    if key not in unknown_entity_types
+                }
+
+        # convert them into the list of dictionaries that we expect
+        entities: List[Dict[Text, Any]] = []
+        default_properties = {}
+        if extractor_name:
+            default_properties = {EXTRACTOR: extractor_name}
+
+        for entity_type, entity_values in parsed_entities.items():
+            if not isinstance(entity_values, list):
+                entity_values = [entity_values]
+
+            for entity_value in entity_values:
+                entities.append(
+                    {
+                        ENTITY_ATTRIBUTE_TYPE: entity_type,
+                        ENTITY_ATTRIBUTE_VALUE: entity_value,
+                        ENTITY_ATTRIBUTE_START: match.start(ENTITIES),
+                        ENTITY_ATTRIBUTE_END: match.end(ENTITIES),
+                        **default_properties,
+                    }
+                )
+        return entities
+
+    @staticmethod
+    def _confidences_from_regex_match(match: Match) -> float:
+        """Extracts the optional confidence information from the given pattern match.
+
+        If no confidence is specified, then this method returns the maximum
+        confidence `1.0`.
+        If a confidence is specified but extraction fails, then this method defaults
+        to a confidence of `0.0`.
+
+        Args:
+            match: a match produced by `self.pattern`
+            domain: the domain
+
+        Returns:
+            some confidence value
+        """
+        confidence_str = match.group(PREDICTED_CONFIDENCE_KEY)
+        if confidence_str is None:
+            return 1.0
+        try:
+            confidence_str = confidence_str.strip()[1:]  # remove the "@"
+            try:
+                confidence = float(confidence_str)
+            except ValueError:
+                confidence = 0.0
+                raise ValueError(
+                    f"Expected confidence to be a non-negative decimal number but "
+                    f"found {confidence}. Continuing with 0.0 instead."
+                )
+            if confidence > 1.0:
+                # Due to the pattern we know that this cannot be a negative number.
+                original_confidence = confidence
+                confidence = min(1.0, confidence)
+                raise ValueError(
+                    f"Expected confidence to be at most 1.0. "
+                    f"but found {original_confidence}. "
+                    f"Continuing with {confidence} instead."
+                )
+            return confidence
+
+        except ValueError as e:
+            rasa.shared.utils.io.raise_warning(
+                f"Failed to parse arguments in line '{match.string}'. "
+                f"Could not extract confidence value from `{confidence_str}'. "
+                f"Make sure the intent confidence is an @ followed "
+                f"by a decimal number that not negative and at most 1.0. "
+                f"Error: {e}",
+                docs=DOCS_URL_STORIES,
+            )
+            return confidence
 
 
 class StoryParser(YAMLStoryReader):
