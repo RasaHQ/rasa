@@ -1,18 +1,10 @@
 repos:
-- repo: https://github.com/ambv/black
-  rev: 19.10b0
-  hooks:
-  - id: black
-- repo: https://github.com/thlorenz/doctoc
-  rev: master
-  hooks:
-  -   id: doctoc
-      files: "CONTRIBUTING.md"
-- repo: local
-  hooks:
-    - id: docstring-check
-      name: docstring-check
-      entry: bash -c 'make lint-docstrings'
-      language: system
-      types: [python]
-      pass_filenames: false
+-   repo: https://github.com/ambv/black
+    rev: 21.9b0
+    hooks:
+    - id: black
+-   repo: https://github.com/thlorenz/doctoc
+    rev: v2.0.1
+    hooks:
+    -   id: doctoc
+        files: "CONTRIBUTING.md"
