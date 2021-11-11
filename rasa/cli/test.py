@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 from typing import List, Optional, Text, Dict, Union, Any
+import asyncio
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
@@ -92,7 +93,7 @@ def _print_core_test_execution_info(args: argparse.Namespace) -> None:
         )
 
 
-def run_core_test(args: argparse.Namespace) -> None:
+async def run_core_test_async(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.model_testing import (
         test_core_models_in_directory,
@@ -126,11 +127,11 @@ def run_core_test(args: argparse.Namespace) -> None:
         )
 
         if args.evaluate_model_directory:
-            test_core_models_in_directory(
+            await test_core_models_in_directory(
                 args.model, stories, output, use_conversation_test_files=args.e2e
             )
         else:
-            test_core(
+            await test_core(
                 model=model_path,
                 stories=stories,
                 output=output,
@@ -139,7 +140,7 @@ def run_core_test(args: argparse.Namespace) -> None:
             )
 
     else:
-        test_core_models(
+        await test_core_models(
             args.model, stories, output, use_conversation_test_files=args.e2e
         )
 
@@ -184,7 +185,7 @@ async def run_nlu_test_async(
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
-    nlu_data = await test_data_importer.get_nlu_data()
+    nlu_data = test_data_importer.get_nlu_data()
 
     output = output_dir or DEFAULT_RESULTS_PATH
     all_args["errors"] = not no_errors
@@ -224,7 +225,10 @@ async def run_nlu_test_async(
         config = rasa.cli.utils.get_validated_path(
             config, "config", DEFAULT_CONFIG_PATH
         )
-        perform_nlu_cross_validation(config, nlu_data, output, all_args)
+        config_importer = TrainingDataImporter.load_from_dict(config_path=config)
+
+        config_dict = config_importer.get_config()
+        await perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
     else:
         model_path = rasa.cli.utils.get_validated_path(
             models_path, "model", DEFAULT_MODELS_PATH
@@ -239,7 +243,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     Args:
         args: the parsed CLI arguments for 'rasa test nlu'.
     """
-    rasa.utils.common.run_in_loop(
+    asyncio.run(
         run_nlu_test_async(
             args.config,
             args.nlu,
@@ -252,6 +256,15 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             vars(args),
         )
     )
+
+
+def run_core_test(args: argparse.Namespace) -> None:
+    """Runs Core tests.
+
+    Args:
+        args: the parsed CLI arguments for 'rasa test core'.
+    """
+    asyncio.run(run_core_test_async(args))
 
 
 def test(args: argparse.Namespace) -> None:

@@ -157,10 +157,6 @@ which is unexpected according to the current set of training stories and hence a
 path to training stories is recommended. Like other bot actions, you can choose to confirm
 or deny running this action.
 
-:::info New in 2.8
-`UnexpecTEDIntentPolicy` was added.
-:::
-
 
 If you provide a trained model using the `--model` argument, training is skipped
 and that model will be loaded instead.
@@ -233,6 +229,13 @@ you need to add the `--ssl-password` as well.
 
 ```bash
 rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key --ssl-password mypassword
+```
+
+Rasa by default listens on each available network interface. You can limit this to a specific 
+network interface using the `-i` command line option.
+
+```bash
+rasa run -i 192.168.69.150
 ```
 
 The following arguments can be used to configure your Rasa server:
@@ -333,14 +336,12 @@ ls train_test_split
 You can convert NLU data from
 - LUIS data format,
 - WIT data format,
-- Dialogflow data format,
-- JSON, or
-- Markdown
+- Dialogflow data format, or
+- JSON
 
 to
 - YAML or
-- JSON or
-- Markdown.
+- JSON
 
 You can start the converter by running:
 
@@ -351,26 +352,6 @@ rasa data convert nlu
 You can specify the input file or directory, output file or directory, and the output format with the following arguments:
 
 ```text [rasa data convert nlu --help]
-```
-
-## rasa data convert core
-
-You can convert Core data from Markdown to YAML.
-
-You can specify the input file or directory, output directory with the following arguments:
-
-```bash
-rasa data convert core --help
-```
-
-## rasa data convert nlg
-
-You can convert NLG data from Markdown to YAML.
-
-You can specify the input file or directory, output directory with the following arguments:
-
-```bash
-rasa data convert nlg --help
 ```
 
 ## rasa data validate
@@ -417,10 +398,6 @@ domain files:
 
 ```text [rasa data validate --help]
 ```
-
-:::info New in 2.8
-Story validation is no longer an experimental feature as of 2.8. The feature behaviour remains unchanged.
-:::
 
 ## rasa export
 

@@ -1,10 +1,10 @@
-import asyncio
 from pathlib import Path
 from typing import Text, List, Dict, Any
 from unittest.mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 
 import pytest
+import numpy as np
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
@@ -18,10 +18,12 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     INTENT,
     ACTION_NAME,
+    FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
@@ -410,7 +412,7 @@ def test_number_of_examples_per_intent():
     assert training_data.number_of_examples_per_intent["ask_weather"] == 2
 
 
-async def test_number_of_examples_per_intent_with_yaml(tmp_path: Path):
+def test_number_of_examples_per_intent_with_yaml(tmp_path: Path):
     domain_path = tmp_path / "domain.yml"
     domain_path.write_text(Domain.empty().as_yaml())
 
@@ -428,7 +430,7 @@ async def test_number_of_examples_per_intent_with_yaml(tmp_path: Path):
         ],
     )
 
-    training_data = await importer.get_nlu_data()
+    training_data = importer.get_nlu_data()
     assert training_data.intents == {"greet", "ask_weather"}
     assert training_data.number_of_examples_per_intent["greet"] == 2
     assert training_data.number_of_examples_per_intent["ask_weather"] == 3
@@ -486,7 +488,6 @@ def test_train_test_split_with_random_seed(filepaths):
     "files",
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
-        ("data/examples/rasa/demo-rasa.yml", "data/test/multiple_files_markdown"),
         ("data/examples/rasa/demo-rasa.yml", "data/test/duplicate_intents_yaml"),
     ],
 )
@@ -502,15 +503,7 @@ def test_data_merging(files):
     assert td.regex_features == td_reference.regex_features
 
 
-def test_markdown_single_sections():
-    td_regex_only = load_data("data/test/markdown_single_sections/regex_only.md")
-    assert td_regex_only.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
-
-    td_syn_only = load_data("data/test/markdown_single_sections/synonyms_only.md")
-    assert td_syn_only.entity_synonyms == {"Chines": "chinese", "Chinese": "chinese"}
-
-
-def test_repeated_entities(tmp_path):
+def test_repeated_entities(tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizer):
     data = """
 {
   "rasa_nlu_data": {
@@ -537,7 +530,7 @@ def test_repeated_entities(tmp_path):
     example = td.entity_examples[0]
     entities = example.get("entities")
     assert len(entities) == 1
-    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    tokens = whitespace_tokenizer.tokenize(example, attribute=TEXT)
     start, end = MitieEntityExtractor.find_entity(
         entities[0], example.get(TEXT), tokens
     )
@@ -545,7 +538,7 @@ def test_repeated_entities(tmp_path):
     assert end == 10
 
 
-def test_multiword_entities(tmp_path):
+def test_multiword_entities(tmp_path: Path, whitespace_tokenizer: WhitespaceTokenizer):
     data = """
 {
   "rasa_nlu_data": {
@@ -572,7 +565,7 @@ def test_multiword_entities(tmp_path):
     example = td.entity_examples[0]
     entities = example.get("entities")
     assert len(entities) == 1
-    tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT)
+    tokens = whitespace_tokenizer.tokenize(example, attribute=TEXT)
     start, end = MitieEntityExtractor.find_entity(
         entities[0], example.get(TEXT), tokens
     )
@@ -708,18 +701,6 @@ def cmp_dict_list(firsts, seconds):
             "json",
             None,
         ),
-        (
-            "data/examples/rasa/demo-rasa.json",
-            "data/test_md/json_converted_to_md.md",
-            "md",
-            None,
-        ),
-        (
-            "data/test/training_data_containing_special_chars.json",
-            "data/test_md/json_with_special_chars_converted_to_md.md",
-            "md",
-            None,
-        ),
     ],
 )
 def test_training_data_conversion(
@@ -760,10 +741,6 @@ def test_training_data_conversion(
             rasa.shared.data.yaml_file_extension(),
         ),
         ("data/examples", rasa.shared.data.yaml_file_extension()),
-        (
-            "data/test_md/default_retrieval_intents.md",
-            rasa.shared.data.markdown_file_extension(),
-        ),
         ("data/examples/rasa/demo-rasa.yml", rasa.shared.data.yaml_file_extension()),
         ("data/rasa_yaml_examples", rasa.shared.data.yaml_file_extension()),
     ],
@@ -808,7 +785,7 @@ def test_custom_attributes(tmp_path):
     assert example.get("sentiment") == 0.8
 
 
-async def test_without_additional_e2e_examples(tmp_path: Path):
+def test_without_additional_e2e_examples(tmp_path: Path):
     domain_path = tmp_path / "domain.yml"
     domain_path.write_text(Domain.empty().as_yaml())
 
@@ -831,11 +808,11 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
     )
 
     # Patch to return our test stories
-    existing.get_stories = asyncio.coroutine(lambda *args: stories)
+    existing.get_stories = lambda *args: stories
 
     importer = E2EImporter(existing)
 
-    training_data = await importer.get_nlu_data()
+    training_data = importer.get_nlu_data()
 
     assert training_data.training_examples
     assert not training_data.is_empty()
@@ -936,3 +913,36 @@ def test_label_fingerprints(message: Message):
     )
     training_data2 = training_data1.merge(TrainingData([message]))
     assert training_data1.label_fingerprint() != training_data2.label_fingerprint()
+
+
+def test_training_data_fingerprint_incorporates_tokens(
+    whitespace_tokenizer: WhitespaceTokenizer,
+):
+    from rasa.shared.importers.utils import training_data_from_paths
+
+    files = [
+        "data/examples/rasa/demo-rasa.yml",
+        "data/examples/rasa/demo-rasa-responses.yml",
+    ]
+    training_data = training_data_from_paths(files, language="en")
+    fp1 = training_data.fingerprint()
+    whitespace_tokenizer.process_training_data(training_data)
+    # training data fingerprint has changed
+    assert fp1 != training_data.fingerprint()
+
+
+def test_training_data_fingerprint_incorporates_features():
+    from rasa.shared.importers.utils import training_data_from_paths
+
+    files = [
+        "data/examples/rasa/demo-rasa.yml",
+        "data/examples/rasa/demo-rasa-responses.yml",
+    ]
+    training_data = training_data_from_paths(files, language="en")
+    fp1 = training_data.fingerprint()
+    big_array = np.random.random((128, 128))
+
+    f1 = Features(big_array, FEATURE_TYPE_SENTENCE, TEXT, "RegexFeaturizer")
+    training_data.training_examples[0].add_features(f1)
+    # training data fingerprint has changed
+    assert fp1 != training_data.fingerprint()

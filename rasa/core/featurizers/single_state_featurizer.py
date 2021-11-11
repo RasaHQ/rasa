@@ -2,16 +2,13 @@ import logging
 import numpy as np
 import scipy.sparse
 from typing import List, Optional, Dict, Text, Set, Any
-from collections import defaultdict
 
-import rasa.shared.utils.io
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.utils import bilou_utils
 from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
 from rasa.shared.core.domain import SubState, State, Domain
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
-from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.trackers import is_prev_action_listen_in_state
 from rasa.shared.nlu.constants import (
     ENTITIES,
@@ -22,9 +19,9 @@ from rasa.shared.nlu.constants import (
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.tensorflow import model_data_utils
 
 logger = logging.getLogger(__name__)
@@ -35,18 +32,13 @@ class SingleStateFeaturizer:
 
     Subclasses of SingleStateFeaturizer will decide how a bot will
     transform the dialogue state into a dictionary mapping an attribute
-    to its features. Possible attributes are: INTENT, TEXT, ACTION_NAME,
-    ACTION_TEXT, ENTITIES, SLOTS and ACTIVE_LOOP. Each attribute will be
+    to its features. Possible attributes are: `INTENT`, `TEXT`, `ACTION_NAME`,
+    `ACTION_TEXT`, `ENTITIES`, `SLOTS` and `ACTIVE_LOOP`. Each attribute will be
     featurized into a list of `rasa.utils.features.Features`.
     """
 
     def __init__(self) -> None:
         """Initialize the single state featurizer."""
-        # rasa core can be trained separately, therefore interpreter during training
-        # will be `RegexInterpreter`. If the model is combined with a rasa nlu model
-        # during prediction the interpreter might be different.
-        # If that is the case, we need to make sure to "reset" the interpreter.
-        self._use_regex_interpreter = False
         self._default_feature_states = {}
         self.action_texts = []
         self.entity_tag_specs = []
@@ -93,23 +85,14 @@ class SingleStateFeaturizer:
         ]
 
     def prepare_for_training(
-        self,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        bilou_tagging: bool = False,
+        self, domain: Domain, bilou_tagging: bool = False,
     ) -> None:
         """Gets necessary information for featurization from domain.
 
         Args:
             domain: An instance of :class:`rasa.shared.core.domain.Domain`.
-            interpreter: The interpreter used to encode the state
             bilou_tagging: indicates whether BILOU tagging should be used or not
         """
-        if isinstance(interpreter, RegexInterpreter):
-            # this method is called during training,
-            # RegexInterpreter means that core was trained separately
-            self._use_regex_interpreter = True
-
         # store feature states for each attribute in order to create binary features
         def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:
             return {
@@ -186,32 +169,6 @@ class SingleStateFeaturizer:
             for feature in sparse_sequence_features
         ]
 
-    def _get_features_from_parsed_message(
-        self, parsed_message: Optional[Message], attributes: Set[Text]
-    ) -> Dict[Text, List[Features]]:
-        if parsed_message is None:
-            return {}
-
-        output = defaultdict(list)
-        for attribute in attributes:
-            all_features = parsed_message.get_sparse_features(
-                attribute
-            ) + parsed_message.get_dense_features(attribute)
-
-            for features in all_features:
-                if features is not None:
-                    output[attribute].append(features)
-
-        # if features for INTENT or ACTION_NAME exist,
-        # they are always sparse sequence features;
-        # transform them to sentence sparse features
-        if output.get(INTENT):
-            output[INTENT] = self._to_sparse_sentence_features(output[INTENT])
-        if output.get(ACTION_NAME):
-            output[ACTION_NAME] = self._to_sparse_sentence_features(output[ACTION_NAME])
-
-        return output
-
     @staticmethod
     def _get_name_attribute(attributes: Set[Text]) -> Optional[Text]:
         # there is always either INTENT or ACTION_NAME
@@ -227,29 +184,50 @@ class SingleStateFeaturizer:
     def _extract_state_features(
         self,
         sub_state: SubState,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         sparse: bool = False,
     ) -> Dict[Text, List[Features]]:
-        # this method is called during both prediction and training,
-        # `self._use_regex_interpreter == True` means that core was trained
-        # separately, therefore substitute interpreter based on some trained
-        # nlu model with default RegexInterpreter to make sure
-        # that prediction and train time features are the same
-        if self._use_regex_interpreter and not isinstance(
-            interpreter, RegexInterpreter
-        ):
-            interpreter = RegexInterpreter()
 
-        message = Message(data=sub_state)
-        # remove entities from possible attributes
+        # Remove entities from possible attributes
         attributes = set(
             attribute for attribute in sub_state.keys() if attribute != ENTITIES
         )
 
-        parsed_message = interpreter.featurize_message(message)
-        output = self._get_features_from_parsed_message(parsed_message, attributes)
+        if precomputations is not None:
 
-        # check that name attributes have features
+            # Collect features for all those attributes
+            attributes_to_features = precomputations.collect_features(
+                sub_state, attributes=attributes
+            )
+            # if features for INTENT or ACTION_NAME exist,
+            # they are always sparse sequence features;
+            # transform them to sentence sparse features
+            if attributes_to_features.get(INTENT):
+                attributes_to_features[INTENT] = self._to_sparse_sentence_features(
+                    attributes_to_features[INTENT]
+                )
+            if attributes_to_features.get(ACTION_NAME):
+                attributes_to_features[ACTION_NAME] = self._to_sparse_sentence_features(
+                    attributes_to_features[ACTION_NAME]
+                )
+
+            # Combine and sort the features:
+            # Per attribute, combine features of same type and level into one Feature,
+            # and (if there are any such features) store the results in a list where
+            # - all the sparse features are listed first and a
+            # - sequence feature is always listed before the sentence feature of the
+            #   same type (sparse/not sparse).
+            output = {
+                attribute: Features.reduce(
+                    features_list=features_list, expected_origins=None
+                )
+                for attribute, features_list in attributes_to_features.items()
+                if len(features_list) > 0  # otherwise, following will fail
+            }
+        else:
+            output = {}
+
+        # Check that the name attribute has features
         name_attribute = self._get_name_attribute(attributes)
         if name_attribute and name_attribute not in output:
             # nlu pipeline didn't create features for user or action
@@ -259,17 +237,18 @@ class SingleStateFeaturizer:
             output[name_attribute] = self._create_features(
                 sub_state, name_attribute, sparse
             )
-
         return output
 
     def encode_state(
-        self, state: State, interpreter: NaturalLanguageInterpreter
+        self,
+        state: State,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> Dict[Text, List[Features]]:
-        """Encodes the given state with the help of the given interpreter.
+        """Encode the given state.
 
         Args:
             state: The state to encode
-            interpreter: The interpreter used to encode the state
+            precomputations: Contains precomputed features and attributes.
 
         Returns:
             A dictionary of state_type to list of features.
@@ -278,13 +257,18 @@ class SingleStateFeaturizer:
         for state_type, sub_state in state.items():
             if state_type == PREVIOUS_ACTION:
                 state_features.update(
-                    self._extract_state_features(sub_state, interpreter, sparse=True)
+                    self._extract_state_features(
+                        sub_state, precomputations=precomputations, sparse=True,
+                    )
                 )
             # featurize user only if it is "real" user input,
             # i.e. input from a turn after action_listen
             if state_type == USER and is_prev_action_listen_in_state(state):
+
                 state_features.update(
-                    self._extract_state_features(sub_state, interpreter, sparse=True)
+                    self._extract_state_features(
+                        sub_state, precomputations=precomputations, sparse=True,
+                    )
                 )
                 if sub_state.get(ENTITIES):
                     state_features[ENTITIES] = self._create_features(
@@ -301,16 +285,16 @@ class SingleStateFeaturizer:
     def encode_entities(
         self,
         entity_data: Dict[Text, Any],
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         bilou_tagging: bool = False,
     ) -> Dict[Text, List[Features]]:
-        """Encodes the given entity data with the help of the given interpreter.
+        """Encode the given entity data.
 
         Produce numeric entity tags for tokens.
 
         Args:
             entity_data: The dict containing the text and entity labels and locations
-            interpreter: The interpreter used to encode the state
+            precomputations: Contains precomputed features and attributes.
             bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
@@ -328,7 +312,8 @@ class SingleStateFeaturizer:
             # we cannot build a classifier with fewer than 2 classes
             return {}
 
-        message = interpreter.featurize_message(Message(entity_data))
+        message = precomputations.lookup_message(user_text=entity_data[TEXT])
+        message.data[ENTITIES] = entity_data[ENTITIES]
 
         if not message:
             return {}
@@ -345,128 +330,73 @@ class SingleStateFeaturizer:
         }
 
     def _encode_action(
-        self, action: Text, interpreter: NaturalLanguageInterpreter
+        self,
+        action: Text,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> Dict[Text, List[Features]]:
         if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
         else:
             action_as_sub_state = {ACTION_NAME: action}
 
-        return self._extract_state_features(action_as_sub_state, interpreter)
+        return self._extract_state_features(
+            action_as_sub_state, precomputations=precomputations
+        )
 
     def encode_all_labels(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+        self,
+        domain: Domain,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> List[Dict[Text, List[Features]]]:
-        """Encodes all labels from the domain using the given interpreter.
-
-        Args:
-            domain: The domain that contains the labels.
-            interpreter: The interpreter used to encode the labels.
-
-        Returns:
-            A list of encoded labels.
-        """
-        return [
-            self._encode_action(action, interpreter)
-            for action in domain.action_names_or_texts
-        ]
-
-    def encode_all_actions(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
-    ) -> List[Dict[Text, List[Features]]]:
-        """Encodes all actions from the domain using the given interpreter.
-
-        This method is deprecated and will be removed in Rasa Open Source 3.0.0 .
-        It is recommended to use `encode_all_labels` instead.
+        """Encode all action from the domain.
 
         Args:
             domain: The domain that contains the actions.
-            interpreter: The interpreter used to encode the actions.
+            precomputations: Contains precomputed features and attributes.
 
         Returns:
             A list of encoded actions.
         """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.__class__.__name__}.encode_all_actions' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. "
-            f"It is recommended to use the method 'encode_all_labels' instead.",
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-
-        return self.encode_all_labels(domain, interpreter)
+        return [
+            self._encode_action(action, precomputations)
+            for action in domain.action_names_or_texts
+        ]
 
 
 class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     """A SingleStateFeaturizer for use with policies that predict intent labels."""
 
     def _encode_intent(
-        self, intent: Text, interpreter: NaturalLanguageInterpreter
+        self,
+        intent: Text,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> Dict[Text, List[Features]]:
         """Extracts a numeric representation of an intent.
 
         Args:
             intent: Intent to be encoded.
-            interpreter: NLU Interpreter to be used for encoding.
+            precomputations: Contains precomputed features and attributes.
 
         Returns:
             Encoded representation of intent.
         """
         intent_as_sub_state = {INTENT: intent}
-
-        return self._extract_state_features(intent_as_sub_state, interpreter)
+        return self._extract_state_features(intent_as_sub_state, precomputations)
 
     def encode_all_labels(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+        self,
+        domain: Domain,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> List[Dict[Text, List[Features]]]:
-        """Encodes all relevant labels from the domain using the given interpreter.
+        """Encodes all relevant labels from the domain using the given precomputations.
 
         Args:
             domain: The domain that contains the labels.
-            interpreter: The interpreter used to encode the labels.
+            precomputations: Contains precomputed features and attributes.
 
         Returns:
             A list of encoded labels.
         """
-        return [self._encode_intent(intent, interpreter) for intent in domain.intents]
-
-
-class BinarySingleStateFeaturizer(SingleStateFeaturizer):
-    """Dialogue State featurizer which features the state as binaries."""
-
-    def __init__(self) -> None:
-        """Creates featurizer."""
-        super().__init__()
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.__class__.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. "
-            f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-
-    def _extract_state_features(
-        self,
-        sub_state: SubState,
-        interpreter: NaturalLanguageInterpreter,
-        sparse: bool = False,
-    ) -> Dict[Text, List[Features]]:
-        # create a special method that doesn't use passed interpreter
-        name_attribute = self._get_name_attribute(set(sub_state.keys()))
-        if name_attribute:
-            return {
-                name_attribute: self._create_features(sub_state, name_attribute, sparse)
-            }
-
-        return {}
-
-
-class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__()
-        # it is hard to fully mimic old behavior, but SingleStateFeaturizer
-        # does the same thing if nlu pipeline is configured correctly
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.__class__.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. "
-            f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
+        return [
+            self._encode_intent(intent, precomputations) for intent in domain.intents
+        ]

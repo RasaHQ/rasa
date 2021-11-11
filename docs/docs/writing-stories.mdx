@@ -216,7 +216,7 @@ and creating too many checkpoints can make your stories hard to understand.
 
 #### OR statements
 
-In stories where different intents are handled by your bot in the same way,
+In stories where different intents or slot events are handled by your bot in the same way,
 you can use OR statements as an alternative to creating a new story.
 
 For example, you can merge these two stories:
@@ -547,7 +547,6 @@ be given the chance to correct the prediction before continuing:
    0.00 action_default_fallback
    0.00 action_listen
    0.00 action_restart
-   0.00 action_revert_fallback_events
    0.00 action_session_start
    0.00 action_two_stage_fallback
    0.00 utter_cheer_up

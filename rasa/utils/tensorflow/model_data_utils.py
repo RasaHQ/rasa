@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import scipy.sparse
 from collections import defaultdict, OrderedDict
-from typing import List, Optional, Text, Dict, Tuple, Union, Any
+from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
@@ -141,7 +141,7 @@ def get_tag_ids(
 def _surface_attributes(
     features: List[List[Dict[Text, List["Features"]]]],
     featurizers: Optional[List[Text]] = None,
-) -> Dict[Text, List[List[List["Features"]]]]:
+) -> DefaultDict[Text, List[List[Optional[List["Features"]]]]]:
     """Restructure the input.
 
     "features" can, for example, be a dictionary of attributes (INTENT,
@@ -171,20 +171,21 @@ def _surface_attributes(
     )
 
     output = defaultdict(list)
-
     for list_of_attribute_to_features in features:
         intermediate_features = defaultdict(list)
         for attribute_to_features in list_of_attribute_to_features:
             for attribute in attributes:
-                features = attribute_to_features.get(attribute)
+                attribute_features = attribute_to_features.get(attribute)
                 if featurizers:
-                    features = _filter_features(features, featurizers)
+                    attribute_features = _filter_features(
+                        attribute_features, featurizers
+                    )
 
                 # if attribute is not present in the example, populate it with None
-                intermediate_features[attribute].append(features)
+                intermediate_features[attribute].append(attribute_features)
 
-        for key, value in intermediate_features.items():
-            output[key].append(value)
+        for key, collection_of_feature_collections in intermediate_features.items():
+            output[key].append(collection_of_feature_collections)
 
     return output
 

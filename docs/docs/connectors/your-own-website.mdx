@@ -11,6 +11,7 @@ to test your bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share
 
 If you already have an existing website and want to add a Rasa assistant to it,
 you can use the [Rasa Chat Widget](#chat-widget) a widget which you can incorporate into your existing webpage by adding a HTML snippet.
+
 Alternatively, you can also build your own chat widget.
 
 ## REST Channels
@@ -133,10 +134,6 @@ implements this session creation mechanism (version >= 0.5.0).
 :::
 
 ### JWT Authentication
-
-:::info New in 2.6
-The JWT authentication option has been added.
-:::
 
 The SocketIO channel can be optionally configured to perform JWT authentication on connect
 by defining the `jwt_key` and optional `jwt_method` in the `credentials.yml` file. 
