@@ -49,7 +49,7 @@ marker_dialogue_incomplete:
 
 Markers are defined in a markers configuration file written in `yaml`.
 Each marker should have a unique identifier, and consists of at least one event condition.
-Markers can also contain operators, which allow you to express more complex behavior or
+Markers can also contain operators, which allow you to express more precise behavior or
 combine event conditions.
 
 Consider the following marker definition:
@@ -59,18 +59,18 @@ marker_mood_expressed:
         - intent: mood_unhappy
         - intent: mood_great
 ```
-The unique marker identified is `marker_mood_expressed`. The marker definition contains one operator, `or`,
+The unique marker identifier is `marker_mood_expressed`. The marker definition contains one operator, `or`,
 and two event conditions `intent: mood_unhappy` and `intent: mood_great`.
 
 ### Event conditions
 
-The following event conditions are supported:
+The following event conditions labels are supported:
 
 - `action`: the specified bot action was executed.
 - `intent`: the specified user intent was detected.
 - `slot_was_set`: the specified slot was set.
 
-as well as their negated forms:
+The negated forms of the labels are also supported:
 
 - `not_action`: the event is not an `ActionExecuted` with the specified action.
 - `not_intent`: the event is not a `UserUttered` with the specified intent.
@@ -82,7 +82,7 @@ The following operators are supported:
 
 - `and`: all listed conditions applied.
 - `or`: any of the listed conditions applied.
-- `not`: the condition did not apply. `not` can have only 1 condition.
+- `not`: the condition did not apply. `not` only accepts 1 condition.
 - `seq`: the list of conditions applied in the specified order, with any number of events occurring in-between.
 - `at_least_once`: the listed marker definitions occurred at least once. Only the first occurrence will be marked.
 - `never`: the listed conditions definitions never occurred.
@@ -98,10 +98,12 @@ marker_mood_expressed:
     or:
         - intent: mood_unhappy
         - intent: mood_great
-marker_cheer_up:
+marker_cheer_up_failed:
     seq:
         - intent: mood_unhappy
         - action: utter_cheer_up
+        - action: utter_did_that_help
+        - intent: deny
 marker_bot_not_challenged:
     never:
         - intent: bot_challenge
