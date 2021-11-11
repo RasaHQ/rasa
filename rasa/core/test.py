@@ -605,7 +605,7 @@ async def _get_e2e_entity_evaluation_result(
     if isinstance(previous_event, SlotSet):
         # UserUttered events with entities can be followed by SlotSet events
         # if slots are defined in the domain
-        previous_event = tracker.get_last_event_for(UserUttered)
+        previous_event = tracker.get_last_event_for((UserUttered, ActionExecuted))
 
     if isinstance(previous_event, UserUttered):
         entities_predicted_by_policies = [
