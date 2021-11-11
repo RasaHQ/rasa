@@ -107,13 +107,13 @@ marker_cheer_up_failed:
 marker_bot_not_challenged:
     never:
         - intent: bot_challenge
-marker_faq:
+marker_cheer_up_attempt:
     at_least_once:
-        - intent: faq
+        - action: utter_cheer_up
 marker_mood_expressed_and_name_not_provided:
     and:
         - not:
-            slot_was_set: name
+            - slot_was_set: name
         - or:
             - intent: mood_unhappy
             - intent: mood_great
