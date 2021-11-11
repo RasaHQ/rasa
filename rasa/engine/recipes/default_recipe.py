@@ -477,7 +477,7 @@ class DefaultV1Recipe(Recipe):
                 config_key: cli_parameters[param]
                 for param, config_key in {
                     "debug_plots": "debug_plots",
-                    "augmentation": "augmentation_factor",
+                    "augmentation_factor": "augmentation_factor",
                 }.items()
                 if param in cli_parameters
             },
