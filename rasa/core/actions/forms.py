@@ -368,9 +368,6 @@ class FormAction(LoopAction):
                 # pre-filled slots were already validated at form activation
                 break
 
-            if event.key not in self.required_slots(domain):
-                continue
-
             slot_values = self._update_slot_values(event, tracker, domain, slot_values)
 
         return slot_values
