@@ -45,3 +45,20 @@ class HangoutsInput(InputChannel)
 
 Channel that uses Google Hangouts Chat API to communicate.
 
+#### name
+
+```python
+ | @classmethod
+ | name(cls) -> Text
+```
+
+Returns channel name.
+
+#### blueprint
+
+```python
+ | blueprint(on_new_message: Callable[[UserMessage], Awaitable[None]]) -> Blueprint
+```
+
+API configuration for the channel webhook.
+

@@ -21,7 +21,7 @@ Slack input channel implementation. Based on the HTTPInputChannel.
 #### \_\_init\_\_
 
 ```python
- | __init__(slack_token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None, slack_retry_reason_header: Optional[Text] = None, slack_retry_number_header: Optional[Text] = None, errors_ignore_retry: Optional[List[Text]] = None, use_threads: Optional[bool] = False, slack_signing_secret: Text = "") -> None
+ | __init__(slack_token: Text, slack_channel: Optional[Text] = None, proxy: Optional[Text] = None, slack_retry_reason_header: Optional[Text] = None, slack_retry_number_header: Optional[Text] = None, errors_ignore_retry: Optional[List[Text]] = None, use_threads: Optional[bool] = False, slack_signing_secret: Text = "", conversation_granularity: Optional[Text] = "sender") -> None
 ```
 
 Create a Slack input channel.
@@ -55,6 +55,10 @@ https://github.com/slackapi/python-slackclient
 - `slack_signing_secret` - Slack creates a unique string for your app and
   shares it with you. This allows us to verify requests from Slack
   with confidence by verifying signatures using your signing secret.
+- `conversation_granularity` - conversation granularity for slack conversations.
+  sender allows 1 conversation per user (across channels)
+  channel allows 1 conversation per user per channel
+  thread allows 1 conversation per user per thread
 
 #### process\_message
 
