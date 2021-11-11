@@ -3,6 +3,7 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
+import time
 from rasa.nlu.featurizers.featurizer import Featurizer
 
 import numpy as np
@@ -894,9 +895,15 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[RANDOM_SEED],
         )
+
+        current_time = time.strftime("%Y%m%d-%H%M%S")
+        class_name = self.__class__.__name__
+        tensorboard_log_dir = (
+            f"{self.component_config[TENSORBOARD_LOG_DIR]}/{class_name}/{current_time}/"
+        )
         callbacks = train_utils.create_common_callbacks(
             self.component_config[EPOCHS],
-            self.component_config[TENSORBOARD_LOG_DIR],
+            tensorboard_log_dir,
             self.component_config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
         )

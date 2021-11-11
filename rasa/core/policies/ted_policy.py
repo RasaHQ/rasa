@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logging
+import time
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 import shutil
@@ -664,9 +665,15 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[RANDOM_SEED],
         )
+
+        current_time = time.strftime("%Y%m%d-%H%M%S")
+        class_name = self.__class__.__name__
+        tensorboard_log_dir = (
+            f"{self.component_config[TENSORBOARD_LOG_DIR]}/{class_name}/{current_time}/"
+        )
         callbacks = rasa.utils.train_utils.create_common_callbacks(
             self.config[EPOCHS],
-            self.config[TENSORBOARD_LOG_DIR],
+            tensorboard_log_dir,
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
         )
