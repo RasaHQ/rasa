@@ -86,10 +86,8 @@ slots:
   outdoor_seating:
     type: bool
     conditions:
-    - active_loop:
-      - restaurant_form
-    - requested_slot:
-      - outdoor_seating
+    - active_loop: restaurant_form
+      requested_slot: outdoor_seating
     mappings:
     - type: from_intent
       intent: affirm
@@ -120,7 +118,7 @@ filled based on the user's intent: If it is `affirm`, it'll be `true`, if it is
 However, the slot should only be set to `true` or `false` if the user was responding to the question, `Do you want to sit outside?`.
 To enforce this condition, the `conditions` for the `outdoor_seating` slot requires that `restaurant_form` is active and that the requested slot is `outdoor_seating`. 
 If there were no conditions and the user had sent a message with the `affirm` or `deny` intent earlier in the conversation,
-the `outdoor_seating` slot would already be filled when the form was activated. Therefore the form would not prompt the user for their outdoor seating preference. See [mapping conditons](./domain.mdx#mapping-conditions) for more information.
+the `outdoor_seating` slot would already be filled when the form was activated. Therefore the form would not prompt the user for their outdoor seating preference. See [mapping conditions](./domain.mdx#mapping-conditions) for more information.
 
 
 #### Validating Slots
