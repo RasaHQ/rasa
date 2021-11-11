@@ -549,6 +549,16 @@ stories:
   - action: utter_greet_user_by_name
 ```
 
+The initial value for any slot by default is `null`, and you can use it to check if the slot was not set:
+
+```yaml-rasa {5-6}
+stories:
+- story: French cuisine
+  steps:
+  - intent: inform
+  - slot_was_set:
+    - cuisine: null
+```
 
 :::note How slots work
 Stories do not **set** slots. The slot must be set by an entity or custom
