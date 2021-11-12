@@ -127,385 +127,6 @@ import to avoid using forward references with Python 3.7.
   </TabItem>
 </Tabs>
 
-#### Changes to Custom Policies
-This guide leads you through the migration of a custom policy step by step.
-
-**Instantiating a Policy for Training**
-
-Policies are no longer instantiated via their constructor. Instead, all policies have
-to implement a `create` method. During the policy instantiation the configuration from
-the [model configuration](model-configuration.mdx) is passed in as a dictionary instead
-of as separate parameters. Similarly, the`featurizers` are no longer instantiated
-outside of policies.
-Instead, the super class `rasa.core.policies.policy.Policy` instantiates the
-featurizers itself.
-
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-init" defaultValue="new">
-  <TabItem value="old">
-
-  ```python
-  class MyPolicy(Policy):
-      def __init__(
-          self,
-          featurizer: Optional[TrackerFeaturizer] = None,
-          priority: int = DEFAULT_POLICY_PRIORITY,
-          max_history: Optional[int] = None,
-      ) -> None:
-          super().__init__(featurizer, priority, **kwargs)
-          ...
-  ```
-
-  </TabItem>
-  <TabItem value="new">
-
-  ```python
-  class MyPolicy(Policy):
-      def __init__(
-          self,
-          featurizer: Optional[TrackerFeaturizer] = None,
-          priority: int = DEFAULT_POLICY_PRIORITY,
-          max_history: Optional[int] = None,
-      ) -> None:
-          super().__init__(
-            config, model_storage, resource, execution_context, featurizer
-          )
-          ...
-      ...
-
-    @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> MyPolicy:
-        return cls(config, model_storage, resource, execution_context)
-
-  ```
-
-  </TabItem>
-</Tabs>
-
-**Persisting a Trained Policy**
-
-Policies used to be persisted by a call to the policy's `persist` method from outside the policy itself.
-With Rasa Open Source 3.0 policies are responsible for persisting themselves.
-Use the provided `model_storage` and `resource` parameters
-to persist your graph component at the end of the training and then return the `resource`
-as result of your policy's `train` method. See [graph component persistence](custom-graph-components.mdx#model-persistence) for more details.
-
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-persistence" defaultValue="new">
-  <TabItem value="old">
-
-  ```python
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List[TrackerWithCachedStates],
-          domain: Domain,
-          interpreter: NaturalLanguageInterpreter,
-          **kwargs: Any,
-      ) -> None:
-          ...
-
-      def persist(self, path: Union[Text, Path]) -> None:
-          if self.featurizer is not None:
-              self.featurizer.persist(path)
-
-          file_path = Path(path) / "model_data.json"
-          rasa.shared.utils.io.create_directory_for_file(file_path)
-          rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
-              self.get_model_data())
-      ...
-  ```
-
-  </TabItem>
-  <TabItem value="new">
-
-  ```python
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List[TrackerWithCachedStates],
-          domain: Domain,
-          **kwargs: Any,
-      ) -> Resource:
-          ...
-          self.persist()
-          return self._resource
-
-      def persist() -> None:
-          with self._model_storage.write_to(self._resource) as directory:
-              if self.featurizer is not None:
-                  self.featurizer.persist(directory)
-
-              file_path = directory / "model_data.json"
-              rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
-                  self.get_model_data())
-      ...
-  ```
-
-  </TabItem>
-</Tabs>
-
-**Instantiating a Trained Policy**
-
-Previously policies had to persist their own configuration. Now the config passed
-into `load` will automatically contain the configuration which your model was trained with.
-
-To instantiate a persisted policy, you need to use `model_storage` and `resource` in your policy's
-`load` method. 
-
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-loading" defaultValue="new">
-  <TabItem value="old">
-
-  ```python
-  class MyPolicy(Policy):
-      @classmethod
-      def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
-          featurizer = None
-          if (Path(path) / FEATURIZER_FILE).is_file():
-              featurizer = TrackerFeaturizer.load(path)
-
-          model_data = {}
-          model_data_file = Path(path) / "model_data.json"
-          if metadata_file.is_file():
-              model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
-
-          return cls(model_data, featurizer)
-      ...
-  ```
-
-  </TabItem>
-  <TabItem value="new">
-
-  ```python
-  class MyPolicy(Policy):
-      @classmethod
-      def load(
-          cls,
-          config: Dict[Text, Any],
-          model_storage: ModelStorage,
-          resource: Resource,
-          execution_context: ExecutionContext,
-          **kwargs: Any,
-      ) -> MyPolicy:
-          featurizer = None
-          model_data = {}
-
-          try:
-              with model_storage.read_from(resource) as path:
-                  if (Path(path) / FEATURIZER_FILE).is_file():
-                      featurizer = TrackerFeaturizer.load(path)
-
-                  model_data_file = directory / "model_data.json"
-                  model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
-
-          except (ValueError, FileNotFoundError, FileIOException):
-              logger.debug(
-                  f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
-                  f"metadata couldn't be loaded."
-              )
-
-          return cls(
-              config, model_storage, resource, execution_context,
-              featurizer=featurizer, model_data=model_data
-          )
-  ```
-
-  </TabItem>
-</Tabs>
-
-**Providing a Default Configuration for a Policy**
-
-The default configuration is no longer provided via default values in your policy's
-constructor but instead returned by the static method `get_default_config`:
-
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-default-config" defaultValue="new">
-  <TabItem value="old">
-
-  ```python
-  class MyPolicy(Policy):
-
-      def __init__(key1: Text = "value1") -> None:
-          ...
-  ```
-
-  </TabItem>
-  <TabItem value="new">
-
-  ```python
-  class MyPolicy(Policy):
-
-      def __init__(self, config: Dict[Text, Any]) -> None:
-          ...
-
-      @staticmethod
-      def get_default_config() -> Dict[Text, Any]:
-          return {"key1": "value1"}
-  ```
-
-  </TabItem>
-</Tabs>
-
-**Using End-To-End Features in a Policy**
-
-To use a custom [end-to-end policy](stories.mdx#end-to-end-training) in Rasa
-Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
-events manually. In Rasa Open Source 3.0, 
-you need to [register](custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
-will be precomputed and passed into your policy during training and inference.
-
-:::caution
-End-To-End features will only be computed and provided to your policy if your training
-data actually contains [end-to-end training data](stories.mdx#end-to-end-training).
-:::
-
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
-  <TabItem value="old">
-
-  ```python
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List[TrackerWithCachedStates],
-          domain: Domain,
-          interpreter: NaturalLanguageInterpreter,
-          **kwargs: Any,
-      ) -> None:
-          ...
-          model_data, label_ids = self._prepare_for_training(
-              training_trackers, domain, interpreter, **kwargs
-          )
-          ...
-
-      def predict_action_probabilities(
-          self,
-          tracker: DialogueStateTracker,
-          domain: Domain,
-          interpreter: NaturalLanguageInterpreter,
-          **kwargs: Any,
-      ) -> PolicyPrediction:
-          ...
-          tracker_state_features = self._featurize_tracker_for_e2e(
-              tracker, domain, interpreter
-          )
-          ...
-  ```
-
-  </TabItem>
-  <TabItem value="new">
-
-  ```python {2,9,13,21,27}
-  @DefaultV1Recipe.register(
-      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
-  )
-  class MyPolicy(Policy):
-      def train(
-          self,
-          training_trackers: List[TrackerWithCachedStates],
-          domain: Domain,
-          precomputations: Optional[MessageContainerForCoreFeaturization] = None,
-      ) -> Resource:
-          ...
-          model_data, label_ids = self._prepare_for_training(
-            training_trackers, domain, precomputations,
-          )
-          ...
-
-      def predict_action_probabilities(
-          self,
-          tracker: DialogueStateTracker,
-          domain: Domain,
-          precomputations: Optional[MessageContainerForCoreFeaturization] = None,
-          rule_only_data: Optional[Dict[Text, Any]] = None,
-          **kwargs: Any,
-      ) -> PolicyPrediction:
-          ...
-          tracker_state_features = self._featurize_tracker(
-              tracker, domain, precomputations, rule_only_data=rule_only_data
-          )
-          ...
-  ```
-
-  </TabItem>
-</Tabs>
-
-**Registering a Policy**
-
-Before you can use your custom policy you have to register your policy using the
-`DefaultV1Recipe.register` decorator. If your policy requires end-to-end features
-specify the graph component type `POLICY_WITH_END_TO_END_SUPPORT`. Otherwise, use
-`POLICY_WITHOUT_END_TO_END_SUPPORT`. Specify `is_trainable=True` if the `train`
-method of your policy should be called during the training. If your policy is only
-used during inference use `is_trainable=False`.
-
-
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-register" defaultValue="new">
-  <TabItem value="old">
-
-  ```python
-  class MyPolicy(Policy):
-      ...
-  ```
-
-  </TabItem>
-  <TabItem value="new">
-
-  ```python {3-5}
-  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-
-  @DefaultV1Recipe.register(
-      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT,
-      is_trainable=True
-  )
-  class MyPolicy(Policy):
-      ...
-  ```
-
-  </TabItem>
-</Tabs>
-
-**Providing Rule-only Data to a Policy**
-
-Rasa Open Source allows excluding [forms](forms.mdx) or [slots](domain.mdx#slots) which
-are completely handled by
-[rules](rules.mdx) from becoming features in other policies.
-In Rasa Open Source 2 this information was passed onto the
-policies using the `set_shared_policy_states` method which set the policy attribute
-`_rule_only_data`. Rasa Open Source passes the names of rule-only slots and forms via the
-`predict_action_probabilities` method. The passed `rule_only_data` can be `None`
-in case the [`RulePolicy`](policies.mdx#rule-policy) is not part of your model
-configuration.
-
-<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-rule-only-data" defaultValue="new">
-  <TabItem value="old">
-
-  ```python
-  class MyPolicy(Policy):
-
-      def set_shared_policy_states(self, **kwargs: Any) -> None:
-          """Sets policy's shared states for correct featurization."""
-          self._rule_only_data = kwargs.get("rule_only_data", {})
-  ```
-
-  </TabItem>
-  <TabItem value="new">
-
-  ```python {6}
-  class MyPolicy(Policy):
-      def predict_action_probabilities(
-          self,
-          tracker: DialogueStateTracker,
-          domain: Domain,
-          rule_only_data: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyPrediction:
-  ```
-
-  </TabItem>
-</Tabs>
-
 #### Changes to Custom NLU Components
 
 **Inheriting from `GraphComponent`**
@@ -931,6 +552,385 @@ parameter in the `register` decorator. The model will then be passed to your mod
       def process(self, messages: List[Message], model: SpacyModel) -> List[Message]:
           spacy_nlp = model.model
           ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+#### Changes to Custom Policies
+This guide leads you through the migration of a custom policy step by step.
+
+**Instantiating a Policy for Training**
+
+Policies are no longer instantiated via their constructor. Instead, all policies have
+to implement a `create` method. During the policy instantiation the configuration from
+the [model configuration](model-configuration.mdx) is passed in as a dictionary instead
+of as separate parameters. Similarly, the`featurizers` are no longer instantiated
+outside of policies.
+Instead, the super class `rasa.core.policies.policy.Policy` instantiates the
+featurizers itself.
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-init" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      def __init__(
+          self,
+          featurizer: Optional[TrackerFeaturizer] = None,
+          priority: int = DEFAULT_POLICY_PRIORITY,
+          max_history: Optional[int] = None,
+      ) -> None:
+          super().__init__(featurizer, priority, **kwargs)
+          ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyPolicy(Policy):
+      def __init__(
+          self,
+          featurizer: Optional[TrackerFeaturizer] = None,
+          priority: int = DEFAULT_POLICY_PRIORITY,
+          max_history: Optional[int] = None,
+      ) -> None:
+          super().__init__(
+            config, model_storage, resource, execution_context, featurizer
+          )
+          ...
+      ...
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> MyPolicy:
+        return cls(config, model_storage, resource, execution_context)
+
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Persisting a Trained Policy**
+
+Policies used to be persisted by a call to the policy's `persist` method from outside the policy itself.
+With Rasa Open Source 3.0 policies are responsible for persisting themselves.
+Use the provided `model_storage` and `resource` parameters
+to persist your graph component at the end of the training and then return the `resource`
+as result of your policy's `train` method. See [graph component persistence](custom-graph-components.mdx#model-persistence) for more details.
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-persistence" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List[TrackerWithCachedStates],
+          domain: Domain,
+          interpreter: NaturalLanguageInterpreter,
+          **kwargs: Any,
+      ) -> None:
+          ...
+
+      def persist(self, path: Union[Text, Path]) -> None:
+          if self.featurizer is not None:
+              self.featurizer.persist(path)
+
+          file_path = Path(path) / "model_data.json"
+          rasa.shared.utils.io.create_directory_for_file(file_path)
+          rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
+              self.get_model_data())
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List[TrackerWithCachedStates],
+          domain: Domain,
+          **kwargs: Any,
+      ) -> Resource:
+          ...
+          self.persist()
+          return self._resource
+
+      def persist() -> None:
+          with self._model_storage.write_to(self._resource) as directory:
+              if self.featurizer is not None:
+                  self.featurizer.persist(directory)
+
+              file_path = directory / "model_data.json"
+              rasa.shared.utils.io.dump_obj_as_json_to_file(file_path,
+                  self.get_model_data())
+      ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Instantiating a Trained Policy**
+
+Previously policies had to persist their own configuration. Now the config passed
+into `load` will automatically contain the configuration which your model was trained with.
+
+To instantiate a persisted policy, you need to use `model_storage` and `resource` in your policy's
+`load` method.
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-loading" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      @classmethod
+      def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
+          featurizer = None
+          if (Path(path) / FEATURIZER_FILE).is_file():
+              featurizer = TrackerFeaturizer.load(path)
+
+          model_data = {}
+          model_data_file = Path(path) / "model_data.json"
+          if metadata_file.is_file():
+              model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+
+          return cls(model_data, featurizer)
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyPolicy(Policy):
+      @classmethod
+      def load(
+          cls,
+          config: Dict[Text, Any],
+          model_storage: ModelStorage,
+          resource: Resource,
+          execution_context: ExecutionContext,
+          **kwargs: Any,
+      ) -> MyPolicy:
+          featurizer = None
+          model_data = {}
+
+          try:
+              with model_storage.read_from(resource) as path:
+                  if (Path(path) / FEATURIZER_FILE).is_file():
+                      featurizer = TrackerFeaturizer.load(path)
+
+                  model_data_file = directory / "model_data.json"
+                  model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
+
+          except (ValueError, FileNotFoundError, FileIOException):
+              logger.debug(
+                  f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
+                  f"metadata couldn't be loaded."
+              )
+
+          return cls(
+              config, model_storage, resource, execution_context,
+              featurizer=featurizer, model_data=model_data
+          )
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Providing a Default Configuration for a Policy**
+
+The default configuration is no longer provided via default values in your policy's
+constructor but instead returned by the static method `get_default_config`:
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-default-config" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+
+      def __init__(key1: Text = "value1") -> None:
+          ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python
+  class MyPolicy(Policy):
+
+      def __init__(self, config: Dict[Text, Any]) -> None:
+          ...
+
+      @staticmethod
+      def get_default_config() -> Dict[Text, Any]:
+          return {"key1": "value1"}
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Using End-To-End Features in a Policy**
+
+To use a custom [end-to-end policy](stories.mdx#end-to-end-training) in Rasa
+Open Source 2, you had to use the `interpreter` parameter to featurize the tracker
+events manually. In Rasa Open Source 3.0,
+you need to [register](custom-graph-components.mdx#registering-graph-components-with-the-model-configuration) a policy that requires end-to-end features with type `ComponentType.POLICY_WITH_END_TO_END_SUPPORT`. The features
+will be precomputed and passed into your policy during training and inference.
+
+:::caution
+End-To-End features will only be computed and provided to your policy if your training
+data actually contains [end-to-end training data](stories.mdx#end-to-end-training).
+:::
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-end-to-end-features" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List[TrackerWithCachedStates],
+          domain: Domain,
+          interpreter: NaturalLanguageInterpreter,
+          **kwargs: Any,
+      ) -> None:
+          ...
+          model_data, label_ids = self._prepare_for_training(
+              training_trackers, domain, interpreter, **kwargs
+          )
+          ...
+
+      def predict_action_probabilities(
+          self,
+          tracker: DialogueStateTracker,
+          domain: Domain,
+          interpreter: NaturalLanguageInterpreter,
+          **kwargs: Any,
+      ) -> PolicyPrediction:
+          ...
+          tracker_state_features = self._featurize_tracker_for_e2e(
+              tracker, domain, interpreter
+          )
+          ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python {2,9,13,21,27}
+  @DefaultV1Recipe.register(
+      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
+  )
+  class MyPolicy(Policy):
+      def train(
+          self,
+          training_trackers: List[TrackerWithCachedStates],
+          domain: Domain,
+          precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+      ) -> Resource:
+          ...
+          model_data, label_ids = self._prepare_for_training(
+            training_trackers, domain, precomputations,
+          )
+          ...
+
+      def predict_action_probabilities(
+          self,
+          tracker: DialogueStateTracker,
+          domain: Domain,
+          precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+          rule_only_data: Optional[Dict[Text, Any]] = None,
+          **kwargs: Any,
+      ) -> PolicyPrediction:
+          ...
+          tracker_state_features = self._featurize_tracker(
+              tracker, domain, precomputations, rule_only_data=rule_only_data
+          )
+          ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Registering a Policy**
+
+Before you can use your custom policy you have to register your policy using the
+`DefaultV1Recipe.register` decorator. If your policy requires end-to-end features
+specify the graph component type `POLICY_WITH_END_TO_END_SUPPORT`. Otherwise, use
+`POLICY_WITHOUT_END_TO_END_SUPPORT`. Specify `is_trainable=True` if the `train`
+method of your policy should be called during the training. If your policy is only
+used during inference use `is_trainable=False`.
+
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-register" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+      ...
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python {3-5}
+  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+
+  @DefaultV1Recipe.register(
+      DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT,
+      is_trainable=True
+  )
+  class MyPolicy(Policy):
+      ...
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Providing Rule-only Data to a Policy**
+
+Rasa Open Source allows excluding [forms](forms.mdx) or [slots](domain.mdx#slots) which
+are completely handled by
+[rules](rules.mdx) from becoming features in other policies.
+In Rasa Open Source 2 this information was passed onto the
+policies using the `set_shared_policy_states` method which set the policy attribute
+`_rule_only_data`. Rasa Open Source passes the names of rule-only slots and forms via the
+`predict_action_probabilities` method. The passed `rule_only_data` can be `None`
+in case the [`RulePolicy`](policies.mdx#rule-policy) is not part of your model
+configuration.
+
+<Tabs values={[{"label": "Rasa 2.0 (old)", "value": "old"}, {"label": "Rasa 3.0 (new)", "value": "new"}]}  groupId="3-0-policy-rule-only-data" defaultValue="new">
+  <TabItem value="old">
+
+  ```python
+  class MyPolicy(Policy):
+
+      def set_shared_policy_states(self, **kwargs: Any) -> None:
+          """Sets policy's shared states for correct featurization."""
+          self._rule_only_data = kwargs.get("rule_only_data", {})
+  ```
+
+  </TabItem>
+  <TabItem value="new">
+
+  ```python {6}
+  class MyPolicy(Policy):
+      def predict_action_probabilities(
+          self,
+          tracker: DialogueStateTracker,
+          domain: Domain,
+          rule_only_data: Optional[Dict[Text, Any]] = None,
+    ) -> PolicyPrediction:
   ```
 
   </TabItem>
