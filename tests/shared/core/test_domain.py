@@ -300,7 +300,7 @@ def test_domain_to_dict():
 
 def test_domain_to_yaml():
     test_yaml = f"""
-version: '2.0'
+version: '3.0'
 actions:
 - action_save_world
 config:
@@ -819,7 +819,7 @@ def test_schema_error_with_forms_as_lists():
     with pytest.raises(YamlException):
         Domain.from_yaml(
             """
-        version: '2.0'
+        version: '3.0'
         forms: []
         """
         )
@@ -829,7 +829,7 @@ def test_schema_error_with_forms_and_slots_but_without_required_slots_key():
     with pytest.raises(YamlException):
         Domain.from_yaml(
             """
-        version: '2.0'
+        version: '3.0'
         forms:
           my_form:
             cool_slot:
