@@ -77,7 +77,13 @@ module.exports = {
             'default-actions',
           ],
         },
-        'markers',
+        {
+          type: 'category',
+          label: 'Evaluation',
+          items: [
+            'markers',
+          ],
+        },
         {
           type: 'category',
           label: 'Channel Connectors',

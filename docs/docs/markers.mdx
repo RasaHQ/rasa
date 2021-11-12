@@ -16,15 +16,17 @@ This feature is currently experimental and might change or be removed in the fut
 
 ## Overview
 
-Markers are conditions that allow you to describe and mark points of interest in dialogues. In Rasa, a dialogue is represented as a sequence of events,
-which include bot actions that were executed, intents that were detected, and slots that were set.
-Markers allow you to describe conditions over such events, and when these conditions are met, the dialogues are "marked" for further analysis or inspection.
+Markers are conditions that allow you to describe and mark points of interest in dialogues to evaluate your bot.
 
-There are several applications for Markers. For example, they can be used to define your bot's **Key Performance Indicators (KPIs)**,
-such as dialogue completion or task success. Take [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/)
-for example, which helps users offset their carbon emissions from flying. For Carbon Bot, you might define **dialogue completion** as "all mandatory slots have been filled",
-and **task success** as "all mandatory slots have been filled and a carbon estimate has been successfully computed".
-Marking when these important events occur allows you to quantify Carbon Bot's success rate.
+In Rasa, a dialogue is represented as a sequence of events,
+which include bot actions that were executed, intents that were detected, and slots that were set.
+Markers allow you to describe conditions over such events, and when the conditions are met, the relevant events are marked for further analysis or inspection.
+
+There are several downstream applications for Markers. For example, they can be used to define and measure your bot's **Key Performance Indicators (KPIs)**,
+such as **dialogue completion** or **task success**. Take [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/)
+for example, which helps users offset their carbon emissions from flying. For Carbon Bot, you can define dialogue completion as "all mandatory slots have been filled",
+and task success as "all mandatory slots have been filled and a carbon estimate has been successfully computed".
+Marking when these important events occur allows you to measure Carbon Bot's success rate.
 
 Markers also allow you to **diagnose your dialogues** by surfacing important events for further inspection.
 For example, you might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots,
