@@ -3,7 +3,7 @@ import logging
 import typing
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Text, Optional
+from typing import Text
 import uuid
 
 import rasa.utils.common
