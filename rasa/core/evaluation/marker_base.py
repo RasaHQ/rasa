@@ -653,8 +653,8 @@ class Marker(ABC):
                 [
                     "sender_id",
                     "session_idx",
-                    "marker_name",
-                    "event_id",
+                    "marker",
+                    "event_idx",
                     "num_preceding_user_turns",
                 ]
             )
