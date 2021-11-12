@@ -95,6 +95,7 @@ class MessageProcessor:
         self.action_endpoint = action_endpoint
         self.model_metadata, self.graph_runner = self._load_model(model_path)
         self.model_path = Path(model_path)
+        self.model_filename = os.path.basename(get_latest_model(Path(model_path)))
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter
 

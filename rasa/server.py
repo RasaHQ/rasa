@@ -686,7 +686,7 @@ def create_app(
         """Respond with the model name and the fingerprint of that model."""
         return response.json(
             {
-                "model_file": app.agent.model_name,
+                "model_file": app.agent.processor.model_filename,
                 "model_id": app.agent.model_id,
                 "num_active_training_jobs": app.active_training_processes.value,
             }
