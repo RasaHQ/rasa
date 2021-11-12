@@ -445,7 +445,7 @@ class LocalTrainingCache(TrainingCache):
         result_type: Text,
         node_name: Text,
         model_storage: ModelStorage,
-        output_fingerprint_key,
+        output_fingerprint_key: Text,
     ) -> Optional[Cacheable]:
         try:
             module = rasa.shared.utils.common.class_from_module_path(result_type)

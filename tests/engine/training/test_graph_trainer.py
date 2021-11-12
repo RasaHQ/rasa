@@ -495,10 +495,7 @@ def test_graph_trainer_train_logging_with_cached_components(
 
 
 def test_resources_fingerprints_are_unique_when_cached(
-    tmp_path: Path,
-    temp_cache: LocalTrainingCache,
-    train_with_schema: Callable,
-    caplog: LogCaptureFixture,
+    temp_cache: LocalTrainingCache, train_with_schema: Callable,
 ):
     train_schema = GraphSchema(
         {
@@ -543,10 +540,7 @@ def test_resources_fingerprints_are_unique_when_cached(
 
 
 def test_resources_fingerprints_remain_after_being_cached(
-    tmp_path: Path,
-    temp_cache: LocalTrainingCache,
-    train_with_schema: Callable,
-    caplog: LogCaptureFixture,
+    temp_cache: LocalTrainingCache, train_with_schema: Callable,
 ):
     train_schema = GraphSchema(
         {
@@ -601,7 +595,7 @@ def test_resources_fingerprints_remain_after_being_cached(
             temp_cache.CacheEntry.last_used.desc()
         )
         entry = session.execute(query_for_most_recently_used_entry).scalars().first()
-        # Assert the fingerptint key of the new entry is the same. This confirms that
+        # Assert the fingerprint key of the new entry is the same. This confirms that
         # the Resource from the cache has the same fingerprint.
         assert entry.fingerprint_key == fingerprint_key
 
