@@ -359,9 +359,10 @@ class FormAction(LoopAction):
         self, tracker: "DialogueStateTracker", domain: Domain,
     ) -> Set[Text]:
         required_slots = set(self.required_slots(domain))
+        requested_slot = self.get_slot_to_fill(tracker)
 
-        if self.get_slot_to_fill(tracker):
-            required_slots.add(self.get_slot_to_fill(tracker))
+        if requested_slot:
+            required_slots.add(requested_slot)
 
         return required_slots
 
