@@ -591,7 +591,7 @@ def test_or_statement_with_slot_was_set():
     slot = steps[2].events[3]
     assert isinstance(slot, SlotSet)
     assert slot.key == "name"
-    assert slot.value == None
+    assert slot.value is None
 
 
 @pytest.mark.parametrize(
