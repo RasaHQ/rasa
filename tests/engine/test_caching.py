@@ -45,7 +45,11 @@ class TestCacheableOutput:
 
     @classmethod
     def from_cache(
-        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+        cls,
+        node_name: Text,
+        directory: Path,
+        model_storage: ModelStorage,
+        output_fingerprint: Text,
     ) -> "TestCacheableOutput":
 
         value = rasa.shared.utils.io.read_json_file(directory / "cached.json")
