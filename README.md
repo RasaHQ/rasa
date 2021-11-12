@@ -18,12 +18,11 @@
 
 <hr />
 
-💡 **Rasa Open Source 3.0 is coming up!** 💡
+💡 **Rasa Open Source 3.0 is here!** 💡
 
-[2.8](https://github.com/RasaHQ/rasa/milestone/39) will be the last minor in the 2.x series, as we need to pause releasing minors while we work on architectural changes in 3.0. You can still contribute new features and improvements which we plan to release together with 3.0. Read more
-about [our contributor guidelines](#how-to-contribute).
-
-We plan to ship alpha releases and release candidates over the next few months in order to get early feedback. Stay tuned!
+[2.8](https://github.com/RasaHQ/rasa/milestone/39) is the last minor in the 2.x series.
+You can still contribute new features and improvements which we plan to release alongside
+updates to 3.0. Read more about [our contributor guidelines](#how-to-contribute).
 
 <hr />
 
