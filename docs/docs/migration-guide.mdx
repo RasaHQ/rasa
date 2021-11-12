@@ -1710,17 +1710,18 @@ policies:
 The new configuration would then look like:
 
 ```yaml-rasa title="config.yml"
-policies:
-  # Other policies
-  - name: RulePolicy
-    core_fallback_threshold: 0.3
-    core_fallback_action_name: "action_default_fallback"
-
+recipe: default.v1
 pipeline:
   # Other components
   - name: FallbackClassifier
     threshold: 0.4
     ambiguity_threshold: 0.1
+
+policies:
+  # Other policies
+  - name: RulePolicy
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: "action_default_fallback"
 ```
 
 In addition, you need to add a [rule](./rules.mdx) to specify which action to run
@@ -1757,17 +1758,18 @@ policies:
 The new configuration would look like this:
 
 ```yaml-rasa title="config.yml"
-policies:
-  # Other policies
-  - name: RulePolicy
-    core_fallback_threshold: 0.3
-    core_fallback_action_name: "action_default_fallback"
-
+recipe: default.v1
 pipeline:
   # Other components
   - name: FallbackClassifier
     threshold: 0.4
     ambiguity_threshold: 0.1
+
+policies:
+  # Other policies
+  - name: RulePolicy
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: "action_default_fallback"
 ```
 
 In addition you need to add a [rule](./rules.mdx) to activate the Two-Stage Fallback for

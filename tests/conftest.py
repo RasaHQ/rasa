@@ -168,36 +168,6 @@ def endpoints_path() -> Text:
     return "data/test_endpoints/example_endpoints.yml"
 
 
-@pytest.fixture(scope="session")
-def simple_markers_config() -> Text:
-    return "data/test_markers/config_simple.yml"
-
-
-@pytest.fixture(scope="session")
-def markers_config_folder() -> Text:
-    return "data/test_markers/config_dir"
-
-
-@pytest.fixture(scope="session")
-def invalid_markers_config() -> Text:
-    return "data/test_markers/config_invalid.yml"
-
-
-@pytest.fixture(scope="session")
-def markers_config_operators() -> Text:
-    return "data/test_markers/config_operators.yml"
-
-
-@pytest.fixture(scope="session")
-def extracted_markers_json() -> Text:
-    return "data/test_markers/extracted_markers.json"
-
-
-@pytest.fixture(scope="session")
-def marker_stats_output_json() -> Text:
-    return "stats_output.json"
-
-
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture

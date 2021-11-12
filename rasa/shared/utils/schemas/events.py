@@ -18,11 +18,7 @@ ENTITIES_SCHEMA = {
 
 INTENT = {
     "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "confidence": {"type": "number"},
-        "id": {"type": "number"},
-    },
+    "properties": {"name": {"type": "string"}, "confidence": {"type": "number"},},
 }
 
 RESPONSE_SCHEMA = {
