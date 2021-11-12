@@ -3,7 +3,7 @@ id: markers
 sidebar_label: Markers
 title: Markers
 description: Find out how to mark points of interest in dialogues using Marker conditions.
-abstract: Markers are conditions that allow you to describe and mark points of interest in dialogues.
+abstract: Markers are conditions to describe and mark points of interest in dialogues.
 ---
 
 
@@ -16,11 +16,11 @@ This feature is currently experimental and might change or be removed in the fut
 
 ## Overview
 
-Markers are conditions that allow you to describe and mark points of interest in dialogues to evaluate your bot.
+Markers are conditions that allow you to describe and mark points of interest in dialogues for evaluating your bot.
 
 In Rasa, a dialogue is represented as a sequence of events,
 which include bot actions that were executed, intents that were detected, and slots that were set.
-Markers allow you to describe conditions over such events, and when the conditions are met, the relevant events are marked for further analysis or inspection.
+Markers allow you to describe conditions over such events. When the conditions are met, the relevant events are marked for further analysis or inspection.
 
 There are several downstream applications for Markers. For example, they can be used to define and measure your bot's **Key Performance Indicators (KPIs)**,
 such as **dialogue completion** or **task success**. Take [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/)
@@ -34,7 +34,7 @@ but fails to set the `travel_flight_class` slot. You can define a marker to quan
 and surface relevant dialogues for review as part of
 [Conversation Driven Development (CDD)](./conversation-driven-development.mdx).
 
-Marker definitions are written in `YAML`. For example, here are the markers that define dialogue completion and task success for Carbon Bot:
+Marker definitions are written in `YAML` in a marker configuration file. For example, here are the markers that define dialogue completion and task success for Carbon Bot:
 
 ```yaml
 marker_dialogue_completion:
@@ -66,7 +66,7 @@ The next sections explain how to write marker definitions, how to apply them to 
 
 ## Defining Markers
 
-You define your markers in a marker configuration file written in `YAML`.
+Markers should be defined in a marker configuration file written in `YAML`.
 Each marker should have a **unique identifier**, and consists of at least one **event condition**.
 Markers can also contain **operators**, which allow you to express more nuanced behavior or
 combine event conditions.
@@ -79,8 +79,11 @@ marker_mood_expressed:
     - intent: mood_great
 ```
 The unique marker identifier is `marker_mood_expressed`. This marker definition contains one operator `or`,
-and two event conditions `intent: mood_unhappy` and `intent: mood_great`. This marker will be true at every point in the dialogue
-where a user expressed either a `mood_unhappy` or a `mood_great`.
+and two event conditions `intent: mood_unhappy` and `intent: mood_great`.
+
+This markers will be true at every point in the dialogue where the user
+expressed either a `mood_unhappy` or a `mood_great`. More precisely, the marker will be true for every event
+which is a `UserUttered()` with the `intent` equal to `mood_unhappy` or a `mood_great`.
 
 ### Event Conditions
 
@@ -214,7 +217,7 @@ The extracted markers output file contains the following columns:
 - `session_idx`: an integer indexing sessions, starting with `0`.
 - `marker`: the unique marker identifier.
 - `event_idx`: an integer indexing events, starting with `0`.
-- `num_preceding_user_turns`: an integer specifying the number of user turns preceding the event at which the marker applied.
+- `num_preceding_user_turns`: an integer indicating the number of user turns preceding the event at which the marker applied.
 
 Here is an example of the extracted markers output file (for a marker configuration file containing two markers: `marker_mood_expressed` and `marker_cheer_up_failed`):
 
@@ -239,9 +242,9 @@ The script computes the following statistics:
     2. The number of sessions and the percentage of sessions where each marker applied at least once.
 
 The results are stored in a tabular format in `stats-overall.csv` and `stats-per-session.csv`. You can change prefix `stats` in the file names using the optional argument `--stats-file-prefix `.
-For example, the following script will produce the files: `marker-statistics-overall.csv` and `marker-statistics-per-session.csv`:
+For example, the following script will produce the files: `my-statistics-overall.csv` and `my-statistics-per-session.csv`:
 ```bash
-rasa evaluate markers all --stats-file-prefix "marker-statistics" extracted_markers.csv
+rasa evaluate markers all --stats-file-prefix "my-statistics" extracted_markers.csv
 ```
 
 The two statistics files contain the following columns:
