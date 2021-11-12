@@ -109,7 +109,7 @@ Persists `Cacheable` to disk.
 
 ```python
  | @classmethod
- | from_cache(cls, node_name: Text, directory: Path, model_storage: ModelStorage) -> Cacheable
+ | from_cache(cls, node_name: Text, directory: Path, model_storage: ModelStorage, output_fingerprint: Text) -> Cacheable
 ```
 
 Loads `Cacheable` from cache.
@@ -120,6 +120,9 @@ Loads `Cacheable` from cache.
 - `directory` - Directory containing the persisted `Cacheable`.
 - `model_storage` - The current model storage (e.g. used when restoring
   `Resource` objects so that they can fill the model storage with data).
+- `output_fingerprint` - The fingerprint of the cached result (e.g. used when
+  restoring `Resource` objects as the fingerprint can not be easily
+  calculated from the object itself).
   
 
 **Returns**:
