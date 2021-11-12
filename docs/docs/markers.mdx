@@ -198,29 +198,32 @@ The next two sections describe the formats of the extracted markers and computed
 ### Extracted Markers
 
 For each marker defined in your marker configuration file, the following information is extracted:
-1. The number of user turns preceding the event at which a marker applied. Each `UserUttered` event is treated as a user turn.
-2. The index of the event at which a marker applied.
+1. **The index of the event** at which the marker applied.
+2. **The number of user turns preceding the event** at which the marker applied. Each `UserUttered` event is treated as a user turn.
 
-For the `at_least_once` operator, the information above will only be extracted for the first occurrence.
+:::note
+For markers defined using the `at_least_once` operator, the information above will only be extracted for the first occurrence.
+:::
 
-The extracted markers will be output to the `.csv` file you specify in the script, for example, `extracted_markers.csv`.
+The extracted markers are stored in a tabular format in the `CSV` file you specify in the script, for example, `extracted_markers.csv`.
 The extracted markers output file contains the following columns:
 
 - `sender_id`: taken from the trackers.
 - `session_idx`: an integer indexing sessions, starting with `0`.
-- `marker`: the unique identifier you specified for the marker.
+- `marker`: the unique marker identifier.
 - `event_idx`: an integer indexing events, starting with `0`.
-- `num_preceding_user_turns`: an integer specifying the number of user turns which preceded the event at which the marker applied.
+- `num_preceding_user_turns`: an integer specifying the number of user turns preceding the event at which the marker applied.
 
-Here is an example of the extracted markers output file (for a markers configuration file containing two markers: `marker_mood_expressed` and `marker_cheer_up_failed`):
+Here is an example of the extracted markers output file (for a marker configuration file containing two markers: `marker_mood_expressed` and `marker_cheer_up_failed`):
 
 ```
-sender_id,session_idx,marker,event_id,num_preceding_user_turns
+sender_id,session_idx,marker,event_idx,num_preceding_user_turns
 3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,2,0
 4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,7,1
 4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,14,2
 c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,2,0
 ```
+Each row represents an occurrence of the marker specified under the `marker` column.
 
 ### Computed Statistics
 
@@ -233,23 +236,21 @@ The script computes the following statistics:
     1. Overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the marker applied in any session.
     2. The number of sessions and the percentage of sessions where each marker applied at least once.
 
-The results are stored in tabular format in `stats-overall.csv` and `stats-per-session.csv`. You can change prefix `stats` in the file names using the optional argument `--stats-file-prefix `.
+The results are stored in a tabular format in `stats-overall.csv` and `stats-per-session.csv`. You can change prefix `stats` in the file names using the optional argument `--stats-file-prefix `.
 For example, the following script will produce the files: `marker-statistics-overall.csv` and `marker-statistics-per-session.csv`:
 ```bash
 rasa evaluate markers all --stats-file-prefix "marker-statistics" extracted_markers.csv
 ```
 
+The two statistics files contain the following columns:
 
-Both files contain the following columns:
-
-- `sender_id`: taken from the trackers.
-- `session_idx`: an integer indexing sessions, starting with `0`.
-- `marker`: the unique identifier you specified for the marker.
+- `sender_id`: taken from the trackers. If the statistic is computed over all sessions this will be equal to `all`.
+- `session_idx`: an integer indexing sessions, starting with `0`. If the statistic is computed over all sessions, this will be equal to `nan`.
+- `marker`: the unique marker identifier.
 - `statistic`: a description of the statistic computed.
-- `value`: an integer or float value represented the computed statistic.
+- `value`: an integer or float value of the computed statistic. If the statistic is not available then `value` will be equal to `nan`.
 
 Here is a sample `stats-per-session.csv` output:
-
 ```
 sender_id,session_idx,marker,statistic,value
 3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,count(number of preceding user turns),0
@@ -284,10 +285,11 @@ c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,median(number of preced
 c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,min(number of preceding user turns),0
 
 ```
-Note that some statistics will be `nan`, for example if a marker never occurred, then the number of preceding user turns will be `nan`.
+Note that the value for unavailable statistics is `nan`. For example, because `marker_cheer_up_failed` never occurred in
+ tracker `3c1afa1ed72c4116ba6670a1668f1b4a` session `0`, then the `min`, `max`, `median`, and `mean` number of preceding user turns
+ are equal to `nan`.
 
-Here is a sample `stats-overall.csv` output.
-
+Here is a sample `stats-overall.csv` output:
 ```
 sender_id,session_idx,marker,statistic,value
 all,nan,-,total_number_of_sessions,3
@@ -306,7 +308,7 @@ all,nan,marker_mood_expressed,median(number of preceding user turns),0.0
 all,nan,marker_mood_expressed,min(number of preceding user turns),0
 all,nan,marker_mood_expressed,max(number of preceding user turns),1
 ```
-Note that because each row computes a statistics over all session, the `sender_id` is equal to `all`,
+Note that because each row computes a statistic over all sessions, the `sender_id` is equal to `all`,
 and the `session_idx` is equal to `nan`.
 
 ## Configuring the CLI command
