@@ -2770,8 +2770,16 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 ## Custom Components
 
+:::info New in 3.0
+Rasa Open Source 3.0 unified the implementation of NLU components and policies.
+This requires changes to custom components written for earlier versions of Rasa Open
+Source. Please see the
+[migration guide](migration-guide.mdx#custom-policies-and-custom-components) for a
+step-by-step guide for the migration.
+
+:::
+
 You can create a custom component to perform a specific task which NLU doesn't currently offer (for example, sentiment analysis).
-Below is the specification of the `rasa.nlu.components.Component`] class with the methods you'll need to implement.
 
 You can add a custom component to your pipeline by adding the module path.
 So if you have a module called `sentiment`
@@ -2782,133 +2790,6 @@ pipeline:
 - name: "sentiment.SentimentAnalyzer"
 ```
 
+See the [guide on custom graph components](custom-graph-components.mdx) for a complete guide on custom components.
 Also be sure to read the section on the [Component Lifecycle](./tuning-your-model.mdx#component-lifecycle).
 
-To get started, you can use this skeleton that contains the most important
-methods that you should implement:
-
-```python
-import typing
-from typing import Any, Optional, Text, Dict, List, Type
-
-from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Metadata
-
-
-class MyComponent(Component):
-    """A new component"""
-
-    # Which components are required by this component.
-    # Listed components should appear before the component itself in the pipeline.
-    @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        """Specify which components need to be present in the pipeline."""
-
-        return []
-
-    # Defines the default configuration parameters of a component
-    # these values can be overwritten in the pipeline configuration
-    # of the model. The component should choose sensible defaults
-    # and should be able to create reasonable results with the defaults.
-    defaults = {}
-
-    # Defines what language(s) this component can handle.
-    # This attribute is designed for instance method: `can_handle_language`.
-    # Default value is None which means it can handle all languages.
-    # This is an important feature for backwards compatibility of components.
-    supported_language_list = None
-
-    # Defines what language(s) this component can NOT handle.
-    # This attribute is designed for instance method: `can_handle_language`.
-    # Default value is None which means it can handle all languages.
-    # This is an important feature for backwards compatibility of components.
-    not_supported_language_list = None
-
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        super().__init__(component_config)
-
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
-        """Train this component.
-
-        This is the components chance to train itself provided
-        with the training data. The component can rely on
-        any context attribute to be present, that gets created
-        by a call to :meth:`components.Component.pipeline_init`
-        of ANY component and
-        on any context attributes created by a call to
-        :meth:`components.Component.train`
-        of components previous to this one."""
-        pass
-
-    def process(self, message: Message, **kwargs: Any) -> None:
-        """Process an incoming message.
-
-        This is the components chance to process an incoming
-        message. The component can rely on
-        any context attribute to be present, that gets created
-        by a call to :meth:`components.Component.pipeline_init`
-        of ANY component and
-        on any context attributes created by a call to
-        :meth:`components.Component.process`
-        of components previous to this one."""
-        pass
-
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-        """Persist this component to disk for future loading."""
-
-        pass
-
-    @classmethod
-    def load(
-        cls,
-        meta: Dict[Text, Any],
-        model_dir: Text,
-        model_metadata: Optional["Metadata"] = None,
-        cached_component: Optional["Component"] = None,
-        **kwargs: Any,
-    ) -> "Component":
-        """Load this component from file."""
-
-        if cached_component:
-            return cached_component
-        else:
-            return cls(meta)
-
-```
-
-When you [define metadata for your intent examples in your training data](./training-data-format.mdx#training-examples),
-your component can access both the intent metadata and the intent example metadata during processing:
-
-```python
-# in your component class
-
-    def process(self, message: Message, **kwargs: Any) -> None:
-        metadata = message.get("metadata")
-        print(metadata.get("intent"))
-        print(metadata.get("example"))
-```
-
-:::note custom tokenizers
-If you create a custom tokenizer you should implement the methods of `rasa.nlu.tokenizers.tokenizer.Tokenizer`.
-The `train` and `process` methods are already implemented and you simply need to overwrite the `tokenize`
-method.
-
-:::
-
-:::note custom featurizers
-If you create a custom featurizer you can return two different kind of features: sequence features and sentence
-features. The sequence features are a matrix of size `(number-of-tokens x feature-dimension)`, e.g.
-the matrix contains a feature vector for every token in the sequence.
-The sentence features are represented by a matrix of size `(1 x feature-dimension)`.
-
-:::
