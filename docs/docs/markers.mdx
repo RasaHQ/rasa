@@ -6,13 +6,15 @@ description: Find out how to mark points of interest in dialogues using Marker c
 abstract: Markers are conditions that allow you to describe and mark points of interest in dialogues.
 ---
 
-## Overview
+
 
 :::caution
 
 This feature is currently experimental and might change or be removed in the future. Share your feedback in the forum to help us make it production-ready.
 
 :::
+
+## Overview
 
 Markers are conditions that allow you to describe and mark points of interest in dialogues. In Rasa, a dialogue is represented as a sequence of events,
 which include bot actions that were executed, intents that were detected, and slots that were set.
@@ -38,6 +40,7 @@ marker_dialogue_completion:
     - slot_was_set: travel_departure
     - slot_was_set: travel_destination
     - slot_was_set: travel_flight_class
+
 marker_task_success:
   and:
     - slot_was_set: travel_departure

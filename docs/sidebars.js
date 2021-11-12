@@ -77,6 +77,7 @@ module.exports = {
             'default-actions',
           ],
         },
+        'markers',
         {
           type: 'category',
           label: 'Channel Connectors',
