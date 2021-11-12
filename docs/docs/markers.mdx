@@ -60,11 +60,11 @@ marker_dialogue_mandatory_slot_failure:
       - slot_was_set: travel_flight_class
 ```
 
-The next sections explain how write marker definitions, how to apply them to your existing dialogues, and what the output format looks like.
+The next sections explain how to write marker definitions, how to apply them to your existing dialogues, and what the output format looks like.
 
 ## Defining Markers
 
-You define you markers in a marker configuration file written in `YAML`.
+You define your markers in a marker configuration file written in `YAML`.
 Each marker should have a **unique identifier**, and consists of at least one **event condition**.
 Markers can also contain **operators**, which allow you to express more nuanced behavior or
 combine event conditions.
@@ -77,7 +77,8 @@ marker_mood_expressed:
     - intent: mood_great
 ```
 The unique marker identifier is `marker_mood_expressed`. This marker definition contains one operator `or`,
-and two event conditions `intent: mood_unhappy` and `intent: mood_great`.
+and two event conditions `intent: mood_unhappy` and `intent: mood_great`. This marker will be true at every point in the dialogue
+where a user expressed either a `mood_unhappy` or a `mood_great`.
 
 ### Event Conditions
 
@@ -161,7 +162,7 @@ You cannot yet reuse an existing marker name in the definition of another marker
 
 ## Extracting Markers
 
-Markers are extracted from dialogues already stored a tracker store. To learn how to store interactions with your bot in a tracker store,
+Markers are extracted from dialogues already stored in a tracker store. To learn how to store interactions with your bot in a tracker store,
 read the [Tracker Store](./tracker-stores.mdx) page.
 
 Once you've created your marker definitions in the marker configuration file, and have stored some dialogues in your tracker store,
@@ -188,8 +189,9 @@ For more information on the usage of each strategy, type the following command, 
 rasa evaluate markers <strategy> --help
 ```
 
+:::note
 Each tracker in the tracker store can contain multiple sessions. The script will process each session separately, indexing them by `session_idx`.
-
+:::
 The next two sections describe the formats of the extracted markers and computed statistics.
 
 

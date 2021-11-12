@@ -23,7 +23,7 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa data convert`     |Converts training data between different formats.                                                                                         |
 |`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                                             |
 |`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                            |
-|`rasa evaluate markers` |Applies markers to existing tracker store.                                                                                                |
+|`rasa evaluate markers` |Extracts markers from an existing tracker store.                                                                                                |
 |`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
 
@@ -428,8 +428,9 @@ This feature is currently experimental and might change or be removed in the fut
 
 :::
 
-This command allows you to apply the [markers](./markers.mdx) you defined in your marker configuration file,
-to pre-existing dialogues stored in your [tracker store](./tracker-stores.mdx):
+The following command applies the [markers](./markers.mdx) you defined in your marker configuration file,
+to pre-existing dialogues stored in your [tracker store](./tracker-stores.mdx), and produces `CSV` files containing
+the extracted markers and summary statistics:
 
 ```bash
 rasa evaluate markers all extracted_markers.csv
