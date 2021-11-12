@@ -474,11 +474,8 @@ class DefaultV1Recipe(Recipe):
             constructor_name="create",
             fn="provide",
             config={
-                config_key: cli_parameters[param]
-                for param, config_key in {
-                    "debug_plots": "debug_plots",
-                    "augmentation_factor": "augmentation_factor",
-                }.items()
+                param: cli_parameters[param]
+                for param in ["debug_plots", "augmentation_factor"]
                 if param in cli_parameters
             },
         )
