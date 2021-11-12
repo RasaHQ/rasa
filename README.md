@@ -106,290 +106,271 @@ pull 요청을 통해 기여하려면 다음 단계를 따르세요:
 
 ## Development Internals
 
-### Installing Poetry
+### Poetry 설치
 
-Rasa uses Poetry for packaging and dependency management. If you want to build it from source,
-you have to install Poetry first. This is how it can be done:
+Rasa는 패키징과 의존성 관리를 위해 Poetry를 사용합니다. 원본에서 빌드하고 싶다면, 먼저 Poetry를 설치해야 합니다. 설치 방법:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 ```
 
-There are several other ways to install Poetry. Please, follow
-[the official guide](https://python-poetry.org/docs/#installation) to see all possible options.
+Poetry를 설치하는 몇 가지 다른 방법도 있습니다. 가능한 모든 옵션을 보려면 [공식 가이드](https://python-poetry.org/docs/#installation)를 확인하십시오.
 
-### Managing environments
+### 환경 관리
 
-The official [Poetry guide](https://python-poetry.org/docs/managing-environments/) suggests to use
-[pyenv](https://github.com/pyenv/pyenv) or any other similar tool to easily switch between Python versions.
-This is how it can be done:
+공식 [Poetry 가이드](https://python-poetry.org/docs/managing-environments/)에서는 파이썬 버전 간에 쉽게 전환할 수 있도록 [pyenv](https://github.com/pyenv/pyenv) 또는 다른 비슷한 도구를 사용할 것을 제안합니다. 설치 방법: 
 
 ```bash
 pyenv install 3.7.9
-pyenv local 3.7.9  # Activate Python 3.7.9 for the current project
+pyenv local 3.7.9  # 현재 프로젝트에 대해 파이썬 3.7.9 활성화
 ```
-*Note*: If you have trouble installing a specific version of python on your system
-it might be worth trying other supported versions.
+*주의*: 특정 버전의 파이썬을 설치하는 데 문제가 있는 경우 지원되는 다른 버전을 사용하십시오.
 
-By default, Poetry will try to use the currently activated Python version to create the virtual environment
-for the current project automatically. You can also create and activate a virtual environment manually — in this
-case, Poetry should pick it up and use it to install the dependencies. For example:
+기본적으로, Poetry는 현재 활성화된 파이썬 버전을 사용하여 현재 프로젝트의 가상 환경을 자동으로 생성하려고 시도 할 것입니다. 가상 환경을 수동으로 만들고 활성화할 수도 있습니다. — 이 경우, Poetry는 그것을 dependencies를 설치하는데 사용해야 합니다. 예를 들어:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
 
-You can make sure that the environment is picked up by executing
+실행을 통해 환경이 선택되었는지 확인할 수 있습니다
 
 ```bash
 poetry env info
 ```
 
-### Building from source
+### 원본에서 빌드
 
-To install dependencies and `rasa` itself in editable mode execute
+편집 가능한 모드에서 dependencies와 `rasa`를 설치하려면
 
 ```bash
 make install
 ```
 
-*Note for macOS users*: under macOS Big Sur we've seen some compiler issues for 
-dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped. 
+*macOS 유저라면*: macOS Big Sur에 dependencies에 대한 몇가지 컴파일러 문제가 있습니다.
+. 설치 전에 `export SYSTEM_VERSION_COMPAT=1` 사용하면 도움이 될 것입니다.
 
-### Running and changing the documentation
+### documentation 실행 및 변경
 
-First of all, install all the required dependencies:
+먼저, 필요한 모든 dependencies를 설치하십시오:
 
 ```bash
 make install install-docs
 ```
 
-After the installation has finished, you can run and view the documentation
-locally using:
+설치가 완료되면 아래 코드를 사용하여 문서를 실행하고 볼 수 있습니다.
 
 ```bash
 make livedocs
 ```
 
-It should open a new tab with the local version of the docs in your browser;
-if not, visit http://localhost:3000 in your browser.
-You can now change the docs locally and the web page will automatically reload
-and apply your changes.
+브라우저에 있는 문서의 로컬 버전으로 새 탭을 열여야 합니다;
+열지 못했다면, 브라우저에서 http://localhost:3000 에 접속하십시오.
+이제 문서를 로컬에서 변경할 수 있으며 웹 페이지가 자동으로 로드되어 변경 내용을 적용합니다.
 
-### Running the Tests
+### 테스트 실행
 
-In order to run the tests, make sure that you have the development requirements installed:
+테스트를 실행하려면, 먼저 개발 요구 사항이 설치되어 있는지 확인하십시오:
 
 ```bash
-make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
-make prepare-tests-macos  # Only on macOS
+make prepare-tests-ubuntu # Ubuntu, Debian based systems에서만
+make prepare-tests-macos  # macOS에서만
 ```
 
-Then, run the tests:
+그리고, 테스트를 실행하세요:
 
 ```bash
 make test
 ```
 
-They can also be run at multiple jobs to save some time:
+시간을 절약하기 위해 여러 작업을 실행할 수 있습니다:
 
 ```bash
 JOBS=[n] make test
 ```
 
-Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
+`[n]`은 원하는 작업의 개수입니다. 생략할 경우, `[n]`은 pytest를 통해 자동으로 선택됩니다.
 
 
-### Running the Integration Tests
+### 통합 테스트 실행
 
-In order to run the integration tests, make sure that you have the development requirements installed:
+통합 테스트를 실행하려면, 개발 요구 사항이 설치되어 있는지 확인해야 합니다:
 
 ```bash
-make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
-make prepare-tests-macos  # Only on macOS
+make prepare-tests-ubuntu # Ubuntu, Debian based systems에서만
+make prepare-tests-macos  # macOS에서만
 ```
 
-Then, you'll need to start services with the following command which uses
-[Docker Compose](https://docs.docker.com/compose/install/):
+그런 다음, [Docker Compose](https://docs.docker.com/compose/install/)를 사용하는 다음 명령으로 서비스를 시작해야 합니다:
 
 ```bash
 make run-integration-containers
 ```
 
-Finally, you can run the integration tests like this:
+마지막으로, 다음과 같은 통합 테스트를 실행할 수 있습니다:
 
 ```bash
 make test-integration
 ```
 
 
-### Resolving merge conflicts
+### 병합 충돌 해결
 
-Poetry doesn't include any solution that can help to resolve merge conflicts in
-the lock file `poetry.lock` by default.
-However, there is a great tool called [poetry-merge-lock](https://poetry-merge-lock.readthedocs.io/en/latest/).
-Here is how you can install it:
+Poetry에는 기본적으로 잠금 파일 `poetry.lock`의 병합 충돌을 해결하는 데 도움이 되는 솔루션이 포함되어 있지 않습니다.
+그러나, [poetry-merge-lock](https://poetry-merge-lock.readthedocs.io/en/latest/)라는 좋은 도구가 있습니다.
+설치 방법입니다:
 
 ```bash
 pip install poetry-merge-lock
 ```
 
-Just execute this command to resolve merge conflicts in `poetry.lock` automatically:
+`poetry.lock`에서 병합 충돌을 자동으로 해결하려면 이 명령을 실행하십시오:
 
 ```bash
 poetry-merge-lock
 ```
 
-### Build a Docker image locally
+### 도커 이미지 로컬 작성
 
-In order to build a Docker image on your local machine execute the following command:
+로컬 컴퓨터에 도커 이미지를 작성하려면 다음 명령을 실행하십시오:
 
 ```bash
 make build-docker
 ```
 
-The Docker image is available on your local machine as `rasa:localdev`.
+도커 이미지는 로컬 컴퓨터에서 `rasa:localdev`로 사용할 수 있습니다.
 
-### Code Style
+### 코드 스타일
 
-To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black).
-To ensure our type annotations are correct we use the type checker [pytype](https://github.com/google/pytype).
-If your code is not formatted properly or doesn't type check, GitHub will fail to build.
+표준화된 코드 스타일을 위해 포맷터 [black](https://github.com/ambv/black)을 사용합니다.
+유형 주석이 올바른지 확인하기 위해 [pytype](https://github.com/google/pytype)을 사용합니다.
+당신의 코드가 제대로 포맷되지 않았거나 Check되지 않았다면, GitHub가 빌드할 수 없습니다.
 
-#### Formatting
+#### 서식 설정
 
-If you want to automatically format your code on every commit, you can use [pre-commit](https://pre-commit.com/).
-Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
-This will add a hook to the repository, which reformats files on every commit.
+모든 커밋에서 코드를 자동으로 포맷하려면 [pre-commit](https://pre-commit.com/)을 사용하십시오.
+`pip install pre-commit`을 통해 설치하고 루트 폴더에서 `pre-commit install`을 실행하면 됩니다.
+이렇게 하면 모든 커밋에서 파일을 재구성하는 후크가 저장소에 추가됩니다.
 
-If you want to set it up manually, install black via `poetry install`.
-To reformat files execute
+수동으로 설정하려면 `poetry install`을 통해 black을 설치하십시오.
+파일을 다시 포맷하려면 아래 코드를 실행하십시오.
 ```
 make formatter
 ```
 
-#### Type Checking
+#### 유형 확인
 
-If you want to check types on the codebase, install `mypy` using `poetry install`.
-To check the types execute
+코드베이스에서 타입을 확인하려면 `poetry install`을 사용하여 `mypy`을 설치하십시오.
+타입을 확인하려면 아래 코드를 실행하십시오.
 ```
 make types
 ```
 
-### Deploying documentation updates
+### 문서 업데이트 배포
 
-We use `Docusaurus v2` to build docs for tagged versions and for the `main` branch.
-The static site that gets built is pushed to the `documentation` branch of this repo.
+우리는 `Docusaurus v2`를 사용하여 태그가 지정된 버전과 `main` 브랜치에 대한 문서를 작성합니다.
+빌드되는 정적 사이트는 이 저장소의 `documentation` 브랜치로 푸시됩니다.
 
-We host the site on netlify. On `main` branch builds (see `.github/workflows/documentation.yml`), we push the built docs to
-the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
+우리는 netlify로 사이트를 주최합니다. `main` 브랜치 빌드에서 (`.github/workflows/documentation.yml`를 확인하세요), 우리는 빌드된 문서를 `documentation` 브랜치로 푸시합니다. Netlify는 해당 브랜치가 변경될 때마다 자동으로 문서 페이지를 다시 배포합니다
 
 ## Releases
-### Release Timeline for Minor Releases
-**For Rasa Open Source, we usually commit to time-based releases, specifically on a monthly basis.**
-This means that we commit beforehand to releasing a specific version of Rasa Open Source on a specific day,
-and we cannot be 100% sure what will go in a release, because certain features may not be ready.
+### Minor Releases를 위한 Release 시간표
+**Rasa 오픈 소스의 경우 일반적으로 시간 기반 Release 특히 월간 Release를 사용합니다.**
+이는 특정 날짜에 특정 버전의 Rasa Open Source를 release 하겠다고 미리 약속하고, 일부 기능이 준비되지 않았을 수 있기 때문에 release에서 무엇을 수행할지 100% 확신할 수 없다는 것을 의미합니다.
 
-At the beginning of each quarter, the Rasa team will review the scheduled release dates for all products and make sure
-they work for the projected work we have planned for the quarter, as well as work well across products.
+각 분기 초에 Rasa 팀은 모든 제품의 예상 Release 날짜를 검토하고 해당 분기에 계획된 예상 작업뿐만 아니라 제품 전반에 걸쳐 작업을 수행하는지 확인합니다.
 
-**Once the dates are settled upon, we update the respective [milestones](https://github.com/RasaHQ/rasa/milestones).**
+**날짜가 정해지면 각 [마일스톤](https://github.com/RasaHQ/rasa/milestones)을 업데이트합니다.**
 
-### Cutting a Major / Minor release
-#### A week before release day
+### major release / minor release cutting
 
-1. **Make sure the [milestone](https://github.com/RasaHQ/rasa/milestones) already exists and is scheduled for the
-correct date.**
-2. **Take a look at the issues & PRs that are in the milestone**: does it look about right for the release highlights
-we are planning to ship? Does it look like anything is missing? Don't worry about being aware of every PR that should
-be in, but it's useful to take a moment to evaluate what's assigned to the milestone.
-3. **Post a message on the engineering Slack channel**, letting the team know you'll be the one cutting the upcoming
-release, as well as:
-    1. Providing the link to the appropriate milestone
-    2. Reminding everyone to go over their issues and PRs and please assign them to the milestone
-    3. Reminding everyone of the scheduled date for the release
+#### release 일주일 전
 
-#### A day before release day
+1. **[마일스톤](https://github.com/RasaHQ/rasa/milestones)이 이미 존재하는지, 정확한 날짜에 예약되었는지 검토합니다.**
+2. **마일스톤의 issues 와 PR을 살펴봅니다**: 우리가 옮길 예정인 Release Highlights에 적합해 보이나요? 뭔가 놓치고 있는 것처럼 보이나요?  모든 PR을 인식하는 것에 대해 걱정하지 않아도 됩니다. 그러나 잠시 동안 마일스톤을 평가하는 것이 유용합니다.
+3. **Engineering Slack 채널에 메시지를 게시하여**, Rasa 팀에게 다음 release에 대해 컷팅하고 있음을 알리고 다음과 같이 알려 주십시오:
+    1. 적절한 마일스톤에 대한 링크를 제공합니다.
+    2. 모든 사용자에게 issue와 PR을 검토하고 마일스톤에 할당하도록 지시합니다.
+    3. 모든 사용자에게 예상 Release 날짜를 알려줍니다.
 
-1. **Go over the milestone and evaluate the status of any PR merging that's happening. Follow up with people on their
-bugs and fixes.** If the release introduces new bugs or regressions that can't be fixed in time, we should discuss on
-Slack about this and take a decision on how to move forward. If the issue is not ready to be merged in time, we remove the issue / PR from the milestone and notify the PR owner and the product manager on Slack about it. The PR / issue owners are responsible for
-communicating any issues which might be release relevant. Postponing the release should be considered as an edge case scenario.
+#### Release 하루 전
 
-#### Release day! 🚀
 
-1. **At the start of the day, post a small message on slack announcing release day!** Communicate you'll be handling
-the release, and the time you're aiming to start releasing (again, no later than 4pm, as issues may arise and
-cause delays). This message should be posted early in the morning and before moving forward with any of the steps of the release, 
-   in order to give enough time to people to check their PRs and issues. That way they can plan any remaining work. A template of the slack message can be found [here](https://rasa-hq.slack.com/archives/C36SS4N8M/p1613032208137500?thread_ts=1612876410.068400&cid=C36SS4N8M).
-   The release time should be communicated transparently so that others can plan potentially necessary steps accordingly. If there are bigger changes this should be communicated.
-2. Make sure the milestone is empty (everything has been either merged or moved to the next milestone)
-3. Once everything in the milestone is taken care of, post a small message on Slack communicating you are about to
-start the release process (in case anything is missing).
-4. **You may now do the release by following the instructions outlined in the
-[Rasa Open Source README](#steps-to-release-a-new-version) !**
+1. **마일스톤을 검토하고 진행 중인 PR 병합의 상태를 평가합니다. 버그와 수정 사항에 대한 후속 조치를 취합니다.** 릴리스에서 제때에 수정할 수 없는 새로운 버그나 퇴보가 발생할 경우, Slack에서 이 문제에 대해 논의하고 앞으로 나아갈 방법을 결정해야 합니다. 병합할 준비가 되지 않은 경우 마일스톤에서 issue/PR을 제거하고 Slack에 있는 PR 소유자와 제품 관리자에게 통보합니다. issue/PR 소유자는 Release와 관련된 모든 문제를 전달할 책임이 있습니다. Release 연기는 edge case 시나리오로서 고려되어야 합니다.
 
-#### After a Major release
 
-After a Major release has been completed, please follow [these instructions to complete the documentation update](./docs/README.md#manual-steps-after-a-new-version).
+#### Release 당일! 🚀
 
-### Steps to release a new version
-Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
+1. **하루를 시작할 때, Slack에 릴리스 당일이라고 알리는 간단한 메시지를 올리십시오!** release 처리 및 release 시작 시간(문제가 발생하여 지연될 수 있으므로 오후 4시 이전까지)에 대해 알려 주십시오. 이 메시지는 이른 아침 그리고 Release 단계를 진행하기 전에 게시되어야 하며, 사람들이 그들의 PR와 issue를 확인할 수 있는 충분한 시간을 주어야 합니다. 그렇게 해야 그들은 남은 일을 계획할 수 있습니다.Slack 메시지의 형식은 [여기](https://rasa-hq.slack.com/archives/C36SS4N8M/p1613032208137500?thread_ts=1612876410.068400&cid=C36SS4N8M)에서 찾을 수 있습니다. release 시간은 다른 사용자가 항상 필요한 단계를 그에 따라 계획할 수 있도록 투명하게 전달되어야 합니다. 더 큰 변화가 있을 경우 이를 전달해야 합니다.
+
+2. 마일스톤이 비어 있는지 확인하세요 (모든 항목이 병합되었거나 다음 마일스톤으로 이동되었는지)
+
+3. 마일스톤의 모든 작업이 완료되면 Slack에 Release 과정을 시작한다는 간단한 메시지를 게시합니다 (어떤 것이든 누락된 경우)
+
+4. **이제 당신은 [Rasa 오픈소스 README](https://github.com/RasaHQ/rasa#steps-to-release-a-new-version)에 설명된 지침을 따라 release 할 수 있습니다!**
+
+#### Major rlease 이후
+
+major release가 완료된 후 [문서 업데이트를 완료하기 위한 지침](./docs/README.md#manual-steps-after-a-new-version)을 따르십시오.
+
+### 새로운 버전을 release하는 단계
+패키지가 GitHub Actions에 의해 빌드되고 배포되기 때문에 새로운 버전을 release 하는 것은 매우 간단합니다.
 
 *Terminology*:
-* micro release (third version part increases): 1.1.2 -> 1.1.3
-* minor release (second version part increases): 1.1.3 -> 1.2.0
-* major release (first version part increases): 1.2.0 -> 2.0.0
+* micro release (버전의 세번째 부분 증가): 1.1.2 -> 1.1.3.
+* minor release (버전의 두번째 부분 증가): 1.1.3 -> 1.2.0
+* major release (버전의 첫번째 부분 증가): 1.2.0 -> 2.0.0
 
-*Release steps*:
-1. Make sure all dependencies are up to date (**especially Rasa SDK**)
-    - For Rasa SDK that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
-    - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
-2. In case of a minor release, create a new branch that corresponds to the new release, e.g. 
+*Release 단계*:
+1. 모든 종속성이 최신 상태인지 확인합니다 (**특히 Rasa SDK**)
+    - Rasa SDK의 경우 먼저 [새로운 Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version)를 만듭니다(새 Rasa SDK release와 Rasa SDK release 간의 버전 번호가 일치하는지 확인하십시오)
+    - 새로운 Rasa SDK release를 사용하여 태그를 푸시하고 패키지가 [pypi](https://pypi.org/project/rasa-sdk/)로 나타나면 Rasa 레포지토리의 종속성을 해결할 수 있습니다(아래 참조).
+
+2. minor release인 경우 새로운 release에 해당하는 새로운 branch를 만듭니다. 
+  eg.
    ```bash
     git checkout -b 1.2.x
     git push origin 1.2.x
     ```
-3. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and micros)
-    - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
-    - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
-4. If this is a major release, update the list of actively maintained versions [in the README](#actively-maintained-versions) and in [the docs](./docs/docs/actively-maintained-versions.mdx).
-5. Run `make release`
-6. Create a PR against the release branch (e.g. `1.2.x`)
-7. Once your PR is merged, tag a new release (this SHOULD always happen on the release branch), e.g. using
+3. 컷팅을 원하는 branch로 전환합니다 (major인 경우 `main`, minors와 micros를 위한 브랜치인 경우 `<major>.<minor>.x`)
+    - `pyproject.toml`의 `rasa-sdk` 항목을 새 release 버전으로 업데이트하고 `poetry update`를 실행합니다. 이렇게 하면 모든 종속성이 해결된 새 `poetry.lock` 파일이 생성됩니다.
+    - `git commit -am "bump rasa-sdk dependency"` 를 사용하여 변경 사항을 적용하되 push는 하지 마십시오. 다음 단계에 따라 자동으로 픽업됩니다.
+4. 만약 이 버전이 major release인 경우 [README](https://github.com/RasaHQ/rasa#actively-maintained-versions) 및 [문서](https://github.com/RasaHQ/rasa/blob/main/docs/docs/actively-maintained-versions.mdx)에서 현재 유지 관리 중인 버전 목록을 업데이트합니다.
+5. `make release`를 실행합니다.
+6. release branch에 대한 PR을 생성합니다 (e.g. `1.2.x`)
+7. PR이 merge되면 새 release에 태그를 지정합니다. (이는 항상 release 브랜치에서 진행되어야 합니다) eg. using
     ```bash
     git checkout 1.2.x
     git pull origin 1.2.x
     git tag 1.2.0 -m "next release"
     git push origin 1.2.0
     ```
-    GitHub will build this tag and publish the build artifacts.
-8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-9. If no message appears in the channel then you can do the following checks:
-    - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
-    - If the workflow is not completed, then try to re run the workflow in case that solves the problem
-    - If the problem persists, check also the log files and try to find the root cause of the issue
-    - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
-10.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
+   GitHub는 이 태그를 빌드하고 빌드 아티팩트를 게시할 것입니다.
+8. 모든 단계가 완료되고 모든 것이 잘 진행되면 우리는 회사의 Slack (`product` channel) 에 다음과 같은 [메시지](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)가 자동으로 게시되는 것을 볼 수 있습니다.
+9. 채널에 메시지가 표시되지 않으면 다음 사항들을 확인할 수 있습니다:
+    - [Github Actions](https://github.com/RasaHQ/rasa/actions)에서 워크플로우를 확인하고 현재 release의 merge된 PR이 성공적으로 완료되었는지 확인합니다. PR을 쉽게 찾으려면 `event: push` 및 `branch: <version number>` 필터를 사용할 수 있습니다. (release 2.4의 예는 [여기](https://github.com/RasaHQ/rasa/actions/runs/643344876)에서 볼 수 있습니다.)
+    - 워크플로우가 완료되지 않은 경우, 문제를 해결할 수 있도록 워크플로우를 다시 실행하세요
+    - 문제가 지속되면 로그 파일도 확인하고 문제의 근본 원인을 찾아보세요
+    - 그래도 여전히 오류를 해결할 수 없는 경우, 조사를 통해 유용한 정보를 제공하여 인프라 팀에 문의하세요
+10.  메시지가 `product` 채널에 올바르게 게시된 후 `product-engineering-alerts` 채널에서도 [이와 같은](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000) Rasa Open Source release와 관련된 경고가 있는지 확인합니다.
     
-### 마이크로 릴리스 컷팅
+### Cutting a Micro release
 
-마이크로 릴리즈는 버그 수정만 포함하기 때문에 컷팅이 더 간단합니다.
+Micro release는 버그 수정만 포함하기 때문에 컷팅이 더 간단합니다.
 
-**마이크로 릴리스를 자르기 위해 해야 할 일은 다음과 같습니다.**
+**Micro release를 자르기 위해 해야 할 일은 다음과 같습니다.**
 
-1. 누군가 추가해야 할 중요한 수정 사항이 있는 경우를 대비하여 Slack의 엔지니어링 팀에 마이크로 컷팅을 계획하고 있음을 알립니다.
-2. 사용할 릴리스 브랜치에 버그 수정이 필요한지 확인하십시오. (예: `2.0.4` 마이크로를 컷팅하는 경우, 수정사항이 `2.0.x` 릴리스 브랜치에 있어야 합니다) 모든 마이크로는 `.x`에서 가져와야합니다! 
-3. Rasa 오픈 소스 마이크로를 릴리스할 준비가 되면 브랜치를 확인하고 `make release`를 실행하고, 단계를 따르고 PR을 merge합니다.
+1. 누군가 추가해야 할 중요한 수정 사항이 있는 경우를 대비하여 Slack의 엔지니어링 팀에 micro 컷팅을 계획하고 있음을 알립니다.
+2. 사용할 release 브랜치에 버그 수정이 필요한지 확인하십시오. (예: `2.0.4` 마이크로를 컷팅하는 경우, 수정사항이 `2.0.x` release 브랜치에 있어야 합니다.) 모든 micro는 `.x`에서 가져와야합니다! 
+3. Rasa Open Source micro를 release할 준비가 되면 브랜치를 확인하고 `make release`를 실행하고, 단계를 따르고 PR을 merge합니다.
 4. PR이 들어오면 `.x` 브랜치를 다시 pull하고 태그를 push합니다!
 
 ### 능동적으로 유지관리되는 버전
 
-우리는 최신 주요 릴리스의 모든 마이너 버전과 이전 주요 릴리스의 최신 마이너 버전을 적극적으로 유지 관리하고 있습니다.
-현재 이는 다음 마이너 버전이 버그 수정 업데이트를 받을 것을 의미합니다:
+우리는 최신 major release의 모든 minor 버전과 이전 major release의 최신 minor 버전을 적극적으로 유지 관리하고 있습니다.
+현재 이는 다음 minor 버전이 버그 수정 업데이트를 받을 것을 의미합니다:
 - 1.10
-- 2.x의 모든 마이너 버전
+- 2.x의 모든 minor 버전
 
 ## License
 Apache 라이센스 버전 2.0에 따라 라이센스가 부여됩니다.
