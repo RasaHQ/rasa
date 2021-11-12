@@ -372,11 +372,7 @@ async def test_remote_action_utterances_with_none_values(
         UserUttered(
             text="hello",
             parse_data={
-                "intent": {
-                    "id": -4389344335148575888,
-                    "name": "greet",
-                    "confidence": 0.9604260921478271,
-                },
+                "intent": {"name": "greet", "confidence": 0.9604260921478271,},
                 "entities": [
                     {"entity": "city", "value": "London"},
                     {"entity": "count", "value": 1},
@@ -385,46 +381,14 @@ async def test_remote_action_utterances_with_none_values(
                 "message_id": "3f4c04602a4947098c574b107d3ccc50",
                 "metadata": {},
                 "intent_ranking": [
-                    {
-                        "id": -4389344335148575888,
-                        "name": "greet",
-                        "confidence": 0.9604260921478271,
-                    },
-                    {
-                        "id": 7180145986630405383,
-                        "name": "goodbye",
-                        "confidence": 0.01835782080888748,
-                    },
-                    {
-                        "id": 4246019067232216572,
-                        "name": "deny",
-                        "confidence": 0.011255578137934208,
-                    },
-                    {
-                        "id": -4048707801696782560,
-                        "name": "bot_challenge",
-                        "confidence": 0.004019865766167641,
-                    },
-                    {
-                        "id": -5942619264156239037,
-                        "name": "affirm",
-                        "confidence": 0.002524246694520116,
-                    },
-                    {
-                        "id": 677880322645240870,
-                        "name": "mood_great",
-                        "confidence": 0.002214624546468258,
-                    },
-                    {
-                        "id": -5973454296286367554,
-                        "name": "chitchat",
-                        "confidence": 0.0009614597074687481,
-                    },
-                    {
-                        "id": -4598562678335233249,
-                        "name": "mood_unhappy",
-                        "confidence": 0.00024030178610701114,
-                    },
+                    {"name": "greet", "confidence": 0.9604260921478271,},
+                    {"name": "goodbye", "confidence": 0.01835782080888748,},
+                    {"name": "deny", "confidence": 0.011255578137934208,},
+                    {"name": "bot_challenge", "confidence": 0.004019865766167641,},
+                    {"name": "affirm", "confidence": 0.002524246694520116,},
+                    {"name": "mood_great", "confidence": 0.002214624546468258,},
+                    {"name": "chitchat", "confidence": 0.0009614597074687481,},
+                    {"name": "mood_unhappy", "confidence": 0.00024030178610701114,},
                 ],
                 "response_selector": {
                     "all_retrieval_intents": [],
