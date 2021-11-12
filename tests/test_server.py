@@ -173,7 +173,7 @@ async def test_status(rasa_app: SanicASGITestClient, trained_rasa_model: Text):
     _, response = await rasa_app.get("/status")
     model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
     assert model_file == Path(trained_rasa_model).name
 
 
@@ -183,7 +183,7 @@ async def test_status_nlu_only(
     _, response = await rasa_app_nlu.get("/status")
     model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
     assert "model_file" in response.json
     assert model_file == Path(trained_nlu_model).name
 
@@ -1509,9 +1509,9 @@ async def test_load_model(rasa_app: SanicASGITestClient, trained_core_model: Tex
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
 
-    old_fingerprint = response.json["fingerprint"]
+    old_model_id = response.json["model_id"]
 
     data = {"model_file": trained_core_model}
     _, response = await rasa_app.put("/model", json=data)
@@ -1521,9 +1521,9 @@ async def test_load_model(rasa_app: SanicASGITestClient, trained_core_model: Tex
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
 
-    assert old_fingerprint != response.json["fingerprint"]
+    assert old_model_id != response.json["model_id"]
 
 
 async def test_load_model_from_model_server(
@@ -1532,9 +1532,9 @@ async def test_load_model_from_model_server(
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
 
-    old_fingerprint = response.json["fingerprint"]
+    old_model_id = response.json["model_id"]
 
     endpoint = EndpointConfig("https://example.com/model/trained_core_model")
     with open(trained_core_model, "rb") as f:
@@ -1559,9 +1559,9 @@ async def test_load_model_from_model_server(
             _, response = await rasa_app.get("/status")
 
             assert response.status == HTTPStatus.OK
-            assert "fingerprint" in response.json
+            assert "model_id" in response.json
 
-            assert old_fingerprint != response.json["fingerprint"]
+            assert old_model_id != response.json["model_id"]
 
 
 async def test_load_model_invalid_request_body(
