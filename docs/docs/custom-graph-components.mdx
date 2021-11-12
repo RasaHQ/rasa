@@ -4,6 +4,7 @@ sidebar_label: Custom Graph Components
 title: Custom Graph Components
 abstract: You can extend Rasa Open Source with custom NLU components and policies. This page provides a guide on how to develop your own custom graph components.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 Rasa Open Source provides a variety of [NLU components](components.mdx) and
 [policies](policies.mdx) out of the box. You can customize them or create your
@@ -47,6 +48,10 @@ In practice this is represented by the
 [`GraphComponent`](custom-graph-components.mdx#the-graphcomponent-interface)
 interface: Both policies and NLU components have to inherit from this interface to
 become compatible and executable for Rasa's graph.
+
+<div align="center">
+    <img alt="Visualization of the Rasa Open Source Graph Architecture" src={useBaseUrl("/img/graph_architecture.png")} width="100%" />
+</div>
 
 ## Getting Started
 Before you get started you have to decide whether you want to implement a custom
@@ -381,7 +386,9 @@ to specify the following details:
   `process_training_data` and `process` methods of the graph component. These methods
    have to support the parameter `model` to receive the language model. Note that you
    still need to make sure that the graph component which provides this model is part
-   of your model configuration.
+   of your model configuration. A common use case for this is if you want to expose the
+   [SpacyNLP](components.mdx#spacynlp) language model to your other NLU components.
+
 
 ## Using Custom Components in your Model Configuration
 You can use custom graph components like any other NLU component or policy within your
