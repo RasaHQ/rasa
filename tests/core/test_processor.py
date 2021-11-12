@@ -614,7 +614,7 @@ async def test_update_tracker_session_with_metadata(
     )
 
     assert events[2] == with_model_id(SessionStarted(), model_id=model_id)
-    assert events[2].metadata == {**message_metadata, METADATA_MODEL_ID: model_id}
+    assert events[2].metadata == {METADATA_MODEL_ID: model_id}
     assert events[3] == with_model_id(
         SlotSet(SESSION_START_METADATA_SLOT, message_metadata), model_id=model_id
     )
