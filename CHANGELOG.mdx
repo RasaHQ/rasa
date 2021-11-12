@@ -16,6 +16,19 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.13] - 2021-11-11
+### Bugfixes
+- [#9949](https://github.com/rasahq/rasa/issues/9949): Fixed new intent creation in `rasa interactive` command. Previously, this failed with 500
+  from the server due to `UnexpecTEDIntentPolicy` trying to predict with the new intent not in
+  domain.
+- [#9982](https://github.com/rasahq/rasa/issues/9982): Install mitie library when preparing test runs. This step was missing before
+  and tests were thus failing as we have many tests which rely on mitie library.
+  Previously, `make install-full` was required.
+
+### Miscellaneous internal changes
+- [#10146](https://github.com/rasahq/rasa/issues/10146), [#9989](https://github.com/rasahq/rasa/issues/9989)
+
+
 ## [2.8.12] - 2021-10-21
 ### Bugfixes
 - [#9771](https://github.com/rasahq/rasa/issues/9771): Fixed a bug where `rasa test --fail-on-prediction-errors` would raise a 

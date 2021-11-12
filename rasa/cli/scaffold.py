@@ -6,13 +6,13 @@ from typing import List, Text
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.shell import shell
-from rasa.cli.utils import create_output_path
 from rasa.shared.utils.cli import print_success, print_error_and_exit
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_MODELS_PATH,
 )
 
 
@@ -65,7 +65,7 @@ def print_train_or_instructions(args: argparse.Namespace) -> None:
             DEFAULT_DOMAIN_PATH,
             DEFAULT_CONFIG_PATH,
             DEFAULT_DATA_PATH,
-            create_output_path(),
+            DEFAULT_MODELS_PATH,
         )
         args.model = training_result.model
 
