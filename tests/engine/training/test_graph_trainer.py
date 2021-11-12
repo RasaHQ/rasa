@@ -8,7 +8,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 import pytest
 
-from rasa.engine.caching import TrainingCache
+from rasa.engine.caching import LocalTrainingCache, TrainingCache
 from rasa.engine.exceptions import GraphComponentException
 from rasa.engine.graph import (
     GraphComponent,
@@ -492,6 +492,114 @@ def test_graph_trainer_train_logging_with_cached_components(
             "Finished training component 'SubtractByX'.",
             "Restored component 'CacheableComponent' from cache.",
         }
+
+
+def test_resources_fingerprints_are_unique_when_cached(
+    temp_cache: LocalTrainingCache, train_with_schema: Callable,
+):
+    train_schema = GraphSchema(
+        {
+            "train": SchemaNode(
+                needs={},
+                uses=PersistableTestComponent,
+                fn="train",
+                constructor_name="create",
+                config={"test_value": "4"},
+                is_target=True,
+            ),
+            "process": SchemaNode(
+                needs={"resource": "train"},
+                uses=PersistableTestComponent,
+                fn="run_inference",
+                constructor_name="load",
+                config={},
+            ),
+            "assert_node": SchemaNode(
+                needs={"i": "process"},
+                uses=AssertComponent,
+                fn="run_assert",
+                constructor_name="create",
+                config={"value_to_assert": "4"},
+                is_target=True,
+            ),
+        }
+    )
+
+    # Train to cache
+    train_with_schema(train_schema, temp_cache)
+
+    train_schema.nodes["train"].config["test_value"] = "5"
+    train_schema.nodes["assert_node"].config["value_to_assert"] = "5"
+    train_with_schema(train_schema, temp_cache)
+
+    # Add something to the config so only "assert_node" re-runs.
+    train_schema.nodes["assert_node"].config["something"] = "something"
+    # This breaks when `Resource`s use the node name as a fingerprint.
+    # This is because the `Resource` for the first run is retrieved from the cache which
+    # returns 4 whereas it should be the second resource which returns 5, and the schema
+    # assert_node expects 5 now.
+    train_with_schema(train_schema, temp_cache)
+
+
+def test_resources_fingerprints_remain_after_being_cached(
+    temp_cache: LocalTrainingCache, train_with_schema: Callable,
+):
+    train_schema = GraphSchema(
+        {
+            "train": SchemaNode(
+                needs={},
+                uses=PersistableTestComponent,
+                fn="train",
+                constructor_name="create",
+                config={"test_value": "4"},
+                is_target=True,
+            ),
+            "process": SchemaNode(
+                needs={"resource": "train"},
+                uses=PersistableTestComponent,
+                fn="run_inference",
+                constructor_name="load",
+                config={},
+                is_target=True,
+            ),
+        }
+    )
+
+    # Train and cache.
+    train_with_schema(train_schema, temp_cache)
+
+    # We can determine if a cached `Resource` has a static fingerprint by comparing two
+    # subsequent cache entries of a child node.
+    import sqlalchemy as sa
+
+    with temp_cache._sessionmaker.begin() as session:
+        # This will get the cache entry for the "process" node.
+        query_for_most_recently_used_entry = sa.select(temp_cache.CacheEntry).order_by(
+            temp_cache.CacheEntry.last_used.desc()
+        )
+        entry = session.execute(query_for_most_recently_used_entry).scalars().first()
+        # The fingerprint key will incorporate the fingerprint of the `Resource`
+        # provided by the "train" node. We save this key to compare after the next run.
+        fingerprint_key = entry.fingerprint_key
+        # Deleting the entry will force it to be recreated next train.
+        delete_query = sa.delete(temp_cache.CacheEntry).where(
+            temp_cache.CacheEntry.fingerprint_key == fingerprint_key
+        )
+        session.execute(delete_query)
+
+    # In this second train, the Resource output of "train" will be retrieved from the
+    # cache.
+    train_with_schema(train_schema, temp_cache)
+
+    with temp_cache._sessionmaker.begin() as session:
+        # This will get the new cache entry for the "process" node.
+        query_for_most_recently_used_entry = sa.select(temp_cache.CacheEntry).order_by(
+            temp_cache.CacheEntry.last_used.desc()
+        )
+        entry = session.execute(query_for_most_recently_used_entry).scalars().first()
+        # Assert the fingerprint key of the new entry is the same. This confirms that
+        # the Resource from the cache has the same fingerprint.
+        assert entry.fingerprint_key == fingerprint_key
 
 
 @pytest.mark.parametrize(
