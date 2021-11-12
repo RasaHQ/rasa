@@ -10,7 +10,7 @@ from fbmessenger.sender_actions import SenderAction
 import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional, Union
+from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
@@ -23,15 +23,17 @@ class Messenger:
 
     @classmethod
     def name(cls) -> Text:
-        return "facebook"
+        return "messenger"
 
     def __init__(
         self,
         page_access_token: Text,
+        messenger_service: Text,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
     ) -> None:
 
         self.on_new_message = on_new_message
+        self.messenger_service = messenger_service
         self.client = MessengerClient(page_access_token)
         self.last_message: Dict[Text, Any] = {}
 
@@ -108,30 +110,32 @@ class Messenger:
 
         # quick reply and user message both share 'text' attribute
         # so quick reply should be checked first
-        if self._is_quick_reply_message(message):
-            text = message["message"]["quick_reply"]["payload"]
-        elif self._is_user_message(message):
-            text = message["message"]["text"]
-        elif self._is_audio_message(message):
-            attachment = message["message"]["attachments"][0]
-            text = attachment["payload"]["url"]
-        elif self._is_image_message(message):
-            attachment = message["message"]["attachments"][0]
-            text = attachment["payload"]["url"]
-        elif self._is_video_message(message):
-            attachment = message["message"]["attachments"][0]
-            text = attachment["payload"]["url"]
-        elif self._is_file_message(message):
-            attachment = message["message"]["attachments"][0]
-            text = attachment["payload"]["url"]
-        else:
-            logger.warning(
-                "Received a message from facebook that we can not "
-                f"handle. Message: {message}"
-            )
-            return
+        if not message["message"].get("is_echo", False):
+            if self._is_quick_reply_message(message):
+                text = message["message"]["quick_reply"]["payload"]
+            elif self._is_user_message(message):
+                text = message["message"]["text"]
+            elif self._is_audio_message(message):
+                attachment = message["message"]["attachments"][0]
+                text = attachment["payload"]["url"]
+            elif self._is_image_message(message):
+                attachment = message["message"]["attachments"][0]
+                text = attachment["payload"]["url"]
+            elif self._is_video_message(message):
+                attachment = message["message"]["attachments"][0]
+                text = attachment["payload"]["url"]
+            elif self._is_file_message(message):
+                attachment = message["message"]["attachments"][0]
+                text = attachment["payload"]["url"]
 
-        await self._handle_user_message(text, self.get_user_id(), metadata)
+            else:
+                logger.warning(
+                    "Received a message from facebook that we can not "
+                    f"handle. Message: {message}"
+                )
+                return
+
+            await self._handle_user_message(text, self.get_user_id(), metadata)
 
     async def postback(
         self, message: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
@@ -146,7 +150,7 @@ class Messenger:
     ) -> None:
         """Pass on the text to the dialogue engine for processing."""
 
-        out_channel = MessengerBot(self.client)
+        out_channel = MessengerBot(self.client, self.messenger_service)
         await out_channel.send_action(sender_id, sender_action="mark_seen")
 
         user_msg = UserMessage(
@@ -170,11 +174,14 @@ class MessengerBot(OutputChannel):
 
     @classmethod
     def name(cls) -> Text:
-        return "facebook"
+        return "messenger"
 
-    def __init__(self, messenger_client: MessengerClient) -> None:
+    def __init__(
+        self, messenger_client: MessengerClient, messenger_service: Text
+    ) -> None:
 
         self.messenger_client = messenger_client
+        self.messenger_service = messenger_service
         super().__init__()
 
     def send(self, recipient_id: Text, element: Any) -> None:
@@ -222,29 +229,36 @@ class MessengerBot(OutputChannel):
         """Sends buttons to the output."""
 
         # buttons is a list of tuples: [(option_name,payload)]
-        if len(buttons) > 3:
+        if "instagram" in self.messenger_service:
+            await self.send_quick_replies(recipient_id, text, buttons)
             rasa.shared.utils.io.raise_warning(
-                "Facebook API currently allows only up to 3 buttons. "
-                "If you add more, all will be ignored."
+                "Instagram API currently doesn't allow use of buttons. "
+                "If you add, all will be converted to quick replies."
             )
-            await self.send_text_message(recipient_id, text, **kwargs)
         else:
-            self._add_postback_info(buttons)
-
-            # Currently there is no predefined way to create a message with
-            # buttons in the fbmessenger framework - so we need to create the
-            # payload on our own
-            payload = {
-                "attachment": {
-                    "type": "template",
-                    "payload": {
-                        "template_type": "button",
-                        "text": text,
-                        "buttons": buttons,
-                    },
+            if len(buttons) > 3:
+                rasa.shared.utils.io.raise_warning(
+                    "Facebook API currently allows only up to 3 buttons. "
+                    "If you add more, all will be ignored."
+                )
+                await self.send_text_message(recipient_id, text, **kwargs)
+            else:
+                logger.info("here")
+                self._add_postback_info(buttons)
+                # Currently there is no predefined way to create a message with
+                # buttons in the fbmessenger framework - so we need to create the
+                # payload on our own
+                payload = {
+                    "attachment": {
+                        "type": "template",
+                        "payload": {
+                            "template_type": "button",
+                            "text": text,
+                            "buttons": buttons,
+                        },
+                    }
                 }
-            }
-            self.messenger_client.send(payload, recipient_id, "RESPONSE")
+                self.messenger_client.send(payload, recipient_id, "RESPONSE")
 
     async def send_quick_replies(
         self,
@@ -276,19 +290,11 @@ class MessengerBot(OutputChannel):
         self.messenger_client.send(payload, recipient_id, "RESPONSE")
 
     async def send_custom_json(
-        self,
-        recipient_id: Text,
-        json_message: Union[List, Dict[Text, Any]],
-        **kwargs: Any,
+        self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json data to the output."""
-        if isinstance(json_message, dict) and "sender" in json_message.keys():
-            recipient_id = json_message.pop("sender", {}).pop("id", recipient_id)
-        elif isinstance(json_message, list):
-            for message in json_message:
-                if "sender" in message.keys():
-                    recipient_id = message.pop("sender", {}).pop("id", recipient_id)
-                    break
+
+        recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
 
         self.messenger_client.send(json_message, recipient_id, "RESPONSE")
 
@@ -321,26 +327,38 @@ class MessengerBot(OutputChannel):
         return QuickReplies(quick_replies=fb_quick_replies)
 
 
-class FacebookInput(InputChannel):
+class MessengerInput(InputChannel):
     """Facebook input channel implementation. Based on the HTTPInputChannel."""
 
     @classmethod
     def name(cls) -> Text:
-        return "facebook"
+        return "messenger"
 
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
-
+        if not credentials.get("messenger-service") in [
+            "instagram",
+            "facebook",
+            "facebook/instagram",
+        ]:
+            cls.raise_missing_credentials_exception()
         return cls(
             credentials.get("verify"),
             credentials.get("secret"),
             credentials.get("page-access-token"),
+            credentials.get("messenger-service"),
         )
 
-    def __init__(self, fb_verify: Text, fb_secret: Text, fb_access_token: Text) -> None:
-        """Create a facebook input channel.
+    def __init__(
+        self,
+        messenger_verify: Text,
+        messenger_secret: Text,
+        messenger_access_token: Text,
+        messenger_service: Text,
+    ) -> None:
+        """Create a messenger input channel.
 
         Needs a couple of settings to properly authenticate and validate
         messages. Details to setup:
@@ -348,14 +366,15 @@ class FacebookInput(InputChannel):
         https://github.com/rehabstudio/fbmessenger#facebook-app-setup
 
         Args:
-            fb_verify: FB Verification string
+            messenger_verify: FB/Insta Verification string
                 (can be chosen by yourself on webhook creation)
-            fb_secret: facebook application secret
-            fb_access_token: access token to post in the name of the FB page
+            messenger_secret: facebook application secret
+            messenger_access_token: access token to post in the name of the FB page
         """
-        self.fb_verify = fb_verify
-        self.fb_secret = fb_secret
-        self.fb_access_token = fb_access_token
+        self.messenger_verify = messenger_verify
+        self.messenger_secret = messenger_secret
+        self.messenger_access_token = messenger_access_token
+        self.messenger_service = messenger_service
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -370,7 +389,7 @@ class FacebookInput(InputChannel):
 
         @fb_webhook.route("/webhook", methods=["GET"])
         async def token_verification(request: Request) -> HTTPResponse:
-            if request.args.get("hub.verify_token") == self.fb_verify:
+            if request.args.get("hub.verify_token") == self.messenger_verify:
                 return response.text(request.args.get("hub.challenge"))
             else:
                 logger.warning(
@@ -382,14 +401,18 @@ class FacebookInput(InputChannel):
         @fb_webhook.route("/webhook", methods=["POST"])
         async def webhook(request: Request) -> HTTPResponse:
             signature = request.headers.get("X-Hub-Signature") or ""
-            if not self.validate_hub_signature(self.fb_secret, request.body, signature):
+            if not self.validate_hub_signature(
+                self.messenger_secret, request.body, signature
+            ):
                 logger.warning(
                     "Wrong fb secret! Make sure this matches the "
                     "secret in your facebook app settings"
                 )
                 return response.text("not validated")
 
-            messenger = Messenger(self.fb_access_token, on_new_message)
+            messenger = Messenger(
+                self.messenger_access_token, self.messenger_service, on_new_message
+            )
 
             metadata = self.get_metadata(request)
             await messenger.handle(request.json, metadata)
@@ -428,5 +451,5 @@ class FacebookInput(InputChannel):
         return False
 
     def get_output_channel(self) -> OutputChannel:
-        client = MessengerClient(self.fb_access_token)
-        return MessengerBot(client)
+        client = MessengerClient(self.messenger_access_token)
+        return MessengerBot(client, self.messenger_service)

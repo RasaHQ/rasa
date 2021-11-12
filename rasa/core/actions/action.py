@@ -924,9 +924,9 @@ class ActionDefaultAskAffirmation(Action):
 
         intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
 
-        intent_ranking: List["IntentPrediction"] = latest_message.parse_data.get(
-            INTENT_RANKING_KEY
-        ) or []
+        intent_ranking: List["IntentPrediction"] = (
+            latest_message.parse_data.get(INTENT_RANKING_KEY) or []
+        )
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
@@ -979,7 +979,8 @@ class ActionExtractSlots(Action):
 
     @staticmethod
     def _matches_mapping_conditions(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any],
+        tracker: "DialogueStateTracker",
     ) -> bool:
         slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
 
@@ -1001,7 +1002,8 @@ class ActionExtractSlots(Action):
 
     @staticmethod
     def _verify_mapping_conditions(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any],
+        tracker: "DialogueStateTracker",
     ) -> bool:
         if mapping.get(MAPPING_CONDITIONS) and mapping.get(MAPPING_TYPE) != str(
             SlotMapping.FROM_TRIGGER_INTENT
@@ -1070,7 +1072,11 @@ class ActionExtractSlots(Action):
             return [], executed_custom_actions
 
         slot_events = await self._run_custom_action(
-            custom_action, output_channel, nlg, tracker, domain,
+            custom_action,
+            output_channel,
+            nlg,
+            tracker,
+            domain,
         )
 
         executed_custom_actions.add(custom_action)
@@ -1179,12 +1185,16 @@ class ActionExtractSlots(Action):
 
 
 def extract_slot_value_from_predefined_mapping(
-    mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+    mapping: Dict[Text, Any],
+    tracker: "DialogueStateTracker",
 ) -> List[Any]:
     """Extracts slot value if slot has an applicable predefined mapping."""
     should_fill_entity_slot = mapping.get(MAPPING_TYPE) == str(
         SlotMapping.FROM_ENTITY
-    ) and SlotMapping.entity_is_desired(mapping, tracker,)
+    ) and SlotMapping.entity_is_desired(
+        mapping,
+        tracker,
+    )
 
     should_fill_intent_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT)
 

@@ -40,14 +40,16 @@ You need to set up a Facebook app and a page.
    **messaging_postback** subscriptions. Insert your callback URL, which will
    look like `https://<host>:<port>/webhooks/facebook/webhook`, replacing
    the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
-   
+
+7. Insert the **messenger service** as **facebook** when using Facebook Messenger
+
    Insert the **Verify Token** which has to match the `verify`
    entry in your `credentials.yml`.
 
 :::note configure https
 Facebook Messenger only forwards
 messages to endpoints via `https`, so take appropriate measures to add
-it to your setup. For local testing of your bot, see [Testing Channels on Your Local Machine](../messaging-and-voice-channels.mdx#testing-channels-on-your-local-machine).
+it to your setup.
 :::
 
 For more detailed steps, visit the
@@ -55,13 +57,14 @@ For more detailed steps, visit the
 
 ### Running On Facebook Messenger
 
-Add the Facebook credentials to your `credentials.yml`:
+Add the Messenger credentials to your `credentials.yml`:
 
 ```yaml-rasa
-facebook:
+messenger:
   verify: "rasa-bot"
   secret: "3e34709d01ea89032asdebfe5a74518"
   page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
+  messenger-service: "facebook"
 ```
 
 
@@ -137,3 +140,117 @@ Both Quick Reply and Button titles in Facebook Messenger have a character limit 
              - title: Example button F
                payload: /example_intent
   ```
+
+## Instagram Setup
+1. You first need to create a Facebook page and Instagram business page.
+
+2. Go to [Instagram](https://www.instagram.com) and under **Settings** you will
+   find **Accounts Center**, click on it and connect your facebook account with instagram.
+
+3. Now, visit [Facebook](https://www.facebook.com/) on left side click on **Pages**
+   scroll down on left side and click on **Settings** again scroll down on left side menu
+   and click on **Instagram**. Link your instagram page with Facebook page.
+
+4. Create/use app for Messenger service on [Facebook Developers](https://www.developers.facebook.com).
+
+5. Once you have them you can add these to your `credentials.yml`.
+
+### Getting Credentials
+**How to get the Instagram credentials:**
+You need to set up a Facebook app, a facebook page and a Instagram page.
+
+1. To create the app head over to
+   [Facebook for Developers](https://developers.facebook.com/)
+   and click on **My Apps** → **Add New App**.
+
+2. Go onto the dashboard for the app and under **Products**,
+   find the **Messenger** section and click **Set Up**. Scroll down to
+   **Token Generation** and click on the link to create a new page for your
+   app.
+
+3. Go to **Messenger** -> **Instagram Settings** Create your facebook page
+   and select it in the dropdown menu for the **Token Generation**. The
+   shown **Page Access Token** is the `page-access-token` needed later on.
+
+4. Locate the **App Secret** in the app dashboard under **Settings** → **Basic**.
+   This will be your `secret`.
+
+5. Use the collected `secret` and `page-access-token` in your
+   `credentials.yml`, and add a field called `verify` containing
+   a string of your choice. Start `rasa run` with the
+   `--credentials credentials.yml` option.
+
+6. Set up a **Webhook** and select at least the **messaging** and
+   **messaging_postback** subscriptions. Insert your callback URL, which will
+   look like `https://<host>:<port>/webhooks/messenger/webhook`, replacing
+   the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
+
+7. Insert the **messenger service** as **instagram** when using Facebook Messenger
+
+   Insert the **Verify Token** which has to match the `verify`
+   entry in your `credentials.yml`.
+
+### Running On Instagram Messenger
+
+Add the messenger credentials to your `credentials.yml`:
+
+```yaml-rasa
+messenger:
+  verify: "rasa-bot"
+  secret: "3e34709d01ea89032asdebfe5a74518"
+  page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
+  messenger-service: "instagram"
+```
+
+## Supported response attachments
+
+In addition to typical text, image, and custom responses, the Instagram Messenger
+channel supports the following additional response attachments:
+
+* [Quick Replies](https://developers.facebook.com/docs/messenger-platform/send-messages/quick-replies)
+  provide a way to present a set of up to 13 buttons in-conversation that contain a
+  title and optional image, and appear prominently above the composer. You can also
+  use quick replies to request a person's email address or phone number.
+
+  ```yaml-rasa
+  utter_fb_quick_reply_example:
+     - text: Hello World!
+       quick_replies:
+         - title: Text quick reply
+           payload: /example_intent
+         - title: Image quick reply
+           payload: /example_intent
+           image_url: http://example.com/img/red.png
+         # below are Facebook provided quick replies
+         # the title and payload will be filled
+         # with the user's information from their profile
+         - content_type: user_email
+           title:
+           payload:
+         - content_type: user_phone_number
+           title:
+           payload:
+  ```
+
+:::note
+Both Quick Reply titles in Messenger Messenger have a character limit of
+20. Titles longer than 20 characters will be truncated.
+:::
+
+### Running Facebook and Instagram Messenger
+1. Follow **Facebook** and **Instagram** setup till the end except **Step 7**
+
+2. Insert the **messenger service** as **facebook/instagram** when using Facebook Messenger and Instagram Messenger
+
+```yaml-rasa
+messenger:
+  verify: "rasa-bot"
+  secret: "3e34709d01ea89032asdebfe5a74518"
+  page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
+  messenger-service: "facebook/instagram"
+```
+
+:::note Buttons usage
+Instagram doesn't supports buttons, so we are converting them to quick replies.
+While, using messenger for facebook buttons will be converted to quick replies.
+:::

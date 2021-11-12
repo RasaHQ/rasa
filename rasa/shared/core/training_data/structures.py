@@ -305,7 +305,7 @@ class StoryStep:
 
 
 class RuleStep(StoryStep):
-    """A Special type of StoryStep representing a Rule. """
+    """A Special type of StoryStep representing a Rule."""
 
     def __init__(
         self,
@@ -351,7 +351,7 @@ class RuleStep(StoryStep):
         )
 
     def get_rules_condition(self) -> List[Event]:
-        """Returns a list of events forming a condition of the Rule. """
+        """Returns a list of events forming a condition of the Rule."""
 
         return [
             event
@@ -360,7 +360,7 @@ class RuleStep(StoryStep):
         ]
 
     def get_rules_events(self) -> List[Event]:
-        """Returns a list of events forming the Rule, that are not conditions. """
+        """Returns a list of events forming the Rule, that are not conditions."""
 
         return [
             event

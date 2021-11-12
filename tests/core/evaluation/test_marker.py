@@ -332,7 +332,12 @@ def test_operators_nested_simple():
     marker = AndMarker(
         markers=[
             SlotSetMarker("s1"),
-            OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6"),]),
+            OrMarker(
+                [
+                    IntentDetectedMarker("4"),
+                    IntentDetectedMarker("6"),
+                ]
+            ),
         ],
         name="marker_name",
     )
@@ -629,13 +634,16 @@ def test_marker_validation_raises(config: Any):
         Marker.from_config(config)
 
 
-def test_marker_from_path_only_reads_yamls(tmp_path: Path,):
+def test_marker_from_path_only_reads_yamls(
+    tmp_path: Path,
+):
     suffixes = [("yaml", True), ("yml", True), ("yaeml", False), ("config", False)]
     for idx, (suffix, allowed) in enumerate(suffixes):
         config = {f"marker-{idx}": {IntentDetectedMarker.positive_tag(): "intent"}}
         config_file = tmp_path / f"config-{idx}.{suffix}"
         rasa.shared.utils.io.write_yaml(
-            data=config, target=config_file,
+            data=config,
+            target=config_file,
         )
     loaded = Marker.from_path(tmp_path)
     assert len(loaded.sub_markers) == sum(allowed for _, allowed in suffixes)
@@ -658,7 +666,8 @@ def test_marker_from_path_adds_special_or_marker(tmp_path: Path, configs: Any):
 
     yaml_file = tmp_path / "config.yml"
     rasa.shared.utils.io.write_yaml(
-        data=configs, target=yaml_file,
+        data=configs,
+        target=yaml_file,
     )
     loaded = Marker.from_path(tmp_path)
     assert isinstance(loaded, OrMarker)
@@ -717,13 +726,26 @@ def test_marker_from_path_raises(
             AndMarker(
                 markers=[
                     SlotSetMarker("s1"),
-                    OrMarker([IntentDetectedMarker("4"), IntentDetectedMarker("6"),]),
+                    OrMarker(
+                        [
+                            IntentDetectedMarker("4"),
+                            IntentDetectedMarker("6"),
+                        ]
+                    ),
                 ],
             ),
             3,
         ),
         (SlotSetMarker("s1"), 1),
-        (AndMarker(markers=[SlotSetMarker("s1"), IntentDetectedMarker("6"),],), 2),
+        (
+            AndMarker(
+                markers=[
+                    SlotSetMarker("s1"),
+                    IntentDetectedMarker("6"),
+                ],
+            ),
+            2,
+        ),
     ],
 )
 def test_marker_depth(marker: Marker, expected_depth: int):

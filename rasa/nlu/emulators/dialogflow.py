@@ -23,7 +23,7 @@ class DialogflowEmulator(Emulator):
     """
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
-        """"Transform response JSON to DialogFlow format.
+        """ "Transform response JSON to DialogFlow format.
 
         Args:
             data: input JSON data as a dictionary.

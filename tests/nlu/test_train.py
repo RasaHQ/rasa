@@ -76,7 +76,9 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
         (
             "en",
             as_pipeline(
-                "WhitespaceTokenizer", "LanguageModelFeaturizer", "DIETClassifier",
+                "WhitespaceTokenizer",
+                "LanguageModelFeaturizer",
+                "DIETClassifier",
             ),
         ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
@@ -160,7 +162,9 @@ async def test_train_persist_load_parse(
     )
 
     persisted_path = rasa.model_training.train_nlu(
-        str(config_file), nlu_as_json_path, output=str(tmp_path),
+        str(config_file),
+        nlu_as_json_path,
+        output=str(tmp_path),
     )
 
     assert Path(persisted_path).is_file()
@@ -182,11 +186,18 @@ def test_train_persist_load_parse_non_windows(
 
 def test_train_model_empty_pipeline(nlu_as_json_path: Text, tmp_path: Path):
     config_file = tmp_path / "config.yml"
-    rasa.shared.utils.io.dump_obj_as_json_to_file(config_file, {"pipeline": [],})
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        config_file,
+        {
+            "pipeline": [],
+        },
+    )
 
     with pytest.raises(ValueError):
         rasa.model_training.train_nlu(
-            str(config_file), nlu_as_json_path, output=str(tmp_path),
+            str(config_file),
+            nlu_as_json_path,
+            output=str(tmp_path),
         )
 
 
@@ -203,10 +214,13 @@ def test_handles_pipeline_with_non_existing_component(
     )
 
     with pytest.raises(
-        Exception, match="Can't load class for name 'my_made_up_component'",
+        Exception,
+        match="Can't load class for name 'my_made_up_component'",
     ):
         rasa.model_training.train_nlu(
-            str(config_file), nlu_as_json_path, output=str(tmp_path),
+            str(config_file),
+            nlu_as_json_path,
+            output=str(tmp_path),
         )
 
 

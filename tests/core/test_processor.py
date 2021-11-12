@@ -588,7 +588,8 @@ async def test_update_tracker_session(
 
 
 async def test_update_tracker_session_with_metadata(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
 ):
     model_id = default_processor.model_metadata.model_id
     sender_id = uuid.uuid4().hex
@@ -605,7 +606,11 @@ async def test_update_tracker_session_with_metadata(
     events = list(tracker.events)
 
     assert events[0] == with_model_id(
-        SlotSet(SESSION_START_METADATA_SLOT, message_metadata,), model_id
+        SlotSet(
+            SESSION_START_METADATA_SLOT,
+            message_metadata,
+        ),
+        model_id,
     )
     assert tracker.slots[SESSION_START_METADATA_SLOT].value == message_metadata
 
@@ -874,7 +879,10 @@ async def test_handle_message_with_session_start(
             SlotSet(entity, slot_1[entity]),
             DefinePrevUserUtteredFeaturization(False),
             ActionExecuted("utter_greet"),
-            BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"},),
+            BotUttered(
+                "hey there Core!",
+                metadata={"utter_action": "utter_greet"},
+            ),
             ActionExecuted(ACTION_LISTEN_NAME),
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
@@ -930,7 +938,10 @@ async def test_should_predict_another_action(
 
 async def test_action_unlikely_intent_metadata(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
-        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME),],
+        "some-sender",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
     )
     domain = Domain.empty()
     metadata = {"key1": 1, "key2": "2"}
@@ -1000,7 +1011,10 @@ async def test_restart_triggers_session_start(
             SlotSet(entity, slot_1[entity]),
             DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
             ActionExecuted("utter_greet"),
-            BotUttered("hey there name1!", metadata={"utter_action": "utter_greet"},),
+            BotUttered(
+                "hey there name1!",
+                metadata={"utter_action": "utter_greet"},
+            ),
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("/restart", {INTENT_NAME_KEY: "restart", "confidence": 1.0}),
             DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
@@ -1163,7 +1177,10 @@ async def test_policy_events_not_applied_if_rejected(
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(user_message, intent={"name": "greet"},),
+            UserUttered(
+                user_message,
+                intent={"name": "greet"},
+            ),
             ActionExecutionRejected(ACTION_LISTEN_NAME),
         ],
         model_id,
@@ -1173,7 +1190,8 @@ async def test_policy_events_not_applied_if_rejected(
 
 
 async def test_logging_of_end_to_end_action(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
 ):
     model_id = default_processor.model_metadata.model_id
     end_to_end_action = "hi, how are you?"
@@ -1226,7 +1244,10 @@ async def test_logging_of_end_to_end_action(
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(user_message, intent={"name": "greet"},),
+            UserUttered(
+                user_message,
+                intent={"name": "greet"},
+            ),
             ActionExecuted(action_text=end_to_end_action),
             BotUttered("hi, how are you?", {}, {}, 123),
             ActionExecuted(ACTION_LISTEN_NAME),
