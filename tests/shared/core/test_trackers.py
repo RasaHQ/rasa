@@ -1370,7 +1370,7 @@ def test_autofill_slots_for_policy_entities():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "2.0"
+            version: "3.0"
             entities:
             - {nlu_entity}
             - {policy_entity}

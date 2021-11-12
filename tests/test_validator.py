@@ -99,7 +99,7 @@ def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         stories:
         - story: path 1
           steps:
@@ -263,7 +263,7 @@ def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Te
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         stories:
         - story: story path 1
           steps:
@@ -290,7 +290,7 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
     rules_file_name = tmp_path / "rules.yml"
     rules_file_name.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         rules:
         - rule: rule path 1
           steps:
@@ -316,7 +316,7 @@ def test_verify_form_slots_invalid_domain(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         forms:
           name_form:
             required_slots:
@@ -376,7 +376,7 @@ def test_valid_stories_rules_actions_in_domain(
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - greet
         actions:
@@ -386,7 +386,7 @@ def test_valid_stories_rules_actions_in_domain(
     file_name = tmp_path / f"{file_name}.yml"
     file_name.write_text(
         f"""
-        version: "2.0"
+        version: "3.0"
         {file_name}:
         - {data_type}: test path
           steps:
@@ -408,7 +408,7 @@ def test_valid_stories_rules_default_actions(
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - greet
         """
@@ -416,7 +416,7 @@ def test_valid_stories_rules_default_actions(
     file_name = tmp_path / f"{file_name}.yml"
     file_name.write_text(
         f"""
-            version: "2.0"
+            version: "3.0"
             {file_name}:
             - {data_type}: test path
               steps:
@@ -433,7 +433,7 @@ def test_valid_form_slots_in_domain(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         forms:
           name_form:
             required_slots:
@@ -460,7 +460,7 @@ def test_verify_slot_mappings_mapping_active_loop_not_in_forms(tmp_path: Path):
     slot_name = "some_slot"
     domain.write_text(
         f"""
-        version: "2.0"
+        version: "3.0"
         entities:
         - some_entity
         slots:
@@ -496,7 +496,7 @@ def test_verify_slot_mappings_from_trigger_intent_mapping_slot_not_in_forms(
     slot_name = "started_booking_form"
     domain.write_text(
         f"""
-        version: "2.0"
+        version: "3.0"
         intents:
         - activate_booking
         entities:
@@ -534,7 +534,7 @@ def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path:
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - activate_booking
         entities:
@@ -575,7 +575,7 @@ def test_verify_slot_mappings_valid(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - activate_booking
         entities:

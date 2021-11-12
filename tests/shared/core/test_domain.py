@@ -179,7 +179,7 @@ def test_domain_from_template(domain: Domain):
 def test_avoid_action_repetition(domain: Domain):
     domain = Domain.from_yaml(
         """
-        version: "2.0"
+        version: "3.0"
         actions:
         - utter_greet
         responses:
@@ -443,7 +443,7 @@ session_config:
 def test_merge_with_empty_domain():
     domain = Domain.from_yaml(
         """
-        version: "2.0"
+        version: "3.0"
         config:
           store_entities_as_slots: false
         session_config:
@@ -475,7 +475,7 @@ def test_merge_with_empty_domain():
 def test_merge_with_empty_other_domain(other: Optional[Domain]):
     domain = Domain.from_yaml(
         """
-        version: "2.0"
+        version: "3.0"
         config:
           store_entities_as_slots: false
         session_config:
@@ -961,7 +961,7 @@ def test_not_add_knowledge_base_slots():
 def test_add_knowledge_base_slots():
     test_domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "3.0"
         actions:
         - {DEFAULT_KNOWLEDGE_BASE_ACTION}
         """
@@ -1279,7 +1279,7 @@ def test_form_invalid_required_slots_raises():
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(
             """
-            version: "2.0"
+            version: "3.0"
             entities:
             - some_entity
             forms:
@@ -1348,7 +1348,7 @@ def test_slot_invalid_mappings(domain_as_dict: Dict[Text, Any]):
         # Wrong type for slots
         (
             """
-        version: "2.0"
+        version: "3.0"
         slots:
           []
         """
@@ -1356,14 +1356,14 @@ def test_slot_invalid_mappings(domain_as_dict: Dict[Text, Any]):
         # Wrong type for slot names
         (
             """
-        version: "2.0"
+        version: "3.0"
         slots:
           some_slot: 5
         """
         ),
         (
             """
-        version: "2.0"
+        version: "3.0"
         slots:
           some_slot: []
         """
@@ -1583,7 +1583,7 @@ def test_domain_count_conditional_response_variations():
 def test_domain_with_no_form_slots():
     domain = Domain.from_yaml(
         """
-        version: "2.0"
+        version: "3.0"
         forms:
          contract_form:
           required_slots: []
@@ -1596,7 +1596,7 @@ def test_domain_with_empty_required_slots():
     with pytest.raises(YamlException):
         Domain.from_yaml(
             """
-            version: "2.0"
+            version: "3.0"
             forms:
               contract_form:
             """
@@ -1613,7 +1613,7 @@ def test_domain_invalid_yml_in_folder():
 
 def test_domain_fingerprint_consistency_across_runs():
     domain_yaml = """
-         version: "2.0"
+         version: "3.0"
          intents:
          - greet
          - goodbye
@@ -1646,7 +1646,7 @@ def test_domain_fingerprint_consistency_across_runs():
 def test_domain_fingerprint_uniqueness():
     domain = Domain.from_yaml(
         """
-         version: "2.0"
+         version: "3.0"
          intents:
          - greet
          - goodbye
@@ -1658,7 +1658,7 @@ def test_domain_fingerprint_uniqueness():
 
     domain_with_extra_intent = Domain.from_yaml(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - greet
         - goodbye
@@ -1672,7 +1672,7 @@ def test_domain_fingerprint_uniqueness():
 
     domain_with_extra_action = Domain.from_yaml(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - greet
         - goodbye
@@ -1686,7 +1686,7 @@ def test_domain_fingerprint_uniqueness():
 
     domain_with_extra_responses = Domain.from_yaml(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - greet
         - goodbye
@@ -1705,7 +1705,7 @@ def test_domain_slots_for_entities_with_mapping_conditions_no_slot_set():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             entities:
             - city
             slots:
@@ -1732,7 +1732,7 @@ def test_domain_slots_for_entities_sets_valid_slot():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             entities:
             - city
             slots:
@@ -1753,7 +1753,7 @@ def test_domain_slots_for_entities_sets_valid_list_slot():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             entities:
             - topping
             slots:
@@ -1778,7 +1778,7 @@ def test_domain_slots_for_entities_sets_valid_list_slot():
 def test_domain_slots_for_entities_with_entity_mapping_to_multiple_slots():
     domain = Domain.from_yaml(
         """
-        version: "2.0"
+        version: "3.0"
         entities:
         - city
         slots:

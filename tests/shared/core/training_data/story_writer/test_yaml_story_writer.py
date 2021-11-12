@@ -88,7 +88,7 @@ def test_yaml_writer_dumps_user_messages():
         dump.strip()
         == textwrap.dedent(
             """
-        version: "2.0"
+        version: "3.0"
         stories:
         - story: default
           steps:
@@ -116,7 +116,7 @@ def test_yaml_writer_doesnt_dump_action_unlikely_intent():
         dump.strip()
         == textwrap.dedent(
             """
-    version: "2.0"
+    version: "3.0"
     stories:
     - story: default
       steps:
@@ -140,7 +140,7 @@ def test_yaml_writer_avoids_dumping_not_existing_user_messages():
         dump.strip()
         == textwrap.dedent(
             """
-        version: "2.0"
+        version: "3.0"
         stories:
         - story: default
           steps:
@@ -198,7 +198,7 @@ def test_yaml_writer_stories_to_yaml_with_null_entities(domain: Domain):
     writer = YAMLStoryWriter()
     stories = textwrap.dedent(
         """
-    version: "2.0"
+    version: "3.0"
     stories:
     - story: happy path
       steps:
@@ -251,7 +251,7 @@ def test_writing_end_to_end_stories(domain: Domain):
         dump.strip()
         == textwrap.dedent(
             f"""
-        version: "2.0"
+        version: "3.0"
         stories:
         - story: {story_name}
           steps:
@@ -298,7 +298,7 @@ stories:
         dump.strip()
         == textwrap.dedent(
             f"""
-        version: "2.0"
+        version: "3.0"
         stories:
         - story: {story_name}
           steps:
