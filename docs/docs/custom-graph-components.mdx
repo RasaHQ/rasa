@@ -372,7 +372,7 @@ to specify the following details:
       the graph component's `predict_action_probabilities` to make predictions for the
       next action which should be run within a conversation.
 
-- `is_trainable`: Specifies if the graph component requires to train itself before it can
+- `is_trainable`: Specifies if the graph component is required to train itself before it can
    process training data for other dependent graph components or before it can make
    predictions
 
@@ -401,7 +401,8 @@ language: en
 pipeline:
 # other NLU components
 - name: your.custom.NLUComponent
-  dimensions: ["number"]
+  setting_a = 0.01
+  setting_b = string_value
 
 policies:
 # other dialogue policies
