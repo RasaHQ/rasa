@@ -764,3 +764,48 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
         f"Please make sure to include these for a successful migration.",
     ):
         rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+
+
+def test_migrate_twice(tmp_path: Path,):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          outdoor_seating:
+           type: bool
+           influence_conversation: false
+        """,
+        "slots_one.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          cuisine:
+           type: text
+           influence_conversation: false
+        """,
+        "slots_two.yml",
+    )
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)

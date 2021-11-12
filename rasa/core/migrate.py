@@ -1,4 +1,5 @@
 import copy
+import shutil
 from pathlib import Path
 from typing import List, Dict, Text, Any, Tuple, Optional, Union
 
@@ -180,6 +181,53 @@ def _write_final_domain(
         rasa.shared.utils.io.write_yaml(new_domain, out_file, True)
 
 
+def _migrate_domain_files(domain_file: Path, backup_dir: Path, out_file: Path):
+    slots = {}
+    forms = {}
+    entities = []
+
+    for file in domain_file.iterdir():
+        if not Domain.is_domain_file(file):
+            continue
+
+        backup = backup_dir / file.name
+        original_content = _create_back_up(file, backup)
+
+        if KEY_SLOTS not in original_content and KEY_FORMS not in original_content:
+            # this is done so that the other domain files can be moved
+            # in the migrated directory
+            rasa.shared.utils.io.write_yaml(
+                original_content, out_file / file.name, True
+            )
+        elif KEY_SLOTS in original_content and slots:
+            raise RasaException(
+                f"Domain files with multiple '{KEY_SLOTS}' "
+                f"sections were provided. Please group these sections "
+                f"in one file only to prevent content duplication across "
+                f"multiple files. "
+            )
+        elif KEY_FORMS in original_content and forms:
+            raise RasaException(
+                f"Domain files with multiple '{KEY_FORMS}' "
+                f"sections were provided. Please group these sections "
+                f"in one file only to prevent content duplication across "
+                f"multiple files. "
+            )
+
+        slots.update(original_content.get(KEY_SLOTS, {}))
+        forms.update(original_content.get(KEY_FORMS, {}))
+        entities.extend(original_content.get(KEY_ENTITIES, {}))
+
+    if not slots or not forms:
+        raise RasaException(
+            f"The files you have provided in '{domain_file}' are missing slots "
+            f"or forms. Please make sure to include these for a "
+            f"successful migration."
+        )
+
+    return {KEY_SLOTS: slots, KEY_FORMS: forms, KEY_ENTITIES: entities}
+
+
 def migrate_domain_format(
     domain_file: Union[Text, Path], out_file: Union[Text, Path]
 ) -> None:
@@ -193,11 +241,6 @@ def migrate_domain_format(
         backup_dir = current_dir / "original_domain"
         backup_dir.mkdir()
 
-        slots = {}
-        forms = {}
-        entities = []
-        original_domain = {}
-
         if out_file.is_file() or not out_file.exists():
             out_file = current_dir / "new_domain"
             out_file.mkdir()
@@ -207,48 +250,11 @@ def migrate_domain_format(
                 f"for migrated domain files."
             )
 
-        for file in domain_file.iterdir():
-            if not Domain.is_domain_file(file):
-                continue
-
-            backup = backup_dir / file.name
-            original_content = _create_back_up(file, backup)
-
-            if KEY_SLOTS not in original_content and KEY_FORMS not in original_content:
-                # this is done so that the other domain files can be moved
-                # in the migrated directory
-                rasa.shared.utils.io.write_yaml(
-                    original_content, out_file / file.name, True
-                )
-            elif KEY_SLOTS in original_content and slots:
-                raise RasaException(
-                    f"Domain files with multiple '{KEY_SLOTS}' "
-                    f"sections were provided. Please group these sections "
-                    f"in one file only to prevent content duplication across "
-                    f"multiple files. "
-                )
-            elif KEY_FORMS in original_content and forms:
-                raise RasaException(
-                    f"Domain files with multiple '{KEY_FORMS}' "
-                    f"sections were provided. Please group these sections "
-                    f"in one file only to prevent content duplication across "
-                    f"multiple files. "
-                )
-
-            slots.update(original_content.get(KEY_SLOTS, {}))
-            forms.update(original_content.get(KEY_FORMS, {}))
-            entities.extend(original_content.get(KEY_ENTITIES, {}))
-
-        if not slots or not forms:
-            raise RasaException(
-                f"The files you have provided in '{domain_file}' are missing slots "
-                f"or forms. Please make sure to include these for a "
-                f"successful migration."
-            )
-
-        original_domain.update(
-            {KEY_SLOTS: slots, KEY_FORMS: forms, KEY_ENTITIES: entities}
-        )
+        try:
+            original_domain = _migrate_domain_files(domain_file, backup_dir, out_file)
+        except Exception as e:
+            shutil.rmtree(backup_dir)
+            raise e
     else:
         if not Domain.is_domain_file(domain_file):
             raise RasaException(
