@@ -159,33 +159,25 @@ Markers are extracted from dialogues already stored a tracker store. To learn ho
 Once you've created your marker definitions in the marker configuration file, and have stored some dialogues in your tracker store, you can apply your markers to your trackers by running the following command:
 
 ```bash
-rasa evaluate markers all extracted_markers.csv
+rasa evaluate markers all --config marker.yml extracted_markers.csv
 ```
+This script will process the marker definitions you provide your in the marker configuration file: `marker.yml`.
+The script will output the extracted markers in the specified output file: `extracted_markers.csv`.
+It will also produce two summary statistics files. The format of the output files are described in the next section.
 
-By default, the script will process the marker definitions provided in the `marker.yml` file. To specify a different marker configuration file, use the optional `--config` argument.
+By default, the script will validate your marker definitions against your bot's `domain.yml` file. To specify a different domain file, use the optional `--domain` argument.
 
-By default, the script will validate the marker definitions against your bot's `domain.yml` file. To specify a different domain file, use the optional `--domain` argument.
+By default, the script will process the tracker store in your bot's `endpoint.yml`. However, you can specify a different endpoint file using the optional `--endpoint` argument.
 
-By default, the script will retrieve the tracker store specified in your bot's `endpoint.yml` file. However, you can specify a different endpoint file using the optional `--endpoint` argument.
-
-The script provides three tracker loading strategies: `all`, `sample_n`, and `first_n`. The option `all` will process all the trackers in your tracker store. The other two strategies process a subset of `N` trackers from all trackers, either sequentially (by using `first_n`), or by sampling uniformly without replacement (by using `sample_n`). The sampling strategy also allows you to set the random seed.
-For more information on the usage of each strategy, type the following:
+Three different tracker loading strategies are supported: `all`, `sample_n`, and `first_n`. The option `all` will process all the trackers in your tracker store. The other two strategies process a subset of `N` trackers, either sequentially (by using `first_n`), or by sampling uniformly without replacement (using `sample_n`). The sampling strategy also allows you to set the random seed.
+For more information on the usage of each strategy, type the following command, replacing `<strategy>` with one of: `all`, `first_n`, and `sample_n`:
 ```bash
 rasa evaluate markers <strategy> --help
 ```
-replacing `<strategy>` with one of: `all`, `first_n`, and `sample_n`.
 
 Each tracker in the tracker store can contain multiple sessions. The script will process each session separately, indexing them by `session_idx`.
 
-The script above will output the extracted markers in the specified output file: `extracted_markers.csv`. It will also compute overall summary statistics and per-session summary statistics and output them in the files `stats-overall.csv` and `stats-per-session.csv`.
-You can change prefix `stats` in the file names using the optional argument `--stats-file-prefix `.
-For example, the following script will produce the files: `marker-statistics-overall.csv` and `marker-statistics-per-session.csv`:
-```bash
-rasa evaluate markers all --stats-file-prefix "marker-statistics" extracted_markers.csv
-```
-
-
-The next two sections give more detail about the formats of the extracted markers and computed statistics.
+The next two sections describe the formats of the extracted markers and computed statistics.
 
 
 ### Extracted Markers
@@ -194,9 +186,9 @@ For each marker defined in your marker configuration file, the following informa
 1. The number of user turns preceding the event at which a marker applied. Each `UserUttered` event is treated as a user turn.
 2. The index of the event at which a marker applied.
 
-For the `at_least_once` marker, the information above will only be extracted for the first occurrence.
+For the `at_least_once` operator, the information above will only be extracted for the first occurrence.
 
-The extracted markers will be output to the `.csv` file you specify in the script, for example, `extracted_markers.csv` (in the script above).
+The extracted markers will be output to the `.csv` file you specify in the script, for example, `extracted_markers.csv`.
 The extracted markers output file contains the following columns:
 
 - `sender_id`: taken from the trackers.
@@ -216,7 +208,7 @@ sender_id,session_idx,marker_name,event_id,num_preceding_user_turns
 
 ### Computed Statistics
 
-By default, the script computes summary statistics about the information gathered. To disable the statistics computation, use the optional flag `--no-stats`.
+By default, the command computes summary statistics about the information gathered. To disable the statistics computation, use the optional flag `--no-stats`.
 
 The script computes the following statistics:
 
@@ -225,7 +217,12 @@ The script computes the following statistics:
     1. Overall statistics including the arithmetic mean, median, minimum, and maximum number of user turns preceding the event where the marker applied in any session.
     2. The number of sessions and the percentage of sessions where each marker applied at least once.
 
-The results are stored in tabular format in `stats-overall.csv` and `stats-per-session.csv`.
+The results are stored in tabular format in `stats-overall.csv` and `stats-per-session.csv`. You can change prefix `stats` in the file names using the optional argument `--stats-file-prefix `.
+For example, the following script will produce the files: `marker-statistics-overall.csv` and `marker-statistics-per-session.csv`:
+```bash
+rasa evaluate markers all --stats-file-prefix "marker-statistics" extracted_markers.csv
+```
+
 
 Both files contain the following columns:
 
