@@ -532,6 +532,8 @@ def test_resources_fingerprints_are_unique_when_cached(
     train_schema.nodes["assert_node"].config["value_to_assert"] = "5"
     train_with_schema(train_schema, temp_cache)
 
+    # Add something to the config so only "assert_node" re-runs.
+    train_schema.nodes["assert_node"].config["something"] = "something"
     # This breaks when `Resource`s use the node name as a fingerprint.
     # This is because the `Resource` for the first run is retrieved from the cache which
     # returns 4 whereas it should be the second resource which returns 5, and the schema
