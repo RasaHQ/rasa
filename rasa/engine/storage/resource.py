@@ -1,9 +1,10 @@
 from __future__ import annotations
 import logging
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Text
+from typing import Text, Optional
+import uuid
 
 import rasa.utils.common
 import rasa.utils.io
@@ -16,13 +17,32 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Resource:
-    """Represents a persisted graph component in the graph."""
+    """Represents a persisted graph component in the graph.
+
+    Attributes:
+        name: The unique identifier for the `Resource`. Used to locate the associated
+            data from a `ModelStorage`. Normally matches the name of the node which
+            created it.
+        output_fingerprint: An unique identifier for a specific instantiation of a
+            `Resource`. Used to distinguish a specific persistence for the same
+            `Resource` when saving to the cache.
+
+    """
 
     name: Text
+    output_fingerprint: Optional[Text] = field(
+        default_factory=lambda: uuid.uuid4().hex,
+        # We do not use this for comparison as it is not consistent after serialization.
+        compare=False,
+    )
 
     @classmethod
     def from_cache(
-        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+        cls,
+        node_name: Text,
+        directory: Path,
+        model_storage: ModelStorage,
+        output_fingerprint: Text,
     ) -> Resource:
         """Loads a `Resource` from the cache.
 
@@ -33,13 +53,14 @@ class Resource:
             directory: The directory with the cached `Resource`.
             model_storage: The `ModelStorage` which the cached `Resource` will be added
                 to so that the `Resource` is accessible for other graph nodes.
+            output_fingerprint: The fingerprint of the cached `Resource`.
 
         Returns:
             The ready-to-use and accessible `Resource`.
         """
         logger.debug(f"Loading resource '{node_name}' from cache.")
 
-        resource = Resource(node_name)
+        resource = Resource(node_name, output_fingerprint=output_fingerprint)
         if not any(directory.glob("*")):
             logger.debug(f"Cached resource for '{node_name}' was empty.")
             return resource
@@ -79,11 +100,11 @@ class Resource:
     def fingerprint(self) -> Text:
         """Provides fingerprint for `Resource`.
 
-        The fingerprint can be just the name as the persisted resource only changes
-        if the used training data (which is loaded in previous nodes) or the config
-        (which is fingerprinted separately) changes.
+        A unique fingerprint is created on initialization of a `Resource` however we
+        also allow a value to be provided for when we retrieve a `Resource` from the
+        cache (see `Resource.from_cache`).
 
         Returns:
             Fingerprint for `Resource`.
         """
-        return self.name
+        return self.output_fingerprint
