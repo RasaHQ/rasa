@@ -212,13 +212,14 @@ The extracted markers output file contains the following columns:
 - `event_idx`: an integer indexing events, starting with `0`.
 - `num_preceding_user_turns`: an integer specifying the number of user turns which preceded the event at which the marker applied.
 
-Here is a sample of the extracted markers output file:
+Here is an example of the extracted markers output file (for a markers configuration file containing two markers: `marker_mood_expressed` and `marker_cheer_up_failed`):
 
 ```
-sender_id,session_idx,marker_name,event_id,num_preceding_user_turns
-1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,7,1
-2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,7,1
-:
+sender_id,session_idx,marker,event_id,num_preceding_user_turns
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,2,0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,7,1
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,14,2
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,2,0
 ```
 
 ### Computed Statistics
@@ -251,22 +252,37 @@ Here is a sample `stats-per-session.csv` output:
 
 ```
 sender_id,session_idx,marker,statistic,value
-1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,count(number of preceding user turns),1
-2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,count(number of preceding user turns),1
-79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,count(number of preceding user turns),0
-1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,max(number of preceding user turns),1
-2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,max(number of preceding user turns),1
-79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,max(number of preceding user turns),nan
-1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,mean(number of preceding user turns),1.0
-2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,mean(number of preceding user turns),1.0
-79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,mean(number of preceding user turns),nan
-1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,median(number of preceding user turns),1.0
-2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,median(number of preceding user turns),1.0
-79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,median(number of preceding user turns),nan
-1309ed25d6fa45beb74d0862d37289a5,0,marker_mood_expressed,min(number of preceding user turns),1
-2cf4106e76a041dfb2d4f75bd6ae804b,0,marker_mood_expressed,min(number of preceding user turns),1
-79e7604d2acc442d9f78e00b173786c9,0,marker_mood_expressed,min(number of preceding user turns),nan
-:
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,count(number of preceding user turns),0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,count(number of preceding user turns),1
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,count(number of preceding user turns),0
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,max(number of preceding user turns),nan
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,max(number of preceding user turns),2
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,max(number of preceding user turns),nan
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,mean(number of preceding user turns),nan
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,mean(number of preceding user turns),2.0
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,mean(number of preceding user turns),nan
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,median(number of preceding user turns),nan
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,median(number of preceding user turns),2.0
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,median(number of preceding user turns),nan
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_cheer_up_failed,min(number of preceding user turns),nan
+4d55093e9696452c8d1157fa33fd54b2,0,marker_cheer_up_failed,min(number of preceding user turns),2
+c00b3de97713427d85524c4374125db1,0,marker_cheer_up_failed,min(number of preceding user turns),nan
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,count(number of preceding user turns),1
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,count(number of preceding user turns),1
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,count(number of preceding user turns),1
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,max(number of preceding user turns),0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,max(number of preceding user turns),1
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,max(number of preceding user turns),0
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,mean(number of preceding user turns),0.0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,mean(number of preceding user turns),1.0
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,mean(number of preceding user turns),0.0
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,median(number of preceding user turns),0.0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,median(number of preceding user turns),1.0
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,median(number of preceding user turns),0.0
+3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,min(number of preceding user turns),0
+4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,min(number of preceding user turns),1
+c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,min(number of preceding user turns),0
+
 ```
 Note that some statistics will be `nan`, for example if a marker never occurred, then the number of preceding user turns will be `nan`.
 
@@ -275,13 +291,20 @@ Here is a sample `stats-overall.csv` output.
 ```
 sender_id,session_idx,marker,statistic,value
 all,nan,-,total_number_of_sessions,3
-all,nan,marker_cheer_up,number_of_sessions_where_marker_applies_at_least_once,0
-all,nan,marker_cheer_up,percentage_of_sessions_where_marker_applies_at_least_once,0.0
-all,nan,marker_mood_expressed,number_of_sessions_where_marker_applies_at_least_once,2
-all,nan,marker_mood_expressed,percentage_of_sessions_where_marker_applies_at_least_once,66.667
-all,nan,marker_mood_expressed_and_name_provided,number_of_sessions_where_marker_applies_at_least_once,0
-all,nan,marker_mood_expressed_and_name_provided,percentage_of_sessions_where_marker_applies_at_least_once,0.0
-:
+all,nan,marker_cheer_up_failed,number_of_sessions_where_marker_applies_at_least_once,1
+all,nan,marker_cheer_up_failed,percentage_of_sessions_where_marker_applies_at_least_once,33.333
+all,nan,marker_mood_expressed,number_of_sessions_where_marker_applies_at_least_once,3
+all,nan,marker_mood_expressed,percentage_of_sessions_where_marker_applies_at_least_once,100.0
+all,nan,marker_cheer_up_failed,count(number of preceding user turns),1
+all,nan,marker_cheer_up_failed,mean(number of preceding user turns),2.0
+all,nan,marker_cheer_up_failed,median(number of preceding user turns),2.0
+all,nan,marker_cheer_up_failed,min(number of preceding user turns),2
+all,nan,marker_cheer_up_failed,max(number of preceding user turns),2
+all,nan,marker_mood_expressed,count(number of preceding user turns),3
+all,nan,marker_mood_expressed,mean(number of preceding user turns),0.333
+all,nan,marker_mood_expressed,median(number of preceding user turns),0.0
+all,nan,marker_mood_expressed,min(number of preceding user turns),0
+all,nan,marker_mood_expressed,max(number of preceding user turns),1
 ```
 Note that because each row computes a statistics over all session, the `sender_id` is equal to `all`,
 and the `session_idx` is equal to `nan`.
