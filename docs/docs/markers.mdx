@@ -27,7 +27,8 @@ Marking when these important events occur allows you to quantify Carbon Bot's su
 Markers also allow you to **diagnose your dialogues** by surfacing important events for further inspection.
 For example, you might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots,
 but fails to set the `travel_flight_class` slot. You can define a marker to quantify how often this behavior occurs
-and surface relevant dialogues for review as part of [Conversation Driven Development (CDD)](https://rasa.com/blog/conversation-driven-development-a-better-approach-to-building-ai-assistants/).
+and surface relevant dialogues for review as part of
+[Conversation Driven Development (CDD)](./conversation-driven-development.mdx).
 
 Marker definitions are written in `YAML`. For example, here are the markers that define dialogue completion and task success for Carbon Bot:
 
@@ -53,7 +54,7 @@ marker_dialogue_mandatory_slot_failure:
     - slot_was_set: travel_departure
     - slot_was_set: travel_destination
     - not:
-      slot_was_set: travel_flight_class
+      - slot_was_set: travel_flight_class
 ```
 
 The next sections explain how write marker definitions, how to apply them to your existing dialogues, and what the output format looks like.
@@ -102,7 +103,8 @@ The following operators are supported:
 
 ### Marker Configuration
 
-Here is an example of a marker configuration file containing several marker definitions. The example is created for mood bot, with a new slot `name` to illustrate the use of the label `slot_was_set`:
+Here is an example of a marker configuration file containing several marker definitions. The example is created for mood bot,
+with a new slot `name` to illustrate the use of the label `slot_was_set`:
 
 ```yaml
 marker_name_provided:
@@ -142,11 +144,13 @@ Note the following:
 
 - A marker definition can contain a single condition, as shown in `marker_name_provided`.
 
-- A marker definition can contain a single operator with a list of conditions, as shown in `marker_mood_expressed`, `marker_cheer_up_failed`, `marker_bot_not_challenged`, and `marker_cheer_up_attempted`.
+- A marker definition can contain a single operator with a list of conditions, as shown in `marker_mood_expressed`,
+`marker_cheer_up_failed`, `marker_bot_not_challenged`, and `marker_cheer_up_attempted`.
 
 - A marker definition can contain nested operators, as shown in `marker_mood_expressed_and_name_not_provided`.
 
-- The values assigned to event conditions must be valid according to your bot's `domain.yml` file. For example, in `marker_mood_expressed`, the intents `mood_unhappy` and `mood_unhappy` are both intents listed in the mood bot's `domain.yml` file.
+- The values assigned to event conditions must be valid according to your bot's `domain.yml` file. For example, in
+`marker_mood_expressed`, the intents `mood_unhappy` and `mood_unhappy` are both intents listed in the mood bot's `domain.yml` file.
 
 :::note
 You cannot yet reuse an existing marker name in the definition of another marker.
@@ -154,9 +158,11 @@ You cannot yet reuse an existing marker name in the definition of another marker
 
 ## Extracting Markers
 
-Markers are extracted from dialogues already stored a tracker store. To learn how to store interactions with your bot in a tracker store, read the [Tracker Store](https://rasa.com/docs/rasa/next/tracker-stores) page.
+Markers are extracted from dialogues already stored a tracker store. To learn how to store interactions with your bot in a tracker store,
+read the [Tracker Store](./tracker-stores.mdx) page.
 
-Once you've created your marker definitions in the marker configuration file, and have stored some dialogues in your tracker store, you can apply your markers to your trackers by running the following command:
+Once you've created your marker definitions in the marker configuration file, and have stored some dialogues in your tracker store,
+you can apply your markers to your trackers by running the following command:
 
 ```bash
 rasa evaluate markers all --config marker.yml extracted_markers.csv
@@ -165,11 +171,15 @@ This script will process the marker definitions you provide your in the marker c
 The script will output the extracted markers in the specified output file: `extracted_markers.csv`.
 It will also produce two summary statistics files. The format of the output files are described in the next section.
 
-By default, the script will validate your marker definitions against your bot's `domain.yml` file. To specify a different domain file, use the optional `--domain` argument.
+By default, the script will validate your marker definitions against your bot's `domain.yml` file. To specify a different
+domain file, use the optional `--domain` argument.
 
-By default, the script will process the tracker store in your bot's `endpoint.yml`. However, you can specify a different endpoint file using the optional `--endpoint` argument.
+By default, the script will process the tracker store in your bot's `endpoint.yml`. However, you can specify a different
+endpoint file using the optional `--endpoint` argument.
 
-Three different tracker loading strategies are supported: `all`, `sample_n`, and `first_n`. The option `all` will process all the trackers in your tracker store. The other two strategies process a subset of `N` trackers, either sequentially (by using `first_n`), or by sampling uniformly without replacement (using `sample_n`). The sampling strategy also allows you to set the random seed.
+Three different tracker loading strategies are supported: `all`, `sample_n`, and `first_n`. The option `all` will process
+all the trackers in your tracker store. The other two strategies process a subset of `N` trackers, either sequentially
+(by using `first_n`), or by sampling uniformly without replacement (using `sample_n`). The sampling strategy also allows you to set the random seed.
 For more information on the usage of each strategy, type the following command, replacing `<strategy>` with one of: `all`, `first_n`, and `sample_n`:
 ```bash
 rasa evaluate markers <strategy> --help
@@ -273,34 +283,4 @@ and the `session_idx` is equal to `nan`.
 
 ## Configuring the CLI command
 
-You can configure the marker extraction and statistics computation using the following arguments:
-
-```
-usage: rasa evaluate markers [-h] [-v] [-vv] [--quiet] [--config CONFIG] [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]] [--endpoints ENDPOINTS] [-d DOMAIN] output_filename {first_n,sample,all} ...
-
-positional arguments:
-  output_filename       The filename to write the extracted markers to (CSV format).
-  {first_n,sample,all}
-    first_n             Select trackers sequentially until N are taken.
-    sample              Select trackers by sampling N.
-    all                 Select all trackers.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --config CONFIG       The config file(s) containing marker definitions. This can be a single YAML file, or a directory that contains several files with marker definitions in it. The content of these files will be read and
-                        merged together. (default: markers.yml)
-  --no-stats            Do not compute summary statistics. (default: True)
-  --stats-file-prefix [STATS_FILE_PREFIX]
-                        The common file prefix of the files where we write out the compute statistics. More precisely, the file prefix must consist of a common path plus a common file prefix, to which suffixes `-overall.csv` and
-                        `-per-session.csv` will be added automatically. (default: stats)
-  --endpoints ENDPOINTS
-                        Configuration file for the tracker store as a yml file. (default: endpoints.yml)
-  -d DOMAIN, --domain DOMAIN
-                        Domain specification. This can be a single YAML file, or a directory that contains several files with domain specifications in it. The content of these files will be read and merged together. (default:
-                        domain.yml)
-
-Python Logging Options:
-  -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
-  -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
-  --quiet               Be quiet! Sets logging level to WARNING. (default: None)
-```
+Visit our [CLI page](./command-line-interface.mdx#rasa-evaluate-markers) for more information on configuring the marker extraction and statistics computation process.
