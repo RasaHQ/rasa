@@ -3,8 +3,10 @@ id: markers
 sidebar_label: Markers
 title: Markers
 description: Find out how to mark points of interest in dialogues using Marker conditions.
-abstract: Markers are conditions that allow you to describe and mark points of interest in user interactions.
+abstract: Markers are conditions that allow you to describe and mark points of interest in dialogues.
 ---
+
+## Overview
 
 :::caution
 
@@ -12,53 +14,53 @@ This feature is currently experimental and might change or be removed in the fut
 
 :::
 
-Markers are conditions that allow you to describe and mark points of interest in dialogues. In Rasa, a dialogue or a user interaction is represented as a sequence of events,
+Markers are conditions that allow you to describe and mark points of interest in dialogues. In Rasa, a dialogue is represented as a sequence of events,
 which include bot actions that were executed, intents that were detected, and slots that were set.
-Markers allow you to describe conditions over such events. When these conditions are met, the dialogues are `marked` for further analysis or inspection.
+Markers allow you to describe conditions over such events, and when these conditions are met, the dialogues are "marked" for further analysis or inspection.
 
-There are several applications for Markers. For example, they can be used to define your bot's Key Performance Indicators (KPIs),
+There are several applications for Markers. For example, they can be used to define your bot's **Key Performance Indicators (KPIs)**,
 such as dialogue completion or task success. Take [Carbon Bot](https://rasa.com/blog/using-conversation-tags-to-measure-carbon-bots-success-rate/)
-for example, which helps users offset their carbon emissions from flying. For Carbon Bot, you might define dialogue completion as "all mandatory slots have been filled",
-and task success as "all mandatory slots have been filled and a carbon estimate has been successfully computed".
+for example, which helps users offset their carbon emissions from flying. For Carbon Bot, you might define **dialogue completion** as "all mandatory slots have been filled",
+and **task success** as "all mandatory slots have been filled and a carbon estimate has been successfully computed".
 Marking when these important events occur allows you to quantify Carbon Bot's success rate.
 
-Markers also allow you to diagnose your dialogues by surfacing important events for further inspection.
+Markers also allow you to **diagnose your dialogues** by surfacing important events for further inspection.
 For example, you might observe that Carbon Bot tends to successfully set the `travel_departure` and `travel_destination` slots,
 but fails to set the `travel_flight_class` slot. You can define a marker to quantify how often this behavior occurs
 and surface relevant dialogues for review as part of [Conversation Driven Development (CDD)](https://rasa.com/blog/conversation-driven-development-a-better-approach-to-building-ai-assistants/).
 
-Marker definitions are written in `YAML`. For example, here are markers that define dialogue completion and task success for Carbon Bot:
+Marker definitions are written in `YAML`. For example, here are the markers that define dialogue completion and task success for Carbon Bot:
 
 ```yaml
 marker_dialogue_completion:
-    and:
-        - slot_was_set: travel_departure
-        - slot_was_set: travel_destination
-        - slot_was_set: travel_flight_class
+  and:
+    - slot_was_set: travel_departure
+    - slot_was_set: travel_destination
+    - slot_was_set: travel_flight_class
 marker_task_success:
-    and:
-        - slot_was_set: travel_departure
-        - slot_was_set: travel_destination
-        - slot_was_set: travel_flight_class
-        - action: provide_carbon_estimate
+  and:
+    - slot_was_set: travel_departure
+    - slot_was_set: travel_destination
+    - slot_was_set: travel_flight_class
+    - action: provide_carbon_estimate
 ```
 
-And here is a marker for surfacing dialogues where all mandatory slots are set except `travel_flight_class`:
+And here is the marker for surfacing dialogues where all mandatory slots are set except `travel_flight_class`:
 
 ```yaml
 marker_dialogue_mandatory_slot_failure:
-    and:
-        - slot_was_set: travel_departure
-        - slot_was_set: travel_destination
-        - not:
-            slot_was_set: travel_flight_class
+  and:
+    - slot_was_set: travel_departure
+    - slot_was_set: travel_destination
+    - not:
+      slot_was_set: travel_flight_class
 ```
 
 The next sections explain how write marker definitions, how to apply them to your existing dialogues, and what the output format looks like.
 
 ## Defining Markers
 
-Markers are defined in a marker configuration file written in `YAML`.
+You define you markers in a marker configuration file written in `YAML`.
 Each marker should have a **unique identifier**, and consists of at least one **event condition**.
 Markers can also contain **operators**, which allow you to express more nuanced behavior or
 combine event conditions.
@@ -66,12 +68,12 @@ combine event conditions.
 Consider the following marker definition:
 ```yaml
 marker_mood_expressed:
-    or:
-        - intent: mood_unhappy
-        - intent: mood_great
+  or:
+    - intent: mood_unhappy
+    - intent: mood_great
 ```
-The unique marker identifier is `marker_mood_expressed`. This marker definition contains one operator, `or`,
-and two event conditions, `intent: mood_unhappy` and `intent: mood_great`.
+The unique marker identifier is `marker_mood_expressed`. This marker definition contains one operator `or`,
+and two event conditions `intent: mood_unhappy` and `intent: mood_great`.
 
 ### Event Conditions
 
@@ -83,8 +85,8 @@ The following event condition labels are supported:
 
 The negated forms of the labels are also supported:
 
-- `not_action`: the event is not an `ActionExecuted` with the specified action.
-- `not_intent`: the event is not a `UserUttered` with the specified intent.
+- `not_action`: the event is not the specified bot action.
+- `not_intent`: the event is not the specified user intent.
 - `slot_was_not_set`: the specified slot has not been set.
 
 ### Operators
@@ -93,7 +95,7 @@ The following operators are supported:
 
 - `and`: all listed conditions applied.
 - `or`: any of the listed conditions applied.
-- `not`: the condition did not apply. `not` only accepts 1 condition.
+- `not`: the condition did not apply. This operator only accepts 1 condition.
 - `seq`: the list of conditions applied in the specified order, with any number of events occurring in-between.
 - `at_least_once`: the listed marker definitions occurred at least once. Only the first occurrence will be marked.
 - `never`: the listed marker definitions never occurred.
@@ -104,38 +106,43 @@ Here is an example of a marker configuration file containing several marker defi
 
 ```yaml
 marker_name_provided:
-    slot_was_set: name
+  slot_was_set: name
+
 marker_mood_expressed:
-    or:
-        - intent: mood_unhappy
-        - intent: mood_great
+  or:
+    - intent: mood_unhappy
+    - intent: mood_great
+
 marker_cheer_up_failed:
-    seq:
-        - intent: mood_unhappy
-        - action: utter_cheer_up
-        - action: utter_did_that_help
-        - intent: deny
+  seq:
+    - intent: mood_unhappy
+    - action: utter_cheer_up
+    - action: utter_did_that_help
+    - intent: deny
+
 marker_bot_not_challenged:
-    never:
-        - intent: bot_challenge
-marker_cheer_up_attempt:
-    at_least_once:
-        - action: utter_cheer_up
+  never:
+    - intent: bot_challenge
+
+marker_cheer_up_attempted:
+  at_least_once:
+    - action: utter_cheer_up
+
 marker_mood_expressed_and_name_not_provided:
-    and:
-        - not:
-            - slot_was_set: name
-        - or:
-            - intent: mood_unhappy
-            - intent: mood_great
+  and:
+    - not:
+      - slot_was_set: name
+    - or:
+      - intent: mood_unhappy
+      - intent: mood_great
 ```
 Note the following:
 
-- Each marker has a unique identifier, or name, such as `marker_name_provided`.
+- Each marker has a unique identifier (or name) such as `marker_name_provided`.
 
 - A marker definition can contain a single condition, as shown in `marker_name_provided`.
 
-- A marker definition can contain a single operator with nested conditions, as shown in `marker_mood_expressed`, `marker_cheer_up_failed`, `marker_bot_not_challenged`, and `marker_cheer_up_attempt`.
+- A marker definition can contain a single operator with a list of conditions, as shown in `marker_mood_expressed`, `marker_cheer_up_failed`, `marker_bot_not_challenged`, and `marker_cheer_up_attempted`.
 
 - A marker definition can contain nested operators, as shown in `marker_mood_expressed_and_name_not_provided`.
 
@@ -155,7 +162,7 @@ Once you've created your marker definitions in the marker configuration file, an
 rasa evaluate markers all extracted_markers.csv
 ```
 
-This script will process the marker definitions provided in the `marker.yml` file. To specify a different marker configuration file, use the optional `--config` argument.
+By default, the script will process the marker definitions provided in the `marker.yml` file. To specify a different marker configuration file, use the optional `--config` argument.
 
 By default, the script will validate the marker definitions against your bot's `domain.yml` file. To specify a different domain file, use the optional `--domain` argument.
 
@@ -178,12 +185,12 @@ rasa evaluate markers all --stats-file-prefix "marker-statistics" extracted_mark
 ```
 
 
-The next two sections give more detail about the extracted markers and computed statistics.
+The next two sections give more detail about the formats of the extracted markers and computed statistics.
 
 
 ### Extracted Markers
 
-For each marker defined in the marker configuration file, the following information is extracted:
+For each marker defined in your marker configuration file, the following information is extracted:
 1. The number of user turns preceding the event at which a marker applied. Each `UserUttered` event is treated as a user turn.
 2. The index of the event at which a marker applied.
 
