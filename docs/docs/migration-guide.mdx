@@ -98,6 +98,9 @@ import to avoid using forward references with Python 3.7.
   <TabItem value="old">
 
   ```python
+  from typing import List, Any
+  from rasa.core.policies.policy import Policy
+
   class MyPolicy(Policy):
       def train(
           self,
@@ -113,6 +116,12 @@ import to avoid using forward references with Python 3.7.
 
   ```python
   from __future__ import annotations
+  from typing import List, Any
+
+  from rasa.core.policies.policy import Policy
+  from rasa.engine.storage.resource import Resource
+  from rasa.shared.core.domain import Domain
+  from rasa.shared.core.generator import TrackerWithCachedStates
 
   class MyPolicy(Policy):
       def train(
@@ -146,6 +155,8 @@ This snippet shows the required changes:
   <TabItem value="old">
 
   ```python
+  from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
+
   class MyNLUComponent(SparseFeaturizer):
       ...
   ```
@@ -155,6 +166,7 @@ This snippet shows the required changes:
 
   ```python {3}
   from rasa.engine.graph import GraphComponent
+  from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 
   class MyNLUComponent(GraphComponent, SparseFeaturizer):
       ...
@@ -205,17 +217,27 @@ from your model configuration file.
   <TabItem value="old">
 
   ```python
+  from typing import Optional, Dict, Text, Any
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+
   class MyNLUComponent(IntentClassifier):
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         super().__init__(component_config)
-      ...
+        ...
   ```
 
   </TabItem>
   <TabItem value="new">
 
   ```python
+  from typing import Dict, Text, Any
+
+  from rasa.engine.graph import GraphComponent, ExecutionContext
+  from rasa.engine.storage.resource import Resource
+  from rasa.engine.storage.storage import ModelStorage
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+
   class MyNLUComponent(GraphComponent, IntentClassifier):
 
     def __init__(self, component_config: Dict[Text, Any]) -> None:
@@ -250,6 +272,13 @@ See [component persistence](custom-graph-components.mdx#model-persistence) for m
   <TabItem value="old">
 
   ```python
+  from pathlib import Path
+  from typing import Optional, Any, Text, Dict
+
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+  from rasa.nlu.config import RasaNLUModelConfig
+  from rasa.shared.nlu.training_data.training_data import TrainingData
+
   class MyNLUComponent(IntentClassifier):
       def train(
           self,
@@ -273,13 +302,18 @@ See [component persistence](custom-graph-components.mdx#model-persistence) for m
   <TabItem value="new">
 
   ```python
+  from rasa.engine.graph import GraphComponent
+  from rasa.engine.storage.resource import Resource
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+  from rasa.shared.nlu.training_data.training_data import TrainingData
+
   class MyNLUComponent(GraphComponent, IntentClassifier):
       def train(self, training_data: TrainingData) -> Resource:
           ...
           self.persist()
           return self._resource
 
-      def persist() -> None:
+      def persist(self) -> None:
           with self._model_storage.write_to(self._resource) as directory:
               model_data_file = directory / "model_data.json"
               rasa.shared.utils.io.dump_obj_as_json_to_file(model_data_file,
@@ -303,6 +337,13 @@ To instantiate a persisted NLU component, you need to use `model_storage` and `r
   <TabItem value="old">
 
   ```python
+  import json
+  from pathlib import Path
+  from typing import Text, Dict, Any, Optional
+
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+  from rasa.nlu.model import Metadata
+
   class MyNLUComponent(IntentClassifier):
       @classmethod
       def load(
@@ -326,6 +367,16 @@ To instantiate a persisted NLU component, you need to use `model_storage` and `r
   <TabItem value="new">
 
   ```python
+  from __future__ import annotations
+  import json
+  from typing import Any, Text, Dict
+
+  from rasa.engine.graph import GraphComponent, ExecutionContext
+  from rasa.engine.storage.resource import Resource
+  from rasa.engine.storage.storage import ModelStorage
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+  from rasa.shared.exceptions import FileIOException
+
   class MyNLUComponent(GraphComponent, IntentClassifier):
       @classmethod
       def load(
@@ -341,7 +392,7 @@ To instantiate a persisted NLU component, you need to use `model_storage` and `r
           try:
               with model_storage.read_from(resource) as path:
 
-                  model_data_file = directory / "model_data.json"
+                  model_data_file = path / "model_data.json"
                   model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
 
           except (ValueError, FileNotFoundError, FileIOException):
@@ -366,6 +417,8 @@ by the static method `get_default_config`:
   <TabItem value="old">
 
   ```python
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+
   class MyNLUComponent(IntentClassifier):
       ...
       defaults = {"key1": "value1"}
@@ -375,6 +428,11 @@ by the static method `get_default_config`:
   <TabItem value="new">
 
   ```python
+  from typing import Text, Any, Dict
+
+  from rasa.engine.graph import GraphComponent
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+
   class MyNLUComponent(GraphComponent, IntentClassifier):
       ...
       @staticmethod
@@ -401,6 +459,12 @@ training data augmentation were done as part of the `train` method. In Rasa Open
   <TabItem value="old">
 
   ```python
+  from typing import Optional, Any
+
+  from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
+  from rasa.nlu.config import RasaNLUModelConfig
+  from rasa.shared.nlu.training_data.training_data import TrainingData
+
   class MyNLUComponent(SparseFeaturizer):
       def train(
           self,
@@ -418,6 +482,11 @@ training data augmentation were done as part of the `train` method. In Rasa Open
   <TabItem value="new">
 
   ```python
+  from rasa.engine.graph import GraphComponent
+  from rasa.engine.storage.resource import Resource
+  from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
+  from rasa.shared.nlu.training_data.training_data import TrainingData
+
   class MyNLUComponent(GraphComponent, SparseFeaturizer):
       def train(self, training_data: TrainingData) -> Resource:
           self.train_featurizer(training_data)
@@ -425,7 +494,7 @@ training data augmentation were done as part of the `train` method. In Rasa Open
           self.persist()
           return self._resource
 
-      def process_training_data(training_data: TrainingData) -> TrainingData:
+      def process_training_data(self, training_data: TrainingData) -> TrainingData:
           for message in training_data.training_examples:
               self.add_features(message)
 
@@ -446,6 +515,11 @@ message objects at the end of the `process` method.
   <TabItem value="old">
 
   ```python
+  from typing import Any
+
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+  from rasa.shared.nlu.training_data.message import Message
+
   class MyNLUComponent(IntentClassifier):
       def process(self, message: Message, **kwargs: Any) -> None:
         self.predict(message)
@@ -455,6 +529,12 @@ message objects at the end of the `process` method.
   <TabItem value="new">
 
   ```python
+  from typing import List
+
+  from rasa.engine.graph import GraphComponent
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+  from rasa.shared.nlu.training_data.message import Message
+
   class MyNLUComponent(GraphComponent, IntentClassifier):
       def process(self, messages: List[Message]) -> List[Message]:
           for message in messages:
@@ -487,6 +567,8 @@ during training.
   <TabItem value="old">
 
   ```python
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+
   class MyNLUComponent(IntentClassifier):
       ...
   ```
@@ -494,8 +576,10 @@ during training.
   </TabItem>
   <TabItem value="new">
 
-  ```python {3-5}
+  ```python {5-7}
   from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+  from rasa.engine.graph import GraphComponent
 
   @DefaultV1Recipe.register(
       DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
@@ -520,6 +604,13 @@ parameter in the `register` decorator. The model will then be passed to your mod
   <TabItem value="old">
 
   ```python
+  from typing import Optional, Any
+
+  from rasa.nlu.config import RasaNLUModelConfig
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+  from rasa.shared.nlu.training_data.message import Message
+  from rasa.shared.nlu.training_data.training_data import TrainingData
+
   class MyNLUComponent(IntentClassifier):
       def train(
           self,
@@ -540,6 +631,16 @@ parameter in the `register` decorator. The model will then be passed to your mod
   <TabItem value="new">
 
   ```python
+  from typing import List
+
+  from rasa.engine.graph import GraphComponent
+  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+  from rasa.engine.storage.resource import Resource
+  from rasa.nlu.classifiers.classifier import IntentClassifier
+  from rasa.nlu.utils.spacy_utils import SpacyModel
+  from rasa.shared.nlu.training_data.message import Message
+  from rasa.shared.nlu.training_data.training_data import TrainingData
+
   @DefaultV1Recipe.register(
       DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True, model_from="SpacyNLP"
   )
@@ -574,12 +675,19 @@ featurizers itself.
   <TabItem value="old">
 
   ```python
+  from typing import Optional, Any
+
+  from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+  from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+  from rasa.core.policies.policy import Policy
+
   class MyPolicy(Policy):
       def __init__(
           self,
           featurizer: Optional[TrackerFeaturizer] = None,
           priority: int = DEFAULT_POLICY_PRIORITY,
           max_history: Optional[int] = None,
+          **kwargs: Any
       ) -> None:
           super().__init__(featurizer, priority, **kwargs)
           ...
@@ -589,12 +697,22 @@ featurizers itself.
   <TabItem value="new">
 
   ```python
+  from typing import Optional, Dict, Text, Any
+
+  from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+  from rasa.core.policies.policy import Policy
+  from rasa.engine.graph import ExecutionContext
+  from rasa.engine.storage.resource import Resource
+  from rasa.engine.storage.storage import ModelStorage
+
   class MyPolicy(Policy):
       def __init__(
           self,
+          config: Dict[Text, Any],
+          model_storage: ModelStorage,
+          resource: Resource,
+          execution_context: ExecutionContext,
           featurizer: Optional[TrackerFeaturizer] = None,
-          priority: int = DEFAULT_POLICY_PRIORITY,
-          max_history: Optional[int] = None,
       ) -> None:
           super().__init__(
             config, model_storage, resource, execution_context, featurizer
@@ -629,6 +747,14 @@ as result of your policy's `train` method. See [graph component persistence](cus
   <TabItem value="old">
 
   ```python
+  from pathlib import Path
+  from typing import List, Any, Union, Text
+
+  from rasa.core.policies.policy import Policy
+  from rasa.shared.core.domain import Domain
+  from rasa.shared.core.generator import TrackerWithCachedStates
+  from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+
   class MyPolicy(Policy):
       def train(
           self,
@@ -654,6 +780,13 @@ as result of your policy's `train` method. See [graph component persistence](cus
   <TabItem value="new">
 
   ```python
+  from typing import List, Any
+
+  from rasa.core.policies.policy import Policy
+  from rasa.engine.storage.resource import Resource
+  from rasa.shared.core.domain import Domain
+  from rasa.shared.core.generator import TrackerWithCachedStates
+
   class MyPolicy(Policy):
       def train(
           self,
@@ -665,7 +798,7 @@ as result of your policy's `train` method. See [graph component persistence](cus
           self.persist()
           return self._resource
 
-      def persist() -> None:
+      def persist(self) -> None:
           with self._model_storage.write_to(self._resource) as directory:
               if self.featurizer is not None:
                   self.featurizer.persist(directory)
@@ -691,6 +824,13 @@ To instantiate a persisted policy, you need to use `model_storage` and `resource
   <TabItem value="old">
 
   ```python
+  import json
+  from pathlib import Path
+  from types import Union
+  from typing import Text, Any
+
+  from rasa.core.policies.policy import Policy
+
   class MyPolicy(Policy):
       @classmethod
       def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
@@ -711,6 +851,16 @@ To instantiate a persisted policy, you need to use `model_storage` and `resource
   <TabItem value="new">
 
   ```python
+  import json
+  from typing import Dict, Text, Any
+
+  from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+  from rasa.core.policies.policy import Policy
+  from rasa.engine.graph import ExecutionContext
+  from rasa.engine.storage.resource import Resource
+  from rasa.engine.storage.storage import ModelStorage
+  from rasa.shared.exceptions import FileIOException
+
   class MyPolicy(Policy):
       @classmethod
       def load(
@@ -729,7 +879,7 @@ To instantiate a persisted policy, you need to use `model_storage` and `resource
                   if (Path(path) / FEATURIZER_FILE).is_file():
                       featurizer = TrackerFeaturizer.load(path)
 
-                  model_data_file = directory / "model_data.json"
+                  model_data_file = path / "model_data.json"
                   model_data = json.loads(rasa.shared.utils.io.read_file(model_data_file))
 
           except (ValueError, FileNotFoundError, FileIOException):
@@ -756,6 +906,9 @@ constructor but instead returned by the static method `get_default_config`:
   <TabItem value="old">
 
   ```python
+  from typing import Text
+  from rasa.core.policies.policy import Policy
+
   class MyPolicy(Policy):
 
       def __init__(key1: Text = "value1") -> None:
@@ -766,6 +919,9 @@ constructor but instead returned by the static method `get_default_config`:
   <TabItem value="new">
 
   ```python
+  from typing import Dict, Text, Any
+  from rasa.core.policies.policy import Policy
+
   class MyPolicy(Policy):
 
       def __init__(self, config: Dict[Text, Any]) -> None:
@@ -796,6 +952,14 @@ data actually contains [end-to-end training data](stories.mdx#end-to-end-trainin
   <TabItem value="old">
 
   ```python
+  from typing import List, Any
+
+  from rasa.core.policies.policy import Policy, PolicyPrediction
+  from rasa.shared.core.domain import Domain
+  from rasa.shared.core.generator import TrackerWithCachedStates
+  from rasa.shared.core.trackers import DialogueStateTracker
+  from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+
   class MyPolicy(Policy):
       def train(
           self,
@@ -827,7 +991,17 @@ data actually contains [end-to-end training data](stories.mdx#end-to-end-trainin
   </TabItem>
   <TabItem value="new">
 
-  ```python {2,9,13,21,27}
+  ```python {12,19,23,31,37}
+  from typing import List, Optional, Dict, Text, Any
+
+  from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+  from rasa.core.policies.policy import PolicyPrediction, Policy
+  from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+  from rasa.engine.storage.resource import Resource
+  from rasa.shared.core.domain import Domain
+  from rasa.shared.core.generator import TrackerWithCachedStates
+  from rasa.shared.core.trackers import DialogueStateTracker
+
   @DefaultV1Recipe.register(
       DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
   )
@@ -876,6 +1050,8 @@ used during inference use `is_trainable=False`.
   <TabItem value="old">
 
   ```python
+  from rasa.core.policies.policy import Policy
+
   class MyPolicy(Policy):
       ...
   ```
@@ -883,7 +1059,8 @@ used during inference use `is_trainable=False`.
   </TabItem>
   <TabItem value="new">
 
-  ```python {3-5}
+  ```python {4-6}
+  from rasa.core.policies.policy import Policy
   from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 
   @DefaultV1Recipe.register(
@@ -913,6 +1090,9 @@ configuration.
   <TabItem value="old">
 
   ```python
+  from rasa.core.policies.policy import Policy
+  from typing import Any
+
   class MyPolicy(Policy):
 
       def set_shared_policy_states(self, **kwargs: Any) -> None:
@@ -923,7 +1103,13 @@ configuration.
   </TabItem>
   <TabItem value="new">
 
-  ```python {6}
+  ```python {12}
+  from typing import Optional, Dict, Text, Any
+
+  from rasa.core.policies.policy import Policy, PolicyPrediction
+  from rasa.shared.core.domain import Domain
+  from rasa.shared.core.trackers import DialogueStateTracker
+
   class MyPolicy(Policy):
       def predict_action_probabilities(
           self,
@@ -931,6 +1117,7 @@ configuration.
           domain: Domain,
           rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> PolicyPrediction:
+        ...
   ```
 
   </TabItem>
