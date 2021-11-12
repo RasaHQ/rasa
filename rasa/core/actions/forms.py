@@ -162,6 +162,7 @@ class FormAction(LoopAction):
     def entity_mapping_is_unique(
         self, slot_mapping: Dict[Text, Any], domain: Domain
     ) -> bool:
+        """Verifies if the from_entity mapping is unique."""
         if not self._have_unique_entity_mappings_been_initialized:
             # create unique entity mappings on the first call
             self._unique_entity_mappings = self._create_unique_entity_mappings(domain)
