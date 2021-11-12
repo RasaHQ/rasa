@@ -33,6 +33,7 @@ from rasa.engine.graph import (
 from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import DOCS_URL_GRAPH_COMPONENTS
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 
@@ -147,7 +148,8 @@ def _validate_target(
             f"Your {target_type} model's output component "
             f"'{target_node.uses.__name__}' returns an invalid return "
             f"type '{target_return_type}'. This is not allowed. The {target_type} "
-            f"model's last component is expected to return the type '{expected_type}'."
+            f"model's last component is expected to return the type '{expected_type}'. "
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
 
@@ -188,7 +190,8 @@ def _validate_interface_usage(node: SchemaNode) -> None:
             f"This class does not implement the '{GraphComponent.__name__}' interface "
             f"and can hence not be run within Rasa Open Source. Please use a different "
             f"component or implement the '{GraphComponent}' interface in class "
-            f"'{node.uses.__name__}'."
+            f"'{node.uses.__name__}'. "
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
 
@@ -281,6 +284,7 @@ def _get_type_hints(
             f"all type annotations can be resolved during runtime. Note that you might "
             f"need to do a 'from __future__ import annotations' to avoid forward "
             f"references."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
 
@@ -293,6 +297,7 @@ def _get_fn(uses: Type[GraphComponent], method_name: Text) -> Callable:
             f"method '{method_name}'. Please make sure you're either using "
             f"the right component or that your component is registered with the "
             f"correct component type."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
     return fn
 
@@ -314,6 +319,7 @@ def _validate_run_fn(
                 f"'{node.fn}'. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."
+                f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
             )
 
 
@@ -337,6 +343,7 @@ def _validate_run_fn_return_type(
             f"method '{node.fn}' does not have a type annotation for "
             f"its return value. Type annotations are required for all "
             f"components to validate your model's structure."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
     # TODO: Handle forward references here
@@ -366,6 +373,7 @@ def _validate_types_of_reserved_keywords(
                     f"incompatible type '{param.type_annotation}' for "
                     f"the '{param_name}' parameter in its '{fn_name}' method. "
                     f"The expected type is '{KEYWORDS_EXPECTED_TYPES[param_name]}'."
+                    f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
                 )
 
 
@@ -383,6 +391,7 @@ def _validate_constructor(
             f"('{', '.join(required_args)}'). "
             f"Extra parameters can only be supplied to the constructor method which is "
             f"used during training."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
     for param_name in _required_args(create_fn_params):
@@ -393,6 +402,7 @@ def _validate_constructor(
                 f"'{node.constructor_name}'. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."
+                f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
             )
 
 
@@ -416,6 +426,7 @@ def _validate_needs(
                 f"name. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."
+                f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
             )
 
         if not _is_placeholder_input(parent_name) and parent_name not in graph.nodes:
@@ -425,6 +436,7 @@ def _validate_needs(
                 f"your model configuration. Please make sure that you registered "
                 f"your component correctly and and that your model configuration is "
                 f"valid."
+                f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
             )
 
         required_type = available_args.get(param_name)
@@ -481,6 +493,7 @@ def _validate_parent_return_type(
             f"Please make sure that you registered "
             f"your component correctly and and that your model configuration is "
             f"valid."
+            f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
         )
 
 
