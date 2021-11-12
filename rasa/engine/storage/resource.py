@@ -30,7 +30,7 @@ class Resource:
     """
 
     name: Text
-    output_fingerprint: Optional[Text] = field(
+    output_fingerprint: Text = field(
         default_factory=lambda: uuid.uuid4().hex,
         # We do not use this for comparison as it is not consistent after serialization.
         compare=False,
