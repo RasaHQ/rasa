@@ -80,7 +80,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  fingerprint:
+                  model_id:
                     type: object
                     description: Fingerprint of the loaded model
                     example:
