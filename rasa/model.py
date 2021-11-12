@@ -52,7 +52,7 @@ def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
     return model_path
 
 
-def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
+def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     """Get the latest model from a path.
 
     Args:
