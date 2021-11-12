@@ -355,6 +355,17 @@ class FormAction(LoopAction):
 
         return slot_values
 
+    def _add_dynamic_slots_requested_by_dynamic_forms(
+        self, tracker: "DialogueStateTracker", domain: Domain,
+    ) -> Set[Text]:
+        required_slots = set(self.required_slots(domain))
+        requested_slot = self.get_slot_to_fill(tracker)
+
+        if requested_slot:
+            required_slots.add(requested_slot)
+
+        return required_slots
+
     def _get_slot_extractions(
         self, tracker: "DialogueStateTracker", domain: Domain,
     ) -> Dict[Text, Any]:
@@ -363,12 +374,16 @@ class FormAction(LoopAction):
         )
         slot_values = {}
 
+        required_slots = self._add_dynamic_slots_requested_by_dynamic_forms(
+            tracker, domain
+        )
+
         for event in events_since_last_user_uttered:
             if not tracker.active_loop:
                 # pre-filled slots were already validated at form activation
                 break
 
-            if event.key not in self.required_slots(domain):
+            if event.key not in required_slots:
                 continue
 
             slot_values = self._update_slot_values(event, tracker, domain, slot_values)

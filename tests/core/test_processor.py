@@ -614,7 +614,7 @@ async def test_update_tracker_session_with_metadata(
     )
 
     assert events[2] == with_model_id(SessionStarted(), model_id=model_id)
-    assert events[2].metadata == {**message_metadata, METADATA_MODEL_ID: model_id}
+    assert events[2].metadata == {METADATA_MODEL_ID: model_id}
     assert events[3] == with_model_id(
         SlotSet(SESSION_START_METADATA_SLOT, message_metadata), model_id=model_id
     )
@@ -1475,3 +1475,18 @@ def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
     model_id = default_processor.model_metadata.model_id
     tracker = default_processor.get_tracker("bloop")
     assert tracker.model_id == model_id
+
+
+async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
+    processor = e2e_bot_agent.processor
+    message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test",)
+    with caplog.at_level(logging.DEBUG):
+        await processor.handle_message(message)
+
+    tracker = processor.get_tracker("test")
+    assert SlotSet("mood", "sad") in tracker.events
+    assert any(
+        "An end-to-end prediction was made which has triggered the 2nd execution of "
+        "the default action 'action_extract_slots'." in message
+        for message in caplog.messages
+    )
