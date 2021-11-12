@@ -131,7 +131,7 @@ class MessageProcessor:
             )
             return None
 
-        tracker = await self._run_action_extract_slots(message, tracker)
+        tracker = await self._run_action_extract_slots(message.output_channel, tracker)
 
         await self._run_prediction_loop(message.output_channel, tracker)
 
@@ -143,13 +143,13 @@ class MessageProcessor:
         return None
 
     async def _run_action_extract_slots(
-        self, message: UserMessage, tracker: DialogueStateTracker,
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker,
     ) -> DialogueStateTracker:
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
         )
         extraction_events = await action_extract_slots.run(
-            message.output_channel, self.nlg, tracker, self.domain
+            output_channel, self.nlg, tracker, self.domain
         )
         tracker.update_with_events(extraction_events, self.domain)
 
@@ -538,6 +538,9 @@ class MessageProcessor:
             UserUttered.create_external(intent_name, entity_list, input_channel),
             self.domain,
         )
+
+        tracker = await self._run_action_extract_slots(output_channel, tracker)
+
         await self._run_prediction_loop(output_channel, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -733,6 +736,13 @@ class MessageProcessor:
                     # call a registered callback
                     self.on_circuit_break(tracker, output_channel, self.nlg)
                 break
+
+            if prediction.is_end_to_end_prediction:
+                logger.debug(
+                    f"An end-to-end prediction was made which has triggered the 2nd "
+                    f"execution of the default action '{ACTION_EXTRACT_SLOTS}'."
+                )
+                tracker = await self._run_action_extract_slots(output_channel, tracker)
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, prediction
