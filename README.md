@@ -373,31 +373,27 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
 10.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
     
-### Cutting a Micro release
+### 마이크로 릴리스 컷팅
 
-Micro releases are simpler to cut, since they are meant to contain only bugfixes.
+마이크로 릴리즈는 버그 수정만 포함하기 때문에 컷팅이 더 간단합니다.
 
-**The only things you need to do to cut a micro are:**
+**마이크로 릴리스를 자르기 위해 해야 할 일은 다음과 같습니다.**
 
-1. Notify the engineering team on Slack that you are planning to cut a micro, in case someone has an important fix
-to add.
-2. Make sure the bugfix(es) are in the release branch you will use (p.e if you are cutting a `2.0.4` micro, you will
-need your fixes to be on the `2.0.x` release branch). All micros must come from a `.x` branch!
-3. Once you're ready to release the Rasa Open Source micro, checkout the branch, run `make release` and follow the
-steps + get the PR merged.
-4. Once the PR is in, pull the `.x` branch again and push the tag!
+1. 누군가 추가해야 할 중요한 수정 사항이 있는 경우를 대비하여 Slack의 엔지니어링 팀에 마이크로 컷팅을 계획하고 있음을 알립니다.
+2. 사용할 릴리스 브랜치에 버그 수정이 필요한지 확인하십시오. (예: `2.0.4` 마이크로를 컷팅하는 경우, 수정사항이 `2.0.x` 릴리스 브랜치에 있어야 합니다) 모든 마이크로는 `.x`에서 가져와야합니다! 
+3. Rasa 오픈 소스 마이크로를 릴리스할 준비가 되면 브랜치를 확인하고 `make release`를 실행하고, 단계를 따르고 PR을 merge합니다.
+4. PR이 들어오면 `.x` 브랜치를 다시 pull하고 태그를 push합니다!
 
-### Actively maintained versions
+### 능동적으로 유지관리되는 버전
 
-We're actively maintaining _any minor on our latest major release_ and _the latest minor of the previous major release_.
-Currently, this means the following minor versions will receive bugfixes updates:
+우리는 최신 주요 릴리스의 모든 마이너 버전과 이전 주요 릴리스의 최신 마이너 버전을 적극적으로 유지 관리하고 있습니다.
+현재 이는 다음 마이너 버전이 버그 수정 업데이트를 받을 것을 의미합니다:
 - 1.10
-- Every minor version on 2.x
+- 2.x의 모든 마이너 버전
 
 ## License
-Licensed under the Apache License, Version 2.0.
-Copyright 2021 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Apache 라이센스 버전 2.0에 따라 라이센스가 부여됩니다.
+저작권 2021 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
-A list of the Licenses of the dependencies of the project can be found at
-the bottom of the
+프로젝트 종속성의 라이센스 목록은 하단에서 찾을 수 있습니다.
 [Libraries Summary](https://libraries.io/github/RasaHQ/rasa).
