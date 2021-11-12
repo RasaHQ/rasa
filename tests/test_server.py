@@ -571,7 +571,7 @@ async def test_train_with_yaml(
     rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory,
 ):
     training_data = """
-version: "2.0"
+version: "3.0"
 
 stories:
 - story: My story
@@ -1766,7 +1766,7 @@ def test_app_when_app_has_no_input_channels():
             ],
             None,
             True,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1789,7 +1789,7 @@ stories:
             ],
             None,
             True,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID, story 1
   steps:
@@ -1819,7 +1819,7 @@ stories:
             ],
             None,
             False,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1843,7 +1843,7 @@ stories:
             ],
             None,
             None,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1866,7 +1866,7 @@ stories:
             ],
             4,
             True,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1876,7 +1876,7 @@ stories:
   - action: utter_greet""",
         ),
         # empty conversation
-        ([], None, True, 'version: "2.0"'),
+        ([], None, True, 'version: "3.0"'),
         # Conversation with slot
         (
             [
@@ -1888,7 +1888,7 @@ stories:
             ],
             None,
             True,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1992,7 +1992,7 @@ async def test_get_story_does_not_update_conversation_session(
     # expected story is returned
     assert (
         response.content.decode().strip()
-        == """version: "2.0"
+        == """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
