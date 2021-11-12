@@ -13,6 +13,7 @@ DOCS_URL_FORMS = DOCS_BASE_URL + "/forms"
 DOCS_URL_PIPELINE = DOCS_BASE_URL + "/tuning-your-model"
 DOCS_URL_POLICIES = DOCS_BASE_URL + "/policies"
 DOCS_URL_TEST_STORIES = DOCS_BASE_URL + "/testing-your-assistant"
+DOCS_URL_MARKERS = DOCS_BASE_URL + "/markers"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/actions"
 DOCS_URL_DEFAULT_ACTIONS = DOCS_BASE_URL + "/default-actions"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/connectors/"
@@ -29,6 +30,7 @@ DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
 DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 DOCS_BASE_URL_ACTION_SERVER = "https://rasa.com/docs/action-server"
+
 
 INTENT_MESSAGE_PREFIX = "/"
 
