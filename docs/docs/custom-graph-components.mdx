@@ -464,4 +464,19 @@ the matrix contains a feature vector for every token in the sequence.
 The sentence features are represented by a matrix of size `(1 x feature-dimension)`.
 
 ## Examples of Custom Components
-Vincent?
+
+### Dense Message Featurizer
+
+The following is the example of a dense [message featurizer](components.mdx#featurizers)
+which uses a pretrained model:
+
+```python (docs/sources/data/test_classes/custom_graph_components/nlu_dense.py)
+```
+
+### Sparse Message Featurizer
+
+The following is the example of a dense [message featurizer](components.mdx#featurizers)
+which trains a new model:
+
+```python (docs/sources/data/test_classes/custom_graph_components/nlu_sparse.py)
+```
