@@ -139,7 +139,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         stories = tmp_path / "stories.yml"
         stories.write_text(
             """
-            version: "2.0"
+            version: "3.0"
             stories:
             - story: test path
               steps:

@@ -21,6 +21,7 @@ DOCS_URL_EVENT_BROKERS = DOCS_BASE_URL + "/event-brokers"
 DOCS_URL_PIKA_EVENT_BROKER = DOCS_URL_EVENT_BROKERS + "#pika-event-broker"
 DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/tracker-stores"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/components"
+DOCS_URL_GRAPH_COMPONENTS = DOCS_BASE_URL + "/custom-graph-components"
 DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide"
 DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
     f"{DOCS_URL_MIGRATION_GUIDE}#rasa-21-to-rasa-22"
@@ -38,7 +39,7 @@ MODEL_CONFIG_SCHEMA_FILE = "shared/utils/schemas/model_config.yml"
 CONFIG_SCHEMA_FILE = "shared/utils/schemas/config.yml"
 RESPONSES_SCHEMA_FILE = "shared/nlu/training_data/schemas/responses.yml"
 SCHEMA_EXTENSIONS_FILE = "shared/utils/pykwalify_extensions.py"
-LATEST_TRAINING_DATA_FORMAT_VERSION = "2.0"
+LATEST_TRAINING_DATA_FORMAT_VERSION = "3.0"
 
 DOMAIN_SCHEMA_FILE = "shared/utils/schemas/domain.yml"
 
