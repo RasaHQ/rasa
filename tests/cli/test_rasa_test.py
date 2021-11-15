@@ -47,7 +47,7 @@ def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunR
     )
 
     simple_test_story_yaml = """
-version: "2.0"
+version: "3.0"
 stories:
 - story: unlikely path
   steps:
