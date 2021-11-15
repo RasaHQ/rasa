@@ -8,6 +8,7 @@ on:
     - '*'
   pull_request:
 
+concurrency:
   # Cancel previous runs on PRs only - github.head_ref is only available when the event that triggers a workflow run is pull_request
   # Don't cancel runs on main branch commits and tag pushes by naming the concurrency group with commit sha, which is always differentconcurrency:
   group: continous-integration-${{ github.head_ref || github.sha }}
@@ -541,6 +542,11 @@ jobs:
       image_tag: ${{ steps.set_output.outputs.image_tag }}
       # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
       is_newest_version: ${{ steps.rasa_get_version.outputs.is_newest_version }}
+    concurrency:
+      # Always cancel previous build_docker runs on one branch or under the same tag name
+      group: build-docker-${{ github.ref }}
+      cancel-in-progress: true
+
     steps:
       # Due to an issue with checking out a wrong commit, we make sure
       # to checkout HEAD commit for a pull request.
