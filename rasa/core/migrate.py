@@ -181,7 +181,9 @@ def _write_final_domain(
         rasa.shared.utils.io.write_yaml(new_domain, out_file, True)
 
 
-def _migrate_domain_files(domain_file: Path, backup_dir: Path, out_file: Path):
+def _migrate_domain_files(
+    domain_file: Path, backup_dir: Path, out_file: Path
+) -> Dict[Text, Any]:
     slots = {}
     forms = {}
     entities = []
@@ -234,6 +236,7 @@ def migrate_domain_format(
     """Converts 2.0 domain to 3.0 format."""
     domain_file = Path(domain_file)
     out_file = Path(out_file)
+    created_out_dir = False
 
     current_dir = domain_file.parent
 
@@ -244,6 +247,7 @@ def migrate_domain_format(
         if out_file.is_file() or not out_file.exists():
             out_file = current_dir / "new_domain"
             out_file.mkdir()
+            created_out_dir = True
             rasa.shared.utils.io.raise_warning(
                 f"The out path provided is not a directory, "
                 f"creating a new directory '{str(out_file)}' "
@@ -254,6 +258,8 @@ def migrate_domain_format(
             original_domain = _migrate_domain_files(domain_file, backup_dir, out_file)
         except Exception as e:
             shutil.rmtree(backup_dir)
+            if created_out_dir:
+                shutil.rmtree(out_file)
             raise e
     else:
         if not Domain.is_domain_file(domain_file):

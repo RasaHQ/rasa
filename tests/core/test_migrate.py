@@ -1,4 +1,5 @@
 import re
+import os
 import textwrap
 from pathlib import Path
 from typing import Text, Any
@@ -769,6 +770,7 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
 def test_migrate_twice(tmp_path: Path,):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
+    migrated_domain_dir = tmp_path / "domain2"
 
     prepare_domain_path(
         domain_dir,
@@ -802,10 +804,14 @@ def test_migrate_twice(tmp_path: Path,):
         RasaException,
         match="Domain files with multiple 'slots' sections were provided.",
     ):
-        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+        rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
 
     with pytest.raises(
         RasaException,
         match="Domain files with multiple 'slots' sections were provided.",
     ):
-        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+        rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
+
+    current_dir = domain_dir.parent
+    assert not os.path.exists(current_dir / "original_domain")
+    assert not os.path.exists(current_dir / "new_domain")
