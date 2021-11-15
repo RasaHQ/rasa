@@ -173,7 +173,7 @@ async def test_default_slot_value_if_unfeaturized_slot():
     assert not warnings
 
 
-def test_can_read_test_story_with_entities_slot_autofill(domain: Domain):
+def test_can_read_test_story_with_entities(domain: Domain):
     trackers = training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities.yml",
         domain,
