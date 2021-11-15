@@ -86,7 +86,7 @@ class MitieNLP(GraphComponent):
         import mitie
 
         model_file = config.get("model")
-        if not model_file or not Path(model_file).is_file():
+        if not model_file:
             raise InvalidConfigException(
                 "The MITIE component 'MitieNLP' needs "
                 "the configuration value for 'model'."
@@ -94,6 +94,13 @@ class MitieNLP(GraphComponent):
                 "documentation in the pipeline section "
                 "to get more info about this "
                 "parameter."
+            )
+        if not Path(model_file).is_file():
+            raise InvalidConfigException(
+                "The model file configured in the MITIE"
+                "component cannot be found. "
+                "Please ensure the directory path and "
+                "filename, '{}', are correct.".format(Path(model_file))
             )
         extractor = mitie.total_word_feature_extractor(str(model_file))
 
