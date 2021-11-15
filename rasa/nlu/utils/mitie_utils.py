@@ -99,7 +99,7 @@ class MitieNLP(GraphComponent):
             raise InvalidConfigException(
                 "The model file configured in the MITIE"
                 "component cannot be found. "
-                "Please ensure the directory path and "
+                "Please ensure the directory path and/or "
                 "filename, '{}', are correct.".format(Path(model_file))
             )
         extractor = mitie.total_word_feature_extractor(str(model_file))
