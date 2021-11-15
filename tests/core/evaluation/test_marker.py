@@ -527,14 +527,14 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
 
         for row in result_reader:
             senders.add(row["sender_id"])
-            if row["marker_name"] == "marker1":
+            if row["marker"] == "marker1":
                 assert row["session_idx"] == "0"
-                assert int(row["event_id"]) >= 2
+                assert int(row["event_idx"]) >= 2
                 assert row["num_preceding_user_turns"] == "0"
 
-            if row["marker_name"] == "marker2":
+            if row["marker"] == "marker2":
                 assert row["session_idx"] == "1"
-                assert int(row["event_id"]) >= 3
+                assert int(row["event_idx"]) >= 3
                 assert row["num_preceding_user_turns"] == "1"
 
         assert len(senders) == 5
@@ -739,6 +739,5 @@ def test_split_sessions(tmp_path):
         UserUttered(intent={"name": "this-intent"}),
     ]
     sessions = Marker._split_sessions(events)
-    assert len(sessions) == 2
-    assert len(sessions[0]) == 0
-    assert len(sessions[1]) == len(events)
+    assert len(sessions) == 1
+    assert len(sessions[0][0]) == len(events)

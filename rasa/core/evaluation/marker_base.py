@@ -309,8 +309,6 @@ class Marker(ABC):
 
         extracted_markers: List[Dict[Text, List[EventMetaData]]] = []
         for session, start_idx in sessions_and_start_indices:
-            if len(session) == 0:  # skip empty sessions
-                continue
             # track all events and collect meta data per time step
             meta_data = self._track_all_and_collect_meta_data(
                 events=session, event_idx_offset=start_idx
@@ -350,7 +348,8 @@ class Marker(ABC):
             )
             end_idx = session_start_indices[session_idx]
             session = [events[idx] for idx in range(start_idx, end_idx)]
-            sessions_and_start_indices.append((session, start_idx))
+            if len(session) > 0:
+                sessions_and_start_indices.append((session, start_idx))
         last_session = [
             events[idx] for idx in range(session_start_indices[-1], len(events))
         ]
