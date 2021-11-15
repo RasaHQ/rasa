@@ -458,6 +458,7 @@ def test_sessions_evaluated_separately():
     """Each marker applies an exact number of times (slots are immediately un-set)."""
 
     events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
@@ -478,6 +479,7 @@ def test_sessions_evaluated_separately():
 
 def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     events = [
+        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
@@ -492,10 +494,10 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     assert len(evaluation) == 2
     assert len(evaluation[0]["my-marker"]) == 1
     assert evaluation[0]["my-marker"][0].preceding_user_turns == 3
-    assert evaluation[0]["my-marker"][0].idx == 3
+    assert evaluation[0]["my-marker"][0].idx == 4
     assert len(evaluation[1]["my-marker"]) == 1
     assert evaluation[1]["my-marker"][0].preceding_user_turns == 2
-    assert evaluation[1]["my-marker"][0].idx == 7  # i.e. NOT the index in the dialogue
+    assert evaluation[1]["my-marker"][0].idx == 8  # i.e. NOT the index in the dialogue
 
 
 def test_markers_cli_results_save_correctly(tmp_path: Path):
@@ -734,7 +736,7 @@ def test_split_sessions(tmp_path):
     """Tests loading a tracker with multiple sessions."""
 
     events = [
-        ActionExecuted("action_session_start"),
+        ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         UserUttered(intent={"name": "this-intent"}),
     ]

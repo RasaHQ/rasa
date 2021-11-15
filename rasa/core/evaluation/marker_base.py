@@ -342,14 +342,11 @@ class Marker(ABC):
         if len(session_start_indices) == 0:
             return [(events, 0)]
         sessions_and_start_indices: List[Tuple[List[Event], int]] = []
-        for session_idx in range(len(session_start_indices)):
-            start_idx = (
-                session_start_indices[session_idx - 1] if (session_idx > 0) else 0
-            )
-            end_idx = session_start_indices[session_idx]
+        for session_idx in range(len(session_start_indices)-1):
+            start_idx = session_start_indices[session_idx]
+            end_idx = session_start_indices[session_idx+1]
             session = [events[idx] for idx in range(start_idx, end_idx)]
-            if len(session) > 0:
-                sessions_and_start_indices.append((session, start_idx))
+            sessions_and_start_indices.append((session, start_idx))
         last_session = [
             events[idx] for idx in range(session_start_indices[-1], len(events))
         ]
