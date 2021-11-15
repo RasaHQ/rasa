@@ -18,6 +18,7 @@ from rasa.engine.storage.storage import (
 )
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.storage.resource import Resource
+from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.core.domain import Domain
 import rasa.model
 
@@ -88,6 +89,18 @@ class LocalModelStorage(ModelStorage):
     ) -> None:
         with TarSafe.open(model_archive_path, mode="r:gz") as tar:
             tar.extractall(temporary_directory)
+        LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
+
+    @staticmethod
+    def _assert_not_rasa2_archive(temporary_directory: Union[Text, Path],) -> None:
+        fingerprint_file = Path(temporary_directory) / "fingerprint.json"
+        if fingerprint_file.is_file():
+            serialized_fingerprint = rasa.shared.utils.io.read_json_file(
+                fingerprint_file
+            )
+            raise UnsupportedModelVersionError(
+                model_version=serialized_fingerprint["version"]
+            )
 
     @staticmethod
     def _initialize_model_storage_from_model_archive(

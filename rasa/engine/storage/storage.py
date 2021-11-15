@@ -10,7 +10,7 @@ from typing import Tuple, Union, Text, ContextManager, Dict, Any, Optional
 from packaging import version
 
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.exceptions import UnsupportedModelError
+from rasa.exceptions import UnsupportedModelVersionError
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.autoconfig import TrainingType
@@ -149,14 +149,7 @@ class ModelMetadata:
         minimum_version = version.parse(MINIMUM_COMPATIBLE_VERSION)
         model_version = version.parse(self.rasa_open_source_version)
         if model_version < minimum_version:
-            raise UnsupportedModelError(
-                f"The model version is trained using Rasa Open Source {model_version} "
-                f"and is not compatible with your current installation "
-                f"({minimum_version}). "
-                f"This means that you either need to retrain your model "
-                f"or revert back to the Rasa version that trained the model "
-                f"to ensure that the versions match up again."
-            )
+            raise UnsupportedModelVersionError(model_version=model_version)
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serializable version of the `ModelMetadata`."""
