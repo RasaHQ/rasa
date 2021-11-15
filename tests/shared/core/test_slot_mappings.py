@@ -68,7 +68,7 @@ def test_slot_mapping_intent_is_desired(domain: Domain):
 def test_slot_mappings_ignored_intents_during_active_loop():
     domain = Domain.from_yaml(
         """
-    version: "2.0"
+    version: "3.0"
     intents:
     - greet
     - chitchat
@@ -105,7 +105,7 @@ def test_missing_slot_mappings_raises():
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(
             """
-            version: "2.0"
+            version: "3.0"
             slots:
               some_slot:
                 type: text
@@ -118,7 +118,7 @@ def test_slot_mappings_invalid_type_raises():
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(
             """
-            version: "2.0"
+            version: "3.0"
             entities:
             - from_entity
             slots:
