@@ -97,7 +97,7 @@ class MitieNLP(GraphComponent):
             )
         if not Path(model_file).is_file():
             raise InvalidConfigException(
-                "The model file configured in the MITIE"
+                "The model file configured in the MITIE "
                 "component cannot be found. "
                 "Please ensure the directory path and/or "
                 "filename, '{}', are correct.".format(Path(model_file))
