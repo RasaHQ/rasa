@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 import pytest
 
-from rasa.exceptions import UnsupportedModelError
+from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.importers.autoconfig import TrainingType
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphSchema, SchemaNode
@@ -91,7 +91,7 @@ def test_metadata_version_check():
         f"{old_version} and is not compatible with your current "
         f"installation .*"
     )
-    with pytest.raises(UnsupportedModelError, match=expected_message):
+    with pytest.raises(UnsupportedModelVersionError, match=expected_message):
         ModelMetadata(
             trained_at,
             old_version,
