@@ -31,7 +31,6 @@ DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 DOCS_BASE_URL_ACTION_SERVER = "https://rasa.com/docs/action-server"
 
-
 INTENT_MESSAGE_PREFIX = "/"
 
 PACKAGE_NAME = "rasa"

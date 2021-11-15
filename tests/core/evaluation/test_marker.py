@@ -24,7 +24,7 @@ from rasa.core.evaluation.marker_base import (
     InvalidMarkerConfig,
 )
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
+from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered, SessionStarted
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.core.slots import Slot
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
@@ -728,3 +728,17 @@ def test_marker_from_path_raises(
 )
 def test_marker_depth(marker: Marker, expected_depth: int):
     assert marker.max_depth() == expected_depth
+
+
+def test_split_sessions(tmp_path):
+    """Tests loading a tracker with multiple sessions."""
+
+    events = [
+        ActionExecuted("action_session_start"),
+        SessionStarted(),
+        UserUttered(intent={"name": "this-intent"}),
+    ]
+    sessions = Marker._split_sessions(events)
+    assert len(sessions) == 2
+    assert len(sessions[0]) == 0
+    assert len(sessions[1]) == len(events)
