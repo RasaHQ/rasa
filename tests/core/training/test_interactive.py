@@ -575,7 +575,7 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
     form_name = "my_form"
     old_domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "3.0"
         actions:
         - utter_greet
         - utter_goodbye
