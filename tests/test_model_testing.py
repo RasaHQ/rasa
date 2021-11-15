@@ -190,7 +190,7 @@ def test_write_classification_errors():
         dump.strip()
         == textwrap.dedent(
             """
-        version: "2.0"
+        version: "3.0"
         stories:
         - story: default
           steps:

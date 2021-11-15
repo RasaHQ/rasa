@@ -156,7 +156,7 @@ def test_validate_files_action_not_found_invalid_domain(
     file_name = tmp_path / f"{file_type}.yml"
     file_name.write_text(
         f"""
-        version: "2.0"
+        version: "3.0"
         {file_type}:
         - {data_type}: test path
           steps:
@@ -183,7 +183,7 @@ def test_validate_files_form_not_found_invalid_domain(
     file_name = tmp_path / f"{file_type}.yml"
     file_name.write_text(
         f"""
-        version: "2.0"
+        version: "3.0"
         {file_type}:
         - {data_type}: test path
           steps:
@@ -206,7 +206,7 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
     domain_file_name = tmp_path / "domain.yml"
     domain_file_name.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         forms:
           name_form:
             required_slots:
@@ -266,7 +266,7 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
     slot_name = "started_booking_form"
     domain.write_text(
         f"""
-            version: "2.0"
+            version: "3.0"
             intents:
             - activate_booking
             entities:
