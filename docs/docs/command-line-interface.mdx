@@ -377,14 +377,14 @@ If no arguments are specified, the default domain path (`domain.yml`) will be us
 This command will also back-up your 2.0 domain file(s) into a different `original_domain.yml` file or
 directory labeled `original_domain`.
 
-Note that the slots in the migrated domain will contain mapping conditions if these slots are part of a form's
-`required_slots`.
+Note that the slots in the migrated domain will contain [mapping conditions](./domain.mdx#mapping-conditions) if these
+slots are part of a form's `required_slots`.
 
 :::caution
-Exceptions will be raised that will terminate this process if invalid domain files are provided, slots or forms
+Exceptions will be raised and the migration process terminated if invalid domain files are provided, slots or forms
 are missing from your original files or if the slots or forms sections are spread across multiple domain files.
 This is done to avoid duplication of migrated sections in your domain files.
-Please make sure all your slots or forms definitions are grouped into a single file.
+Please make sure all your slots' or forms' definitions are grouped into a single file.
 
 :::
 
