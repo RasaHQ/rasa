@@ -1,5 +1,4 @@
 import re
-import os
 import textwrap
 from pathlib import Path
 from typing import Text, Any
@@ -767,7 +766,7 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
         rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
 
 
-def test_migrate_twice(tmp_path: Path,):
+def test_migration_cleanup(tmp_path: Path,):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
     migrated_domain_dir = tmp_path / "domain2"
@@ -804,7 +803,11 @@ def test_migrate_twice(tmp_path: Path,):
         RasaException,
         match="Domain files with multiple 'slots' sections were provided.",
     ):
-        rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
+        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+
+    # here the migration fails but we check if the domain was
+    # not deleted in the process of cleanup
+    assert Path.exists(domain_dir)
 
     with pytest.raises(
         RasaException,
@@ -812,6 +815,21 @@ def test_migrate_twice(tmp_path: Path,):
     ):
         rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
 
+    # the migration fails again and we check if the cleanup was done successfully
     current_dir = domain_dir.parent
-    assert not os.path.exists(current_dir / "original_domain")
-    assert not os.path.exists(current_dir / "new_domain")
+    assert Path.exists(domain_dir)
+    assert not Path.exists(current_dir / "original_domain")
+    assert not Path.exists(current_dir / "new_domain")
+
+    # create the `migrated_domain_dir` to use it instead of the default one
+    migrated_domain_dir.mkdir()
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
+
+    # check if the cleanup was done successfully after the `migrated_domain_dir` was created
+    assert not Path.exists(current_dir / "original_domain")
+    assert not Path.exists(current_dir / "new_domain")
