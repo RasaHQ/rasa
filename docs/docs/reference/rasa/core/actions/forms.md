@@ -70,6 +70,14 @@ Get mappings for requested slot.
 
 If None, map requested slot to an entity with the same name
 
+#### entity\_mapping\_is\_unique
+
+```python
+ | entity_mapping_is_unique(slot_mapping: Dict[Text, Any], domain: Domain) -> bool
+```
+
+Verifies if the from_entity mapping is unique.
+
 #### get\_entity\_value\_for\_slot
 
 ```python
