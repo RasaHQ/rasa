@@ -831,5 +831,6 @@ def test_migration_cleanup(tmp_path: Path,):
         rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
 
     # check if the cleanup was done successfully after the `migrated_domain_dir` was created
+    assert Path.exists(migrated_domain_dir)
     assert not Path.exists(current_dir / "original_domain")
     assert not Path.exists(current_dir / "new_domain")
