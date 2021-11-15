@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3.0"
 
 stories:
 - story: test 0 - both predictions should be the same in the test stories
