@@ -137,8 +137,8 @@ The `auto_fill` key in the domain is no longer available, as well as the `auto_f
 the `Slot` class.
 
 While forms continue to request the next slot, slot extraction is now delegated to the default
-action `action_extract_slots`. This action runs in the background automatically after each user turn.
-Like `action_listen`, it should not be included in stories.
+action [`action_extract_slots`](./default-actions.mdx#action_extract_slots). This action runs in the background
+automatically after each user turn. Like `action_listen`, it should not be included in stories.
 
 Each slot in the `slots` section must include the `mappings` key. The same keys used for predefined mappings in 2.0 are
 available in 3.0. Additionally, you can define slots with custom mappings implemented in a custom action, for example:
@@ -152,12 +152,14 @@ slots:
       action: action_verify_customer_status
 ```
 
-You can also use [slot validation actions](./slot-validation-actions.mdx) to define custom validation of slots with
-predefined mappings or custom extraction and validation of slots with custom mappings.
+You can also use [slot validation actions](./slot-validation-actions.mdx) to either validate slots with predefined
+mappings, or to both extract and validate slots with custom mappings.
 
 :::note
-The `required_slots` of a form has been converted in a list of slot names because slot mappings are now relocated
-from `forms` to `slots` in the domain.
+The `required_slots` of a form used to be a list of slot mappings.
+Since slot mappings are relocated to the `slots` section of the domain, `required_slots` has been converted to a list of
+slot names only.
+
 :::
 
 #### Automatic migration from 2.0 domain format to the 3.0 format
@@ -213,7 +215,7 @@ entities:
              value: false
 ```
 
-The initial result of this migration could look like this:
+The initial result of migrating this domain to 3.0 format would look like this:
 
 ```yaml
 entities:
@@ -242,12 +244,14 @@ entities:
  forms:
    restaurant_form:
      required_slots:
-	 - cuisine
+     - cuisine
      - num_people
      - outdoor_seating
 ```
 
-In case you'd prefer certain slots to be filled only within the context of a form, you can add mapping conditions like so:
+For slots that should be filled only in the context of a form, add mapping conditions to specify which form(s) should
+be active. Adding `conditions` is required to preserve the behavior of slot mappings from 2.0, since without them
+the mappings will be applied on each user turn regardless of whether a form is active or not.
 
 ```yaml
  slots:
