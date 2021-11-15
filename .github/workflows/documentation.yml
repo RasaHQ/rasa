@@ -9,8 +9,9 @@ on:
 
 concurrency:
   # group workflow runs based on the branch or the tag ref
+  # Pending runs to aviod interferece
   group: documentation-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 # SECRETS
 # - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)

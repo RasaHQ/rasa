@@ -11,7 +11,9 @@ on:
     types: [opened, synchronize, labeled]
 
 concurrency:
-  group: ci-model-regression-${{ github.ref }}  # branch or tag name
+  # Cancel previous runs on PRs only - github.head_ref is only available when the event that triggers a workflow run is pull_request
+  # Don't cancel runs on main branch commits and tag pushes by naming the concurrency group with commit sha, which is always different
+  group: ci-model-regression-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
 
 env:

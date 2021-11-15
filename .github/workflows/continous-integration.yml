@@ -8,8 +8,9 @@ on:
     - '*'
   pull_request:
 
-concurrency:
-  group: continous-integration-${{ github.ref }}  # branch or tag name
+  # Cancel previous runs on PRs only - github.head_ref is only available when the event that triggers a workflow run is pull_request
+  # Don't cancel runs on main branch commits and tag pushes by naming the concurrency group with commit sha, which is always differentconcurrency:
+  group: continous-integration-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
 
 # SECRETS
@@ -308,7 +309,7 @@ jobs:
     - name: Install ddtrace
       if: needs.changes.outputs.backend == 'true'
       run: poetry run pip install -U ddtrace
-      
+
     - name: Test Code 🔍 (monothread)
       # This is a temporary workaround for OOM on Windows caused by increased memory
       # consumption associated with the upgrade of our tensorflow dependency
