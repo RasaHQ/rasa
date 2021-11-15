@@ -1151,7 +1151,7 @@ async def test_action_extract_slots_predefined_mappings(
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             intents:
             - inform
             - greet
@@ -1224,19 +1224,14 @@ async def test_action_extract_slots_predefined_mappings(
         domain,
     )
 
-    if new_user.entities:
-        # the slot gets filled with extracted entities during tracker.update
-        assert not updated_evts
-        assert tracker.get_slot(slot_name) == updated_value
-    else:
-        assert updated_evts == [SlotSet(slot_name, updated_value)]
+    assert updated_evts == [SlotSet(slot_name, updated_value)]
 
 
 async def test_action_extract_slots_with_from_trigger_mappings():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             intents:
             - greet
             - inform
@@ -1354,7 +1349,7 @@ async def test_action_extract_slots_with_list_slot(
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    version: "2.0"
+    version: "3.0"
 
     slots:
       {slot_name}:
@@ -1450,7 +1445,7 @@ async def test_action_extract_slots_with_matched_mapping_condition():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "2.0"
+            version: "3.0"
             intent:
             - greet
             - inform
@@ -1503,7 +1498,7 @@ async def test_action_extract_slots_no_matched_mapping_conditions():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "2.0"
+            version: "3.0"
             intent:
             - greet
             - inform
@@ -1746,7 +1741,7 @@ async def test_extract_other_list_slot_from_entity(
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    version: "2.0"
+    version: "3.0"
 
     slots:
       {slot_name}:
@@ -1958,7 +1953,7 @@ async def test_action_extract_slots_execute_validation_action(
 ):
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         intents:
         - greet
@@ -2022,7 +2017,7 @@ async def test_action_extract_slots_execute_validation_action(
 async def test_action_extract_slots_custom_action_and_predefined_slot_validation():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         intents:
         - inform
@@ -2089,7 +2084,7 @@ async def test_action_extract_slots_custom_action_and_predefined_slot_validation
 async def test_action_extract_slots_with_duplicate_custom_actions():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         intents:
         - inform
@@ -2161,7 +2156,7 @@ async def test_action_extract_slots_with_duplicate_custom_actions():
 async def test_action_extract_slots_disallowed_events(caplog: LogCaptureFixture):
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot_one:
@@ -2225,7 +2220,7 @@ async def test_action_extract_slots_warns_custom_action_exceptions(
 ):
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot_one:
@@ -2273,7 +2268,7 @@ async def test_action_extract_slots_warns_custom_action_exceptions(
 async def test_action_extract_slots_with_empty_conditions():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         entities:
         - city
@@ -2306,7 +2301,7 @@ async def test_action_extract_slots_with_empty_conditions():
 async def test_action_extract_slots_with_none_value_predefined_mapping():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         entities:
         - some_entity
@@ -2347,7 +2342,7 @@ async def test_action_extract_slots_with_none_value_predefined_mapping():
 async def test_action_extract_slots_with_none_value_custom_mapping():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot:
@@ -2390,7 +2385,7 @@ async def test_action_extract_slots_with_none_value_custom_mapping():
 async def test_action_extract_slots_returns_bot_uttered():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot:
