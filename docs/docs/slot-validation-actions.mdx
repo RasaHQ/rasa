@@ -25,6 +25,8 @@ With this option, you do not need to specify the `action` key in the [custom slo
 
 Note that you do not need to implement the `name` method in the custom action extending `ValidationAction`, since this
 is already provided: `action_validate_slot_mappings`. However this name must be added to the domain `actions` list.
+If you override the `name` method, the custom validation action will not run because the original name has been hardcoded
+in the call that the default action `action_extract_slots` makes to the action server.
 
 :::note
 Slots mapped to a form in the mapping `conditions` will be ignored by `ValidationAction` unless you override
