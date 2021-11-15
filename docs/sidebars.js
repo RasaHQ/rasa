@@ -62,6 +62,7 @@ module.exports = {
             'model-configuration',
             'components',
             'policies',
+            'custom-graph-components',
             'training-data-importers',
             'language-support',
           ],
@@ -75,6 +76,13 @@ module.exports = {
             'custom-actions',
             'forms',
             'default-actions',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Evaluation',
+          items: [
+            'markers',
           ],
         },
         {

@@ -51,7 +51,7 @@ def test_validate_yaml_schema_raise_exception(file: Text, schema: Text):
 
 def test_validate_yaml_schema_raise_exception_null_text():
     domain = """
-    version: "2.0"
+    version: "3.0"
     responses:
       utter_ask_email:
       - text: What is your email ID?
@@ -69,7 +69,7 @@ def test_validate_yaml_schema_raise_exception_null_text():
 
 def test_validate_yaml_schema_raise_exception_extra_hyphen_for_image():
     domain = """
-        version: "2.0"
+        version: "3.0"
         responses:
           utter_cheer_up:
           - image: https://i.imgur.com/nGF1K8f.jpg
@@ -226,7 +226,7 @@ def test_concurrent_schema_validation():
 
     def validate() -> None:
         payload = """
-version: "2.0"
+version: "3.0"
 nlu:
 - intent: greet
   examples: |
