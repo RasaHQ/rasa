@@ -120,7 +120,7 @@ async def test_switch_forms_with_same_slot(default_agent: Agent):
     utter_ask_form_2 = f"Please provide the value for {slot_a} of form 2"
 
     domain = f"""
-version: "2.0"
+version: "3.0"
 nlu:
 - intent: order_status
   examples: |
@@ -727,7 +727,7 @@ def test_temporary_tracker():
     sender_id = "test"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "3.0"
         slots:
           {extra_slot}:
             type: any
@@ -1416,7 +1416,7 @@ async def test_extract_other_slots_with_matched_mapping_conditions():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             intent:
             - greet
             - inform
@@ -1487,7 +1487,7 @@ async def test_extract_other_slots_raises_no_matched_conditions():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             intent:
             - greet
             - inform
@@ -1557,7 +1557,7 @@ async def test_extract_other_slots_raises_no_matched_conditions():
 async def test_action_extract_slots_custom_mapping_with_condition():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot:

@@ -1248,7 +1248,7 @@ async def test_predict_next_action_with_hidden_rules(
     story_slot = "story_slot"
     domain_content = textwrap.dedent(
         f"""
-        version: "2.0"
+        version: "3.0"
         intents:
         - {rule_intent}
         - {story_intent}

@@ -959,7 +959,7 @@ def test_invalid_graph_schema(
 ):
     config = textwrap.dedent(
         """
-    version: "2.0"
+    version: "3.0"
     recipe: "default.v1"
 
     pipeline:
@@ -999,7 +999,7 @@ def test_fingerprint_changes_if_module_changes(
 
     config = textwrap.dedent(
         f"""
-    version: "2.0"
+    version: "3.0"
     recipe: "default.v1"
 
     policies:

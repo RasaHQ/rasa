@@ -1125,6 +1125,18 @@ configuration.
 
 ### Training data
 
+#### Upgrading `version` from `2.0` to `3.0`
+
+At the top of your training data files, you need to change `version: "2.0"` to `version: "3.0"`.
+
+We follow semantic versioning for training data versions. This means breaking changes result in a new
+major version, while new features result in a new minor version. 
+
+The improvements to `slot mappings` in Rasa Open Source 3.0 were breaking changes, so we needed to upgrade
+from major version `2.0` to major version `3.0`. 
+
+#### `TrainingDataImporter`
+
 `TrainingDataImporter` and all its implementations are updated to contain only synchronous methods.
 If you have a custom data importer or rely on some functions provided by `TrainingDataImporter`, you need
 to update your implementation and function calls.
