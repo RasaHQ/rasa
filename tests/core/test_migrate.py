@@ -845,6 +845,8 @@ def test_migration_cleanup(tmp_path: Path,):
 
     # check if the cleanup was done successfully after
     # the `migrated_domain_dir` was created
-    assert Path.exists(migrated_domain_dir) and len(os.listdir(migrated_domain_dir)) == 0
+    assert (
+        Path.exists(migrated_domain_dir) and len(os.listdir(migrated_domain_dir)) == 0
+    )
     assert not Path.exists(current_dir / "original_domain")
     assert not Path.exists(current_dir / "new_domain")
