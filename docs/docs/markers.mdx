@@ -250,10 +250,10 @@ rasa evaluate markers all --stats-file-prefix "my-statistics" extracted_markers.
 The two statistics files contain the following columns:
 
 - `sender_id`: taken from the trackers. If the statistic is computed over all sessions this will be equal to `all`.
-- `session_idx`: an integer indexing sessions, starting with `0`. If the statistic is computed over all sessions, this will be equal to `nan`.
+- `session_idx`: an integer indexing sessions, starting with `0`. If the statistic is computed over all sessions, this will be equal to `nan` (not a number).
 - `marker`: the unique marker identifier.
 - `statistic`: a description of the statistic computed.
-- `value`: an integer or float value of the computed statistic. If the statistic is not available then `value` will be equal to `nan`.
+- `value`: an integer or float value of the computed statistic. If the statistic is not available then `value` will be equal to `nan` (not a number).
 
 Here is a sample `stats-per-session.csv` output:
 ```
@@ -288,7 +288,6 @@ c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,median(number of preced
 3c1afa1ed72c4116ba6670a1668f1b4a,0,marker_mood_expressed,min(number of preceding user turns),0
 4d55093e9696452c8d1157fa33fd54b2,0,marker_mood_expressed,min(number of preceding user turns),1
 c00b3de97713427d85524c4374125db1,0,marker_mood_expressed,min(number of preceding user turns),0
-
 ```
 Note that the value for unavailable statistics is `nan`. For example, because `marker_cheer_up_failed` never occurred in
  tracker `3c1afa1ed72c4116ba6670a1668f1b4a` session `0`, then the `min`, `max`, `median`, and `mean` number of preceding user turns
@@ -298,10 +297,10 @@ Here is a sample `stats-overall.csv` output:
 ```
 sender_id,session_idx,marker,statistic,value
 all,nan,-,total_number_of_sessions,3
-all,nan,marker_cheer_up_failed,number_of_sessions_where_marker_applies_at_least_once,1
-all,nan,marker_cheer_up_failed,percentage_of_sessions_where_marker_applies_at_least_once,33.333
-all,nan,marker_mood_expressed,number_of_sessions_where_marker_applies_at_least_once,3
-all,nan,marker_mood_expressed,percentage_of_sessions_where_marker_applies_at_least_once,100.0
+all,nan,marker_cheer_up_failed,number_of_sessions_where_marker_applied_at_least_once,1
+all,nan,marker_cheer_up_failed,percentage_of_sessions_where_marker_applied_at_least_once,33.333
+all,nan,marker_mood_expressed,number_of_sessions_where_marker_applied_at_least_once,3
+all,nan,marker_mood_expressed,percentage_of_sessions_where_marker_applied_at_least_once,100.0
 all,nan,marker_cheer_up_failed,count(number of preceding user turns),1
 all,nan,marker_cheer_up_failed,mean(number of preceding user turns),2.0
 all,nan,marker_cheer_up_failed,median(number of preceding user turns),2.0
