@@ -87,7 +87,7 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
         args: The arguments passed in from the CLI.
     """
     seed = args.seed if "seed" in args else None
-    count = args.count if "N" in args else None
+    count = args.count if "count" in args else None
 
     stats_file_prefix = args.stats_file_prefix if args.stats else None
 

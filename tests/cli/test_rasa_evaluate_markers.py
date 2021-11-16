@@ -65,7 +65,7 @@ def test_evaluate_markers_first_n_help(run: Callable[..., RunResult]):
     [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
-    N output_filename"""
+    count output_filename"""
 
     lines = [line.strip() for line in help_text.split("\n")]
     # expected help text lines should appear somewhere in the output
@@ -82,7 +82,7 @@ def test_evaluate_markers_sample_n_help(run: Callable[..., RunResult]):
     [--config CONFIG]
     [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
-    N output_filename"""
+    count output_filename"""
 
     lines = [line.strip() for line in help_text.split("\n")]
     # expected help text lines should appear somewhere in the output
