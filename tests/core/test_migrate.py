@@ -441,6 +441,58 @@ def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file:
     }
 
 
+def test_migrate_domain_with_no_requested_slot_for_from_entity_mappings(
+    tmp_path: Path, domain_out_file: Path
+):
+    existing_domain_file = prepare_domain_path(
+        tmp_path,
+        """
+        version: "3.0"
+        intents:
+        - greet
+        - affirm
+        - inform
+        entities:
+        - city
+        slots:
+          location:
+            type: text
+            influence_conversation: false
+          email:
+            type: text
+            influence_conversation: false
+        forms:
+            some_form:
+                location:
+                - entity: city
+                  type: from_entity
+                - intent: something
+                  type: from_text
+        """,
+        "domain.yml",
+    )
+
+    rasa.core.migrate.migrate_domain_format(existing_domain_file, domain_out_file)
+
+    domain = Domain.from_path(domain_out_file)
+    assert domain
+
+    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_slots = migrated_domain.get("slots")
+    location_slot = migrated_slots.get("location")
+    mappings = location_slot.get("mappings")
+    assert mappings[0] == {
+        "entity": "city",
+        "type": "from_entity",
+        "conditions": [{"active_loop": "some_form"}],
+    }
+    assert mappings[1] == {
+        "intent": "something",
+        "type": "from_text",
+        "conditions": [{"active_loop": "some_form", "requested_slot": "location"}],
+    }
+
+
 def test_migrate_domain_format_duplicated_slots_in_forms(
     tmp_path: Path, domain_out_file: Path
 ):
