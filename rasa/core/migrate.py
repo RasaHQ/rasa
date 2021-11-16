@@ -95,7 +95,6 @@ def _migrate_form_slots(
             updated_mappings = _get_updated_or_new_mappings(
                 existing_mappings, mappings, condition, slot_name
             )
-            print(">< Updated mappings", updated_mappings)
             slot_properties.update({"mappings": updated_mappings})
             updated_slots[slot_name] = slot_properties
 
