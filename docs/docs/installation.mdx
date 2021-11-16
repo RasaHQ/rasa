@@ -71,12 +71,12 @@ your machine and continue development locally.
 **Install Rasa Open Source using pip (requires Python 3.7, or 3.8).**
 
 ```bash
-pip3 install -U --user pip
+pip3 install -U --user pip && pip3 install rasa
 ```
 
-```bash
-pip3 install rasa
-```
+:::caution
+We recommend updating pip to 21.3 or later due to performance improvements. Previous versions would take long time to resolve dependencies.
+:::
 
 **You are now ready to go! So what's next? You can create a new project by running:**
 
