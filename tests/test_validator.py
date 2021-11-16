@@ -1,11 +1,25 @@
 from typing import Text
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.importers.autoconfig import TrainingType
 from pathlib import Path
+
+
+@pytest.fixture(scope="class")
+def validator_under_test() -> Validator:
+    importer = RasaFileImporter(
+        domain_path="data/test_validation/domain.yml",
+        training_data_paths=[
+            "data/test_validation/data/nlu.yml",
+            "data/test_validation/data/stories.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    return validator
 
 
 def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
@@ -211,6 +225,44 @@ def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text):
     )
     validator = Validator.from_importer(importer)
     assert not validator.verify_example_repetition_in_intents(False)
+
+
+def test_verify_logging_message_for_intent_not_used_in_nlu(
+    caplog: LogCaptureFixture, validator_under_test: Validator
+):
+    caplog.clear()
+    with pytest.warns(UserWarning) as record:
+        validator_under_test.verify_intents(False)
+
+    assert (
+        "The intent 'goodbye' is listed in the domain file, "
+        "but is not found in the NLU training data."
+        in (m.message.args[0] for m in record)
+    )
+
+
+def test_verify_logging_message_for_intent_not_used_in_story(
+    caplog: LogCaptureFixture, validator_under_test: Validator
+):
+    caplog.clear()
+    with pytest.warns(UserWarning) as record:
+        validator_under_test.verify_intents_in_stories(False)
+
+    assert "The intent 'goodbye' is not used in any story or rule." in (
+        m.message.args[0] for m in record
+    )
+
+
+def test_verify_logging_message_for_unused_utterance(
+    caplog: LogCaptureFixture, validator_under_test: Validator
+):
+    caplog.clear()
+    with pytest.warns(UserWarning) as record:
+        validator_under_test.verify_utterances_in_stories(False)
+
+    assert "The utterance 'utter_chatter' is not used in any story or rule." in (
+        m.message.args[0] for m in record
+    )
 
 
 def test_verify_logging_message_for_repetition_in_intents(caplog, nlu_data_path: Text):
