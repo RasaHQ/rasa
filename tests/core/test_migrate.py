@@ -1,3 +1,4 @@
+import os
 import re
 import textwrap
 from pathlib import Path
@@ -816,3 +817,88 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
         f"Please make sure to include these for a successful migration.",
     ):
         rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+
+
+def test_migration_cleanup(tmp_path: Path,):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+    migrated_domain_dir = tmp_path / "domain2"
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          outdoor_seating:
+           type: bool
+           influence_conversation: false
+        """,
+        "slots_one.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          cuisine:
+           type: text
+           influence_conversation: false
+        """,
+        "slots_two.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        responses:
+          utter_greet:
+          - text: "Hi there!"
+        """,
+        "responses.yml",
+    )
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+
+    # here the migration fails but we check if the domain was
+    # not deleted in the process of cleanup
+    assert Path.exists(domain_dir)
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
+
+    # the migration fails again and we check
+    # if the cleanup was done successfully
+    current_dir = domain_dir.parent
+    assert Path.exists(domain_dir)
+    assert not Path.exists(current_dir / "original_domain")
+    assert not Path.exists(current_dir / "new_domain")
+
+    # create the `migrated_domain_dir` to use it instead of the default one
+    migrated_domain_dir.mkdir()
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
+
+    # check if the cleanup was done successfully after
+    # the `migrated_domain_dir` was created
+    assert (
+        Path.exists(migrated_domain_dir) and len(os.listdir(migrated_domain_dir)) == 0
+    )
+    assert not Path.exists(current_dir / "original_domain")
+    assert not Path.exists(current_dir / "new_domain")
