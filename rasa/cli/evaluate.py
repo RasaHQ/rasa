@@ -43,8 +43,6 @@ def add_subparser(
         help="Applies marker conditions to existing trackers.",
     )
 
-    arguments.set_markers_arguments(marker_parser)
-
     markers_subparser = marker_parser.add_subparsers(dest="strategy")
 
     markers_first_n_subparser = markers_subparser.add_parser(
@@ -56,8 +54,10 @@ def add_subparser(
     )
     arguments.set_markers_first_n_arguments(markers_first_n_subparser)
 
+    arguments.set_markers_arguments(markers_first_n_subparser)
+
     markers_sample_subparser = markers_subparser.add_parser(
-        "sample",
+        "sample_n",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -65,13 +65,18 @@ def add_subparser(
     )
     arguments.set_markers_sample_arguments(markers_sample_subparser)
 
-    markers_subparser.add_parser(
+    arguments.set_markers_arguments(markers_sample_subparser)
+
+    # markers_subparser.add_parser(
+    markers_all_subparser = markers_subparser.add_parser(
         "all",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Select all trackers.",
     )
+
+    arguments.set_markers_arguments(markers_all_subparser)
 
     marker_parser.set_defaults(func=_run_markers_cli)
 
@@ -83,7 +88,7 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
         args: The arguments passed in from the CLI.
     """
     seed = args.seed if "seed" in args else None
-    count = args.count if "count" in args else None
+    count = args.count if "N" in args else None
 
     stats_file_prefix = args.stats_file_prefix if args.stats else None
 
