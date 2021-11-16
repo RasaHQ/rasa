@@ -67,7 +67,6 @@ def add_subparser(
 
     arguments.set_markers_arguments(markers_sample_subparser)
 
-    # markers_subparser.add_parser(
     markers_all_subparser = markers_subparser.add_parser(
         "all",
         parents=parents,

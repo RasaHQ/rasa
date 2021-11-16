@@ -62,9 +62,9 @@ def test_evaluate_markers_first_n_help(run: Callable[..., RunResult]):
     output = run("evaluate", "markers", "first_n", "--help")
 
     help_text = """usage: rasa evaluate markers first_n [-h] [-v] [-vv] [--quiet]
-    [--config CONFIG] 
-    [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]] 
-    [--endpoints ENDPOINTS] [-d DOMAIN] 
+    [--config CONFIG]
+    [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
+    [--endpoints ENDPOINTS] [-d DOMAIN]
     N output_filename"""
 
     lines = [line.strip() for line in help_text.split("\n")]
@@ -79,8 +79,8 @@ def test_evaluate_markers_sample_n_help(run: Callable[..., RunResult]):
     output = run("evaluate", "markers", "sample_n", "--help")
 
     help_text = """usage: rasa evaluate markers sample_n [-h] [-v] [-vv] [--quiet] [--seed SEED]
-    [--config CONFIG] 
-    [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]] 
+    [--config CONFIG]
+    [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
     [--endpoints ENDPOINTS] [-d DOMAIN]
     N output_filename"""
 
@@ -95,9 +95,9 @@ def test_evaluate_markers_all_help(run: Callable[..., RunResult]):
     # We need to specify an output_filename as that's the first positional parameter
     output = run("evaluate", "markers", "all", "--help")
 
-    help_text = """usage: rasa evaluate markers all [-h] [-v] [-vv] [--quiet] [--config CONFIG] 
-    [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]] 
-    [--endpoints ENDPOINTS] [-d DOMAIN] 
+    help_text = """usage: rasa evaluate markers all [-h] [-v] [-vv] [--quiet] [--config CONFIG]
+    [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]]
+    [--endpoints ENDPOINTS] [-d DOMAIN]
     output_filename"""
 
     lines = [line.strip() for line in help_text.split("\n")]
