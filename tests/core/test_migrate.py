@@ -800,6 +800,17 @@ def test_migration_cleanup(tmp_path: Path,):
         "slots_two.yml",
     )
 
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        responses:
+          utter_greet:
+          - text: "Hi there!"
+        """,
+        "responses.yml",
+    )
+
     with pytest.raises(
         RasaException,
         match="Domain files with multiple 'slots' sections were provided.",

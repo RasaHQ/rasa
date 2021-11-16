@@ -258,8 +258,12 @@ def migrate_domain_format(
             original_domain = _migrate_domain_files(domain_file, backup_dir, out_file)
         except Exception as e:
             shutil.rmtree(backup_dir)
-            if out_file != domain_file and created_out_dir:
+            if out_file != domain_file:
                 shutil.rmtree(out_file)
+                if not created_out_dir:
+                    # we recreate the deleted directory
+                    # because it existed before
+                    out_file.mkdir()
             raise e
     else:
         if not Domain.is_domain_file(domain_file):
