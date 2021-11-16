@@ -24,6 +24,7 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa data migrate`     |Migrates 2.0 domain to 3.0 format.                                                                                                        |
 |`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                         |
 |`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                            |
+|`rasa evaluate markers` |Extracts markers from an existing tracker store.                                                                                                |
 |`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
 
@@ -458,6 +459,54 @@ should be published:
 This command is most commonly used to import old conversations into Rasa X to annotate
 them. Read more about [importing conversations into Rasa X](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#1-import-existing-conversations-from-rasa-open-source).
 :::
+
+## rasa evaluate markers
+
+:::caution
+
+This feature is currently experimental and might change or be removed in the future. Share your feedback in the forum to help us make it production-ready.
+
+:::
+
+The following command applies the [markers](./markers.mdx) you defined in your marker configuration file,
+to pre-existing dialogues stored in your [tracker store](./tracker-stores.mdx), and produces `CSV` files containing
+the extracted markers and summary statistics:
+
+```bash
+rasa evaluate markers all extracted_markers.csv
+```
+
+Use the following arguments to configure the marker extraction process:
+
+```
+usage: rasa evaluate markers [-h] [-v] [-vv] [--quiet] [--config CONFIG] [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]] [--endpoints ENDPOINTS] [-d DOMAIN] output_filename {first_n,sample,all} ...
+
+positional arguments:
+  output_filename       The filename to write the extracted markers to (CSV format).
+  {first_n,sample,all}
+    first_n             Select trackers sequentially until N are taken.
+    sample              Select trackers by sampling N.
+    all                 Select all trackers.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --config CONFIG       The config file(s) containing marker definitions. This can be a single YAML file, or a directory that contains several files with marker definitions in it. The content of these files will be read and
+                        merged together. (default: markers.yml)
+  --no-stats            Do not compute summary statistics. (default: True)
+  --stats-file-prefix [STATS_FILE_PREFIX]
+                        The common file prefix of the files where we write out the compute statistics. More precisely, the file prefix must consist of a common path plus a common file prefix, to which suffixes `-overall.csv` and
+                        `-per-session.csv` will be added automatically. (default: stats)
+  --endpoints ENDPOINTS
+                        Configuration file for the tracker store as a yml file. (default: endpoints.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification. This can be a single YAML file, or a directory that contains several files with domain specifications in it. The content of these files will be read and merged together. (default:
+                        domain.yml)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default: None)
+```
 
 ## rasa x
 

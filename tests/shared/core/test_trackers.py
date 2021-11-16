@@ -11,6 +11,9 @@ import fakeredis
 import freezegun
 import pytest
 
+from rasa.core.actions.action import ActionExtractSlots
+from rasa.core.channels import CollectingOutputChannel
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.training import load_data
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -317,7 +320,7 @@ def test_get_latest_entity_values(
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
-def test_tracker_update_slots_with_entity(domain: Domain):
+async def test_tracker_update_slots_with_entity(domain: Domain):
     tracker = DialogueStateTracker("default", domain.slots)
 
     test_entity = domain.entities[0]
@@ -340,6 +343,15 @@ def test_tracker_update_slots_with_entity(domain: Domain):
         ),
         domain,
     )
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(events, domain)
 
     assert tracker.get_slot(test_entity) == expected_slot_value
 
@@ -1364,13 +1376,13 @@ def test_policy_prediction_reflected_in_tracker_state():
     assert tracker.latest_message.parse_data["entities"] == nlu_entities
 
 
-def test_autofill_slots_for_policy_entities():
+async def test_fill_slots_for_policy_entities():
     policy_entity, policy_entity_value = "policy_entity", "end-to-end"
     nlu_entity, nlu_entity_value = "nlu_entity", "nlu rocks"
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "2.0"
+            version: "3.0"
             entities:
             - {nlu_entity}
             - {policy_entity}
@@ -1410,10 +1422,6 @@ def test_autofill_slots_for_policy_entities():
         slots=domain.slots,
     )
 
-    # Slots are correctly set
-    assert tracker.slots[nlu_entity].value == nlu_entity_value
-    assert tracker.slots[policy_entity].value == policy_entity_value
-
     expected_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(
@@ -1425,8 +1433,6 @@ def test_autofill_slots_for_policy_entities():
                 {"entity": policy_entity, "value": policy_entity_value},
             ],
         ),
-        # SlotSet event added for entity predicted by NLU
-        SlotSet(nlu_entity, nlu_entity_value),
         DefinePrevUserUtteredFeaturization(True),
         EntitiesAdded(
             entities=[
@@ -1434,12 +1440,23 @@ def test_autofill_slots_for_policy_entities():
                 {"entity": nlu_entity, "value": nlu_entity_value},
             ]
         ),
-        # SlotSet event added for entity predicted by policies
-        # This event is somewhat duplicate. We don't deduplicate as this is a true
-        # reflection of the given events and it doesn't change the actual state.
         SlotSet(nlu_entity, nlu_entity_value),
         SlotSet(policy_entity, policy_entity_value),
     ]
+
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(events, domain)
+
+    # Slots are correctly set
+    assert tracker.slots[nlu_entity].value == nlu_entity_value
+    assert tracker.slots[policy_entity].value == policy_entity_value
 
     for actual, expected in zip(tracker.events, expected_events):
         assert actual == expected
@@ -1464,7 +1481,7 @@ def test_tracker_unique_fingerprint(domain: Domain):
     event1 = UserUttered(
         text="hello",
         parse_data={
-            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+            "intent": {"name": "greet", "confidence": 0.9604260921478271},
             "entities": [
                 {"entity": "city", "value": "London"},
                 {"entity": "count", "value": 1},
@@ -1473,9 +1490,9 @@ def test_tracker_unique_fingerprint(domain: Domain):
             "message_id": "3f4c04602a4947098c574b107d3ccc59",
             "metadata": {},
             "intent_ranking": [
-                {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
-                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748},
-                {"id": 0, "name": "deny", "confidence": 0.011255578137934208},
+                {"name": "greet", "confidence": 0.9604260921478271},
+                {"name": "goodbye", "confidence": 0.01835782080888748},
+                {"name": "deny", "confidence": 0.011255578137934208},
             ],
         },
     )

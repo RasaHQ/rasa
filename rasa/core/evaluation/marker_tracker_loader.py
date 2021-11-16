@@ -5,6 +5,10 @@ from typing import Any, Iterable, Iterator, List, Text, Optional
 from rasa.core.tracker_store import TrackerStore
 import rasa.shared.utils.io
 
+STRATEGY_ALL = "all"
+STRATEGY_FIRST_N = "first_n"
+STRATEGY_SAMPLE = "sample"
+
 
 def strategy_all(keys: List[Text], count: int) -> Iterable[Text]:
     """Selects all keys from the set of keys."""
@@ -51,7 +55,7 @@ class MarkerTrackerLoader:
 
         if strategy not in MarkerTrackerLoader._STRATEGY_MAP:
             raise RasaException(
-                "Invalid strategy for loading markers - '{strategy}' was given, \
+                f"Invalid strategy for loading markers - '{strategy}' was given, \
                 options 'all', 'sample', or 'first_n' exist."
             )
 
@@ -60,7 +64,7 @@ class MarkerTrackerLoader:
         if strategy != "all":
             if not count:
                 raise RasaException(
-                    "Desired tracker count must be given for strategy '{strategy}'."
+                    f"Desired tracker count must be given for strategy '{strategy}'."
                 )
 
             if count < 1:
@@ -80,7 +84,7 @@ class MarkerTrackerLoader:
                 random.seed(seed)
             else:
                 rasa.shared.utils.io.raise_warning(
-                    "Parameter 'seed' is ignored by strategy '{strategy}'."
+                    f"Parameter 'seed' is ignored by strategy '{strategy}'."
                 )
 
     def load(self) -> Iterator[Optional[DialogueStateTracker]]:
@@ -96,4 +100,4 @@ class MarkerTrackerLoader:
 
         keys = self.strategy(stored_keys, self.count)
         for sender in keys:
-            yield self.tracker_store.retrieve(sender)
+            yield self.tracker_store.retrieve_full_tracker(sender)

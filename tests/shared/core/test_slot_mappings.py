@@ -17,7 +17,7 @@ def test_slot_mapping_entity_is_desired(slot_name: Text, expected: bool):
     tracker = DialogueStateTracker("test_id", slots=domain.slots)
     event = UserUttered(
         text="I'm travelling to Vancouver.",
-        intent={"id": 1, "name": "inform", "confidence": 0.9604260921478271},
+        intent={"name": "inform", "confidence": 0.9604260921478271},
         entities=[{"entity": "GPE", "value": "Vancouver", "role": "destination"}],
     )
     tracker.update(event, domain)
@@ -30,11 +30,7 @@ def test_slot_mapping_intent_is_desired(domain: Domain):
     tracker = DialogueStateTracker("sender_id_test", slots=domain.slots)
     event1 = UserUttered(
         text="I'd like to book a restaurant for 2 people.",
-        intent={
-            "id": 1,
-            "name": "request_restaurant",
-            "confidence": 0.9604260921478271,
-        },
+        intent={"name": "request_restaurant", "confidence": 0.9604260921478271,},
         entities=[{"entity": "number", "value": 2}],
     )
     tracker.update(event1, domain)
@@ -45,7 +41,7 @@ def test_slot_mapping_intent_is_desired(domain: Domain):
 
     event2 = UserUttered(
         text="Yes, 2 please",
-        intent={"id": 2, "name": "affirm", "confidence": 0.9604260921478271},
+        intent={"name": "affirm", "confidence": 0.9604260921478271},
         entities=[{"entity": "number", "value": 2}],
     )
     tracker.update(event2, domain)
@@ -56,7 +52,7 @@ def test_slot_mapping_intent_is_desired(domain: Domain):
 
     event3 = UserUttered(
         text="Yes, please",
-        intent={"id": 3, "name": "affirm", "confidence": 0.9604260921478271},
+        intent={"name": "affirm", "confidence": 0.9604260921478271},
         entities=[],
     )
     tracker.update(event3, domain)
@@ -72,7 +68,7 @@ def test_slot_mapping_intent_is_desired(domain: Domain):
 def test_slot_mappings_ignored_intents_during_active_loop():
     domain = Domain.from_yaml(
         """
-    version: "2.0"
+    version: "3.0"
     intents:
     - greet
     - chitchat
@@ -95,7 +91,7 @@ def test_slot_mappings_ignored_intents_during_active_loop():
     event1 = ActiveLoop("restaurant_form")
     event2 = UserUttered(
         text="The weather is sunny today",
-        intent={"id": 4, "name": "chitchat", "confidence": 0.9604260921478271},
+        intent={"name": "chitchat", "confidence": 0.9604260921478271},
         entities=[],
     )
     tracker.update_with_events([event1, event2], domain)
@@ -109,7 +105,7 @@ def test_missing_slot_mappings_raises():
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(
             """
-            version: "2.0"
+            version: "3.0"
             slots:
               some_slot:
                 type: text
@@ -122,7 +118,7 @@ def test_slot_mappings_invalid_type_raises():
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(
             """
-            version: "2.0"
+            version: "3.0"
             entities:
             - from_entity
             slots:

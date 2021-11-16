@@ -692,7 +692,7 @@ tested_events = [
     UserUttered(
         text="hello",
         parse_data={
-            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
+            "intent": {"name": "greet", "confidence": 0.9604260921478271,},
             "entities": [
                 {"entity": "city", "value": "London"},
                 {"entity": "count", "value": 1},
@@ -701,18 +701,14 @@ tested_events = [
             "message_id": "3f4c04602a4947098c574b107d3ccc50",
             "metadata": {},
             "intent_ranking": [
-                {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
-                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748,},
-                {"id": 0, "name": "deny", "confidence": 0.011255578137934208,},
-                {"id": 3, "name": "bot_challenge", "confidence": 0.004019865766167641,},
-                {"id": 4, "name": "affirm", "confidence": 0.002524246694520116,},
-                {"id": 5, "name": "mood_great", "confidence": 0.002214624546468258,},
-                {"id": 6, "name": "chitchat", "confidence": 0.0009614597074687481,},
-                {
-                    "id": 7,
-                    "name": "mood_unhappy",
-                    "confidence": 0.00024030178610701114,
-                },
+                {"name": "greet", "confidence": 0.9604260921478271,},
+                {"name": "goodbye", "confidence": 0.01835782080888748,},
+                {"name": "deny", "confidence": 0.011255578137934208,},
+                {"name": "bot_challenge", "confidence": 0.004019865766167641,},
+                {"name": "affirm", "confidence": 0.002524246694520116,},
+                {"name": "mood_great", "confidence": 0.002214624546468258,},
+                {"name": "chitchat", "confidence": 0.0009614597074687481,},
+                {"name": "mood_unhappy", "confidence": 0.00024030178610701114,},
             ],
             "response_selector": {
                 "all_retrieval_intents": [],
