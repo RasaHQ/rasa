@@ -27,14 +27,14 @@ def _create_back_up(
     return original_content
 
 
-def _update_mapping_condition(
+def _get_updated_mapping_condition(
     condition: Dict[Text, Text], mapping: Dict[Text, Any], slot_name: Text
 ) -> Dict[Text, Text]:
     if mapping.get("type") not in [
         str(SlotMapping.FROM_ENTITY),
         str(SlotMapping.FROM_TRIGGER_INTENT),
     ]:
-        condition.update({REQUESTED_SLOT: slot_name})
+        return {**condition, REQUESTED_SLOT: slot_name}
     return condition
 
 
@@ -52,20 +52,22 @@ def _get_updated_or_new_mappings(
         conditions = existing_mapping.pop("conditions", [])
         if existing_mapping in new_mappings:
             new_mappings.remove(existing_mapping)
-
-            updated_condition = _update_mapping_condition(
-                condition, existing_mapping, slot_name
+            conditions.append(
+                _get_updated_mapping_condition(condition, existing_mapping, slot_name)
             )
-
-            conditions.append(updated_condition)
             existing_mapping.update({"conditions": conditions})
             updated_mappings.append(existing_mapping)
         else:
             updated_mappings.append(mapping_copy)
 
     for mapping in new_mappings:
-        updated_condition = _update_mapping_condition(condition, mapping, slot_name)
-        mapping.update({"conditions": [updated_condition]})
+        mapping.update(
+            {
+                "conditions": [
+                    _get_updated_mapping_condition(condition, mapping, slot_name)
+                ]
+            }
+        )
         updated_mappings.append(mapping)
 
     return updated_mappings
@@ -93,6 +95,7 @@ def _migrate_form_slots(
             updated_mappings = _get_updated_or_new_mappings(
                 existing_mappings, mappings, condition, slot_name
             )
+            print(">< Updated mappings", updated_mappings)
             slot_properties.update({"mappings": updated_mappings})
             updated_slots[slot_name] = slot_properties
 
