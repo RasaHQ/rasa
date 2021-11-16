@@ -196,7 +196,7 @@ def _create_tracker_loader(
         count: (Optional) Number of trackers to extract from (for any strategy
                except 'all').
         seed: (Optional) The seed to initialise the random number generator for
-              use with the 'sample' strategy.
+              use with the 'sample_n' strategy.
 
     Returns:
         A MarkerTrackerLoader object configured with the specified strategy against

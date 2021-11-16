@@ -49,14 +49,14 @@ def set_markers_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def set_markers_first_n_arguments(parser: argparse.ArgumentParser) -> None:
-    """Specifies arguments for `rasa evaluate markers by_first_n`."""
+    """Specifies arguments for `rasa evaluate markers first_n`."""
     parser.add_argument(
         "count", type=int, help="The number of trackers to extract markers from",
     )
 
 
 def set_markers_sample_arguments(parser: argparse.ArgumentParser) -> None:
-    """Specifies arguments for `rasa evaluate markers by_sample`."""
+    """Specifies arguments for `rasa evaluate markers sample_n`."""
     parser.add_argument(
         "--seed", type=int, help="Seed to use if selecting trackers by 'sample_n'"
     )
