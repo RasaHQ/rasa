@@ -15,7 +15,7 @@ def set_markers_arguments(parser: argparse.ArgumentParser) -> None:
         "--config",
         default="markers.yml",
         type=Path,
-        help="The config file(s) containing marker definitions. This can be a single "
+        help="The marker configuration file(s) containing marker definitions. This can be a single "
         "YAML file, or a directory that contains several files with marker "
         "definitions in it. The content of these files will be read and merged "
         "together.",
