@@ -107,11 +107,11 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
 def _run_markers(
     seed: Optional[int],
     count: Optional[int],
-    endpoint_config: Text,
+    endpoint_config: Path,
     domain_path: Optional[Text],
     strategy: Text,
-    config: Text,
-    output_filename: Text,
+    config: Path,
+    output_filename: Path,
     stats_file_prefix: Optional[Path] = None,
 ) -> None:
     """Run markers algorithm over specified config and tracker store.
