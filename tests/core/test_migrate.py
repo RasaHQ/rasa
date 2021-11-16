@@ -440,7 +440,9 @@ def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file:
     }
 
 
-def test_migrate_domain_with_no_requested_slot_for_from_entity_mappings(tmp_path: Path, domain_out_file: Path):
+def test_migrate_domain_with_no_requested_slot_for_from_entity_mappings(
+    tmp_path: Path, domain_out_file: Path
+):
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
@@ -481,12 +483,12 @@ def test_migrate_domain_with_no_requested_slot_for_from_entity_mappings(tmp_path
     assert mappings[0] == {
         "entity": "city",
         "type": "from_entity",
-        "conditions": [{"active_loop": "some_form"}]
+        "conditions": [{"active_loop": "some_form"}],
     }
     assert mappings[1] == {
         "intent": "something",
         "type": "from_text",
-        "conditions": [{"active_loop": "some_form", "requested_slot": "location"}]
+        "conditions": [{"active_loop": "some_form", "requested_slot": "location"}],
     }
 
 
