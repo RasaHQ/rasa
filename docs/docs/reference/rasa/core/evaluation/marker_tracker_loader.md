@@ -18,10 +18,10 @@ strategy_first_n(keys: List[Text], count: int) -> Iterable[Text]
 
 Takes the first N keys from the set of keys.
 
-#### strategy\_sample
+#### strategy\_sample\_n
 
 ```python
-strategy_sample(keys: List[Text], count: int) -> Iterable[Text]
+strategy_sample_n(keys: List[Text], count: int) -> Iterable[Text]
 ```
 
 Samples N unique keys from the set of keys.
@@ -46,10 +46,10 @@ Creates a MarkerTrackerLoader.
 
 - `tracker_store` - The underlying tracker store to access.
 - `strategy` - The strategy to use for selecting trackers,
-  can be &#x27;all&#x27;, &#x27;sample&#x27;, or &#x27;first_n&#x27;.
+  can be &#x27;all&#x27;, &#x27;sample_n&#x27;, or &#x27;first_n&#x27;.
 - `count` - Number of trackers to return, can only be None if strategy is &#x27;all&#x27;.
 - `seed` - Optional seed to set up random number generator,
-  only useful if strategy is &#x27;sample&#x27;.
+  only useful if strategy is &#x27;sample_n&#x27;.
 
 #### load
 

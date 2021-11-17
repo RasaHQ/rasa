@@ -16,7 +16,7 @@ Specifies arguments for `rasa evaluate markers`.
 set_markers_first_n_arguments(parser: argparse.ArgumentParser) -> None
 ```
 
-Specifies arguments for `rasa evaluate markers by_first_n`.
+Specifies arguments for `rasa evaluate markers first_n`.
 
 #### set\_markers\_sample\_arguments
 
@@ -24,5 +24,5 @@ Specifies arguments for `rasa evaluate markers by_first_n`.
 set_markers_sample_arguments(parser: argparse.ArgumentParser) -> None
 ```
 
-Specifies arguments for `rasa evaluate markers by_sample`.
+Specifies arguments for `rasa evaluate markers sample_n`.
 
