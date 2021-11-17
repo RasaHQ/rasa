@@ -23,7 +23,9 @@ You can extend the `ValidationAction` class in the Rasa SDK to define custom ext
 can be set or updated outside of a form context.
 
 :::note
-`ValidationAction` will ignore any slots mapped to a form added to the slot mapping's `conditions`.
+`ValidationAction` is intended for extracting slots **outside** the context of a form.
+It will ignore extraction and validation methods for any slots that have a form specified under the slot mapping's `conditions`.
+It will not run these methods when the specified form is active nor when no form is active.
 Please extend the [`FormValidationAction`](./slot-validation-actions.mdx#formvalidationaction-class) class for applying
 custom slot mappings only within the context of a form.
 :::
