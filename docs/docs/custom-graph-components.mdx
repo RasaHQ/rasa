@@ -42,7 +42,7 @@ how data flows between them. This has two major benefits:
 When translating the model configuration to the computational graph
 [policies](policies.mdx) and [NLU components](components.mdx) become nodes within this graph.
 While there is a distinction between policies and NLU components in your model
-configuration the distinction is abstracted away when they are placed within the graph.
+configuration, the distinction is abstracted away when they are placed within the graph.
 At this point policies and NLU components become abstract *graph components*.
 In practice this is represented by the
 [`GraphComponent`](custom-graph-components.mdx#the-graphcomponent-interface)
@@ -54,9 +54,9 @@ become compatible and executable for Rasa's graph.
 </div>
 
 ## Getting Started
-Before you get started you have to decide whether you want to implement a custom
+Before you get started, you have to decide whether you want to implement a custom
 [NLU component](components.mdx) or a [policy](policies.mdx). If you are implementing
-a custom policy then we recommend extending the existing
+a custom policy, then we recommend extending the existing
 `rasa.core.policies.policy.Policy` class which already implements the `GraphComponent`
 interface.
 
@@ -77,8 +77,13 @@ skeleton:
 
 ```python (docs/sources/data/test_classes/nlu_component_skeleton.py)
 ```
+
+
+Read the following sections to find out how to solve the `TODO`s in the example above
+ and what other methods need to be implemented in your custom component.
+
 :::note custom tokenizers
-If you create a custom tokenizer you should extend the 
+If you create a custom tokenizer, you should extend the
 `rasa.nlu.tokenizers.tokenizer.Tokenizer` class. The `train` and `process` methods are
 already implemented so you only need to overwrite the `tokenize` method.
 
@@ -216,8 +221,8 @@ class MyComponent(GraphComponent):
 The snippet below illustrates how to write your graph component's data to the model
 storage.
 To persist your graph component after training, the `train` method will need to access
-to the values of `model_storage` and `resource`. Therefore, you should store the value
-s of `model_storage` and `resource` at initialization time.
+to the values of `model_storage` and `resource`. Therefore, you should store the values
+of `model_storage` and `resource` at initialization time.
 
 Your graph component's train method must return the value of `resource` so that Rasa Open Source can cache
 the training results between trainings.
@@ -331,7 +336,7 @@ Currently, Rasa Open Source only supports the `default.v1` recipe.
 Register your graph component with this recipe by using the `DefaultV1Recipe.register`
 decorator:
 
-```python (docs/sources/data/test_classes/registered_component.py) {5-9}
+```python {5-9} (docs/sources/data/test_classes/registered_component.py)
 ```
 
 Rasa Open Source uses the information provided in the `register` decorator and the
@@ -458,8 +463,10 @@ your NLU component can access both the intent metadata and the intent example me
 ```
 
 ### Sparse and Dense Message Features
-If you create a custom message featurizer you can return two different kind of features: sequence features and sentence
-features. The sequence features are a matrix of size `(number-of-tokens x feature-dimension)`, e.g.
+If you create a custom message featurizer, you can return two different kind of
+features: sequence features and sentence
+features. The sequence features are a matrix of size `(number-of-tokens x
+feature-dimension)`, i.e.
 the matrix contains a feature vector for every token in the sequence.
 The sentence features are represented by a matrix of size `(1 x feature-dimension)`.
 
