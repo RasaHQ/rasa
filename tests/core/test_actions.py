@@ -2426,3 +2426,74 @@ async def test_action_extract_slots_returns_bot_uttered():
             domain,
         )
         assert all([isinstance(event, (SlotSet, BotUttered)) for event in events])
+
+
+async def test_action_extract_slots_does_not_raise_disallowed_warning_for_slot_events(
+    caplog: LogCaptureFixture,
+):
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.0"
+
+        slots:
+          custom_slot_a:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+              action: custom_extract_action
+          custom_slot_b:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+
+        actions:
+        - custom_extract_action
+        - action_validate_slot_mappings
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": "custom_slot_a", "value": "test_A"},
+                ]
+            },
+        )
+
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": "custom_slot_b", "value": "test_B"},
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        with caplog.at_level(logging.INFO):
+            events = await action_extract_slots.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
+            )
+
+        assert len(caplog.messages) == 0
+
+        assert events == [
+            SlotSet("custom_slot_b", "test_B"),
+            SlotSet("custom_slot_a", "test_A"),
+        ]
