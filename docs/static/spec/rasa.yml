@@ -482,12 +482,12 @@ paths:
         description: >-
           The training data should be in YAML format.
         content:
-          application/json:
+          application/yaml:
             schema:
-              $ref: '#/components/schemas/JSONTrainingRequest'
-          application/x-yaml:
-            schema:
-              type: string
+              $ref: '#/components/schemas/YAMLTrainingRequest'
+            example:
+              $ref: '#/components/examples/YAMLTrainingRequest'
+
 
       responses:
         200:
@@ -1407,19 +1407,40 @@ components:
           type: integer
           description: Time to wait between pulls from model server
 
-    JSONTrainingRequest:
+    YAMLTrainingRequest:
       type: object
       properties:
-        domain:
-          $ref: '#/components/schemas/DomainFile'
-        config:
-          $ref: '#/components/schemas/ConfigFile'
+        intents:
+          type: array
+          description: All intent names and properties
+          items:
+            $ref: '#/components/schemas/IntentDescription'
+        responses:
+          description: Bot response templates
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TemplateDescription'
+        session_config:
+          description: Session configuration options
+          type: object
+          properties:
+            session_expiration_time:
+              type: integer
+            carry_over_slots_to_new_session:
+              type: boolean
+        pipeline:
+          description: Pipeline list
+          type: array
+        policies:
+          description: Policies list
         nlu:
           $ref: '#/components/schemas/NLUTrainingData'
-        responses:
-          $ref: '#/components/schemas/RetrievalIntentsTrainingData'
+        rules:
+          description: Rule list
+          type: array
         stories:
           $ref: '#/components/schemas/StoriesTrainingData'
+
         force:
           type: boolean
           description: >-
@@ -1432,7 +1453,6 @@ components:
             If `true` (default) the trained model will be saved in the default model
             directory, if `false` it will be saved in a temporary directory
           deprecated: True
-      required: ["config"]
 
     NLUTrainingData:
       type: string
@@ -1860,3 +1880,50 @@ components:
           type: string
           description: Text of the message
           example: "Hello!"
+  examples:
+    YAMLTrainingRequest: |
+      intents:
+        - greet
+        - goodbye
+
+      responses:
+        utter_greet:
+        - text: "Hey! How are you?"
+
+        utter_goodbye:
+        - text: "Bye"
+
+      session_config:
+        session_expiration_time: 60
+        carry_over_slots_to_new_session: true
+
+      pipeline:
+
+      policies:
+
+      nlu:
+      - intent: greet
+        examples: |
+          - hey
+          - hello
+
+      - intent: goodbye
+        examples: |
+          - bye
+          - goodbye
+
+      rules:
+
+      - rule: Say goodbye anytime the user says goodbye
+        steps:
+        - intent: goodbye
+        - action: utter_goodbye
+
+      stories:
+
+      - story: happy path
+        steps:
+        - intent: greet
+        - action: utter_greet
+        - intent: goodbye
+        - action: utter_goodbye
