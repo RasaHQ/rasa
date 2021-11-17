@@ -26,6 +26,24 @@ Initializes a `MessageProcessor`.
 
 Handle a single message with this processor.
 
+#### run\_action\_extract\_slots
+
+```python
+ | async run_action_extract_slots(output_channel: OutputChannel, tracker: DialogueStateTracker) -> DialogueStateTracker
+```
+
+Run action to extract slots and update the tracker accordingly.
+
+**Arguments**:
+
+- `output_channel` - Output channel associated with the incoming user message.
+- `tracker` - A tracker representing a conversation state.
+  
+
+**Returns**:
+
+  the given (updated) tracker
+
 #### predict\_next\_for\_sender\_id
 
 ```python
@@ -294,4 +312,16 @@ Determine whether the processor should predict another action.
 
 Send bot messages, schedule and cancel reminders that are logged
 in the events array.
+
+#### save\_tracker
+
+```python
+ | save_tracker(tracker: DialogueStateTracker) -> None
+```
+
+Save the given tracker to the tracker store.
+
+**Arguments**:
+
+- `tracker` - Tracker to be saved.
 

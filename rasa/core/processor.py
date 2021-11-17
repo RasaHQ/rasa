@@ -125,27 +125,36 @@ class MessageProcessor:
         tracker = await self.log_message(message, should_save_tracker=False)
 
         if self.model_metadata.training_type == TrainingType.NLU:
-            self._save_tracker(tracker)
+            self.save_tracker(tracker)
             rasa.shared.utils.io.raise_warning(
                 "No core model. Skipping action prediction and execution.",
                 docs=DOCS_URL_POLICIES,
             )
             return None
 
-        tracker = await self._run_action_extract_slots(message.output_channel, tracker)
+        tracker = await self.run_action_extract_slots(message.output_channel, tracker)
 
         await self._run_prediction_loop(message.output_channel, tracker)
 
-        self._save_tracker(tracker)
+        self.save_tracker(tracker)
 
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
 
         return None
 
-    async def _run_action_extract_slots(
+    async def run_action_extract_slots(
         self, output_channel: OutputChannel, tracker: DialogueStateTracker,
     ) -> DialogueStateTracker:
+        """Run action to extract slots and update the tracker accordingly.
+
+        Args:
+            output_channel: Output channel associated with the incoming user message.
+            tracker: A tracker representing a conversation state.
+
+        Returns:
+            the given (updated) tracker
+        """
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
         )
@@ -176,7 +185,7 @@ class MessageProcessor:
         result = self.predict_next_with_tracker(tracker)
 
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        self.save_tracker(tracker)
 
         return result
 
@@ -363,7 +372,7 @@ class MessageProcessor:
         await self._handle_message_with_tracker(message, tracker)
 
         if should_save_tracker:
-            self._save_tracker(tracker)
+            self.save_tracker(tracker)
 
         return tracker
 
@@ -399,7 +408,7 @@ class MessageProcessor:
         await self._run_action(action, tracker, output_channel, nlg, prediction)
 
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        self.save_tracker(tracker)
 
         return tracker
 
@@ -540,11 +549,11 @@ class MessageProcessor:
             self.domain,
         )
 
-        tracker = await self._run_action_extract_slots(output_channel, tracker)
+        tracker = await self.run_action_extract_slots(output_channel, tracker)
 
         await self._run_prediction_loop(output_channel, tracker)
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        self.save_tracker(tracker)
 
     @staticmethod
     def _log_slots(tracker: DialogueStateTracker) -> None:
@@ -743,7 +752,7 @@ class MessageProcessor:
                     f"An end-to-end prediction was made which has triggered the 2nd "
                     f"execution of the default action '{ACTION_EXTRACT_SLOTS}'."
                 )
-                tracker = await self._run_action_extract_slots(output_channel, tracker)
+                tracker = await self.run_action_extract_slots(output_channel, tracker)
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, prediction
@@ -936,7 +945,12 @@ class MessageProcessor:
 
         return has_expired
 
-    def _save_tracker(self, tracker: DialogueStateTracker) -> None:
+    def save_tracker(self, tracker: DialogueStateTracker) -> None:
+        """Save the given tracker to the tracker store.
+
+        Args:
+            tracker: Tracker to be saved.
+        """
         self.tracker_store.save(tracker)
 
     def _predict_next_with_tracker(
