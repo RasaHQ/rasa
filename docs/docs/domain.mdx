@@ -595,6 +595,12 @@ slots:
       not_intent: excluded_intent
 ```
 
+:::note
+To maintain the 2.x form behavior when using `from_text` slot mappings, you must use [mapping conditions](./domain.mdx#mapping-conditions),
+where both `active_loop` and `requested_slot` keys are defined.
+:::
+
+
 #### from_intent
 
 The `from_intent` mapping will fill slot `slot_name` with value `my_value` if
