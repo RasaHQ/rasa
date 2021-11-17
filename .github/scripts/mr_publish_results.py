@@ -112,7 +112,8 @@ def send_to_datadog(context):
     with ApiClient(Configuration()) as api_client:
         api_instance = MetricsApi(api_client)
         response = api_instance.submit_metrics(body=body)
-        print(response)
+        if response.get('status') != 'ok':
+            print(response)
 
 
 def send_to_segment(context):
