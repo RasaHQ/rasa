@@ -5,7 +5,12 @@ import datetime
 import json
 import os
 
-from datadog import initialize, statsd
+from datetime import datetime
+from datadog_api_client.v1 import ApiClient, Configuration
+from datadog_api_client.v1.api.metrics_api import MetricsApi
+from datadog_api_client.v1.model.metrics_payload import MetricsPayload
+from datadog_api_client.v1.model.point import Point
+from datadog_api_client.v1.model.series import Series
 
 
 METRIC_PREFIX = "rasa.perf.benchmark."
@@ -79,12 +84,6 @@ def send_to_datadog(context):
         "branch": os.environ["BRANCH"],
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
-    options = {
-        "statsd_host": "127.0.0.1",
-        "statsd_port": 8125,
-        "statsd_constant_tags": tags_list,
-    }
-    initialize(**options)
 
     # Send  metrics
     metrics = {
@@ -92,9 +91,25 @@ def send_to_datadog(context):
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
         "total_run_time": os.environ["TOTAL_RUN_TIME"],
     }
+    timestamp = datetime.now().timestamp()
+
+    series = []
     for metric_name, metric_value in metrics.items():
         overall_seconds = transform_to_seconds(metric_value)
-        statsd.gauge(f"{METRIC_PREFIX}{metric_name}.gauge", overall_seconds, tags=["environment:dev"])
+        series.append(
+            Series(
+                metric=f"{METRIC_PREFIX}{metric_name}.gauge",
+                type="gauge",
+                points=[Point([timestamp, overall_seconds])],
+                tags=tags_list,
+            )
+        )
+
+    body = MetricsPayload(series=series)
+    with ApiClient(Configuration()) as api_client:
+        api_instance = MetricsApi(api_client)
+        response = api_instance.submit_metrics(body=body)
+        print(response)
 
 
 def send_to_segment(context):
