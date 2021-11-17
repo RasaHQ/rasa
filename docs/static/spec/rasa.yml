@@ -718,7 +718,8 @@ paths:
       summary: Replace the currently loaded model
       description: >-
         Updates the currently loaded model.
-        First, tries to load the model from the local storage system.
+        First, tries to load the model from the local (note: local to Rasa server)
+        storage system.
         Secondly, tries to load the model from the provided model server configuration.
         Last, tries to load the model from the provided remote storage.
       requestBody:
@@ -1052,7 +1053,7 @@ components:
         model_file:
           type: string
           description: Path to model file
-          example: "/models/20190512.tar.gz"
+          example: "/CHANGE-TO-DIR-ON-REMOTE-SERVER/models/20190512.tar.gz"
         model_server:
           $ref: '#/components/schemas/EndpointConfig'
         remote_storage:
