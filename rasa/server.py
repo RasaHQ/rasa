@@ -1002,10 +1002,10 @@ def create_app(
                 tracker = await app.agent.processor.log_message(
                     user_message, should_save_tracker=False
                 )
-                tracker = await app.agent.processor._run_action_extract_slots(
+                tracker = await app.agent.processor.run_action_extract_slots(
                     user_message.output_channel, tracker
                 )
-                app.agent.processor._save_tracker(tracker)
+                app.agent.processor.save_tracker(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
