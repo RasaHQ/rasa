@@ -30,6 +30,7 @@ from rasa import telemetry
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.io import WriteRow
+from rasa.shared.constants import DOCS_URL_MARKERS
 
 import logging
 import csv
@@ -341,11 +342,9 @@ class Marker(ABC):
         if len(session_start_indices) == 0:
             return [(events, 0)]
         sessions_and_start_indices: List[Tuple[List[Event], int]] = []
-        for session_idx in range(len(session_start_indices)):
-            start_idx = (
-                session_start_indices[session_idx - 1] if (session_idx > 0) else 0
-            )
-            end_idx = session_start_indices[session_idx]
+        for session_idx in range(len(session_start_indices) - 1):
+            start_idx = session_start_indices[session_idx]
+            end_idx = session_start_indices[session_idx + 1]
             session = [events[idx] for idx in range(start_idx, end_idx)]
             sessions_and_start_indices.append((session, start_idx))
         last_session = [
@@ -487,8 +486,9 @@ class Marker(ABC):
                 f"The given path ({path}) is neither pointing to a directory "
                 f"nor a file. Please specify the location of a yaml file or a "
                 f"root directory (all yaml configs found in the directories "
-                f"under that root directory will be loaded."
-            )  # TODO: add link to docs
+                f"under that root directory will be loaded). "
+                f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+            )
         return yaml_files
 
     @staticmethod
@@ -501,8 +501,9 @@ class Marker(ABC):
                 raise InvalidMarkerConfig(
                     f"Expected the loaded configurations to be a dictionary "
                     f"of marker configurations but found a "
-                    f"{type(loaded_config)} in {yaml_file}."
-                )  # TODO: add link to docs
+                    f"{type(loaded_config)} in {yaml_file}. "
+                    f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+                )
             if set(loaded_config.keys()).intersection(marker_names):
                 raise InvalidMarkerConfig(
                     f"The names of markers defined in {yaml_file} "
@@ -510,8 +511,9 @@ class Marker(ABC):
                     f"overlap with the names of markers loaded so far "
                     f"({sorted(marker_names)}). "
                     f"Please adapt your configurations such that your custom "
-                    f"marker names are unique."
-                )  # TODO: add link to docs
+                    f"marker names are unique. "
+                    f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+                )
             if set(loaded_config.keys()).intersection(MarkerRegistry.all_tags):
                 raise InvalidMarkerConfig(
                     f"The top level of your marker configuration should consist "
@@ -521,8 +523,9 @@ class Marker(ABC):
                     f"or operator and won't be evaluated against any sessions. "
                     f"Please remove any of the pre-defined marker tags "
                     f"(i.e. {MarkerRegistry.all_tags}) "
-                    f"from {yaml_file}."
-                )  # TODO: add link to docs
+                    f"from {yaml_file}. "
+                    f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+                )
             marker_names.update(loaded_config.keys())
             loaded_configs[yaml_file] = loaded_config
         return loaded_configs
@@ -554,8 +557,9 @@ class Marker(ABC):
                 "To configure a marker, please define a dictionary that maps a "
                 "single operator tag or a single condition tag to the "
                 "corresponding parameter configuration or a list of marker "
-                "configurations, respectively."
-            )  # TODO: add link to docs
+                "configurations, respectively. "
+                f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+            )
 
         tag = next(iter(config))
         sub_marker_config = config[tag]
@@ -575,7 +579,8 @@ class Marker(ABC):
                 f" an operator or a condition but found {tag}. "
                 f"Available conditions and operators are: "
                 f"{sorted(MarkerRegistry.all_tags)}. "
-            )  # TODO: add link to docs
+                f"Refer to the docs for more information: {DOCS_URL_MARKERS} "
+            )
 
         return marker
 
@@ -653,8 +658,8 @@ class Marker(ABC):
                 [
                     "sender_id",
                     "session_idx",
-                    "marker_name",
-                    "event_id",
+                    "marker",
+                    "event_idx",
                     "num_preceding_user_turns",
                 ]
             )
