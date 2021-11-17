@@ -226,7 +226,11 @@ class CacheableText:
 
     @classmethod
     def from_cache(
-        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+        cls,
+        node_name: Text,
+        directory: Path,
+        model_storage: ModelStorage,
+        output_fingerprint: Text,
     ) -> CacheableText:
         text = rasa.shared.utils.io.read_file(directory / "my_file.txt")
         return cls(text=text)

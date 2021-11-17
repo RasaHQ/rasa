@@ -22,7 +22,7 @@ CONFIG_TELEMETRY_ID = "rasa_user_id"
 CONFIG_TELEMETRY_ENABLED = "enabled"
 CONFIG_TELEMETRY_DATE = "date"
 
-MINIMUM_COMPATIBLE_VERSION = "2.8.9"
+MINIMUM_COMPATIBLE_VERSION = "3.0.0rc1"
 
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
 

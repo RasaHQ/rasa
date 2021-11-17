@@ -56,7 +56,7 @@ Currently, the latest training data format specification for Rasa 2.x is 2.0.
 Here's a short example which keeps all training data in a single file:
 
 ```yaml-rasa
-version: "2.0"
+version: "3.0"
 
 nlu:
 - intent: greet
@@ -550,6 +550,16 @@ stories:
   - action: utter_greet_user_by_name
 ```
 
+The initial value for any slot by default is `null`, and you can use it to check if the slot was not set:
+
+```yaml-rasa {5-6}
+stories:
+- story: French cuisine
+  steps:
+  - intent: inform
+  - slot_was_set:
+    - cuisine: null
+```
 
 :::note How slots work
 Stories do not **set** slots. The slot must be set by the default action `action_extract_slots` if a slot mapping applies, or custom

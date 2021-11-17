@@ -159,9 +159,10 @@ class FormAction(LoopAction):
 
         return unique_entity_slot_mappings
 
-    def _entity_mapping_is_unique(
+    def entity_mapping_is_unique(
         self, slot_mapping: Dict[Text, Any], domain: Domain
     ) -> bool:
+        """Verifies if the from_entity mapping is unique."""
         if not self._have_unique_entity_mappings_been_initialized:
             # create unique entity mappings on the first call
             self._unique_entity_mappings = self._create_unique_entity_mappings(domain)
@@ -319,24 +320,6 @@ class FormAction(LoopAction):
 
         return events_since_last_user_uttered
 
-    def _slot_is_set_by_non_unique_entity_mappings(
-        self,
-        mapping: Dict[Text, Any],
-        slot_name: Text,
-        tracker: "DialogueStateTracker",
-        domain: Domain,
-    ) -> bool:
-        if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
-            return False
-
-        if self.get_slot_to_fill(tracker) == slot_name:
-            return False
-
-        if self._entity_mapping_is_unique(mapping, domain):
-            return False
-
-        return True
-
     def _update_slot_values(
         self,
         event: SlotSet,
@@ -347,13 +330,20 @@ class FormAction(LoopAction):
         slot_mappings = self.get_mappings_for_slot(event.key, domain)
 
         for mapping in slot_mappings:
-
-            if not self._slot_is_set_by_non_unique_entity_mappings(
-                mapping, event.key, tracker, domain
-            ):
-                slot_values[event.key] = event.value
+            slot_values[event.key] = event.value
 
         return slot_values
+
+    def _add_dynamic_slots_requested_by_dynamic_forms(
+        self, tracker: "DialogueStateTracker", domain: Domain,
+    ) -> Set[Text]:
+        required_slots = set(self.required_slots(domain))
+        requested_slot = self.get_slot_to_fill(tracker)
+
+        if requested_slot:
+            required_slots.add(requested_slot)
+
+        return required_slots
 
     def _get_slot_extractions(
         self, tracker: "DialogueStateTracker", domain: Domain,
@@ -363,12 +353,16 @@ class FormAction(LoopAction):
         )
         slot_values = {}
 
+        required_slots = self._add_dynamic_slots_requested_by_dynamic_forms(
+            tracker, domain
+        )
+
         for event in events_since_last_user_uttered:
             if not tracker.active_loop:
                 # pre-filled slots were already validated at form activation
                 break
 
-            if event.key not in self.required_slots(domain):
+            if event.key not in required_slots:
                 continue
 
             slot_values = self._update_slot_values(event, tracker, domain, slot_values)
