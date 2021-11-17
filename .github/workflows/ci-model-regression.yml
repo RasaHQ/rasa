@@ -617,6 +617,8 @@ jobs:
           DD_ENV: rasa-regression-tests
           DD_SERVICE: rasa
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.eu
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
