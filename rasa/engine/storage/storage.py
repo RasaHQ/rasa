@@ -7,7 +7,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple, Union, Text, ContextManager, Dict, Any, Optional
+from packaging import version
 
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.exceptions import UnsupportedModelVersionError
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.autoconfig import TrainingType
@@ -44,6 +47,10 @@ class ModelStorage(abc.ABC):
 
         Returns:
             Initialized model storage, and metadata about the model.
+
+        Raises:
+            `UnsupportedModelError` if the loaded meta data indicates that the model
+            has been created with an outdated Rasa version.
         """
         ...
 
@@ -58,6 +65,10 @@ class ModelStorage(abc.ABC):
 
         Returns:
             Metadata about the model.
+
+        Raises:
+            `UnsupportedModelError` if the loaded meta data indicates that the model
+            has been created with an outdated Rasa version.
         """
         ...
 
@@ -127,6 +138,18 @@ class ModelMetadata:
     nlu_target: Text
     language: Optional[Text]
     training_type: TrainingType = TrainingType.BOTH
+
+    def __post_init__(self,) -> None:
+        """Raises an exception when the meta data indicates an unsupported version.
+
+        Raises:
+            `UnsupportedModelException` if the `rasa_open_source_version` is lower
+            than the minimum compatible version
+        """
+        minimum_version = version.parse(MINIMUM_COMPATIBLE_VERSION)
+        model_version = version.parse(self.rasa_open_source_version)
+        if model_version < minimum_version:
+            raise UnsupportedModelVersionError(model_version=model_version)
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serializable version of the `ModelMetadata`."""
