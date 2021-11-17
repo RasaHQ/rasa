@@ -1396,8 +1396,9 @@ entities:
      - outdoor_seating
 ```
 
-For slots that should be filled only in the context of a form, add mapping conditions to specify which form(s) should
-be active. Adding `conditions` is required to preserve the behavior of slot mappings from 2.0, since without them
+For slots that should be filled only in the context of a form, add [mapping conditions](./domain.mdx#mapping-conditions)
+to specify which form(s) should be active, as well as indicate if the `requested_slot` should be the same slot.
+Adding `conditions` is required to preserve the behavior of slot mappings from 2.0, since without them
 the mappings will be applied on each user turn regardless of whether a form is active or not.
 
 ```yaml
