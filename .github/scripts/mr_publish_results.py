@@ -27,6 +27,17 @@ task_mapping = {
 
 
 def transform_to_seconds(duration: str) -> float:
+    """Transform string (with hours, minutes, and seconds) to seconds.
+
+    Args:
+        duration: Examples: '1m27s', '1m27.3s', '27s', '1h27s', '1h1m27s'
+
+    Raises:
+        Exception: If the input is not supported.
+
+    Returns:
+        Duration converted in seconds.
+    """
     h_split = duration.split("h")
     if len(h_split) == 1:
         rest = h_split[0]
