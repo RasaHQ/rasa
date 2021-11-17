@@ -5,7 +5,6 @@ import datetime
 import json
 import os
 
-from datetime import datetime
 from datadog_api_client.v1 import ApiClient, Configuration
 from datadog_api_client.v1.api.metrics_api import MetricsApi
 from datadog_api_client.v1.model.metrics_payload import MetricsPayload
@@ -91,7 +90,7 @@ def send_to_datadog(context):
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
         "total_run_time": os.environ["TOTAL_RUN_TIME"],
     }
-    timestamp = datetime.now().timestamp()
+    timestamp = datetime.datetime.now().timestamp()
 
     series = []
     for metric_name, metric_value in metrics.items():
