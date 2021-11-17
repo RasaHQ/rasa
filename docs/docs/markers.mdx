@@ -162,7 +162,7 @@ Note the following:
 `marker_mood_expressed`, the intents `mood_unhappy` and `mood_unhappy` are both intents listed in the mood bot's `domain.yml` file.
 
 :::note
-You cannot yet reuse an existing marker name in the definition of another marker.
+You cannot reuse an existing marker name in the definition of another marker.
 :::
 
 ## Extracting Markers
@@ -174,9 +174,9 @@ Once you've created your marker definitions in the marker configuration file, an
 you can apply your markers to your trackers by running the following command:
 
 ```bash
-rasa evaluate markers all --config marker.yml extracted_markers.csv
+rasa evaluate markers all --config markers.yml extracted_markers.csv
 ```
-This script will process the marker definitions you provide your in the marker configuration file: `marker.yml`.
+This script will process the marker definitions you provide your in the marker configuration file: `markers.yml`.
 The script will output the extracted markers in the specified output file: `extracted_markers.csv`.
 It will also produce two summary statistics files. The format of the output files are described in the next section.
 
