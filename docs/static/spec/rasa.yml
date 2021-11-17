@@ -1053,7 +1053,7 @@ components:
         model_file:
           type: string
           description: Path to model file
-          example: "/CHANGE-TO-DIR-ON-REMOTE-SERVER/models/20190512.tar.gz"
+          example: "/absolute-path-to-models-directory/models/20190512.tar.gz"
         model_server:
           $ref: '#/components/schemas/EndpointConfig'
         remote_storage:
