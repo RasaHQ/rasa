@@ -616,6 +616,7 @@ jobs:
           BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DD_ENV: rasa-regression-tests
           DD_SERVICE: rasa
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
