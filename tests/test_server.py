@@ -66,7 +66,8 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_TEXT, ENTITY_ATTRIBUTE_VALUE, PREDICTED_CONFIDENCE_KEY,
+    ENTITY_ATTRIBUTE_VALUE,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
@@ -798,7 +799,7 @@ async def test_add_message(rasa_app: SanicASGITestClient,):
     previous_num_events = len(response.json["events"])
 
     unique_text = f"test_add_message_text_{time.time()}"
-    unique_slot_value =  f"test_add_message_entity_{time.time()}"
+    unique_slot_value = f"test_add_message_entity_{time.time()}"
     data = {
         "text": unique_text,
         "sender": "user",  # must be "user"
@@ -806,8 +807,10 @@ async def test_add_message(rasa_app: SanicASGITestClient,):
             "text": unique_text,  # this is what is used for "latest_message"
             "intent": {PREDICTED_CONFIDENCE_KEY: 0.57, INTENT_NAME_KEY: "greet"},
             "entities": [
-                {ENTITY_ATTRIBUTE_TYPE: "name",
-                 ENTITY_ATTRIBUTE_VALUE: unique_slot_value}
+                {
+                    ENTITY_ATTRIBUTE_TYPE: "name",
+                    ENTITY_ATTRIBUTE_VALUE: unique_slot_value,
+                }
             ],
         },
     }
@@ -820,10 +823,11 @@ async def test_add_message(rasa_app: SanicASGITestClient,):
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/tracker")
     updated_events = response.json["events"]
-    assert len(updated_events) == previous_num_events+2
+    assert len(updated_events) == previous_num_events + 2
     assert updated_events[-2]["text"] == unique_text
     assert updated_events[-1]["event"] == "slot"
     assert updated_events[-1]["value"] == unique_slot_value
+
 
 async def test_evaluate_intent(rasa_app: SanicASGITestClient, nlu_data_path: Text):
     nlu_data = rasa.shared.utils.io.read_file(nlu_data_path)
