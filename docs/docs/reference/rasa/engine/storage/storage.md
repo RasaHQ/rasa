@@ -43,6 +43,12 @@ Unpacks a model archive and initializes a `ModelStorage`.
 **Returns**:
 
   Initialized model storage, and metadata about the model.
+  
+
+**Raises**:
+
+  `UnsupportedModelError` if the loaded meta data indicates that the model
+  has been created with an outdated Rasa version.
 
 #### metadata\_from\_archive
 
@@ -61,6 +67,12 @@ Retrieves metadata from archive.
 **Returns**:
 
   Metadata about the model.
+  
+
+**Raises**:
+
+  `UnsupportedModelError` if the loaded meta data indicates that the model
+  has been created with an outdated Rasa version.
 
 #### write\_to
 
@@ -135,6 +147,19 @@ class ModelMetadata()
 ```
 
 Describes a trained model.
+
+#### \_\_post\_init\_\_
+
+```python
+ | __post_init__() -> None
+```
+
+Raises an exception when the meta data indicates an unsupported version.
+
+**Raises**:
+
+  `UnsupportedModelException` if the `rasa_open_source_version` is lower
+  than the minimum compatible version
 
 #### as\_dict
 

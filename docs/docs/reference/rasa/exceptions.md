@@ -2,6 +2,20 @@
 sidebar_label: rasa.exceptions
 title: rasa.exceptions
 ---
+## UnsupportedModelVersionError Objects
+
+```python
+@dataclass
+class UnsupportedModelVersionError(RasaException)
+```
+
+Raised when a model is too old to be loaded.
+
+**Arguments**:
+
+- `model_version` - the used model version that is not supported and triggered
+  this exception
+
 ## ModelNotFound Objects
 
 ```python
@@ -45,6 +59,7 @@ Raised if a python package dependency is needed, but not installed.
 ## PublishingError Objects
 
 ```python
+@dataclass
 class PublishingError(RasaException)
 ```
 

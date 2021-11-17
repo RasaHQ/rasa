@@ -2,26 +2,6 @@
 sidebar_label: rasa.core.exceptions
 title: rasa.core.exceptions
 ---
-## UnsupportedDialogueModelError Objects
-
-```python
-class UnsupportedDialogueModelError(RasaCoreException)
-```
-
-Raised when a model is too old to be loaded.
-
-**Attributes**:
-
-- `message` - explanation of why the model is invalid
-
-#### \_\_init\_\_
-
-```python
- | __init__(message: Text, model_version: Optional[Text] = None) -> None
-```
-
-Initialize message and model_version attributes.
-
 ## AgentNotReady Objects
 
 ```python
