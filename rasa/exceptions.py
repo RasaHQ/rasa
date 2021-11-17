@@ -1,21 +1,21 @@
 from typing import Text
 from packaging import version
+from dataclasses import dataclass
 
 from rasa.shared.exceptions import RasaException
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 
 
+@dataclass
 class UnsupportedModelVersionError(RasaException):
-    """Raised when a model is too old to be loaded."""
+    """Raised when a model is too old to be loaded.
 
-    def __init__(self, model_version: Text) -> None:
-        """Instantiates a new exception indicating an unsupported model version.
+    Args:
+        model_version: the used model version that is not supported and triggered
+            this exception
+    """
 
-        Args:
-          model_version: the used model version that is not supported and triggered
-             this exception
-        """
-        self.model_version = model_version
+    model_version: Text
 
     def __str__(self) -> Text:
         minimum_version = version.parse(MINIMUM_COMPATIBLE_VERSION)
@@ -50,6 +50,7 @@ class MissingDependencyException(RasaException):
     """Raised if a python package dependency is needed, but not installed."""
 
 
+@dataclass
 class PublishingError(RasaException):
     """Raised when publishing of an event fails.
 
@@ -57,9 +58,7 @@ class PublishingError(RasaException):
         timestamp -- Unix timestamp of the event during which publishing fails.
     """
 
-    def __init__(self, timestamp: float) -> None:
-        self.timestamp = timestamp
-        super(PublishingError, self).__init__()
+    timestamp: float
 
     def __str__(self) -> Text:
         """Returns string representation of exception."""

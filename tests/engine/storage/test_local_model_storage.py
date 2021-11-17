@@ -203,12 +203,11 @@ def test_read_unsupported_model(
         "_create_model_metadata",
         lambda *args, **kwargs: outdated_model_meta_data,
     )
-    with freezegun.freeze_time(trained_at):
-        train_model_storage.create_model_package(
-            model_archive_path=archive_path,
-            model_configuration=model_configuration,
-            domain=domain,
-        )
+    train_model_storage.create_model_package(
+        model_archive_path=archive_path,
+        model_configuration=model_configuration,
+        domain=domain,
+    )
 
     # Unpack and inspect packaged model
     load_model_storage_dir = tmp_path_factory.mktemp("load model storage")
