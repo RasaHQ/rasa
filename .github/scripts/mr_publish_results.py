@@ -12,6 +12,8 @@ from datadog_api_client.v1.model.point import Point
 from datadog_api_client.v1.model.series import Series
 
 
+DD_ENV = "rasa-regression-tests"
+DD_SERVICE = "rasa"
 METRIC_PREFIX = "rasa.perf.benchmark."
 IS_EXTERNAL = os.environ["IS_EXTERNAL"]
 DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
@@ -81,6 +83,8 @@ def send_to_datadog(context):
         "github_event": os.environ["GITHUB_EVENT_NAME"],
         "type": os.environ["TYPE"],
         "branch": os.environ["BRANCH"],
+        "env": DD_ENV,
+        "service": DD_SERVICE,
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
 
