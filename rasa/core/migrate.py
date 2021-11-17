@@ -245,7 +245,6 @@ def migrate_domain_format(
     if domain_file.is_dir():
         backup_dir = current_dir / "original_domain"
         backup_dir.mkdir()
-        backup_path = backup_dir / "original_domain.yml"
 
         if out_file.is_file() or not out_file.exists():
             out_file = current_dir / "new_domain"
@@ -275,8 +274,8 @@ def migrate_domain_format(
                 f"domain file. Only domain yaml files can be migrated. "
             )
 
-        backup_path = current_dir / "original_domain.yml"
-        original_domain = _create_back_up(domain_file, backup_path)
+        backup_dir = current_dir / "original_domain.yml"
+        original_domain = _create_back_up(domain_file, backup_dir)
 
     new_forms, updated_slots = _migrate_form_slots(original_domain)
     new_slots = _migrate_auto_fill_and_custom_slots(original_domain, updated_slots)
@@ -286,5 +285,5 @@ def migrate_domain_format(
     rasa.shared.utils.cli.print_success(
         f"Your domain file '{str(domain_file)}' was successfully migrated! "
         f"The migrated version is now '{str(out_file)}'. "
-        f"The original domain file is backed-up as '{str(backup_path)}'."
+        f"The original domain file is backed-up at '{str(backup_dir)}'."
     )
