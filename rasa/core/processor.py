@@ -146,6 +146,14 @@ class MessageProcessor:
     async def run_action_extract_slots(
         self, output_channel: OutputChannel, tracker: DialogueStateTracker,
     ) -> DialogueStateTracker:
+        """Run action to extract slots and update the tracker accordingly.
+
+        Args:
+            output_channel: Output channel associated with the incoming user message.
+            tracker: A tracker representing a conversation state.
+        Returns:
+            the given (updated) tracker
+        """
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
         )
@@ -937,6 +945,11 @@ class MessageProcessor:
         return has_expired
 
     def save_tracker(self, tracker: DialogueStateTracker) -> None:
+        """Save the given tracker to the tracker store.
+
+        Args:
+            tracker: Tracker to be saved.
+        """
         self.tracker_store.save(tracker)
 
     def _predict_next_with_tracker(
