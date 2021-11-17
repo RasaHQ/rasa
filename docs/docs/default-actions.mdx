@@ -245,15 +245,15 @@ extracted slots.
 Note that custom actions used by slot mappings or slot mapping validation should only return events of type `SlotSet` or
 `BotUttered`. Events of any other type are not permitted and will be ignored when updating the tracker.
 
-This default action replaces the slot extraction previously executed by `FormAction`. If you wish to set a slot based on
-information extracted from intents that trigger forms, you must explicitly specify a mapping that does not
-contain the `conditions` key. A slot mapping with `conditions` applies only once the specified form is active.
-`action_extract_slots` runs directly after each user message, and thus before activation of the form.
+The default action `action_extract_slots` replaces the slot extraction previously executed by `FormAction`.
+If you wish to set a slot based on information extracted from intents that trigger forms, you must explicitly specify a
+mapping that does not contain the `conditions` key. A slot mapping with `conditions` applies only once the specified form is active.
+`action_extract_slots` runs directly after each user message, and thus before the activation of the form.
 Therefore a mapping that should apply to user messages that trigger a form must not specify `conditions`, or the form
 will re-ask for the slot once it is activated.
 
 :::note
-If `action_default_fallback` is the next action predicted and executed by the assistant, this will result in an
+If `action_default_fallback` is the next action predicted and executed by the assistant, this will result in a
 `UserUtteranceReverted` event which will unset the slots previously filled in the last user turn.
 
 :::

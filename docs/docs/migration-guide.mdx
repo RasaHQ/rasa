@@ -1260,7 +1260,8 @@ components were deprecated in Rasa 2.x and have been removed in Rasa 3.0. See th
 
 As of version 3.0, there is a single explicit mechanism for slot filling enabled by defining slot mappings for each slot
 in the `slots` section of the domain file. This approach keeps slots up to date over the course of a conversation, and
-removes duplicated effort in mapping the same slots in multiple forms.
+removes duplicated effort in mapping the same slots in multiple forms. It is still possible to fill slots from arbitrary
+custom actions and not update them on every turn of the conversation if that behavior is desired.
 
 This new mechanism replaces the implicit slot setting via auto-fill of slots with entities of the same name.
 The `auto_fill` key in the domain is no longer available, as well as the `auto_fill` parameter in the constructor of
@@ -1271,7 +1272,8 @@ action [`action_extract_slots`](./default-actions.mdx#action_extract_slots). Thi
 automatically after each user turn. Like `action_listen`, it should not be included in stories.
 
 Each slot in the `slots` section must include the `mappings` key. The same keys used for predefined mappings in 2.0 are
-available in 3.0. Additionally, you can define slots with custom mappings implemented in a custom action, for example:
+available in 3.0. Additionally, you can define slots with custom mappings implemented in a custom action which will be
+run on every user turn, for example:
 
 ```yaml
 slots:
@@ -1282,8 +1284,23 @@ slots:
       action: action_verify_customer_status
 ```
 
-You can also use [slot validation actions](./slot-validation-actions.mdx) to either validate slots with predefined
+You can use [slot validation actions](./slot-validation-actions.mdx) to either validate slots with predefined
 mappings, or to both extract and validate slots with custom mappings.
+
+Slots which will be filled by arbitrary custom actions in the course of the conversation, and which should not be updated
+on every user turn, should be listed with mappings of type `custom` and no action. For example:
+
+```yaml
+slots:
+  handoff_completed:
+    type: bool
+    initial_value: false
+    mappings:
+    - type: custom
+```
+
+This slot's value will only change when a custom action is predicted that sets it. This mapping maintains the behavior
+from 2.x for a slot which was not filled by an entity or by slot mappings in a form.
 
 :::note
 The `required_slots` of a form used to be a list of slot mappings.

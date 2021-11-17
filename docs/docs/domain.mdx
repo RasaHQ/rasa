@@ -641,6 +641,19 @@ slots:
       action: action_calculate_day_of_week
 ```
 
+You can also use the `custom` slot mapping to list slots that will be filled by arbitrary custom actions in the course
+of a conversation, by listing the type and no specific action. For example:
+
+```yaml
+slots:
+  handoff_completed:
+    type: boolean
+    mappings:
+    - type: custom
+```
+
+This slot will not be updated on every user turn, but only once a custom action that returns a `SlotSet` event for it is predicted.
+
 ### Initial slot values
 
 You can provide an initial value for a slot in your domain file:

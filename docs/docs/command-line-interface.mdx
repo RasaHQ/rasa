@@ -382,8 +382,9 @@ Note that the slots in the migrated domain will contain [mapping conditions](./d
 slots are part of a form's `required_slots`.
 
 :::caution
-Exceptions will be raised and the migration process terminated if invalid domain files are provided, slots or forms
-are missing from your original files or if the slots or forms sections are spread across multiple domain files.
+Exceptions will be raised and the migration process terminated if invalid domain files are provided or if they are
+already in the 3.0 format, if slots or forms are missing from your original files or if the slots or forms sections
+are spread across multiple domain files.
 This is done to avoid duplication of migrated sections in your domain files.
 Please make sure all your slots' or forms' definitions are grouped into a single file.
 

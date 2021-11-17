@@ -25,7 +25,7 @@ With this option, you do not need to specify the `action` key in the [custom slo
 
 Note that you do not need to implement the `name` method in the custom action extending `ValidationAction`, since this
 is already provided: `action_validate_slot_mappings`. However this name must be added to the domain `actions` list.
-If you override the `name` method, the custom validation action will not run because the original name has been hardcoded
+If you override the `name` method, the custom validation action will not run because the original name is hardcoded
 in the call that the default action `action_extract_slots` makes to the action server.
 
 :::note
@@ -94,10 +94,10 @@ class ValidateCustomSlotMappings(ValidationAction):
 
 ## `FormValidationAction` class
 
+A `FormValidationAction` custom action will only run if the form it specifies in its name is activated.
 If certain custom slot mappings should only be extracted and / or validated within the context of a form,
-make sure your custom action inherits from `FormValidationAction` rather than from `ValidationAction`.
-It is not required to use mapping conditions for custom slot mappings defined in a custom action extending
-`FormValidationAction`.
-Note that this custom action will only run if the form is activated.
+the custom action should inherit from `FormValidationAction` rather than from `ValidationAction`.
+Since `FormValidationAction` runs on every user turn only as long as the form is active, it is not required to use
+mapping conditions for custom slot mappings defined in a custom action extending `FormValidationAction`.
 
 To learn more about how to implement this class, see Forms [Advanced Usage](./forms.mdx#advanced-usage).
