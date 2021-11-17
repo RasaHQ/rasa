@@ -735,8 +735,10 @@ call, or to start the conversation with a bot message. The docs on
 ## Config
 
 The `config` key in the domain file maintains the `store_entities_as_slots` parameter.
-When an entity is recognized by the NLU model and it matches the `from_entity` slot mapping, `store_entities_as_slots`
-defines whether the entity value should be placed in that slot.
+This parameter is used only in the context of reading stories and turning them into trackers. If the parameter is set
+to `True`, this will result in slots being implicitly set from entities if applicable entities are present in the story.
+When an entity matches the `from_entity` slot mapping, `store_entities_as_slots` defines whether the entity value should
+be placed in that slot. Therefore, this parameter skips adding an explicit `slot_was_set` step manually in the story.
 By default, this behaviour is switched on.
 
 You can turn off this functionality by setting the `store_entities_as_slots` parameter to `false`:
