@@ -21,12 +21,15 @@ Note that the action name must be listed in the domain `actions` section too.
 
 You can extend the `ValidationAction` class in the Rasa SDK to define custom extraction and / or validation of slots that
 can be set or updated outside of a form context.
-With this option, you do not need to specify the `action` key in the [custom slot mapping](./domain.mdx#custom-slot-mappings).
 
 Note that you do not need to implement the `name` method in the custom action extending `ValidationAction`, since this
 is already provided: `action_validate_slot_mappings`. However this name must be added to the domain `actions` list.
 If you override the `name` method, the custom validation action will not run because the original name is hardcoded
 in the call that the default action `action_extract_slots` makes to the action server.
+
+With this option, you do not need to specify the `action` key in the [custom slot mapping](./domain.mdx#custom-slot-mappings),
+since the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
+automatically if present in the `actions` section of the domain.
 
 :::note
 Slots mapped to a form in the mapping `conditions` will be ignored by `ValidationAction` unless you override
