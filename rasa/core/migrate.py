@@ -283,5 +283,7 @@ def migrate_domain_format(
     _write_final_domain(domain_file, new_forms, new_slots, out_file)
 
     rasa.shared.utils.cli.print_success(
-        f"Your domain was successfully migrated! It's location is {out_file}."
+        f"Your domain file '{str(domain_file)}' was successfully migrated! "
+        f"The migrated version is now '{str(out_file)}'. "
+        f"The original domain file is backed-up as 'original_domain.yml'."
     )
