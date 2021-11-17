@@ -345,10 +345,10 @@ to extract customs slots:
 
 1. Define a method `extract_<slot_name>` for every slot that should be mapped in a
    custom way.
-2. Make sure that in the domain file you list for your form only those slots that use 
-predefined mappings.
-3. Override `required_slots` to add all slots with custom mappings to the list of slots
-   the form should request.
+2. In your domain file, for your form's `required_slots`, list all required slots, with both predefined and custom mappings.
+
+In addition, you can override the `required_slots` method to add dynamically requested slots: you can read more in the
+[Dynamic Form Behavior](./forms.mdx#dynamic-form-behavior) section.
 
 :::note
 If you have added a slot with a custom mapping in the `slots` section of the domain file which you only
@@ -373,16 +373,6 @@ from rasa_sdk.forms import FormValidationAction
 class ValidateRestaurantForm(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
-
-    async def required_slots(
-        self,
-        domain_slots: List[Text],
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: "DomainDict",
-    ) -> List[Text]:
-        required_slots = domain_slots + ["outdoor_seating"]
-        return required_slots
 
     async def extract_outdoor_seating(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
