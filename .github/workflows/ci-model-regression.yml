@@ -544,9 +544,9 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
-      - name: Install ddtrace and datadog
+      - name: Install datadog-api-client
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U ddtrace datadog
+        run: poetry run pip install -U datadog-api-client
 
       - name: Run test
         id: run_test
