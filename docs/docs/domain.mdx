@@ -577,10 +577,6 @@ if a form is activated by a user message with intent `intent_name`.
 The slot mapping will not apply if the intent of the message is
 `excluded_intent`.
 
-A slot with `from_trigger_intent` mapping must always be listed in the form's `required_slots`.
-You can verify if your domain is compliant with this requirement by running
-CLI command [`rasa data validate`](./command-line-interface.mdx#rasa-data-validate).
-
 ```yaml-rasa
 slots:
   slot_name:
@@ -590,12 +586,6 @@ slots:
       value: my_value
       intent: intent_name
       not_intent: excluded_intent
-      conditions:
-      - active_loop: your_form
-forms:
-  your_form:
-    required_slots:
-    - slot_name
 ```
 
 ### Mapping Conditions
