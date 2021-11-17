@@ -151,6 +151,7 @@ class MessageProcessor:
         Args:
             output_channel: Output channel associated with the incoming user message.
             tracker: A tracker representing a conversation state.
+
         Returns:
             the given (updated) tracker
         """
