@@ -144,53 +144,10 @@ write stories or rules for this case.
 As of 3.0, [slot mappings](./domain.mdx#slot-mappings) are defined in the `slots` section of the domain.
 This change allows the same slot mapping to be reused across multiple forms, removing any unnecessary duplication.
 Please follow the [migration guide](./migration-guide.mdx#slot-mappings) to update your assistant.
+
+Note specifically the role of [Mapping Conditions](./domain.mdx#mapping-conditions) and the
+[unique entity mapping](./domain.mdx#unique-from-entity-mapping-matching) constraint.
 :::
-
-#### Unique entity mapping matching
-
-In the `from_entity` slot mapping, when the attributes of an extracted entity (i.e, entity name, role, group) uniquely map
-onto a slot, the slot will be filled even if this slot wasn't requested by the form.
-The extracted entity will be ignored if the mapping is not unique.
-
-```yaml-rasa
-slots:
-  departure_city:
-    type: text
-    mappings:
-    - type: from_entity
-      entity: city
-      role: from
-    - type: from_entity
-      entity: city
-  arrival_city:
-    type: text
-    mappings:
-    - type: from_entity
-      entity: city
-      role: to
-    - type: from_entity
-      entity: city
-  arrival_date:
-    type: any
-    mappings:
-    - type: from_entity
-      entity: date
-forms:
-  your_form:
-    required_slots:
-    - departure_city
-    - arrival_city
-    - arrival_date
-```
-
-In the example above, an entity `date` uniquely sets the slot `arrival_date`,
-an entity `city` with a role `from` uniquely sets the slot `departure_city` and
-an entity `city` with a role `to` uniquely sets the slot `arrival_city`,
-therefore they can be used to fit corresponding slots
-even if these slots were not requested.
-However, entity `city` without a role can fill both `departure_city` and `arrival_city`
-slots, depending which one is requested, so if an entity `city` is extracted when
-slot `arrival_date` is requested, it'll be ignored by the form.
 
 ### Writing Stories / Rules for Unhappy Form Paths
 
