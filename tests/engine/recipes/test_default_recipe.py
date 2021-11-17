@@ -193,7 +193,7 @@ def test_tracker_generator_parameter_interpolation():
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
-        config, {"augmentation": augmentation, "debug_plots": debug_plots},
+        config, {"augmentation_factor": augmentation, "debug_plots": debug_plots},
     )
 
     node = model_config.train_schema.nodes["training_tracker_provider"]
