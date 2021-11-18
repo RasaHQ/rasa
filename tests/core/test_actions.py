@@ -1355,7 +1355,7 @@ async def test_action_extract_slots_with_list_slot(
         textwrap.dedent(
             f"""
     version: "3.0"
-    
+
     entities:
     - topping
 
@@ -1751,15 +1751,15 @@ async def test_extract_other_list_slot_from_entity(
         textwrap.dedent(
             f"""
     version: "3.0"
-    
+
     entities:
     - topping
     - some_slot
-    
+
     intents:
     - some_intent
     - greeted
-    
+
     slots:
       {slot_name}:
         type: list
@@ -2341,8 +2341,9 @@ async def test_action_extract_slots_with_not_existing_entity():
 
     with pytest.warns(
         None,
-        match="Slot 'location' uses a `from_entity` mapping for a non-existent entity 'city2'. "
-              "Skipping slot extraction because of invalid mapping.",
+        match="Slot 'location' uses a `from_entity` mapping for "
+        "a non-existent entity 'city2'. "
+        "Skipping slot extraction because of invalid mapping.",
     ):
         events = await action_extract_slots.run(
             CollectingOutputChannel(),
@@ -2379,8 +2380,9 @@ async def test_action_extract_slots_with_not_existing_intent():
 
     with pytest.warns(
         UserWarning,
-        match=r"Slot 'location' uses a 'from_intent' mapping for a non-existent intent 'affirm'. "
-              r"Skipping slot extraction because of invalid mapping.",
+        match=r"Slot 'location' uses a 'from_intent' mapping for "
+        r"a non-existent intent 'affirm'. "
+        r"Skipping slot extraction because of invalid mapping.",
     ):
         events = await action_extract_slots.run(
             CollectingOutputChannel(),
