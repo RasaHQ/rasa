@@ -74,6 +74,25 @@ Checks whether slot should be filled by an entity in the input or not.
 
   True, if slot should be filled, false otherwise.
 
+#### check\_mapping\_validity
+
+```python
+ | @staticmethod
+ | check_mapping_validity(slot_name: Text, mapping: Dict[Text, Any], domain: "Domain") -> bool
+```
+
+Checks the mapping for validity.
+
+**Arguments**:
+
+- `mapping` - Slot mapping.
+- `domain` - The domain to check against.
+  
+
+**Returns**:
+
+  True, if intent and entity specified in a mapping exist in domain.
+
 #### validate\_slot\_mappings
 
 ```python
