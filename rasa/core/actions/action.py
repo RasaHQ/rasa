@@ -1154,6 +1154,9 @@ class ActionExtractSlots(Action):
 
         for slot in user_slots:
             for mapping in slot.mappings:
+                if not _check_if_specified_in_domain(mapping, domain):
+                    continue
+
                 intent_is_desired = SlotMapping.intent_is_desired(
                     mapping, tracker, domain
                 )
@@ -1204,6 +1207,16 @@ class ActionExtractSlots(Action):
         )
 
         return validated_events
+
+
+def _check_if_specified_in_domain(mapping: Dict[Text, Any], domain: "Domain"):
+    if mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_ENTITY) and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities:
+        return False
+
+    if mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT) and mapping.get("intent") not in domain.intents:
+        return False
+
+    return True
 
 
 def extract_slot_value_from_predefined_mapping(

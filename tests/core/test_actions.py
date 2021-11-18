@@ -2298,6 +2298,72 @@ async def test_action_extract_slots_with_empty_conditions():
     assert events == [SlotSet("location", "Berlin")]
 
 
+async def test_action_extract_slots_with_not_existing_entity():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.0"
+
+        entities:
+        - city
+
+        slots:
+          location:
+            type: float
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: city2
+              conditions: []
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi", entities=[{"entity": "city", "value": "Berlin"}])
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [1]
+
+
+async def test_action_extract_slots_with_not_existing_intent():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.0"
+
+        intents:
+        - greet
+
+        slots:
+          location:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_intent
+              intent: affirm
+              value: some_value
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi", entities=[{"entity": "city", "value": "Berlin"}])
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [1]
+
+
 async def test_action_extract_slots_with_none_value_predefined_mapping():
     domain_yaml = textwrap.dedent(
         """
