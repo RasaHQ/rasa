@@ -36,7 +36,9 @@ class SchemaNode:
         fn: The name of the function which should be called on the instantiated
             component when the graph is executed. The parameters from `needs` are
             filled from the parent nodes.
-        config: The configuration for this graph node.
+        config: The user's configuration for this graph node. This configuration
+            does not need to be specify all possible parameters; the default values
+            for missing parameters will be filled in later.
         eager: If `eager` then the component is instantiated before the graph is run.
             Otherwise it's instantiated as the graph runs (lazily). Usually we always
             instantiated lazily during training and eagerly during inference (to
