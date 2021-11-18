@@ -1154,7 +1154,8 @@ class ActionExtractSlots(Action):
 
         for slot in user_slots:
             for mapping in slot.mappings:
-                _check_mapping_validity(mapping, domain)
+                if not _check_mapping_validity(mapping, domain):
+                    continue
 
                 intent_is_desired = SlotMapping.intent_is_desired(
                     mapping, tracker, domain

@@ -1159,6 +1159,7 @@ async def test_action_extract_slots_predefined_mappings(
             - deny
             entities:
             - city
+            - name
             slots:
               location:
                 type: text
@@ -1298,6 +1299,8 @@ async def test_action_extract_slots_when_mapping_applies(
 
     domain = Domain.from_dict(
         {
+            "intents": ["greet"],
+            "entities": ["some_slot"],
             "slots": {entity_name: {"type": "text", "mappings": [slot_mapping]}},
             "forms": {form_name: {REQUIRED_SLOTS_KEY: [entity_name]}},
         }
@@ -1352,6 +1355,9 @@ async def test_action_extract_slots_with_list_slot(
         textwrap.dedent(
             f"""
     version: "3.0"
+    
+    entities:
+    - topping
 
     slots:
       {slot_name}:
@@ -1692,6 +1698,7 @@ async def test_action_extract_slots_from_entity(
     )
     domain = Domain.from_dict(
         {
+            "entities": ["some_entity"],
             "slots": {"some_slot": {"type": "any", "mappings": [mapping],}},
             "forms": {form_name: {REQUIRED_SLOTS_KEY: ["some_slot"]}},
         }
@@ -1744,7 +1751,15 @@ async def test_extract_other_list_slot_from_entity(
         textwrap.dedent(
             f"""
     version: "3.0"
-
+    
+    entities:
+    - topping
+    - some_slot
+    
+    intents:
+    - some_intent
+    - greeted
+    
     slots:
       {slot_name}:
         type: list
@@ -2316,7 +2331,6 @@ async def test_action_extract_slots_with_not_existing_entity():
             mappings:
             - type: from_entity
               entity: city2
-              conditions: []
         """
     )
     domain = Domain.from_yaml(domain_yaml)

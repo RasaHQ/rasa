@@ -472,6 +472,14 @@ async def test_validate_slots(
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
 
     domain = f"""
+    version: "3.0"
+    
+    entities:
+    - num_tables
+    - some_entity
+    - some_other_entity
+    - some_slot
+    
     slots:
       {slot_name}:
         type: any
@@ -482,15 +490,17 @@ async def test_validate_slots(
         mappings:
         - type: from_entity
           entity: num_tables
+          
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
             - {slot_name}
             - num_tables
+            
     actions:
     - validate_{form_name}
     """
-    domain = Domain.from_yaml(domain)
+    domain = Domain.from_yaml(textwrap.dedent(domain))
     action_extract_slots = ActionExtractSlots(action_endpoint=None)
 
     slot_events = await action_extract_slots.run(
