@@ -1,15 +1,19 @@
+import uuid
 from datetime import datetime
 from pathlib import Path
+from tarsafe import TarSafe
 
 import freezegun
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 
 import rasa.shared.utils.io
 from rasa.engine.graph import SchemaNode, GraphSchema, GraphModelConfiguration
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.storage.resource import Resource
+from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.autoconfig import TrainingType
 from tests.engine.graph_components_test_classes import PersistableTestComponent
@@ -52,6 +56,31 @@ def test_read_from_not_existing_resource(default_model_storage: ModelStorage):
     with pytest.raises(ValueError):
         with default_model_storage.read_from(Resource("a different resource")) as _:
             pass
+
+
+def test_read_from_rasa2_resource(tmp_path_factory: TempPathFactory):
+    # we only search for the fingerprint file - nlu and core folder do not even need
+    # to exist
+    model_dir = tmp_path_factory.mktemp("model_dir")
+    version = "2.8.5"
+    rasa.shared.utils.io.dump_obj_as_json_to_file(
+        model_dir / "fingerprint.json",
+        {"version": version, "irrelevant-other-key": "bla"},
+    )
+
+    model_zips = tmp_path_factory.mktemp("model_zips")
+    resource_name = "model"
+    with TarSafe.open(model_zips / resource_name, "w:gz") as tar:
+        tar.add(model_dir, arcname="")
+
+    storage_dir = tmp_path_factory.mktemp("storage_dir")
+    storage = LocalModelStorage(storage_path=storage_dir)
+    with pytest.raises(UnsupportedModelVersionError, match=f".*{version}.*"):
+        storage.from_model_archive(
+            storage_path=storage_dir, model_archive_path=model_zips / resource_name
+        )
+    with pytest.raises(UnsupportedModelVersionError, match=f".*{version}.*"):
+        storage.metadata_from_archive(model_archive_path=model_zips / resource_name)
 
 
 def test_create_model_package(
@@ -134,6 +163,65 @@ def test_create_model_package(
 
     persisted_resources = load_model_storage_dir.glob("*")
     assert list(persisted_resources) == [Path(load_model_storage_dir, "resource1")]
+
+
+def test_read_unsupported_model(
+    monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory, domain: Domain,
+):
+    train_model_storage = LocalModelStorage(
+        tmp_path_factory.mktemp("train model storage")
+    )
+    graph_schema = GraphSchema(nodes={})
+
+    persisted_model_dir = tmp_path_factory.mktemp("persisted models")
+    archive_path = persisted_model_dir / "my-model.tar.gz"
+
+    # Create outdated model meta data
+    trained_at = datetime.utcnow()
+    model_configuration = GraphModelConfiguration(
+        graph_schema, graph_schema, TrainingType.BOTH, None, None, "nlu"
+    )
+    outdated_model_meta_data = ModelMetadata(
+        trained_at=trained_at,
+        rasa_open_source_version=rasa.__version__,  # overwrite later to avoid error
+        model_id=uuid.uuid4().hex,
+        domain=domain,
+        train_schema=model_configuration.train_schema,
+        predict_schema=model_configuration.predict_schema,
+        training_type=model_configuration.training_type,
+        project_fingerprint=rasa.model.project_fingerprint(),
+        language=model_configuration.language,
+        core_target=model_configuration.core_target,
+        nlu_target=model_configuration.nlu_target,
+    )
+    old_version = "0.0.1"
+    outdated_model_meta_data.rasa_open_source_version = old_version
+
+    # Package model - and inject the outdated model meta data
+    monkeypatch.setattr(
+        LocalModelStorage,
+        "_create_model_metadata",
+        lambda *args, **kwargs: outdated_model_meta_data,
+    )
+    train_model_storage.create_model_package(
+        model_archive_path=archive_path,
+        model_configuration=model_configuration,
+        domain=domain,
+    )
+
+    # Unpack and inspect packaged model
+    load_model_storage_dir = tmp_path_factory.mktemp("load model storage")
+
+    expected_message = (
+        f"The model version is trained using Rasa Open Source "
+        f"{old_version} and is not compatible with your current "
+        f"installation .*"
+    )
+    with pytest.raises(UnsupportedModelVersionError, match=expected_message):
+        LocalModelStorage.metadata_from_archive(archive_path)
+
+    with pytest.raises(UnsupportedModelVersionError, match=expected_message):
+        LocalModelStorage.from_model_archive(load_model_storage_dir, archive_path)
 
 
 def test_create_package_with_non_existing_parent(tmp_path: Path):

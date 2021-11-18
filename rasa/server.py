@@ -998,7 +998,14 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.log_message(user_message)
+                # cf. processor.handle_message (ignoring prediction loop run)
+                tracker = await app.agent.processor.log_message(
+                    user_message, should_save_tracker=False
+                )
+                tracker = await app.agent.processor.run_action_extract_slots(
+                    user_message.output_channel, tracker
+                )
+                app.agent.processor.save_tracker(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
