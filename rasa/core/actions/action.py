@@ -1211,9 +1211,15 @@ class ActionExtractSlots(Action):
 
 def _check_if_specified_in_domain(mapping: Dict[Text, Any], domain: "Domain"):
     if mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_ENTITY) and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities:
+        rasa.shared.utils.io.raise_warning(
+            f"Slot uses a 'from_entity' mapping for a non-existent entity '{mapping.get(ENTITY_ATTRIBUTE_TYPE)}'"
+        )
         return False
 
     if mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT) and mapping.get("intent") not in domain.intents:
+        rasa.shared.utils.io.raise_warning(
+            f"Slot uses a 'from_intent' mapping for a non-existent intent '{mapping.get('intent')}'"
+        )
         return False
 
     return True

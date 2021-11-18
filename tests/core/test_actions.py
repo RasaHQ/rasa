@@ -2322,13 +2322,17 @@ async def test_action_extract_slots_with_not_existing_entity():
 
     action_extract_slots = ActionExtractSlots(None)
 
-    events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
-    assert events == [1]
+    with pytest.warns(
+        None,
+        match="Slot uses a `from_entity` mapping for a non-existent entity 'city2'",
+    ):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+    assert events == []
 
 
 async def test_action_extract_slots_with_not_existing_intent():
@@ -2355,13 +2359,17 @@ async def test_action_extract_slots_with_not_existing_intent():
 
     action_extract_slots = ActionExtractSlots(None)
 
-    events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
-    assert events == [1]
+    with pytest.warns(
+        UserWarning,
+        match=r"Slot uses a 'from_intent' mapping for a non-existent intent 'affirm'",
+    ):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+    assert events == []
 
 
 async def test_action_extract_slots_with_none_value_predefined_mapping():
