@@ -153,7 +153,7 @@ def add_augmentation_param(
     parser.add_argument(
         "--augmentation",
         type=int,
-        default=TrainingTrackerProvider.get_default_config()['augmentation'],
+        default=TrainingTrackerProvider.get_default_config()['augmentation_factor'],
         help="How much data augmentation to use during training.",
     )
 
