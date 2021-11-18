@@ -1208,7 +1208,8 @@ class ActionExtractSlots(Action):
         return validated_events
 
 
-def _check_mapping_validity(mapping: Dict[Text, Any], domain: "Domain"):
+def _check_mapping_validity(mapping: Dict[Text, Any], domain: "Domain") -> bool:
+    """Checks if intent and entity specified in a mapping exist in domain."""
     if (
         mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_ENTITY)
         and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities
