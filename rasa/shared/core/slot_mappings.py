@@ -185,7 +185,8 @@ class SlotMapping(Enum):
             and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities
         ):
             rasa.shared.utils.io.raise_warning(
-                f"Slot uses a 'from_entity' mapping for a non-existent entity '{mapping.get(ENTITY_ATTRIBUTE_TYPE)}'"
+                f"Slot uses a 'from_entity' mapping for a non-existent entity "
+                f"'{mapping.get(ENTITY_ATTRIBUTE_TYPE)}'. Skipping slot extraction because of invalid mapping."
             )
             return False
 
@@ -194,7 +195,8 @@ class SlotMapping(Enum):
             and mapping.get("intent") not in domain.intents
         ):
             rasa.shared.utils.io.raise_warning(
-                f"Slot uses a 'from_intent' mapping for a non-existent intent '{mapping.get('intent')}'"
+                f"Slot uses a 'from_intent' mapping for a non-existent intent "
+                f"'{mapping.get('intent')}'. Skipping slot extraction because of invalid mapping."
             )
             return False
 
