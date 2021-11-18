@@ -1194,12 +1194,14 @@ async def test_action_extract_slots_predefined_mappings(
 
     action_extract_slots = ActionExtractSlots(action_endpoint=None)
     tracker = DialogueStateTracker.from_events("sender", evts=[user])
-    events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
+
+    with pytest.warns(None):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
 
     assert events == [SlotSet(slot_name, slot_value)]
 
@@ -2289,12 +2291,13 @@ async def test_action_extract_slots_with_empty_conditions():
 
     action_extract_slots = ActionExtractSlots(None)
 
-    events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
+    with pytest.warns(None):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
     assert events == [SlotSet("location", "Berlin")]
 
 
