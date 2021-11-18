@@ -167,6 +167,39 @@ class SlotMapping(Enum):
 
         return slot_fulfils_entity_mapping
 
+    @staticmethod
+    def check_mapping_validity(mapping: Dict[Text, Any], domain: "Domain") -> bool:
+        """Checks the mapping for validity.
+
+        Args:
+            mapping: Slot mapping.
+            domain: The domain to check against.
+
+        Returns:
+            True, if intent and entity specified in a mapping exist in domain.
+        """
+        from rasa.shared.core.constants import MAPPING_TYPE
+
+        if (
+            mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_ENTITY)
+            and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities
+        ):
+            rasa.shared.utils.io.raise_warning(
+                f"Slot uses a 'from_entity' mapping for a non-existent entity '{mapping.get(ENTITY_ATTRIBUTE_TYPE)}'"
+            )
+            return False
+
+        if (
+            mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT)
+            and mapping.get("intent") not in domain.intents
+        ):
+            rasa.shared.utils.io.raise_warning(
+                f"Slot uses a 'from_intent' mapping for a non-existent intent '{mapping.get('intent')}'"
+            )
+            return False
+
+        return True
+
 
 def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     """Raises InvalidDomain exception if slot mappings are invalid."""

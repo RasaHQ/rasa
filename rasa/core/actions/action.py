@@ -1154,7 +1154,7 @@ class ActionExtractSlots(Action):
 
         for slot in user_slots:
             for mapping in slot.mappings:
-                if not _check_mapping_validity(mapping, domain):
+                if not SlotMapping.check_mapping_validity(mapping, domain):
                     continue
 
                 intent_is_desired = SlotMapping.intent_is_desired(
@@ -1207,29 +1207,6 @@ class ActionExtractSlots(Action):
         )
 
         return validated_events
-
-
-def _check_mapping_validity(mapping: Dict[Text, Any], domain: "Domain") -> bool:
-    """Checks if intent and entity specified in a mapping exist in domain."""
-    if (
-        mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_ENTITY)
-        and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities
-    ):
-        rasa.shared.utils.io.raise_warning(
-            f"Slot uses a 'from_entity' mapping for a non-existent entity '{mapping.get(ENTITY_ATTRIBUTE_TYPE)}'"
-        )
-        return False
-
-    if (
-        mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT)
-        and mapping.get("intent") not in domain.intents
-    ):
-        rasa.shared.utils.io.raise_warning(
-            f"Slot uses a 'from_intent' mapping for a non-existent intent '{mapping.get('intent')}'"
-        )
-        return False
-
-    return True
 
 
 def extract_slot_value_from_predefined_mapping(
