@@ -151,7 +151,6 @@ def add_augmentation_param(
     parser.add_argument(
         "--augmentation",
         type=int,
-        default=50,
         help="How much data augmentation to use during training.",
     )
 
@@ -162,7 +161,6 @@ def add_debug_plots_param(
     """Specifies if conversation flow should be visualized."""
     parser.add_argument(
         "--debug-plots",
-        default=False,
         action="store_true",
         help="If enabled, will create plots showing checkpoints "
         "and their connections between story blocks in a  "
