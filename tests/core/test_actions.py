@@ -1159,6 +1159,7 @@ async def test_action_extract_slots_predefined_mappings(
             - deny
             entities:
             - city
+            - name
             slots:
               location:
                 type: text
@@ -1194,12 +1195,14 @@ async def test_action_extract_slots_predefined_mappings(
 
     action_extract_slots = ActionExtractSlots(action_endpoint=None)
     tracker = DialogueStateTracker.from_events("sender", evts=[user])
-    events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
+
+    with pytest.warns(None):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
 
     assert events == [SlotSet(slot_name, slot_value)]
 
@@ -1296,6 +1299,8 @@ async def test_action_extract_slots_when_mapping_applies(
 
     domain = Domain.from_dict(
         {
+            "intents": ["greet"],
+            "entities": ["some_slot"],
             "slots": {entity_name: {"type": "text", "mappings": [slot_mapping]}},
             "forms": {form_name: {REQUIRED_SLOTS_KEY: [entity_name]}},
         }
@@ -1350,6 +1355,9 @@ async def test_action_extract_slots_with_list_slot(
         textwrap.dedent(
             f"""
     version: "3.0"
+
+    entities:
+    - topping
 
     slots:
       {slot_name}:
@@ -1690,6 +1698,7 @@ async def test_action_extract_slots_from_entity(
     )
     domain = Domain.from_dict(
         {
+            "entities": ["some_entity"],
             "slots": {"some_slot": {"type": "any", "mappings": [mapping],}},
             "forms": {form_name: {REQUIRED_SLOTS_KEY: ["some_slot"]}},
         }
@@ -1742,6 +1751,14 @@ async def test_extract_other_list_slot_from_entity(
         textwrap.dedent(
             f"""
     version: "3.0"
+
+    entities:
+    - topping
+    - some_slot
+
+    intents:
+    - some_intent
+    - greeted
 
     slots:
       {slot_name}:
@@ -2289,13 +2306,91 @@ async def test_action_extract_slots_with_empty_conditions():
 
     action_extract_slots = ActionExtractSlots(None)
 
-    events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
+    with pytest.warns(None):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
     assert events == [SlotSet("location", "Berlin")]
+
+
+async def test_action_extract_slots_with_not_existing_entity():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.0"
+
+        entities:
+        - city
+
+        slots:
+          location:
+            type: float
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: city2
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi", entities=[{"entity": "city", "value": "Berlin"}])
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    with pytest.warns(
+        None,
+        match="Slot 'location' uses a `from_entity` mapping for "
+        "a non-existent entity 'city2'. "
+        "Skipping slot extraction because of invalid mapping.",
+    ):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+    assert events == []
+
+
+async def test_action_extract_slots_with_not_existing_intent():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.0"
+
+        intents:
+        - greet
+
+        slots:
+          location:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_intent
+              intent: affirm
+              value: some_value
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi", entities=[{"entity": "city", "value": "Berlin"}])
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    with pytest.warns(
+        UserWarning,
+        match=r"Slot 'location' uses a 'from_intent' mapping for "
+        r"a non-existent intent 'affirm'. "
+        r"Skipping slot extraction because of invalid mapping.",
+    ):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+    assert events == []
 
 
 async def test_action_extract_slots_with_none_value_predefined_mapping():
