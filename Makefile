@@ -125,7 +125,7 @@ endif
 	rm data/MITIE*.bz2
 
 prepare-transformers:
-	if [ $(OS) = "Windows_NT" ]; then HOME_DIR=%HOMEDRIVE%%HOMEPATH%; else HOME_DIR=$(HOME); fi;\
+	if [ $(OS) = "Windows_NT" ]; then HOME_DIR=$(HOMEDRIVE)/$(HOMEPATH); else HOME_DIR=$(HOME); fi;\
 	CACHE_DIR=$$HOME_DIR/.cache/torch/transformers;\
 	mkdir -p "$$CACHE_DIR";\
 	i=0;\
