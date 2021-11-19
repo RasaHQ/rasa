@@ -308,7 +308,10 @@ class FormAction(LoopAction):
     def _get_events_since_last_user_uttered(
         tracker: "DialogueStateTracker",
     ) -> List[SlotSet]:
+        # Why would latest message not be in events?
         if tracker.latest_message in tracker.events:
+            # This will find first event with same text (since entities and intents
+            # will likely be interpreted to be same for same text)
             index = tracker.events.index(tracker.latest_message)
         else:
             index = 0
