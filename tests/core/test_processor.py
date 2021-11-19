@@ -574,7 +574,7 @@ async def test_update_tracker_session(
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
-    default_processor._save_tracker(tracker)
+    default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
     tracker = default_processor.tracker_store.retrieve(sender_id)
@@ -691,7 +691,7 @@ async def test_update_tracker_session_with_slots(
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
-    default_processor._save_tracker(tracker)
+    default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
     tracker = default_processor.tracker_store.retrieve(sender_id)
@@ -1248,7 +1248,7 @@ async def test_predict_next_action_with_hidden_rules(
     story_slot = "story_slot"
     domain_content = textwrap.dedent(
         f"""
-        version: "2.0"
+        version: "3.0"
         intents:
         - {rule_intent}
         - {story_intent}

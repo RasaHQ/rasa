@@ -120,7 +120,7 @@ async def test_switch_forms_with_same_slot(default_agent: Agent):
     utter_ask_form_2 = f"Please provide the value for {slot_a} of form 2"
 
     domain = f"""
-version: "2.0"
+version: "3.0"
 nlu:
 - intent: order_status
   examples: |
@@ -472,6 +472,14 @@ async def test_validate_slots(
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
 
     domain = f"""
+    version: "3.0"
+
+    entities:
+    - num_tables
+    - some_entity
+    - some_other_entity
+    - some_slot
+
     slots:
       {slot_name}:
         type: any
@@ -482,15 +490,17 @@ async def test_validate_slots(
         mappings:
         - type: from_entity
           entity: num_tables
+
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
             - {slot_name}
             - num_tables
+
     actions:
     - validate_{form_name}
     """
-    domain = Domain.from_yaml(domain)
+    domain = Domain.from_yaml(textwrap.dedent(domain))
     action_extract_slots = ActionExtractSlots(action_endpoint=None)
 
     slot_events = await action_extract_slots.run(
@@ -727,7 +737,7 @@ def test_temporary_tracker():
     sender_id = "test"
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "3.0"
         slots:
           {extra_slot}:
             type: any
@@ -1416,7 +1426,7 @@ async def test_extract_other_slots_with_matched_mapping_conditions():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             intent:
             - greet
             - inform
@@ -1487,7 +1497,7 @@ async def test_extract_other_slots_raises_no_matched_conditions():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             intent:
             - greet
             - inform
@@ -1557,7 +1567,7 @@ async def test_extract_other_slots_raises_no_matched_conditions():
 async def test_action_extract_slots_custom_mapping_with_condition():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot:

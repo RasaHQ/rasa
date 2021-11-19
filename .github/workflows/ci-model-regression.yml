@@ -325,6 +325,10 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
+      - name: Install datadog-api-client
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: poetry run pip install -U datadog-api-client
+
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
@@ -376,6 +380,11 @@ jobs:
         with:
           name: report.json
 
+      - name: Extract branch name
+        shell: bash
+        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
+        id: extract_branch
+
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
@@ -390,6 +399,10 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
+          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.eu
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -544,6 +557,10 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
+      - name: Install datadog-api-client
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: poetry run pip install -U datadog-api-client
+
       - name: Run test
         id: run_test
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -590,6 +607,11 @@ jobs:
         with:
           name: report.json
 
+      - name: Extract branch name
+        shell: bash
+        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
+        id: extract_branch
+
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
@@ -604,6 +626,10 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
+          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.eu
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -666,7 +692,7 @@ jobs:
           echo "::set-output name=result::$OUTPUT"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v1
+        uses: marocchino/sticky-pull-request-comment@v2.1.1
         if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -742,7 +768,7 @@ jobs:
           echo "::set-output name=result::$OUTPUT"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v1
+        uses: marocchino/sticky-pull-request-comment@v2.1.1
         if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

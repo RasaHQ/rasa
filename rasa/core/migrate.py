@@ -1,4 +1,5 @@
 import copy
+import shutil
 from pathlib import Path
 from typing import List, Dict, Text, Any, Tuple, Optional, Union
 
@@ -27,14 +28,14 @@ def _create_back_up(
     return original_content
 
 
-def _update_mapping_condition(
+def _get_updated_mapping_condition(
     condition: Dict[Text, Text], mapping: Dict[Text, Any], slot_name: Text
 ) -> Dict[Text, Text]:
     if mapping.get("type") not in [
         str(SlotMapping.FROM_ENTITY),
         str(SlotMapping.FROM_TRIGGER_INTENT),
     ]:
-        condition.update({REQUESTED_SLOT: slot_name})
+        return {**condition, REQUESTED_SLOT: slot_name}
     return condition
 
 
@@ -52,20 +53,22 @@ def _get_updated_or_new_mappings(
         conditions = existing_mapping.pop("conditions", [])
         if existing_mapping in new_mappings:
             new_mappings.remove(existing_mapping)
-
-            updated_condition = _update_mapping_condition(
-                condition, existing_mapping, slot_name
+            conditions.append(
+                _get_updated_mapping_condition(condition, existing_mapping, slot_name)
             )
-
-            conditions.append(updated_condition)
             existing_mapping.update({"conditions": conditions})
             updated_mappings.append(existing_mapping)
         else:
             updated_mappings.append(mapping_copy)
 
     for mapping in new_mappings:
-        updated_condition = _update_mapping_condition(condition, mapping, slot_name)
-        mapping.update({"conditions": [updated_condition]})
+        mapping.update(
+            {
+                "conditions": [
+                    _get_updated_mapping_condition(condition, mapping, slot_name)
+                ]
+            }
+        )
         updated_mappings.append(mapping)
 
     return updated_mappings
@@ -180,75 +183,92 @@ def _write_final_domain(
         rasa.shared.utils.io.write_yaml(new_domain, out_file, True)
 
 
+def _migrate_domain_files(
+    domain_file: Path, backup_location: Path, out_file: Path
+) -> Dict[Text, Any]:
+    slots = {}
+    forms = {}
+    entities = []
+
+    for file in domain_file.iterdir():
+        if not Domain.is_domain_file(file):
+            continue
+
+        backup = backup_location / file.name
+        original_content = _create_back_up(file, backup)
+
+        if KEY_SLOTS not in original_content and KEY_FORMS not in original_content:
+            # this is done so that the other domain files can be moved
+            # in the migrated directory
+            rasa.shared.utils.io.write_yaml(
+                original_content, out_file / file.name, True
+            )
+        elif KEY_SLOTS in original_content and slots:
+            raise RasaException(
+                f"Domain files with multiple '{KEY_SLOTS}' "
+                f"sections were provided. Please group these sections "
+                f"in one file only to prevent content duplication across "
+                f"multiple files. "
+            )
+        elif KEY_FORMS in original_content and forms:
+            raise RasaException(
+                f"Domain files with multiple '{KEY_FORMS}' "
+                f"sections were provided. Please group these sections "
+                f"in one file only to prevent content duplication across "
+                f"multiple files. "
+            )
+
+        slots.update(original_content.get(KEY_SLOTS, {}))
+        forms.update(original_content.get(KEY_FORMS, {}))
+        entities.extend(original_content.get(KEY_ENTITIES, {}))
+
+    if not slots or not forms:
+        raise RasaException(
+            f"The files you have provided in '{domain_file}' are missing slots "
+            f"or forms. Please make sure to include these for a "
+            f"successful migration."
+        )
+
+    return {KEY_SLOTS: slots, KEY_FORMS: forms, KEY_ENTITIES: entities}
+
+
 def migrate_domain_format(
     domain_file: Union[Text, Path], out_file: Union[Text, Path]
 ) -> None:
     """Converts 2.0 domain to 3.0 format."""
     domain_file = Path(domain_file)
     out_file = Path(out_file)
+    created_out_dir = False
 
     current_dir = domain_file.parent
 
     if domain_file.is_dir():
-        backup_dir = current_dir / "original_domain"
-        backup_dir.mkdir()
-
-        slots = {}
-        forms = {}
-        entities = []
-        original_domain = {}
+        backup_location = current_dir / "original_domain"
+        backup_location.mkdir()
 
         if out_file.is_file() or not out_file.exists():
             out_file = current_dir / "new_domain"
             out_file.mkdir()
+            created_out_dir = True
             rasa.shared.utils.io.raise_warning(
                 f"The out path provided is not a directory, "
                 f"creating a new directory '{str(out_file)}' "
                 f"for migrated domain files."
             )
 
-        for file in domain_file.iterdir():
-            if not Domain.is_domain_file(file):
-                continue
-
-            backup = backup_dir / file.name
-            original_content = _create_back_up(file, backup)
-
-            if KEY_SLOTS not in original_content and KEY_FORMS not in original_content:
-                # this is done so that the other domain files can be moved
-                # in the migrated directory
-                rasa.shared.utils.io.write_yaml(
-                    original_content, out_file / file.name, True
-                )
-            elif KEY_SLOTS in original_content and slots:
-                raise RasaException(
-                    f"Domain files with multiple '{KEY_SLOTS}' "
-                    f"sections were provided. Please group these sections "
-                    f"in one file only to prevent content duplication across "
-                    f"multiple files. "
-                )
-            elif KEY_FORMS in original_content and forms:
-                raise RasaException(
-                    f"Domain files with multiple '{KEY_FORMS}' "
-                    f"sections were provided. Please group these sections "
-                    f"in one file only to prevent content duplication across "
-                    f"multiple files. "
-                )
-
-            slots.update(original_content.get(KEY_SLOTS, {}))
-            forms.update(original_content.get(KEY_FORMS, {}))
-            entities.extend(original_content.get(KEY_ENTITIES, {}))
-
-        if not slots or not forms:
-            raise RasaException(
-                f"The files you have provided in '{domain_file}' are missing slots "
-                f"or forms. Please make sure to include these for a "
-                f"successful migration."
+        try:
+            original_domain = _migrate_domain_files(
+                domain_file, backup_location, out_file
             )
-
-        original_domain.update(
-            {KEY_SLOTS: slots, KEY_FORMS: forms, KEY_ENTITIES: entities}
-        )
+        except Exception as e:
+            shutil.rmtree(backup_location)
+            if out_file != domain_file:
+                shutil.rmtree(out_file)
+                if not created_out_dir:
+                    # we recreate the deleted directory
+                    # because it existed before
+                    out_file.mkdir()
+            raise e
     else:
         if not Domain.is_domain_file(domain_file):
             raise RasaException(
@@ -256,8 +276,8 @@ def migrate_domain_format(
                 f"domain file. Only domain yaml files can be migrated. "
             )
 
-        backup = current_dir / "original_domain.yml"
-        original_domain = _create_back_up(domain_file, backup)
+        backup_location = current_dir / "original_domain.yml"
+        original_domain = _create_back_up(domain_file, backup_location)
 
     new_forms, updated_slots = _migrate_form_slots(original_domain)
     new_slots = _migrate_auto_fill_and_custom_slots(original_domain, updated_slots)
@@ -265,5 +285,7 @@ def migrate_domain_format(
     _write_final_domain(domain_file, new_forms, new_slots, out_file)
 
     rasa.shared.utils.cli.print_success(
-        f"Your domain was successfully migrated! It's location is {out_file}."
+        f"Your domain file '{str(domain_file)}' was successfully migrated! "
+        f"The migrated version is now '{str(out_file)}'. "
+        f"The original domain file is backed-up at '{str(backup_location)}'."
     )

@@ -1026,11 +1026,9 @@ class ActionExtractSlots(Action):
                 output_channel, nlg, tracker, domain
             )
             for event in custom_events:
-                if (
-                    isinstance(event, SlotSet)
-                    and tracker.get_slot(event.key) != event.value
-                ):
-                    slot_events.append(event)
+                if isinstance(event, SlotSet):
+                    if tracker.get_slot(event.key) != event.value:
+                        slot_events.append(event)
                 elif isinstance(event, BotUttered):
                     slot_events.append(event)
                 else:
@@ -1112,6 +1110,33 @@ class ActionExtractSlots(Action):
             event for event in slot_events if event.key not in validated_slot_names
         ]
 
+    def _fails_unique_entity_mapping_check(
+        self,
+        slot_name: Text,
+        mapping: Dict[Text, Any],
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> bool:
+        from rasa.core.actions.forms import FormAction
+
+        if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
+            return False
+
+        form_name = tracker.active_loop_name
+
+        if not form_name:
+            return False
+
+        if tracker.get_slot(REQUESTED_SLOT) == slot_name:
+            return False
+
+        form = FormAction(form_name, self._action_endpoint)
+
+        if form.entity_mapping_is_unique(mapping, domain):
+            return False
+
+        return True
+
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -1129,6 +1154,9 @@ class ActionExtractSlots(Action):
 
         for slot in user_slots:
             for mapping in slot.mappings:
+                if not SlotMapping.check_mapping_validity(slot.name, mapping, domain):
+                    continue
+
                 intent_is_desired = SlotMapping.intent_is_desired(
                     mapping, tracker, domain
                 )
@@ -1137,6 +1165,11 @@ class ActionExtractSlots(Action):
                     continue
 
                 if not ActionExtractSlots._verify_mapping_conditions(mapping, tracker):
+                    continue
+
+                if self._fails_unique_entity_mapping_check(
+                    slot.name, mapping, tracker, domain
+                ):
                     continue
 
                 if mapping.get(MAPPING_TYPE) in PREDEFINED_MAPPINGS:
