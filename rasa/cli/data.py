@@ -279,14 +279,14 @@ async def _convert_to_yaml(
         data_path = data_path[0]
 
     output = Path(out_path)
-    if not os.path.exists(output):
+    if not output.exists():
         rasa.shared.utils.cli.print_error_and_exit(
             f"The output path '{output}' doesn't exist. Please make sure to specify "
             f"an existing directory and try again."
         )
 
     training_data = Path(data_path)
-    if not os.path.exists(training_data):
+    if not training_data.exists():
         rasa.shared.utils.cli.print_error_and_exit(
             f"The training data path {training_data} doesn't exist "
             f"and will be skipped."
@@ -294,10 +294,10 @@ async def _convert_to_yaml(
 
     num_of_files_converted = 0
 
-    if os.path.isfile(training_data):
+    if training_data.is_file():
         if await _convert_file_to_yaml(training_data, output, converter):
             num_of_files_converted += 1
-    elif os.path.isdir(training_data):
+    elif training_data.is_dir():
         for root, _, files in os.walk(training_data, followlinks=True):
             for f in sorted(files):
                 source_path = Path(os.path.join(root, f))

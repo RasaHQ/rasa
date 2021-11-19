@@ -19,24 +19,24 @@ rasa init
 
 This will create a directory called `data`.
 Remove the files in this directory, and
-move your json file with Watson data into this directory.
+move the json file containing the exported Watson data into this directory.
 
 ```bash
 rm -r data/*
 mv /path/to/file.json data/
 ```
 
-## Step 3: Train your NLU model
+## Step 3: Convert your Watson NLU data
 
 To train a model using your Watson data, you should convert the data to a format Rasa can understand.:
 
 ```bash
-rasa data convert -i data/your-watson-file.json -o data/file.yml --format yaml
+rasa data convert -i your-watson-file.json -o data/converted-watson-data.yml --format yaml
 ```
 
 ## Step 4: Train your NLU model
 
-To train a model using your Watson data, run:
+To train an NLU model using your Watson data, run:
 
 ```bash
 rasa train nlu

@@ -11,13 +11,6 @@ from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import yaml
 
 
-def test_watson_data():
-    td = load_data("data/examples/watson/demo_watson_v2.json")
-    assert not td.is_empty()
-    assert len(td.entity_examples) == 117
-    assert len(td.intent_examples) == 309
-
-
 def test_filter():
     source = Path("data/examples/watson/demo_watson_v2.json")
     filter = WatsonTrainingDataConverter().filter(source)
