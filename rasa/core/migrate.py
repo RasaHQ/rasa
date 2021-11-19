@@ -184,7 +184,7 @@ def _write_final_domain(
 
 
 def _migrate_domain_files(
-    domain_file: Path, backup_dir: Path, out_file: Path
+    domain_file: Path, backup_location: Path, out_file: Path
 ) -> Dict[Text, Any]:
     slots = {}
     forms = {}
@@ -194,7 +194,7 @@ def _migrate_domain_files(
         if not Domain.is_domain_file(file):
             continue
 
-        backup = backup_dir / file.name
+        backup = backup_location / file.name
         original_content = _create_back_up(file, backup)
 
         if KEY_SLOTS not in original_content and KEY_FORMS not in original_content:
@@ -243,8 +243,8 @@ def migrate_domain_format(
     current_dir = domain_file.parent
 
     if domain_file.is_dir():
-        backup_dir = current_dir / "original_domain"
-        backup_dir.mkdir()
+        backup_location = current_dir / "original_domain"
+        backup_location.mkdir()
 
         if out_file.is_file() or not out_file.exists():
             out_file = current_dir / "new_domain"
@@ -257,9 +257,11 @@ def migrate_domain_format(
             )
 
         try:
-            original_domain = _migrate_domain_files(domain_file, backup_dir, out_file)
+            original_domain = _migrate_domain_files(
+                domain_file, backup_location, out_file
+            )
         except Exception as e:
-            shutil.rmtree(backup_dir)
+            shutil.rmtree(backup_location)
             if out_file != domain_file:
                 shutil.rmtree(out_file)
                 if not created_out_dir:
@@ -274,8 +276,8 @@ def migrate_domain_format(
                 f"domain file. Only domain yaml files can be migrated. "
             )
 
-        backup = current_dir / "original_domain.yml"
-        original_domain = _create_back_up(domain_file, backup)
+        backup_location = current_dir / "original_domain.yml"
+        original_domain = _create_back_up(domain_file, backup_location)
 
     new_forms, updated_slots = _migrate_form_slots(original_domain)
     new_slots = _migrate_auto_fill_and_custom_slots(original_domain, updated_slots)
@@ -283,5 +285,7 @@ def migrate_domain_format(
     _write_final_domain(domain_file, new_forms, new_slots, out_file)
 
     rasa.shared.utils.cli.print_success(
-        f"Your domain was successfully migrated! It's location is {out_file}."
+        f"Your domain file '{str(domain_file)}' was successfully migrated! "
+        f"The migrated version is now '{str(out_file)}'. "
+        f"The original domain file is backed-up at '{str(backup_location)}'."
     )
