@@ -76,6 +76,7 @@ module.exports = {
             'custom-actions',
             'forms',
             'default-actions',
+            'slot-validation-actions',
           ],
         },
         {
