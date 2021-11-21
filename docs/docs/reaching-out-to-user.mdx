@@ -111,7 +111,7 @@ easier to see which intents are expected to come from external devices when work
 ### 4. Update the Domain
 
 To tell the assistant which plant needs watering, you can define an entity that you'll post along with the intent.
-To be able to use the entity value directly in a response, define a slot by the same name:
+To be able to use the entity value directly in a response, define a `from_entity` slot mapping for the `plant` slot:
 
 ```yaml-rasa  title="domain.yml"
 entities:
