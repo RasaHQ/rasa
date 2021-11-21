@@ -1125,6 +1125,18 @@ configuration.
 
 ### Training data
 
+#### Upgrading `version` from `2.0` to `3.0`
+
+At the top of your training data files, you need to change `version: "2.0"` to `version: "3.0"`.
+
+We follow semantic versioning for training data versions. This means breaking changes result in a new
+major version, while new features result in a new minor version. 
+
+The improvements to `slot mappings` in Rasa Open Source 3.0 were breaking changes, so we needed to upgrade
+from major version `2.0` to major version `3.0`. 
+
+#### `TrainingDataImporter`
+
 `TrainingDataImporter` and all its implementations are updated to contain only synchronous methods.
 If you have a custom data importer or rely on some functions provided by `TrainingDataImporter`, you need
 to update your implementation and function calls.
@@ -1224,6 +1236,25 @@ confidences. This change can affect the maximum confidence predicted by the
 `TEDPolicy` and thereby affect the final result of the policy ensemble.
 However, the previous behavior can still be enforced by setting
 `ranking_length=10` and `renormalize_confidences=True`.
+
+#### Removed Policies
+
+Several dialogue policies that were deprecated in Rasa 2.x have been removed in Rasa 3.0.
+If you are migrating a config file with a removed policy,
+consult the following migration guides for the individual policies:
+
+- `FallbackPolicy` [migration guide](#manually-migrating-from-the-fallback-policy)
+- `TwoStageFallbackPolicy` [migration guide](#manually-migrating-from-the-two-stage-fallback-policy)
+- `MappingPolicy` [migration guide](#manually-migrating-from-the-mapping-policy)
+- `FormPolicy` [migration guide](#forms)
+- `SklearnPolicy` should be replaced with [TEDPolicy](/policies#ted-policy).
+  It is recommended to use the [default TEDPolicy config](/model-configuration#suggested-config) as a starting point.
+
+#### Removed Tokenizers and Featurizers
+
+The `ConveRTTokenizer`, `LanguageModelTokenizer`, and `HFTransformersNLP` featurizer
+components were deprecated in Rasa 2.x and have been removed in Rasa 3.0. See the
+[migration guide for Rasa 2.x](#deprecations-2) for replacing these components in your pipeline.  
 
 ## Rasa 2.7 to 2.8
 

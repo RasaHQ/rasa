@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3.0"
 responses:
   utter_mood/great:
   - text: some response to mood/great

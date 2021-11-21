@@ -156,7 +156,7 @@ async def test_ask_rephrase_after_failed_affirmation():
 
     domain = Domain.from_yaml(
         f"""
-        version: "2.0"
+        version: "3.0"
         responses:
             utter_ask_rephrase:
             - text: {rephrase_text}
