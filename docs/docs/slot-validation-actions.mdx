@@ -5,24 +5,17 @@ title: Slot Validation Actions
 abstract: A slot validation action is a special type of custom action, designed to handle custom extraction and/or validation of slot values. This can be used to validate slots with predefined mappings or extract slots with custom mappings.
 ---
 
-You can use three different types of slot validation actions to write custom extraction and validation of slot values:
-
-## Regular Custom Action
-
-You can use the `Action` Rasa SDK class to create a regular [custom action](./custom-actions.mdx).
-The base class will not prevent you from returning arbitrary events, however a slot validation action should only return
-`SlotSet` and `BotUttered` events. Any other event type will be filtered out by the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots).
-The name of the custom action must be specified in the `action` key of the relevant [custom slot mapping](./domain.mdx#custom-slot-mappings)
-in the domain.
-Note that the action name must be listed in the domain `actions` section too.
+You can do custom extraction and validation of slot values by writing custom actions in three different ways.
 
 ## `action_validate_slot_mappings`
 
 You can use the `action_validate_slot_mappings` action to define custom extraction and / or validation of slots that
 can be set or updated outside of a form context.
 
-This action should extend the Rasa SDK `ValidationAction` class or the implementation of this class in your
-custom action server.
+This action is called automatically at the end of the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots),
+so the name must not be changed. If you are using Rasa SDK, you should extend the Rasa SDK `ValidationAction` class.
+If you are using a different action server, you will need to implement an action class with equivalent functionality to
+the Rasa SDK class. Please see [the action server docs]() for details.
 
 With this option, you do not need to specify the `action` key in the [custom slot mapping](./domain.mdx#custom-slot-mappings),
 since the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
@@ -30,7 +23,21 @@ automatically if present in the `actions` section of the domain.
 
 ## `validate_<form name>`
 
-If certain custom slot mappings should only be extracted and / or validated within the context of a form,
-the custom action should inherit from the Rasa SDK `FormValidationAction` class or the implementation of this class
-in your custom action server.
-The `validate_<form name>` action will only run if the form it specifies in its name is activated.
+Custom actions named `validate_<form name>` will run automatically if the form it specifies in its name is activated.
+If you are using Rasa SDK, the custom action should inherit from the Rasa SDK `FormValidationAction` class.
+If you are not using Rasa SDK, you will need to implement an action or action class with equivalent functionality to the
+`FormValidationClass` in your custom action server. Please see [the action server docs]() for details.
+
+
+## Regular Custom Action
+
+You can use a regular custom action [custom action](./custom-actions.mdx) that returns [`slot`](https://rasa.com/docs/action-server/events#slot)
+events for custom slot extraction. Use this option if neither [`action_validate_slot_mappings`](#action-validate-slot-mappings) or
+[`validate_<form name>`](#validate-form-name) meet your needs.
+For example, if you want to reuse the same custom action explicitly in a story or rule, you should use a regular custom
+action for custom slot extraction.
+A slot validation action should only return `slot` and [`bot`](https://rasa.com/docs/action-server/events#bot) events.
+Any other event type will be filtered out by the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots).
+The name of the custom action must be specified in the `action` key of the relevant [custom slot mapping](./domain.mdx#custom-slot-mappings)
+in the domain.
+Note that the action name must be listed in the domain `actions` section too.
