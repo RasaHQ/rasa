@@ -247,6 +247,17 @@ def validate_training_data_format_version(
             raise TypeError
 
         if version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION) >= parsed_version:
+            if version_value < LATEST_TRAINING_DATA_FORMAT_VERSION:
+                # not raising here since it's not critical
+                logger.warning(
+                    f"Training data file {filename} has a lower "
+                    f"format version than your Rasa Open Source installation: "
+                    f"{version_value} < {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
+                    f"Rasa Open Source will read the file as a version "
+                    f"{LATEST_TRAINING_DATA_FORMAT_VERSION} file but "
+                    f"please update your version key to 3.0. "
+                    f"See {DOCS_URL_TRAINING_DATA}."
+                )
             return True
 
     except TypeError:
