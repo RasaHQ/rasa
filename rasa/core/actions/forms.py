@@ -256,6 +256,7 @@ class FormAction(LoopAction):
         validate_name = f"validate_{self.name()}"
 
         if validate_name not in domain.action_names_or_texts:
+            # TODO: should return empty list
             return events
 
         _tracker = self._temporary_tracker(tracker, events, domain)
@@ -269,6 +270,7 @@ class FormAction(LoopAction):
         # If the custom action doesn't return a SlotSet event for an extracted slot
         # candidate we assume that it was valid. The custom action has to return a
         # SlotSet(slot_name, None) event to mark a Slot as invalid.
+        # TODO: should only return validate_events
         return validate_events + [
             event for event in events if event.key not in validated_slot_names
         ]
@@ -359,8 +361,15 @@ class FormAction(LoopAction):
         required_slots = self._add_dynamic_slots_requested_by_dynamic_forms(
             tracker, domain
         )
+        print("*" * 100)
+        print("*" * 100)
+        print("*" * 100)
+        print("required slots:", required_slots)
+        print("number of SlotSet events: ", len(events_since_last_user_uttered))
+        print("active_loop: ", tracker.active_loop)
 
         for event in events_since_last_user_uttered:
+            # This should move to the top of the method
             if not tracker.active_loop:
                 # pre-filled slots were already validated at form activation
                 break
@@ -370,6 +379,10 @@ class FormAction(LoopAction):
 
             slot_values = self._update_slot_values(event, tracker, domain, slot_values)
 
+        print("slot values: ", slot_values)
+        print("*" * 100)
+        print("*" * 100)
+        print("*" * 100)
         return slot_values
 
     async def validate(
