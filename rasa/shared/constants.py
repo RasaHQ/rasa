@@ -34,7 +34,7 @@ DOCS_BASE_URL_ACTION_SERVER = "https://rasa.com/docs/action-server"
 INTENT_MESSAGE_PREFIX = "/"
 
 PACKAGE_NAME = "rasa"
-NEXT_MAJOR_VERSION_FOR_DEPRECATIONS = "3.0.0"
+NEXT_MAJOR_VERSION_FOR_DEPRECATIONS = "4.0.0"
 
 MODEL_CONFIG_SCHEMA_FILE = "shared/utils/schemas/model_config.yml"
 CONFIG_SCHEMA_FILE = "shared/utils/schemas/config.yml"
