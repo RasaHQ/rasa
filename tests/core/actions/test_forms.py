@@ -1625,3 +1625,60 @@ async def test_action_extract_slots_custom_mapping_with_condition():
             SlotSet(REQUESTED_SLOT, None),
             ActiveLoop(None),
         ]
+
+
+async def test_form_slots_empty_with_restart():
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            """
+            version: "3.0"
+            intent:
+            - greet
+            - inform
+            entities:
+            - name
+            slots:
+              name:
+                type: text
+                influence_conversation: false
+                mappings:
+                - type: from_entity
+                  entity: name
+                  conditions:
+                  - active_loop: some_form
+            forms:
+             some_form:
+               required_slots:
+                 - name
+            """
+        )
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            UserUttered("hi", intent={"name": "greet", "confidence": 1.0}),
+            ActiveLoop("some_form"),
+            SlotSet(REQUESTED_SLOT, "name"),
+            UserUttered(
+                "My name is Emily.",
+                intent={"name": "inform", "confidence": 1.0},
+                entities=[{"entity": "name", "value": "Emily"},],
+            ),
+            SlotSet("name", "emily"),
+            Restarted(),
+            ActiveLoop("some_form"),
+            SlotSet(REQUESTED_SLOT, "name"),
+            UserUttered("hi", intent={"name": "greet", "confidence": 1.0}),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    action = FormAction("some_form", None)
+
+    with pytest.raises(ActionExecutionRejection):
+        await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )

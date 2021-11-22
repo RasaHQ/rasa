@@ -1,4 +1,5 @@
 from typing import Text, List, Optional, Union, Any, Dict, Set
+import itertools
 import logging
 import json
 
@@ -20,6 +21,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     ActiveLoop,
     ActionExecutionRejected,
+    Restarted,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.slot_mappings import SlotMapping
@@ -310,17 +312,22 @@ class FormAction(LoopAction):
     def _get_events_since_last_user_uttered(
         tracker: "DialogueStateTracker",
     ) -> List[SlotSet]:
-        # Why would latest message not be in events?
-        if tracker.latest_message in tracker.events:
-            # This will find first event with same text (since entities and intents
-            # will likely be interpreted to be same for same text)
-            index = tracker.events.index(tracker.latest_message)
-        else:
+        # TODO: Better way to get this latest_message index is through an instance
+        # variable, eg. tracker.latest_message_index
+        try:
+            index_from_end = next(
+                i
+                for i, event in enumerate(reversed(tracker.events))
+                if event == Restarted() or event == tracker.latest_message
+            )
+            index = len(tracker.events) - index_from_end - 1
+        except StopIteration:
             index = 0
 
-        tracker_events = list(tracker.events)
         events_since_last_user_uttered = [
-            event for event in tracker_events[index:] if isinstance(event, SlotSet)
+            event
+            for event in itertools.islice(tracker.events, index, None)
+            if isinstance(event, SlotSet)
         ]
 
         return events_since_last_user_uttered
