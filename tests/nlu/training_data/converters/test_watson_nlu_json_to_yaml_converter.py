@@ -6,7 +6,6 @@ import pytest
 from rasa.nlu.training_data.converters.watson_nlu_json_to_yaml_converter import (
     WatsonTrainingDataConverter,
 )
-from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import yaml
 
