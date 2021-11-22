@@ -14,7 +14,7 @@ import rasa.shared.utils.common
 from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.importers.autoconfig import TrainingType
 
 logger = logging.getLogger(__name__)
@@ -464,9 +464,15 @@ class GraphNode:
             # handling of exceptions.
             raise
         except Exception as e:
-            raise GraphComponentException(
-                f"Error running graph component for node {self._node_name}."
-            ) from e
+            if not isinstance(e, RasaException):
+                raise GraphComponentException(
+                    f"Error running graph component for node {self._node_name}."
+                ) from e
+            else:
+                logger.error(
+                    f"Error running graph component for node" f" {self._node_name}."
+                )
+                raise
 
         self._run_after_hooks(input_hook_outputs, output)
 
