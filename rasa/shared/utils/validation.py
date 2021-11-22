@@ -255,8 +255,8 @@ def validate_training_data_format_version(
                     f"{version_value} < {LATEST_TRAINING_DATA_FORMAT_VERSION}. "
                     f"Rasa Open Source will read the file as a version "
                     f"{LATEST_TRAINING_DATA_FORMAT_VERSION} file but "
-                    f"please update your version key to 3.0. "
-                    f"See {DOCS_URL_TRAINING_DATA}."
+                    f"please update your version key to "
+                    f"{LATEST_TRAINING_DATA_FORMAT_VERSION}. See {DOCS_URL_TRAINING_DATA}."
                 )
             return True
 
