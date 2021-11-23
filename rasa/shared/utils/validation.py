@@ -260,7 +260,7 @@ def validate_training_data_format_version(
                 f"See {DOCS_URL_TRAINING_DATA}."
             )
 
-        if parsed_version >= parsed_version:
+        if latest_version >= parsed_version:
 
             return True
 
