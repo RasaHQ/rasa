@@ -470,7 +470,7 @@ class GraphNode:
                 ) from e
             else:
                 logger.error(
-                    f"Error running graph component for node" f" {self._node_name}."
+                    f"Error running graph component for node {self._node_name}."
                 )
                 raise
 
