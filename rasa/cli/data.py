@@ -319,6 +319,7 @@ async def _convert_file_to_yaml(
     source_file: Path, target_dir: Path, converter: "TrainingDataConverter"
 ) -> bool:
     """Converts a single training data file to `YAML` format.
+    
     Args:
         source_file: Training data file to be converted.
         target_dir: Target directory for the converted file.
