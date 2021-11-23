@@ -1501,7 +1501,7 @@ async def test_model_name_is_available(trained_moodbot_path: Text):
 
 
 async def test_loads_correct_model_from_path(
-    trained_core_model: Text, trained_nlu_model: Text, tmp_path
+    trained_core_model: Text, trained_nlu_model: Text, tmp_path: Path
 ):
     # We move both models to the same directory to prove we can load models by name
     # from a directory with multiple models.
