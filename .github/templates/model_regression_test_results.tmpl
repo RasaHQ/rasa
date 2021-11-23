@@ -70,8 +70,7 @@ The print_result_core template returns data depends on available fields.
 {{- if eq $config_data.type "nlu" -}}
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}`|
 {{- if has $config_data "intent_classification" -}}
-{{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $intent_class_main := $config_data.intent_classification -}}
+{{- $intent_class_main := dict -}}
 {{- if has $.dataset_main $config_name -}}
 {{- $intent_class_main = (index $.dataset_main $config_name).intent_classification -}}
 {{- end -}}
@@ -81,8 +80,7 @@ The print_result_core template returns data depends on available fields.
 `no data`|
 {{- end -}}
 {{- if has $config_data "entity_prediction" -}}
-{{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $entity_class_main := $config_data.entity_prediction -}}
+{{- $entity_class_main := dict -}}
 {{- if has $.dataset_main $config_name -}}
 {{- $entity_class_main = (index $.dataset_main $config_name).entity_prediction -}}
 {{- end -}}
@@ -92,8 +90,7 @@ The print_result_core template returns data depends on available fields.
 `no data`|
 {{- end -}}
 {{- if has $config_data "response_selection" -}}
-{{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $response_class_main := $config_data.response_selection -}}
+{{- $response_class_main := dict -}}
 {{- if has $.dataset_main $config_name -}}
 {{- $response_class_main = (index $.dataset_main $config_name).response_selection -}}
 {{- end -}}
@@ -117,8 +114,7 @@ The print_result_core template returns data depends on available fields.
 {{- if eq $config_data.type "core" -}}
 | `{{ $config_name }}` |
 {{- if has $config_data "story_prediction" -}}
-{{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $story_prediction_main := $config_data.story_prediction -}}
+{{- $story_prediction_main := dict -}}
 {{- if has $.dataset_main $config_name -}}
 {{- $story_prediction_main = (index $.dataset_main $config_name).story_prediction -}}
 {{- end -}}
@@ -128,8 +124,7 @@ The print_result_core template returns data depends on available fields.
 `no data`|
 {{- end -}}
 {{- if has $config_data "story_prediction" -}}
-{{- /* Use results from branch if there is lack of data doesn't exist in results from scheduled version */ -}}
-{{- $story_prediction_main := $config_data.story_prediction -}}
+{{- $story_prediction_main := dict -}}
 {{- if has $.dataset_main $config_name -}}
 {{- $story_prediction_main = (index $.dataset_main $config_name).story_prediction -}}
 {{- end -}}
