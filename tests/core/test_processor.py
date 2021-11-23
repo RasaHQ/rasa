@@ -1490,3 +1490,9 @@ async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFi
         "the default action 'action_extract_slots'." in message
         for message in caplog.messages
     )
+
+
+async def test_model_name_is_available(trained_moodbot_path: Text):
+    processor = Agent.load(model_path=trained_moodbot_path).processor
+    assert len(processor.model_filename) > 0
+    assert "/" not in processor.model_filename

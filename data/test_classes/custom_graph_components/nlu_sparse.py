@@ -1,5 +1,3 @@
-from rich.console import Console
-
 import logging
 from typing import Any, Text, Dict, List, Type
 
@@ -28,27 +26,23 @@ from rasa.shared.nlu.constants import (
 logger = logging.getLogger(__name__)
 
 
-console = Console()
-
-
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
 )
 class TfIdfFeaturizer(SparseFeaturizer, GraphComponent):
     @classmethod
     def required_components(cls) -> List[Type]:
-        console.log("ping from required_components")
+        """Components that should be included in the pipeline before this component."""
         return [Tokenizer]
 
     @staticmethod
     def required_packages() -> List[Text]:
         """Any extra python dependencies required for this component to run."""
-        console.log("ping from required_packages")
         return ["sklearn"]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
-        console.log("ping from get_default_config")
+        """Returns the component's default config."""
         return {
             **SparseFeaturizer.get_default_config(),
             "analyzer": "word",
@@ -63,10 +57,9 @@ class TfIdfFeaturizer(SparseFeaturizer, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
     ) -> None:
-        # TODO: When is `resource` passed and when isn't it?
-        # TODO: When is `model_storage` passed and when isn't it?
+        """Constructs a new tf/idf vectorizer using the sklearn framework."""
         super().__init__(name, config)
-        console.log("ping from init")
+        # Initialize the tfidf sklearn component
         self.tfm = TfidfVectorizer(
             analyzer=config["analyzer"],
             ngram_range=(config["min_ngram"], config["max_ngram"]),
@@ -77,12 +70,10 @@ class TfIdfFeaturizer(SparseFeaturizer, GraphComponent):
         self._resource = resource
 
     def train(self, training_data: TrainingData) -> Resource:
+        """Trains the component from training data."""
         texts = [e.get(TEXT) for e in training_data.training_examples if e.get(TEXT)]
-        console.log("ping from train")
-
         self.tfm.fit(texts)
         self.persist()
-
         return self._resource
 
     @classmethod
@@ -93,49 +84,18 @@ class TfIdfFeaturizer(SparseFeaturizer, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> GraphComponent:
-        console.log("ping from create")
+        """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, execution_context.node_name, model_storage, resource)
 
-    def process(self, messages: List[Message]) -> List[Message]:
-        console.log("ping from process")
-        for message in messages:
-            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-                self._set_features(message, attribute)
-        return messages
-
-    def persist(self) -> None:
-        console.log("ping from persist")
-        with self._model_storage.write_to(self._resource) as model_dir:
-            dump(self.tfm, model_dir / "tfidfvectorizer.joblib")
-
-    @classmethod
-    def load(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> GraphComponent:
-        console.log("ping from load")
-        with model_storage.read_from(resource) as model_dir:
-            tfidfvectorizer = load(model_dir / "tfidfvectorizer.joblib")
-            component = cls(
-                config, execution_context.node_name, model_storage, resource
-            )
-            component.tfm = tfidfvectorizer
-            return component
-
-    def process_training_data(self, training_data: TrainingData) -> TrainingData:
-        console.log("ping from process_training_data")
-        self.process(training_data.training_examples)
-        return training_data
-
     def _set_features(self, message: Message, attribute: Text = TEXT) -> None:
+        """Sets the features on a single message. Utility method."""
         tokens = message.get(TEXT_TOKENS)
 
+        # If the message doesn't have tokens, we can't create features.
         if not tokens:
             return None
 
+        # Make distinction between sentence and sequence features
         text_vector = self.tfm.transform([message.get(TEXT)])
         word_vectors = self.tfm.transform([t.text for t in tokens])
 
@@ -154,8 +114,51 @@ class TfIdfFeaturizer(SparseFeaturizer, GraphComponent):
         )
         message.add_features(final_sentence_features)
 
+    def process(self, messages: List[Message]) -> List[Message]:
+        """Processes incoming message and compute and set features."""
+        for message in messages:
+            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+                self._set_features(message, attribute)
+        return messages
+
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
+        """Processes the training examples in the given training data in-place."""
+        self.process(training_data.training_examples)
+        return training_data
+
+    def persist(self) -> None:
+        """
+        Persist this model into the passed directory.
+
+        Returns the metadata necessary to load the model again. In this case; `None`.
+        """
+        with self._model_storage.write_to(self._resource) as model_dir:
+            dump(self.tfm, model_dir / "tfidfvectorizer.joblib")
+
+    @classmethod
+    def load(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> GraphComponent:
+        """Loads trained component from disk."""
+        try:
+            with model_storage.read_from(resource) as model_dir:
+                tfidfvectorizer = load(model_dir / "tfidfvectorizer.joblib")
+                component = cls(
+                    config, execution_context.node_name, model_storage, resource
+                )
+                component.tfm = tfidfvectorizer
+        except (ValueError, FileNotFoundError):
+            logger.debug(
+                f"Couldn't load metadata for component '{cls.__name__}' as the persisted "
+                f"model data couldn't be loaded."
+            )
+        return component
+
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        console.log("ping from validate_config")
         pass

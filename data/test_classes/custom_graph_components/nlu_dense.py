@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 class BytePairFeaturizer(DenseFeaturizer, GraphComponent):
     @classmethod
     def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
         return [Tokenizer]
 
     @staticmethod
@@ -42,6 +43,7 @@ class BytePairFeaturizer(DenseFeaturizer, GraphComponent):
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config."""
         return {
             **DenseFeaturizer.get_default_config(),
             # specifies the language of the subword segmentation model
@@ -55,7 +57,12 @@ class BytePairFeaturizer(DenseFeaturizer, GraphComponent):
             "vs_fallback": True,
         }
 
-    def __init__(self, config: Dict[Text, Any], name: Text,) -> None:
+    def __init__(
+        self,
+        config: Dict[Text, Any],
+        name: Text,
+    ) -> None:
+        """Constructs a new byte pair vectorizer."""
         super().__init__(name, config)
         # The configuration dictionary is saved in `self._config` for reference.
         self.model = BPEmb(
@@ -84,18 +91,12 @@ class BytePairFeaturizer(DenseFeaturizer, GraphComponent):
         return messages
 
     def process_training_data(self, training_data: TrainingData) -> TrainingData:
-        """Processes the training examples in the given training data in-place.
-
-        Args:
-          training_data: Training data.
-
-        Returns:
-          Same training data after processing.
-        """
+        """Processes the training examples in the given training data in-place."""
         self.process(training_data.training_examples)
         return training_data
 
     def _create_word_vector(self, document: Text) -> np.ndarray:
+        """Creates a word vector from a text. Utility method."""
         encoded_ids = self.model.encode_ids(document)
         if encoded_ids:
             return self.model.vectors[encoded_ids[0]]
@@ -103,8 +104,10 @@ class BytePairFeaturizer(DenseFeaturizer, GraphComponent):
         return np.zeros((self.component_config["dim"],), dtype=np.float32)
 
     def _set_features(self, message: Message, attribute: Text = TEXT) -> None:
+        """Sets the features on a single message. Utility method."""
         tokens = message.get(TEXT_TOKENS)
 
+        # If the message doesn't have tokens, we can't create features.
         if not tokens:
             return None
 
