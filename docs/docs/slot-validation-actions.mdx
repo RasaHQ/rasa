@@ -13,9 +13,9 @@ You can use the `action_validate_slot_mappings` action to define custom extracti
 can be set or updated outside of a form context.
 
 This action is called automatically at the end of the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots),
-so the name must not be changed. If you are using Rasa SDK, you should extend the Rasa SDK `ValidationAction` class.
+so the name must not be changed. If you are using Rasa SDK, you should extend the Rasa SDK [`ValidationAction` class](https://rasa.com/docs/action-server/next/validation-action#how-to-subclass-validationaction).
 If you are using a different action server, you will need to implement an action class with equivalent functionality to
-the Rasa SDK class. Please see [the action server docs]() for details.
+the Rasa SDK class. Please see [the action server docs](https://rasa.com/docs/action-server/next/validation-action#validationaction-class-implementation) for details.
 
 With this option, you do not need to specify the `action` key in the [custom slot mapping](./domain.mdx#custom-slot-mappings),
 since the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
@@ -24,9 +24,9 @@ automatically if present in the `actions` section of the domain.
 ## `validate_<form name>`
 
 Custom actions named `validate_<form name>` will run automatically if the form it specifies in its name is activated.
-If you are using Rasa SDK, the custom action should inherit from the Rasa SDK `FormValidationAction` class.
+If you are using Rasa SDK, the custom action should inherit from the Rasa SDK [`FormValidationAction` class](https://rasa.com/docs/action-server/next/validation-action#formvalidationaction-class).
 If you are not using Rasa SDK, you will need to implement an action or action class with equivalent functionality to the
-`FormValidationClass` in your custom action server. Please see [the action server docs]() for details.
+`FormValidationClass` in your custom action server. Please see [the action server docs](https://rasa.com/docs/action-server/next/validation-action#formvalidationaction-class-implementation) for details.
 
 
 ## Regular Custom Action
