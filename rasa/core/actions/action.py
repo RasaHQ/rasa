@@ -39,6 +39,7 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     PREDEFINED_MAPPINGS,
+    LOOP_REJECTED,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -1153,6 +1154,12 @@ class ActionExtractSlots(Action):
         ]
 
         for slot in user_slots:
+            if (
+                tracker.active_loop
+                and tracker.active_loop.get(LOOP_REJECTED)
+                and tracker.get_slot(REQUESTED_SLOT) == slot.name
+            ):
+                continue
             for mapping in slot.mappings:
                 if not SlotMapping.check_mapping_validity(slot.name, mapping, domain):
                     continue

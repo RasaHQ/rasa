@@ -61,7 +61,7 @@ slots:
       - active_loop: restaurant_form
         requested_slot: preferences
     - type: from_text
-      not_intent: affirm
+      not_intent: [affirm, restart]
       conditions:
       - active_loop: restaurant_form
         requested_slot: preferences
