@@ -32,8 +32,8 @@ If you are not using Rasa SDK, you will need to implement an action or action cl
 ## Regular Custom Action
 
 You can use a regular custom action [custom action](./custom-actions.mdx) that returns [`slot`](https://rasa.com/docs/action-server/events#slot)
-events for custom slot extraction. Use this option if neither [`action_validate_slot_mappings`](#action-validate-slot-mappings) or
-[`validate_<form name>`](#validate-form-name) meet your needs.
+events for custom slot extraction. Use this option if neither [`action_validate_slot_mappings`](#action_validate_slot_mappings) or
+[`validate_<form name>`](#validate_form-name) meet your needs.
 For example, if you want to reuse the same custom action explicitly in a story or rule, you should use a regular custom
 action for custom slot extraction.
 A slot validation action should only return `slot` and [`bot`](https://rasa.com/docs/action-server/events#bot) events.
