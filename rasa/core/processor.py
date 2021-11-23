@@ -105,9 +105,12 @@ class MessageProcessor:
         model_path: Union[Text, Path]
     ) -> Tuple[Text, ModelMetadata, GraphRunner]:
         """Unpacks a model from a given path using the graph model loader."""
-        model_tar = get_latest_model(model_path)
-        if not model_tar:
-            raise ModelNotFound(f"No model found at path '{model_path}'.")
+        if os.path.isfile(model_path):
+            model_tar = model_path
+        else:
+            model_tar = get_latest_model(model_path)
+            if not model_tar:
+                raise ModelNotFound(f"No model found at path '{model_path}'.")
 
         logger.info(f"Loading model {model_tar}...")
         with tempfile.TemporaryDirectory() as temporary_directory:
