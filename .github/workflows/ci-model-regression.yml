@@ -327,7 +327,7 @@ jobs:
 
       - name: Install datadog-api-client
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U datadog-api-client
+        run: poetry run pip install -U datadog-api-client memory_profiler
 
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -351,7 +351,11 @@ jobs:
           fi
 
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
-            poetry run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
+            export EXPERIMENT_DIR="experiments/{{ matrix.dataset }}/{{ matrix.config }}"
+            export CPU_MEM_TRAIN=${EXPERIMENT_DIR}/cpu_mem.train
+            export GPU_MEM_TRAIN=${EXPERIMENT_DIR}/gpu_mem.train
+
+            mprof run --output $CPU_MEM_TRAIN poetry run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG} &> $TRAINLOG
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -739,12 +743,15 @@ jobs:
           SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
             | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
+          echo SCHEDULE_ID:$SCHEDULE_ID
 
           ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
+          echo ARTIFACT_URL:$ARTIFACT_URL
 
           DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
             | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
+          echo DOWNLOAD_URL:$DOWNLOAD_URL
 
           # Download the artifact
           curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
