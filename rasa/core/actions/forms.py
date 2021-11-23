@@ -216,6 +216,7 @@ class FormAction(LoopAction):
         Returns:
             The slot name or `None`
         """
+
         return (
             tracker.get_slot(REQUESTED_SLOT)
             if tracker.active_loop_name == self.name()
@@ -330,6 +331,7 @@ class FormAction(LoopAction):
         slot_mappings = self.get_mappings_for_slot(event.key, domain)
 
         for mapping in slot_mappings:
+            logger.debug(f"ALWX got_mapping: {mapping}")
             slot_values[event.key] = event.value
 
         return slot_values
@@ -358,6 +360,7 @@ class FormAction(LoopAction):
         )
 
         for event in events_since_last_user_uttered:
+            logger.debug(f"ALWX event: \"{event.as_story_string()}\"")
             if not tracker.active_loop:
                 # pre-filled slots were already validated at form activation
                 break
@@ -367,6 +370,7 @@ class FormAction(LoopAction):
 
             slot_values = self._update_slot_values(event, tracker, domain, slot_values)
 
+        # TODO(alwx): it returns {'slot_0': 'bye'} but should be {'slot_A': 'bye'}
         return slot_values
 
     async def validate(
@@ -381,6 +385,12 @@ class FormAction(LoopAction):
         If nothing was extracted reject execution of the form action.
         Subclass this method to add custom validation and rejection logic
         """
+
+        # extract requested slot
+        slot_to_fill = self.get_slot_to_fill(tracker)
+        logger.debug(f"ALWX Trying to extract requested slot {slot_to_fill}")
+
+        # TODO(alwx):
         slot_values = self._get_slot_extractions(tracker, domain)
 
         validation_events = await self.validate_slots(
@@ -394,9 +404,6 @@ class FormAction(LoopAction):
             # to be filled by the user.
             if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
-
-        # extract requested slot
-        slot_to_fill = self.get_slot_to_fill(tracker)
 
         if (
             slot_to_fill

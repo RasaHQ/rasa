@@ -1,8 +1,11 @@
 from abc import ABC
 from typing import List, TYPE_CHECKING
+import logging
 
 from rasa.core.actions.action import Action
 from rasa.shared.core.events import Event, ActiveLoop
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from rasa.core.channels import OutputChannel
@@ -21,6 +24,7 @@ class LoopAction(Action, ABC):
     ) -> List[Event]:
         events = []
 
+        logger.debug(f"ALWX potentially activate {self.name()}")
         if not await self.is_activated(output_channel, nlg, tracker, domain):
             events += self._default_activation_events()
             events += await self.activate(output_channel, nlg, tracker, domain)

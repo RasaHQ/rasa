@@ -1154,6 +1154,8 @@ class ActionExtractSlots(Action):
 
         for slot in user_slots:
             for mapping in slot.mappings:
+                logger.debug(f"ALWX one more got_mapping: '{mapping}'")
+
                 intent_is_desired = SlotMapping.intent_is_desired(
                     mapping, tracker, domain
                 )
