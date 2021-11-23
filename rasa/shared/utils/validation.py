@@ -243,10 +243,12 @@ def validate_training_data_format_version(
 
     try:
         parsed_version = version.parse(version_value)
+        latest_version = version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION)
+
         if isinstance(parsed_version, LegacyVersion):
             raise TypeError
 
-        if parsed_version < LATEST_TRAINING_DATA_FORMAT_VERSION:
+        if parsed_version < latest_version:
             rasa.shared.utils.io.raise_warning(
                 f"Training data file {filename} has a lower "
                 f"format version than your Rasa Open Source installation: "
