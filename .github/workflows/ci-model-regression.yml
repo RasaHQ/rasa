@@ -433,7 +433,7 @@ jobs:
     steps:
       - name: Run Datadog Agent
         run: |
-          ./github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
+          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
       - name: Checkout
         uses: actions/checkout@v2
 
