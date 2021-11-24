@@ -431,6 +431,24 @@ jobs:
     if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
+      - name: Run DataDog Agent
+        run: |
+          set -x
+          DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=${{ secrets.DD_API_KEY }} DD_SITE="datadoghq.eu" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
+          DATADOG_YAML_PATH=/etc/datadog-agent/datadog.yaml
+          sudo chmod 666 $DATADOG_YAML_PATH
+
+          # echo -e "\nenv: rasa-regression-tests\ntags:\n- service: rasa" >> $DATADOG_YAML_PATH
+          echo "env: rasa-regression-tests" >> $DATADOG_YAML_PATH
+          echo "tags:" >> $DATADOG_YAML_PATH
+          echo "- service: rasa" >> $DATADOG_YAML_PATH
+          echo "- dataset: ${{ matrix.dataset }}" >> $DATADOG_YAML_PATH
+          echo "- config: ${{ matrix.config }}" >> $DATADOG_YAML_PATH
+
+          tail $DATADOG_YAML_PATH  # debug code
+          sudo service datadog-agent restart
+          sleep 2  # debug code
+          sudo datadog-agent status  # debug code
       - name: Checkout
         uses: actions/checkout@v2
 
