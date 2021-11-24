@@ -446,8 +446,11 @@ jobs:
           echo "- config: ${{ matrix.config }}" >> $DATADOG_YAML_PATH
 
           tail $DATADOG_YAML_PATH  # debug code
+
+          ls -al /etc/datadog-agent/conf.d/system_core.d/  # conf.yaml /etc/datadog-agent/conf.d/system_core.d/conf.yaml
+
           sudo service datadog-agent restart
-          sleep 2  # debug code
+          sleep 10  # debug code
           sudo datadog-agent status  # debug code
       - name: Checkout
         uses: actions/checkout@v2
