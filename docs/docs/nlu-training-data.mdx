@@ -235,8 +235,30 @@ examples for every combination of entity and role or group label.
 To enable the model to generalize, make sure to have some variation in your training examples.
 For example, you should  include examples like `fly TO y FROM x`, not only `fly FROM x TO y`.
 
-To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
-[forms](forms.mdx) or use [custom actions](custom-actions.mdx) to extract the corresponding entity directly from the tracker.
+To fill slots from entities with a specific role/group, you need to define a `from_entity` [slot mapping](./domain.mdx#slot-mappings)
+for the slot and specify the role/group that is required. For example:
+
+```yaml-rasa
+entities:
+   - city:
+       roles:
+       - departure
+       - destination
+
+slots:
+  departure:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: city
+      role: departure
+  destination:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: city
+      role: destination
+```
 
 ### Entity Roles and Groups influencing dialogue predictions
 

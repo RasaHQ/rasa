@@ -93,27 +93,38 @@ class MessageProcessor:
         self.max_number_of_predictions = max_number_of_predictions
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
-        self.model_metadata, self.graph_runner = self._load_model(model_path)
+        self.model_filename, self.model_metadata, self.graph_runner = self._load_model(
+            model_path
+        )
         self.model_path = Path(model_path)
-        self.model_filename = os.path.basename(get_latest_model(Path(model_path)) or "")
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter
 
     @staticmethod
-    def _load_model(model_path: Union[Text, Path]) -> Tuple[ModelMetadata, GraphRunner]:
+    def _load_model(
+        model_path: Union[Text, Path]
+    ) -> Tuple[Text, ModelMetadata, GraphRunner]:
         """Unpacks a model from a given path using the graph model loader."""
-        model_tar = get_latest_model(model_path)
-        if not model_tar:
-            raise ModelNotFound(f"No model found at path '{model_path}'.")
+        try:
+            if os.path.isfile(model_path):
+                model_tar = model_path
+            else:
+                model_tar = get_latest_model(model_path)
+                if not model_tar:
+                    raise ModelNotFound(f"No model found at path '{model_path}'.")
+        except TypeError:
+            raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
+        logger.info(f"Loading model {model_tar}...")
         with tempfile.TemporaryDirectory() as temporary_directory:
             try:
-                return loader.load_predict_graph_runner(
+                metadata, runner = loader.load_predict_graph_runner(
                     Path(temporary_directory),
                     Path(model_tar),
                     LocalModelStorage,
                     DaskGraphRunner,
                 )
+                return os.path.basename(model_tar), metadata, runner
             except tarfile.ReadError:
                 raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
