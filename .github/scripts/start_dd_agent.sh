@@ -3,9 +3,9 @@
 DD_API_KEY=$1
 dataset=$2
 config=$3
-echo $DD_API_KEY
-echo $dataset
-echo $config
+
+echo "Dataset: ${dataset}"
+echo "Config: ${config}"
 
 # Install Datadog system agent
 DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY DD_SITE="datadoghq.eu" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"

@@ -202,6 +202,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Run Datadog Agent
+        run: |
+          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
+
       - name: Checkout dataset
         uses: actions/checkout@v2
         with:
@@ -436,9 +440,6 @@ jobs:
 
       - name: Run Datadog Agent
         run: |
-          set -x
-          pwd
-          ls -al
           .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
 
       - name: Checkout dataset
