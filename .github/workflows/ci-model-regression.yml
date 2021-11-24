@@ -449,7 +449,7 @@ jobs:
 
           tail $DATADOG_YAML_PATH  # debug code
 
-          mv /etc/datadog-agent/conf.d/system_core.d/conf.yaml.example /etc/datadog-agent/conf.d/system_core.d/conf.yaml
+          sudo mv /etc/datadog-agent/conf.d/system_core.d/conf.yaml.example /etc/datadog-agent/conf.d/system_core.d/conf.yaml
 
           sudo service datadog-agent restart
           sleep 10  # debug code
