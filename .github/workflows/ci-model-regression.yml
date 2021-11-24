@@ -433,8 +433,9 @@ jobs:
     steps:
       - name: Run DataDog Agent
         run: |
-          set -x
           DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=${{ secrets.DD_API_KEY }} DD_SITE="datadoghq.eu" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
+          set -x
+
           DATADOG_YAML_PATH=/etc/datadog-agent/datadog.yaml
           sudo chmod 666 $DATADOG_YAML_PATH
 
@@ -442,12 +443,13 @@ jobs:
           echo "env: rasa-regression-tests" >> $DATADOG_YAML_PATH
           echo "tags:" >> $DATADOG_YAML_PATH
           echo "- service: rasa" >> $DATADOG_YAML_PATH
+          echo "- markusci: true" >> $DATADOG_YAML_PATH
           echo "- dataset: ${{ matrix.dataset }}" >> $DATADOG_YAML_PATH
           echo "- config: ${{ matrix.config }}" >> $DATADOG_YAML_PATH
 
           tail $DATADOG_YAML_PATH  # debug code
 
-          ls -al /etc/datadog-agent/conf.d/system_core.d/  # conf.yaml /etc/datadog-agent/conf.d/system_core.d/conf.yaml
+          mv /etc/datadog-agent/conf.d/system_core.d/conf.yaml.example /etc/datadog-agent/conf.d/system_core.d/conf.yaml
 
           sudo service datadog-agent restart
           sleep 10  # debug code
