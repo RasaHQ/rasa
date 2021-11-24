@@ -439,7 +439,7 @@ jobs:
           set -x
           pwd
           ls -al
-          ../scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
+          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
 
       - name: Checkout dataset
         uses: actions/checkout@v2
