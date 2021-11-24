@@ -318,15 +318,7 @@ async def _convert_to_yaml(
 async def _convert_file_to_yaml(
     source_file: Path, target_dir: Path, converter: "TrainingDataConverter"
 ) -> bool:
-    """Converts a single training data file to `YAML` format.
 
-    Args:
-        source_file: Training data file to be converted.
-        target_dir: Target directory for the converted file.
-        converter: Converter to be used.
-    Returns:
-        `True` if file was converted, `False` otherwise.
-    """
     if not rasa.shared.data.is_valid_filetype(source_file):
         return False
 
