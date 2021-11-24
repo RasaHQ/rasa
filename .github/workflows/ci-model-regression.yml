@@ -442,10 +442,10 @@ jobs:
           # echo -e "\nenv: rasa-regression-tests\ntags:\n- service: rasa" >> $DATADOG_YAML_PATH
           echo "env: rasa-regression-tests" >> $DATADOG_YAML_PATH
           echo "tags:" >> $DATADOG_YAML_PATH
-          echo "- service: rasa" >> $DATADOG_YAML_PATH
-          echo "- markusci: true" >> $DATADOG_YAML_PATH
-          echo "- dataset: ${{ matrix.dataset }}" >> $DATADOG_YAML_PATH
-          echo "- config: ${{ matrix.config }}" >> $DATADOG_YAML_PATH
+          echo "- service:rasa" >> $DATADOG_YAML_PATH
+          echo "- markusci:true" >> $DATADOG_YAML_PATH
+          echo "- dataset:${{ matrix.dataset }}" >> $DATADOG_YAML_PATH
+          echo "- config:${{ matrix.config }}" >> $DATADOG_YAML_PATH
 
           tail $DATADOG_YAML_PATH  # debug code
 
