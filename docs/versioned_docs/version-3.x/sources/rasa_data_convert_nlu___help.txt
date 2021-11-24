@@ -1,0 +1,25 @@
+usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,yaml}]
+                             [--data DATA [DATA ...]] [--out OUT]
+                             [-l LANGUAGE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f {json,yaml}, --format {json,yaml}
+                        Output format the training data should be converted
+                        into. (default: yaml)
+  --data DATA [DATA ...]
+                        Paths to the files or directories containing Rasa NLU
+                        data. (default: data)
+  --out OUT             File (for `json`) or existing path (for `yaml`) where
+                        to save training data in Rasa format. (default:
+                        converted_data)
+  -l LANGUAGE, --language LANGUAGE
+                        Language of data. (default: en)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)

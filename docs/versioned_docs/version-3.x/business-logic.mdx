@@ -1,0 +1,314 @@
+---
+id: business-logic
+sidebar_label: Handling Business Logic
+title: Handling Business Logic
+abstract: Conversational assistants often need to ask users for information in order to help them. You can use Forms to collect the required user information and fulfill a request.
+---
+
+Conversational assistants often support user goals that involve collecting required information
+from the user before doing something for them. For example, a restaurant search bot would need to gather a few pieces of information
+about the user's preferences to find them a suitable restaurant:
+
+<Chat caption="Finding a restaurant">
+<ChatUserText>Help me find a restaurant</ChatUserText>
+<ChatBotText>What cuisine?</ChatBotText>
+<ChatUserText>I'm looking for Tuscan food</ChatUserText>
+<ChatBotText>How many people?</ChatBotText>
+<ChatUserText>5</ChatUserText>
+<ChatBotText>Do you want to sit outside?</ChatBotText>
+<ChatUserText>Yes</ChatUserText>
+<ChatBotText>All done!</ChatBotText>
+<ChatBotText>I am going to run a restaurant search using the following parameters:</ChatBotText>
+<ChatBotText><p>- cuisine: Tuscan</p>
+<p>- num_people: 5</p>
+<p>- outdoor_seating: True</p></ChatBotText>
+</Chat>
+
+
+This page is a guide on handling the **business logic** of collecting user information to fulfill a request.
+In the example above, business logic includes needing to know the user's preferred cuisine, party size, and seating preference.
+The examples on this page come from the [formbot example bot](https://github.com/RasaHQ/rasa/tree/main/examples/formbot).
+
+## Step-by-step Guide on Using Forms to Handle Business Logic
+
+[Forms](forms.mdx) work by prompting the user for information until it has gathered all required information.
+The information is stored in [slots](domain.mdx#slots). Once all the required slots are filled,
+the bot fulfills the user's original request.
+
+
+### 1. Defining the form
+
+To define a form, you will need to define:
+
+* Slot mappings: The required info to collect
+* Responses: How your bot should ask for each piece of information
+
+#### Slot Mappings
+
+For the restaurant search example, we want to collect the following information
+from the user:
+
+- cuisine
+- number of people
+- whether they want to sit outside or not
+
+
+You define a form in your domain by specifying a list of required slots under the form name:
+
+```yaml-rasa title="domain.yml"
+forms:
+  restaurant_form:
+    required_slots:
+        - cuisine
+        - num_people
+        - outdoor_seating
+```
+
+These slots need to be added to your domain's `slots` section, along with [slot mappings](domain.mdx#slot-mappings) which define how the slots can be filled. For any slot filled `from_entity`, the entity also needs to be added
+to the domain. Slots filled by forms should usually not influence
+the conversation, so set `influence_conversation` to `false:
+
+```yaml-rasa title="domain.yml"
+entities:
+  - cuisine
+  - number
+slots:
+  cuisine:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: cuisine
+  num_people:
+    type: float
+    mappings:
+    - type: from_entity
+      entity: number
+  outdoor_seating:
+    type: bool
+    mappings:
+    - type: from_intent
+      intent: affirm
+      value: true
+      conditions:
+       - active_loop: restaurant_form
+         requested_slot: outdoor_seating
+    - type: from_intent
+      intent: deny
+      value: false
+      conditions:
+      - active_loop: restaurant_form
+        requested_slot: outdoor_seating
+```
+
+The `number` slot is filled from an entity. Entities like numbers
+can be extracted by [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add  DucklingEntityExtractor
+to your NLU pipeline:
+
+```yaml-rasa title="config.yml"
+language: en
+pipeline:
+# other components
+- name: DucklingEntityExtractor
+  dimensions: ["number"]
+```
+
+##### Slot Mappings with Conditions
+
+The `outdoor_seating` slot is
+filled based on the user's intent: If it is `affirm`, it'll be `true`, if it is
+`deny`, it'll be `false`. 
+
+However, the slot should only be set to `true` or `false` if the user was responding to the question, `Do you want to sit outside?`.
+To enforce this condition, the `conditions` for the `outdoor_seating` slot requires that `restaurant_form` is active and that the requested slot is `outdoor_seating`. 
+If there were no conditions and the user had sent a message with the `affirm` or `deny` intent earlier in the conversation,
+the `outdoor_seating` slot would already be filled when the form was activated. Therefore the form would not prompt the user for their outdoor seating preference. See [mapping conditions](./domain.mdx#mapping-conditions) for more information.
+
+
+#### Validating Slots
+
+Often, you'll want to validate the user's input before accepting it,
+for example by checking if the given cuisine is in your assistant's database
+of available cuisines.
+See the docs on [validating form input](forms.mdx#validating-form-input) for more information
+about validation actions.
+
+#### Requesting Slots
+
+To specify how the bot should ask for the required information,
+you define [`responses`](domain.mdx#responses) called `utter_ask_{slotname}` in your domain:
+
+```yaml-rasa title="domain.yml"
+responses:
+  utter_ask_cuisine:
+    - text: "What cuisine?"
+  utter_ask_num_people:
+    - text: "How many people?"
+  utter_ask_outdoor_seating:
+    - text: "Do you want to sit outside?"
+```
+
+
+### 2. Updating the configuration
+
+A form's [happy path](glossary.mdx#happy--unhappy-paths) should be defined as a [rule](rules.mdx) which means you'll need to add the [RulePolicy](policies.mdx#rule-policy)
+to your policies:
+
+```yaml-rasa title="config.yml"
+policies:
+  - name: RulePolicy
+```
+
+### 3. Creating rules
+
+The form itself takes care of the logic around asking the user for all
+the required information, so
+you need only two rules for a form's happy path:
+One that defines when it starts, and one that defines what happens when it has been filled.
+For the restaurant search example, in real life the assistant would look up
+a restaurant based on the user's preferences.
+In this case, the bot will utter a response with the details
+that would be used for a search.
+
+
+```yaml-rasa title="rules.yml"
+rules:
+  - rule: activate restaurant form
+    steps:
+      - intent: request_restaurant   # intent that triggers form activation
+      - action: restaurant_form      # run the form
+      - active_loop: restaurant_form # this form is active
+
+  - rule: submit form
+    condition:
+    - active_loop: restaurant_form   # this form must be active
+    steps:
+      - action: restaurant_form      # run the form
+      - active_loop: null            # the form is no longer active because it has been filled
+      - action: utter_submit         # action to take after the form is complete
+      - action: utter_slots_values   # action to take after the form is complete
+```
+
+By splitting up the activation and submission of the form,
+the rules will still apply if the user provides
+[unexpected input](unexpected-input.mdx) or interrupts
+the form with [chitchat](chitchat-faqs.mdx).
+
+
+### 4. Updating the NLU training data
+
+You'll need to add examples for the intent that should activate the form, as well as
+examples for how the user will provide the required information.
+
+#### Form Activation Intent(s)
+
+You need to provide training examples for the
+intent(s) that should activate the form.
+Add examples for the intent `request_restaurant`:
+
+```yaml-rasa title="nlu.yml"
+nlu:
+- intent: request_restaurant
+  examples: |
+    - im looking for a restaurant
+    - can i get [swedish](cuisine) food in any area
+    - a restaurant that serves [caribbean](cuisine) food
+    - id like a restaurant
+    - im looking for a restaurant that serves [mediterranean](cuisine) food
+    - can i find a restaurant that serves [chinese](cuisine)
+```
+
+Slots filled with `from_entity` can by default be filled by any user utterance, regardless of the intent, as
+long as the correct entity is extracted. That means that if the user provides the `cuisine` entity as part of
+their first message, the slot will be filled at the beginning of the form and the bot will not
+ask them for the cuisine again.
+
+#### Form Filling Intent(s)
+
+While the form is filling slots, it will not pay attention to which intent was predicted
+unless a slot mapping explicitly requires or excludes an intent.
+
+For the restaurant search example, the `outdoor_seating` slot is mapped to two intents,
+so you need to add training data for these intents.
+
+For the `cuisine` and `number` slots, no intent is specified, so you can add examples to a generic `inform` intent. You need
+to annotate the `cuisine` entity so that DIETClassifier can
+learn to extract it. You don't need to annotate the `number` entity since DucklingEntityExtractor is a rule-based extractors
+that isn't trained on your training data. Only a few examples are shown for each intent;
+for your bot to work well, you should add more training data than is shown here:
+
+
+```yaml-rasa title="nlu.yml"
+nlu:
+- intent: affirm
+  examples: |
+    - Yes
+    - yes, please
+    - yup
+- intent: deny
+  examples: |
+    - no don't
+    - no
+    - no I don't want that
+
+- intent: inform
+  examples: |
+    - [afghan](cuisine) food
+    - how bout [asian oriental](cuisine)
+    - what about [indian](cuisine) food
+    - uh how about [turkish](cuisine) type of food
+    - um [english](cuisine)
+    - im looking for [tuscan](cuisine) food
+    - id like [moroccan](cuisine) food
+    - for ten people
+    - 2 people
+    - for three people
+    - just one person
+    - book for seven people
+    - 2 please
+    - nine people
+```
+
+Update your domain to include these intents:
+
+```yaml-rasa title="domain.yml"
+intents:
+  - request_restaurant
+  - affirm
+  - deny
+  - inform
+```
+
+### 5. Defining the responses
+
+Add the responses that are sent after the form has been submitted:
+
+```yaml-rasa title="domain.yml"
+responses:
+  utter_submit:
+  - text: "All done!"
+  utter_slots_values:
+  - text: "I am going to run a restaurant search using the following parameters:\n
+            - cuisine: {cuisine}\n
+            - num_people: {num_people}\n
+            - outdoor_seating: {outdoor_seating}"
+```
+
+## Summary
+
+Forms can simplify the logic of collecting user
+information. To define a minimal form like the restaurant search
+example above, this is a summary of what you'll need to do:
+
+- [ ] Add the RulePolicy to `config.yml`
+- [ ] Define the form with required slots in the domain
+- [ ] Add slot mappings for all required slots in the domain
+- [ ] Add rules for activating and submitting the form
+- [ ] Add examples for the intent(s) to activate your form
+- [ ] Add examples for the intent(s) to fill the required slots
+- [ ] Define an action or response for the bot to take when the form is completed
+- [ ] Update your domain with new intents and actions you've defined
+
+To try out your newly defined form, retrain the bot's model by running `rasa train` and start `rasa shell`.
+Because the DucklingEntityExtractor is being used to extract
+entities, you'll need to start Duckling in the background as well
+(see the [instructions for running Duckling](components.mdx#DucklingEntityExtractor)).

@@ -1,0 +1,9 @@
+event_broker:
+  type: kafka
+  security_protocol: SASL_PLAINTEXT
+  topic: topic
+  url: localhost
+  partition_by_sender: True
+  sasl_username: username
+  sasl_password: password
+  sasl_mechanism: PLAIN

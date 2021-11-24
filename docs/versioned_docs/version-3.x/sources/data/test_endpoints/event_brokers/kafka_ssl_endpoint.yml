@@ -1,0 +1,9 @@
+event_broker:
+  type: kafka
+  security_protocol: SSL
+  topic: topic
+  url: localhost
+  ssl_cafile: CARoot.pem
+  ssl_certfile: certificate.pem
+  ssl_keyfile: key.pem
+  ssl_check_hostname: True

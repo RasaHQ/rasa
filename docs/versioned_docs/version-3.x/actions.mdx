@@ -1,0 +1,29 @@
+---
+id: actions
+sidebar_label: Overview
+title: Actions
+abstract: After each user message, the model will predict an action that the assistant should perform next. This page gives you an overview of the different types of actions you can use.
+---
+
+## Responses
+A [response](./responses.mdx) is a message the assistant will send back to the user. This is
+the action you will use most often, when you want the assistant to send text, images, buttons
+or similar to the user.
+
+## Custom Actions
+A [custom action](./custom-actions.mdx) is an action that can run any code you want. This can be used to make an
+API call, or to query a database for example.
+
+## Forms
+[Forms](./forms.mdx) are a special type of custom action, designed to handle business logic. If you have
+any conversation designs where you expect the assistant to ask for a specific set of
+information, you should use forms.
+
+## Default Actions
+[Default actions](./default-actions.mdx) are actions that are built into the dialogue manager by default. Most of
+these are automatically predicted based on certain conversation situations. You may want to
+customize these to personalize your assistant.
+
+## Slot Validation Actions
+A [slot validation action](./slot-validation-actions.mdx) is a special type of custom action, designed to handle custom extraction and/or validation of slot values.
+This can be used to validate slots with predefined mappings or extract slots with custom mappings.
