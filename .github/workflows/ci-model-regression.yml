@@ -433,24 +433,7 @@ jobs:
     steps:
       - name: Run Datadog Agent
         run: |
-          # Install Datadog system agent
-          DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=${{ secrets.DD_API_KEY }} DD_SITE="datadoghq.eu" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
-          DATADOG_YAML_PATH=/etc/datadog-agent/datadog.yaml
-          sudo chmod 666 $DATADOG_YAML_PATH
-
-          # Associate metrics with tags and env
-          echo "env: rasa-regression-tests" >> $DATADOG_YAML_PATH
-          echo "tags:" >> $DATADOG_YAML_PATH
-          echo "- service:rasa" >> $DATADOG_YAML_PATH
-          echo "- markusci:true" >> $DATADOG_YAML_PATH
-          echo "- dataset:${{ matrix.dataset }}" >> $DATADOG_YAML_PATH
-          echo "- config:${{ matrix.config }}" >> $DATADOG_YAML_PATH
-
-          # Enable system_core integration
-          sudo mv /etc/datadog-agent/conf.d/system_core.d/conf.yaml.example /etc/datadog-agent/conf.d/system_core.d/conf.yaml
-
-          # Apply changes
-          sudo service datadog-agent restart
+          ./github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
       - name: Checkout
         uses: actions/checkout@v2
 
