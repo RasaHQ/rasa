@@ -259,8 +259,6 @@ jobs:
           echo "DATASET=${DATASET}" >> $GITHUB_ENV
           echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
           echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
-          echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
-          echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
           echo "EXTERNAL_DATASET_REPOSITORY_BRANCH=${EXTERNAL_DATASET_REPOSITORY_BRANCH}" >> $GITHUB_ENV
           echo "IS_EXTERNAL=${IS_EXTERNAL}" >> $GITHUB_ENV
 
@@ -491,8 +489,6 @@ jobs:
           echo "DATASET=${DATASET}" >> $GITHUB_ENV
           echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
           echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
-          echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
-          echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
           echo "EXTERNAL_DATASET_REPOSITORY_BRANCH=${EXTERNAL_DATASET_REPOSITORY_BRANCH}" >> $GITHUB_ENV
           echo "IS_EXTERNAL=${IS_EXTERNAL}" >> $GITHUB_ENV
 
@@ -600,6 +596,7 @@ jobs:
 
       # Download the results of the previous runs
       # The report file is extended with new results every next job run
+
       - name: Download artifact
         uses: actions/download-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
