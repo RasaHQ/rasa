@@ -640,7 +640,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report.json
-          path: ./report-{{ matrix.dataset }}-{{ matrix.config }}.json
+          path: ./report-${{ matrix.dataset }}-${{ matrix.config }}.json
 
   combine_reports:
     name: Combine reports
