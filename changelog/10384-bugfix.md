@@ -1,1 +1,0 @@
-Validate regular expressions in nlu training data configuration.
