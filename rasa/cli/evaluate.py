@@ -168,7 +168,9 @@ def _run_markers(
 
     telemetry.track_markers_parsed_count(num_markers, max_depth, branching_factor)
 
-    tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
+    tracker_loader = _create_tracker_loader(
+        endpoint_config, strategy, domain, count, seed
+    )
 
     def _append_suffix(path: Optional[Path], suffix: Text) -> Optional[Path]:
         return path.parent / (path.name + suffix) if path else None
@@ -185,7 +187,11 @@ def _run_markers(
 
 
 def _create_tracker_loader(
-    endpoint_config: Text, strategy: Text, count: Optional[int], seed: Optional[int]
+    endpoint_config: Text,
+    strategy: Text,
+    domain: Domain,
+    count: Optional[int],
+    seed: Optional[int],
 ) -> MarkerTrackerLoader:
     """Create a tracker loader against the configured tracker store.
 
@@ -193,6 +199,7 @@ def _create_tracker_loader(
         endpoint_config: Path to the endpoint configuration defining the tracker
                          store to use.
         strategy: Strategy to use when selecting trackers to extract from.
+        domain: The domain to use when connecting to the tracker store.
         count: (Optional) Number of trackers to extract from (for any strategy
                except 'all').
         seed: (Optional) The seed to initialise the random number generator for
@@ -203,5 +210,5 @@ def _create_tracker_loader(
         the configured tracker store.
     """
     endpoints = AvailableEndpoints.read_endpoints(endpoint_config)
-    tracker_store = TrackerStore.create(endpoints.tracker_store)
+    tracker_store = TrackerStore.create(endpoints.tracker_store, domain=domain)
     return MarkerTrackerLoader(tracker_store, strategy, count, seed,)
