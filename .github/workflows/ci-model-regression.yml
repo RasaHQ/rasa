@@ -639,8 +639,13 @@ jobs:
         uses: actions/upload-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          name: report.json
-          path: ./report-${{ matrix.dataset }}-${{ matrix.config }}.json
+          name: report-{{ matrix.dataset }}-${{ matrix.config }}.json
+          path: ${{ github.workspace }}/reports
+
+      - name: Display structure of downloaded files
+        continue-on-error: true
+        run: ls -R
+        working-directory: ${{ github.workspace }}/reports
 
   combine_reports:
     name: Combine reports
@@ -667,6 +672,7 @@ jobs:
         # TODO download according to same matrix
 
       - name: Display structure of downloaded files
+        continue-on-error: true
         run: ls -R
         working-directory: ${{ github.workspace }}/reports
 
