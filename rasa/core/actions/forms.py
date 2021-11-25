@@ -258,7 +258,6 @@ class FormAction(LoopAction):
         validate_name = f"validate_{self.name()}"
 
         if validate_name not in domain.action_names_or_texts:
-            # TODO: should return empty list
             return events
 
         _tracker = self._temporary_tracker(tracker, events, domain)
@@ -272,7 +271,6 @@ class FormAction(LoopAction):
         # If the custom action doesn't return a SlotSet event for an extracted slot
         # candidate we assume that it was valid. The custom action has to return a
         # SlotSet(slot_name, None) event to mark a Slot as invalid.
-        # TODO: should only return validate_events
         return validate_events + [
             event for event in events if event.key not in validated_slot_names
         ]
