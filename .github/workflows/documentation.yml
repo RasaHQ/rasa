@@ -105,7 +105,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@0066b88440aa9562be742e2c60ee750fc57d8849  # v2.2.2
       with:
         python-version: 3.7
 
