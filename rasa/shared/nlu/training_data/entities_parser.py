@@ -1,6 +1,7 @@
 import re
 from json import JSONDecodeError
 from typing import Text, List, Dict, Match, Optional, NamedTuple, Any
+import logging
 
 import rasa.shared.nlu.training_data.util
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
@@ -12,20 +13,25 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.shared.nlu.training_data.message import Message
-
+import rasa.utils.io as utils_io
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
 GROUP_ENTITY_DICT = "entity_dict"
 GROUP_ENTITY_TEXT = "entity_text"
 GROUP_COMPLETE_MATCH = 0
+GROUP_ENTITY_DICT_LIST = "list_entity_dicts"
 
-# regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict})`
+# regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict}|[list_entity_dicts])`
 ENTITY_REGEX = re.compile(
-    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\})"  # noqa: E501, W505
+    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\}|\[(?P<list_entity_dicts>.*?)\])"  # noqa: E501, W505
 )
 
+SINGLE_ENTITY_DICT = re.compile(
+    r"{(?P<entity_dict>[^}]+?)\}"
+)
 
+logger = logging.getLogger(__name__)
 class EntityAttributes(NamedTuple):
     """Attributes of an entity defined in markdown data."""
 
@@ -49,23 +55,48 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
     entities = []
     offset = 0
 
+    logger.debug('Starting extraction')
     for match in re.finditer(ENTITY_REGEX, example):
-        entity_attributes = extract_entity_attributes(match)
+        logger.debug(f"{match}")
+        if match.groupdict()[GROUP_ENTITY_DICT] or match.groupdict()[GROUP_ENTITY_TYPE]:
+            entity_attributes = extract_entity_attributes(match)
 
-        start_index = match.start() - offset
-        end_index = start_index + len(entity_attributes.text)
-        offset += len(match.group(0)) - len(entity_attributes.text)
+            start_index = match.start() - offset
+            end_index = start_index + len(entity_attributes.text)
+            offset += len(match.group(0)) - len(entity_attributes.text)
 
-        entity = rasa.shared.nlu.training_data.util.build_entity(
-            start_index,
-            end_index,
-            entity_attributes.value,
-            entity_attributes.type,
-            entity_attributes.role,
-            entity_attributes.group,
-        )
-        entities.append(entity)
+            entity = rasa.shared.nlu.training_data.util.build_entity(
+                start_index,
+                end_index,
+                entity_attributes.value,
+                entity_attributes.type,
+                entity_attributes.role,
+                entity_attributes.group,
+            )
+            entities.append(entity)
+            logger.debug(f"entity {entity}")
+        else:
+            entity_text = match.groupdict()[GROUP_ENTITY_TEXT]
+            # iterate over the list
 
+            start_index = match.start() - offset
+            end_index = start_index + len(entity_text)
+            offset += len(match.group(0)) - len(entity_text)
+
+            for m2 in re.finditer(SINGLE_ENTITY_DICT, match.groupdict()[GROUP_ENTITY_DICT_LIST]):
+
+                entity_attributes = extract_entity_attributes_from_dict(entity_text=entity_text, match=m2)
+
+                entity = rasa.shared.nlu.training_data.util.build_entity(
+                    start_index,
+                    end_index,
+                    entity_attributes.value,
+                    entity_attributes.type,
+                    entity_attributes.role,
+                    entity_attributes.group,
+                )
+                entities.append(entity)                
+                logger.debug(f"entity {entity}")
     return entities
 
 
