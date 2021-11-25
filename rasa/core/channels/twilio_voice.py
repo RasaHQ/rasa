@@ -86,7 +86,6 @@ class TwilioVoiceInput(InputChannel):
         "Polly.Filiz",
         "Polly.Gwyneth",
         "Polly.Aditi",
-
     ]
 
     SUPPORTED_SPEECH_MODELS = ["default", "numbers_and_commands", "phone_call"]
