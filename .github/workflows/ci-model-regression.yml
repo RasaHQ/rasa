@@ -296,7 +296,14 @@ jobs:
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
+          set -x
+          if [[ ${{ job.name }} == *"gpu"* ]]; then
+            USE_GPU=true
+          else
+            USE_GPU=false
+          fi
+          echo "USE_GPU: $USE_GPU"
+          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} $USE_GPU '${{ matrix.dataset }}' '${{ matrix.config }}'
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
@@ -538,7 +545,14 @@ jobs:
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
+          set -x
+          if [[ ${{ job.name }} == *"gpu"* ]]; then
+            USE_GPU=true
+          else
+            USE_GPU=false
+          fi
+          echo "USE_GPU: $USE_GPU"
+          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} $USE_GPU '${{ matrix.dataset }}' '${{ matrix.config }}'
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2

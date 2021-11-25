@@ -1,8 +1,9 @@
 #!/bin/bash
 
 DD_API_KEY=$1
-dataset=$2
-config=$3
+USE_GPU=$2
+dataset=$3
+config=$4
 
 echo "Dataset: ${dataset}"
 echo "Config: ${config}"
@@ -32,10 +33,12 @@ set -x
 # Enable system_core integration
 sudo mv /etc/datadog-agent/conf.d/system_core.d/conf.yaml.example /etc/datadog-agent/conf.d/system_core.d/conf.yaml
 
+if [[ "${USE_GPU}" == "true" ]]; then
 # Install and enable NVML integration
 sudo datadog-agent integration --allow-root install -t datadog-nvml==1.0.1
 sudo -u dd-agent -H /opt/datadog-agent/embedded/bin/pip3 install grpcio pynvml
 sudo mv /etc/datadog-agent/conf.d/nvml.d/conf.yaml.example /etc/datadog-agent/conf.d/nvml.d/conf.yaml
+fi
 
 # Apply changes
 sudo service datadog-agent restart
