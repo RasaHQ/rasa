@@ -30,5 +30,10 @@ sudo chmod 666 $DATADOG_YAML_PATH
 # Enable system_core integration
 sudo mv /etc/datadog-agent/conf.d/system_core.d/conf.yaml.example /etc/datadog-agent/conf.d/system_core.d/conf.yaml
 
+# Install and enable NVML integration
+sudo datadog-agent integration --allow-root install -t datadog-nvml==1.0.1
+sudo -u dd-agent -H /opt/datadog-agent/embedded/bin/pip3 install grpcio pynvml
+sudo mv /etc/datadog-agent/conf.d/nvml.d/conf.yaml.example /etc/datadog-agent/conf.d/nvml.d/conf.yaml
+
 # Apply changes
 sudo service datadog-agent restart
