@@ -998,7 +998,14 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.log_message(user_message)
+                # cf. processor.handle_message (ignoring prediction loop run)
+                tracker = await app.agent.processor.log_message(
+                    user_message, should_save_tracker=False
+                )
+                tracker = await app.agent.processor.run_action_extract_slots(
+                    user_message.output_channel, tracker
+                )
+                app.agent.processor.save_tracker(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -1413,34 +1420,6 @@ def _test_data_file_from_payload(request: Request, temporary_directory: Path) ->
             file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
         )["training_files"]
     )
-
-
-def _validate_json_training_payload(rjs: Dict) -> None:
-    if "config" not in rjs:
-        raise ErrorResponse(
-            HTTPStatus.BAD_REQUEST,
-            "BadRequest",
-            "The training request is missing the required key `config`.",
-            {"parameter": "config", "in": "body"},
-        )
-
-    if "nlu" not in rjs and "stories" not in rjs:
-        raise ErrorResponse(
-            HTTPStatus.BAD_REQUEST,
-            "BadRequest",
-            "To train a Rasa model you need to specify at least one type of "
-            "training data. Add `nlu` and/or `stories` to the request.",
-            {"parameters": ["nlu", "stories"], "in": "body"},
-        )
-
-    if "stories" in rjs and "domain" not in rjs:
-        raise ErrorResponse(
-            HTTPStatus.BAD_REQUEST,
-            "BadRequest",
-            "To train a Rasa model with story training data, you also need to "
-            "specify the `domain`.",
-            {"parameter": "domain", "in": "body"},
-        )
 
 
 def _training_payload_from_yaml(
