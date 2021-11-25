@@ -17,7 +17,6 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "env: rasa-regression-tests"
     echo "tags:"
     echo "- service:rasa"
-    echo "- markusci:true"
     echo "- dataset:$dataset"
     echo "- config:$config"
 } >> $DATADOG_YAML_PATH
