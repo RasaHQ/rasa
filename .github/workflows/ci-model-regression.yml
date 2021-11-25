@@ -596,7 +596,6 @@ jobs:
 
       # Download the results of the previous runs
       # The report file is extended with new results every next job run
-
       - name: Download artifact
         uses: actions/download-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
