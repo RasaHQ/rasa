@@ -314,16 +314,15 @@ class FormAction(LoopAction):
     ) -> List[SlotSet]:
         # TODO: Better way to get this latest_message index is through an instance
         # variable, eg. tracker.latest_message_index
-        try:
-            index_from_end = next(
+        index_from_end = next(
+            (
                 i
                 for i, event in enumerate(reversed(tracker.events))
                 if event == Restarted() or event == tracker.latest_message
-            )
-            index = len(tracker.events) - index_from_end - 1
-        except StopIteration:
-            index = 0
-
+            ),
+            default=len(tracker.events) - 1,
+        )
+        index = len(tracker.events) - index_from_end - 1
         events_since_last_user_uttered = [
             event
             for event in itertools.islice(tracker.events, index, None)
