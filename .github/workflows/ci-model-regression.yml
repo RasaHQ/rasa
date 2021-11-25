@@ -294,6 +294,7 @@ jobs:
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Run Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
           .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ matrix.dataset }}' '${{ matrix.config }}'
 
