@@ -160,12 +160,14 @@ def _assemble_new_domain(
     domain_file: Path, new_forms: Dict[Text, Any], new_slots: Dict[Text, Any]
 ) -> Dict[Text, Any]:
     original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
-    new_domain = {}
+    new_domain: Dict[Text, Any] = {}
     for key, value in original_content.items():
         if key == KEY_SLOTS:
             new_domain.update({key: new_slots})
         elif key == KEY_FORMS:
             new_domain.update({key: new_forms})
+        elif key == "version":
+            new_domain.update({key: '"3.0"'})
         else:
             new_domain.update({key: value})
     return new_domain
@@ -198,6 +200,9 @@ def _migrate_domain_files(
         original_content = _create_back_up(file, backup)
 
         if KEY_SLOTS not in original_content and KEY_FORMS not in original_content:
+            if isinstance(original_content, dict):
+                original_content.update({"version": '"3.0"'})
+
             # this is done so that the other domain files can be moved
             # in the migrated directory
             rasa.shared.utils.io.write_yaml(
