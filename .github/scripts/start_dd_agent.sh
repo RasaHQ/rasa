@@ -27,6 +27,8 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "use_dogstatsd: true"
 } >> $DATADOG_YAML_PATH
 
+set -x
+
 # Enable system_core integration
 sudo mv /etc/datadog-agent/conf.d/system_core.d/conf.yaml.example /etc/datadog-agent/conf.d/system_core.d/conf.yaml
 
@@ -37,3 +39,8 @@ sudo mv /etc/datadog-agent/conf.d/nvml.d/conf.yaml.example /etc/datadog-agent/co
 
 # Apply changes
 sudo service datadog-agent restart
+
+sudo ls -al /etc/datadog-agent/conf.d/nvml.d/
+sudo cat /etc/datadog-agent/conf.d/nvml.d/conf.yaml
+sleep 10
+sudo datadog-agent status
