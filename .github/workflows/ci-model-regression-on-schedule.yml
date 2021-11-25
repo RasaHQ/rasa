@@ -346,6 +346,11 @@ jobs:
           name: report.json
           path: ./report.json
 
+      - name: Stop Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |
+          sudo service datadog-agent stop
+
       - name: Check duplicate issue
         if: failure()
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
