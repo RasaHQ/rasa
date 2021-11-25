@@ -1151,7 +1151,7 @@ async def test_action_extract_slots_predefined_mappings(
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             intents:
             - inform
             - greet
@@ -1159,6 +1159,7 @@ async def test_action_extract_slots_predefined_mappings(
             - deny
             entities:
             - city
+            - name
             slots:
               location:
                 type: text
@@ -1194,12 +1195,14 @@ async def test_action_extract_slots_predefined_mappings(
 
     action_extract_slots = ActionExtractSlots(action_endpoint=None)
     tracker = DialogueStateTracker.from_events("sender", evts=[user])
-    events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
+
+    with pytest.warns(None):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
 
     assert events == [SlotSet(slot_name, slot_value)]
 
@@ -1224,19 +1227,14 @@ async def test_action_extract_slots_predefined_mappings(
         domain,
     )
 
-    if new_user.entities:
-        # the slot gets filled with extracted entities during tracker.update
-        assert not updated_evts
-        assert tracker.get_slot(slot_name) == updated_value
-    else:
-        assert updated_evts == [SlotSet(slot_name, updated_value)]
+    assert updated_evts == [SlotSet(slot_name, updated_value)]
 
 
 async def test_action_extract_slots_with_from_trigger_mappings():
     domain = Domain.from_yaml(
         textwrap.dedent(
             """
-            version: "2.0"
+            version: "3.0"
             intents:
             - greet
             - inform
@@ -1301,6 +1299,8 @@ async def test_action_extract_slots_when_mapping_applies(
 
     domain = Domain.from_dict(
         {
+            "intents": ["greet"],
+            "entities": ["some_slot"],
             "slots": {entity_name: {"type": "text", "mappings": [slot_mapping]}},
             "forms": {form_name: {REQUIRED_SLOTS_KEY: [entity_name]}},
         }
@@ -1354,7 +1354,10 @@ async def test_action_extract_slots_with_list_slot(
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    version: "2.0"
+    version: "3.0"
+
+    entities:
+    - topping
 
     slots:
       {slot_name}:
@@ -1450,7 +1453,7 @@ async def test_action_extract_slots_with_matched_mapping_condition():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "2.0"
+            version: "3.0"
             intent:
             - greet
             - inform
@@ -1503,7 +1506,7 @@ async def test_action_extract_slots_no_matched_mapping_conditions():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "2.0"
+            version: "3.0"
             intent:
             - greet
             - inform
@@ -1695,6 +1698,7 @@ async def test_action_extract_slots_from_entity(
     )
     domain = Domain.from_dict(
         {
+            "entities": ["some_entity"],
             "slots": {"some_slot": {"type": "any", "mappings": [mapping],}},
             "forms": {form_name: {REQUIRED_SLOTS_KEY: ["some_slot"]}},
         }
@@ -1746,7 +1750,15 @@ async def test_extract_other_list_slot_from_entity(
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    version: "2.0"
+    version: "3.0"
+
+    entities:
+    - topping
+    - some_slot
+
+    intents:
+    - some_intent
+    - greeted
 
     slots:
       {slot_name}:
@@ -1958,7 +1970,7 @@ async def test_action_extract_slots_execute_validation_action(
 ):
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         intents:
         - greet
@@ -2022,7 +2034,7 @@ async def test_action_extract_slots_execute_validation_action(
 async def test_action_extract_slots_custom_action_and_predefined_slot_validation():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         intents:
         - inform
@@ -2089,7 +2101,7 @@ async def test_action_extract_slots_custom_action_and_predefined_slot_validation
 async def test_action_extract_slots_with_duplicate_custom_actions():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         intents:
         - inform
@@ -2161,7 +2173,7 @@ async def test_action_extract_slots_with_duplicate_custom_actions():
 async def test_action_extract_slots_disallowed_events(caplog: LogCaptureFixture):
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot_one:
@@ -2225,7 +2237,7 @@ async def test_action_extract_slots_warns_custom_action_exceptions(
 ):
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot_one:
@@ -2273,7 +2285,7 @@ async def test_action_extract_slots_warns_custom_action_exceptions(
 async def test_action_extract_slots_with_empty_conditions():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         entities:
         - city
@@ -2294,19 +2306,97 @@ async def test_action_extract_slots_with_empty_conditions():
 
     action_extract_slots = ActionExtractSlots(None)
 
-    events = await action_extract_slots.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
+    with pytest.warns(None):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
     assert events == [SlotSet("location", "Berlin")]
+
+
+async def test_action_extract_slots_with_not_existing_entity():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.0"
+
+        entities:
+        - city
+
+        slots:
+          location:
+            type: float
+            influence_conversation: false
+            mappings:
+            - type: from_entity
+              entity: city2
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi", entities=[{"entity": "city", "value": "Berlin"}])
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    with pytest.warns(
+        None,
+        match="Slot 'location' uses a `from_entity` mapping for "
+        "a non-existent entity 'city2'. "
+        "Skipping slot extraction because of invalid mapping.",
+    ):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+    assert events == []
+
+
+async def test_action_extract_slots_with_not_existing_intent():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.0"
+
+        intents:
+        - greet
+
+        slots:
+          location:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_intent
+              intent: affirm
+              value: some_value
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi", entities=[{"entity": "city", "value": "Berlin"}])
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    with pytest.warns(
+        UserWarning,
+        match=r"Slot 'location' uses a 'from_intent' mapping for "
+        r"a non-existent intent 'affirm'. "
+        r"Skipping slot extraction because of invalid mapping.",
+    ):
+        events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+    assert events == []
 
 
 async def test_action_extract_slots_with_none_value_predefined_mapping():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         entities:
         - some_entity
@@ -2347,7 +2437,7 @@ async def test_action_extract_slots_with_none_value_predefined_mapping():
 async def test_action_extract_slots_with_none_value_custom_mapping():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot:
@@ -2390,7 +2480,7 @@ async def test_action_extract_slots_with_none_value_custom_mapping():
 async def test_action_extract_slots_returns_bot_uttered():
     domain_yaml = textwrap.dedent(
         """
-        version: "2.0"
+        version: "3.0"
 
         slots:
           custom_slot:
@@ -2431,3 +2521,74 @@ async def test_action_extract_slots_returns_bot_uttered():
             domain,
         )
         assert all([isinstance(event, (SlotSet, BotUttered)) for event in events])
+
+
+async def test_action_extract_slots_does_not_raise_disallowed_warning_for_slot_events(
+    caplog: LogCaptureFixture,
+):
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.0"
+
+        slots:
+          custom_slot_a:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+              action: custom_extract_action
+          custom_slot_b:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: custom
+
+        actions:
+        - custom_extract_action
+        - action_validate_slot_mappings
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
+
+    action_server_url = "http:/my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": "custom_slot_a", "value": "test_A"},
+                ]
+            },
+        )
+
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": "custom_slot_b", "value": "test_B"},
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        with caplog.at_level(logging.INFO):
+            events = await action_extract_slots.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
+            )
+
+        assert len(caplog.messages) == 0
+
+        assert events == [
+            SlotSet("custom_slot_b", "test_B"),
+            SlotSet("custom_slot_a", "test_A"),
+        ]

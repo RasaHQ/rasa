@@ -24,7 +24,7 @@ from rasa.core.evaluation.marker_base import (
     InvalidMarkerConfig,
 )
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered
+from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered, SessionStarted
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.core.slots import Slot
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
@@ -458,6 +458,7 @@ def test_sessions_evaluated_separately():
     """Each marker applies an exact number of times (slots are immediately un-set)."""
 
     events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
@@ -478,6 +479,7 @@ def test_sessions_evaluated_separately():
 
 def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     events = [
+        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
         UserUttered(intent={INTENT_NAME_KEY: "ignored"}),
@@ -492,10 +494,10 @@ def test_sessions_evaluated_returns_event_indices_wrt_tracker_not_dialogue():
     assert len(evaluation) == 2
     assert len(evaluation[0]["my-marker"]) == 1
     assert evaluation[0]["my-marker"][0].preceding_user_turns == 3
-    assert evaluation[0]["my-marker"][0].idx == 3
+    assert evaluation[0]["my-marker"][0].idx == 4
     assert len(evaluation[1]["my-marker"]) == 1
     assert evaluation[1]["my-marker"][0].preceding_user_turns == 2
-    assert evaluation[1]["my-marker"][0].idx == 7  # i.e. NOT the index in the dialogue
+    assert evaluation[1]["my-marker"][0].idx == 8  # i.e. NOT the index in the dialogue
 
 
 def test_markers_cli_results_save_correctly(tmp_path: Path):
@@ -527,14 +529,14 @@ def test_markers_cli_results_save_correctly(tmp_path: Path):
 
         for row in result_reader:
             senders.add(row["sender_id"])
-            if row["marker_name"] == "marker1":
+            if row["marker"] == "marker1":
                 assert row["session_idx"] == "0"
-                assert int(row["event_id"]) >= 2
+                assert int(row["event_idx"]) >= 2
                 assert row["num_preceding_user_turns"] == "0"
 
-            if row["marker_name"] == "marker2":
+            if row["marker"] == "marker2":
                 assert row["session_idx"] == "1"
-                assert int(row["event_id"]) >= 3
+                assert int(row["event_idx"]) >= 3
                 assert row["num_preceding_user_turns"] == "1"
 
         assert len(senders) == 5
@@ -728,3 +730,16 @@ def test_marker_from_path_raises(
 )
 def test_marker_depth(marker: Marker, expected_depth: int):
     assert marker.max_depth() == expected_depth
+
+
+def test_split_sessions(tmp_path):
+    """Tests loading a tracker with multiple sessions."""
+
+    events = [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        UserUttered(intent={"name": "this-intent"}),
+    ]
+    sessions = Marker._split_sessions(events)
+    assert len(sessions) == 1
+    assert len(sessions[0][0]) == len(events)

@@ -1,11 +1,25 @@
 from typing import Text
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.importers.autoconfig import TrainingType
 from pathlib import Path
+
+
+@pytest.fixture(scope="class")
+def validator_under_test() -> Validator:
+    importer = RasaFileImporter(
+        domain_path="data/test_validation/domain.yml",
+        training_data_paths=[
+            "data/test_validation/data/nlu.yml",
+            "data/test_validation/data/stories.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    return validator
 
 
 def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
@@ -99,7 +113,7 @@ def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         stories:
         - story: path 1
           steps:
@@ -213,6 +227,44 @@ def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text):
     assert not validator.verify_example_repetition_in_intents(False)
 
 
+def test_verify_logging_message_for_intent_not_used_in_nlu(
+    caplog: LogCaptureFixture, validator_under_test: Validator
+):
+    caplog.clear()
+    with pytest.warns(UserWarning) as record:
+        validator_under_test.verify_intents(False)
+
+    assert (
+        "The intent 'goodbye' is listed in the domain file, "
+        "but is not found in the NLU training data."
+        in (m.message.args[0] for m in record)
+    )
+
+
+def test_verify_logging_message_for_intent_not_used_in_story(
+    caplog: LogCaptureFixture, validator_under_test: Validator
+):
+    caplog.clear()
+    with pytest.warns(UserWarning) as record:
+        validator_under_test.verify_intents_in_stories(False)
+
+    assert "The intent 'goodbye' is not used in any story or rule." in (
+        m.message.args[0] for m in record
+    )
+
+
+def test_verify_logging_message_for_unused_utterance(
+    caplog: LogCaptureFixture, validator_under_test: Validator
+):
+    caplog.clear()
+    with pytest.warns(UserWarning) as record:
+        validator_under_test.verify_utterances_in_stories(False)
+
+    assert "The utterance 'utter_chatter' is not used in any story or rule." in (
+        m.message.args[0] for m in record
+    )
+
+
 def test_verify_logging_message_for_repetition_in_intents(caplog, nlu_data_path: Text):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
@@ -263,7 +315,7 @@ def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Te
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         stories:
         - story: story path 1
           steps:
@@ -290,7 +342,7 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
     rules_file_name = tmp_path / "rules.yml"
     rules_file_name.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         rules:
         - rule: rule path 1
           steps:
@@ -316,7 +368,7 @@ def test_verify_form_slots_invalid_domain(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         forms:
           name_form:
             required_slots:
@@ -376,7 +428,7 @@ def test_valid_stories_rules_actions_in_domain(
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - greet
         actions:
@@ -386,7 +438,7 @@ def test_valid_stories_rules_actions_in_domain(
     file_name = tmp_path / f"{file_name}.yml"
     file_name.write_text(
         f"""
-        version: "2.0"
+        version: "3.0"
         {file_name}:
         - {data_type}: test path
           steps:
@@ -408,7 +460,7 @@ def test_valid_stories_rules_default_actions(
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - greet
         """
@@ -416,7 +468,7 @@ def test_valid_stories_rules_default_actions(
     file_name = tmp_path / f"{file_name}.yml"
     file_name.write_text(
         f"""
-            version: "2.0"
+            version: "3.0"
             {file_name}:
             - {data_type}: test path
               steps:
@@ -433,7 +485,7 @@ def test_valid_form_slots_in_domain(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         forms:
           name_form:
             required_slots:
@@ -460,7 +512,7 @@ def test_verify_slot_mappings_mapping_active_loop_not_in_forms(tmp_path: Path):
     slot_name = "some_slot"
     domain.write_text(
         f"""
-        version: "2.0"
+        version: "3.0"
         entities:
         - some_entity
         slots:
@@ -496,7 +548,7 @@ def test_verify_slot_mappings_from_trigger_intent_mapping_slot_not_in_forms(
     slot_name = "started_booking_form"
     domain.write_text(
         f"""
-        version: "2.0"
+        version: "3.0"
         intents:
         - activate_booking
         entities:
@@ -534,7 +586,7 @@ def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path:
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - activate_booking
         entities:
@@ -575,7 +627,7 @@ def test_verify_slot_mappings_valid(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
-        version: "2.0"
+        version: "3.0"
         intents:
         - activate_booking
         entities:

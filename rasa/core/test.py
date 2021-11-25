@@ -53,7 +53,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TEXT,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
-from rasa.shared.core.events import ActionExecuted, EntitiesAdded, UserUttered
+from rasa.shared.core.events import ActionExecuted, EntitiesAdded, UserUttered, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -601,6 +601,12 @@ async def _get_e2e_entity_evaluation_result(
     prediction: PolicyPrediction,
 ) -> Optional[EntityEvaluationResult]:
     previous_event = tracker.events[-1]
+
+    if isinstance(previous_event, SlotSet):
+        # UserUttered events with entities can be followed by SlotSet events
+        # if slots are defined in the domain
+        previous_event = tracker.get_last_event_for((UserUttered, ActionExecuted))
+
     if isinstance(previous_event, UserUttered):
         entities_predicted_by_policies = [
             entity

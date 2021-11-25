@@ -1,6 +1,8 @@
 import asyncio
 import datetime
 from http import HTTPStatus
+import os.path
+import shutil
 import textwrap
 from pathlib import Path
 
@@ -574,7 +576,7 @@ async def test_update_tracker_session(
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
-    default_processor._save_tracker(tracker)
+    default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
     tracker = default_processor.tracker_store.retrieve(sender_id)
@@ -614,7 +616,7 @@ async def test_update_tracker_session_with_metadata(
     )
 
     assert events[2] == with_model_id(SessionStarted(), model_id=model_id)
-    assert events[2].metadata == {**message_metadata, METADATA_MODEL_ID: model_id}
+    assert events[2].metadata == {METADATA_MODEL_ID: model_id}
     assert events[3] == with_model_id(
         SlotSet(SESSION_START_METADATA_SLOT, message_metadata), model_id=model_id
     )
@@ -691,7 +693,7 @@ async def test_update_tracker_session_with_slots(
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
-    default_processor._save_tracker(tracker)
+    default_processor.save_tracker(tracker)
 
     # inspect tracker and make sure all events are present
     tracker = default_processor.tracker_store.retrieve(sender_id)
@@ -1248,7 +1250,7 @@ async def test_predict_next_action_with_hidden_rules(
     story_slot = "story_slot"
     domain_content = textwrap.dedent(
         f"""
-        version: "2.0"
+        version: "3.0"
         intents:
         - {rule_intent}
         - {story_intent}
@@ -1475,3 +1477,47 @@ def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
     model_id = default_processor.model_metadata.model_id
     tracker = default_processor.get_tracker("bloop")
     assert tracker.model_id == model_id
+
+
+async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
+    processor = e2e_bot_agent.processor
+    message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test",)
+    with caplog.at_level(logging.DEBUG):
+        await processor.handle_message(message)
+
+    tracker = processor.get_tracker("test")
+    assert SlotSet("mood", "sad") in tracker.events
+    assert any(
+        "An end-to-end prediction was made which has triggered the 2nd execution of "
+        "the default action 'action_extract_slots'." in message
+        for message in caplog.messages
+    )
+
+
+async def test_model_name_is_available(trained_moodbot_path: Text):
+    processor = Agent.load(model_path=trained_moodbot_path).processor
+    assert len(processor.model_filename) > 0
+    assert "/" not in processor.model_filename
+
+
+async def test_loads_correct_model_from_path(
+    trained_core_model: Text, trained_nlu_model: Text, tmp_path: Path
+):
+    # We move both models to the same directory to prove we can load models by name
+    # from a directory with multiple models.
+    model_dir = tmp_path / "models"
+    os.makedirs(model_dir)
+
+    trained_core_model_name = os.path.basename(trained_core_model)
+    shutil.copy2(trained_core_model, model_dir)
+
+    trained_nlu_model_name = os.path.basename(trained_nlu_model)
+    shutil.copy2(trained_nlu_model, model_dir)
+
+    core_processor = Agent.load(
+        model_path=model_dir / trained_core_model_name
+    ).processor
+    nlu_processor = Agent.load(model_path=model_dir / trained_nlu_model_name).processor
+
+    assert core_processor.model_filename == trained_core_model_name
+    assert nlu_processor.model_filename == trained_nlu_model_name

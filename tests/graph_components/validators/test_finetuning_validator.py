@@ -12,6 +12,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.validators.finetuning_validator import FinetuningValidator
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -339,6 +340,49 @@ def test_validate_after_replacing_something_in_schema(
     )
     with pytest.raises(InvalidConfigException):
         loaded_validate(importer=EmptyDataImporter())
+
+
+@pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
+def test_validate_after_adding_adding_default_parameter(
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+):
+    # create a schema and rely on rasa to fill in defaults later
+    schema1 = _get_example_schema()
+    schema1.nodes["nlu-node"] = SchemaNode(
+        needs={}, uses=WhitespaceTokenizer, constructor_name="", fn="", config={}
+    )
+    schema1.nodes["core-node"] = SchemaNode(
+        needs={}, uses=RulePolicy, constructor_name="", fn="", config={}
+    )
+
+    # training
+    validate = get_validation_method(
+        finetuning=False, load=False, nlu=nlu, core=core, graph_schema=schema1
+    )
+    validate(importer=EmptyDataImporter())
+
+    # same schema -- we just explicitly pass default values
+    schema2 = copy.deepcopy(schema1)
+    schema2.nodes["nlu-node"] = SchemaNode(
+        needs={},
+        uses=WhitespaceTokenizer,
+        constructor_name="",
+        fn="",
+        config=WhitespaceTokenizer.get_default_config(),
+    )
+    schema2.nodes["core-node"] = SchemaNode(
+        needs={},
+        uses=RulePolicy,
+        constructor_name="",
+        fn="",
+        config=RulePolicy.get_default_config(),
+    )
+
+    # finetuning *does not raise*
+    loaded_validate = get_validation_method(
+        finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema2
+    )
+    loaded_validate(importer=EmptyDataImporter())
 
 
 @pytest.mark.parametrize(

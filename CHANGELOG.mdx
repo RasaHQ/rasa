@@ -16,6 +16,277 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.0.0] - 2021-11-23
+### Deprecations and Removals
+- [#6487](https://github.com/rasahq/rasa/issues/6487): Remove backwards compatibility code with Rasa Open Source 1.x, Rasa Enterprise 0.35, and other outdated
+  backwards compatibility code in `rasa.cli.x`, `rasa.core.utils`, `rasa.model_testing`, `rasa.model_training`
+  and `rasa.shared.core.events`.
+- [#8569](https://github.com/rasahq/rasa/issues/8569): Removed Python 3.6 support as [it reaches its end of life in December 2021](https://www.python.org/dev/peps/pep-0494/#lifespan).
+- [#8862](https://github.com/rasahq/rasa/issues/8862): Follow through on removing deprecation warnings for synchronous `EventBroker` methods.
+- [#8864](https://github.com/rasahq/rasa/issues/8864): Follow through on deprecation warnings for policies and policy ensembles.
+- [#8867](https://github.com/rasahq/rasa/issues/8867): Follow through on deprecation warnings for `rasa.shared.data`.
+- [#8868](https://github.com/rasahq/rasa/issues/8868): Follow through on deprecation warnings for the `Domain`. Most importantly this will
+  enforce the schema of the [`forms` section](forms.mdx) in the domain file.
+  This further includes the removal of the `UnfeaturizedSlot` type.
+- [#8869](https://github.com/rasahq/rasa/issues/8869): Remove deprecated `change_form_to` and `set_form_validation` methods from `DialogueStateTracker`.
+- [#8870](https://github.com/rasahq/rasa/issues/8870): Remove the support of Markdown training data format. This includes:
+  - reading and writing of story files in Markdown format
+  - reading and writing of NLU data in Markdown format
+  - reading and writing of retrieval intent data in Markdown format
+  - all the Markdown examples and tests that use Markdown
+- [#8871](https://github.com/rasahq/rasa/issues/8871): Removed automatic renaming of deprecated action 
+  `action_deactivate_form` to `action_deactivate_loop`. 
+  `action_deactivate_form` will just be treated like other
+  non-existing actions from now on.
+- [#8872](https://github.com/rasahq/rasa/issues/8872): Remove deprecated `sorted_intent_examples` method from `TrainingData`.
+- [#8873](https://github.com/rasahq/rasa/issues/8873): Raising `RasaException` instead of deprecation warning when using 
+  `class_from_module_path` for loading types other than classes.
+- [#8874](https://github.com/rasahq/rasa/issues/8874): Specifying the `retrieve_events_from_previous_conversation_sessions` kwarg for the any `TrackerStore` was deprecated and has now been removed.
+  Please use the `retrieve_full_tracker()` method instead.
+
+  Deserialization of pickled trackers was deprecated and has now been removed.
+  Rasa will perform any future save operations of trackers using json serialisation.
+
+  Removed catch for missing (deprecated) `session_date` when saving trackers in `DynamoTrackerStore`.
+- [#8879](https://github.com/rasahq/rasa/issues/8879): Removed the deprecated dialogue policy state featurizers: `BinarySingleStateFeature` and `LabelTokenizerSingleStateFeaturizer`.
+
+  Removed the deprecated method `encode_all_actions` of `SingleStateFeaturizer`. Use `encode_all_labels` instead.
+- [#8880](https://github.com/rasahq/rasa/issues/8880): Follow through with removing deprecated policies: `FormPolicy`, `MappingPolicy`, `FallbackPolicy`, `TwoStageFallbackPolicy`, and `SklearnPolicy`.
+
+  Remove warning about default value of `max_history` in MemoizationPolicy. The default value is now `None`.
+- [#8881](https://github.com/rasahq/rasa/issues/8881): Follow through on deprecation warnings and remove code, tests, and docs for `ConveRTTokenizer`, `LanguageModelTokenizer` and `HFTransformersNLP`.
+- [#8883](https://github.com/rasahq/rasa/issues/8883): `rasa.shared.nlu.training_data.message.Message` method `get_combined_intent_response_key` has been removed. `get_full_intent` should now be used in its place.
+- [#8974](https://github.com/rasahq/rasa/issues/8974): Intent IDs sent with events (to kafka and elsewhere) have been removed, intent
+  names can be used instead (or if numerical values are needed for backwards
+  compatibility, one can also hash the names to get previous ID values, ie.
+  `hash(intent_name)` is the old ID values). Intent IDs have been removed because
+  they were providing no extra value and integers that large were problematic for
+  some event broker implementations.
+- [#9236](https://github.com/rasahq/rasa/issues/9236): Remove `loop` argument from `train` method in `rasa`.
+  This argument became redundant when Python 3.6 support was dropped as `asyncio.run` became available in Python 3.7.
+- [#9390](https://github.com/rasahq/rasa/issues/9390): Remove `template_variables` and `e2e` arguments from `get_stories` method of `TrainingDataImporter`.
+  This argument was used in Markdown data format and became redundant once Markdown was removed.
+- [#9399](https://github.com/rasahq/rasa/issues/9399): `weight_sparsity` has been removed. Developers should replace it with `connection_density` in the following way: `connection_density` = 1-`weight_sparsity`.
+
+  `softmax` is not available as a `loss_type` anymore.
+
+  The `linear_norm` option has been removed as possible value for `model_confidence`. Please, use `softmax` instead.
+
+  `minibatch` has been removed as a value for `tensorboard_log_level`, use `batch` instead. 
+
+  Removed deprecation warnings related to the removed component config values.
+- [#9404](https://github.com/rasahq/rasa/issues/9404): Follow through on removing deprecation warnings raised in these modules:
+ 
+  - `rasa/server.py`
+  
+  - `rasa/core/agent.py`
+  
+  - `rasa/core/actions/action.py`
+  
+  - `rasa/core/channels/mattermost.py`
+  
+  - `rasa/core/nlg/generator.py`
+  
+  - `rasa/nlu/registry.py`
+- [#9432](https://github.com/rasahq/rasa/issues/9432): Remove deprecation warnings associated with the `"number_additional_patterns"` parameter of 
+  `rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer`.
+  This parameter is no longer needed for incremental training.
+
+  Remove deprecation warnings associated with the `"additional_vocabulary_size"` parameter of 
+  `rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer.CountVectorsFeaturizer`.
+  This parameter is no longer needed for incremental training.
+
+  Remove deprecated functions `training_states_actions_and_entities` and 
+  `training_states_and_actions` from `rasa.core.featurizers.tracker_featurizers.TrackerFeaturizer`.
+  Use `training_states_labels_and_entities` and `training_states_and_labels` instead.
+- [#9455](https://github.com/rasahq/rasa/issues/9455): Follow through on deprecation warning for `NGramFeaturizer`
+- [#9598](https://github.com/rasahq/rasa/issues/9598): The CLI commands `rasa data convert config` and `rasa data convert responses` which
+  converted from the Rasa Open Source 1 to the Rasa Open Source 2 formats were removed.
+  Please use a Rasa Open Source 2 installation to convert your training data before
+  moving to Rasa Open Source 3.
+- [#9766](https://github.com/rasahq/rasa/issues/9766): `rasa.core.agent.Agent.visualize` was removed. Please use `rasa visualize` or
+  `rasa.core.visualize.visualize` instead.
+- [#9972](https://github.com/rasahq/rasa/issues/9972): Removed slot auto-fill functionality, making the key invalid to use in the domain file.
+  The `auto_fill` parameter was also removed from the constructor of the `Slot` class.
+  In order to continue filling slots with entities of the same name, you now have to define a `from_entity` mapping in the `slots` section of the domain.
+  To learn more about how to migrate your 2.0 assistant, please read the migration guide.
+
+### Features
+- [#10150](https://github.com/rasahq/rasa/issues/10150): Training data version upgraded from `2.0` to `3.0` due to breaking changes to format in Rasa Open Source 3.0
+- [#10170](https://github.com/rasahq/rasa/issues/10170): A new experimental feature called `Markers` has been added.
+  `Markers` allow you to define points of interest in conversations as a set of conditions that need to be met.
+  A new command `rasa evaluate markers` allows you to apply these conditions to your existing tracker stores 
+  and outputs the points at which the conditions were satisfied.
+- [#9803](https://github.com/rasahq/rasa/issues/9803): Rasa Open Source now uses the [model configuration](model-configuration.mdx) to build a
+
+  [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
+  This graph describes the dependencies between the items in your model configuration and
+  how data flows between them. This has two major benefits:
+
+  - Rasa Open Source can use the computational graph to optimize the execution of your
+    model. Examples for this are efficient caching of training steps or executing
+    independent steps in parallel.
+  - Rasa Open Source can represent different model architectures flexibly. As long as the
+    graph remains acyclic Rasa Open Source can in theory pass any data to any graph
+    component based on the model configuration without having to tie the underlying
+    software architecture to the used model architecture.
+
+  This change required changes to custom policies and custom NLU components. See the
+  documentation for a detailed 
+  [migration guide](migration-guide.mdx#custom-policies-and-custom-components).
+- [#9972](https://github.com/rasahq/rasa/issues/9972): Added explicit mechanism for slot filling that allows slots to be set and/or updated throughout the conversation. 
+  This mechanism is enabled by defining global slot mappings in the `slots` section of the domain file.
+
+  In order to support this new functionality, implemented a new default action: `action_extract_slots`. This new action runs after each user turn and checks if any slots can be filled with information extracted from the last user message based on defined slot mappings.
+
+  Since slot mappings were moved away from the `forms` section of the domain file, converted the form's `required_slots` to a list of slot names.
+  In order to restrict certain mappings to a form, you can now use the `conditions` key in the mapping to define the applicable `active_loop`, like so:
+  ```yaml
+  slots:
+    location:
+      type: text
+      influence_conversation: false
+      mappings:
+      - type: from_entity
+        entity: city
+        conditions:
+        - active_loop: booking_form
+  ```
+  To learn more about how to migrate your 2.0 assistant, please read the migration guide.
+
+### Improvements
+- [#10189](https://github.com/rasahq/rasa/issues/10189): Updated the `/status` endpoint response payload, and relevant documentation, to return/reflect the updated 3.0 keys/values.
+- [#7619](https://github.com/rasahq/rasa/issues/7619): Bump TensorFlow version to 2.6.
+
+    This update brings some security benefits (see TensorFlow 
+    [release notes](https://github.com/tensorflow/tensorflow/releases/tag/v2.6.0)
+    for details). However, internal experiments suggest that it is also associated with
+    increased train and inference time, as well as increased memory usage.
+
+    You can read more about why we decided to update TensorFlow, and what the expected 
+    impact is [here](https://rasa.com/blog/let-s-talk-about-tensorflow-2-6/).
+
+    If you experience a significant increase in train time, inference time, and/or memory 
+    usage, please let us know in the [forum](https://forum.rasa.com/t/feedback-upgrading-to-tensorflow-2-6/48331).
+
+    Users can no longer set `TF_DETERMINISTIC_OPS=1` if they are using GPU(s) because a 
+    `tf.errors.UnimplementedError` will be thrown by TensorFlow (read more
+    [here](https://github.com/tensorflow/tensorflow/releases/tag/v2.6.0)).
+
+    :::caution
+    This **breaks backward compatibility of previously trained models**.
+    It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
+    your assistant before trying to use this version.
+- [#8057](https://github.com/rasahq/rasa/issues/8057): Added authentication support for connecting to external RabbitMQ servers.
+  Currently user has to hardcode a username and a password in a URL in order to connect to an external RabbitMQ server.
+- [#8459](https://github.com/rasahq/rasa/issues/8459): 1) Failed test stories will display full retrieval intents. 
+
+  2) Retrieval intents will be extracted during action prediction in test stories so that we won't have unnecessary mismatches anymore.
+
+  Let's take this example story:
+  ```yaml
+  - story: test story
+    steps:
+    - user: |
+        what is your name?
+      intent: chitchat/ask_name
+    - action: utter_chitchat/ask_name
+    - intent: bye
+    - action: utter_bye
+  ```
+
+  Before:
+  ```yaml
+    steps:
+    - intent: chitchat   # 1) intent is not displayed in it's original form
+    - action: utter_chitchat/ask_name  # predicted: utter_chitchat  
+                    # 2) retrieval intent is not extracted during action prediction and we have a mismatch
+  
+    - intent: bye  # some other fail
+    - action: utter_bye # some other fail
+  ```
+
+  Both 1) and 2) problems are solved.
+
+  Now:
+  ```yaml
+    steps:
+    - intent: chitchat/ask_name
+    - action: utter_chitchat/ask_name
+    - intent: bye  # some other fail
+    - action: utter_bye # some other fail
+  ```
+- [#8469](https://github.com/rasahq/rasa/issues/8469): Added `-i` command line option to make RASA listen on a specific ip-address instead of any network interface
+- [#8760](https://github.com/rasahq/rasa/issues/8760): `rasa data validate` now checks that forms referenced in `active_loop` directives are defined in the domain
+- [#8914](https://github.com/rasahq/rasa/issues/8914): Every conversation event now includes in its metadata the ID of the model which loaded at the time it was created.
+- [#8924](https://github.com/rasahq/rasa/issues/8924): Send indices of user message tokens along with the `UserUttered` event through the event broker to Rasa X.
+- [#8929](https://github.com/rasahq/rasa/issues/8929): Added optional flag to convert intent ID hashes from integer to string in the `KafkaEventBroker`.
+- [#8933](https://github.com/rasahq/rasa/issues/8933): Make it possible to use `or` functionality for `slot_was_set` events.
+- [#9068](https://github.com/rasahq/rasa/issues/9068): Upgraded the spaCy dependency from version 3.0 to 3.1.
+- [#9133](https://github.com/rasahq/rasa/issues/9133): Implemented `fingerprint` methods in these classes:
+
+  - `Event`
+  - `Slot`
+  - `DialogueStateTracker`
+- [#9193](https://github.com/rasahq/rasa/issues/9193): Added debug message that logs when a response condition is used.
+- [#9485](https://github.com/rasahq/rasa/issues/9485): The naming scheme for trained models was changed. Unless you provide a 
+  `--fixed-model-name` to `rasa train`, Rasa Open Source will now generate a new model
+  name using the schema `<timestamp>-<random name>.tar.gz`, e.g. 
+  - `20211018-094821-composite-pita.tar.gz` (for a model containing a trained NLU and dialogue model)
+  - `nlu-20211018-094821-composite-pita.tar.gz` (for a model containing only a trained NLU model but not a dialogue model)
+  - `core-20211018-094821-composite-pita.tar.gz` (for a model containing only a trained dialogue model but no NLU model)
+- [#9604](https://github.com/rasahq/rasa/issues/9604): Due to changes in the model architecture the behavior of `rasa train --dry-run` changed.
+  The exit codes now have the following meaning:
+
+  * `0 means that the model does not require an expensive retraining. However, the 
+    responses might still require updating by running `rasa train`
+  * `1` means that one or multiple components require to be retrained.
+  * `8` means that the `--force` flag was used and hence any cached results are ignored
+    and the entire model is retrained.
+- [#9642](https://github.com/rasahq/rasa/issues/9642): Machine learning components like `DIETClassifier`, `ResponseSelector` and `TEDPolicy` using a `ranking_length` parameter will no longer report renormalised
+  confidences for the top predictions by default. 
+
+  A new parameter `renormalize_confidences` is added to these components which if set to `True`, renormalizes the confidences of top `ranking_length` number of predictions to sum up to 1. The default value is `False`, which means no renormalization will be applied by default. It is advised to leave it to `False` but if you are trying to reproduce the results from previous versions of Rasa Open Source, you can set it to `True`. 
+
+  Renormalization will only be applied if `model_confidence=softmax` is used.
+
+### Bugfixes
+- [#10079](https://github.com/rasahq/rasa/issues/10079): Fixed validation behavior and logging output around unused intents and utterances.
+- [#8614](https://github.com/rasahq/rasa/issues/8614): `rasa test nlu --cross-validation` uses autoconfiguration when no pipeline is defined instead of failing
+- [#9195](https://github.com/rasahq/rasa/issues/9195): Update DynamoDb tracker store to correctly retrieve all `sender_ids` from a DynamoDb table.
+- [#9629](https://github.com/rasahq/rasa/issues/9629): Fix for `failed_test_stories.yml` not printing the correct message when the extracted entity 
+  specified in a test story is incorrect.
+- [#9852](https://github.com/rasahq/rasa/issues/9852): Fix CVE-2021-41127
+
+### Improved Documentation
+- [#10095](https://github.com/rasahq/rasa/issues/10095): Added new docs for Markers.
+- [#10230](https://github.com/rasahq/rasa/issues/10230): Update pip in same command which installs rasa and clarify supported version in
+  docs.
+- [#8568](https://github.com/rasahq/rasa/issues/8568): Update `pika` consumer code in Event Brokers documentation.
+- [#8930](https://github.com/rasahq/rasa/issues/8930): Adds documentation on how to use `CRFEntityExtractor` with features from a dense featurizer (e.g. `LanguageModelFeaturizer`).
+- [#9366](https://github.com/rasahq/rasa/issues/9366): Updated docs (Domain, Forms, Default Actions, Migration Guide, CLI) to provide more detail over the new slot mappings changes.
+- [#9711](https://github.com/rasahq/rasa/issues/9711): Updated documentation publishing mechanisms to build one version of [the documentation](https://rasa.com/docs/rasa)
+  for each major version of Rasa Open Source, starting from 2.x upwards. Previously, we were building one
+  version of the documentation for each minor version of Rasa Open Source, resulting in a poor user
+  experience and high maintenance costs.
+
+### Miscellaneous internal changes
+- [#10065](https://github.com/rasahq/rasa/issues/10065), [#10084](https://github.com/rasahq/rasa/issues/10084), [#10086](https://github.com/rasahq/rasa/issues/10086), [#10131](https://github.com/rasahq/rasa/issues/10131), [#9078](https://github.com/rasahq/rasa/issues/9078), [#9131](https://github.com/rasahq/rasa/issues/9131), [#9135](https://github.com/rasahq/rasa/issues/9135), [#9557](https://github.com/rasahq/rasa/issues/9557)
+
+
+## [2.8.13] - 2021-11-11
+### Bugfixes
+- [#9949](https://github.com/rasahq/rasa/issues/9949): Fixed new intent creation in `rasa interactive` command. Previously, this failed with 500
+  from the server due to `UnexpecTEDIntentPolicy` trying to predict with the new intent not in
+  domain.
+- [#9982](https://github.com/rasahq/rasa/issues/9982): Install mitie library when preparing test runs. This step was missing before
+  and tests were thus failing as we have many tests which rely on mitie library.
+  Previously, `make install-full` was required.
+
+### Miscellaneous internal changes
+- [#10146](https://github.com/rasahq/rasa/issues/10146), [#9989](https://github.com/rasahq/rasa/issues/9989)
+
+
 ## [2.8.12] - 2021-10-21
 ### Bugfixes
 - [#9771](https://github.com/rasahq/rasa/issues/9771): Fixed a bug where `rasa test --fail-on-prediction-errors` would raise a 

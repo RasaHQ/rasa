@@ -1,3 +1,4 @@
+import os
 import re
 import textwrap
 from pathlib import Path
@@ -75,6 +76,9 @@ def test_migrate_domain_format_with_required_slots(
     assert old_domain_path
 
     migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+
+    migrated_training_data_version = migrated_domain.get("version")
+    assert migrated_training_data_version == '"3.0"'
 
     migrated_slots = migrated_domain.get("slots")
     expected_slots = {
@@ -339,6 +343,10 @@ def test_migrate_domain_format_from_dir(tmp_path: Path):
 
     for file in domain_out_dir.iterdir():
         assert file.name in ["slots.yml", "forms.yml"]
+        migrated_file = rasa.shared.utils.io.read_yaml_file(file)
+
+        migrated_training_data_version = migrated_file.get("version")
+        assert migrated_training_data_version == '"3.0"'
 
 
 def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
@@ -384,6 +392,9 @@ def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
 
     migrated_actions = migrated_domain.get("actions")
     assert "action_check_time" in migrated_actions
+
+    migrated_training_data_version = migrated_domain.get("version")
+    assert migrated_training_data_version == '"3.0"'
 
 
 def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file: Path):
@@ -437,6 +448,58 @@ def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file:
         "type": "text",
         "influence_conversation": False,
         "mappings": [{"type": "custom"}],
+    }
+
+
+def test_migrate_domain_with_no_requested_slot_for_from_entity_mappings(
+    tmp_path: Path, domain_out_file: Path
+):
+    existing_domain_file = prepare_domain_path(
+        tmp_path,
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - affirm
+        - inform
+        entities:
+        - city
+        slots:
+          location:
+            type: text
+            influence_conversation: false
+          email:
+            type: text
+            influence_conversation: false
+        forms:
+            some_form:
+                location:
+                - entity: city
+                  type: from_entity
+                - intent: something
+                  type: from_text
+        """,
+        "domain.yml",
+    )
+
+    rasa.core.migrate.migrate_domain_format(existing_domain_file, domain_out_file)
+
+    domain = Domain.from_path(domain_out_file)
+    assert domain
+
+    migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+    migrated_slots = migrated_domain.get("slots")
+    location_slot = migrated_slots.get("location")
+    mappings = location_slot.get("mappings")
+    assert mappings[0] == {
+        "entity": "city",
+        "type": "from_entity",
+        "conditions": [{"active_loop": "some_form"}],
+    }
+    assert mappings[1] == {
+        "intent": "something",
+        "type": "from_text",
+        "conditions": [{"active_loop": "some_form", "requested_slot": "location"}],
     }
 
 
@@ -700,6 +763,10 @@ def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
 
     for file in domain_dir.iterdir():
         migrated = rasa.shared.utils.io.read_yaml_file(file)
+
+        migrated_training_data_version = migrated.get("version")
+        assert migrated_training_data_version == '"3.0"'
+
         if file.name == domain_file_one:
             assert migrated.get("entities") == ["outdoor"]
         elif file.name == domain_file_two:
@@ -764,3 +831,88 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
         f"Please make sure to include these for a successful migration.",
     ):
         rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+
+
+def test_migration_cleanup(tmp_path: Path,):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+    migrated_domain_dir = tmp_path / "domain2"
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          outdoor_seating:
+           type: bool
+           influence_conversation: false
+        """,
+        "slots_one.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          cuisine:
+           type: text
+           influence_conversation: false
+        """,
+        "slots_two.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        responses:
+          utter_greet:
+          - text: "Hi there!"
+        """,
+        "responses.yml",
+    )
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+
+    # here the migration fails but we check if the domain was
+    # not deleted in the process of cleanup
+    assert Path.exists(domain_dir)
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
+
+    # the migration fails again and we check
+    # if the cleanup was done successfully
+    current_dir = domain_dir.parent
+    assert Path.exists(domain_dir)
+    assert not Path.exists(current_dir / "original_domain")
+    assert not Path.exists(current_dir / "new_domain")
+
+    # create the `migrated_domain_dir` to use it instead of the default one
+    migrated_domain_dir.mkdir()
+
+    with pytest.raises(
+        RasaException,
+        match="Domain files with multiple 'slots' sections were provided.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, migrated_domain_dir)
+
+    # check if the cleanup was done successfully after
+    # the `migrated_domain_dir` was created
+    assert (
+        Path.exists(migrated_domain_dir) and len(os.listdir(migrated_domain_dir)) == 0
+    )
+    assert not Path.exists(current_dir / "original_domain")
+    assert not Path.exists(current_dir / "new_domain")
