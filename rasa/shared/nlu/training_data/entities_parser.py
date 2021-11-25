@@ -13,7 +13,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.shared.nlu.training_data.message import Message
-import rasa.utils.io as utils_io
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -27,11 +26,11 @@ ENTITY_REGEX = re.compile(
     r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\}|\[(?P<list_entity_dicts>.*?)\])"  # noqa: E501, W505
 )
 
-SINGLE_ENTITY_DICT = re.compile(
-    r"{(?P<entity_dict>[^}]+?)\}"
-)
+SINGLE_ENTITY_DICT = re.compile(r"{(?P<entity_dict>[^}]+?)\}")
 
 logger = logging.getLogger(__name__)
+
+
 class EntityAttributes(NamedTuple):
     """Attributes of an entity defined in markdown data."""
 
@@ -55,7 +54,6 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
     entities = []
     offset = 0
 
-    logger.debug('Starting extraction')
     for match in re.finditer(ENTITY_REGEX, example):
         logger.debug(f"{match}")
         if match.groupdict()[GROUP_ENTITY_DICT] or match.groupdict()[GROUP_ENTITY_TYPE]:
@@ -74,7 +72,6 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
                 entity_attributes.group,
             )
             entities.append(entity)
-            logger.debug(f"entity {entity}")
         else:
             entity_text = match.groupdict()[GROUP_ENTITY_TEXT]
             # iterate over the list
@@ -83,9 +80,13 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
             end_index = start_index + len(entity_text)
             offset += len(match.group(0)) - len(entity_text)
 
-            for m2 in re.finditer(SINGLE_ENTITY_DICT, match.groupdict()[GROUP_ENTITY_DICT_LIST]):
+            for match_inner in re.finditer(
+                SINGLE_ENTITY_DICT, match.groupdict()[GROUP_ENTITY_DICT_LIST]
+            ):
 
-                entity_attributes = extract_entity_attributes_from_dict(entity_text=entity_text, match=m2)
+                entity_attributes = extract_entity_attributes_from_dict(
+                    entity_text=entity_text, match=match_inner
+                )
 
                 entity = rasa.shared.nlu.training_data.util.build_entity(
                     start_index,
@@ -95,8 +96,7 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
                     entity_attributes.role,
                     entity_attributes.group,
                 )
-                entities.append(entity)                
-                logger.debug(f"entity {entity}")
+                entities.append(entity)
     return entities
 
 
@@ -125,9 +125,7 @@ def extract_entity_attributes(match: Match) -> EntityAttributes:
     return EntityAttributes(entity_type, entity_value, entity_text, None, None)
 
 
-def extract_entity_attributes_from_dict(
-    entity_text: Text, match: Match
-) -> EntityAttributes:
+def extract_entity_attributes_from_dict(entity_text: Text, match: Match) -> EntityAttributes:
     """Extract entity attributes from dict format.
 
     Args:
@@ -194,9 +192,7 @@ def replace_entities(training_example: Text) -> Text:
     Returns:
         String with removed special symbols.
     """
-    return re.sub(
-        ENTITY_REGEX, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], training_example
-    )
+    return re.sub(ENTITY_REGEX, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], training_example)
 
 
 def parse_training_example(example: Text, intent: Optional[Text] = None) -> "Message":
