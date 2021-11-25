@@ -1,0 +1,63 @@
+name: Debug datadog
+
+on:
+  push
+
+jobs:
+  upload:
+    name: Upload
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest]
+        python-version: [ 3.7 ]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - run: mkdir -p path/to/artifact
+
+    - run: echo hello > path/to/artifact/world.txt
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: my-artifact
+        path: path/to/artifact/world.txt
+
+    - name: Create file
+      run: |
+        touch report.json
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: report.json
+        path: ./report.json
+
+  download:
+    name: Download
+    runs-on: ubuntu-latest
+    needs:
+      - upload
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest]
+        python-version: [ 3.7 ]
+
+    steps:
+      - name: Get reports
+        uses: actions/download-artifact@v2
+        with:
+          path: ${{ github.workspace }}/reports
+
+      - name: Display structure of downloaded files
+        continue-on-error: true
+        run: ls -R
+        working-directory: ${{ github.workspace }}/reports
+
+      # - name: Get reports2
+      #   uses: actions/download-artifact@v2
+      #   with:
+      #     name: report.json
+      #     path: ${{ github.workspace }}/reports
