@@ -19,6 +19,12 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "- service:rasa"
     echo "- dataset:$dataset"
     echo "- config:$config"
+    echo ""
+    echo "process_config:"
+    echo "    enabled: false"
+    echo "apm_config:"
+    echo "    enabled: false"
+    echo "use_dogstatsd: true"
 } >> $DATADOG_YAML_PATH
 
 # Enable system_core integration
