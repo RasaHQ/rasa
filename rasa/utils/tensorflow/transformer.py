@@ -433,15 +433,20 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
 
         self._ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
-            RandomlyConnectedDense(
-                units=filter_units, activation=tf.nn.gelu, density=density
-            ),  # (batch_size, length, filter_units)
-            tf.keras.layers.Dropout(dropout_rate),
+        ]
+        if filter_units:
+            self._ffn_layers.extend([
+                RandomlyConnectedDense(
+                    units=filter_units, activation=tf.nn.gelu, density=density
+                ),  # (batch_size, length, filter_units)
+                tf.keras.layers.Dropout(dropout_rate),
+            ])
+        self._ffn_layers.extend([
             RandomlyConnectedDense(
                 units=units, density=density
             ),  # (batch_size, length, units)
             tf.keras.layers.Dropout(dropout_rate),
-        ]
+        ])
 
     def call(
         self,

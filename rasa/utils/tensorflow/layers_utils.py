@@ -111,3 +111,15 @@ def reduce_mean_equal(
             tf.reduce_sum(equal_indices, axis=-1), tf.reduce_sum(mask, axis=-1)
         )
     )
+
+
+def reveal_mask_up_to_last_visible_token(
+    mask: Tensor,
+    exclusive: bool = False
+) -> Tensor:
+    return 1 - tf.math.cumprod(
+        1 - mask,
+        axis=-1,
+        exclusive=exclusive,
+        reverse=True
+    )

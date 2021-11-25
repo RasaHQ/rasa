@@ -31,6 +31,8 @@ from rasa.utils.tensorflow.model_data import (
     FeatureSignature,
     FeatureArray,
 )
+import rasa.utils.tensorflow.layers_utils
+import rasa.utils.tensorflow.rasa_layers
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
@@ -1608,8 +1610,9 @@ class DIET(TransformerRasaModel):
             losses += self._batch_loss_entities(
                 mask_combined_sequence_sentence,
                 sequence_feature_lengths,
-                text_transformed,
-                tf_batch_data,
+                text_transformed=text_transformed,
+                text_in=text_in,
+                tf_batch_data=tf_batch_data,
             )
 
         return tf.math.add_n(losses)
@@ -1652,11 +1655,16 @@ class DIET(TransformerRasaModel):
         mask_combined_sequence_sentence: tf.Tensor,
         sequence_feature_lengths: tf.Tensor,
         text_transformed: tf.Tensor,
+        text_in: tf.Tensor,
         tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
     ) -> List[tf.Tensor]:
         losses = []
 
         entity_tags = None
+        mask = rasa.utils.tensorflow.layers_utils.reveal_mask_up_to_last_visible_token(
+            mask_combined_sequence_sentence,
+            exclusive=True,
+        )
 
         for tag_spec in self._entity_tag_specs:
             if tag_spec.num_tags == 0:
@@ -1668,12 +1676,13 @@ class DIET(TransformerRasaModel):
             tag_ids = tf.pad(tag_ids, [[0, 0], [0, 1], [0, 0]])
 
             loss, f1, _logits = self._calculate_entity_loss(
-                text_transformed,
-                tag_ids,
-                mask_combined_sequence_sentence,
-                sequence_feature_lengths,
-                tag_spec.tag_name,
-                entity_tags,
+                inputs=text_transformed,
+                text_in=text_in,
+                tag_ids=tag_ids,
+                mask_combined_sequence_sentence=mask,
+                sequence_lengths=sequence_feature_lengths,
+                tag_name=tag_spec.tag_name,
+                entity_tags=entity_tags,
             )
 
             if tag_spec.tag_name == ENTITY_ATTRIBUTE_TYPE:
@@ -1729,7 +1738,7 @@ class DIET(TransformerRasaModel):
             tf_batch_data, TEXT,
         )
 
-        text_transformed, _, _, _, _, attention_weights = self._tf_layers[
+        text_transformed, text_in, mask_combined_sequence_sentence, _, _, attention_weights = self._tf_layers[
             f"sequence_layer.{self.text_name}"
         ](
             (
@@ -1756,17 +1765,30 @@ class DIET(TransformerRasaModel):
 
         if self.config[ENTITY_RECOGNITION]:
             predictions.update(
-                self._batch_predict_entities(sequence_feature_lengths, text_transformed)
+                self._batch_predict_entities(
+                    sequence_feature_lengths,
+                    text_transformed,
+                    text_in=text_in,
+                    mask_combined_sequence_sentence=mask_combined_sequence_sentence,
+                )
             )
 
         return predictions
 
     def _batch_predict_entities(
-        self, sequence_feature_lengths: tf.Tensor, text_transformed: tf.Tensor
+        self,
+        sequence_feature_lengths: tf.Tensor,
+        text_transformed: tf.Tensor,
+        text_in: tf.Tensor,
+        mask_combined_sequence_sentence: tf.Tensor,
     ) -> Dict[Text, tf.Tensor]:
         predictions: Dict[Text, tf.Tensor] = {}
 
         entity_tags = None
+        mask = rasa.utils.tensorflow.layers_utils.reveal_mask_up_to_last_visible_token(
+            mask_combined_sequence_sentence,
+            exclusive=True,
+        )
 
         for tag_spec in self._entity_tag_specs:
             # skip crf layer if it was not trained
@@ -1777,8 +1799,22 @@ class DIET(TransformerRasaModel):
             _input = text_transformed
 
             if entity_tags is not None:
+                no_entity = tf.one_hot(0, depth=entity_tags.shape[-1])
+                entity_mask = tf.cast(
+                    tf.reduce_all(
+                        tf.equal(entity_tags, no_entity), axis=-1, keepdims=True
+                    ),
+                    dtype=_input.dtype,
+                )
                 _tags = self._tf_layers[f"embed.{name}.tags"](entity_tags)
-                _input = tf.concat([_input, _tags], axis=-1)
+                _input = text_in * entity_mask + _tags * (1 - entity_mask)
+                # tf.print("tag_name: ", tag_spec.tag_name)
+                # tf.print("input:    ", _input)
+                # tf.print("1-mask:   ", 1 - mask)
+                _input, _ = self._tf_layers[f"transformer.{name}"](
+                    _input, 1 - mask, self._training
+                    # _input, entity_mask, self._training
+                )
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)
             pred_ids, confidences = self._tf_layers[f"crf.{name}"](

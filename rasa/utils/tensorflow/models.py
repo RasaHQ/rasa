@@ -12,7 +12,7 @@ from typing import (
     Optional,
     Any,
 )
-
+from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_TYPE
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -35,6 +35,13 @@ from rasa.utils.tensorflow.constants import (
     LEARNING_RATE,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
+    CONCAT_DIMENSION,
+    TRANSFORMER_SIZE,
+    NUM_HEADS,
+    DROP_RATE,
+    DROP_RATE_ATTENTION,
+    UNIDIRECTIONAL_ENCODER,
+    MAX_RELATIVE_POSITION,
 )
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
@@ -49,6 +56,7 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
 )
+from rasa.utils.tensorflow.transformer import TransformerEncoder
 from keras.utils import tf_utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
@@ -799,11 +807,34 @@ class TransformerRasaModel(RasaModel):
             self._tf_layers[f"crf.{name}"] = layers.CRF(
                 num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
             )
-            self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
-                self.config[EMBEDDING_DIMENSION],
-                self.config[REGULARIZATION_CONSTANT],
-                f"tags.{name}",
-            )
+            if name == ENTITY_ATTRIBUTE_TYPE:
+                self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
+                    self.config[EMBEDDING_DIMENSION],
+                    self.config[REGULARIZATION_CONSTANT],
+                    f"tags.{name}",
+                )
+            else:
+                # Roles and groups
+                self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
+                    embed_dim=self.config[CONCAT_DIMENSION][TEXT],
+                    reg_lambda=self.config[REGULARIZATION_CONSTANT],
+                    layer_name_suffix=f"tags.{name}",
+                )
+                self._tf_layers[f"transformer.{name}"] = TransformerEncoder(
+                    num_layers=1,
+                    units=self.config[TRANSFORMER_SIZE],
+                    num_heads=self.config[NUM_HEADS],
+                    filter_units=0,
+                    reg_lambda=self.config[REGULARIZATION_CONSTANT],
+                    dropout_rate=self.config[DROP_RATE],
+                    attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+                    density=self.config[CONNECTION_DENSITY],
+                    unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+                    use_key_relative_position=True,
+                    use_value_relative_position=True,
+                    max_relative_position=self.config[MAX_RELATIVE_POSITION],
+                    name=f"{name}_encoderr",
+                )
 
     @staticmethod
     def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
@@ -869,8 +900,9 @@ class TransformerRasaModel(RasaModel):
     def _calculate_entity_loss(
         self,
         inputs: tf.Tensor,
+        text_in: tf.Tensor,
         tag_ids: tf.Tensor,
-        mask: tf.Tensor,
+        mask_combined_sequence_sentence: tf.Tensor,
         sequence_lengths: tf.Tensor,
         tag_name: Text,
         entity_tags: Optional[tf.Tensor] = None,
@@ -880,7 +912,22 @@ class TransformerRasaModel(RasaModel):
 
         if entity_tags is not None:
             _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
-            inputs = tf.concat([inputs, _tags], axis=-1)
+            no_entity = tf.one_hot(0, depth=entity_tags.shape[-1])
+            entity_mask = tf.cast(
+                tf.reduce_all(tf.equal(entity_tags, no_entity), axis=-1, keepdims=True),
+                dtype=inputs.dtype,
+            )
+            inputs = text_in * entity_mask + _tags * (1 - entity_mask)
+
+            # tf.print("tag_name: ", tag_name)
+            # tf.print("input:    ", inputs)
+            # tf.print("1-mask:   ", 1 - mask_combined_sequence_sentence)
+
+            inputs, _ = self._tf_layers[f"transformer.{tag_name}"](
+                inputs, 1 - mask_combined_sequence_sentence, self._training
+                # inputs, entity_mask, self._training
+                # inputs, mask_combined_sequence_sentence, self._training
+            )
 
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
 
@@ -889,7 +936,7 @@ class TransformerRasaModel(RasaModel):
         loss = self._tf_layers[f"crf.{tag_name}"].loss(
             logits, tag_ids, sequence_lengths
         )
-        f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
+        f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask_combined_sequence_sentence)
 
         return loss, f1, logits
 

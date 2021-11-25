@@ -69,3 +69,34 @@ def test_reduce_mean_equal(
     expected_output: float,
 ):
     assert expected_output == layers_utils.reduce_mean_equal(x, y, mask)
+
+
+@pytest.mark.parametrize(
+    "mask, exclusive, expected_output",
+    [
+        (tf.constant([[1, 1, 0, 1, 0]]), False, [[1, 1, 1, 1, 0]]),
+        (tf.constant([[]]), False, [[]]),
+        (tf.constant([[1]]), False, [[1]]),
+        (tf.constant([[0, 0, 0, 1, 0]]), False, [[1, 1, 1, 1, 0]]),
+        (tf.constant([[0, 0, 0, 0, 0]]), False, [[0, 0, 0, 0, 0]]),
+        (tf.constant([[1, 1, 1, 1, 1]]), False, [[1, 1, 1, 1, 1]]),
+        (tf.constant([[1, 0], [0, 1]]), False, [[1, 0], [1, 1]]),
+        (tf.constant([[1, 1, 0, 1, 0]]), True, [[1, 1, 1, 0, 0]]),
+        (tf.constant([[]]), True, [[]]),
+        (tf.constant([[1]]), True, [[0]]),
+        (tf.constant([[0, 0, 0, 1, 0]]), True, [[1, 1, 1, 0, 0]]),
+        (tf.constant([[0, 0, 0, 0, 0]]), True, [[0, 0, 0, 0, 0]]),
+        (tf.constant([[1, 1, 1, 1, 1]]), True, [[1, 1, 1, 1, 0]]),
+        (tf.constant([[1, 0], [0, 1]]), True, [[0, 0], [1, 0]]),
+    ],
+)
+def test_reveal_mask_up_to_last_visible_token(
+    mask: tf.Tensor,
+    exclusive: bool,
+    expected_output: List[List[int]],
+):
+    result = layers_utils.reveal_mask_up_to_last_visible_token(
+        mask,
+        exclusive=exclusive,
+    )
+    assert np.all(result == expected_output)
