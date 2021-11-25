@@ -318,7 +318,7 @@ class FormAction(LoopAction):
                 for i, event in enumerate(reversed(tracker.events))
                 if event == Restarted() or event == tracker.latest_message
             ),
-            default=len(tracker.events) - 1,
+            len(tracker.events) - 1,
         )
         index = len(tracker.events) - index_from_end - 1
         events_since_last_user_uttered = [
