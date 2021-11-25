@@ -125,7 +125,9 @@ def extract_entity_attributes(match: Match) -> EntityAttributes:
     return EntityAttributes(entity_type, entity_value, entity_text, None, None)
 
 
-def extract_entity_attributes_from_dict(entity_text: Text, match: Match) -> EntityAttributes:
+def extract_entity_attributes_from_dict(
+    entity_text: Text, match: Match
+) -> EntityAttributes:
     """Extract entity attributes from dict format.
 
     Args:
@@ -192,7 +194,9 @@ def replace_entities(training_example: Text) -> Text:
     Returns:
         String with removed special symbols.
     """
-    return re.sub(ENTITY_REGEX, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], training_example)
+    return re.sub(
+        ENTITY_REGEX, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], training_example
+    )
 
 
 def parse_training_example(example: Text, intent: Optional[Text] = None) -> "Message":
