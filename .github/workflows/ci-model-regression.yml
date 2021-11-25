@@ -634,12 +634,60 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
-          poetry run python .github/scripts/mr_generate_summary.py
-          cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
         uses: actions/upload-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        with:
+          name: report.json
+          path: ./report-{{ matrix.dataset }}-{{ matrix.config }}.json
+
+  combine_reports:
+    name: Combine reports
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+    needs:
+      - model_regression_test_cpu
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.7 🐍
+        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+        with:
+          python-version: 3.7
+
+      - name: Get reports
+        uses: actions/download-artifact@v2
+        with:
+          path: ${{ github.workspace }}/reports
+        # Downloads all artifacts (if name parameter not provided):
+        # see https://github.com/actions/download-artifact#download-all-artifacts
+        # report-{{ matrix.dataset }}-{{ matrix.config }}.json
+        # TODO download according to same matrix
+
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: ${{ github.workspace }}/reports
+
+      - name: Merge all reports
+        env:
+          SUMMARY_FILE: "./report.json"
+          REPORTS_DIR: "${{ github.workspace }}/reports"
+          RESULT_DIR: "${{ github.workspace }}/results"
+          # DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          # TYPE: ${{ matrix.type }}
+          # DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
+        run: |
+          python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
+          # ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+
+      - name: Upload an artifact with the overall report
+        uses: actions/upload-artifact@v2
         with:
           name: report.json
           path: ./report.json

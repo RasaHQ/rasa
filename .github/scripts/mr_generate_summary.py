@@ -1,16 +1,23 @@
 # Collect the results of the various model test runs which are done as part of
-# The model regression CI pipeline and dump them as a single file artifact.This artifact will the then be published at the end of the tests.
+# the model regression CI pipeline and dump them as a single file artifact.
+# This artifact will the then be published at the end of the tests.
 import json
 import os
+from pathlib import Path
+
+REPORTS_PATH = Path(os.environ['REPORTS_DIR'])
+print("REPORTS_PATH", list(REPORTS_PATH.glob("*")))
 
 SUMMARY_FILE = os.environ["SUMMARY_FILE"]
-CONFIG = os.environ["CONFIG"]
-DATASET = os.environ["DATASET_NAME"]
-TYPE = os.environ["TYPE"]
-IS_EXTERNAL = os.environ["IS_EXTERNAL"]
-CONFIG_REPOSITORY = "training-data"
-CONFIG_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
-DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
+print("SUMMARY_FILE", SUMMARY_FILE)
+
+# CONFIG = os.environ["CONFIG"]
+# DATASET = os.environ["DATASET_NAME"]
+# TYPE = os.environ["TYPE"]
+# IS_EXTERNAL = os.environ["IS_EXTERNAL"]
+# CONFIG_REPOSITORY = "training-data"
+# CONFIG_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
+# DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 task_mapping = {
     "intent_report.json": "intent_classification",
     "CRFEntityExtractor_report.json": "entity_prediction",
