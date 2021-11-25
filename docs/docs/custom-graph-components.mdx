@@ -336,8 +336,8 @@ Currently, Rasa Open Source only supports the `default.v1` recipe.
 Register your graph component with this recipe by using the `DefaultV1Recipe.register`
 decorator:
 
-```python {5-9} (docs/sources/data/test_classes/registered_component.py)
-```
+:::code language="python" source="docs/sources/data/test_classes/registered_component.py"
+ highlight="5-9":::
 
 Rasa Open Source uses the information provided in the `register` decorator and the
 position of your graph component within the configuration file to schedule the execution
