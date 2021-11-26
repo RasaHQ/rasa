@@ -166,7 +166,9 @@ def remove_empty_response_examples(
     return filtered
 
 
-def drop_intents_below_freq(training_data: TrainingData, cutoff: int = 5) -> TrainingData:
+def drop_intents_below_freq(
+    training_data: TrainingData, cutoff: int = 5
+) -> TrainingData:
     """Remove intent groups with less than cutoff instances.
 
     Args:
@@ -175,7 +177,9 @@ def drop_intents_below_freq(training_data: TrainingData, cutoff: int = 5) -> Tra
 
     Returns: updated training data
     """
-    logger.debug("Raw data intent examples: {}".format(len(training_data.intent_examples)))
+    logger.debug(
+        "Raw data intent examples: {}".format(len(training_data.intent_examples))
+    )
 
     examples_per_intent = training_data.number_of_examples_per_intent
     return training_data.filter_training_examples(
@@ -225,7 +229,8 @@ def _write_errors(errors: List[Dict], errors_filename: Text, error_type: Text) -
         rasa.shared.utils.io.dump_obj_as_json_to_file(errors_filename, errors)
         logger.info(f"Incorrect {error_type} predictions saved to {errors_filename}.")
         logger.debug(
-            f"\n\nThese {error_type} examples could not be classified " f"correctly: \n{errors}"
+            f"\n\nThese {error_type} examples could not be classified "
+            f"correctly: \n{errors}"
         )
     else:
         logger.info(f"Every {error_type} was predicted correctly by the model.")
@@ -272,12 +277,16 @@ def write_response_successes(
     if successes:
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful response predictions saved to {successes_filename}.")
-        logger.debug(f"\n\nSuccessfully predicted the following responses: \n{successes}")
+        logger.debug(
+            f"\n\nSuccessfully predicted the following responses: \n{successes}"
+        )
     else:
         logger.info("No successful response predictions found.")
 
 
-def _response_errors(response_results: List[ResponseSelectionEvaluationResult],) -> List[Dict]:
+def _response_errors(
+    response_results: List[ResponseSelectionEvaluationResult],
+) -> List[Dict]:
     """Write incorrect response selection predictions to a file.
 
     Args:
@@ -301,7 +310,9 @@ def _response_errors(response_results: List[ResponseSelectionEvaluationResult],)
 
 
 def plot_attribute_confidences(
-    results: Union[List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]],
+    results: Union[
+        List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]
+    ],
     hist_filename: Optional[Text],
     target_key: Text,
     prediction_key: Text,
@@ -317,11 +328,15 @@ def plot_attribute_confidences(
         title: title of plot
     """
     pos_hist = [
-        r.confidence for r in results if getattr(r, target_key) == getattr(r, prediction_key)
+        r.confidence
+        for r in results
+        if getattr(r, target_key) == getattr(r, prediction_key)
     ]
 
     neg_hist = [
-        r.confidence for r in results if getattr(r, target_key) != getattr(r, prediction_key)
+        r.confidence
+        for r in results
+        if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
     plot_utils.plot_paired_histogram([pos_hist, neg_hist], title, hist_filename)
@@ -391,7 +406,9 @@ def evaluate_response_selections(
     """
     # remove empty response targets
     num_examples = len(response_selection_results)
-    response_selection_results = remove_empty_response_examples(response_selection_results)
+    response_selection_results = remove_empty_response_examples(
+        response_selection_results
+    )
 
     logger.info(
         f"Response Selection Evaluation: Only considering those "
@@ -399,8 +416,13 @@ def evaluate_response_selections(
         f"of {num_examples} examples."
     )
 
-    (target_intent_response_keys, predicted_intent_response_keys,) = _targets_predictions_from(
-        response_selection_results, "intent_response_key_target", "intent_response_key_prediction",
+    (
+        target_intent_response_keys,
+        predicted_intent_response_keys,
+    ) = _targets_predictions_from(
+        response_selection_results,
+        "intent_response_key_target",
+        "intent_response_key_prediction",
     )
 
     report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
@@ -429,7 +451,9 @@ def evaluate_response_selections(
     if not disable_plotting:
         confusion_matrix_filename = "response_selection_confusion_matrix.png"
         if output_directory:
-            confusion_matrix_filename = os.path.join(output_directory, confusion_matrix_filename)
+            confusion_matrix_filename = os.path.join(
+                output_directory, confusion_matrix_filename
+            )
 
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
@@ -580,7 +604,9 @@ def evaluate_intents(
     if not disable_plotting:
         confusion_matrix_filename = "intent_confusion_matrix.png"
         if output_directory:
-            confusion_matrix_filename = os.path.join(output_directory, confusion_matrix_filename)
+            confusion_matrix_filename = os.path.join(
+                output_directory, confusion_matrix_filename
+            )
         plot_utils.plot_confusion_matrix(
             confusion_matrix,
             classes=labels,
@@ -659,7 +685,9 @@ def _dump_report(output_directory: Text, filename: Text, report: Dict) -> None:
     logger.info(f"Classification report saved to {report_filename}.")
 
 
-def merge_labels(aligned_predictions: List[Dict], extractor: Optional[Text] = None) -> List[Text]:
+def merge_labels(
+    aligned_predictions: List[Dict], extractor: Optional[Text] = None
+) -> List[Text]:
     """Concatenates all labels of the aligned predictions.
 
     Takes the aligned prediction labels which are grouped for each message
@@ -764,7 +792,9 @@ def write_successful_entity_predictions(
     if successes:
         rasa.shared.utils.io.dump_obj_as_json_to_file(successes_filename, successes)
         logger.info(f"Successful entity predictions saved to {successes_filename}.")
-        logger.debug(f"\n\nSuccessfully predicted the following entities: \n{successes}")
+        logger.debug(
+            f"\n\nSuccessfully predicted the following entities: \n{successes}"
+        )
     else:
         logger.info("No successful entity prediction found.")
 
@@ -787,7 +817,10 @@ def collect_successful_entity_predictions(
     offset = 0
     for entity_result in entity_results:
         for i in range(offset, offset + len(entity_result.tokens)):
-            if merged_targets[i] == merged_predictions[i] and merged_targets[i] != NO_ENTITY:
+            if (
+                merged_targets[i] == merged_predictions[i]
+                and merged_targets[i] != NO_ENTITY
+            ):
                 successes.append(
                     {
                         "text": entity_result.message,
@@ -835,7 +868,9 @@ def evaluate_entities(
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, NO_ENTITY_TAG, NO_ENTITY)
+        merged_predictions = substitute_labels(
+            merged_predictions, NO_ENTITY_TAG, NO_ENTITY
+        )
 
         logger.info(f"Evaluation for entity extractor: {extractor} ")
 
@@ -883,7 +918,9 @@ def evaluate_entities(
                 merged_confidences = merge_confidences(aligned_predictions, extractor)
                 histogram_filename = f"{extractor}_histogram.png"
                 if output_directory:
-                    histogram_filename = os.path.join(output_directory, histogram_filename)
+                    histogram_filename = os.path.join(
+                        output_directory, histogram_filename
+                    )
                 plot_entity_confidences(
                     merged_targets,
                     merged_predictions,
@@ -937,7 +974,10 @@ def do_entities_overlap(entities: List[Dict]) -> bool:
     for i in range(len(sorted_entities) - 1):
         curr_ent = sorted_entities[i]
         next_ent = sorted_entities[i + 1]
-        if next_ent["start"] < curr_ent["end"] and next_ent["entity"] != curr_ent["entity"]:
+        if (
+            next_ent["start"] < curr_ent["end"]
+            and next_ent["entity"] != curr_ent["entity"]
+        ):
             logger.warning(f"Overlapping entity {curr_ent} with {next_ent}")
             return True
 
@@ -1022,7 +1062,9 @@ def determine_token_labels(
 
 
 def determine_entity_for_token(
-    token: Token, entities: List[Dict[Text, Any]], extractors: Optional[Set[Text]] = None,
+    token: Token,
+    entities: List[Dict[Text, Any]],
+    extractors: Optional[Set[Text]] = None,
 ) -> Optional[Dict[Text, Any]]:
     """
     Determines the best fitting entity for the given token, given entities that do
@@ -1046,16 +1088,18 @@ def determine_entity_for_token(
 
 
 def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
-    """Checks if extractors support overlapping entities."""
+    """Checks if extractors support overlapping entities"""
     if extractors is None:
-        return True
+        return False
 
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
     return CRFEntityExtractor.name not in extractors
 
 
-def align_entity_predictions(result: EntityEvaluationResult, extractors: Set[Text]) -> Dict:
+def align_entity_predictions(
+    result: EntityEvaluationResult, extractors: Set[Text]
+) -> Dict:
     """Aligns entity predictions to the message tokens.
 
     Determines for every token the true label based on the
@@ -1070,11 +1114,15 @@ def align_entity_predictions(result: EntityEvaluationResult, extractors: Set[Tex
              from the extractors
     """
     true_token_labels = []
-    entities_by_extractors: Dict[Text, List] = {extractor: [] for extractor in extractors}
+    entities_by_extractors: Dict[Text, List] = {
+        extractor: [] for extractor in extractors
+    }
     for p in result.entity_predictions:
         entities_by_extractors[p[EXTRACTOR]].append(p)
     extractor_labels: Dict[Text, List] = {extractor: [] for extractor in extractors}
-    extractor_confidences: Dict[Text, List] = {extractor: [] for extractor in extractors}
+    extractor_confidences: Dict[Text, List] = {
+        extractor: [] for extractor in extractors
+    }
     for t in result.tokens:
         true_token_labels.append(_concat_entity_labels(t, result.entity_targets))
         for extractor, entities in entities_by_extractors.items():
@@ -1107,9 +1155,15 @@ def _concat_entity_labels(
     Returns:
         the entity label of the provided token
     """
-    entity_label = determine_token_labels(token, entities, extractors, ENTITY_ATTRIBUTE_TYPE)
-    group_label = determine_token_labels(token, entities, extractors, ENTITY_ATTRIBUTE_GROUP)
-    role_label = determine_token_labels(token, entities, extractors, ENTITY_ATTRIBUTE_ROLE)
+    entity_label = determine_token_labels(
+        token, entities, extractors, ENTITY_ATTRIBUTE_TYPE
+    )
+    group_label = determine_token_labels(
+        token, entities, extractors, ENTITY_ATTRIBUTE_GROUP
+    )
+    role_label = determine_token_labels(
+        token, entities, extractors, ENTITY_ATTRIBUTE_ROLE
+    )
 
     if entity_label == role_label == group_label == NO_ENTITY_TAG:
         return NO_ENTITY_TAG
@@ -1201,13 +1255,19 @@ def get_eval_data(
         if e.get(INTENT_RESPONSE_KEY) is not None
     ]
     intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
-    should_eval_intents = is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
+    should_eval_intents = (
+        is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
+    )
     should_eval_response_selection = (
         is_response_selector_present(interpreter) and len(set(response_labels)) >= 2
     )
-    available_response_selector_types = get_available_response_selector_types(interpreter)
+    available_response_selector_types = get_available_response_selector_types(
+        interpreter
+    )
 
-    should_eval_entities = is_entity_extractor_present(interpreter) and len(test_data.entities) > 0
+    should_eval_entities = (
+        is_entity_extractor_present(interpreter) and len(test_data.entities) > 0
+    )
 
     for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
@@ -1241,9 +1301,9 @@ def get_eval_data(
             else:
                 response_prediction_key = RESPONSE_SELECTOR_DEFAULT_INTENT
 
-            response_prediction = selector_properties.get(response_prediction_key, {}).get(
-                RESPONSE_SELECTOR_PREDICTION_KEY, {}
-            )
+            response_prediction = selector_properties.get(
+                response_prediction_key, {}
+            ).get(RESPONSE_SELECTOR_PREDICTION_KEY, {})
 
             intent_response_key_target = example.get(INTENT_RESPONSE_KEY, "")
 
@@ -1304,7 +1364,9 @@ def is_intent_classifier_present(interpreter: Interpreter) -> bool:
     """Checks whether intent classifier is present."""
     from rasa.nlu.classifiers.classifier import IntentClassifier
 
-    intent_classifiers = [c.name for c in interpreter.pipeline if isinstance(c, IntentClassifier)]
+    intent_classifiers = [
+        c.name for c in interpreter.pipeline if isinstance(c, IntentClassifier)
+    ]
     return intent_classifiers != []
 
 
@@ -1313,7 +1375,9 @@ def is_response_selector_present(interpreter: Interpreter) -> bool:
 
     from rasa.nlu.selectors.response_selector import ResponseSelector
 
-    response_selectors = [c.name for c in interpreter.pipeline if isinstance(c, ResponseSelector)]
+    response_selectors = [
+        c.name for c in interpreter.pipeline if isinstance(c, ResponseSelector)
+    ]
     return response_selectors != []
 
 
@@ -1323,7 +1387,9 @@ def get_available_response_selector_types(interpreter: Interpreter) -> List[Text
     from rasa.nlu.selectors.response_selector import ResponseSelector
 
     response_selector_types = [
-        c.retrieval_intent for c in interpreter.pipeline if isinstance(c, ResponseSelector)
+        c.retrieval_intent
+        for c in interpreter.pipeline
+        if isinstance(c, ResponseSelector)
     ]
 
     return response_selector_types
@@ -1478,7 +1544,9 @@ def combine_result(
     data: TrainingData,
     intent_results: Optional[List[IntentEvaluationResult]] = None,
     entity_results: Optional[List[EntityEvaluationResult]] = None,
-    response_selection_results: Optional[List[ResponseSelectionEvaluationResult]] = None,
+    response_selection_results: Optional[
+        List[ResponseSelectionEvaluationResult]
+    ] = None,
 ) -> Tuple[IntentMetrics, EntityMetrics, ResponseSelectionMetrics]:
     """Collects intent, response selection and entity metrics for cross validation
     folds.
@@ -1618,8 +1686,9 @@ def cross_validate(
 
         if not extractors:
             extractors = get_entity_extractors(interpreter)
-            entity_evaluation_possible = entity_evaluation_possible or _contains_entity_labels(
-                entity_test_results
+            entity_evaluation_possible = (
+                entity_evaluation_possible
+                or _contains_entity_labels(entity_test_results)
             )
 
         if is_intent_classifier_present(interpreter):
@@ -1685,7 +1754,9 @@ def cross_validate(
 
 
 def _targets_predictions_from(
-    results: Union[List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]],
+    results: Union[
+        List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]
+    ],
     target_key: Text,
     prediction_key: Text,
 ) -> Iterator[Iterable[Optional[Text]]]:
@@ -1717,11 +1788,15 @@ def compute_metrics(
 
     intent_results = remove_empty_intent_examples(intent_results)
 
-    response_selection_results = remove_empty_response_examples(response_selection_results)
+    response_selection_results = remove_empty_response_examples(
+        response_selection_results
+    )
 
     intent_metrics = {}
     if intent_results:
-        intent_metrics = _compute_metrics(intent_results, "intent_target", "intent_prediction")
+        intent_metrics = _compute_metrics(
+            intent_results, "intent_target", "intent_prediction"
+        )
 
     entity_metrics = {}
     if entity_results:
@@ -1845,7 +1920,9 @@ async def compare_nlu(
 
 
 def _compute_metrics(
-    results: Union[List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]],
+    results: Union[
+        List[IntentEvaluationResult], List[ResponseSelectionEvaluationResult]
+    ],
     target_key: Text,
     prediction_key: Text,
 ) -> Union[IntentMetrics, ResponseSelectionMetrics]:
@@ -1861,7 +1938,9 @@ def _compute_metrics(
     from rasa.model_testing import get_evaluation_metrics
 
     # compute fold metrics
-    targets, predictions = _targets_predictions_from(results, target_key, prediction_key)
+    targets, predictions = _targets_predictions_from(
+        results, target_key, prediction_key
+    )
     _, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
 
     return {"Accuracy": [accuracy], "F1-score": [f1], "Precision": [precision]}
@@ -1893,7 +1972,9 @@ def _compute_entity_metrics(
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, NO_ENTITY_TAG, NO_ENTITY)
+        merged_predictions = substitute_labels(
+            merged_predictions, NO_ENTITY_TAG, NO_ENTITY
+        )
         _, precision, f1, accuracy = get_evaluation_metrics(
             merged_targets, merged_predictions, exclude_label=NO_ENTITY
         )
@@ -1912,7 +1993,9 @@ def log_results(results: IntentMetrics, dataset_name: Text) -> None:
         dataset_name: string of which dataset the results are from, e.g. test/train
     """
     for k, v in results.items():
-        logger.info("{} {}: {:.3f} ({:.3f})".format(dataset_name, k, np.mean(v), np.std(v)))
+        logger.info(
+            "{} {}: {:.3f} ({:.3f})".format(dataset_name, k, np.mean(v), np.std(v))
+        )
 
 
 def log_entity_results(results: EntityMetrics, dataset_name: Text) -> None:
