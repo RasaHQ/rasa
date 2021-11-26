@@ -402,7 +402,15 @@ class GraphNode:
             # handling of exceptions.
             raise
         except Exception as e:
-            raise e
+            if not isinstance(e, RasaException):
+                raise GraphComponentException(
+                    f"Error initializing graph component for node {self._node_name}."
+                ) from e
+            else:
+                logger.error(
+                    f"Error initializing graph component for node {self._node_name}."
+                )
+                raise
 
     def _get_resource(self, kwargs: Dict[Text, Any]) -> Resource:
         if "resource" in kwargs:
