@@ -88,7 +88,7 @@ class SpacyNLP(GraphComponent):
                 f"For example:\n"
                 f"- name: SpacyNLP\n"
                 f"  model: en_core_web_md\n"
-                f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
+                f"More information can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
 
         try:
@@ -99,7 +99,7 @@ class SpacyNLP(GraphComponent):
                 f"Please confirm that {spacy_model_name} is an available spaCy model. "
                 f"You need to download one upfront. For example:\n"
                 f"python -m spacy download en_core_web_md\n"
-                f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
+                f"More information can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
 
     @classmethod
