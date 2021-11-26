@@ -79,8 +79,6 @@ class SpacyNLP(GraphComponent):
         """Try loading the model, catching the OSError if missing."""
         import spacy
 
-        sys.tracebacklimit = 0
-
         if not spacy_model_name:
             raise InvalidModelError(
                 f"Missing model configuration for `SpacyNLP` in `config.yml`.\n"
