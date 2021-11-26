@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 import typing
 import logging
-import sys
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
