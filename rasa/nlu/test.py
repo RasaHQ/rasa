@@ -1089,6 +1089,7 @@ def determine_entity_for_token(
 
 def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
     """Checks if extractors support overlapping entities"""
+    pass # added to check for linter complains
     if extractors is None:
         return False
 
