@@ -19,11 +19,14 @@ GROUP_ENTITY_TYPE = "entity"
 GROUP_ENTITY_DICT = "entity_dict"
 GROUP_ENTITY_TEXT = "entity_text"
 GROUP_COMPLETE_MATCH = 0
+GROUP_ENTITY_DICT_LIST = "list_entity_dicts"
 
-# regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict})`
+# regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict}|[list_entity_dicts])` # noqa: E501, W505
 ENTITY_REGEX = re.compile(
-    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\})"  # noqa: E501, W505
+    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\}|\[(?P<list_entity_dicts>.*?)\])"  # noqa: E501, W505
 )
+
+SINGLE_ENTITY_DICT = re.compile(r"{(?P<entity_dict>[^}]+?)\}")
 
 
 class EntityAttributes(NamedTuple):
@@ -50,21 +53,47 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
     offset = 0
 
     for match in re.finditer(ENTITY_REGEX, example):
-        entity_attributes = extract_entity_attributes(match)
+        if match.groupdict()[GROUP_ENTITY_DICT] or match.groupdict()[GROUP_ENTITY_TYPE]:
+            entity_attributes = extract_entity_attributes(match)
 
-        start_index = match.start() - offset
-        end_index = start_index + len(entity_attributes.text)
-        offset += len(match.group(0)) - len(entity_attributes.text)
+            start_index = match.start() - offset
+            end_index = start_index + len(entity_attributes.text)
+            offset += len(match.group(0)) - len(entity_attributes.text)
 
-        entity = rasa.shared.nlu.training_data.util.build_entity(
-            start_index,
-            end_index,
-            entity_attributes.value,
-            entity_attributes.type,
-            entity_attributes.role,
-            entity_attributes.group,
-        )
-        entities.append(entity)
+            entity = rasa.shared.nlu.training_data.util.build_entity(
+                start_index,
+                end_index,
+                entity_attributes.value,
+                entity_attributes.type,
+                entity_attributes.role,
+                entity_attributes.group,
+            )
+            entities.append(entity)
+        else:
+            entity_text = match.groupdict()[GROUP_ENTITY_TEXT]
+            # iterate over the list
+
+            start_index = match.start() - offset
+            end_index = start_index + len(entity_text)
+            offset += len(match.group(0)) - len(entity_text)
+
+            for match_inner in re.finditer(
+                SINGLE_ENTITY_DICT, match.groupdict()[GROUP_ENTITY_DICT_LIST]
+            ):
+
+                entity_attributes = extract_entity_attributes_from_dict(
+                    entity_text=entity_text, match=match_inner
+                )
+
+                entity = rasa.shared.nlu.training_data.util.build_entity(
+                    start_index,
+                    end_index,
+                    entity_attributes.value,
+                    entity_attributes.type,
+                    entity_attributes.role,
+                    entity_attributes.group,
+                )
+                entities.append(entity)
 
     return entities
 
