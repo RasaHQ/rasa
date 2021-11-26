@@ -3,8 +3,8 @@ from __future__ import annotations
 import dataclasses
 import typing
 import logging
+import sys
 from typing import Any, Dict, List, Optional, Text, Tuple
-
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -78,6 +78,8 @@ class SpacyNLP(GraphComponent):
     def load_model(spacy_model_name: Text) -> SpacyModel:
         """Try loading the model, catching the OSError if missing."""
         import spacy
+
+        sys.tracebacklimit = 0
 
         if not spacy_model_name:
             raise InvalidModelError(
