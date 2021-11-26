@@ -687,6 +687,15 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
         )
 
         action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_endpoint=None)
+        slot_events = await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+        tracker.update_with_events(slot_events, domain)
+
         action = FormAction(form_name, action_server)
 
         events = await action.run(

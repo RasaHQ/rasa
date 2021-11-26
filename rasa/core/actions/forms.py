@@ -357,10 +357,6 @@ class FormAction(LoopAction):
     def _get_slot_extractions(
         self, tracker: "DialogueStateTracker", domain: Domain,
     ) -> Dict[Text, Any]:
-        if not tracker.active_loop:
-            # pre-filled slots were already validated at form activation
-            return {}
-
         events_since_last_user_uttered = FormAction._get_events_since_last_user_uttered(
             tracker
         )
@@ -533,7 +529,10 @@ class FormAction(LoopAction):
            - form validation was not cancelled
         """
         # no active_loop means that it is called during activation
-        needs_validation = not tracker.active_loop or (
+        if not tracker.active_loop:
+            return []
+
+        needs_validation = (
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
         )
