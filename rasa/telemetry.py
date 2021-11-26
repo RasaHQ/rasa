@@ -12,7 +12,7 @@ import platform
 import sys
 import textwrap
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text, Union
+from typing import Any, Callable, Dict, List, Optional, Text
 import uuid
 import requests
 from terminaltables import SingleTable
@@ -25,6 +25,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DOCS_URL_TELEMETRY
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
@@ -93,6 +94,10 @@ TELEMETRY_RASA_X_LOCAL_STARTED_EVENT = "Rasa X Local Started"
 TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
+TELEMETRY_MARKERS_EXTRACTION_INITIATED_EVENT = "Markers Extraction Initiated"
+TELEMETRY_MARKERS_EXTRACTED_EVENT = "Markers Extracted"
+TELEMETRY_MARKERS_STATS_COMPUTED_EVENT = "Markers Statistics Computed"
+TELEMETRY_MARKERS_PARSED_COUNT = "Markers Parsed"
 
 # used to calculate the context on the first call and cache it afterwards
 TELEMETRY_CONTEXT = None
@@ -471,7 +476,6 @@ def _default_context_fields() -> Dict[Text, Any]:
     Return:
         A new context containing information about the runtime environment.
     """
-
     global TELEMETRY_CONTEXT
 
     if not TELEMETRY_CONTEXT:
@@ -740,6 +744,11 @@ def track_model_training(
     nlu_data = training_data.get_nlu_data()
     domain = training_data.get_domain()
     count_conditional_responses = domain.count_conditional_response_variations()
+    (
+        count_total_mappings,
+        count_custom_mappings,
+        count_conditional_mappings,
+    ) = domain.count_slot_mapping_statistics()
 
     training_id = uuid.uuid4().hex
 
@@ -760,6 +769,9 @@ def track_model_training(
             # 'templates' in the domain
             "num_templates": len(domain.responses),
             "num_conditional_response_variations": count_conditional_responses,
+            "num_slot_mappings": count_total_mappings,
+            "num_custom_slot_mappings": count_custom_mappings,
+            "num_conditional_slot_mappings": count_conditional_mappings,
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),
@@ -873,7 +885,7 @@ def track_server_start(
     number_of_workers: int,
     is_api_enabled: bool,
 ) -> None:
-    """Track when a user starts a rasa server.
+    """Tracks when a user starts a rasa server.
 
     Args:
         input_channels: Used input channels
@@ -886,16 +898,18 @@ def track_server_start(
 
     def project_fingerprint_from_model(
         _model_directory: Optional[Text],
-    ) -> Optional[Union[Text, List[Text], int, float]]:
-        """Get project fingerprint from an app's loaded model."""
-        if _model_directory:
-            try:
-                with model.get_model(_model_directory) as unpacked_model:
-                    fingerprint = model.fingerprint_from_path(unpacked_model)
-                    return fingerprint.get(model.FINGERPRINT_PROJECT)
-            except Exception:
-                return None
-        return None
+    ) -> Optional[Text]:
+        """Gets project fingerprint from an app's loaded model."""
+        if not model_directory:
+            return None
+
+        try:
+            model_archive = model.get_local_model(_model_directory)
+            metadata = LocalModelStorage.metadata_from_archive(model_archive)
+
+            return metadata.project_fingerprint
+        except Exception:
+            return None
 
     if not endpoints:
         endpoints = AvailableEndpoints()
@@ -968,11 +982,13 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
         e2e: indicator if tests running in end to end mode
         agent: Agent of the model getting tested
     """
-    fingerprint = model.fingerprint_from_path(agent.model_directory or "")
-    project = fingerprint.get(model.FINGERPRINT_PROJECT)
     _track(
         TELEMETRY_TEST_CORE_EVENT,
-        {"project": project, "end_to_end": e2e, "num_story_steps": num_story_steps},
+        {
+            "project": agent.processor.model_metadata.project_fingerprint,
+            "end_to_end": e2e,
+            "num_story_steps": num_story_steps,
+        },
     )
 
 
@@ -991,5 +1007,74 @@ def track_nlu_model_test(test_data: "TrainingData") -> None:
             "num_lookup_tables": len(test_data.lookup_tables),
             "num_synonyms": len(test_data.entity_synonyms),
             "num_regexes": len(test_data.regex_features),
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_extraction_initiated(
+    strategy: Text, only_extract: bool, seed: bool, count: Optional[int],
+) -> None:
+    """Track when a user tries to extract success markers.
+
+    Args:
+        strategy: The strategy the user is using for tracker selection
+        only_extract: Indicates if the user is only extracting markers or also
+                      producing stats
+        seed: Indicates if the user used a seed for this attempt
+        count: (Optional) The number of trackers the user is trying to select.
+    """
+    _track(
+        TELEMETRY_MARKERS_EXTRACTION_INITIATED_EVENT,
+        {
+            "strategy": strategy,
+            "only_extract": only_extract,
+            "seed": seed,
+            "count": count,
+        },
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_extracted(trackers_count: int) -> None:
+    """Track when markers have been extracted by a user.
+
+    Args:
+        trackers_count: The actual number of trackers processed
+    """
+    _track(
+        TELEMETRY_MARKERS_EXTRACTED_EVENT, {"trackers_count": trackers_count},
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_stats_computed(trackers_count: int) -> None:
+    """Track when stats over markers have been computed by a user.
+
+    Args:
+        trackers_count: The actual number of trackers processed
+    """
+    _track(
+        TELEMETRY_MARKERS_STATS_COMPUTED_EVENT, {"trackers_count": trackers_count},
+    )
+
+
+@ensure_telemetry_enabled
+def track_markers_parsed_count(
+    marker_count: int, max_depth: int, branching_factor: int
+) -> None:
+    """Track when markers have been successfully parsed from config.
+
+    Args:
+        marker_count: The number of markers found in the config
+        max_depth: The maximum depth of any marker in the config
+        branching_factor: The maximum number of children of any marker in the config.
+    """
+    _track(
+        TELEMETRY_MARKERS_PARSED_COUNT,
+        {
+            "marker_count": marker_count,
+            "max_depth": max_depth,
+            "branching_factor": branching_factor,
         },
     )

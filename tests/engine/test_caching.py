@@ -3,7 +3,7 @@ import logging
 import shutil
 import uuid
 from pathlib import Path
-from typing import Dict, Text, Optional, Any
+from typing import Dict, Text, Optional, Any, Callable
 from unittest.mock import Mock
 
 import pytest
@@ -45,7 +45,11 @@ class TestCacheableOutput:
 
     @classmethod
     def from_cache(
-        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+        cls,
+        node_name: Text,
+        directory: Path,
+        model_storage: ModelStorage,
+        output_fingerprint: Text,
     ) -> "TestCacheableOutput":
 
         value = rasa.shared.utils.io.read_json_file(directory / "cached.json")
@@ -95,11 +99,11 @@ def test_get_cached_result_with_miss(
 
 
 def test_get_cached_result_when_result_no_longer_available(
-    tmp_path: Path, monkeypatch: MonkeyPatch, default_model_storage: ModelStorage
+    tmp_path: Path,
+    local_cache_creator: Callable[..., LocalTrainingCache],
+    default_model_storage: ModelStorage,
 ):
-    monkeypatch.setenv(CACHE_LOCATION_ENV, str(tmp_path))
-
-    cache = LocalTrainingCache()
+    cache = local_cache_creator(tmp_path)
 
     output = TestCacheableOutput({"something to cache": "dasdaasda"})
     output_fingerprint = uuid.uuid4().hex
@@ -119,12 +123,12 @@ def test_get_cached_result_when_result_no_longer_available(
     )
 
 
-def test_cache_creates_location_if_missing(tmp_path: Path, monkeypatch: MonkeyPatch):
+def test_cache_creates_location_if_missing(
+    tmp_path: Path, local_cache_creator: Callable[..., LocalTrainingCache]
+):
     cache_location = tmp_path / "directory does not exist yet"
 
-    monkeypatch.setenv(CACHE_LOCATION_ENV, str(cache_location))
-
-    _ = LocalTrainingCache()
+    _ = local_cache_creator(cache_location)
 
     assert cache_location.is_dir()
 
@@ -244,11 +248,12 @@ def test_restore_cached_output_with_invalid_module(
 
 
 def test_removing_no_longer_compatible_cache_entries(
-    tmp_path: Path, monkeypatch: MonkeyPatch, default_model_storage: ModelStorage
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    local_cache_creator: Callable[..., LocalTrainingCache],
+    default_model_storage: ModelStorage,
 ):
-    monkeypatch.setenv(CACHE_LOCATION_ENV, str(tmp_path))
-
-    cache = LocalTrainingCache()
+    cache = local_cache_creator(tmp_path)
 
     # Cache an entry including serialized output which will be incompatible later
     fingerprint_key1 = uuid.uuid4().hex
@@ -449,16 +454,18 @@ def test_cache_exceeds_size_but_not_in_database(
     # Pretend we have a cache of size `max_cached_size`
     monkeypatch.setenv(CACHE_SIZE_ENV, str(max_cache_size))
 
+    cache = LocalTrainingCache()
+
     # Fill cache with something which is not in the cache metadata
-    sub_dir = tmp_path / "some dir"
+    sub_dir = cache._cache_location / "some dir"
     sub_dir.mkdir()
 
     # one subdirectory which needs deletion
     tests.conftest.create_test_file_with_size(sub_dir, max_cache_size)
     # one file which needs deletion
-    tests.conftest.create_test_file_with_size(tmp_path, max_cache_size)
-
-    cache = LocalTrainingCache()
+    test_file = tests.conftest.create_test_file_with_size(
+        cache._cache_location, max_cache_size
+    )
 
     # Cache an item
     fingerprint_key = uuid.uuid4().hex
@@ -472,16 +479,20 @@ def test_cache_exceeds_size_but_not_in_database(
     assert cache.get_cached_result(
         output_fingerprint, "some_node", default_model_storage
     )
+    assert not sub_dir.is_dir()
+    assert not test_file.is_file()
 
 
 def test_clean_up_of_cached_result_if_database_fails(
-    tmp_path: Path, monkeypatch: MonkeyPatch, default_model_storage: ModelStorage
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    default_model_storage: ModelStorage,
+    local_cache_creator: Callable[..., LocalTrainingCache],
 ):
     database_name = "test.db"
-    monkeypatch.setenv(CACHE_LOCATION_ENV, str(tmp_path))
     monkeypatch.setenv(CACHE_DB_NAME_ENV, database_name)
 
-    cache = LocalTrainingCache()
+    cache = local_cache_creator(tmp_path)
 
     # Deleting the database will cause an error when caching the result
     (tmp_path / database_name).unlink()

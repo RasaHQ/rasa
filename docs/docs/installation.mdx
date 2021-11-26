@@ -18,15 +18,67 @@ your machine and continue development locally.
 
 ## Quick Installation
 
-You can install Rasa Open Source using pip (requires Python 3.7 or 3.8).
+**Isolate your python project using a virtual environment.**
+
+<Tabs values={[{"label": "Ubuntu", "value": "ubuntu"}, {"label": "macOS", "value": "macos"}, {"label": "Windows", "value": "windows"}]}  groupId="operating-systems" defaultValue="ubuntu">
+  <TabItem value="ubuntu">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+
+  ```bash
+  python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bash
+  source ./venv/bin/activate
+  ```
+
+  </TabItem>
+  <TabItem value="macos">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `./venv` directory to hold it:
+
+  ```bash
+  python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bash
+  source ./venv/bin/activate
+  ```
+
+  </TabItem>
+  <TabItem value="windows">
+
+  Create a new virtual environment by choosing a Python interpreter and making a `.\\venv` directory to hold it:
+
+  ```bat
+  C:\> python3 -m venv ./venv
+  ```
+
+  Activate the virtual environment:
+
+  ```bat
+  C:\> .\venv\Scripts\activate
+  ```
+
+  </TabItem>
+</Tabs>
+
+**Install Rasa Open Source using pip (requires Python 3.7, or 3.8).**
 
 ```bash
-pip3 install -U pip
-pip3 install rasa
+pip3 install -U --user pip && pip3 install rasa
 ```
 
-You are now ready to go! So what's next?
-You can create a new project by running:
+:::caution
+The command above will upgrade your pip to the latest version. We recommend using pip 21.3 or later due to performance improvements. Previous versions would take long time to resolve dependencies.
+:::
+
+**You are now ready to go! So what's next? You can create a new project by running:**
 
 ```bash
 rasa init
@@ -34,6 +86,9 @@ rasa init
 
 You can learn about the most important Rasa commands in the [Command Line Interface](./command-line-interface.mdx).
 
+:::note
+Due to lack of official TensorFlow support for the Apple M1, Rasa Open Source is currently unable to train a model using M1.
+:::
 
 ## Step-by-step Installation Guide
 
@@ -230,6 +285,7 @@ for the English language, but many other languages are availabe too.
 We recommend using at least the "medium" sized models (`_md`) instead of the spaCy's
 default small `en_core_web_sm` model. Small models require less
 memory to run, but will likely reduce intent classification performance.
+
 
 ### Dependencies for MITIE
 

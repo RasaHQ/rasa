@@ -11,6 +11,8 @@ from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
+    RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     SIMILARITY_TYPE,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
@@ -39,20 +41,48 @@ if TYPE_CHECKING:
     from tensorflow.keras.callbacks import Callback
 
 
-def normalize(values: np.ndarray, ranking_length: int = 0) -> np.ndarray:
-    """Normalizes an array of positive numbers over the top `ranking_length` values.
+def rank_and_mask(
+    confidences: np.ndarray, ranking_length: int = 0, renormalize: bool = False
+) -> Tuple[np.array, np.array]:
+    """Computes a ranking of the given confidences.
 
-    Other values will be set to 0.
+    First, it computes a list containing the indices that would sort all the given
+    confidences in decreasing order.
+    If a `ranking_length` is specified, then only the indices for the `ranking_length`
+    largest confidences will be returned and all other confidences (i.e. whose indices
+    we do not return) will be masked by setting them to 0.
+    Moreover, if `renormalize` is set to `True`, then the confidences will
+    additionally be renormalised by dividing them by their sum.
+
+    We assume that the given confidences sum up to 1 and, if the
+    `ranking_length` is 0 or larger than the given number of confidences,
+    we set the `ranking_length` to the number of confidences.
+    Hence, in this case the confidences won't be modified.
+
+    Args:
+        confidences: a 1-d array of confidences that are non-negative and sum up to 1
+        ranking_length: the size of the ranking to be computed. If set to 0 or
+            something larger than the number of given confidences, then this is set
+            to the exact number of given confidences.
+        renormalize: determines whether the masked confidences should be renormalised.
+        return_indices:
+    Returns:
+        indices of the top `ranking_length` confidences and an array of the same
+        shape as the given confidences that contains the possibly masked and
+        renormalized confidence values
     """
-    new_values = values.copy()  # prevent mutation of the input
-    if 0 < ranking_length < len(new_values):
-        ranked = sorted(new_values, reverse=True)
-        new_values[new_values < ranked[ranking_length - 1]] = 0
+    indices = confidences.argsort()[::-1]
+    confidences = confidences.copy()
 
-    if np.sum(new_values) > 0:
-        new_values = new_values / np.sum(new_values)
+    if 0 < ranking_length < len(confidences):
+        confidences[indices[ranking_length:]] = 0
 
-    return new_values
+        if renormalize and np.sum(confidences) > 0:
+            confidences = confidences / np.sum(confidences)
+
+        indices = indices[:ranking_length]
+
+    return indices, confidences
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
@@ -507,6 +537,16 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
                 f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
                 f"only with {SIMILARITY_TYPE}={INNER}."
             )
+    if component_config.get(RENORMALIZE_CONFIDENCES) and component_config.get(
+        RANKING_LENGTH
+    ):
+        if component_config[MODEL_CONFIDENCE] != SOFTMAX:
+            raise InvalidConfigException(
+                f"Renormalizing the {component_config[RANKING_LENGTH]} top "
+                f"predictions should only be done if {MODEL_CONFIDENCE}={SOFTMAX} "
+                f"Please use {RENORMALIZE_CONFIDENCES}={True} "
+                f"only with {MODEL_CONFIDENCE}={SOFTMAX}."
+            )
 
 
 def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
@@ -516,9 +556,7 @@ def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
     ):
         rasa.shared.utils.io.raise_warning(
             f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
-            f"to set it to `True` when using cross-entropy loss. It will be set to "
-            f"`True` by default, "
-            f"Rasa Open Source 3.0.0 onwards.",
+            f"to set it to `True` when using cross-entropy loss.",
             category=UserWarning,
         )
 

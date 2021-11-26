@@ -9,7 +9,6 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
 import numpy as np
 
-
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
@@ -27,21 +26,10 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
-from rasa.core.featurizers import _tracker_featurizers
 
 FEATURIZER_FILE = "featurizer.json"
 
 logger = logging.getLogger(__name__)
-
-# All code outside this module will continue to use the old `tracker_featurizer` module
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-TrackerFeaturizer = _tracker_featurizers.TrackerFeaturizer
-MaxHistoryTrackerFeaturizer = _tracker_featurizers.MaxHistoryTrackerFeaturizer
-IntentMaxHistoryTrackerFeaturizer = (
-    _tracker_featurizers.IntentMaxHistoryTrackerFeaturizer
-)
-FullDialogueTrackerFeaturizer = _tracker_featurizers.FullDialogueTrackerFeaturizer
 
 
 class InvalidStory(RasaException):
@@ -60,7 +48,7 @@ class InvalidStory(RasaException):
         return self.message
 
 
-class TrackerFeaturizer2:
+class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
@@ -463,7 +451,7 @@ class TrackerFeaturizer2:
         )
 
     @staticmethod
-    def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer2]:
+    def load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer]:
         """Loads the featurizer from file.
 
         Args:
@@ -502,7 +490,7 @@ class TrackerFeaturizer2:
         ]
 
 
-class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2):
+class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     """Creates full dialogue training data for time distributed architectures.
 
     Creates training data that uses each time output for prediction.
@@ -640,7 +628,7 @@ class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2):
         return trackers_as_states
 
 
-class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2):
+class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     """Truncates the tracker history into `max_history` long sequences.
 
     Creates training data from trackers where actions are the output prediction
@@ -881,7 +869,7 @@ class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2):
         return trackers_as_states
 
 
-class IntentMaxHistoryTrackerFeaturizer2(MaxHistoryTrackerFeaturizer2):
+class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     """Truncates the tracker history into `max_history` long sequences.
 
     Creates training data from trackers where intents are the output prediction

@@ -12,6 +12,7 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.io
+from rasa.utils.tensorflow.constants import EPOCHS
 
 FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY = "config-without-epochs"
 FINGERPRINT_CORE = "domain-without-responses"
@@ -21,7 +22,7 @@ FINGERPRINT_VERSION = "rasa-version"
 logger = logging.getLogger(__name__)
 
 
-class FineTuningValidator(GraphComponent):
+class FinetuningValidator(GraphComponent):
     """Component that checks whether fine-tuning is possible.
 
     This is a component at the beginning of the graph which receives all training data
@@ -46,8 +47,14 @@ class FineTuningValidator(GraphComponent):
 
     FILENAME = "fingerprints-for-validation.json"
 
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Default config for ProjectProvider."""
+        return {"validate_core": True, "validate_nlu": True}
+
     def __init__(
         self,
+        config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
@@ -70,41 +77,25 @@ class FineTuningValidator(GraphComponent):
         self._resource = resource
         self._fingerprints: Dict[Text, Text] = fingerprints or {}
 
-    def validate_nlu_only(self, importer: TrainingDataImporter,) -> None:
-        """Validates whether we can finetune the NLU part when finetuning is enabled.
+        self._core = config["validate_core"]
+        self._nlu = config["validate_nlu"]
 
-        Args:
-            importer: a training data importer
-
-        Raises:
-            `InvalidConfigException` if there is a conflict
-        """
-        self._validate(importer=importer, nlu=True, core=False)
-
-    def validate_core_only(self, importer: TrainingDataImporter,) -> None:
-        """Validates whether we can finetune the Core part when finetuning is enabled.
-
-        Args:
-            importer: a training data importer
-
-        Raises:
-            `InvalidConfigException` if there is a conflict
-        """
-        self._validate(importer=importer, nlu=False, core=True)
-
-    def validate(self, importer: TrainingDataImporter,) -> None:
+    def validate(self, importer: TrainingDataImporter,) -> TrainingDataImporter:
         """Validates whether we can finetune Core and NLU when finetuning is enabled.
 
         Args:
             importer: a training data importer
+
         Raises:
             `InvalidConfigException` if there is a conflict
-        """
-        self._validate(importer, nlu=True, core=True)
 
-    def _validate(
-        self, importer: TrainingDataImporter, nlu: bool = True, core: bool = True,
-    ) -> None:
+        Returns:
+            Training Data Importer.
+        """
+        self._validate(importer)
+        return importer
+
+    def _validate(self, importer: TrainingDataImporter) -> None:
         """Validate whether the finetuning setting conflicts with other settings.
 
         Note that this validation always takes into account the configuration of
@@ -116,9 +107,7 @@ class FineTuningValidator(GraphComponent):
 
         Args:
             importer: a training data importer
-            domain: the domain
-            nlu: set to `False` if NLU part should not be validated
-            core: set to `False` if Core part should not be validated
+
         Raises:
             `InvalidConfigException` if there is a conflict
         """
@@ -145,7 +134,7 @@ class FineTuningValidator(GraphComponent):
                 )
         self._fingerprints[FINGERPRINT_VERSION] = rasa_version
 
-        fingerprint_config = self._get_fingerprint_of_schema_without_epochs_config()
+        fingerprint_config = self._get_fingerprint_of_schema_without_irrelevant_keys()
         self._compare_or_memorize(
             fingerprint_key=FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
             new_fingerprint=fingerprint_config,
@@ -157,7 +146,7 @@ class FineTuningValidator(GraphComponent):
             ),
         )
 
-        if core:
+        if self._core:
             # NOTE: If there's a consistency check between domain and core training data
             # that ensures domain and core training data are consistent, then we can
             # drop this check.
@@ -175,7 +164,7 @@ class FineTuningValidator(GraphComponent):
                 ),
             )
 
-        if nlu:
+        if self._nlu:
             fingerprint_nlu = importer.get_nlu_data().label_fingerprint()
             self._compare_or_memorize(
                 fingerprint_key=FINGERPRINT_NLU,
@@ -231,18 +220,30 @@ class FineTuningValidator(GraphComponent):
         domain.responses = {}
         return domain.fingerprint()
 
-    def _get_fingerprint_of_schema_without_epochs_config(self,) -> Text:
-        """Returns a fingerprint of the given configuration with "epoch" keys removed.
+    def _get_fingerprint_of_schema_without_irrelevant_keys(self,) -> Text:
+        """Returns a fingerprint of the given schema with certain items removed.
+
+        These items include specifications that do not influence actual training
+        results such as "eager" mode. The only configuration (in your config) that is
+        allowed to change is the number of `epochs`.
 
         Returns:
             fingerprint
         """
-        schema_as_dict = self._execution_context.graph_schema.as_dict()
-        for node_dict in schema_as_dict.values():
+        graph_schema = self._execution_context.graph_schema
+        schema_as_dict = graph_schema.as_dict()
+        for node_name, node_dict in schema_as_dict["nodes"].items():
             config_copy = copy.deepcopy(node_dict["config"])
-            config_copy.pop("epochs", None)
+            config_copy.pop(EPOCHS, None)
+            # ignore default values since they're filled in anyway later and can
+            # end up in configs (or not) in mysterious ways
+            defaults = graph_schema.nodes[node_name].uses.get_default_config()
+            for key, default_value in defaults.items():
+                if key in config_copy and config_copy[key] == default_value:
+                    config_copy.pop(key)
             node_dict["config"] = config_copy
             node_dict.pop("eager")
+            node_dict.pop("constructor_name")
         return rasa.shared.utils.io.deep_container_fingerprint(schema_as_dict)
 
     @classmethod
@@ -252,9 +253,10 @@ class FineTuningValidator(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> FineTuningValidator:
+    ) -> FinetuningValidator:
         """Creates a new `FineTuningValidator` (see parent class for full docstring)."""
         return cls(
+            config=config,
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -283,6 +285,7 @@ class FineTuningValidator(GraphComponent):
                     filename=path / cls.FILENAME,
                 )
                 return cls(
+                    config=config,
                     model_storage=model_storage,
                     execution_context=execution_context,
                     resource=resource,

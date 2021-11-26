@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 import copy
 from typing import Callable, List, Optional, Text, Dict, Any
-import functools
 
 from _pytest.monkeypatch import MonkeyPatch
 import pytest
@@ -11,8 +10,9 @@ import pytest
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.graph_components.validators.finetuning_validator import FineTuningValidator
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.graph_components.validators.finetuning_validator import FinetuningValidator
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -33,7 +33,9 @@ def default_resource() -> Resource:
     return Resource("FineTuningValidator")
 
 
-ValidationMethodType = Callable[[TrainingDataImporter, Dict[Text, Any]], None]
+ValidationMethodType = Callable[
+    [TrainingDataImporter, Dict[Text, Any]], TrainingDataImporter
+]
 
 
 @pytest.fixture
@@ -41,20 +43,23 @@ def get_finetuning_validator(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     default_resource: Resource,
-) -> Callable[[bool, bool, GraphSchema], FineTuningValidator]:
+) -> Callable[[bool, bool, Dict[Text, Any], GraphSchema], FinetuningValidator]:
     def inner(
-        finetuning: bool, load: bool, graph_schema: Optional[GraphSchema] = None
-    ) -> FineTuningValidator:
+        finetuning: bool,
+        load: bool,
+        config: Dict[Text, Any],
+        graph_schema: Optional[GraphSchema] = None,
+    ) -> FinetuningValidator:
         if load:
-            constructor = FineTuningValidator.load
+            constructor = FinetuningValidator.load
         else:
-            constructor = FineTuningValidator.create
+            constructor = FinetuningValidator.create
         if finetuning:
             default_execution_context.is_finetuning = finetuning
         if graph_schema is not None:
             default_execution_context.graph_schema = graph_schema
         return constructor(
-            config=FineTuningValidator.get_default_config(),
+            config={**FinetuningValidator.get_default_config(), **config},
             execution_context=default_execution_context,
             model_storage=default_model_storage,
             resource=default_resource,
@@ -65,7 +70,7 @@ def get_finetuning_validator(
 
 @pytest.fixture
 def get_validation_method(
-    get_finetuning_validator: Callable[[bool, bool], FineTuningValidator],
+    get_finetuning_validator: Callable[[bool, bool], FinetuningValidator],
 ) -> Callable[[bool, bool, bool, bool, GraphSchema], ValidationMethodType]:
     def inner(
         finetuning: bool,
@@ -75,20 +80,13 @@ def get_validation_method(
         graph_schema: Optional[GraphSchema] = None,
     ) -> ValidationMethodType:
         validator = get_finetuning_validator(
-            finetuning=finetuning, load=load, graph_schema=graph_schema
+            finetuning=finetuning,
+            load=load,
+            config={"validate_core": core, "validate_nlu": nlu},
+            graph_schema=graph_schema,
         )
-        if core and nlu:
-            method = "validate"
-        elif core:
-            method = "validate_core_only"
-        elif nlu:
-            method = "validate_nlu_only"
-        else:
-            method = "validate"
-        func = getattr(validator, method)
-        if not core and not nlu:
-            func = functools.partial(func, nlu=False, core=False)
-        return func
+
+        return validator.validate
 
     return inner
 
@@ -221,6 +219,29 @@ def test_validate_after_changing_epochs_in_config(
     validate(importer=EmptyDataImporter())
 
     # change schema - replace all epoch settings by a different value
+    schema2 = _get_example_schema(num_epochs=5)
+    for node in schema2.nodes.values():
+        node.constructor_name = "other"
+
+    # finetuning - does not complain
+    loaded_validate = get_validation_method(
+        finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema2
+    )
+    loaded_validate(importer=EmptyDataImporter())
+
+
+@pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
+def test_validate_after_changing_constructor(
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+):
+    # training
+    schema1 = _get_example_schema(num_epochs=5)
+    validate = get_validation_method(
+        finetuning=False, load=False, nlu=nlu, core=core, graph_schema=schema1
+    )
+    validate(importer=EmptyDataImporter())
+
+    # change schema - replace all epoch settings by a different value
     schema2 = _get_example_schema(num_epochs=10)
 
     # finetuning - does not complain
@@ -303,7 +324,7 @@ def test_validate_after_replacing_something_in_schema(
     schema2 = copy.deepcopy(schema1)
     schema_node = schema2.nodes["node-0"]
     if what == "uses":
-        schema_node.uses = WhitespaceTokenizerGraphComponent
+        schema_node.uses = WhitespaceTokenizer
     elif what == "fn":
         schema_node.fn = "a-new-function"
     elif what == "needs":
@@ -319,6 +340,49 @@ def test_validate_after_replacing_something_in_schema(
     )
     with pytest.raises(InvalidConfigException):
         loaded_validate(importer=EmptyDataImporter())
+
+
+@pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
+def test_validate_after_adding_adding_default_parameter(
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+):
+    # create a schema and rely on rasa to fill in defaults later
+    schema1 = _get_example_schema()
+    schema1.nodes["nlu-node"] = SchemaNode(
+        needs={}, uses=WhitespaceTokenizer, constructor_name="", fn="", config={}
+    )
+    schema1.nodes["core-node"] = SchemaNode(
+        needs={}, uses=RulePolicy, constructor_name="", fn="", config={}
+    )
+
+    # training
+    validate = get_validation_method(
+        finetuning=False, load=False, nlu=nlu, core=core, graph_schema=schema1
+    )
+    validate(importer=EmptyDataImporter())
+
+    # same schema -- we just explicitly pass default values
+    schema2 = copy.deepcopy(schema1)
+    schema2.nodes["nlu-node"] = SchemaNode(
+        needs={},
+        uses=WhitespaceTokenizer,
+        constructor_name="",
+        fn="",
+        config=WhitespaceTokenizer.get_default_config(),
+    )
+    schema2.nodes["core-node"] = SchemaNode(
+        needs={},
+        uses=RulePolicy,
+        constructor_name="",
+        fn="",
+        config=RulePolicy.get_default_config(),
+    )
+
+    # finetuning *does not raise*
+    loaded_validate = get_validation_method(
+        finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema2
+    )
+    loaded_validate(importer=EmptyDataImporter())
 
 
 @pytest.mark.parametrize(
@@ -457,7 +521,9 @@ def test_validate_with_finetuning_fails_without_training(
 
 
 def test_loading_without_persisting(
-    get_finetuning_validator: Callable[[bool, bool], FineTuningValidator],
+    get_finetuning_validator: Callable[
+        [bool, bool, Dict[Text, bool]], FinetuningValidator
+    ],
 ):
     with pytest.raises(ValueError):
-        get_finetuning_validator(finetuning=False, load=True)
+        get_finetuning_validator(finetuning=False, load=True, config={})

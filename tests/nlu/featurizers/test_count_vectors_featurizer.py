@@ -8,8 +8,8 @@ import scipy.sparse
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizerGraphComponent
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, ACTION_TEXT, ACTION_NAME
@@ -17,20 +17,18 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
-    CountVectorsFeaturizerGraphComponent,
+    CountVectorsFeaturizer,
 )
 
 
 @pytest.fixture()
 def create_featurizer(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-) -> Callable[..., CountVectorsFeaturizerGraphComponent]:
-    def inner(
-        config: Optional[Dict[Text, Any]] = None
-    ) -> CountVectorsFeaturizerGraphComponent:
+) -> Callable[..., CountVectorsFeaturizer]:
+    def inner(config: Optional[Dict[Text, Any]] = None) -> CountVectorsFeaturizer:
         config = config or {}
-        return CountVectorsFeaturizerGraphComponent.create(
-            {**CountVectorsFeaturizerGraphComponent.get_default_config(), **config},
+        return CountVectorsFeaturizer.create(
+            {**CountVectorsFeaturizer.get_default_config(), **config},
             default_model_storage,
             Resource("count_vectors_featurizer"),
             default_execution_context,
@@ -42,13 +40,13 @@ def create_featurizer(
 @pytest.fixture()
 def load_featurizer(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
-) -> Callable[..., CountVectorsFeaturizerGraphComponent]:
+) -> Callable[..., CountVectorsFeaturizer]:
     def inner(
         config: Optional[Dict[Text, Any]] = None, is_finetuning: bool = False
-    ) -> CountVectorsFeaturizerGraphComponent:
+    ) -> CountVectorsFeaturizer:
         config = config or {}
-        return CountVectorsFeaturizerGraphComponent.load(
-            {**CountVectorsFeaturizerGraphComponent.get_default_config(), **config},
+        return CountVectorsFeaturizer.load(
+            {**CountVectorsFeaturizer.get_default_config(), **config},
             default_model_storage,
             Resource("count_vectors_featurizer"),
             dataclasses.replace(default_execution_context, is_finetuning=is_finetuning),
@@ -70,8 +68,8 @@ def test_count_vector_featurizer(
     sentence: Text,
     expected: List[List[int]],
     expected_cls: List[List[int]],
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer()
 
@@ -111,8 +109,8 @@ def test_count_vector_featurizer_response_attribute_featurization(
     response: Optional[Text],
     intent_features: List[List[int]],
     response_features: Optional[List[List[int]]],
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer()
 
@@ -175,8 +173,8 @@ def test_count_vector_featurizer_attribute_featurization(
     response: Optional[Text],
     intent_features: List[List[int]],
     response_features: Optional[List[List[int]]],
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer()
 
@@ -239,8 +237,8 @@ def test_count_vector_featurizer_shared_vocab(
     text_features: List[List[int]],
     intent_features: List[List[int]],
     response_features: List[List[int]],
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"use_shared_vocab": True,})
 
@@ -289,8 +287,8 @@ def test_count_vector_featurizer_shared_vocab(
 def test_count_vector_featurizer_oov_token(
     sentence: Text,
     expected: List[List[int]],
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"OOV_token": "__oov__"})
     train_message = Message(data={TEXT: sentence})
@@ -321,8 +319,8 @@ def test_count_vector_featurizer_oov_token(
 def test_count_vector_featurizer_oov_words(
     sentence: Text,
     expected: List[List[int]],
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer(
         {"OOV_token": "__oov__", "OOV_words": ["oov_word0", "OOV_word1"],}
@@ -358,7 +356,7 @@ def test_count_vector_featurizer_oov_words(
 def test_count_vector_featurizer_using_tokens(
     tokens: List[Text],
     expected: List[List[int]],
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
 ):
     ftr = create_featurizer()
 
@@ -396,8 +394,8 @@ def test_count_vector_featurizer_using_tokens(
 def test_count_vector_featurizer_char(
     sentence: Text,
     expected: List[List[int]],
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char",})
 
@@ -418,9 +416,9 @@ def test_count_vector_featurizer_char(
 
 
 def test_count_vector_featurizer_persist_load(
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    load_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    load_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     # set non default values to config
     config = {
@@ -508,8 +506,8 @@ def test_count_vector_featurizer_persist_load(
 
 
 def test_count_vectors_featurizer_train(
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     featurizer = create_featurizer()
 
@@ -572,9 +570,9 @@ def test_count_vector_featurizer_use_lemma(
     sequence_features: List[List[int]],
     sentence_features: List[List[int]],
     use_lemma: bool,
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    load_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    spacy_tokenizer: SpacyTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    load_featurizer: Callable[..., CountVectorsFeaturizer],
+    spacy_tokenizer: SpacyTokenizer,
 ):
     config = {"use_lemma": use_lemma, "OOV_words": ["drinks"], "OOV_token": "OOV"}
     ftr = create_featurizer(config)
@@ -587,7 +585,7 @@ def test_count_vector_featurizer_use_lemma(
     spacy_tokenizer.process([train_message])
     spacy_tokenizer.process([test_message])
 
-    ftr.train(TrainingData([train_message]), spacy_nlp=SpacyModel(spacy_nlp, "en"))
+    ftr.train(TrainingData([train_message]), model=SpacyModel(spacy_nlp, "en"))
 
     ftr.process([test_message])
 
@@ -620,8 +618,8 @@ def test_count_vector_featurizer_action_attribute_featurization(
     action_text: Text,
     action_name_features: np.ndarray,
     response_features: np.ndarray,
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"token_pattern": r"(?u)\b\w+\b",})
 
@@ -686,8 +684,8 @@ def test_count_vector_featurizer_process_by_attribute(
     action_text: Text,
     action_name_features: np.ndarray,
     response_features: np.ndarray,
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"token_pattern": r"(?u)\b\w+\b",})
 
@@ -736,9 +734,9 @@ def test_cvf_incremental_training(
     additional_train_text: Text,
     initial_vocabulary_size: int,
     final_vocabulary_size: int,
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    load_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    load_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     initial_cvf = create_featurizer()
     train_message = Message(data={"text": initial_train_text})
@@ -781,9 +779,9 @@ def test_use_shared_vocab_exception(
     initial_train_text: Text,
     additional_train_text: Text,
     use_shared_vocab: bool,
-    create_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    load_featurizer: Callable[..., CountVectorsFeaturizerGraphComponent],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    create_featurizer: Callable[..., CountVectorsFeaturizer],
+    load_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     """Tests if an exception is raised when `use_shared_vocab` is set to True
     during incremental training."""

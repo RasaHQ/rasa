@@ -59,10 +59,9 @@ jobs:
 
       - name: Get TensorFlow version
         run: |-
-          # Read TF version, trim special characters ^~><+
-          TF_VERSION=$(grep "tensorflow =" pyproject.toml | sed 's/^[^"]*"\([^"]*\),.*/\1/' | sed 's/[\^~><=]//g')
-          # Keep the first 3 characters, e.g. we keep 2.3 if TF_VERSION is 2.3.4
-          TF_VERSION=${TF_VERSION::3}
+          # Read TF version from poetry.lock file
+          pip install toml
+          TF_VERSION=$(scripts/read_tensorflow_version.sh)
           echo "TensorFlow version: $TF_VERSION"
           echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
 
@@ -80,7 +79,7 @@ jobs:
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
+      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -166,6 +165,12 @@ jobs:
               && echo "::set-output name=is_config_exists::false" && exit 0)
           fi
 
+          # Skip job if dataset is Hermit and config is BERT + DIET(seq) + ResponseSelector(t2t) or Sparse + BERT + DIET(seq) + ResponseSelector(t2t)
+          if [[ "${{ matrix.dataset }}" == "Hermit" && "${{ matrix.config }}" =~ "BERT + DIET(seq) + ResponseSelector(t2t)" ]]; then
+            echo "::warning::This ${{ matrix.dataset }} dataset / ${{ matrix.config }} config is currently being skipped due to OOM associated with the upgrade to TF 2.6." \
+              && echo "::set-output name=is_config_exists::false" && exit 0
+          fi
+
           # Skip job if a given type is not available for a given dataset
           if [[ -z "${DOMAIN_FILE}" && "${{ matrix.type }}" == "core" ]]; then
             echo "::warning::The ${{ matrix.dataset }} dataset doesn't include core type. Skipping the job." \
@@ -244,6 +249,10 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
+      - name: Install datadog-api-client
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: poetry run pip install -U datadog-api-client
+
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
@@ -255,7 +264,6 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          TF_DETERMINISTIC_OPS: 1 # Run GPUs in a deterministic mode
         run: |-
           poetry run rasa --version
 
@@ -296,6 +304,11 @@ jobs:
         with:
           name: report.json
 
+      - name: Extract branch name
+        shell: bash
+        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
+        id: extract_branch
+
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
@@ -311,6 +324,10 @@ jobs:
           DATASET_REPOSITORY_BRANCH: "main"
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
+          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.eu
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
@@ -371,7 +388,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure()  && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@047b09b154480ed39076984b64f324fff010d703  # v3
+        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9  # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -528,7 +545,7 @@ jobs:
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@047b09b154480ed39076984b64f324fff010d703 #v3
+        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -566,7 +583,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
+      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}

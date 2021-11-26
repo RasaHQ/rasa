@@ -1,16 +1,22 @@
 from __future__ import annotations
 import abc
 import logging
+import typing
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Tuple, Union, Text, ContextManager, Dict, Any
+from typing import Tuple, Union, Text, ContextManager, Dict, Any, Optional
+from packaging import version
 
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.exceptions import UnsupportedModelVersionError
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-from rasa.engine.graph import GraphSchema
+from rasa.shared.importers.autoconfig import TrainingType
 
+if typing.TYPE_CHECKING:
+    from rasa.engine.graph import GraphSchema, GraphModelConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +47,28 @@ class ModelStorage(abc.ABC):
 
         Returns:
             Initialized model storage, and metadata about the model.
+
+        Raises:
+            `UnsupportedModelError` if the loaded meta data indicates that the model
+            has been created with an outdated Rasa version.
+        """
+        ...
+
+    @classmethod
+    def metadata_from_archive(
+        cls, model_archive_path: Union[Text, Path]
+    ) -> ModelMetadata:
+        """Retrieves metadata from archive.
+
+        Args:
+            model_archive_path: The path to the model archive.
+
+        Returns:
+            Metadata about the model.
+
+        Raises:
+            `UnsupportedModelError` if the loaded meta data indicates that the model
+            has been created with an outdated Rasa version.
         """
         ...
 
@@ -79,16 +107,14 @@ class ModelStorage(abc.ABC):
     def create_model_package(
         self,
         model_archive_path: Union[Text, Path],
-        train_schema: GraphSchema,
-        predict_schema: GraphSchema,
+        model_configuration: GraphModelConfiguration,
         domain: Domain,
     ) -> ModelMetadata:
         """Creates a model archive containing all data to load and run the model.
 
         Args:
             model_archive_path: The path to the archive which should be created.
-            train_schema: The schema which was used to train the graph model.
-            predict_schema: The schema for running predictions with the trained model.
+            model_configuration: The model configuration (schemas, language, etc.)
             domain: The `Domain` which was used to train the model.
 
         Returns:
@@ -107,6 +133,23 @@ class ModelMetadata:
     domain: Domain
     train_schema: GraphSchema
     predict_schema: GraphSchema
+    project_fingerprint: Text
+    core_target: Optional[Text]
+    nlu_target: Text
+    language: Optional[Text]
+    training_type: TrainingType = TrainingType.BOTH
+
+    def __post_init__(self,) -> None:
+        """Raises an exception when the meta data indicates an unsupported version.
+
+        Raises:
+            `UnsupportedModelException` if the `rasa_open_source_version` is lower
+            than the minimum compatible version
+        """
+        minimum_version = version.parse(MINIMUM_COMPATIBLE_VERSION)
+        model_version = version.parse(self.rasa_open_source_version)
+        if model_version < minimum_version:
+            raise UnsupportedModelVersionError(model_version=model_version)
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serializable version of the `ModelMetadata`."""
@@ -117,6 +160,11 @@ class ModelMetadata:
             "rasa_open_source_version": self.rasa_open_source_version,
             "train_schema": self.train_schema.as_dict(),
             "predict_schema": self.predict_schema.as_dict(),
+            "training_type": self.training_type.value,
+            "project_fingerprint": self.project_fingerprint,
+            "core_target": self.core_target,
+            "nlu_target": self.nlu_target,
+            "language": self.language,
         }
 
     @classmethod
@@ -129,6 +177,8 @@ class ModelMetadata:
         Returns:
             Instantiated `ModelMetadata`.
         """
+        from rasa.engine.graph import GraphSchema
+
         return ModelMetadata(
             trained_at=datetime.fromisoformat(serialized["trained_at"]),
             rasa_open_source_version=serialized["rasa_open_source_version"],
@@ -136,4 +186,9 @@ class ModelMetadata:
             domain=Domain.from_dict(serialized["domain"]),
             train_schema=GraphSchema.from_dict(serialized["train_schema"]),
             predict_schema=GraphSchema.from_dict(serialized["predict_schema"]),
+            training_type=TrainingType(serialized["training_type"]),
+            project_fingerprint=serialized["project_fingerprint"],
+            core_target=serialized["core_target"],
+            nlu_target=serialized["nlu_target"],
+            language=serialized["language"],
         )

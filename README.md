@@ -18,12 +18,11 @@
 
 <hr />
 
-💡 **Rasa Open Source 3.0 is coming up!** 💡
+💡 **Rasa Open Source 3.0 is here!** 💡
 
-[2.8](https://github.com/RasaHQ/rasa/milestone/39) will be the last minor in the 2.x series, as we need to pause releasing minors while we work on architectural changes in 3.0. You can still contribute new features and improvements which we plan to release together with 3.0. Read more
-about [our contributor guidelines](#how-to-contribute).
-
-We plan to ship alpha releases and release candidates over the next few months in order to get early feedback. Stay tuned!
+[2.8](https://github.com/RasaHQ/rasa/milestone/39) is the last minor in the 2.x series.
+You can still contribute new features and improvements which we plan to release alongside
+updates to 3.0. Read more about [our contributor guidelines](#how-to-contribute).
 
 <hr />
 
@@ -338,6 +337,10 @@ start the release process (in case anything is missing).
 4. **You may now do the release by following the instructions outlined in the
 [Rasa Open Source README](#steps-to-release-a-new-version) !**
 
+#### After a Major release
+
+After a Major release has been completed, please follow [these instructions to complete the documentation update](./docs/README.md#manual-steps-after-a-new-version).
+
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
 
@@ -348,7 +351,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 
 *Release steps*:
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
-    - For Rasa SDK that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
+    - For Rasa SDK, except in the case of a micro release, that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
 2. In case of a minor release, create a new branch that corresponds to the new release, e.g. 
    ```bash
