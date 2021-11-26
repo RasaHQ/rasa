@@ -1088,9 +1088,9 @@ def determine_entity_for_token(
 
 
 def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
-    """Checks if extractors support overlapping entities"""
+    """Checks if extractors support overlapping entities."""
     if extractors is None:
-        return False
+        return True
 
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
