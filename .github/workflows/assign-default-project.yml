@@ -1,7 +1,6 @@
 name: Assign default project to issues
 
 on:
-  pull_request:
   issues:
     types:
     - opened
@@ -14,9 +13,8 @@ jobs:
 
     steps:
     - name: Assign vulnerability scans or Sentry issues to Enable
-      # if: contains(github.event.issue.labels.*.name, 'tool:trivy') || contains(github.event.issue.labels.*.name, 'tool:sentry')
-      if: contains(github.event.pull_request.labels.*.name, 'tool:trivy')
-      uses: RasaHQ/create-or-update-project-card@main
+      if: contains(github.event.issue.labels.*.name, 'tool:trivy') || contains(github.event.issue.labels.*.name, 'tool:sentry')
+      uses: RasaHQ/create-or-update-project-card@d99652311b24f83aeb7e9c308a30302317a08fa3
 
       with:
         token: ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}
@@ -28,7 +26,7 @@ jobs:
 
     - name: Assign model regression issues to Research
       if: contains(github.event.issue.labels.*.name, 'tool:model-regression-tests')
-      uses: RasaHQ/create-or-update-project-card@main
+      uses: RasaHQ/create-or-update-project-card@d99652311b24f83aeb7e9c308a30302317a08fa3
 
       with:
         token: ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}
