@@ -1684,6 +1684,8 @@ async def test_form_slots_empty_with_restart():
     )
     action = FormAction("some_form", None)
 
+    # FormAction execution is rejected because a slot was requested but none
+    # were extracted (events before restart are not considered).
     with pytest.raises(ActionExecutionRejection):
         await action.run(
             CollectingOutputChannel(),
