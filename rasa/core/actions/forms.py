@@ -528,7 +528,7 @@ class FormAction(LoopAction):
            - the form is called after `action_listen`
            - form validation was not cancelled
         """
-        # no active_loop means that it is called during activation
+        # No active_loop means there are no form filled slots to validate yet
         if not tracker.active_loop:
             return []
 
