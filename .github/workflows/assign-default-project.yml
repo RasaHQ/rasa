@@ -16,8 +16,7 @@ jobs:
     - name: Assign vulnerability scans or Sentry issues to Enable
       # if: contains(github.event.issue.labels.*.name, 'tool:trivy') || contains(github.event.issue.labels.*.name, 'tool:sentry')
       if: contains(github.event.pull_request.labels.*.name, 'tool:trivy')
-      uses: RasaHQ/create-or-update-project-card@main
-
+      uses: HotThoughts/create-or-update-project-card@fix
       with:
         token: ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}
         # https://github.com/orgs/RasaHQ/projects/40
