@@ -31,7 +31,7 @@ def test_serialize_graph_schema(tmp_path: Path):
                 is_target=True,
                 resource=Resource("test resource"),
             ),
-        }
+        },
     )
 
     serialized = graph_schema.as_dict()
@@ -62,7 +62,7 @@ def test_invalid_module_error_when_deserializing_schemas(tmp_path: Path):
     serialized = graph_schema.as_dict()
 
     # Pretend module is for some reason invalid
-    serialized["train"]["uses"] = "invalid.class"
+    serialized["nodes"]["train"]["uses"] = "invalid.class"
 
     # Dump it to make sure it's actually serializable
     file_path = tmp_path / "my_graph.yml"
@@ -85,7 +85,7 @@ def test_minimal_graph_schema():
             is_target=target,
         )
 
-    assert GraphSchema(
+    test_schema = GraphSchema(
         {
             "1": test_schema_node({"i": "3"}, True),
             "2": test_schema_node({"i": "3"}),
@@ -95,14 +95,22 @@ def test_minimal_graph_schema():
             "6": test_schema_node({}),
             "7": test_schema_node({}),
             "8": test_schema_node({"i": "9"}, True),
-            "9": test_schema_node({}),
+            "9": test_schema_node({"i": "__input__"}),
         }
-    ).minimal_graph_schema() == GraphSchema(
+    )
+    assert test_schema.minimal_graph_schema() == GraphSchema(
         {
             "1": test_schema_node({"i": "3"}, True),
             "3": test_schema_node({"i": "4"}),
             "4": test_schema_node({}),
             "8": test_schema_node({"i": "9"}, True),
-            "9": test_schema_node({}),
+            "9": test_schema_node({"i": "__input__"}),
+        }
+    )
+
+    assert test_schema.minimal_graph_schema(targets=["8"]) == GraphSchema(
+        {
+            "8": test_schema_node({"i": "9"}, True),
+            "9": test_schema_node({"i": "__input__"}),
         }
     )

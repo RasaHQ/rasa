@@ -494,7 +494,7 @@ class TrainingData:
                 rasa.shared.utils.io.raise_warning(
                     f"Your training data contains an example "
                     f"'{example.get(TEXT)[:20]}...' "
-                    f"for the {example.get_full_intent()} intent. "
+                    f"for the '{example.get_full_intent()}' intent. "
                     f"You either need to add a response phrase or correct the "
                     f"intent for this example in your training data. "
                     f"If you intend to use Response Selector in the pipeline, the "

@@ -4,16 +4,17 @@ import re
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 import scipy.sparse
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.shared.nlu.constants import (
     TEXT,
     RESPONSE,
@@ -21,22 +22,26 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.featurizers.sparse_featurizer._regex_featurizer import RegexFeaturizer
 
 logger = logging.getLogger(__name__)
 
-# TODO: remove after all references to old featurizer have been removed
-RegexFeaturizer = RegexFeaturizer
 
-
-class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
+class RegexFeaturizer(SparseFeaturizer, GraphComponent):
     """Adds message features based on regex expressions."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Tokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """Returns the component's default config."""
         return {
-            **SparseFeaturizer2.get_default_config(),
+            **SparseFeaturizer.get_default_config(),
             # text will be processed with case sensitive as default
             "case_sensitive": True,
             # use lookup tables to generate features
@@ -45,9 +50,6 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
             "use_regexes": True,
             # use match word boundaries for lookup table
             "use_word_boundaries": True,
-            # Additional number of patterns to consider
-            # for incremental training
-            "number_additional_patterns": None,
         }
 
     def __init__(
@@ -78,14 +80,6 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         self.case_sensitive = config["case_sensitive"]
         self.finetune_mode = execution_context.is_finetuning
 
-        if config["number_additional_patterns"]:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "The parameter `number_additional_patterns` has been deprecated "
-                "since the pipeline does not create an extra buffer for new vocabulary "
-                "anymore. Any value assigned to this parameter will be ignored. "
-                "You can omit specifying `number_additional_patterns` in future runs."
-            )
-
     @classmethod
     def create(
         cls,
@@ -93,7 +87,7 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> RegexFeaturizerGraphComponent:
+    ) -> RegexFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -245,7 +239,7 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> RegexFeaturizerGraphComponent:
+    ) -> RegexFeaturizer:
         """Loads trained component (see parent class for full docstring)."""
         known_patterns = None
 
@@ -277,11 +271,4 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        pass
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
         pass

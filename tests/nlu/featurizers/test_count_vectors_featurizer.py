@@ -17,7 +17,7 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
-    CountVectorsFeaturizerGraphComponent as CountVectorsFeaturizer,
+    CountVectorsFeaturizer,
 )
 
 
@@ -69,14 +69,15 @@ def test_count_vector_featurizer(
     expected: List[List[int]],
     expected_cls: List[List[int]],
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer()
 
     train_message = Message(data={TEXT: sentence})
     test_message = Message(data={TEXT: sentence})
 
-    WhitespaceTokenizer().process(train_message)
-    WhitespaceTokenizer().process(test_message)
+    whitespace_tokenizer.process([train_message])
+    whitespace_tokenizer.process([test_message])
 
     ftr.train(TrainingData([train_message]))
 
@@ -109,9 +110,9 @@ def test_count_vector_featurizer_response_attribute_featurization(
     intent_features: List[List[int]],
     response_features: Optional[List[List[int]]],
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer()
-    tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
@@ -126,7 +127,7 @@ def test_count_vector_featurizer_response_attribute_featurization(
 
     data = TrainingData([train_message, second_message])
 
-    tk.train(data)
+    whitespace_tokenizer.process_training_data(data)
     ftr.train(data)
     ftr.process_training_data(data)
 
@@ -173,9 +174,9 @@ def test_count_vector_featurizer_attribute_featurization(
     intent_features: List[List[int]],
     response_features: Optional[List[List[int]]],
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer()
-    tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
@@ -184,7 +185,7 @@ def test_count_vector_featurizer_attribute_featurization(
 
     data = TrainingData([train_message])
 
-    tk.train(data)
+    whitespace_tokenizer.process_training_data(data)
     ftr.train(data)
     ftr.process_training_data(data)
 
@@ -237,9 +238,9 @@ def test_count_vector_featurizer_shared_vocab(
     intent_features: List[List[int]],
     response_features: List[List[int]],
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"use_shared_vocab": True,})
-    tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
@@ -247,7 +248,7 @@ def test_count_vector_featurizer_shared_vocab(
     train_message.set(RESPONSE, response)
 
     data = TrainingData([train_message])
-    tk.train(data)
+    whitespace_tokenizer.process_training_data(data)
     ftr.train(data)
     ftr.process_training_data(data)
 
@@ -287,10 +288,11 @@ def test_count_vector_featurizer_oov_token(
     sentence: Text,
     expected: List[List[int]],
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"OOV_token": "__oov__"})
     train_message = Message(data={TEXT: sentence})
-    WhitespaceTokenizer().process(train_message)
+    whitespace_tokenizer.process([train_message])
 
     data = TrainingData([train_message])
     ftr.train(data)
@@ -318,12 +320,13 @@ def test_count_vector_featurizer_oov_words(
     sentence: Text,
     expected: List[List[int]],
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer(
         {"OOV_token": "__oov__", "OOV_words": ["oov_word0", "OOV_word1"],}
     )
     train_message = Message(data={TEXT: sentence})
-    WhitespaceTokenizer().process(train_message)
+    whitespace_tokenizer.process([train_message])
 
     data = TrainingData([train_message])
     ftr.train(data)
@@ -392,11 +395,12 @@ def test_count_vector_featurizer_char(
     sentence: Text,
     expected: List[List[int]],
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char",})
 
     train_message = Message(data={TEXT: sentence})
-    WhitespaceTokenizer().process(train_message)
+    whitespace_tokenizer.process([train_message])
 
     data = TrainingData([train_message])
     ftr.train(data)
@@ -414,6 +418,7 @@ def test_count_vector_featurizer_char(
 def test_count_vector_featurizer_persist_load(
     create_featurizer: Callable[..., CountVectorsFeaturizer],
     load_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     # set non default values to config
     config = {
@@ -434,8 +439,8 @@ def test_count_vector_featurizer_persist_load(
 
     train_message1 = Message(data={TEXT: sentence1})
     train_message2 = Message(data={TEXT: sentence2})
-    WhitespaceTokenizer().process(train_message1)
-    WhitespaceTokenizer().process(train_message2)
+    whitespace_tokenizer.process([train_message1])
+    whitespace_tokenizer.process([train_message2])
 
     data = TrainingData([train_message1, train_message2])
     train_ftr.train(data)
@@ -466,10 +471,10 @@ def test_count_vector_featurizer_persist_load(
     assert hasattr(test_ftr.vectorizers[TEXT], "vocabulary_")
 
     test_message1 = Message(data={TEXT: sentence1})
-    WhitespaceTokenizer().process(test_message1)
+    whitespace_tokenizer.process([test_message1])
     test_ftr.process([test_message1])
     test_message2 = Message(data={TEXT: sentence2})
-    WhitespaceTokenizer().process(test_message2)
+    whitespace_tokenizer.process([test_message2])
     test_ftr.process([test_message2])
 
     test_seq_vec_1, test_sen_vec_1 = test_message1.get_sparse_features(TEXT, [])
@@ -502,6 +507,7 @@ def test_count_vector_featurizer_persist_load(
 
 def test_count_vectors_featurizer_train(
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     featurizer = create_featurizer()
 
@@ -509,7 +515,7 @@ def test_count_vectors_featurizer_train(
     message = Message(data={TEXT: sentence})
     message.set(RESPONSE, sentence)
     message.set(INTENT, "intent")
-    WhitespaceTokenizer().train(TrainingData([message]))
+    whitespace_tokenizer.process_training_data(TrainingData([message]))
 
     data = TrainingData([message])
     featurizer.train(data)
@@ -566,6 +572,7 @@ def test_count_vector_featurizer_use_lemma(
     use_lemma: bool,
     create_featurizer: Callable[..., CountVectorsFeaturizer],
     load_featurizer: Callable[..., CountVectorsFeaturizer],
+    spacy_tokenizer: SpacyTokenizer,
 ):
     config = {"use_lemma": use_lemma, "OOV_words": ["drinks"], "OOV_token": "OOV"}
     ftr = create_featurizer(config)
@@ -575,10 +582,10 @@ def test_count_vector_featurizer_use_lemma(
     test_message = Message(data={TEXT: sentence})
     test_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
 
-    SpacyTokenizer().process(train_message)
-    SpacyTokenizer().process(test_message)
+    spacy_tokenizer.process([train_message])
+    spacy_tokenizer.process([test_message])
 
-    ftr.train(TrainingData([train_message]), spacy_nlp=SpacyModel(spacy_nlp, "en"))
+    ftr.train(TrainingData([train_message]), model=SpacyModel(spacy_nlp, "en"))
 
     ftr.process([test_message])
 
@@ -612,9 +619,9 @@ def test_count_vector_featurizer_action_attribute_featurization(
     action_name_features: np.ndarray,
     response_features: np.ndarray,
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"token_pattern": r"(?u)\b\w+\b",})
-    tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
@@ -629,7 +636,7 @@ def test_count_vector_featurizer_action_attribute_featurization(
 
     data = TrainingData([train_message, second_message])
 
-    tk.train(data)
+    whitespace_tokenizer.process_training_data(data)
     ftr.train(data)
     ftr.process_training_data(data)
 
@@ -678,9 +685,9 @@ def test_count_vector_featurizer_process_by_attribute(
     action_name_features: np.ndarray,
     response_features: np.ndarray,
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer({"token_pattern": r"(?u)\b\w+\b",})
-    tk = WhitespaceTokenizer()
 
     # add a second example that has some response, so that the vocabulary for
     # response exists
@@ -692,14 +699,14 @@ def test_count_vector_featurizer_process_by_attribute(
 
     data = TrainingData([train_message, train_message1])
 
-    tk.train(data)
+    whitespace_tokenizer.process_training_data(data)
     ftr.train(data)
 
     test_message = Message(data={TEXT: sentence})
     test_message.set(ACTION_NAME, action_name)
     test_message.set(ACTION_TEXT, action_text)
 
-    tk.process(test_message)
+    whitespace_tokenizer.process([test_message])
     ftr.process([test_message])
 
     action_name_seq_vecs, action_name_sen_vecs = test_message.get_sparse_features(
@@ -729,13 +736,13 @@ def test_cvf_incremental_training(
     final_vocabulary_size: int,
     create_featurizer: Callable[..., CountVectorsFeaturizer],
     load_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
-    tk = WhitespaceTokenizer()
     initial_cvf = create_featurizer()
     train_message = Message(data={"text": initial_train_text})
     data = TrainingData([train_message])
 
-    tk.train(data)
+    whitespace_tokenizer.process_training_data(data)
     initial_cvf.train(data)
 
     # Check initial vocabulary size
@@ -750,7 +757,7 @@ def test_cvf_incremental_training(
 
     additional_train_message = Message(data={"text": additional_train_text})
     data = TrainingData([train_message, additional_train_message])
-    tk.train(data)
+    whitespace_tokenizer.process_training_data(data)
     new_cvf.train(data)
 
     new_vocab = new_cvf.vectorizers["text"].vocabulary_
@@ -764,14 +771,6 @@ def test_cvf_incremental_training(
         assert new_vocab.get(vocab_token) == vocab_index
 
 
-def test_additional_vocab_size_deprecation(
-    create_featurizer: Callable[..., CountVectorsFeaturizer],
-):
-    with pytest.warns(FutureWarning) as warning:
-        _ = create_featurizer({"additional_vocabulary_size": {TEXT: 5, RESPONSE: 10}},)
-    assert "The parameter has been deprecated" in warning[0].message.args[0]
-
-
 @pytest.mark.parametrize(
     "initial_train_text, additional_train_text, " "use_shared_vocab",
     [("am I the coolest person?", "no", True), ("rasa rasa", "sara sara", False),],
@@ -782,22 +781,22 @@ def test_use_shared_vocab_exception(
     use_shared_vocab: bool,
     create_featurizer: Callable[..., CountVectorsFeaturizer],
     load_featurizer: Callable[..., CountVectorsFeaturizer],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     """Tests if an exception is raised when `use_shared_vocab` is set to True
     during incremental training."""
-    tk = WhitespaceTokenizer()
     config = {"use_shared_vocab": use_shared_vocab}
     initial_cvf = create_featurizer(config)
     train_message = Message(data={"text": initial_train_text})
     data = TrainingData([train_message])
-    tk.train(data)
+    whitespace_tokenizer.process_training_data(data)
     initial_cvf.train(data)
 
     new_cvf = load_featurizer(config, is_finetuning=True)
 
     additional_train_message = Message(data={"text": additional_train_text})
     data = TrainingData([train_message, additional_train_message])
-    tk.train(data)
+    whitespace_tokenizer.process_training_data(data)
     if use_shared_vocab:
         with pytest.raises(Exception) as exec_info:
             new_cvf.train(data)

@@ -39,7 +39,7 @@ class TrainingTrackerProvider(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         return cls(config)
 
-    def generate_trackers(
+    def provide(
         self, story_graph: StoryGraph, domain: Domain
     ) -> List[TrackerWithCachedStates]:
         """Generates the training trackers from the training data.

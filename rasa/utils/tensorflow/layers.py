@@ -3,14 +3,13 @@ from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
 import rasa.utils.tensorflow.crf
-from tensorflow.python.keras.utils import tf_utils
-from tensorflow.python.keras import backend as K
+from tensorflow.python.layers.utils import smart_cond
+from tensorflow.keras import backend as K
 from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     MARGIN,
     COSINE,
     INNER,
-    LINEAR_NORM,
     CROSS_ENTROPY,
     LABEL,
     LABEL_PAD_ID,
@@ -88,9 +87,7 @@ class SparseDropout(tf.keras.layers.Dropout):
             to_retain = tf.greater_equal(to_retain_prob, self.rate)
             return tf.sparse.retain(inputs, to_retain)
 
-        outputs = tf_utils.smart_cond(
-            training, dropped_inputs, lambda: tf.identity(inputs)
-        )
+        outputs = smart_cond(training, dropped_inputs, lambda: tf.identity(inputs))
         # need to explicitly recreate sparse tensor, because otherwise the shape
         # information will be lost after `retain`
         # noinspection PyProtectedMember
@@ -415,7 +412,7 @@ class Ffnn(tf.keras.layers.Layer):
                 RandomlyConnectedDense(
                     units=layer_size,
                     density=density,
-                    activation=tfa.activations.gelu,
+                    activation=tf.nn.gelu,
                     kernel_regularizer=l2_regularizer,
                     name=f"hidden_layer_{layer_name_suffix}_{i}",
                 )
@@ -425,6 +422,7 @@ class Ffnn(tf.keras.layers.Layer):
     def call(
         self, x: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None
     ) -> tf.Tensor:
+        """Apply feed-forward network layer."""
         for layer in self._ffn_layers:
             x = layer(x, training=training)
 
@@ -557,7 +555,7 @@ class InputMask(tf.keras.layers.Layer):
             return tf.where(tf.tile(lm_mask_bool, (1, 1, x.shape[-1])), x_other, x)
 
         return (
-            tf_utils.smart_cond(training, x_masked, lambda: tf.identity(x)),
+            smart_cond(training, x_masked, lambda: tf.identity(x)),
             lm_mask_bool,
         )
 
@@ -571,7 +569,6 @@ def _scale_loss(log_likelihood: tf.Tensor) -> tf.Tensor:
     Returns:
         Scaling tensor.
     """
-
     p = tf.math.exp(log_likelihood)
     # only scale loss if some examples are already learned
     return tf.cond(
@@ -731,7 +728,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Normalization of confidence values during inference.
-                Possible values are `SOFTMAX` and `LINEAR_NORM`.
+                Currently, the only possible value is `SOFTMAX`.
             similarity_type: Similarity measure to use, either `cosine` or `inner`.
             name: Optional name of the layer.
 
@@ -806,12 +803,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         confidences = similarities
         if self.model_confidence == SOFTMAX:
             confidences = tf.nn.softmax(similarities)
-        elif self.model_confidence == LINEAR_NORM:
-            # Clip negative values to 0 and linearly normalize to bring the predictions
-            # in the range [0,1].
-            clipped_similarities = tf.nn.relu(similarities)
-            normalization = tf.reduce_sum(clipped_similarities, axis=-1)
-            confidences = tf.math.divide_no_nan(clipped_similarities, normalization)
         return similarities, confidences
 
     def call(self, *args: Any, **kwargs: Any) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -898,7 +889,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
                 sigmoid loss term is added to the total loss to ensure that similarity
                 values are approximately bounded.
             model_confidence: Normalization of confidence values during inference.
-                Possible values are `SOFTMAX` and `LINEAR_NORM`.
+                Currently, the only possible value is `SOFTMAX`.
         """
         super().__init__(
             num_candidates,
@@ -1262,7 +1253,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Normalization of confidence values during inference.
-                Possible values are `SOFTMAX` and `LINEAR_NORM`.
+                Currently, the only possible value is `SOFTMAX`.
         """
         super().__init__(
             num_candidates,

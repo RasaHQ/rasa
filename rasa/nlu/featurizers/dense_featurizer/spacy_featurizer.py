@@ -3,13 +3,13 @@ import typing
 import logging
 from typing import Any, Text, Dict, List, Type
 
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-import rasa.shared.utils.io
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -19,32 +19,36 @@ from rasa.nlu.constants import (
 )
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
-from rasa.nlu.featurizers.dense_featurizer._spacy_featurizer import SpacyFeaturizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
-SpacyFeaturizer = SpacyFeaturizer
-
 logger = logging.getLogger(__name__)
 
 
-class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
+)
+class SpacyFeaturizer(DenseFeaturizer, GraphComponent):
     """Featurize messages using SpaCy."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [SpacyTokenizer]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            **DenseFeaturizer2.get_default_config(),
+            **DenseFeaturizer.get_default_config(),
             # Specify what pooling operation should be used to calculate the vector of
             # the complete utterance. Available options: 'mean' and 'max'
             POOLING: MEAN_POOLING,
         }
 
     def __init__(self, config: Dict[Text, Any], name: Text,) -> None:
-        """Initializes SpacyFeaturizerGraphComponent."""
+        """Initializes SpacyFeaturizer."""
         super().__init__(name, config)
         self.pooling_operation = self._config[POOLING]
 
@@ -78,7 +82,6 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
         Args:
           training_data: Training data.
-          model: A Mitie model.
 
         Returns:
           Same training data after processing.
@@ -122,13 +125,3 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
         pass
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
-        if tokenizer_type != SpacyTokenizer:
-            rasa.shared.utils.io.raise_warning(
-                f"Expected '{SpacyTokenizer.__name__}' to be present."
-            )

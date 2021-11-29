@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3.0"
 intents:
   - greet
   - default
@@ -7,11 +7,19 @@ intents:
 slots:
   cuisine:
     type: text
+    mappings:
+      - type: from_entity
+        entity: cuisine
   location:
     type: text
+    mappings:
+      - type: from_entity
+        entity: location
 
 entities:
   - name
+  - cuisine
+  - location
 
 responses:
   utter_greet:

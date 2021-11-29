@@ -9,6 +9,8 @@ from rasa.constants import (
     ENV_CPU_INTER_OP_CONFIG,
     ENV_CPU_INTRA_OP_CONFIG,
 )
+from rasa.utils.tensorflow.constants import TF_DETERMINISTIC_OPS
+from rasa.shared.utils import io as shared_io_utils
 
 if typing.TYPE_CHECKING:
     from tensorflow import config as tf_config
@@ -140,6 +142,18 @@ def _setup_cpu_environment() -> None:
 
 def setup_tf_environment() -> None:
     """Setup CPU and GPU related environment settings for TensorFlow."""
-
     _setup_cpu_environment()
     _setup_gpu_environment()
+
+
+def check_deterministic_ops() -> None:
+    """Warn user if they have set TF_DETERMINISTIC_OPS."""
+    if os.getenv(TF_DETERMINISTIC_OPS, False):
+        shared_io_utils.raise_warning(
+            f"You have set '{TF_DETERMINISTIC_OPS}' to 1. If you are "
+            f"using one or more GPU(s) and use any of 'SparseFeaturizer', "
+            f"'TEDPolicy', 'DIETClassifier', 'UnexpecTEDIntentPolicy', or "
+            f"'ResponseSelector' training and testing will fail as there are no "
+            f"deterministic GPU implementations of some underlying TF ops.",
+            category=UserWarning,
+        )

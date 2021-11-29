@@ -2,18 +2,20 @@ import copy
 
 import pytest
 import numpy as np
-from typing import List, Dict, Text, Any, Optional, Union, Callable
-from unittest.mock import Mock
-
-from _pytest.monkeypatch import MonkeyPatch
+from typing import List, Dict, Text, Any, Optional, Tuple, Union, Callable
 
 import rasa.model
-import rasa.nlu.train
-from rasa.engine.graph import ExecutionContext
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    CountVectorsFeaturizer,
+)
+from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
+    LexicalSyntacticFeaturizer,
+)
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu import registry
-from rasa.nlu.components import Component
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data import util
 import rasa.shared.nlu.training_data.loading
@@ -21,6 +23,7 @@ from rasa.utils.tensorflow.constants import (
     EPOCHS,
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
+    RENORMALIZE_CONFIDENCES,
     TRANSFORMER_SIZE,
     CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
@@ -33,7 +36,6 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
 )
-from rasa.utils import train_utils
 from rasa.shared.nlu.constants import (
     TEXT,
     FEATURE_TYPE_SENTENCE,
@@ -43,7 +45,7 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.nlu.selectors.response_selector import ResponseSelectorGraphComponent
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
@@ -72,10 +74,10 @@ def create_response_selector(
     default_model_storage: ModelStorage,
     default_response_selector_resource: Resource,
     default_execution_context: ExecutionContext,
-) -> Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent]:
-    def inner(config_params: Dict[Text, Any]) -> ResponseSelectorGraphComponent:
-        return ResponseSelectorGraphComponent.create(
-            {**ResponseSelectorGraphComponent.get_default_config(), **config_params},
+) -> Callable[[Dict[Text, Any]], ResponseSelector]:
+    def inner(config_params: Dict[Text, Any]) -> ResponseSelector:
+        return ResponseSelector.create(
+            {**ResponseSelector.get_default_config(), **config_params},
             default_model_storage,
             default_response_selector_resource,
             default_execution_context,
@@ -89,14 +91,54 @@ def load_response_selector(
     default_model_storage: ModelStorage,
     default_response_selector_resource: Resource,
     default_execution_context: ExecutionContext,
-) -> Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent]:
-    def inner(config_params: Dict[Text, Any]) -> ResponseSelectorGraphComponent:
-        return ResponseSelectorGraphComponent.load(
-            {**ResponseSelectorGraphComponent.get_default_config(), **config_params},
+) -> Callable[[Dict[Text, Any]], ResponseSelector]:
+    def inner(config_params: Dict[Text, Any]) -> ResponseSelector:
+        return ResponseSelector.load(
+            {**ResponseSelector.get_default_config(), **config_params},
             default_model_storage,
             default_response_selector_resource,
             default_execution_context,
         )
+
+    return inner
+
+
+@pytest.fixture()
+def train_persist_load_with_different_settings(
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    default_execution_context: ExecutionContext,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
+):
+    def inner(
+        pipeline: List[Dict[Text, Any]],
+        config_params: Dict[Text, Any],
+        should_finetune: bool,
+    ):
+
+        training_data, loaded_pipeline = train_and_preprocess(
+            pipeline, "data/examples/rasa/demo-rasa.yml"
+        )
+
+        response_selector = create_response_selector(config_params)
+        response_selector.train(training_data=training_data)
+
+        if should_finetune:
+            default_execution_context.is_finetuning = True
+
+        message = Message(data={TEXT: "hello"})
+        message = process_message(loaded_pipeline, message)
+
+        message2 = copy.deepcopy(message)
+
+        classified_message = response_selector.process([message])[0]
+
+        loaded_selector = load_response_selector(config_params)
+
+        classified_message2 = loaded_selector.process([message2])[0]
+
+        assert classified_message2.fingerprint() == classified_message.fingerprint()
 
     return inner
 
@@ -111,26 +153,24 @@ def load_response_selector(
 def test_train_selector(
     response_selector_training_data: TrainingData,
     config_params: Dict[Text, Any],
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    default_model_storage: ModelStorage,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
-    pipeline = [{"name": "WhitespaceTokenizer"}, {"name": "CountVectorsFeaturizer"}]
-    loaded_pipeline = [
-        registry.get_component_class(component.pop("name"))(component)
-        for component in copy.deepcopy(pipeline)
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
-
-    for component in loaded_pipeline:
-        component.train(response_selector_training_data)
+    response_selector_training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, response_selector_training_data
+    )
 
     response_selector = create_response_selector(config_params)
-
     response_selector.train(training_data=response_selector_training_data)
 
     message = Message(data={TEXT: "hello"})
-    for component in loaded_pipeline:
-        component.process(message)
+    message = process_message(loaded_pipeline, message)
 
     classified_message = response_selector.process([message])[0]
 
@@ -167,9 +207,7 @@ def test_train_selector(
 
 def test_preprocess_selector_multiple_retrieval_intents(
     response_selector_training_data: TrainingData,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
 
     training_data_extra_intent = TrainingData(
@@ -200,9 +238,7 @@ def test_ground_truth_for_training(
     use_text_as_label,
     label_values,
     response_selector_training_data: TrainingData,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     response_selector = create_response_selector(
         {"use_text_as_label": use_text_as_label},
@@ -227,9 +263,7 @@ def test_resolve_intent_response_key_from_label(
     train_on_text: bool,
     resolved_intent_response_key: Text,
     response_selector_training_data: TrainingData,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
 
     response_selector = create_response_selector({"use_text_as_label": train_on_text},)
@@ -249,37 +283,15 @@ def test_resolve_intent_response_key_from_label(
     )
 
 
-def load_pipeline(pipeline: List[Dict[Text, Text]]) -> List[Component]:
-    loaded_pipeline = [
-        registry.get_component_class(component.pop("name"))(component)
-        for component in copy.deepcopy(pipeline)
-    ]
-
-    return loaded_pipeline
-
-
-def train_pipeline(
-    loaded_pipeline: List[Component], training_data_paths: List[Text],
-) -> TrainingData:
-    importer = RasaFileImporter(training_data_paths=training_data_paths)
-    training_data = importer.get_nlu_data()
-
-    for component in loaded_pipeline:
-        component.train(training_data)
-
-    return training_data
-
-
 def test_train_model_checkpointing(
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     default_model_storage: ModelStorage,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
 ):
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
+        {"component": WhitespaceTokenizer},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 3,
             "max_ngram": 17,
@@ -288,12 +300,13 @@ def test_train_model_checkpointing(
         },
     ]
 
-    loaded_pipeline = load_pipeline(pipeline)
-    training_data = train_pipeline(loaded_pipeline, ["data/test_selectors"])
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, "data/test_selectors"
+    )
 
     config_params = {
         EPOCHS: 5,
-        MODEL_CONFIDENCE: "linear_norm",
+        MODEL_CONFIDENCE: "softmax",
         CONSTRAIN_SIMILARITIES: True,
         CHECKPOINT_MODEL: True,
         EVAL_NUM_EPOCHS: 1,
@@ -317,90 +330,41 @@ def test_train_model_checkpointing(
         assert len(checkpoint_files) >= 2
 
 
-def _train_persist_load_with_different_settings(
-    pipeline: List[Dict[Text, Any]],
-    config_params: Dict[Text, Any],
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
-    should_finetune: bool,
-    default_execution_context: ExecutionContext,
-):
-    loaded_pipeline = load_pipeline(pipeline)
-    training_data = train_pipeline(
-        loaded_pipeline, ["data/examples/rasa/demo-rasa.yml"]
-    )
-
-    response_selector = create_response_selector(config_params)
-    response_selector.train(training_data=training_data)
-
-    if should_finetune:
-        default_execution_context.is_finetuning = True
-
-    message = Message(data={TEXT: "Rasa is great!"})
-
-    for component in loaded_pipeline:
-        component.process(message)
-
-    message2 = copy.deepcopy(message)
-
-    classified_message = response_selector.process([message])[0]
-
-    loaded_selector = load_response_selector(config_params)
-
-    classified_message2 = loaded_selector.process([message2])[0]
-
-    assert classified_message2.fingerprint() == classified_message.fingerprint()
-
-
 @pytest.mark.skip_on_windows
 def test_train_persist_load(
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     default_execution_context: ExecutionContext,
+    train_persist_load_with_different_settings,
 ):
+
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
     config_params = {EPOCHS: 1}
 
-    _train_persist_load_with_different_settings(
-        pipeline,
-        config_params,
-        create_response_selector,
-        load_response_selector,
-        False,
-        default_execution_context,
+    train_persist_load_with_different_settings(
+        pipeline, config_params, False,
     )
 
-    _train_persist_load_with_different_settings(
-        pipeline,
-        config_params,
-        create_response_selector,
-        load_response_selector,
-        True,
-        default_execution_context,
+    train_persist_load_with_different_settings(
+        pipeline, config_params, True,
     )
 
 
 async def test_process_gives_diagnostic_data(
     default_execution_context: ExecutionContext,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
     """Tests if processing a message returns attention weights as numpy array."""
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
     config_params = {EPOCHS: 1}
-
-    loaded_pipeline = load_pipeline(pipeline)
 
     importer = RasaFileImporter(
         config_file="data/test_response_selector_bot/config.yml",
@@ -413,8 +377,7 @@ async def test_process_gives_diagnostic_data(
     )
     training_data = importer.get_nlu_data()
 
-    for component in loaded_pipeline:
-        component.train(training_data)
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, training_data)
 
     default_execution_context.should_add_diagnostic_data = True
 
@@ -422,9 +385,7 @@ async def test_process_gives_diagnostic_data(
     response_selector.train(training_data=training_data)
 
     message = Message(data={TEXT: "hello"})
-
-    for component in loaded_pipeline:
-        component.process(message)
+    message = process_message(loaded_pipeline, message)
 
     classified_message = response_selector.process([message])[0]
     diagnostic_data = classified_message.get(DIAGNOSTIC_DATA)
@@ -442,81 +403,27 @@ async def test_process_gives_diagnostic_data(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, output_length",
-    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 9)],
-)
-async def test_cross_entropy_with_linear_norm(
-    classifier_params: Dict[Text, Any],
-    output_length: int,
-    monkeypatch: MonkeyPatch,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-):
-    pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "CountVectorsFeaturizer"},
-    ]
-    loaded_pipeline = load_pipeline(pipeline)
-    training_data = train_pipeline(loaded_pipeline, ["data/test_selectors"])
-
-    response_selector = create_response_selector(classifier_params)
-    response_selector.train(training_data=training_data)
-
-    message = Message(data={TEXT: "hello"})
-
-    for component in loaded_pipeline:
-        component.process(message)
-
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
-    classified_message = response_selector.process([message])[0]
-
-    response_ranking = (
-        classified_message.get("response_selector").get("default").get("ranking")
-    )
-
-    # check that the output was correctly truncated
-    assert len(response_ranking) == output_length
-
-    response_confidences = [response.get("confidence") for response in response_ranking]
-
-    # check whether normalization had the expected effect
-    output_sums_to_1 = sum(response_confidences) == pytest.approx(1)
-    assert output_sums_to_1
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
-
-
-@pytest.mark.parametrize(
     "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
 )
 async def test_margin_loss_is_not_normalized(
-    monkeypatch: MonkeyPatch,
     classifier_params: Dict[Text, int],
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
-    loaded_pipeline = load_pipeline(pipeline)
-    training_data = train_pipeline(loaded_pipeline, ["data/test_selectors"])
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, "data/test_selectors"
+    )
 
     response_selector = create_response_selector(classifier_params)
     response_selector.train(training_data=training_data)
 
     message = Message(data={TEXT: "hello"})
-
-    for component in loaded_pipeline:
-        component.process(message)
-
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+    message = process_message(loaded_pipeline, message)
 
     classified_message = response_selector.process([message])[0]
 
@@ -524,42 +431,46 @@ async def test_margin_loss_is_not_normalized(
         classified_message.get("response_selector").get("default").get("ranking")
     )
 
-    # check that the output was not normalized
-    mock.normalize.assert_not_called()
+    # check that output was not normalized
+    assert [item["confidence"] for item in response_ranking] != pytest.approx(1)
 
     # check that the output was correctly truncated
     assert len(response_ranking) == 9
 
 
 @pytest.mark.parametrize(
-    "classifier_params, output_length",
+    "classifier_params, output_length, sums_up_to_1",
     [
-        ({RANDOM_SEED: 42, EPOCHS: 1}, 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1}, 9),
-        ({RANDOM_SEED: 42, RANKING_LENGTH: 2, EPOCHS: 1}, 2),
+        ({}, 9, True),
+        ({EPOCHS: 1}, 9, True),
+        ({RANKING_LENGTH: 2}, 2, False),
+        ({RANKING_LENGTH: 2, RENORMALIZE_CONFIDENCES: True}, 2, True),
     ],
 )
 async def test_softmax_ranking(
     classifier_params: Dict[Text, int],
     output_length: int,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    sums_up_to_1: bool,
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
+    classifier_params[RANDOM_SEED] = 42
+    classifier_params[EPOCHS] = 1
+
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
     ]
-    loaded_pipeline = load_pipeline(pipeline)
-    training_data = train_pipeline(loaded_pipeline, ["data/test_selectors"])
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, "data/test_selectors"
+    )
 
     response_selector = create_response_selector(classifier_params)
     response_selector.train(training_data=training_data)
 
     message = Message(data={TEXT: "hello"})
-
-    for component in loaded_pipeline:
-        component.process(message)
+    message = process_message(loaded_pipeline, message)
 
     classified_message = response_selector.process([message])[0]
 
@@ -568,6 +479,10 @@ async def test_softmax_ranking(
     )
     # check that the output was correctly truncated after normalization
     assert len(response_ranking) == output_length
+    output_sums_to_1 = sum(
+        [intent.get("confidence") for intent in response_ranking]
+    ) == pytest.approx(1)
+    assert output_sums_to_1 == sums_up_to_1
 
 
 @pytest.mark.parametrize(
@@ -614,9 +529,7 @@ async def test_softmax_ranking(
 def test_warning_when_transformer_and_hidden_layers_enabled(
     config: Dict[Text, Union[int, Dict[Text, List[int]]]],
     should_raise_warning: bool,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     """ResponseSelector recommends disabling hidden layers if transformer is enabled."""
     with pytest.warns(UserWarning) as records:
@@ -660,9 +573,7 @@ def test_warning_when_transformer_and_hidden_layers_enabled(
 def test_sets_integer_transformer_size_when_needed(
     config: Dict[Text, Optional[int]],
     should_set_default_transformer_size: bool,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     """ResponseSelector ensures sensible transformer size when transformer enabled."""
     default_transformer_size = 256
@@ -688,10 +599,10 @@ def test_sets_integer_transformer_size_when_needed(
 
 @pytest.mark.timeout(120)
 async def test_adjusting_layers_incremental_training(
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
     """Tests adjusting sparse layers of `ResponseSelector` to increased sparse
        feature sizes during incremental training.
@@ -704,20 +615,18 @@ async def test_adjusting_layers_incremental_training(
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizer},
+        {"component": LexicalSyntacticFeaturizer},
+        {"component": RegexFeaturizer},
+        {"component": CountVectorsFeaturizer},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
         },
     ]
-    loaded_pipeline = load_pipeline(pipeline)
-    training_data = train_pipeline(loaded_pipeline, [iter1_data_path])
-
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, iter1_data_path)
     response_selector = create_response_selector({EPOCHS: 1})
     response_selector.train(training_data=training_data)
 
@@ -725,9 +634,7 @@ async def test_adjusting_layers_incremental_training(
     old_predict_data_signature = response_selector.model.predict_data_signature
 
     message = Message(data={TEXT: "Rasa is great!"})
-
-    for component in loaded_pipeline:
-        component.process(message)
+    message = process_message(loaded_pipeline, message)
 
     message2 = copy.deepcopy(message)
 
@@ -762,13 +669,12 @@ async def test_adjusting_layers_incremental_training(
 
     assert classified_message2.fingerprint() == classified_message.fingerprint()
 
-    training_data2 = train_pipeline(loaded_pipeline, [iter2_data_path])
+    training_data2, loaded_pipeline2 = train_and_preprocess(pipeline, iter2_data_path)
 
     response_selector.train(training_data=training_data2)
 
     new_message = Message.build(text="Rasa is great!")
-    for component in loaded_pipeline:
-        component.process(new_message)
+    new_message = process_message(loaded_pipeline2, new_message)
 
     classified_new_message = response_selector.process([new_message])[0]
     new_sparse_feature_sizes = classified_new_message.get_sparse_feature_sizes(
@@ -872,34 +778,31 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     iter1_path: Text,
     iter2_path: Text,
     should_raise_exception: bool,
-    create_response_selector: Callable[
-        [Dict[Text, Any]], ResponseSelectorGraphComponent
-    ],
-    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelectorGraphComponent],
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    load_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
     default_execution_context: ExecutionContext,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
 ):
     pipeline = [
-        {"name": "WhitespaceTokenizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {"name": "RegexFeaturizer"},
-        {"name": "CountVectorsFeaturizer"},
+        {"component": WhitespaceTokenizer},
+        {"component": LexicalSyntacticFeaturizer},
+        {"component": RegexFeaturizer},
+        {"component": CountVectorsFeaturizer},
         {
-            "name": "CountVectorsFeaturizer",
+            "component": CountVectorsFeaturizer,
             "analyzer": "char_wb",
             "min_ngram": 1,
             "max_ngram": 4,
         },
     ]
-    loaded_pipeline = load_pipeline(pipeline)
-    training_data = train_pipeline(loaded_pipeline, [iter1_path])
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, iter1_path)
 
     response_selector = create_response_selector({EPOCHS: 1})
     response_selector.train(training_data=training_data)
 
     message = Message(data={TEXT: "Rasa is great!"})
-
-    for component in loaded_pipeline:
-        component.process(message)
+    message = process_message(loaded_pipeline, message)
 
     message2 = copy.deepcopy(message)
 
@@ -915,10 +818,12 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
 
     if should_raise_exception:
         with pytest.raises(Exception) as exec_info:
-            training_data2 = train_pipeline(loaded_pipeline, [iter2_path])
+            training_data2, loaded_pipeline2 = train_and_preprocess(
+                pipeline, iter2_path
+            )
             loaded_selector.train(training_data=training_data2)
         assert "Sparse feature sizes have decreased" in str(exec_info.value)
     else:
-        training_data2 = train_pipeline(loaded_pipeline, [iter2_path])
+        training_data2, loaded_pipeline2 = train_and_preprocess(pipeline, iter2_path)
         loaded_selector.train(training_data=training_data2)
         assert loaded_selector.model

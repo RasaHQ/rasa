@@ -23,20 +23,11 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.tensorflow import model_data_utils
-from rasa.core.featurizers import _single_state_featurizer
 
 logger = logging.getLogger(__name__)
 
-# All code outside this module will continue to use the old `tracker_featurizer` module
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-SingleStateFeaturizer = _single_state_featurizer.SingleStateFeaturizer
-IntentTokenizerSingleStateFeaturizer = (
-    _single_state_featurizer.IntentTokenizerSingleStateFeaturizer
-)
 
-
-class SingleStateFeaturizer2:
+class SingleStateFeaturizer:
     """Base class to transform the dialogue state into an ML format.
 
     Subclasses of SingleStateFeaturizer will decide how a bot will
@@ -372,7 +363,7 @@ class SingleStateFeaturizer2:
         ]
 
 
-class IntentTokenizerSingleStateFeaturizer2(SingleStateFeaturizer2):
+class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     """A SingleStateFeaturizer for use with policies that predict intent labels."""
 
     def _encode_intent(
@@ -397,7 +388,7 @@ class IntentTokenizerSingleStateFeaturizer2(SingleStateFeaturizer2):
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> List[Dict[Text, List[Features]]]:
-        """Encodes all relevant labels from the domain using the given interpreter.
+        """Encodes all relevant labels from the domain using the given precomputations.
 
         Args:
             domain: The domain that contains the labels.

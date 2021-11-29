@@ -49,14 +49,14 @@ will assume you are using the latest training data format specification supporte
 by the version of Rasa Open Source you have installed.
 Training data files with a Rasa Open Source version greater than the version you have
 installed on your machine will be skipped.
-Currently, the latest training data format specification for Rasa 2.x is 2.0.
+Currently, the latest training data format specification for Rasa 3.x is 3.0.
 
 ### Example
 
 Here's a short example which keeps all training data in a single file:
 
 ```yaml-rasa
-version: "2.0"
+version: "3.0"
 
 nlu:
 - intent: greet
@@ -254,7 +254,7 @@ In training examples, entity annotation would look like this:
 nlu:
 - intent: check_balance
   examples: |
-    - how much do I have on my [savings]("account") account
+    - how much do I have on my [savings](account) account
     - how much money is in my [checking]{"entity": "account"} account
     - What's the balance on my [credit card account]{"entity":"account","value":"credit"}
 
@@ -518,8 +518,9 @@ A slot event is specified under the key `slot_was_set:` with the
 slot name and optionally the slot's value.
 
 **[Slots](domain.mdx#slots)** act as the bots memory.
-Slots are **set** by entities or by custom actions and **referenced**
-by stories in `slot_was_set` steps. For example:
+Slots are **set** by either the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots) according to the
+[slot mappings](./domain.mdx#slot-mappings) specified in the domain, or by custom actions.
+They are **referenced** by stories in `slot_was_set` steps. For example:
 
 ```yaml-rasa {5-6}
 stories:
@@ -536,8 +537,8 @@ slot be `positive` for the conversation to continue as specified.
 
 Whether or not you need to include the slot's value depends on the
 [slot type](domain.mdx#slot-types) and whether the value can or should
-influence the dialogue. If the value doesn't matter, list only
-the slot's name:
+influence the dialogue. If the value doesn't matter, as is the case for e.g. `text` slots,
+you can list only the slot's name:
 
 ```yaml-rasa {5-6}
 stories:
@@ -549,9 +550,19 @@ stories:
   - action: utter_greet_user_by_name
 ```
 
+The initial value for any slot by default is `null`, and you can use it to check if the slot was not set:
+
+```yaml-rasa {5-6}
+stories:
+- story: French cuisine
+  steps:
+  - intent: inform
+  - slot_was_set:
+    - cuisine: null
+```
 
 :::note How slots work
-Stories do not **set** slots. The slot must be set by an entity or custom
+Stories do not **set** slots. The slot must be set by the default action `action_extract_slots` if a slot mapping applies, or custom
 action **before** the `slot_was_set` step.
 :::
 
@@ -608,12 +619,12 @@ are easier to read and write.
 
 #### OR statement
 
-`or` steps are ways to handle multiple intents the same way,
+`or` steps are ways to handle multiple intents or slot events the same way,
 without writing a separate story for each intent. For example, if you ask the user to
 confirm something, you might want to treat the `affirm` and `thankyou` intents in the
 same way. Stories with `or` steps will be converted into multiple
-separate stories at training time. For example, the following story would be converted
-to two stories at training time:
+separate stories at training time.
+For example, the following story would be converted to two stories at training time:
 
 ```yaml-rasa {6-8}
 stories:
@@ -625,6 +636,26 @@ stories:
     - intent: affirm
     - intent: thanks
   - action: action_signup_newsletter
+```
+
+You can also use `or` statements with slot events.
+The following means the story requires that the current value for
+the `name` slot is set and is either `joe` or `bob`. This story
+would be converted to two stories at training time.
+
+```yaml-rasa {6-8}
+stories:
+- story:
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: tell_name
+  - or:
+    - slot_was_set:
+        - name: joe
+    - slot_was_set:
+        - name: bob
+  # ... next actions
 ```
 
 Just like checkpoints, OR statements can be useful, but if you are using a lot of them,
@@ -694,7 +725,7 @@ If you want to know more about testing head over to
 
 ## End-to-end Training
 
-:::caution experimental feature
+:::info New in 2.2
 End-to-end training is an experimental feature.
 We introduce experimental features to get feedback from our community, so we encourage you to try it out!
 However, the functionality might be changed or removed in the future.

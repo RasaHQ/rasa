@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3.0"
 
 intents:
  - tell_name
@@ -7,6 +7,20 @@ intents:
 entities:
  - name
  - mood
+
+slots:
+ name:
+  type: text
+  influence_conversation: false
+  mappings:
+   - type: from_entity
+     entity: name
+ mood:
+  type: text
+  influence_conversation: false
+  mappings:
+  - type: from_entity
+    entity: mood
 
 responses:
   utter_greet:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import copy
 import logging
+from rasa.nlu.featurizers.featurizer import Featurizer
 
 import numpy as np
 import tensorflow as tf
@@ -8,6 +9,7 @@ import tensorflow as tf
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DIAGNOSTIC_DATA
@@ -22,7 +24,7 @@ from rasa.nlu.classifiers.diet_classifier import (
     LABEL_SUB_KEY,
     SENTENCE,
     SEQUENCE,
-    DIETClassifierGraphComponent,
+    DIETClassifier,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.utils.tensorflow import rasa_layers
@@ -39,6 +41,7 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     LEARNING_RATE,
     RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     LOSS_TYPE,
     SIMILARITY_TYPE,
     NUM_NEG,
@@ -100,15 +103,13 @@ from rasa.shared.nlu.constants import (
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
 
-from rasa.nlu.selectors._response_selector import ResponseSelector
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-ResponseSelector = ResponseSelector
-
 logger = logging.getLogger(__name__)
 
 
-class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
+)
+class ResponseSelector(DIETClassifier):
     """Response selector using supervised embeddings.
 
     The response selector embeds user inputs
@@ -130,11 +131,16 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
     # The `transformer_size` to use as a default when the transformer is enabled.
     default_transformer_size_when_enabled = 256
 
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Featurizer]
+
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            **DIETClassifierGraphComponent.get_default_config(),
+            **DIETClassifier.get_default_config(),
             # ## Architecture of the used neural network
             # Hidden layer sizes for layers before the embedding layers for user message
             # and labels.
@@ -186,10 +192,15 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
             SIMILARITY_TYPE: AUTO,
             # The type of the loss function, either 'cross_entropy' or 'margin'.
             LOSS_TYPE: CROSS_ENTROPY,
-            # Number of top actions to normalize scores for. Applicable with
-            # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-            # to turn off normalization.
+            # Number of top actions for which confidences should be predicted.
+            # Set to 0 if confidences for all intents should be reported.
             RANKING_LENGTH: 10,
+            # Determines whether the confidences of the chosen top actions should be
+            # renormalized so that they sum up to 1. By default, we do not renormalize
+            # and return the confidences for the top actions as is.
+            # Note that renormalization only makes sense if confidences are generated
+            # via `softmax`.
+            RENORMALIZE_CONFIDENCES: False,
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
             # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
@@ -249,10 +260,10 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
             CHECKPOINT_MODEL: False,
             # if 'True' applies sigmoid on all similarity terms and adds it
             # to the loss function to ensure that similarity values are
-            # approximately bounded. Used inside softmax loss only.
+            # approximately bounded. Used inside cross-entropy loss only.
             CONSTRAIN_SIMILARITIES: False,
-            # Model confidence to be returned during inference. Possible values -
-            # 'softmax' and 'linear_norm'.
+            # Model confidence to be returned during inference. Currently, the only
+            # possible value is `softmax`.
             MODEL_CONFIDENCE: SOFTMAX,
         }
 
@@ -499,12 +510,12 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
 
             # First check if the predicted label was the key itself
             search_key = util.template_key_to_intent_response_key(key)
-            if hash(search_key) == label.get("id"):
+            if search_key == label.get("name"):
                 return search_key
 
             # Otherwise loop over the responses to check if the text has a direct match
             for response in responses:
-                if hash(response.get(TEXT, "")) == label.get("id"):
+                if response.get(TEXT, "") == label.get("name"):
                     return search_key
         return None
 
@@ -567,7 +578,6 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
             )
             prediction_dict = {
                 RESPONSE_SELECTOR_PREDICTION_KEY: {
-                    "id": top_label["id"],
                     RESPONSE_SELECTOR_RESPONSES_KEY: label_responses,
                     PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
                     INTENT_RESPONSE_KEY: label_intent_response_key,
@@ -654,9 +664,9 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> ResponseSelectorGraphComponent:
+    ) -> ResponseSelector:
         """Loads the trained model from the provided directory."""
-        model: ResponseSelectorGraphComponent = super().load(
+        model: ResponseSelector = super().load(
             config, model_storage, resource, execution_context, **kwargs
         )
 
@@ -673,7 +683,7 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
                 model.all_retrieval_intents = all_retrieval_intents
                 return model
         except ValueError:
-            logger.warning(
+            logger.debug(
                 f"Failed to load {cls.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
