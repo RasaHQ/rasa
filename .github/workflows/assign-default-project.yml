@@ -2,9 +2,6 @@ name: Assign default project to issues
 
 on:
   pull_request:
-    types:
-    - labeled
-    - unlabeled
   issues:
     types:
     - opened
