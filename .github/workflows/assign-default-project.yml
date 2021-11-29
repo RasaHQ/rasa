@@ -35,7 +35,7 @@ jobs:
         # https://github.com/orgs/RasaHQ/projects/21
         project-location: RasaHQ
         project-number: 21
-        column-name: Inbox
+        column-name: Inbox 📥
         skip-update: true
 
     - name: Notify slack on failure
