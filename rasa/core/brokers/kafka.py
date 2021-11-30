@@ -197,17 +197,22 @@ class KafkaEventBroker(EventBroker):
         else:
             partition_key = None
 
-        headers = [("RASA_ENVIRONMENT", bytes(self.rasa_environment, encoding=DEFAULT_ENCODING))]
+        headers = [
+            (
+                "RASA_ENVIRONMENT",
+                bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
+            )
+        ]
 
         logger.debug(
-            f"Calling kafka send({self.topic}, value={event}, key={partition_key!s}, headers={headers})"
+            f"Calling kafka send({self.topic}, value={event},"
+            f" key={partition_key!s}, headers={headers})"
         )
 
         self.producer.send(self.topic, value=event, key=partition_key, headers=headers)
 
     def _close(self) -> None:
         self.producer.close()
-
 
     @rasa.shared.utils.common.lazy_property
     def rasa_environment(self) -> Optional[Text]:
