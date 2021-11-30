@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from typing import Callable, List, Optional, Text, Dict, Any, Tuple
 
+import rasa.utils.common
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -35,6 +36,7 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
+    HIDDEN_LAYERS_SIZES,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -73,7 +75,9 @@ def create_diet(
 
         default_execution_context.is_finetuning = finetune
         return constructor(
-            config={**DIETClassifier.get_default_config(), **config},
+            config=rasa.utils.common.override_defaults(
+                DIETClassifier.get_default_config(), config
+            ),
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=default_diet_resource,
@@ -303,6 +307,16 @@ async def test_train_persist_load_with_different_settings(
     create_diet: Callable[..., DIETClassifier],
 ):
     config = {LOSS_TYPE: "margin", EPOCHS: 1}
+    create_train_load_and_process_diet(config)
+    create_diet(config, load=True, finetune=True)
+
+
+@pytest.mark.timeout(240, func_only=True)
+async def test_train_persist_load_with_nested_dict_config(
+    create_train_load_and_process_diet: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
+):
+    config = {HIDDEN_LAYERS_SIZES: {"text": [256, 512]}}
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 
