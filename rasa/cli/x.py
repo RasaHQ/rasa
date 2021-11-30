@@ -2,7 +2,8 @@ import argparse
 import asyncio
 import importlib.util
 import logging
-from multiprocessing import get_context, Process
+from multiprocessing.process import BaseProcess
+from multiprocessing import get_context
 import os
 import signal
 import sys
@@ -77,7 +78,7 @@ def _rasa_service(
     from rasa.core.run import serve_application
 
     # needs separate logging configuration as it is started in its own process
-    rasa.utils.common.set_log_level(args.loglevel)
+    rasa.utils.common.configure_logging_and_warnings(args.loglevel)
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
     if not credentials_path:
@@ -198,7 +199,7 @@ def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
 
 def start_rasa_for_local_rasa_x(
     args: argparse.Namespace, rasa_x_token: Text
-) -> Process:
+) -> BaseProcess:
     """Starts the Rasa X API with Rasa as a background process."""
     credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
     endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
@@ -248,7 +249,7 @@ def generate_rasa_x_token(length: int = 16) -> Text:
 
 def _configure_logging(args: argparse.Namespace) -> None:
     from rasa.core.utils import configure_file_logging
-    from rasa.utils.common import set_log_level
+    from rasa.utils.common import configure_logging_and_warnings
 
     log_level = args.loglevel or DEFAULT_LOG_LEVEL_RASA_X
 
@@ -258,8 +259,10 @@ def _configure_logging(args: argparse.Namespace) -> None:
     logging.basicConfig(level=log_level)
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
-    set_log_level(log_level)
-    configure_file_logging(logging.root, args.log_file)
+    configure_logging_and_warnings(
+        log_level, warn_only_once=False, filter_repeated_logs=False
+    )
+    configure_file_logging(logging.root, args.log_file, False)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
@@ -432,7 +435,7 @@ def _get_credentials_and_endpoints_paths(
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
-        endpoints_config_path, credentials_path = rasa.utils.common.run_in_loop(
+        endpoints_config_path, credentials_path = asyncio.run(
             _pull_runtime_config_from_server(config_endpoint)
         )
 
@@ -492,28 +495,14 @@ def run_locally(args: argparse.Namespace) -> None:
 
     # noinspection PyBroadException
     try:
-        try:
-            local.main(
-                args,
-                project_path,
-                args.data,
-                token=rasa_x_token,
-                config_path=config_path,
-                domain_path=domain_path,
-            )
-        except TypeError as e:
-            if "domain_path" in str(e):
-                # backwards compatibility with Rasa X versions < 0.35.0
-                # fixes regression https://github.com/RasaHQ/rasa/issues/7592
-                local.main(
-                    args,
-                    project_path,
-                    args.data,
-                    token=rasa_x_token,
-                    config_path=config_path,
-                )
-            else:
-                raise
+        local.main(
+            args,
+            project_path,
+            args.data,
+            token=rasa_x_token,
+            config_path=config_path,
+            domain_path=domain_path,
+        )
     except RasaXTermsError:
         # User didn't accept the Rasa X terms.
         pass

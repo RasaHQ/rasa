@@ -1,40 +1,36 @@
-import datetime
 import json
 import os
 import sys
+import textwrap
 
 from pathlib import Path
-from typing import Text, List, Dict, Any, Set, Optional
-from tests.conftest import AsyncMock
+from typing import Text, List, Dict, Any, Set
+
+from rasa.core.agent import Agent
+from rasa.core.channels import UserMessage
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
+
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from tests.conftest import AsyncMock
 
 import rasa.nlu.test
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.model
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
-from rasa.nlu.components import ComponentBuilder, Component
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.extractor import EntityExtractor
-from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.nlu.model import Interpreter, Trainer
-from rasa.core.interpreter import RasaNLUInterpreter
-from rasa.nlu.selectors.response_selector import ResponseSelector
+
 from rasa.nlu.test import (
     is_token_within_entity,
     do_entities_overlap,
     merge_labels,
     remove_empty_intent_examples,
     remove_empty_response_examples,
-    get_entity_extractors,
-    remove_pretrained_extractors,
+    _get_active_entity_extractors,
     drop_intents_below_freq,
     cross_validate,
     run_evaluation,
@@ -50,16 +46,14 @@ from rasa.nlu.test import (
     collect_incorrect_entity_predictions,
     merge_confidences,
     _get_entity_confidences,
-    is_response_selector_present,
     get_eval_data,
     does_token_cross_borders,
     align_entity_predictions,
     determine_intersection,
     determine_token_labels,
-    is_entity_extractor_present,
+    _remove_entities_of_extractors,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import (
@@ -68,11 +62,17 @@ from rasa.shared.nlu.constants import (
     INTENT_RANKING_KEY,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    ENTITIES,
+)
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    EXTRACTOR,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.model_testing import compare_nlu_models
-from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
+from rasa.utils.tensorflow.constants import EPOCHS
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -200,7 +200,7 @@ def test_determine_token_labels_throws_error():
         determine_token_labels(
             CH_correct_segmentation[0],
             [CH_correct_entity, CH_wrong_entity],
-            [CRFEntityExtractor.name],
+            {CRFEntityExtractor.__name__},
         )
 
 
@@ -220,7 +220,7 @@ def test_determine_token_labels_with_extractors():
     label = determine_token_labels(
         CH_correct_segmentation[0],
         [CH_correct_entity, CH_wrong_entity],
-        [SpacyEntityExtractor.name, MitieEntityExtractor.name],
+        {SpacyEntityExtractor.__name__, MitieEntityExtractor.__name__,},
     )
     assert label == "direction"
 
@@ -352,25 +352,52 @@ def test_drop_intents_below_freq():
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout
-async def test_run_evaluation(
-    unpacked_trained_moodbot_path: Text, nlu_as_json_path: Text
-):
+async def test_run_evaluation(mood_agent: Agent, nlu_as_json_path: Text):
     result = await run_evaluation(
         nlu_as_json_path,
-        os.path.join(unpacked_trained_moodbot_path, "nlu"),
+        mood_agent.processor,
         errors=False,
         successes=False,
         disable_plotting=True,
     )
 
     assert result.get("intent_evaluation")
+    assert all(
+        prediction["confidence"] is not None
+        for prediction in result["response_selection_evaluation"]["predictions"]
+    )
+
+
+@pytest.mark.timeout(
+    300, func_only=True
+)  # these can take a longer time than the default timeout
+async def test_run_evaluation_with_regex_message(mood_agent: Agent, tmp_path: Path):
+    training_data = textwrap.dedent(
+        """
+    version: '2.0'
+    nlu:
+    - intent: goodbye
+      examples: |
+        - Bye
+        - /goodbye{"location": "29432"}
+    """
+    )
+
+    data_path = tmp_path / "test.yml"
+    rasa.shared.utils.io.write_text_file(training_data, data_path)
+
+    # Does not raise
+    await run_evaluation(
+        str(data_path),
+        mood_agent.processor,
+        errors=False,
+        successes=False,
+        disable_plotting=True,
+    )
 
 
 async def test_eval_data(
-    component_builder: ComponentBuilder,
-    tmp_path: Path,
-    project: Text,
-    unpacked_trained_rasa_model: Text,
+    tmp_path: Path, project: Text, trained_rasa_model: Text,
 ):
     config_path = os.path.join(project, "config.yml")
     data_importer = TrainingDataImporter.load_nlu_importer_from_config(
@@ -381,50 +408,37 @@ async def test_eval_data(
         ],
     )
 
-    _, nlu_model_directory = rasa.model.get_model_subdirectories(
-        unpacked_trained_rasa_model
-    )
-    interpreter = Interpreter.load(nlu_model_directory, component_builder)
+    processor = Agent.load(trained_rasa_model).processor
 
-    data = await data_importer.get_nlu_data()
-    (intent_results, response_selection_results, entity_results) = get_eval_data(
-        interpreter, data
+    data = data_importer.get_nlu_data()
+    (intent_results, response_selection_results, entity_results) = await get_eval_data(
+        processor, data
     )
 
     assert len(intent_results) == 46
-    assert len(response_selection_results) == 0
+    assert len(response_selection_results) == 46
     assert len(entity_results) == 46
 
 
 @pytest.mark.timeout(
     240, func_only=True
 )  # these can take a longer time than the default timeout
-def test_run_cv_evaluation(
-    pretrained_embeddings_spacy_config: RasaNLUModelConfig, monkeypatch: MonkeyPatch
-):
+async def test_run_cv_evaluation():
     td = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.json"
+        "data/test/demo-rasa-more-ents-and-multiplied.yml"
     )
 
-    nlu_config = RasaNLUModelConfig(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 2},
-            ],
-        }
-    )
-
-    # mock training
-    trainer = Trainer(nlu_config)
-    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
-    mock = Mock(return_value=Interpreter(trainer.pipeline, None))
-    monkeypatch.setattr(Trainer, "train", mock)
+    nlu_config = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {"name": "DIETClassifier", EPOCHS: 2},
+        ],
+    }
 
     n_folds = 2
-    intent_results, entity_results, response_selection_results = cross_validate(
+    intent_results, entity_results, response_selection_results = await cross_validate(
         td,
         n_folds,
         nlu_config,
@@ -450,35 +464,76 @@ def test_run_cv_evaluation(
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
-def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
+@pytest.mark.timeout(
+    180, func_only=True
+)  # these can take a longer time than the default timeout
+async def test_run_cv_evaluation_no_entities():
+    td = rasa.shared.nlu.training_data.loading.load_data(
+        "data/test/demo-rasa-no-ents.yml"
+    )
+
+    nlu_config = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {"name": "DIETClassifier", EPOCHS: 25},
+        ],
+    }
+
+    n_folds = 2
+    intent_results, entity_results, response_selection_results = await cross_validate(
+        td,
+        n_folds,
+        nlu_config,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
+        report_as_dict=True,
+    )
+
+    assert len(intent_results.train["Accuracy"]) == n_folds
+    assert len(intent_results.train["Precision"]) == n_folds
+    assert len(intent_results.train["F1-score"]) == n_folds
+    assert len(intent_results.test["Accuracy"]) == n_folds
+    assert len(intent_results.test["Precision"]) == n_folds
+    assert len(intent_results.test["F1-score"]) == n_folds
+    assert all(key in intent_results.evaluation for key in ["errors", "report"])
+    assert any(
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
+        for intent_report in intent_results.evaluation["report"].values()
+    )
+
+    assert len(entity_results.train) == 0
+    assert len(entity_results.test) == 0
+    assert len(entity_results.evaluation) == 0
+
+
+@pytest.mark.timeout(
+    280, func_only=True
+)  # these can take a longer time than the default timeout
+async def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.yml"
+        "data/test/demo-rasa-more-ents-and-multiplied.yml"
     )
     training_data_responses_obj = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
 
-    nlu_config = RasaNLUModelConfig(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 2},
-                {"name": "ResponseSelector", EPOCHS: 2},
-            ],
-        }
-    )
-
-    # mock training
-    trainer = Trainer(nlu_config)
-    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
-    mock = Mock(return_value=Interpreter(trainer.pipeline, None))
-    monkeypatch.setattr(Trainer, "train", mock)
+    nlu_config = {
+        "language": "en",
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {"name": "DIETClassifier", EPOCHS: 25},
+            {"name": "ResponseSelector", EPOCHS: 2},
+        ],
+    }
 
     n_folds = 2
-    intent_results, entity_results, response_selection_results = cross_validate(
+    intent_results, entity_results, response_selection_results = await cross_validate(
         training_data_obj,
         n_folds,
         nlu_config,
@@ -510,32 +565,28 @@ def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
     assert all(
         key in response_selection_results.evaluation for key in ["errors", "report"]
     )
+
+    assert all(
+        prediction["confidence"] is not None and prediction["confidence"] != 0.0
+        for prediction in response_selection_results.evaluation["predictions"]
+    )
+
     assert any(
         isinstance(intent_report, dict)
         and intent_report.get("confused_with") is not None
         for intent_report in response_selection_results.evaluation["report"].values()
     )
 
-    assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
-    assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
-    assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
+    diet_name = "DIETClassifier"
+    assert len(entity_results.train[diet_name]["Accuracy"]) == n_folds
+    assert len(entity_results.train[diet_name]["Precision"]) == n_folds
+    assert len(entity_results.train[diet_name]["F1-score"]) == n_folds
+
+    assert len(entity_results.test[diet_name]["Accuracy"]) == n_folds
+    assert len(entity_results.test[diet_name]["Precision"]) == n_folds
+    assert len(entity_results.test[diet_name]["F1-score"]) == n_folds
     for extractor_evaluation in entity_results.evaluation.values():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
-
-
-def test_response_selector_present():
-    response_selector_component = ResponseSelector()
-
-    interpreter_with_response_selector = Interpreter(
-        [response_selector_component], context=None
-    )
-    interpreter_without_response_selector = Interpreter([], context=None)
-
-    assert is_response_selector_present(interpreter_with_response_selector)
-    assert not is_response_selector_present(interpreter_without_response_selector)
 
 
 def test_intent_evaluation_report(tmp_path: Path):
@@ -706,43 +757,24 @@ def test_response_evaluation_report(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    "components, expected_extractors",
+    "entity_results, expected_extractors",
     [
-        ([DIETClassifier({ENTITY_RECOGNITION: False})], set()),
-        ([DIETClassifier({ENTITY_RECOGNITION: True})], {"DIETClassifier"}),
-        ([CRFEntityExtractor()], {"CRFEntityExtractor"}),
+        ([], set()),
+        ([EN_entity_result], {"EntityExtractorA", "EntityExtractorB"}),
         (
-            [SpacyEntityExtractor(), CRFEntityExtractor()],
-            {"SpacyEntityExtractor", "CRFEntityExtractor"},
+            [EN_entity_result, EN_entity_result],
+            {"EntityExtractorA", "EntityExtractorB"},
         ),
-        ([ResponseSelector()], set()),
     ],
 )
-def test_get_entity_extractors(
-    components: List[Component], expected_extractors: Set[Text]
+def test_get_active_entity_extractors(
+    entity_results: List[EntityEvaluationResult], expected_extractors: Set[Text]
 ):
-    mock_interpreter = Interpreter(components, None)
-    extractors = get_entity_extractors(mock_interpreter)
-
+    extractors = _get_active_entity_extractors(entity_results)
     assert extractors == expected_extractors
 
 
 def test_entity_evaluation_report(tmp_path: Path):
-    class EntityExtractorA(EntityExtractor):
-
-        provides = ["entities"]
-
-        def __init__(self, component_config=None) -> None:
-
-            super().__init__(component_config)
-
-    class EntityExtractorB(EntityExtractor):
-
-        provides = ["entities"]
-
-        def __init__(self, component_config=None) -> None:
-
-            super().__init__(component_config)
 
     path = tmp_path / "evaluation"
     path.mkdir()
@@ -752,14 +784,8 @@ def test_entity_evaluation_report(tmp_path: Path):
     report_filename_b = os.path.join(report_folder, "EntityExtractorB_report.json")
 
     rasa.shared.utils.io.create_directory(report_folder)
-    mock_interpreter = Interpreter(
-        [
-            EntityExtractorA({"provides": ["entities"]}),
-            EntityExtractorB({"provides": ["entities"]}),
-        ],
-        None,
-    )
-    extractors = get_entity_extractors(mock_interpreter)
+
+    extractors = _get_active_entity_extractors([EN_entity_result])
     result = evaluate_entities(
         [EN_entity_result],
         extractors,
@@ -810,14 +836,24 @@ def test_empty_response_removal():
         ResponseSelectionEvaluationResult(
             "chitchat/ask_name", "chitchat/ask_name", "What's your name?", 0.98765
         ),
+        # This happens if response selection test data is present but no response
+        # selector is part of the model
+        ResponseSelectionEvaluationResult(
+            "chitchat/ask_name", None, "What's your name?", None
+        ),
     ]
     response_results = remove_empty_response_examples(response_results)
 
-    assert len(response_results) == 1
+    assert len(response_results) == 2
     assert response_results[0].intent_response_key_target == "chitchat/ask_name"
     assert response_results[0].intent_response_key_prediction == "chitchat/ask_name"
     assert response_results[0].confidence == 0.98765
     assert response_results[0].message == "What's your name?"
+
+    assert response_results[1].intent_response_key_target == "chitchat/ask_name"
+    assert response_results[1].intent_response_key_prediction == ""
+    assert response_results[1].confidence == 0.0
+    assert response_results[1].message == "What's your name?"
 
 
 def test_evaluate_entities_cv_empty_tokens():
@@ -913,24 +949,6 @@ def test_evaluate_entities_cv():
     }, "Wrong entity prediction alignment"
 
 
-def test_remove_pretrained_extractors(component_builder: ComponentBuilder):
-    _config = RasaNLUModelConfig(
-        {
-            "pipeline": [
-                {"name": "SpacyNLP", "model": "en_core_web_md"},
-                {"name": "SpacyEntityExtractor"},
-                {"name": "DucklingEntityExtractor"},
-            ]
-        }
-    )
-    trainer = Trainer(_config, component_builder)
-
-    target_components_names = ["SpacyNLP"]
-    filtered_pipeline = remove_pretrained_extractors(trainer.pipeline)
-    filtered_components_names = [c.name for c in filtered_pipeline]
-    assert filtered_components_names == target_components_names
-
-
 def test_label_replacement():
     original_labels = ["O", "location"]
     target_labels = ["no_entity", "location"]
@@ -952,18 +970,10 @@ async def test_nlu_comparison(
     # combined on the same dictionary key and cannot be plotted properly
     configs = [write_file_config(config).name, write_file_config(config).name]
 
-    # mock training
-    monkeypatch.setattr(Interpreter, "load", Mock(spec=RasaNLUInterpreter))
-    monkeypatch.setattr(sys.modules["rasa.nlu"], "train", AsyncMock())
-    monkeypatch.setattr(
-        sys.modules["rasa.nlu.test"],
-        "remove_pretrained_extractors",
-        Mock(return_value=None),
-    )
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],
         "get_eval_data",
-        Mock(return_value=(1, None, (None,),)),
+        AsyncMock(return_value=(1, None, (None,),)),
     )
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],
@@ -975,7 +985,7 @@ async def test_nlu_comparison(
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[nlu_as_json_path]
     )
-    test_data = await test_data_importer.get_nlu_data()
+    test_data = test_data_importer.get_nlu_data()
     await compare_nlu_models(
         configs, test_data, output, runs=2, exclusion_percentages=[50, 80]
     )
@@ -988,7 +998,7 @@ async def test_nlu_comparison(
     }
 
     run_1_path = os.path.join(output, "run_1")
-    assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.md"}
+    assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.yml"}
 
     exclude_50_path = os.path.join(run_1_path, "50%_exclusion")
     modelnames = [os.path.splitext(os.path.basename(config))[0] for config in configs]
@@ -1162,22 +1172,17 @@ def test_collect_entity_predictions(
     assert errors == actual
 
 
-class ConstantInterpreter(Interpreter):
+class ConstantProcessor:
     def __init__(self, prediction_to_return: Dict[Text, Any]) -> None:
-        # add intent classifier to make sure intents are evaluated
-        super().__init__([FallbackClassifier()], None)
         self.prediction = prediction_to_return
 
-    def parse(
-        self,
-        text: Text,
-        time: Optional[datetime.datetime] = None,
-        only_output_properties: bool = True,
+    async def parse_message(
+        self, message: UserMessage, only_output_properties: bool = True,
     ) -> Dict[Text, Any]:
         return self.prediction
 
 
-def test_replacing_fallback_intent():
+async def test_replacing_fallback_intent():
     expected_intent = "greet"
     expected_confidence = 0.345
     fallback_prediction = {
@@ -1198,12 +1203,12 @@ def test_replacing_fallback_intent():
         ],
     }
 
-    interpreter = ConstantInterpreter(fallback_prediction)
+    processor = ConstantProcessor(fallback_prediction)
     training_data = TrainingData(
         [Message.build("hi", "greet"), Message.build("bye", "bye")]
     )
 
-    intent_evaluations, _, _ = get_eval_data(interpreter, training_data)
+    intent_evaluations, _, _ = await get_eval_data(processor, training_data)
 
     assert all(
         prediction.intent_prediction == expected_intent
@@ -1212,10 +1217,34 @@ def test_replacing_fallback_intent():
     )
 
 
-@pytest.mark.parametrize(
-    "components, expected_result",
-    [([CRFEntityExtractor()], True), ([WhitespaceTokenizer()], False)],
-)
-def test_is_entity_extractor_present(components, expected_result):
-    interpreter = Interpreter(components, context=None)
-    assert is_entity_extractor_present(interpreter) == expected_result
+async def test_remove_entities_of_extractors():
+    extractor = "TestExtractor"
+    extractor_2 = "DIET"
+    extractor_3 = "YetAnotherExtractor"
+    # shouldn't crash when there are no annotations
+    _remove_entities_of_extractors({}, [extractor])
+
+    # add some entities
+    entities = [
+        {
+            ENTITY_ATTRIBUTE_TYPE: "time",
+            ENTITY_ATTRIBUTE_VALUE: "12:00",
+            EXTRACTOR: extractor,
+        },
+        {
+            ENTITY_ATTRIBUTE_TYPE: "location",
+            ENTITY_ATTRIBUTE_VALUE: "Berlin - Alexanderplatz",
+            EXTRACTOR: extractor_3,
+        },
+        {
+            ENTITY_ATTRIBUTE_TYPE: "name",
+            ENTITY_ATTRIBUTE_VALUE: "Joe",
+            EXTRACTOR: extractor_2,
+        },
+    ]
+    result_dict = {ENTITIES: entities}
+    _remove_entities_of_extractors(result_dict, [extractor, extractor_3])
+
+    assert len(result_dict[ENTITIES]) == 1
+    remaining_entity = result_dict[ENTITIES][0]
+    assert remaining_entity[EXTRACTOR] == extractor_2

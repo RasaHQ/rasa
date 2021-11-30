@@ -105,10 +105,6 @@ entities:
        - 2
 ```
 
-:::caution Changed in 2.1
-Entity Roles and Groups now need to be specified in the domain.
-:::
-
 ## Slots
 
 Slots are your bot's memory. They act as a key-value store
@@ -119,12 +115,16 @@ database query).
 Slots are defined in the slots section of your domain with their name,
 [type](domain.mdx#slot-types) and if and how they should [influence the assistant's
 behavior](domain.mdx#slots-and-conversation-behavior).
-The following example defines a slot with name "slot_name" and type `text`.
+The following example defines a slot with name "slot_name", type `text` and
+predefined slot mapping `from_entity`.
 
 ```yaml
 slots:
   slot_name:
     type: text
+    mappings:
+    - type: from_entity
+      entity: entity_name
 ```
 
 ### Slots and Conversation Behavior
@@ -193,6 +193,9 @@ information before it is able to predict the weather.
   slots:
      cuisine:
         type: text
+        mappings:
+        - type: from_entity
+          entity: cuisine
   ```
 
 * **Description**
@@ -232,6 +235,8 @@ information before it is able to predict the weather.
   slots:
      is_authenticated:
         type: bool
+        mappings:
+        - type: custom
   ```
 
 * **Description**
@@ -261,6 +266,8 @@ information before it is able to predict the weather.
         - low
         - medium
         - high
+      mappings:
+      - type: custom
   ```
 
 * **Description**
@@ -294,6 +301,8 @@ information before it is able to predict the weather.
       type: float
       min_value: -100.0
       max_value:  100.0
+      mappings:
+      - type: custom
   ```
 
 * **Defaults**
@@ -325,6 +334,9 @@ information before it is able to predict the weather.
   slots:
     shopping_items:
       type: list
+      mappings:
+      - type: from_entity
+        entity: shopping_item
   ```
 
 * **Description**
@@ -349,6 +361,8 @@ information before it is able to predict the weather.
   slots:
     shopping_items:
       type: any
+      mappings:
+      - type: custom
   ```
 
 * **Description**
@@ -423,6 +437,8 @@ slots:
   people:
     type: addons.my_custom_slots.NumberOfPeopleSlot
     influence_conversation: true
+    mappings:
+    - type: custom
 ```
 
 Now that your custom slot class can be used by Rasa Open Source, add training stories that diverge based on the value of the `people` slot.
@@ -452,95 +468,240 @@ stories:
   - action: action_explain_table_limit
 ```
 
-#### Unfeaturized Slot
+### Slot Mappings
 
-:::caution deprecated
-The slot type `unfeaturized` is deprecated. Please use the property
-`influence_conversation` as described
-[here](domain.mdx#slots-and-conversation-behavior) or the slot type
-[`any`](domain.mdx#any-slot) instead.
+:::info New in 3.0
 
-:::
-
-* **Type**
-
-  `unfeaturized`
-
-* **Use For**
-
-  Data you want to store which shouldn't influence the dialogue flow.
-
-* **Example**
-
-  ```yaml-rasa
-  slots:
-    internal_user_id:
-      type: unfeaturized
-  ```
-
-* **Description**
-
-  Slots of this type will never influence the conversation.
-
-### Slot Auto-fill
-
-The slot will be set automatically if your NLU model picks up an entity, and your domain
- contains a slot with the same name, provided the following conditions are met:
- 
-1. `store_entities_as_slots` is set to true
-2. the slot's `auto_fill` property is set to true
-
-
-For example:
-
-```yaml-rasa
-stories:
-- story: entity slot-filling
-  steps:
-  - intent: greet
-    entities:
-    - name: Ali
-  - slot_was_set:
-    - name: Ali
-  - action: utter_greet_by_name
-```
-
-In this case, you don't have to include the `slot_was_set` part in the
-story, because it is automatically picked up:
-
-```yaml-rasa
-stories:
-- story: entity slot-filling
-  steps:
-  - intent: greet
-    entities:
-    - name: Ali
-  - action: utter_greet_by_name
-```
-
-
-:::note Auto-filled slots & `influence_conversation`
-An auto-filled slot that is defined with `influence_conversation: true` will influence the conversation the same way any other slot does.
-
-In the example above, if the `name` slot's type is `text`, then it only matters that some name was detected, but it won't matter which one.
-If the `name` slot is type `categorical`, then the behaviour will vary depending on the categories you have defined for the slot. 
-
-Explicitly including a `slot_was_set` step in your story can make the behaviour of an
-auto-filled slot that influences the conversation clearer, and will not change the behaviour of your story.
+As of 3.0, slot mappings are defined in the `slots` section of the domain.
+This change removes the implicit mechanism of setting slots via auto-fill and replaces it with a new explicit
+mechanism of setting slots after every user message.
+You will need to explicitly define slot mappings for each slot in the `slots` section of `domain.yml`.
+If you are migrating from an earlier version, please read through the [migration guide](./migration-guide.mdx#slot-mappings)
+to update your assistant.
 
 :::
 
+Rasa Open Source comes with four predefined mappings to fill slots
+based on the latest user message.
 
+In addition to the predefined mappings, you can define [custom slot mappings](./domain.mdx#custom-slot-mappings).
+All custom slot mappings should contain a mapping of type `custom`.
 
-To disable auto-filling for a particular slot, you can set the
-`auto_fill` attribute to `false` in the domain file:
+The default behavior is for slot mappings to apply after every user message, regardless of the dialogue context.
+To make a slot mapping apply only within the context of a form see [Mapping Conditions](./domain.mdx#mapping-conditions).
+There is one additional default limitation on applying `from_entity` slot mappings in the context of a form;
+see [unique `from_entity` mapping matching](./domain.mdx#unique-from_entity-mapping-matching) for details.
+
+Note that you can also define lists of intents for the optional parameters `intent` and `not_intent`.
+
+#### from_entity
+
+The `from_entity` slot mapping fills slots based on extracted entities.
+The following parameters are required:
+- `entity`: the entity that should fill the slot
+
+The following parameters are optional and can be used to further specify when the mapping applies:
+- `intent`: Only applies the mapping when this intent is predicted.
+- `not_intent`: Does not apply the mapping when this intent is predicted
+- `role`: Only applies the mapping if the extracted entity has this role
+- `group`: Only applies the mapping if the extracted entity belongs to this group.
+
+```yaml-rasa
+entities:
+- entity_name
+slots:
+  slot_name:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: entity_name
+      role: role_name
+      group: group name
+      intent: intent_name
+      not_intent: excluded_intent
+```
+
+##### Unique `from_entity` mapping matching
+
+There is an intentional limitation on applying `from_entity` slot mappings in the context of a form.
+When a form is active, a `from_entity` slot mapping will be applied only if one or more of the following conditions are met:
+
+1. The slot with the `from_entity` mapping has just been requested by the form
+2. Only one of the active form's `required_slots` has that specific `from_entity` mapping,
+including all the attributes of the extracted entity (i.e, entity name, role, group). This is known as a **unique entity mapping** for the form. 
+The extracted entity will be ignored if the mapping is not unique within the list of `required_slots`.
+
+This limitation exists to prevent a form from filling multiple required slots with the same extracted entity value.
+
+For example, in the example below, an entity `date` uniquely sets the slot `arrival_date`,
+an entity `city` with a role `from` uniquely sets the slot `departure_city` and
+an entity `city` with a role `to` uniquely sets the slot `arrival_city`,
+therefore they can be used to fit corresponding slots
+even if these slots were not requested.
+However, entity `city` without a role can fill both `departure_city` and `arrival_city`
+slots, depending which one is requested, so if an entity `city` is extracted when
+slot `arrival_date` is requested, it'll be ignored by the form.
 
 ```yaml-rasa
 slots:
-  name:
+  departure_city:
     type: text
-    auto_fill: false
+    mappings:
+    - type: from_entity
+      entity: city
+      role: from
+    - type: from_entity
+      entity: city
+  arrival_city:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: city
+      role: to
+    - type: from_entity
+      entity: city
+  arrival_date:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: date
+forms:
+  your_form:
+    required_slots:
+    - departure_city
+    - arrival_city
+    - arrival_date
 ```
+
+Note that the unique `from_entity` mapping constraint will **not** prevent filling slots which are not in the active form's `required_slots`;
+those mappings will apply as usual, regardless of the uniqueness of the mapping. To limit applicability of a slot mapping to
+a specific form, see [Mapping Conditions](./domain.mdx#mapping-conditions).
+
+#### from_text
+
+The `from_text` mapping will use the text of the last user utterance to fill the slot
+`slot_name`. If `intent_name` is `None`, the slot will be filled regardless of intent name.
+Otherwise, the slot will only be filled if the user's intent is `intent_name`.
+
+The slot mapping will not apply if the intent of the message is `excluded_intent`.
+
+```yaml-rasa
+slots:
+  slot_name:
+    type: text
+    mappings:
+    - type: from_text
+      intent: intent_name
+      not_intent: excluded_intent
+```
+
+:::note
+To maintain the 2.x form behavior when using `from_text` slot mappings, you must use [mapping conditions](./domain.mdx#mapping-conditions),
+where both `active_loop` and `requested_slot` keys are defined.
+:::
+
+
+#### from_intent
+
+The `from_intent` mapping will fill slot `slot_name` with value `my_value` if
+user intent is `intent_name`. If you choose not to specify the parameter `intent`,
+the slot mapping will apply regardless of the intent of the message as long as
+the intent is not listed under `not_intent` parameter.
+
+The following parameter is required:
+- `value`: the value that fills the slot `slot_name`
+
+The following parameters are optional and can be used to further specify when the mapping applies:
+- `intent`: Only applies the mapping when this intent is predicted.
+- `not_intent`: Does not apply the mapping when this intent is predicted
+
+Note that if you choose not to define the parameter `intent`, the slot mapping will apply regardless of the intent
+of the message as long as the intent is not listed under the `not_intent` parameter.
+
+```yaml-rasa
+slots:
+  slot_name:
+    type: any
+    mappings:
+    - type: from_intent
+      value: my_value
+      intent: intent_name
+      not_intent: excluded_intent
+```
+
+#### from_trigger_intent
+
+The `from_trigger_intent` mapping will fill slot `slot_name` with value `my_value`
+if a form is activated by a user message with intent `intent_name`.
+The slot mapping will not apply if the intent of the message is
+`excluded_intent`.
+
+```yaml-rasa
+slots:
+  slot_name:
+    type: any
+    mappings:
+    - type: from_trigger_intent
+      value: my_value
+      intent: intent_name
+      not_intent: excluded_intent
+```
+
+### Mapping Conditions
+
+To apply a slot mapping only within the context of a form, specify
+the name of the form in the `conditions` key of a slot mapping. Conditions list the form name(s)
+for which the mapping is applicable in the `active_loop` key.
+
+Conditions can also include the name of the `requested_slot`. If `requested_slot` is not mentioned,
+then the slot will be set if relevant information is extracted, regardless of which slot is being
+requested by the form.
+
+```yaml-rasa
+slots:
+  slot_name:
+    type: text
+    mappings:
+    - type: from_text
+      intent: intent_name
+      conditions:
+      - active_loop: your_form
+        requested_slot: slot_name
+      - active_loop: another_form
+```
+
+:::note
+If `conditions` are not included in a slot mapping, the slot mapping will be applicable regardless of whether
+any form is active. As long as a slot is listed in a form's `required_slots`, the form will prompt for the slot
+if it is empty when the form is activated.
+:::
+
+### Custom Slot Mappings
+
+You can define custom slot mappings using [slot validation actions](./slot-validation-actions.mdx) when none of the
+predefined mappings fit your use case. You must define this slot mapping to be of type `custom`, for example:
+
+```yaml
+slots:
+  day_of_week:
+    type: text
+    mappings:
+    - type: custom
+      action: action_calculate_day_of_week
+```
+
+You can also use the `custom` slot mapping to list slots that will be filled by arbitrary custom actions in the course
+of a conversation, by listing the type and no specific action. For example:
+
+```yaml
+slots:
+  handoff_completed:
+    type: boolean
+    mappings:
+    - type: custom
+```
+
+This slot will not be updated on every user turn, but only once a custom action that returns a `SlotSet` event for it is predicted.
 
 ### Initial slot values
 
@@ -551,6 +712,8 @@ slots:
   num_fallbacks:
     type: float
     initial_value: 0
+    mappings:
+    - type: custom
 ```
 
 ## Responses
@@ -631,19 +794,18 @@ call, or to start the conversation with a bot message. The docs on
 ## Config
 
 The `config` key in the domain file maintains the `store_entities_as_slots` parameter.
-When an entity is recognized by the NLU model and the entity name matches a slot name,
-`store_entities_as_slots` defines whether the entity value should be placed in that slot.
-By default, entities will auto-fill slots of the same name.
+This parameter is used only in the context of reading stories and turning them into trackers. If the parameter is set
+to `True`, this will result in slots being implicitly set from entities if applicable entities are present in the story.
+When an entity matches the `from_entity` slot mapping, `store_entities_as_slots` defines whether the entity value should
+be placed in that slot. Therefore, this parameter skips adding an explicit `slot_was_set` step manually in the story.
+By default, this behaviour is switched on.
 
-You can turn off all slot auto-filling by setting the `store_entities_as_slots` parameter to `false`:
+You can turn off this functionality by setting the `store_entities_as_slots` parameter to `false`:
 
 ```yaml-rasa title="domain.yml"
 config:
   store_entities_as_slots: false
 ```
-
-You can also turn off this behavior for a specific slot using the [`auto_fill`](./domain.mdx#slot-auto-fill)
-parameter in that slot's definition.
 
 :::note looking for config.yml?
 If you're looking for information on the `config.yml` file, check out the docs on

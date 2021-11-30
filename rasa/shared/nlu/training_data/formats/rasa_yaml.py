@@ -436,7 +436,10 @@ class RasaYAMLWriter(TrainingDataWriter):
             inverted_synonyms[synonym].append(example)
 
         return cls.process_training_examples_by_key(
-            inverted_synonyms, KEY_SYNONYM, KEY_SYNONYM_EXAMPLES
+            inverted_synonyms,
+            KEY_SYNONYM,
+            KEY_SYNONYM_EXAMPLES,
+            example_extraction_predicate=lambda x: str(x),
         )
 
     @classmethod
@@ -448,12 +451,23 @@ class RasaYAMLWriter(TrainingDataWriter):
             inverted_regexes[regex["name"]].append(regex["pattern"])
 
         return cls.process_training_examples_by_key(
-            inverted_regexes, KEY_REGEX, KEY_REGEX_EXAMPLES
+            inverted_regexes,
+            KEY_REGEX,
+            KEY_REGEX_EXAMPLES,
+            example_extraction_predicate=lambda x: str(x),
         )
 
     @classmethod
     def process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]:
-        prepared_lookup_tables = OrderedDict()
+        """Serializes the look up tables.
+
+        Args:
+            training_data: The training data object with potential look up tables.
+
+        Returns:
+            The serialized lookup tables.
+        """
+        prepared_lookup_tables: Dict[Text, List[Text]] = OrderedDict()
         for lookup_table in training_data.lookup_tables:
             # this is a lookup table filename
             if isinstance(lookup_table["elements"], str):
@@ -461,16 +475,36 @@ class RasaYAMLWriter(TrainingDataWriter):
             prepared_lookup_tables[lookup_table["name"]] = lookup_table["elements"]
 
         return cls.process_training_examples_by_key(
-            prepared_lookup_tables, KEY_LOOKUP, KEY_LOOKUP_EXAMPLES
+            prepared_lookup_tables,
+            KEY_LOOKUP,
+            KEY_LOOKUP_EXAMPLES,
+            example_extraction_predicate=lambda x: str(x),
         )
 
     @staticmethod
     def process_training_examples_by_key(
-        training_examples: Dict,
+        training_examples: Dict[Text, List[Union[Dict, Text]]],
         key_name: Text,
         key_examples: Text,
-        example_extraction_predicate: Callable[[Dict[Text, Any]], Text] = lambda x: x,
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text],
     ) -> List[OrderedDict]:
+        """Prepares training examples  to be written to YAML.
+
+        This can be any NLU training data (intent examples, lookup tables, etc.)
+
+        Args:
+            training_examples: Multiple training examples. Mappings in case additional
+                values were specified for an example (e.g. metadata) or just the plain
+                value.
+            key_name: The top level key which the examples belong to (e.g. `intents`)
+            key_examples: The sub key which the examples should be added to
+                (e.g. `examples`).
+            example_extraction_predicate: Function to extract example value (e.g. the
+                the text for an intent example)
+
+        Returns:
+            NLU training data examples prepared for writing to YAML.
+        """
         intents = []
 
         for intent_name, examples in training_examples.items():
@@ -505,8 +539,8 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @staticmethod
     def _convert_training_examples(
-        training_examples: List[Dict],
-        example_extraction_predicate: Callable[[Dict[Text, Any]], Text] = lambda x: x,
+        training_examples: List[Union[Dict, List[Text]]],
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text],
     ) -> Tuple[List[Dict], Optional[Dict]]:
         """Returns converted training examples and potential intent metadata."""
         converted_examples = []
@@ -555,7 +589,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         return [render(ex) for ex in examples]
 
     @staticmethod
-    def _render_training_examples_as_text(examples: List[Dict]) -> List[Text]:
+    def _render_training_examples_as_text(examples: List[Dict]) -> LiteralScalarString:
         def render(example: Dict) -> Text:
             return TrainingDataWriter.generate_list_item(example[KEY_INTENT_TEXT])
 

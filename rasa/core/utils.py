@@ -17,14 +17,13 @@ import numpy as np
 
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
 
-# backwards compatibility 1.0.x
-# noinspection PyUnresolvedReferences
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
 from sanic.views import CompositionView
+from socket import SOCK_DGRAM, SOCK_STREAM
 import rasa.cli.utils as cli_utils
 
 
@@ -32,24 +31,42 @@ logger = logging.getLogger(__name__)
 
 
 def configure_file_logging(
-    logger_obj: logging.Logger, log_file: Optional[Text]
+    logger_obj: logging.Logger,
+    log_file: Optional[Text],
+    use_syslog: Optional[bool],
+    syslog_address: Optional[Text] = None,
+    syslog_port: Optional[int] = None,
+    syslog_protocol: Optional[Text] = None,
 ) -> None:
     """Configure logging to a file.
 
     Args:
         logger_obj: Logger object to configure.
         log_file: Path of log file to write to.
+        use_syslog: Add syslog as a logger.
+        syslog_address: Adress of the syslog server.
+        syslog_port: Port of the syslog server.
+        syslog_protocol: Protocol with the syslog server
     """
-    if not log_file:
-        return
-
-    formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(
-        log_file, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
-    )
-    file_handler.setLevel(logger_obj.level)
-    file_handler.setFormatter(formatter)
-    logger_obj.addHandler(file_handler)
+    if use_syslog:
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)-5.5s] [%(process)d]" " %(message)s"
+        )
+        socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
+        syslog_handler = logging.handlers.SysLogHandler(
+            address=(syslog_address, syslog_port), socktype=socktype,
+        )
+        syslog_handler.setLevel(logger_obj.level)
+        syslog_handler.setFormatter(formatter)
+        logger_obj.addHandler(syslog_handler)
+    if log_file:
+        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+        file_handler = logging.FileHandler(
+            log_file, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+        )
+        file_handler.setLevel(logger_obj.level)
+        file_handler.setFormatter(formatter)
+        logger_obj.addHandler(file_handler)
 
 
 def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray:
@@ -88,10 +105,8 @@ def dump_obj_as_yaml_to_file(
     )
 
 
-def list_routes(app: Sanic) -> Text:
-    """List all the routes of a sanic application.
-
-    Mainly used for debugging."""
+def list_routes(app: Sanic) -> Dict[Text, Text]:
+    """List all the routes of a sanic application. Mainly used for debugging."""
     from urllib.parse import unquote
 
     output = {}
@@ -102,16 +117,19 @@ def list_routes(app: Sanic) -> Text:
                 return name
         return None
 
-    for endpoint, route in app.router.routes_all.items():
+    for route in app.router.routes:
+        endpoint = route.parts
         if endpoint[:-1] in app.router.routes_all and endpoint[-1] == "/":
             continue
 
         options = {}
-        for arg in route.parameters:
+        for arg in route._params:
             options[arg] = f"[{arg}]"
 
         if not isinstance(route.handler, CompositionView):
-            handlers = [(list(route.methods)[0], route.name)]
+            handlers = [
+                (list(route.methods)[0], route.name.replace("rasa.server.", ""))
+            ]
         else:
             handlers = [
                 (method, find_route(v.__name__, endpoint) or v.__name__)
@@ -119,7 +137,8 @@ def list_routes(app: Sanic) -> Text:
             ]
 
         for method, name in handlers:
-            line = unquote(f"{endpoint:50s} {method:30s} {name}")
+            full_endpoint = "/" + "/".join(endpoint)
+            line = unquote(f"{full_endpoint:50s} {method:30s} {name}")
             output[name] = line
 
     url_table = "\n".join(output[url] for url in sorted(output))

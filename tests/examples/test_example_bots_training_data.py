@@ -42,7 +42,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
         ),
     ],
 )
-async def test_example_bot_training_data_not_raises(
+def test_example_bot_training_data_raises_only_auto_fill_warning(
     config_file: Text, domain_file: Text, data_folder: Text
 ):
 
@@ -50,14 +50,20 @@ async def test_example_bot_training_data_not_raises(
         config_file, domain_file, [data_folder]
     )
 
-    with pytest.warns(None) as record:
-        await importer.get_nlu_data()
-        await importer.get_stories()
+    with pytest.warns(UserWarning) as record:
+        importer.get_nlu_data()
+        importer.get_stories()
 
-    assert not len(record)
+    # two for slot auto-fill removal
+    assert len(record) == 2
+    assert (
+        "Slot auto-fill has been removed in 3.0 and replaced with "
+        "a new explicit mechanism to set slots." in record[0].message.args[0]
+    )
+    assert record[0].message.args[0] == record[1].message.args[0]
 
 
-async def test_example_bot_training_on_initial_project(tmp_path: Path):
+def test_example_bot_training_on_initial_project(tmp_path: Path):
     # we need to test this one separately, as we can't test it in place
     # configuration suggestions would otherwise change the initial file
     scaffold.create_initial_project(str(tmp_path))
@@ -68,8 +74,14 @@ async def test_example_bot_training_on_initial_project(tmp_path: Path):
         str(tmp_path / "data"),
     )
 
-    with pytest.warns(None) as record:
-        await importer.get_nlu_data()
-        await importer.get_stories()
+    with pytest.warns(UserWarning) as record:
+        importer.get_nlu_data()
+        importer.get_stories()
 
-    assert not len(record)
+    # two for slot auto-fill removal
+    assert len(record) == 2
+    assert (
+        "Slot auto-fill has been removed in 3.0 and replaced with "
+        "a new explicit mechanism to set slots." in record[0].message.args[0]
+    )
+    assert record[0].message.args[0] == record[1].message.args[0]

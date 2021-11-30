@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3.0"
 
 intents:
 - activate_q_form
@@ -20,8 +20,30 @@ slots:
   some_slot:
     type: text
     influence_conversation: false
+    mappings:
+      # Slot mappings can be defined in the domain.
+      # You can also implement custom slot mappings in your
+      # `action_validate_slot_mappings` function by returning the desired slot events.
+      # The slot mappings follow the same syntax as currently in the SDK implementation.
+      - type: from_entity
+        entity: some_slot
+      # Example of a slot mapping which extracts the slot value from the message text if
+      # the intent is `greet`, the active loop is `loop_q_form` and `requested_slot` is
+      # the same slot:
+      # - type: from_text
+      #   intent: greet
+      #   conditions:
+      #   - active_loop: loop_q_form
+      #     requested_slot: some_slot
+      # Example of a slot mapping which sets the slot to `my value` in case the message
+      # has an intent `greet`
+      # - type: from_intent
+      #   intent: greet
+      #   value: "my value"
   detailed_faq:
     type: bool
+    mappings:
+    - type: custom
 
 actions:
 - utter_explain_some_slot
@@ -45,22 +67,7 @@ actions:
 forms:
   loop_q_form:
     required_slots:
-      some_slot:
-      # Slot mappings can be defined in the domain.
-      # You can also implement custom slot mappings in your validate function for the
-      # `Form` by returning the desired slot events.
-      # The slot mappings follow the same syntax as currently in the SDK implementation.
-      - type: from_entity
-        entity: some_slot
-      # Example of a slot mapping which extracts the slot value from the message text if
-      # the intent is `greet`.
-      # - type: from_text
-      #   intent: greet
-      # Example of a slot mapping which sets the slot to `my value` in case the message
-      # has an intent `greet`
-      # - type: from_intent
-      #   intent: greet
-      #   value: "my value"
+      - some_slot
 
 session_config:
   session_expiration_time: 60  # value in minutes

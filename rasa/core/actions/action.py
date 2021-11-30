@@ -1,28 +1,24 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING
+from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING, Tuple, Set, Union
 
 import aiohttp
-
 import rasa.core
-from rasa.core.policies.policy import PolicyPrediction
-
-from rasa.shared.core import events
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     RESPONSE_SELECTOR_PREDICTION_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
-
 from rasa.shared.constants import (
     DOCS_BASE_URL,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
     UTTER_PREFIX,
 )
+from rasa.shared.core import events
 from rasa.shared.core.constants import (
     USER_INTENT_OUT_OF_SCOPE,
     ACTION_LISTEN_NAME,
@@ -36,9 +32,16 @@ from rasa.shared.core.constants import (
     ACTION_UNLIKELY_INTENT_NAME,
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
+    ACTION_EXTRACT_SLOTS,
+    DEFAULT_SLOT_NAMES,
+    MAPPING_CONDITIONS,
+    ACTIVE_LOOP,
+    ACTION_VALIDATE_SLOT_MAPPINGS,
+    MAPPING_TYPE,
+    PREDEFINED_MAPPINGS,
+    LOOP_REJECTED,
 )
-from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.constants import INTENT_NAME_KEY, INTENT_RANKING_KEY
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
@@ -50,13 +53,22 @@ from rasa.shared.core.events import (
     Restarted,
     SessionStarted,
 )
+from rasa.shared.core.slot_mappings import SlotMapping
+from rasa.shared.core.slots import ListSlot
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.constants import (
+    INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
+)
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
+import rasa.shared.utils.io
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
-from rasa.shared.core.domain import Domain
-
 
 if TYPE_CHECKING:
-    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
     from rasa.shared.core.events import IntentPrediction
@@ -80,6 +92,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         TwoStageFallbackAction(action_endpoint),
         ActionUnlikelyIntent(),
         ActionBack(),
+        ActionExtractSlots(action_endpoint),
     ]
 
 
@@ -359,6 +372,44 @@ class ActionRetrieveResponse(ActionBotResponse):
         """Resolve the name of the intent from the action name."""
         return action_name.split(UTTER_PREFIX)[1]
 
+    def get_full_retrieval_name(
+        self, tracker: "DialogueStateTracker"
+    ) -> Optional[Text]:
+        """Returns full retrieval name for the action.
+
+        Extracts retrieval intent from response selector and
+        returns complete action utterance name.
+
+        Args:
+            tracker: Tracker containing past conversation events.
+
+        Returns:
+            Full retrieval name of the action if the last user utterance
+            contains a response selector output, `None` otherwise.
+        """
+        if RESPONSE_SELECTOR_PROPERTY_NAME not in tracker.latest_message.parse_data:
+            return None
+
+        response_selector_properties = tracker.latest_message.parse_data[
+            RESPONSE_SELECTOR_PROPERTY_NAME
+        ]
+
+        if (
+            self.intent_name_from_action(self.action_name)
+            in response_selector_properties
+        ):
+            query_key = self.intent_name_from_action(self.action_name)
+        elif RESPONSE_SELECTOR_DEFAULT_INTENT in response_selector_properties:
+            query_key = RESPONSE_SELECTOR_DEFAULT_INTENT
+        else:
+            return None
+
+        selected = response_selector_properties[query_key]
+        full_retrieval_utter_action = selected[RESPONSE_SELECTOR_PREDICTION_KEY][
+            RESPONSE_SELECTOR_UTTER_ACTION_KEY
+        ]
+        return full_retrieval_utter_action
+
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -367,7 +418,6 @@ class ActionRetrieveResponse(ActionBotResponse):
         domain: "Domain",
     ) -> List[Event]:
         """Query the appropriate response and create a bot utterance with that."""
-
         response_selector_properties = tracker.latest_message.parse_data[
             RESPONSE_SELECTOR_PROPERTY_NAME
         ]
@@ -484,10 +534,8 @@ class ActionSessionStart(Action):
     session.
     """
 
-    # Optional arbitrary metadata that can be passed to the SessionStarted event.
-    metadata: Optional[Dict[Text, Any]] = None
-
     def name(self) -> Text:
+        """Returns action start name."""
         return ACTION_SESSION_START_NAME
 
     @staticmethod
@@ -510,7 +558,7 @@ class ActionSessionStart(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        _events = [SessionStarted(metadata=self.metadata)]
+        _events: List[Event] = [SessionStarted()]
 
         if domain.session_config.carry_over_slots:
             _events.extend(self._slot_set_events_from_tracker(tracker))
@@ -626,17 +674,6 @@ class RemoteAction(Action):
         bot_messages = []
         for response in responses:
             generated_response = response.pop("response", None)
-            generated_template = response.pop("template", None)
-            if generated_template and not generated_response:
-                generated_response = generated_template
-                rasa.shared.utils.io.raise_deprecation_warning(
-                    "The terminology 'template' is deprecated and replaced by "
-                    "'response', use the `response` parameter instead of "
-                    "`template` in `dispatcher.utter_message`. You can do that "
-                    "by upgrading to Rasa SDK 2.4.1 or adapting your custom SDK.",
-                    docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}"
-                    f"/sdk-dispatcher",
-                )
             if generated_response:
                 draft = await nlg.generate(
                     generated_response, tracker, output_channel.name(), **response
@@ -690,7 +727,7 @@ class RemoteAction(Action):
 
             events_json = response.get("events", [])
             responses = response.get("responses", [])
-            bot_messages = await self._utter_responses(
+            bot_messages: List[Event] = await self._utter_responses(
                 responses, output_channel, nlg, tracker
             )
 
@@ -919,3 +956,304 @@ class ActionDefaultAskRephrase(ActionBotResponse):
     def __init__(self) -> None:
         """Initializes action default ask rephrase."""
         super().__init__("utter_ask_rephrase", silent_fail=True)
+
+
+class ActionExtractSlots(Action):
+    """Default action that runs after each user turn.
+
+    Action is executed automatically in MessageProcessor.handle_message(...)
+    before the next predicted action is run.
+
+    Sets slots to extracted values from user message
+    according to assigned slot mappings.
+    """
+
+    def __init__(self, action_endpoint: Optional[EndpointConfig]) -> None:
+        """Initializes default action extract slots."""
+        self._action_endpoint = action_endpoint
+
+    def name(self) -> Text:
+        """Returns action_extract_slots name."""
+        return ACTION_EXTRACT_SLOTS
+
+    @staticmethod
+    def _matches_mapping_conditions(
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
+    ) -> bool:
+        slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
+
+        if not slot_mapping_conditions:
+            return True
+
+        if (
+            tracker.active_loop
+            and tracker.active_loop.get(LOOP_REJECTED)
+            and tracker.get_slot(REQUESTED_SLOT) == slot_name
+        ):
+            return False
+
+        # check if found mapping conditions matches form
+        for condition in slot_mapping_conditions:
+            active_loop = condition.get(ACTIVE_LOOP)
+
+            if active_loop and active_loop == tracker.active_loop_name:
+                condition_requested_slot = condition.get(REQUESTED_SLOT)
+                if not condition_requested_slot:
+                    return True
+                if condition_requested_slot == tracker.get_slot(REQUESTED_SLOT):
+                    return True
+
+        return False
+
+    @staticmethod
+    def _verify_mapping_conditions(
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
+    ) -> bool:
+        if mapping.get(MAPPING_CONDITIONS) and mapping.get(MAPPING_TYPE) != str(
+            SlotMapping.FROM_TRIGGER_INTENT
+        ):
+            if not ActionExtractSlots._matches_mapping_conditions(
+                mapping, tracker, slot_name
+            ):
+                return False
+
+        return True
+
+    async def _run_custom_action(
+        self,
+        custom_action: Text,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        slot_events: List[Event] = []
+        remote_action = RemoteAction(custom_action, self._action_endpoint)
+        disallowed_types = set()
+
+        try:
+            custom_events = await remote_action.run(
+                output_channel, nlg, tracker, domain
+            )
+            for event in custom_events:
+                if isinstance(event, SlotSet):
+                    if tracker.get_slot(event.key) != event.value:
+                        slot_events.append(event)
+                elif isinstance(event, BotUttered):
+                    slot_events.append(event)
+                else:
+                    disallowed_types.add(event.type_name)
+        except (RasaException, ClientResponseError) as e:
+            logger.warning(
+                f"Failed to execute custom action '{custom_action}' "
+                f"as a result of error '{str(e)}'. The default action "
+                f"'{self.name()}' failed to fill slots with custom "
+                f"mappings."
+            )
+
+        for type_name in disallowed_types:
+            logger.info(
+                f"Running custom action '{custom_action}' has resulted "
+                f"in an event of type '{type_name}'. This is "
+                f"disallowed and the tracker will not be "
+                f"updated with this event."
+            )
+
+        return slot_events
+
+    async def _execute_custom_action(
+        self,
+        mapping: Dict[Text, Any],
+        executed_custom_actions: Set[Text],
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> Tuple[List[Event], Set[Text]]:
+        custom_action = mapping.get("action")
+
+        if not custom_action or custom_action in executed_custom_actions:
+            return [], executed_custom_actions
+
+        slot_events = await self._run_custom_action(
+            custom_action, output_channel, nlg, tracker, domain,
+        )
+
+        executed_custom_actions.add(custom_action)
+
+        return slot_events, executed_custom_actions
+
+    async def _execute_validation_action(
+        self,
+        extraction_events: List[Event],
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        slot_events: List[Union[Event, SlotSet]] = [
+            event for event in extraction_events if isinstance(event, SlotSet)
+        ]
+
+        slot_candidates = "\n".join([e.key for e in slot_events])
+        logger.debug(f"Validating extracted slots: {slot_candidates}")
+
+        if ACTION_VALIDATE_SLOT_MAPPINGS not in domain.user_actions:
+            return slot_events
+
+        _tracker = DialogueStateTracker.from_events(
+            tracker.sender_id,
+            tracker.events_after_latest_restart() + slot_events,
+            slots=domain.slots,
+        )
+        validate_events = await self._run_custom_action(
+            ACTION_VALIDATE_SLOT_MAPPINGS, output_channel, nlg, _tracker, domain
+        )
+        validated_slot_names = [
+            event.key for event in validate_events if isinstance(event, SlotSet)
+        ]
+
+        # If the custom action doesn't return a SlotSet event for an extracted slot
+        # candidate we assume that it was valid. The custom action has to return a
+        # SlotSet(slot_name, None) event to mark a Slot as invalid.
+        return validate_events + [
+            event for event in slot_events if event.key not in validated_slot_names
+        ]
+
+    def _fails_unique_entity_mapping_check(
+        self,
+        slot_name: Text,
+        mapping: Dict[Text, Any],
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> bool:
+        from rasa.core.actions.forms import FormAction
+
+        if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
+            return False
+
+        form_name = tracker.active_loop_name
+
+        if not form_name:
+            return False
+
+        if tracker.get_slot(REQUESTED_SLOT) == slot_name:
+            return False
+
+        form = FormAction(form_name, self._action_endpoint)
+
+        if form.entity_mapping_is_unique(mapping, domain):
+            return False
+
+        return True
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
+        slot_events: List[Event] = []
+        executed_custom_actions = set()
+
+        user_slots = [
+            slot for slot in domain.slots if slot.name not in DEFAULT_SLOT_NAMES
+        ]
+
+        for slot in user_slots:
+            for mapping in slot.mappings:
+                if not SlotMapping.check_mapping_validity(slot.name, mapping, domain):
+                    continue
+
+                intent_is_desired = SlotMapping.intent_is_desired(
+                    mapping, tracker, domain
+                )
+
+                if not intent_is_desired:
+                    continue
+
+                if not ActionExtractSlots._verify_mapping_conditions(
+                    mapping, tracker, slot.name
+                ):
+                    continue
+
+                if self._fails_unique_entity_mapping_check(
+                    slot.name, mapping, tracker, domain
+                ):
+                    continue
+
+                if mapping.get(MAPPING_TYPE) in PREDEFINED_MAPPINGS:
+                    value = extract_slot_value_from_predefined_mapping(mapping, tracker)
+                else:
+                    value = None
+
+                if value:
+                    if not isinstance(slot, ListSlot):
+                        value = value[-1]
+
+                    if tracker.get_slot(slot.name) != value:
+                        slot_events.append(SlotSet(slot.name, value))
+
+                should_fill_custom_slot = mapping.get(MAPPING_TYPE) == str(
+                    SlotMapping.CUSTOM
+                )
+
+                if should_fill_custom_slot:
+                    (
+                        custom_evts,
+                        executed_custom_actions,
+                    ) = await self._execute_custom_action(
+                        mapping,
+                        executed_custom_actions,
+                        output_channel,
+                        nlg,
+                        tracker,
+                        domain,
+                    )
+                    slot_events.extend(custom_evts)
+
+        validated_events = await self._execute_validation_action(
+            slot_events, output_channel, nlg, tracker, domain
+        )
+
+        return validated_events
+
+
+def extract_slot_value_from_predefined_mapping(
+    mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+) -> List[Any]:
+    """Extracts slot value if slot has an applicable predefined mapping."""
+    should_fill_entity_slot = mapping.get(MAPPING_TYPE) == str(
+        SlotMapping.FROM_ENTITY
+    ) and SlotMapping.entity_is_desired(mapping, tracker,)
+
+    should_fill_intent_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT)
+
+    should_fill_text_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_TEXT)
+
+    active_loops_in_mapping_conditions = [
+        active_loop.get(ACTIVE_LOOP)
+        for active_loop in mapping.get(MAPPING_CONDITIONS, [])
+    ]
+    should_fill_trigger_slot = (
+        mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_TRIGGER_INTENT)
+        and tracker.active_loop_name not in active_loops_in_mapping_conditions
+    )
+
+    value: List[Any] = []
+    if should_fill_entity_slot:
+        value = list(
+            tracker.get_latest_entity_values(
+                mapping.get(ENTITY_ATTRIBUTE_TYPE),
+                mapping.get(ENTITY_ATTRIBUTE_ROLE),
+                mapping.get(ENTITY_ATTRIBUTE_GROUP),
+            )
+        )
+    elif should_fill_intent_slot or should_fill_trigger_slot:
+        value = [mapping.get("value")]
+    elif should_fill_text_slot:
+        value = [tracker.latest_message.text]
+
+    return value

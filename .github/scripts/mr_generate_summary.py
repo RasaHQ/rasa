@@ -58,7 +58,13 @@ def read_results(file):
     with open(file) as json_file:
         data = json.load(json_file)
 
-        keys = ["accuracy", "weighted avg", "macro avg", "micro avg", "conversation_accuracy"]
+        keys = [
+            "accuracy",
+            "weighted avg",
+            "macro avg",
+            "micro avg",
+            "conversation_accuracy",
+        ]
         result = {key: data[key] for key in keys if key in data}
 
     return result

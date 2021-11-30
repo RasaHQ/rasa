@@ -19,7 +19,6 @@ EXTRACTOR = "extractor"
 
 PRETRAINED_EXTRACTORS = {
     "DucklingEntityExtractor",
-    "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
     "SpacyEntityExtractor",
 }
 
@@ -77,5 +76,3 @@ RESPONSE_IDENTIFIER_DELIMITER = "/"
 FEATURIZER_CLASS_ALIAS = "alias"
 
 NO_LENGTH_RESTRICTION = -1
-
-COMPONENT_INDEX = "index"

@@ -17,6 +17,9 @@ entities:
 slots:
   name:
     type: text
+    mappings:
+      - type: from_entity
+        entity: name
 
 responses:
   utter_greet:
@@ -33,6 +36,5 @@ responses:
 
 forms:
   some_form:
-    name:
-    - type: from_entity
-      entity: name
+    required_slots:
+      - name

@@ -1,12 +1,14 @@
+import abc
 import logging
 import re
 
-from typing import Text, List, Optional, Dict, Any
+from typing import Text, List, Dict, Any, Optional
 
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.components import Component
 from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -14,11 +16,14 @@ from rasa.shared.nlu.constants import (
     RESPONSE_IDENTIFIER_DELIMITER,
     ACTION_NAME,
 )
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
 
 class Token:
+    """Used by `Tokenizers` which split a single message into multiple `Token`s."""
+
     def __init__(
         self,
         text: Text,
@@ -27,6 +32,15 @@ class Token:
         data: Optional[Dict[Text, Any]] = None,
         lemma: Optional[Text] = None,
     ) -> None:
+        """Create a `Token`.
+
+        Args:
+            text: The token text.
+            start: The start index of the token within the entire message.
+            end: The end index of the token within the entire message.
+            data: Additional token data.
+            lemma: An optional lemmatized version of the token text.
+        """
         self.text = text
         self.start = start
         self.end = end if end else start + len(text)
@@ -35,6 +49,7 @@ class Token:
         self.lemma = lemma or text
 
     def set(self, prop: Text, info: Any) -> None:
+        """Set property value."""
         self.data[prop] = info
 
     def get(self, prop: Text, default: Optional[Any] = None) -> Any:
@@ -65,39 +80,47 @@ class Token:
         return f"<Token object value='{self.text}' start={self.start} end={self.end} \
         at {hex(id(self))}>"
 
+    def fingerprint(self) -> Text:
+        """Returns a stable hash for this Token."""
+        return rasa.shared.utils.io.deep_container_fingerprint(
+            [self.text, self.start, self.end, self.lemma, self.data]
+        )
 
-class Tokenizer(Component):
+
+class Tokenizer(GraphComponent, abc.ABC):
     """Base class for tokenizers."""
 
-    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
-        """Construct a new tokenizer using the WhitespaceTokenizer framework."""
-        super().__init__(component_config)
-
+    def __init__(self, config: Dict[Text, Any]) -> None:
+        """Construct a new tokenizer."""
+        self._config = config
         # flag to check whether to split intents
-        self.intent_tokenization_flag = self.component_config.get(
-            "intent_tokenization_flag", False
-        )
+        self.intent_tokenization_flag = config["intent_tokenization_flag"]
         # split symbol for intents
-        self.intent_split_symbol = self.component_config.get("intent_split_symbol", "_")
+        self.intent_split_symbol = config["intent_split_symbol"]
         # token pattern to further split tokens
-        token_pattern = self.component_config.get("token_pattern", None)
+        token_pattern = config.get("token_pattern")
         self.token_pattern_regex = None
         if token_pattern:
             self.token_pattern_regex = re.compile(token_pattern)
 
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> GraphComponent:
+        """Creates a new component (see parent class for full docstring)."""
+        return cls(config)
+
+    @abc.abstractmethod
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenizes the text of the provided attribute of the incoming message."""
+        ...
 
-        raise NotImplementedError
-
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
         """Tokenize all training data."""
-
         for example in training_data.training_examples:
             for attribute in MESSAGE_ATTRIBUTES:
                 if (
@@ -109,20 +132,26 @@ class Tokenizer(Component):
                     else:
                         tokens = self.tokenize(example, attribute)
                     example.set(TOKENS_NAMES[attribute], tokens)
+        return training_data
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        """Tokenize the incoming message."""
-        for attribute in MESSAGE_ATTRIBUTES:
-            if isinstance(message.get(attribute), str):
-                if attribute in [INTENT, ACTION_NAME, RESPONSE_IDENTIFIER_DELIMITER]:
-                    tokens = self._split_name(message, attribute)
-                else:
-                    tokens = self.tokenize(message, attribute)
+    def process(self, messages: List[Message]) -> List[Message]:
+        """Tokenize the incoming messages."""
+        for message in messages:
+            for attribute in MESSAGE_ATTRIBUTES:
+                if isinstance(message.get(attribute), str):
+                    if attribute in [
+                        INTENT,
+                        ACTION_NAME,
+                        RESPONSE_IDENTIFIER_DELIMITER,
+                    ]:
+                        tokens = self._split_name(message, attribute)
+                    else:
+                        tokens = self.tokenize(message, attribute)
 
-                message.set(TOKENS_NAMES[attribute], tokens)
+                    message.set(TOKENS_NAMES[attribute], tokens)
+        return messages
 
     def _tokenize_on_split_symbol(self, text: Text) -> List[Text]:
-
         words = (
             text.split(self.intent_split_symbol)
             if self.intent_tokenization_flag

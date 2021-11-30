@@ -50,7 +50,7 @@ ngrok http 5005; rasa run
 
 When you follow the instructions to make your assistant available on a channel, use the ngrok URL.
 Specifically, wherever the instructions say to use `https://<host>:<port>/webhooks/<CHANNEL>/webhook`,
-use `<ngrok_url>/<CHANNEL>/webhook`, replacing `<ngrok_url>` with the randomly generated
+use `<ngrok_url>/webhooks/<CHANNEL>/webhook`, replacing `<ngrok_url>` with the randomly generated
 URL displayed in your ngrok terminal window. For example, if connecting your bot to Slack, 
 your URL should resemble `https://26e7e7744191.ngrok.io/webhooks/slack/webhook`.
 
@@ -59,3 +59,13 @@ With the free-tier of ngrok, you can run into limits on how many connections you
 As of writing this, it is set to 40 connections / minute.
 
 :::
+
+Alternatively you can make your assistent listen on a specific address using the `-i` command line
+option:
+
+```bash
+rasa run -p 5005 -i 192.168.69.150
+```
+
+This is particulary useful when your internet facing machines connect to backend servers using a VPN 
+interface.

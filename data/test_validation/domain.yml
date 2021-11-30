@@ -1,0 +1,12 @@
+version: "2.0"
+
+intents:
+  - greet
+  - goodbye
+
+responses:
+  utter_greet:
+    - text: "Hey! How are you?"
+
+  utter_chatter:
+    - text: "Lovely weather today, isn't it?"
