@@ -1337,14 +1337,14 @@ Let's consider the following 2.0 domain file:
 entities:
  - cuisine
  - number
- slots:
+slots:
    cuisine:
      type: text
    num_people:
      type: float
    outdoor_seating:
      type: bool
- forms:
+forms:
    restaurant_form:
      required_slots:
          cuisine:
@@ -1368,7 +1368,7 @@ The initial result of migrating this domain to 3.0 format would look like this:
 entities:
  - cuisine
  - number
- slots:
+slots:
    cuisine:
      type: text
      mappings:
@@ -1388,7 +1388,7 @@ entities:
      - type: from_intent
        intent: deny
        value: false
- forms:
+forms:
    restaurant_form:
      required_slots:
      - cuisine
