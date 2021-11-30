@@ -1809,6 +1809,7 @@ class DIET(TransformerRasaModel):
                 _tags = self._tf_layers[f"embed.{name}.tags"](entity_tags)
                 _input = text_in * entity_mask + _tags * (1 - entity_mask)
                 # tf.print("tag_name: ", tag_spec.tag_name)
+                # tf.print("entity_mask: ", entity_mask)
                 # tf.print("input:    ", _input)
                 # tf.print("1-mask:   ", 1 - mask)
                 _input, _ = self._tf_layers[f"transformer.{name}"](
@@ -1826,7 +1827,8 @@ class DIET(TransformerRasaModel):
 
             if name == ENTITY_ATTRIBUTE_TYPE:
                 # use the entity tags as additional input for the role
-                # and group CRF
+                # and group CRF (tag specs are always ordered with TYPE first, see
+                # `_ordered_tag_specs`)
                 entity_tags = tf.one_hot(
                     tf.cast(pred_ids, tf.int32), depth=tag_spec.num_tags
                 )
