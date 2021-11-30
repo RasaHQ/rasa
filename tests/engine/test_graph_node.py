@@ -332,7 +332,6 @@ def test_loading_from_resource_eager(default_model_storage: ModelStorage):
 
 
 def test_config_with_nested_dict_override(default_model_storage: ModelStorage):
-
     class ComponentWithNestedDictConfig(GraphComponent):
         @staticmethod
         def get_default_config() -> Dict[Text, Any]:
@@ -340,12 +339,12 @@ def test_config_with_nested_dict_override(default_model_storage: ModelStorage):
 
         @classmethod
         def create(
-                cls,
-                config: Dict,
-                model_storage: ModelStorage,
-                resource: Resource,
-                execution_context: ExecutionContext,
-                **kwargs: Any,
+            cls,
+            config: Dict,
+            model_storage: ModelStorage,
+            resource: Resource,
+            execution_context: ExecutionContext,
+            **kwargs: Any,
         ) -> ComponentWithNestedDictConfig:
             return cls()
 

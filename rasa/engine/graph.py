@@ -11,6 +11,8 @@ from rasa.engine.exceptions import (
     GraphSchemaException,
 )
 import rasa.shared.utils.common
+import rasa.utils.train_utils
+
 from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
@@ -359,10 +361,11 @@ class GraphNode:
         self._constructor_fn: Callable = getattr(
             self._component_class, self._constructor_name
         )
-        self._component_config: Dict[Text, Any] = {
-            **self._component_class.get_default_config(),
-            **component_config,
-        }
+        self._component_config: Dict[
+            Text, Any
+        ] = rasa.utils.train_utils.override_defaults(
+            self._component_class.get_default_config(), component_config,
+        )
         self._fn_name: Text = fn_name
         self._fn: Callable = getattr(self._component_class, self._fn_name)
         self._inputs: Dict[Text, Text] = inputs
