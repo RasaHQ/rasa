@@ -1814,7 +1814,6 @@ class DIET(TransformerRasaModel):
                 # tf.print("1-mask:   ", 1 - mask)
                 _input, _ = self._tf_layers[f"transformer.{name}"](
                     _input, 1 - mask, self._training
-                    # _input, entity_mask, self._training
                 )
 
             _logits = self._tf_layers[f"embed.{name}.logits"](_input)

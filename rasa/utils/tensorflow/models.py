@@ -925,8 +925,6 @@ class TransformerRasaModel(RasaModel):
 
             inputs, _ = self._tf_layers[f"transformer.{tag_name}"](
                 inputs, 1 - mask_combined_sequence_sentence, self._training
-                # inputs, entity_mask, self._training
-                # inputs, mask_combined_sequence_sentence, self._training
             )
 
         logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
