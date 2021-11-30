@@ -1,0 +1,92 @@
+version: "3.0"
+nlu:
+- lookup: city
+  examples: |
+    - Amsterdam
+    - Andorra la Vella
+    - Athens
+    - Belgrade
+    - Berlin
+    - Bern
+    - Bratislava
+    - Brussels
+    - Bucharest
+    - Budapest
+    - Chisinau
+    - Copenhagen
+    - Douglas
+    - Dublin
+    - Gibraltar
+    - Helsinki
+    - Kyiv
+    - Lisbon
+    - Ljubljana
+    - London
+    - Longyearbyen
+    - Luxemburg
+    - Madrid
+    - Minsk
+    - Monaco
+    - Moscow
+    - Oslo
+    - Paris
+    - Podgorica
+    - Prague
+    - Pristina
+    - Reykjavik
+    - Riga
+    - Rome
+    - Saint Helier
+    - Saint Peter Port
+    - San Marino
+    - Sarajevo
+    - Skopje
+    - Sofia
+    - Stockholm
+    - Tallinn
+    - Tirana
+    - Torshavn
+    - Vaduz
+    - Valletta
+    - Vatican City
+    - Vienna
+    - Vilnius
+    - Warsaw
+    - Zagreb
+    - Austin
+    - Boston
+    - Charlotte
+    - Chicago
+    - Columbus
+    - Dallas
+    - Denver
+    - Detroit
+    - El Paso
+    - Fort Worth
+    - Houston
+    - Indianapolis
+    - Jacksonville
+    - Los Angeles
+    - LA
+    - L.A
+    - Nashville
+    - New York City
+    - New York
+    - NY
+    - N.Y
+    - Newyork
+    - Oklahoma City
+    - Oklahoma
+    - Philadelphia
+    - Phoenix
+    - San Antonio
+    - San Diego
+    - San Francisco
+    - SF
+    - S.F
+    - San Jose
+    - Seattle
+    - Washington
+    - Washington DC
+    - DC
+    - D.C

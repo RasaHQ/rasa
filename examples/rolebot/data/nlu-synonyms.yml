@@ -1,0 +1,37 @@
+version: "3.0"
+nlu:
+- synonym: "1"
+  examples: |
+    - one
+- synonym: "2"
+  examples: |
+    - two
+- synonym: "3"
+  examples: |
+    - three
+- synonym: "4"
+  examples: |
+    - four
+- synonym: "5"
+  examples: |
+    - five
+- synonym: "6"
+  examples: |
+    - six
+- synonym: "7"
+  examples: |
+    - seven
+- synonym: "8"
+  examples: |
+    - eight
+- synonym: "9"
+  examples: |
+    - nine
+- synonym: "10"
+  examples: |
+    - ten
+- synonym: "Fungi"
+  examples: |
+    - mushroom
+    - mushrooms
+    - fungi

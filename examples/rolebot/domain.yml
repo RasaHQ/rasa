@@ -1,0 +1,33 @@
+version: "3.0"
+
+intents:
+  - order_pizza
+  - describe_direct_flight
+  - bot_challenge
+  - goodbye
+
+entities:
+  - city:
+      roles:
+      - from
+      - to
+  - pizza
+  - size
+  - integer:
+      roles:
+      - count
+      - age
+
+actions:
+  - tell_entities
+
+responses:
+  utter_goodbye:
+  - text: "Bye"
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
