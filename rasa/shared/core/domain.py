@@ -1476,9 +1476,11 @@ class Domain:
                 if rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR not in entity
             )
             ignore_entities = set(self.entities) - use_entities
-            if len(use_entities) == len(self.entities):
+            use_length = len(use_entities)
+            self_length = len(self.entities)
+            if use_length == self_length:
                 intent_props[USE_ENTITIES_KEY] = True
-            elif len(use_entities) <= len(self.entities) / 2:
+            elif use_length > self_length or use_length <= self_length / 2:
                 intent_props[USE_ENTITIES_KEY] = list(use_entities)
             else:
                 intent_props[IGNORE_ENTITIES_KEY] = list(ignore_entities)
