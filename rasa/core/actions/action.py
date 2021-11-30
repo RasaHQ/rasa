@@ -39,6 +39,7 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     PREDEFINED_MAPPINGS,
+    LOOP_REJECTED,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -977,12 +978,19 @@ class ActionExtractSlots(Action):
 
     @staticmethod
     def _matches_mapping_conditions(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
     ) -> bool:
         slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
 
         if not slot_mapping_conditions:
             return True
+
+        if (
+            tracker.active_loop
+            and tracker.active_loop.get(LOOP_REJECTED)
+            and tracker.get_slot(REQUESTED_SLOT) == slot_name
+        ):
+            return False
 
         # check if found mapping conditions matches form
         for condition in slot_mapping_conditions:
@@ -999,12 +1007,14 @@ class ActionExtractSlots(Action):
 
     @staticmethod
     def _verify_mapping_conditions(
-        mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
     ) -> bool:
         if mapping.get(MAPPING_CONDITIONS) and mapping.get(MAPPING_TYPE) != str(
             SlotMapping.FROM_TRIGGER_INTENT
         ):
-            if not ActionExtractSlots._matches_mapping_conditions(mapping, tracker):
+            if not ActionExtractSlots._matches_mapping_conditions(
+                mapping, tracker, slot_name
+            ):
                 return False
 
         return True
@@ -1164,7 +1174,9 @@ class ActionExtractSlots(Action):
                 if not intent_is_desired:
                     continue
 
-                if not ActionExtractSlots._verify_mapping_conditions(mapping, tracker):
+                if not ActionExtractSlots._verify_mapping_conditions(
+                    mapping, tracker, slot.name
+                ):
                     continue
 
                 if self._fails_unique_entity_mapping_check(
