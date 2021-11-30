@@ -1,4 +1,5 @@
 from typing import Text, List, Optional, Union, Any, Dict, Set
+import itertools
 import logging
 import json
 
@@ -20,6 +21,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     ActiveLoop,
     ActionExecutionRejected,
+    Restarted,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.slot_mappings import SlotMapping
@@ -308,14 +310,21 @@ class FormAction(LoopAction):
     def _get_events_since_last_user_uttered(
         tracker: "DialogueStateTracker",
     ) -> List[SlotSet]:
-        if tracker.latest_message in tracker.events:
-            index = tracker.events.index(tracker.latest_message)
-        else:
-            index = 0
-
-        tracker_events = list(tracker.events)
+        # TODO: Better way to get this latest_message index is through an instance
+        # variable, eg. tracker.latest_message_index
+        index_from_end = next(
+            (
+                i
+                for i, event in enumerate(reversed(tracker.events))
+                if event == Restarted() or event == tracker.latest_message
+            ),
+            len(tracker.events) - 1,
+        )
+        index = len(tracker.events) - index_from_end - 1
         events_since_last_user_uttered = [
-            event for event in tracker_events[index:] if isinstance(event, SlotSet)
+            event
+            for event in itertools.islice(tracker.events, index, None)
+            if isinstance(event, SlotSet)
         ]
 
         return events_since_last_user_uttered
@@ -358,10 +367,6 @@ class FormAction(LoopAction):
         )
 
         for event in events_since_last_user_uttered:
-            if not tracker.active_loop:
-                # pre-filled slots were already validated at form activation
-                break
-
             if event.key not in required_slots:
                 continue
 
@@ -523,8 +528,11 @@ class FormAction(LoopAction):
            - the form is called after `action_listen`
            - form validation was not cancelled
         """
-        # no active_loop means that it is called during activation
-        needs_validation = not tracker.active_loop or (
+        # No active_loop means there are no form filled slots to validate yet
+        if not tracker.active_loop:
+            return []
+
+        needs_validation = (
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
         )
