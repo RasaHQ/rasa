@@ -112,6 +112,7 @@ from rasa.utils.tensorflow.model_data import (
 )
 
 import rasa.utils.io as io_utils
+import rasa.utils.common
 from rasa.core.exceptions import RasaCoreException
 from rasa.shared.utils import common
 
@@ -889,7 +890,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = train_utils.override_defaults(cls.get_default_config(), meta)
+        meta = rasa.utils.common.override_defaults(cls.get_default_config(), meta)
         return meta
 
     @classmethod

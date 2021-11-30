@@ -11,7 +11,7 @@ from rasa.engine.exceptions import (
     GraphSchemaException,
 )
 import rasa.shared.utils.common
-import rasa.utils.train_utils
+import rasa.utils.common
 
 from rasa.engine.storage.resource import Resource
 
@@ -361,9 +361,7 @@ class GraphNode:
         self._constructor_fn: Callable = getattr(
             self._component_class, self._constructor_name
         )
-        self._component_config: Dict[
-            Text, Any
-        ] = rasa.utils.train_utils.override_defaults(
+        self._component_config: Dict[Text, Any] = rasa.utils.common.override_defaults(
             self._component_class.get_default_config(), component_config,
         )
         self._fn_name: Text = fn_name

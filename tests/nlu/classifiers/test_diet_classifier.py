@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from typing import Callable, List, Optional, Text, Dict, Any, Tuple
 
-import rasa.utils.train_utils
+import rasa.utils.common
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -75,7 +75,7 @@ def create_diet(
 
         default_execution_context.is_finetuning = finetune
         return constructor(
-            config=rasa.utils.train_utils.override_defaults(
+            config=rasa.utils.common.override_defaults(
                 DIETClassifier.get_default_config(), config
             ),
             model_storage=default_model_storage,
