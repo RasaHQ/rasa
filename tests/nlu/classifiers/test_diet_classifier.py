@@ -35,6 +35,7 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
+    HIDDEN_LAYERS_SIZES,
 )
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -303,6 +304,15 @@ async def test_train_persist_load_with_different_settings(
     create_diet: Callable[..., DIETClassifier],
 ):
     config = {LOSS_TYPE: "margin", EPOCHS: 1}
+    create_train_load_and_process_diet(config)
+    create_diet(config, load=True, finetune=True)
+
+
+@pytest.mark.timeout(240, func_only=True)
+async def test_train_persist_load_with_nested_dict_config(
+    create_train_load_and_process_diet: Callable[..., Message],
+):
+    config = {HIDDEN_LAYERS_SIZES: {"text": [256, 512]}}
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 
