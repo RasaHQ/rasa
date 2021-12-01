@@ -33,8 +33,8 @@ def utter_pizzas(dispatcher: CollectingDispatcher, message: Dict[Text, Any]) -> 
     user_text: Text = message.get("text", "")
     entities: List[Dict[Text, Any]] = message.get("entities")
     pizzas: Dict[Text, Pizza] = defaultdict(Pizza)
-    dispatcher.utter_message(text="")
     for entity in entities:
+        print(entity)
         entity_type = entity.get("entity")
         entity_value: Text = str(entity.get("value"))
         extractor = entity.get("extractor")
@@ -56,6 +56,35 @@ def utter_pizzas(dispatcher: CollectingDispatcher, message: Dict[Text, Any]) -> 
         dispatcher.utter_message(text=f"Pizza {group}: {pizza.count}x {pizza.size} {pizza.topping}")
 
 
+def utter_phone_specs(dispatcher: CollectingDispatcher, message: Dict[Text, Any]) -> None:
+    user_text: Text = message.get("text", "")
+    entities: List[Dict[Text, Any]] = message.get("entities")
+    included_features: List[Text] = []
+    excluded_features: List[Text] = []
+    for entity in entities:
+        entity_type = entity.get("entity")
+        entity_value: Text = str(entity.get("value"))
+        extractor = entity.get("extractor")
+        entity_role = entity.get("role")
+        entity_group = str(entity.get("group"))
+
+        if entity_group == "include":
+            included_features.append(entity_value)
+        elif entity_group == "exclude":
+            excluded_features.append(entity_value)
+        elif entity_type in ["phone_feature", "color"]:
+            included_features.append(entity_value)
+        else:
+            dispatcher.utter_message(text=f"Not sure what to make of '{entity_value}'")
+
+    dispatcher.utter_message("You want:")
+    for feature in included_features:
+        dispatcher.utter_message(text=f"- {feature}")
+    dispatcher.utter_message("You do not want:")
+    for feature in excluded_features:
+        dispatcher.utter_message(text=f"- {feature}")
+
+
 class TellEntitiesAction(Action):
 
     def name(self) -> Text:
@@ -66,8 +95,12 @@ class TellEntitiesAction(Action):
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
-        utter_entities(dispatcher, tracker.latest_message)
         intent = tracker.get_intent_of_latest_message()
         if intent == "order_pizza":
             utter_pizzas(dispatcher, tracker.latest_message)
+        elif intent == "search_phone":
+            utter_phone_specs(dispatcher, tracker.latest_message)
+        else:
+            utter_entities(dispatcher, tracker.latest_message)
+
         return []

@@ -17,4 +17,5 @@ rules:
   - or:
     - intent: order_pizza
     - intent: describe_direct_flight
+    - intent: search_phone
   - action: tell_entities

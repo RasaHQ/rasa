@@ -3,6 +3,7 @@ version: "3.0"
 intents:
   - order_pizza
   - describe_direct_flight
+  - search_phone
   - bot_challenge
   - goodbye
 
@@ -17,6 +18,8 @@ entities:
       roles:
       - count
       - age
+  - phone_feature
+  - color
 
 actions:
   - tell_entities

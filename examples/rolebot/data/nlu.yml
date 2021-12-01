@@ -1,7 +1,7 @@
 version: "3.0"
 
 nlu:
-- intent: order_pizza  # size (small medium large), kind (), number
+- intent: order_pizza  # size (small, medium, large), kind (Fungi, Veggie, Pepperoni, BBQ chicken, Calzone), number (1..10)
   examples: |
     - Give me a [small]{"entity": "size", "group": "1"} pizza with [mushrooms]{"entity": "pizza", "value": "Fungi", "group": "1"} and a [large]{"entity": "size", "group": "2"} [pepperoni]{"entity": "pizza", "group": "2"}
     - I want a [large]{"entity": "size", "group": "1"} [pepperoni]{"entity": "pizza", "group": "1"} and a [small]{"entity": "size", "group": "2"} [Salami]{"entity": "pizza", "group": "2"}, please
@@ -35,15 +35,39 @@ nlu:
     - A [large]{"entity": "size", "group": "1"} [Salami]{"entity": "pizza", "group": "1"} pizza for my friend, a [medium]{"entity": "size", "group": "2"} [fungi]{"entity": "pizza", "group": "2"} pizza for my husband, and a [medium]{"entity": "size", "group": "3"} [salami]{"entity": "pizza", "group": "3"} for our daughter
 
 
-# - intent: contact_info
-#   examples: |
-#     - we live in [12]{"entity": "number", "role": "housenumber", group: "1"} [Cumberland Street]{"entity": "street", "group": "1"} in [Dunedin]{"entity": "city", "group": "1"} [9017]{"entity": "number", "role": "zipcode", "group": "1"} and want to move to move to [29]{"entity": "number", "role": "housenumber", group: "2"} [Bakerstreet]{"entity": "street", group: "2"}, [London]{"entity": "city", "group": "2"}
+- intent: search_phone  # (color, 5G, USB-C, micro USB, headphone jack, low budget, good camera, leight-weight, long battery life)
+  examples: |
+    - Find me a phone that is not [blue]{"entity": "color", "group": "exclude"} but supports [5G]{"entity": "phone_feature", "group": "include"}
+    - a [green]{"entity": "color", "group": "include"} phone that has a really [good camera]{"entity": "phone_feature", "value": "good camera", "group": "include"}
+    - the phone should be [purple]{"entity": "color", "group": "include"} and sport a [USB-C]{"entity": "phone_feature", "group": "include"} port
+    - i definitely need a [headphone jack]{"entity": "phone_feature", "group": "include"} but I have no use of a [USB-C]{"entity": "phone_feature", "group": "exclude"} port
+    - let it be [light-weight]{"entity": "phone_feature", "group": "include"} and support [5G]{"entity": "phone_feature", "group": "include"}
+    - no [5G]{"entity": "phone_feature", "group": "exclude"} support for me! The radiation will make me sick!
+    - do you have phones with a [micro-USB]{"entity": "phone_feature", "group": "include"} port?
+    - I want a [good camera]{"entity": "phone_feature", "group": "include", "value": "good camera"}, but [don't have much cash]{"entity": "phone_feature", "group": "include", "value": "low budget"}
+    - find me a [cheap]{"entity": "phone_feature", "group": "include", "value": "low budget"} phone with a [headphone jack]{"entity": "phone_feature", "group": "include"}
+    - Give me everything: [USB-C]{"entity": "phone_feature", "group": "include"}, [headphone jack]{"entity": "phone_feature", "group": "include"}, [5G]{"entity": "phone_feature", "group": "include"} support, [max. 150g weight]{"entity": "phone_feature", "group": "include", "value": "light-weight"} and super [long battery life]{"entity": "phone_feature", "group": "include"}!
+    - I wonder if there are phones with an [e-ink display]{"entity": "phone_feature", "group": "include"}?
+    - i need [5G]{"entity": "phone_feature", "group": "include"} support, but no [E-Ink display]{"entity": "phone_feature", "group": "exclude"}
+    - any [cheap]{"entity": "phone_feature", "group": "include", "value": "low budget"} phone will do
+    - It should connect to everything, so a [USB-C]{"entity": "phone_feature", "group": "include"} port, a [micro USB]{"entity": "phone_feature", "group": "include"} port, and a [headphone jack]{"entity": "phone_feature", "group": "include"} should all be there
+    - whatever has the [best camera]{"entity": "phone_feature", "group": "include", "value": "good camera"}!
+    - I don't need a [good camera]{"entity": "phone_feature", "group": "exclude", "value": "good camera"}
+    - I don't need a [good camera]{"entity": "phone_feature", "group": "exclude", "value": "good camera"}, but a [USB-C]{"entity": "phone_feature", "group": "include"} port is a must
+    - i don't care about the [weight]{"entity": "phone_feature", "group": "exclude", "value": "light-weight"}, but i'd like an [e-ink]{"entity": "phone_feature", "group": "include"} display and [yellow]{"entity": "color", "group": "include"}
+    - i have no use for a [USB-C]{"entity": "phone_feature", "group": "exclude"} port, nor for [micro USB]{"entity": "phone_feature", "group": "exclude"} ports. Just [5G]{"entity": "phone_feature", "group": "include"}
+    - any color except [pink]{"entity": "color", "group": "exclude"}
+    - something [cheap]{"entity": "phone_feature", "group": "include", "value": "low budget"} that's not [red]{"entity": "color", "group": "exclude"}
+    - the phone [shouldn't weight more than]{"entity": "phone_feature", "group": "include", "value": "light-weight"} 100g
+    - i need a [cheap]{"entity": "phone_feature", "group": "include", "value": "low budget"} phone without [headphone jack]{"entity": "phone_feature", "group": "exclude"}
+    - i have no use for [USB-C]{"entity": "phone_feature", "group": "exclude"}
+    - without [USB-C]{"entity": "phone_feature", "group": "exclude"}
+    - with [USB-C]{"entity": "phone_feature", "group": "include"}
+    - a phone with [USB-C]{"entity": "phone_feature", "group": "include"}, [e-ink]{"entity": "phone_feature", "group": "include"} display, but not in [red]{"entity": "color", "group": "exclude"}
+    - something [light-wegiht]{"entity": "phone_feature", "group": "exclude", "value": "light-weight"} with a [long battery life]{"entity": "phone_feature", "group": "include"} but not in [purple]{"entity": "color", "group": "exclude"}
 
-# - intent: search_dinosour  # min/max/approx weight, time alive
-#   examples: |
-#     -  what dinosaur weighted [more than]{"entity": "relation", "value": "gt", "group": "weight"} [6000]{"entity": "number", "group": "weight"} [kg]{"entity": "unit", "group": "weight"} and lived [90k]{"entity": "number", "value": 90000, "group": "time_alive"} [years]{"entity": "unit", "group": "time"} ago?
 
-- intent: describe_direct_flight
+- intent: describe_direct_flight  # (from, to)
   examples: |
     - I need a flight from [Pittsburgh]{"entity": "city", "role": "from"} to [Detroit]{"entity": "city", "role": "to"}
     - I need a flight from [Chicago]{"entity": "city", "role": "from"} to [Berlin]{"entity": "city", "role": "to"}
