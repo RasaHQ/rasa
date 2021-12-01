@@ -8,7 +8,6 @@ import typing
 #   imported when running `import rasa`. If you add more imports here,
 #   please check that in the chain you are importing, no slow packages
 #   are getting imported.
-# test
 
 if typing.TYPE_CHECKING:
     from typing import Any, Text, Dict, Union, List, Optional, NoReturn
