@@ -61,10 +61,13 @@ nlu:
     - the phone [shouldn't weight more than]{"entity": "phone_feature", "group": "include", "value": "light-weight"} 100g
     - i need a [cheap]{"entity": "phone_feature", "group": "include", "value": "low budget"} phone without [headphone jack]{"entity": "phone_feature", "group": "exclude"}
     - i have no use for [USB-C]{"entity": "phone_feature", "group": "exclude"}
-    - without [USB-C]{"entity": "phone_feature", "group": "exclude"}
     - with [USB-C]{"entity": "phone_feature", "group": "include"}
+    - without [USB-C]{"entity": "phone_feature", "group": "exclude"}
+    - without [USB-C]{"entity": "phone_feature", "group": "include"} it'd be useless to me
     - a phone with [USB-C]{"entity": "phone_feature", "group": "include"}, [e-ink]{"entity": "phone_feature", "group": "include"} display, but not in [red]{"entity": "color", "group": "exclude"}
     - something [light-wegiht]{"entity": "phone_feature", "group": "exclude", "value": "light-weight"} with a [long battery life]{"entity": "phone_feature", "group": "include"} but not in [purple]{"entity": "color", "group": "exclude"}
+    - I'm pretty much always near a socket, so I don't care about the [battery life]{"entity": "phone_feature", "group": "exclude", "value": "long battery life"}
+    - I can't have no [good camera]{"entity": "phone_feature", "group": "include", "value": "good camera"}
 
 
 - intent: describe_direct_flight  # (from, to)
