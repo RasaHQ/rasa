@@ -1,5 +1,4 @@
 import rasa.shared.constants as constants
-from rasa.shared.core.slot_mappings import SlotMapping
 
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
@@ -86,16 +85,23 @@ DEFAULT_SLOT_NAMES = {
     SLOT_LAST_OBJECT_TYPE,
 }
 
-PREDEFINED_MAPPINGS = {
-    str(SlotMapping.FROM_ENTITY),
-    str(SlotMapping.FROM_INTENT),
-    str(SlotMapping.FROM_TEXT),
-    str(SlotMapping.FROM_TRIGGER_INTENT),
-}
 
 SLOT_MAPPINGS = "mappings"
 MAPPING_CONDITIONS = "conditions"
 MAPPING_TYPE = "type"
+
+MAPPING_FROM_ENTITY = "from_entity"
+MAPPING_FROM_INTENT = "from_intent"
+MAPPING_FROM_TRIGGER_INTENT = "from_trigger_intent"
+MAPPING_FROM_TEXT = "from_text"
+MAPPING_CUSTOM = "custom"
+
+PREDEFINED_MAPPINGS = {
+    MAPPING_FROM_ENTITY,
+    MAPPING_FROM_INTENT,
+    MAPPING_FROM_TRIGGER_INTENT,
+    MAPPING_FROM_TEXT,
+}
 
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a `SubState`

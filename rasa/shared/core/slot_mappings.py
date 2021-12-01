@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Text, Dict, Any, List, Optional, TYPE_CHECKING
 
 from rasa.shared.constants import DOCS_URL_SLOTS, IGNORED_INTENTS
@@ -7,6 +6,18 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
+    INTENT,
+    NOT_INTENT,
+    INTENT_NAME_KEY,
+)
+from rasa.shared.core.constants import (
+    SLOT_MAPPINGS,
+    MAPPING_FROM_INTENT,
+    MAPPING_FROM_TEXT,
+    MAPPING_FROM_TRIGGER_INTENT,
+    MAPPING_FROM_ENTITY,
+    MAPPING_CUSTOM,
+    MAPPING_CONDITIONS,
 )
 
 if TYPE_CHECKING:
@@ -14,18 +25,8 @@ if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
 
 
-class SlotMapping(Enum):
-    """Defines the available slot mappings."""
-
-    FROM_ENTITY = 0
-    FROM_INTENT = 1
-    FROM_TRIGGER_INTENT = 2
-    FROM_TEXT = 3
-    CUSTOM = 4
-
-    def __str__(self) -> Text:
-        """Returns a string representation of the object."""
-        return self.name.lower()
+class SlotMapping:
+    """Defines functionality for the available slot mappings."""
 
     @staticmethod
     def validate(mapping: Dict[Text, Any], slot_name: Text) -> None:
@@ -48,11 +49,11 @@ class SlotMapping(Enum):
             )
 
         validations = {
-            str(SlotMapping.FROM_ENTITY): ["entity"],
-            str(SlotMapping.FROM_INTENT): ["value"],
-            str(SlotMapping.FROM_TRIGGER_INTENT): ["value"],
-            str(SlotMapping.FROM_TEXT): [],
-            str(SlotMapping.CUSTOM): [],
+            MAPPING_FROM_ENTITY: ["entity"],
+            MAPPING_FROM_INTENT: ["value"],
+            MAPPING_FROM_TRIGGER_INTENT: ["value"],
+            MAPPING_FROM_TEXT: [],
+            MAPPING_CUSTOM: [],
         }
 
         mapping_type = mapping.get("type")
@@ -80,7 +81,7 @@ class SlotMapping(Enum):
     ) -> List[Text]:
         from rasa.shared.core.constants import ACTIVE_LOOP
 
-        mapping_conditions = mapping.get("conditions")
+        mapping_conditions = mapping.get(MAPPING_CONDITIONS)
         active_loop_match = True
         ignored_intents = []
 
@@ -104,8 +105,8 @@ class SlotMapping(Enum):
         mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: "Domain",
     ) -> bool:
         """Checks whether user intent matches slot mapping intent specifications."""
-        mapping_intents = SlotMapping.to_list(mapping.get("intent", []))
-        mapping_not_intents = SlotMapping.to_list(mapping.get("not_intent", []))
+        mapping_intents = SlotMapping.to_list(mapping.get(INTENT, []))
+        mapping_not_intents = SlotMapping.to_list(mapping.get(NOT_INTENT, []))
 
         active_loop_name = tracker.active_loop_name
         if active_loop_name:
@@ -116,7 +117,7 @@ class SlotMapping(Enum):
                 )
             )
 
-        intent = tracker.latest_message.intent.get("name")
+        intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
 
         intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
 
@@ -183,7 +184,7 @@ class SlotMapping(Enum):
         from rasa.shared.core.constants import MAPPING_TYPE
 
         if (
-            mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_ENTITY)
+            mapping.get(MAPPING_TYPE) == MAPPING_FROM_ENTITY
             and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities
         ):
             rasa.shared.utils.io.raise_warning(
@@ -194,8 +195,8 @@ class SlotMapping(Enum):
             return False
 
         if (
-            mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT)
-            and mapping.get("intent") not in domain.intents
+            mapping.get(MAPPING_TYPE) == MAPPING_FROM_INTENT
+            and mapping.get(INTENT) not in domain.intents
         ):
             rasa.shared.utils.io.raise_warning(
                 f"Slot '{slot_name}' uses a 'from_intent' mapping for "
@@ -217,7 +218,7 @@ def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     )
 
     for slot_name, properties in domain_slots.items():
-        mappings = properties.get("mappings")
+        mappings = properties.get(SLOT_MAPPINGS)
 
         for slot_mapping in mappings:
             SlotMapping.validate(slot_mapping, slot_name)

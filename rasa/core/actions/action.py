@@ -38,7 +38,12 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
+    MAPPING_CUSTOM,
     PREDEFINED_MAPPINGS,
+    MAPPING_FROM_ENTITY,
+    MAPPING_FROM_INTENT,
+    MAPPING_FROM_TEXT,
+    MAPPING_FROM_TRIGGER_INTENT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -1001,8 +1006,9 @@ class ActionExtractSlots(Action):
     def _verify_mapping_conditions(
         mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
     ) -> bool:
-        if mapping.get(MAPPING_CONDITIONS) and mapping.get(MAPPING_TYPE) != str(
-            SlotMapping.FROM_TRIGGER_INTENT
+        if (
+            mapping.get(MAPPING_CONDITIONS)
+            and mapping.get(MAPPING_TYPE) != MAPPING_FROM_TRIGGER_INTENT
         ):
             if not ActionExtractSlots._matches_mapping_conditions(mapping, tracker):
                 return False
@@ -1119,7 +1125,7 @@ class ActionExtractSlots(Action):
     ) -> bool:
         from rasa.core.actions.forms import FormAction
 
-        if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
+        if mapping.get("type") != MAPPING_FROM_ENTITY:
             return False
 
         form_name = tracker.active_loop_name
@@ -1184,9 +1190,7 @@ class ActionExtractSlots(Action):
                     if tracker.get_slot(slot.name) != value:
                         slot_events.append(SlotSet(slot.name, value))
 
-                should_fill_custom_slot = mapping.get(MAPPING_TYPE) == str(
-                    SlotMapping.CUSTOM
-                )
+                should_fill_custom_slot = mapping.get(MAPPING_TYPE) == MAPPING_CUSTOM
 
                 if should_fill_custom_slot:
                     (
@@ -1213,20 +1217,20 @@ def extract_slot_value_from_predefined_mapping(
     mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
 ) -> List[Any]:
     """Extracts slot value if slot has an applicable predefined mapping."""
-    should_fill_entity_slot = mapping.get(MAPPING_TYPE) == str(
-        SlotMapping.FROM_ENTITY
-    ) and SlotMapping.entity_is_desired(mapping, tracker,)
+    should_fill_entity_slot = mapping.get(
+        MAPPING_TYPE
+    ) == MAPPING_FROM_ENTITY and SlotMapping.entity_is_desired(mapping, tracker,)
 
-    should_fill_intent_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT)
+    should_fill_intent_slot = mapping.get(MAPPING_TYPE) == MAPPING_FROM_INTENT
 
-    should_fill_text_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_TEXT)
+    should_fill_text_slot = mapping.get(MAPPING_TYPE) == MAPPING_FROM_TEXT
 
     active_loops_in_mapping_conditions = [
         active_loop.get(ACTIVE_LOOP)
         for active_loop in mapping.get(MAPPING_CONDITIONS, [])
     ]
     should_fill_trigger_slot = (
-        mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_TRIGGER_INTENT)
+        mapping.get(MAPPING_TYPE) == MAPPING_FROM_TRIGGER_INTENT
         and tracker.active_loop_name not in active_loops_in_mapping_conditions
     )
 

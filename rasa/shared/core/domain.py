@@ -31,7 +31,12 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
 )
 import rasa.shared.core.constants
-from rasa.shared.core.slot_mappings import SlotMapping
+from rasa.shared.core.constants import (
+    MAPPING_CUSTOM,
+    MAPPING_TYPE,
+    MAPPING_CONDITIONS,
+    MAPPING_FROM_ENTITY,
+)
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
@@ -41,7 +46,6 @@ from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
-from rasa.shared.core.constants import MAPPING_CONDITIONS
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
@@ -1222,9 +1226,9 @@ class Domain:
                 matching_entities = []
 
                 for mapping in slot.mappings:
-                    if mapping.get("type") != str(
-                        SlotMapping.FROM_ENTITY
-                    ) or mapping.get(MAPPING_CONDITIONS):
+                    if mapping.get("type") != MAPPING_FROM_ENTITY or mapping.get(
+                        MAPPING_CONDITIONS
+                    ):
                         continue
 
                     for entity in entities:
@@ -1779,10 +1783,10 @@ class Domain:
         for slot in self.slots:
             total_mappings += len(slot.mappings)
             for mapping in slot.mappings:
-                if mapping.get("type") == str(SlotMapping.CUSTOM):
+                if mapping.get(MAPPING_TYPE) == str(MAPPING_CUSTOM):
                     custom_mappings += 1
 
-                if "conditions" in mapping:
+                if MAPPING_CONDITIONS in mapping:
                     conditional_mappings += 1
 
         return (total_mappings, custom_mappings, conditional_mappings)

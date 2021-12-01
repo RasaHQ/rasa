@@ -30,8 +30,8 @@ from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.graph_components.converters.nlu_message_converter import NLUMessageConverter
 from rasa.graph_components.providers.domain_provider import DomainProvider
-from rasa.graph_components.providers.domain_without_response_provider import (
-    DomainWithoutResponsesProvider,
+from rasa.graph_components.providers.domain_for_core_training_provider import (
+    DomainForCoreTrainingProvider,
 )
 from rasa.graph_components.providers.nlu_training_data_provider import (
     NLUTrainingDataProvider,
@@ -449,9 +449,9 @@ class DefaultV1Recipe(Recipe):
             is_target=True,
             is_input=True,
         )
-        train_nodes["domain_without_responses_provider"] = SchemaNode(
+        train_nodes["domain_for_core_training_provider"] = SchemaNode(
             needs={"domain": "domain_provider"},
-            uses=DomainWithoutResponsesProvider,
+            uses=DomainForCoreTrainingProvider,
             constructor_name="create",
             fn="provide",
             config={},
@@ -468,7 +468,7 @@ class DefaultV1Recipe(Recipe):
         train_nodes["training_tracker_provider"] = SchemaNode(
             needs={
                 "story_graph": "story_graph_provider",
-                "domain": "domain_without_responses_provider",
+                "domain": "domain_for_core_training_provider",
             },
             uses=TrainingTrackerProvider,
             constructor_name="create",
@@ -499,7 +499,7 @@ class DefaultV1Recipe(Recipe):
             train_nodes[f"train_{component_name}{idx}"] = SchemaNode(
                 needs={
                     "training_trackers": "training_tracker_provider",
-                    "domain": "domain_without_responses_provider",
+                    "domain": "domain_for_core_training_provider",
                     **(
                         {"precomputations": "end_to_end_features_provider"}
                         if requires_end_to_end_data
@@ -522,7 +522,7 @@ class DefaultV1Recipe(Recipe):
         train_nodes["story_to_nlu_training_data_converter"] = SchemaNode(
             needs={
                 "story_graph": "story_graph_provider",
-                "domain": "domain_without_responses_provider",
+                "domain": "domain_for_core_training_provider",
             },
             uses=CoreFeaturizationInputConverter,
             constructor_name="create",
