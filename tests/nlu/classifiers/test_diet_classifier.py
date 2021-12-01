@@ -316,7 +316,7 @@ async def test_train_persist_load_with_nested_dict_config(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
 ):
-    config = {HIDDEN_LAYERS_SIZES: {"text": [256, 512]}}
+    config = {HIDDEN_LAYERS_SIZES: {"text": [256, 512]}, ENTITY_RECOGNITION: False}
     create_train_load_and_process_diet(config)
     create_diet(config, load=True, finetune=True)
 

@@ -325,17 +325,16 @@ def override_defaults(
     Returns:
         updated config
     """
-    if defaults:
-        config = copy.deepcopy(defaults)
-    else:
-        config = {}
+    config = copy.deepcopy(defaults) if defaults else {}
 
-    if custom:
-        for key in custom.keys():
-            if isinstance(config.get(key), dict):
-                config[key].update(custom[key])
-            else:
-                config[key] = custom[key]
+    if not custom:
+        return config
+
+    for key in custom.keys():
+        if isinstance(config.get(key), dict):
+            config[key].update(custom[key])
+            continue
+        config[key] = custom[key]
 
     return config
 
