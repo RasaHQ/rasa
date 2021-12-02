@@ -321,6 +321,7 @@ class Domain:
 
     @staticmethod
     def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
+        """Collects a list of slots from a dictionary."""
         slots = []
         # make a copy to not alter the input dictionary
         slot_dict = copy.deepcopy(slot_dict)

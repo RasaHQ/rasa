@@ -328,8 +328,7 @@ class Validator:
         return intents_are_valid and stories_are_valid and there_is_no_duplication
 
     def verify_domain_duplicates(self) -> bool:
-        """Verifies that there are no duplicated forms, responses, slots
-        and intents spread between multiple domain file.
+        """Verifies that there are no duplicated dictionaries in multiple domain files.
 
         Returns:
             `True` if duplicates exist.
