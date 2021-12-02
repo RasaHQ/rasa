@@ -336,18 +336,23 @@ class Validator:
         """
         logger.info("Checking duplicates across domain files...")
 
+        all_valid = True
+
+        if not self.domain.duplicates:
+            return True
+
         for key in [KEY_INTENTS, KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
             duplicates = self.domain.duplicates.get(key)
             if duplicates:
-                duplicates_str = ",".join(duplicates)
+                duplicates_str = ", ".join(duplicates)
                 rasa.shared.utils.io.raise_warning(
-                    f"The following duplicated {key} has been found " +
-                    f"across multiple domain files: {duplicates_str}",
+                    f"The following duplicated {key} has been found "
+                    + f"across multiple domain files: {duplicates_str}",
                     docs=DOCS_URL_DOMAINS,
-                    )
-                return False
+                )
+                all_valid = False
 
-        return True
+        return all_valid
 
     def verify_form_slots(self) -> bool:
         """Verifies that form slots match the slot mappings in domain."""

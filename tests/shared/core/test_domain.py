@@ -1622,6 +1622,15 @@ def test_domain_with_duplicates():
     assert domain.duplicates["intents"] == ["greet"]
 
 
+def test_domain_duplicates_when_one_domain_file():
+    """
+    Check if a domain with duplicated slots, responses and intents contains
+    a correct information in `duplicates` field.
+    """
+    domain = Domain.from_file(path="data/test_domains/default.yml")
+    assert domain.duplicates is None
+
+
 def test_domain_fingerprint_consistency_across_runs():
     domain_yaml = """
          version: "3.0"

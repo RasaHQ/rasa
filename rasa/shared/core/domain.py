@@ -185,7 +185,9 @@ class Domain:
             raise e
 
     @classmethod
-    def from_dict(cls, data: Dict, duplicates: Optional[Dict[Text, List[Text]]] = None) -> "Domain":
+    def from_dict(
+        cls, data: Dict, duplicates: Optional[Dict[Text, List[Text]]] = None
+    ) -> "Domain":
         """Deserializes and creates domain.
 
         Args:
@@ -284,8 +286,7 @@ class Domain:
             return sorted(list(set(list1 + list2)))
 
         def extract_duplicates(
-            dict1: Dict[Text, Any],
-            dict2: Dict[Text, Any],
+            dict1: Dict[Text, Any], dict2: Dict[Text, Any],
         ) -> List[Text]:
             return [value for value in dict1.keys() if value in dict2.keys()]
 
@@ -575,7 +576,7 @@ class Domain:
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
-        duplicates: Dict[Text, List[Text]] = None,
+        duplicates: Optional[Dict[Text, List[Text]]] = None,
     ) -> None:
         """Creates a `Domain`.
 
