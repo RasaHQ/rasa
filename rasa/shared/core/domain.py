@@ -185,11 +185,13 @@ class Domain:
             raise e
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Domain":
+    def from_dict(cls, data: Dict, duplicates: Optional[Dict[Text, List[Text]]] = None) -> "Domain":
         """Deserializes and creates domain.
 
         Args:
             data: The serialized domain.
+            duplicates: The dictionary of duplicated intents, slots, forms, etc when the
+                domain is built from multiple files.
 
         Returns:
             The instantiated `Domain` object.
@@ -216,6 +218,7 @@ class Domain:
             data.get(KEY_FORMS, {}),
             data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
+            duplicates=duplicates,
             **additional_arguments,
         )
 
@@ -290,6 +293,12 @@ class Domain:
             merged_dicts = merge_dicts(dict1, dict2, override_existing_values)
             return list(merged_dicts.values())
 
+        def extract_duplicates(
+            dict1: Dict[Text, Any],
+            dict2: Dict[Text, Any],
+        ) -> List[Text]:
+            return [value for value in dict1.keys() if value in dict2.keys()]
+
         if override:
             config = domain_dict["config"]
             for key, val in config.items():
@@ -297,6 +306,8 @@ class Domain:
 
         if override or self.session_config == SessionConfig.default():
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
+
+        duplicates: Dict[Text, List[Text]] = {}
 
         combined[KEY_INTENTS] = merge_lists_of_dicts(
             combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
@@ -311,9 +322,10 @@ class Domain:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            duplicates[key] = extract_duplicates(combined[key], domain_dict[key])
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
-        return self.__class__.from_dict(combined)
+        return self.__class__.from_dict(combined, duplicates)
 
     @staticmethod
     def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
@@ -572,6 +584,7 @@ class Domain:
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
+        duplicates: Dict[Text, List[Text]] = None,
     ) -> None:
         """Creates a `Domain`.
 
@@ -588,6 +601,8 @@ class Domain:
                 events for entities if there are slots with the same name as the entity.
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
+            duplicates: The dictionary of duplicated intents, slots, forms, etc when the
+                domain is built from multiple files.
         """
         self.entities, self.roles, self.groups = self.collect_entity_properties(
             entities
@@ -608,6 +623,7 @@ class Domain:
 
         self.action_texts = action_texts or []
         self.session_config = session_config
+        self.duplicates = duplicates
 
         self._custom_actions = action_names
 

@@ -14,9 +14,14 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core import constants
 from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
-from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, ActiveLoop
 from rasa.shared.core.events import UserUttered
+from rasa.shared.core.domain import (
+    KEY_RESPONSES,
+    KEY_SLOTS,
+    KEY_FORMS,
+    Domain,
+)
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -305,6 +310,21 @@ class Validator:
                 logger.warning(conflict)
 
         return ignore_warnings or not conflicts
+
+    def verify_domain_duplicates(self) -> bool:
+        logger.info("Checking duplicates across domain files...")
+        for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            duplicates = self.domain.duplicates.get(key)
+            if duplicates:
+                duplicates_str = ",".join(duplicates)
+                rasa.shared.utils.io.raise_warning(
+                    f"The following duplicated {key} has been found " +
+                    f"across multiple domain files: {duplicates_str}",
+                    docs=DOCS_URL_DOMAINS,
+                )
+                return False
+
+        return True
 
     def verify_nlu(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
