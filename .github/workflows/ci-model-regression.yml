@@ -635,11 +635,6 @@ jobs:
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
 
-      - name: Display workspace files DEBUG
-        continue-on-error: true
-        run: ls -R
-        working-directory: ${{ github.workspace }}
-
       - name: Display structure of downloaded files
         continue-on-error: true
         run: ls -R
