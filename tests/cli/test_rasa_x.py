@@ -160,7 +160,9 @@ async def test_pull_runtime_config_from_server():
         assert rasa.shared.utils.io.read_file(credentials_path) == credentials
 
 
-def test_rasa_x_raises_warning_above_version_3(monkeypatch: MonkeyPatch, run: Callable[..., RunResult]):
+def test_rasa_x_raises_warning_above_version_3(
+    monkeypatch: MonkeyPatch, run: Callable[..., RunResult],
+):
     def mock_run_locally(args):
         return None
 
