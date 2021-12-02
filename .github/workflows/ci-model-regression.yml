@@ -680,14 +680,9 @@ jobs:
         env:
           SUMMARY_FILE: "./report.json"
           REPORTS_DIR: "${{ github.workspace }}/reports"
-          RESULT_DIR: "${{ github.workspace }}/results"
-          # DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
-          # TYPE: ${{ matrix.type }}
-          # DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
         run: |
           python .github/scripts/mr_generate_summary.py
           cat $SUMMARY_FILE
-          # ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
 
       - name: Upload an artifact with the overall report
         uses: actions/upload-artifact@v2
