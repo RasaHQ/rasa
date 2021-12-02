@@ -293,10 +293,21 @@ jobs:
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
+      - name: Extract branch name
+        shell: bash
+        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
+        id: extract_branch
+
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        env:
+          DATASET: "${{ matrix.dataset }}"
+          CONFIG: "${{ matrix.config }}"
+          DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
+          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          GIT_SHA: "${{ github.sha }}"
         run: |
-          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ env.ACCELERATOR_TYPE }}' '${{ matrix.dataset }}' '${{ matrix.config }}'
+          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ env.ACCELERATOR_TYPE }}'
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
@@ -384,11 +395,6 @@ jobs:
         continue-on-error: true
         with:
           name: report.json
-
-      - name: Extract branch name
-        shell: bash
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
-        id: extract_branch
 
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'

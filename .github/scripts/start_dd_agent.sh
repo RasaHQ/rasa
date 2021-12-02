@@ -2,12 +2,13 @@
 
 DD_API_KEY=$1
 ACCELERATOR_TYPE=$2
-dataset=$3
-config=$4
 
 echo "ACCELERATOR_TYPE: ${ACCELERATOR_TYPE}"
-echo "Dataset: ${dataset}"
-echo "Config: ${config}"
+echo "DATASET: ${DATASET}"
+echo "CONFIG: ${CONFIG}"
+echo "DATASET_COMMIT: ${DATASET_COMMIT}"
+echo "BRANCH: ${BRANCH}"
+echo "GIT_SHA: ${GIT_SHA}"
 
 # Install Datadog system agent
 DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY DD_SITE="datadoghq.eu" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
@@ -19,8 +20,12 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "env: rasa-regression-tests"
     echo "tags:"
     echo "- service:rasa"
-    echo "- dataset:$dataset"
-    echo "- config:$config"
+    echo "- ACCELERATOR_TYPE:${ACCELERATOR_TYPE}"
+    echo "- dataset:${DATASET}"
+    echo "- config:${CONFIG}"
+    echo "- dataset_commit:${DATASET_COMMIT}"
+    echo "- branch:${BRANCH}"
+    echo "- git_sha:${GIT_SHA}"
     echo ""
     echo "process_config:"
     echo "    enabled: false"
