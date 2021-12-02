@@ -62,6 +62,10 @@ which nvidia-smi
 NVIDIA_SMI_PATH=$(which nvidia-smi)
 ls -al "$NVIDIA_SMI_PATH"
 
+ls -al /usr/lib
+ls -al /usr/lib/nvidia-367
+ls -al /usr/lib/nvidia
+
 sudo su - dd-agent -s /bin/bash -c "$NVIDIA_SMI_PATH"
 sudo su - dd-agent -s /bin/bash -c /usr/local/nvidia/bin/nvidia-smi
 sudo su - dd-agent -s /bin/bash -c /usr/bin/nvidia-smi
