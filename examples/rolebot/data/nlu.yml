@@ -33,6 +33,8 @@ nlu:
     - can we have [three]{"entity": "number", "value": "3", "role": "count"} [small]{"entity": "size"} [salami]{"entity": "pizza"} pizzas, please?
     - give me a [Veggie]{"entity": "pizza"} pizza, pronto!
     - A [large]{"entity": "size", "group": "1"} [Salami]{"entity": "pizza", "group": "1"} pizza for my friend, a [medium]{"entity": "size", "group": "2"} [fungi]{"entity": "pizza", "group": "2"} pizza for my husband, and a [medium]{"entity": "size", "group": "3"} [salami]{"entity": "pizza", "group": "3"} for our daughter
+    - [three]{"entity": "number", "value": "3", "role": "count", "group": "1"} [salami]{"entity": "pizza", "group": "1"} pizzas and [two]{"entity": "number", "value": "2", "role": "count", "group": "2"} [mushroom]{"entity": "pizza", "value": "Fungi", "group": "2"}
+    - [three]{"entity": "number", "value": "3", "role": "count", "group": "1"} [salami]{"entity": "pizza", "group": "1"} pizzas and [two]{"entity": "number", "value": "2", "role": "count", "group": "2"} [small]{"entity": "size", "group": "2"} [mushroom]{"entity": "pizza", "value": "Fungi", "group": "2"}
 
 
 - intent: search_phone  # (color, 5G, USB-C, micro USB, headphone jack, low budget, good camera, leight-weight, long battery life)
@@ -68,14 +70,18 @@ nlu:
     - something [light-wegiht]{"entity": "phone_feature", "group": "exclude", "value": "light-weight"} with a [long battery life]{"entity": "phone_feature", "group": "include"} but not in [purple]{"entity": "color", "group": "exclude"}
     - I'm pretty much always near a socket, so I don't care about the [battery life]{"entity": "phone_feature", "group": "exclude", "value": "long battery life"}
     - I can't have no [good camera]{"entity": "phone_feature", "group": "include", "value": "good camera"}
+    - find a phone that has [USB-C]{"entity": "phone_feature", "group": "include"} but no [headphone jack]{"entity": "phone_feature", "group": "exclude"}
+    - find a phone that has [USB-C]{"entity": "phone_feature", "group": "include"} but doesn't have a [headphone jack]{"entity": "phone_feature", "group": "exclude"}
 
 
 - intent: describe_direct_flight  # (from, to)
   examples: |
+    - from [Berlin]{"entity": "city", "role": "from"} to [Paris]{"entity": "city", "role": "to"}
+    - from [Paris]{"entity": "city", "role": "from"} to [Berlin]{"entity": "city", "role": "to"}
+    - to [Berlin]{"entity": "city", "role": "to"} from [Paris]{"entity": "city", "role": "from"}
+    - to [Paris]{"entity": "city", "role": "to"} from [Berlin]{"entity": "city", "role": "from"}
     - I need a flight from [Pittsburgh]{"entity": "city", "role": "from"} to [Detroit]{"entity": "city", "role": "to"}
     - I need a flight from [Chicago]{"entity": "city", "role": "from"} to [Berlin]{"entity": "city", "role": "to"}
-    - from [Berlin]{"entity": "city", "role": "from"} to [Paris]{"entity": "city", "role": "to"}
-    - to [Berlin]{"entity": "city", "role": "to"} from [Paris]{"entity": "city", "role": "from"}
     - i fly from [Berlin]{"entity": "city", "role": "from"} to [New York]{"entity": "city", "role": "to"}
     - i fly from [Kyiv]{"entity": "city", "role": "from"} to [Rome]{"entity": "city", "role": "to"}
     - i fly to [Longyearbyen]{"entity": "city", "role": "to"} from [New York]{"entity": "city", "role": "from"}
@@ -91,7 +97,22 @@ nlu:
 
 - intent: instruct_home_control
   examples: |
+    - if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is turned on, reduce the [temperature]{"entity": "device", "value": "heating", "role": "set", "group": "action"} to [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is turned on, reduce the [temperature]{"entity": "device", "value": "heating", "role": "decrease", "group": "action"} by [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is turned on, increase the [temperature]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is on, change the [temperature]{"entity": "device", "value": "heating", "role": "set", "group": "action"} to [22]{"entity": "number", "value": "22", "role": "celsius", "group": "action"} degrees
+    - if the [heating]{"entity": "device", "value": "heating", "role": "off", "group": "requirement"} is turned off, reduce the [temperature]{"entity": "device", "value": "heating", "role": "set", "group": "action"} to [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - if the [heating]{"entity": "device", "value": "heating", "role": "off", "group": "requirement"} is turned off, reduce the [temperature]{"entity": "device", "value": "heating", "role": "decrease", "group": "action"} by [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - if the [heating]{"entity": "device", "value": "heating", "role": "off", "group": "requirement"} is turned off, increase the [temperature]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - if the [heating]{"entity": "device", "value": "heating", "role": "off", "group": "requirement"} is off, change the [temperature]{"entity": "device", "value": "heating", "role": "set", "group": "action"} to [22]{"entity": "number", "value": "22", "role": "celsius", "group": "action"} degrees
+    - if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is on, turn off the [lights]{"entity": "device", "value": "lights", "role": "off", "group": "action"}
     - yes, and if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is turned on, reduce the [temperature]{"entity": "device", "value": "heating", "role": "set", "group": "action"} to [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - yes, and if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is turned on, reduce the [temperature]{"entity": "device", "value": "heating", "role": "decrease", "group": "action"} by [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - yes, and if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is turned on, increase the [temperature]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - yes, and if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is on, change the [temperature]{"entity": "device", "value": "heating", "role": "set", "group": "action"} to [22]{"entity": "number", "value": "22", "role": "celsius", "group": "action"} degrees
+    - if he [heating]{"entity": "device", "value": "heating", "role": "off", "group": "requirement"} is off, turn the [lights]{"entity": "device", "value": "lights", "role": "on", "group": "action"} on
+    - if he [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is on, turn the [lights]{"entity": "device", "value": "lights", "role": "off", "group": "action"} off
+    - when the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "rule_requirement"} is on, turn the [lights]{"entity": "device", "value": "lights", "role": "off", "group": "action"} off
     - If [nobody]{"entity": "people", "role": "home", "group": "requirement"}'s at home switch off the [light]{"entity": "device", "value": "lights", "role": "off", "group": "action"}
     - If [nobody]{"entity": "people", "role": "home", "group": "requirement"}'s at home switch on the [light]{"entity": "device", "value": "lights", "role": "on", "group": "action"}
     - If [anybody]{"entity": "people", "role": "home", "group": "requirement"}'s at home switch off the [light]{"entity": "device", "value": "lights", "role": "off", "group": "action"}

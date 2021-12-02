@@ -22,7 +22,7 @@ pipeline:
     max_ngram: 4
   - name: RegexFeaturizer
   - name: DIETClassifier
-    epochs: 250
+    epochs: 300
     # transformer_size: 4
     # number_of_attention_heads: 1
     # concat_dimension:

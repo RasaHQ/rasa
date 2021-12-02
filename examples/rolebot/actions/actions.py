@@ -22,6 +22,27 @@ def utter_entities(dispatcher: CollectingDispatcher, message: Dict[Text, Any]) -
         dispatcher.utter_message(text=f"{entity_type} -> {entity_value} ({entity_role}, {entity_group}), {extractor}")
 
 
+def utter_flight(dispatcher: CollectingDispatcher, message: Dict[Text, Any]) -> None:
+    departure = None
+    destination = None
+    others = [None]
+    entities: List[Dict[Text, Any]] = message.get("entities")
+    for entity in entities:
+        entity_type = entity.get("entity")
+        entity_value = entity.get("value")
+        extractor = entity.get("extractor")
+        entity_role = entity.get("role")
+        if entity_role == "from" and not departure:
+            departure = entity_value
+        elif entity_role == "to" and not destination:
+            destination = entity_value
+        else:
+            print(entity)
+            others.append(entity_value)
+    departure = departure or others[-1]
+    destination = destination or others[-1]
+    dispatcher.utter_message(text=f"You want to fly {departure} -> {destination}")
+
 @dataclass
 class Pizza:
     topping: Text = "unknown"
@@ -154,6 +175,8 @@ class TellEntitiesAction(Action):
             utter_phone_specs(dispatcher, tracker.latest_message)
         elif intent == "instruct_home_control":
             utter_home_control_instructions(dispatcher, tracker.latest_message)
+        elif intent == "describe_direct_flight":
+            utter_flight(dispatcher, tracker.latest_message)
         else:
             utter_entities(dispatcher, tracker.latest_message)
 
