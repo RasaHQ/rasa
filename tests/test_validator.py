@@ -377,7 +377,8 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
             False,
             UserWarning,
             [
-                "The following duplicated responses has been found across multiple domain files: some_response"
+                "The following duplicated responses has been found across "
+                "multiple domain files: some_response"
             ],
         ),
         (
@@ -385,7 +386,8 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
             False,
             UserWarning,
             [
-                "The following duplicated slots has been found across multiple domain files: some_slot"
+                "The following duplicated slots has been found across "
+                "multiple domain files: some_slot"
             ],
         ),
         (
@@ -393,7 +395,8 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
             False,
             UserWarning,
             [
-                "The following duplicated forms has been found across multiple domain files: form1, form2"
+                "The following duplicated forms has been found across "
+                "multiple domain files: form1, form2"
             ],
         ),
         (
@@ -401,7 +404,8 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
             False,
             UserWarning,
             [
-                "The following duplicated forms has been found across multiple domain files: form1, form2"
+                "The following duplicated forms has been found across "
+                "multiple domain files: form1, form2"
             ],
         ),
         (
@@ -409,8 +413,10 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
             False,
             UserWarning,
             [
-                "The following duplicated forms has been found across multiple domain files: form1, form2",
-                "The following duplicated slots has been found across multiple domain files: slot1, slot2, slot3",
+                "The following duplicated forms has been found across "
+                "multiple domain files: form1, form2",
+                "The following duplicated slots has been found across "
+                "multiple domain files: slot1, slot2, slot3",
             ],
         ),
     ],
