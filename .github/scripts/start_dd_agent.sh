@@ -20,7 +20,7 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "env: rasa-regression-tests"
     echo "tags:"
     echo "- service:rasa"
-    echo "- ACCELERATOR_TYPE:${ACCELERATOR_TYPE}"
+    echo "- accelerator_type:${ACCELERATOR_TYPE}"
     echo "- dataset:${DATASET}"
     echo "- config:${CONFIG}"
     echo "- dataset_commit:${DATASET_COMMIT}"
