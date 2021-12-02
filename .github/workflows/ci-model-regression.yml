@@ -615,7 +615,7 @@ jobs:
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
-          SUMMARY_FILE: "${{ github.workspace }}/results/report.json"
+          SUMMARY_FILE: "$./report.json"
           SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
@@ -638,14 +638,14 @@ jobs:
       - name: Display structure of downloaded files
         continue-on-error: true
         run: ls -R
-        working-directory: ${{ github.workspace }}/results
+        working-directory: "."
 
       - name: Upload an artifact with the report
         uses: actions/upload-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}
-          path: ${{ github.workspace }}/results/report.json
+          path: report.json
 
   combine_reports:
     name: Combine reports
@@ -665,21 +665,17 @@ jobs:
       - name: Get reports
         uses: actions/download-artifact@v2
         with:
-          path: ${{ github.workspace }}/reports
-        # Downloads all artifacts (if name parameter not provided):
-        # see https://github.com/actions/download-artifact#download-all-artifacts
-        # report-${{ matrix.dataset }}-${{ matrix.config }}.json
-        # TODO download according to same matrix
+          path: reports/
 
       - name: Display structure of downloaded files
         continue-on-error: true
         run: ls -R
-        working-directory: ${{ github.workspace }}/reports
+        working-directory: reports/
 
       - name: Merge all reports
         env:
           SUMMARY_FILE: "./report.json"
-          REPORTS_DIR: "${{ github.workspace }}/reports"
+          REPORTS_DIR: "reports/"
         run: |
           python .github/scripts/mr_generate_summary.py
           cat $SUMMARY_FILE
