@@ -22,7 +22,6 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
-    DEFAULT_DOMAIN_PATH,
 )
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
