@@ -57,3 +57,12 @@ sleep 10
 sudo datadog-agent status
 
 nvidia-smi
+
+which nvidia-smi
+NVIDIA_SMI_PATH=$(which nvidia-smi)
+ls -al "$NVIDIA_SMI_PATH"
+
+sudo su - dd-agent -s /bin/bash -c "$NVIDIA_SMI_PATH"
+sudo su - dd-agent -s /bin/bash -c /usr/local/nvidia/bin/nvidia-smi
+sudo su - dd-agent -s /bin/bash -c /usr/bin/nvidia-smi
+sudo su - dd-agent -s /bin/bash -c nvidia-smi
