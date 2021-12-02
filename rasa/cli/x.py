@@ -357,10 +357,11 @@ def rasa_x(args: argparse.Namespace) -> None:
         MINIMUM_COMPATIBLE_VERSION
     ):
         rasa.shared.utils.io.raise_warning(
-            f"Your version of rasa {rasa.version.__version__} is currently "
+            f"Your version of rasa '{rasa.version.__version__}' is currently "
             f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
             f"version higher or equal to {MINIMUM_COMPATIBLE_VERSION} "
-            f"will result in errors."
+            f"will result in errors.",
+            UserWarning,
         )
 
     if args.production:
