@@ -1425,9 +1425,9 @@ If you have used `FormValidationAction` to define custom extraction and validati
 You will need to make this replacement to continue using your custom code.
 
 :::note
-If you have custom validation actions extending `FormValidationAction` which override `required_slots` method, it is highly
-recommended you double-check the dynamic form behavior of your migrated assistant, in case slots set by the default action
-[`action_extract_slots`](./default-actions.mdx#action_extract_slots) might need to be reset within the context of your form by the custom validation actions.
+If you have custom validation actions extending `FormValidationAction` which override `required_slots` method, you should
+double-check the dynamic form behavior of your migrated assistant. Slots set by the default action
+[`action_extract_slots`](./default-actions.mdx#action_extract_slots) may need to be reset within the context of your form by the custom validation actions.
 
 :::
 
