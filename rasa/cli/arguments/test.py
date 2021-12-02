@@ -121,8 +121,8 @@ def add_test_nlu_argument_group(
         type=str,
         default=DEFAULT_DOMAIN_PATH,
         help="Domain specification. This can be a single YAML file, or a directory "
-             "that contains several files with domain specifications in it. The content "
-             "of these files will be read and merged together.",
+        "that contains several files with domain specifications in it. The content "
+        "of these files will be read and merged together.",
     )
 
     cross_validation_arguments = parser.add_argument_group("Cross Validation")
