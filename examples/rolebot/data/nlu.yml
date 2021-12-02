@@ -89,6 +89,30 @@ nlu:
     - its a flight between [Madrid]{"entity": "city", "role": "from"} and [Kyiv]{"entity": "city", "role": "to"}
     - I want to reach [Washington]{"entity": "city", "role": "to"} on Wednesday. What are my options?
 
+- intent: instruct_home_control
+  examples: |
+    - yes, and if the [heating]{"entity": "device", "value": "heating", "role": "on", "group": "requirement"} is turned on, reduce the [temperature]{"entity": "device", "value": "heating", "role": "set", "group": "action"} to [18]{"entity": "number", "value": "18", "role": "celsius", "group": "action"} degrees
+    - If [nobody]{"entity": "people", "role": "home", "group": "requirement"}'s at home switch off the [light]{"entity": "device", "value": "lights", "role": "off", "group": "action"}
+    - If [nobody]{"entity": "people", "role": "home", "group": "requirement"}'s at home switch on the [light]{"entity": "device", "value": "lights", "role": "on", "group": "action"}
+    - If [anybody]{"entity": "people", "role": "home", "group": "requirement"}'s at home switch off the [light]{"entity": "device", "value": "lights", "role": "off", "group": "action"}
+    - If [anybody]{"entity": "people", "role": "home", "group": "requirement"}'s at home switch on the [light]{"entity": "device", "value": "lights", "role": "on", "group": "action"}
+    - When [anybody]{"entity": "people", "role": "home", "group": "rule_requirement"}'s at home switch on the [light]{"entity": "device", "value": "lights", "role": "on", "group": "action"}
+    - ok, and if the [kids]{"entity": "people", "role": "home", "group": "requirement"} are at home switch on the [light]{"entity": "device", "value": "lights", "role": "on", "group": "action"}
+    - when [nobody]{"entity": "people", "role": "home", "group": "rule_requirement"}'s at home switch off the [light]{"entity": "device", "value": "lights", "role": "off", "group": "action"}
+    - whenever [nobody]{"entity": "people", "role": "home", "group": "rule_requirement"}'s at home switch off the [light]{"entity": "device", "value": "lights", "role": "off", "group": "action"}
+    - If the [windows]{"entity": "device", "value": "windows", "role": "off", "group": "requirement"} are closed, increase [heating]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [5]{"entity": "number", "value": "5", "role": "celsius", "group": "action"} degrees
+    - If the [windows]{"entity": "device", "value": "windows", "role": "on", "group": "requirement"} are open, increase [heating]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [5]{"entity": "number", "value": "5", "role": "celsius", "group": "action"} degrees
+    - If the [windows]{"entity": "device", "value": "windows", "role": "off", "group": "requirement"} are closed, decrease [heating]{"entity": "device", "value": "heating", "role": "decrease", "group": "action"} by [7]{"entity": "number", "value": "7", "role": "celsius", "group": "action"} degrees
+    - If the [windows]{"entity": "device", "value": "windows", "role": "on", "group": "requirement"} are open, decrease [temperature]{"entity": "device", "value": "heating", "role": "decrease", "group": "action"} by [10]{"entity": "number", "value": "10", "role": "celsius", "group": "action"} degrees    - If the [windows]{"entity": "device", "value": "windows", "role": "off", "group": "requirement"} are closed, increase [heating]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [5]{"entity": "number", "value": "5", "role": "celsius", "group": "action"} degrees
+    - When the [windows]{"entity": "device", "value": "windows", "role": "off", "group": "rule_requirement"} are closed, increase [heating]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [5]{"entity": "number", "value": "5", "role": "celsius", "group": "action"} degrees
+    - When the [windows]{"entity": "device", "value": "windows", "role": "on", "group": "rule_requirement"} are open, increase [heating]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [5]{"entity": "number", "value": "5", "role": "celsius", "group": "action"} degrees
+    - whenever the [windows]{"entity": "device", "value": "windows", "role": "off", "group": "rule_requirement"} are closed, decrease [heating]{"entity": "device", "value": "heating", "role": "decrease", "group": "action"} by [7]{"entity": "number", "value": "7", "role": "celsius", "group": "action"} degrees
+    - When the [windows]{"entity": "device", "value": "windows", "role": "on", "group": "rule_requirement"} are open, decrease [temperature]{"entity": "device", "value": "heating", "role": "decrease", "group": "action"} by [10]{"entity": "number", "value": "10", "role": "celsius", "group": "action"} degrees
+    - When the [kids]{"entity": "people", "role": "home", "group": "rule_requirement"} are at home increase [heating]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [4]{"entity": "number", "value": "4", "role": "celsius", "group": "action"} degrees
+    - whenever [nobody]{"entity": "people", "role": "home", "group": "rule_requirement"} is at home, switch off the [lights]{"entity": "device", "value": "lights", "role": "off", "group": "action"}
+    - if the [lights]{"entity": "device", "value": "lights", "role": "on", "group": "requirement"} are on, turn the [lights]{"entity": "device", "value": "lights", "role": "off", "group": "action"} off
+    - if the [kids]{"entity": "people", "role": "home", "group": "requirement"} are home, increase the [temperature]{"entity": "device", "value": "heating", "role": "increase", "group": "action"} by [five]{"entity": "number", "value": "5", "role": "celsius", "group": "action"} degrees
+
 - intent: goodbye
   examples: |
     - cu

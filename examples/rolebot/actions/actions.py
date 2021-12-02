@@ -1,4 +1,4 @@
-from typing import Any, Text, Dict, List
+from typing import Any, Text, Dict, List, Tuple
 
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
@@ -85,6 +85,58 @@ def utter_phone_specs(dispatcher: CollectingDispatcher, message: Dict[Text, Any]
         dispatcher.utter_message(text=f"- {feature}")
 
 
+@dataclass
+class HomeControlRequirement:
+    kind: Text
+    which: Text
+    value: Text
+
+    def __str__(self) -> str:
+        return f"{self.kind}({self.which}) == {self.value}"
+
+
+@dataclass
+class HomeControlAction:
+    device: Text
+    action: Text
+
+    def __str__(self) -> str:
+        return f"{self.device} <- {self.action}"
+
+
+def utter_home_control_instructions(dispatcher: CollectingDispatcher, message: Dict[Text, Any]) -> None:
+    user_text: Text = message.get("text", "")
+    entities: List[Dict[Text, Any]] = message.get("entities")
+    requirements: List[HomeControlRequirement] = []
+    actions: List[HomeControlAction] = []
+    parameters: Dict[Text, Any] = dict()
+    is_rule: bool = False
+    for entity in entities:
+        entity_type = entity.get("entity")
+        entity_value: Text = str(entity.get("value"))
+        extractor = entity.get("extractor")
+        entity_role = entity.get("role")
+        entity_group = str(entity.get("group"))
+
+        if entity_group == "requirement":
+            requirements.append(HomeControlRequirement(entity_type, entity_value, entity_role))
+        elif entity_group == "rule_requirement":
+            requirements.append(HomeControlRequirement(entity_type, entity_value, entity_role))
+            is_rule = True
+        elif entity_type == "device" and entity_group == "action":
+            actions.append(HomeControlAction(entity_value, entity_role))
+        elif entity_type == "number" and entity_role == "celsius" and entity_group == "action":
+            parameters[entity_role] = entity_value
+        else:
+            dispatcher.utter_message(text=f"Not sure what to make of '{entity_value}'")
+
+    conditional = "WHENEVER" if is_rule else "IF"
+    req = " and ".join(f"{requirement}" for requirement in requirements)
+    act = " and ".join(f"{action}" for action in actions)
+    dispatcher.utter_message(text=f"{conditional} {req}")
+    dispatcher.utter_message(text=f"THEN {act} ({[f'{val} {role}' for role, val in parameters.items()]})")
+
+
 class TellEntitiesAction(Action):
 
     def name(self) -> Text:
@@ -100,6 +152,8 @@ class TellEntitiesAction(Action):
             utter_pizzas(dispatcher, tracker.latest_message)
         elif intent == "search_phone":
             utter_phone_specs(dispatcher, tracker.latest_message)
+        elif intent == "instruct_home_control":
+            utter_home_control_instructions(dispatcher, tracker.latest_message)
         else:
             utter_entities(dispatcher, tracker.latest_message)
 

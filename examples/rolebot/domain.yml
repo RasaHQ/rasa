@@ -4,6 +4,7 @@ intents:
   - order_pizza
   - describe_direct_flight
   - search_phone
+  - instruct_home_control
   - bot_challenge
   - goodbye
 
@@ -14,12 +15,15 @@ entities:
       - to
   - pizza
   - size
-  - integer:
+  - number:
       roles:
       - count
       - age
+      - celsius
   - phone_feature
   - color
+  - device
+  - people
 
 actions:
   - tell_entities

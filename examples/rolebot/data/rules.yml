@@ -18,4 +18,5 @@ rules:
     - intent: order_pizza
     - intent: describe_direct_flight
     - intent: search_phone
+    - intent: instruct_home_control
   - action: tell_entities
