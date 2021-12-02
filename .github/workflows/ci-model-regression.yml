@@ -615,7 +615,7 @@ jobs:
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
-          SUMMARY_FILE: "./report.json"
+          SUMMARY_FILE: "${{ github.workspace }}/results/report.json"
           SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
@@ -644,7 +644,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          name: report-${{ matrix.dataset }}-${{ matrix.config }}.json
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}
           path: ${{ github.workspace }}/results
 
   combine_reports:
