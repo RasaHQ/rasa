@@ -4,6 +4,7 @@ import importlib.util
 import logging
 from multiprocessing.process import BaseProcess
 from multiprocessing import get_context
+from packaging import version
 import os
 import signal
 import sys
@@ -22,6 +23,7 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_RASA_X,
     DEFAULT_RASA_PORT,
     DEFAULT_RASA_X_PORT,
+    MINIMUM_COMPATIBLE_VERSION,
 )
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -350,6 +352,16 @@ def rasa_x(args: argparse.Namespace) -> None:
     signal.signal(signal.SIGINT, signal_handler)
 
     _configure_logging(args)
+
+    if version.parse(rasa.version.__version__) >= version.parse(
+        MINIMUM_COMPATIBLE_VERSION
+    ):
+        rasa.shared.utils.io.raise_warning(
+            f"Your version of rasa {rasa.version.__version__} is currently "
+            f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
+            f"version higher or equal to {MINIMUM_COMPATIBLE_VERSION} "
+            f"will result in errors."
+        )
 
     if args.production:
         run_in_production(args)
