@@ -283,16 +283,6 @@ class Domain:
         def merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
             return sorted(list(set(list1 + list2)))
 
-        def merge_lists_of_dicts(
-            dict_list1: List[Dict],
-            dict_list2: List[Dict],
-            override_existing_values: bool = False,
-        ) -> List[Dict]:
-            dict1 = {list(i.keys())[0]: i for i in dict_list1}
-            dict2 = {list(i.keys())[0]: i for i in dict_list2}
-            merged_dicts = merge_dicts(dict1, dict2, override_existing_values)
-            return list(merged_dicts.values())
-
         def extract_duplicates(
             dict1: Dict[Text, Any],
             dict2: Dict[Text, Any],
@@ -309,9 +299,10 @@ class Domain:
 
         duplicates: Dict[Text, List[Text]] = {}
 
-        combined[KEY_INTENTS] = merge_lists_of_dicts(
-            combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
-        )
+        dict1 = {list(i.keys())[0]: i for i in combined[KEY_INTENTS]}
+        dict2 = {list(i.keys())[0]: i for i in domain_dict[KEY_INTENTS]}
+        duplicates[KEY_INTENTS] = extract_duplicates(dict1, dict2)
+        combined[KEY_INTENTS] = list(merge_dicts(dict1, dict2, override).values())
 
         # remove existing forms from new actions
         for form in combined[KEY_FORMS]:
