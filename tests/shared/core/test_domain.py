@@ -1611,6 +1611,17 @@ def test_domain_invalid_yml_in_folder():
         Domain.from_directory("data/test_domains/test_domain_from_directory1/")
 
 
+def test_domain_with_duplicates():
+    """
+    Check if a domain with duplicated slots, responses and intents contains
+    a correct information in `duplicates` field.
+    """
+    domain = Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
+    assert domain.duplicates["slots"] == ["mood"]
+    assert domain.duplicates["responses"] == ["utter_greet", "utter_did_that_help"]
+    assert domain.duplicates["intents"] == ["greet"]
+
+
 def test_domain_fingerprint_consistency_across_runs():
     domain_yaml = """
          version: "3.0"
