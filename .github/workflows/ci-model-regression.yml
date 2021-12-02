@@ -635,12 +635,22 @@ jobs:
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
 
+      - name: Display workspace files DEBUG
+        continue-on-error: true
+        run: ls -R
+        working-directory: ${{ github.workspace }}
+
+      - name: Display structure of downloaded files
+        continue-on-error: true
+        run: ls -R
+        working-directory: ${{ github.workspace }}/results
+
       - name: Upload an artifact with the report
         uses: actions/upload-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          name: report-{{ matrix.dataset }}-${{ matrix.config }}.json
-          path: ./report.json
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}.json
+          path: ${{ github.workspace }}/results
 
   combine_reports:
     name: Combine reports
@@ -663,7 +673,7 @@ jobs:
           path: ${{ github.workspace }}/reports
         # Downloads all artifacts (if name parameter not provided):
         # see https://github.com/actions/download-artifact#download-all-artifacts
-        # report-{{ matrix.dataset }}-{{ matrix.config }}.json
+        # report-${{ matrix.dataset }}-${{ matrix.config }}.json
         # TODO download according to same matrix
 
       - name: Display structure of downloaded files
