@@ -35,7 +35,7 @@ if __name__ == "__main__":
     print('reports_paths', reports_paths)
 
     for report_path in reports_paths:
-        report_dict = json.loads(report_path)
+        report_dict = json.load(open(report_path))
         data = combine_result(data, report_dict)
 
     with open(SUMMARY_FILE, "w") as f:
