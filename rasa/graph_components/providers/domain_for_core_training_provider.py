@@ -21,7 +21,7 @@ class DomainForCoreTrainingProvider(GraphComponent):
 
     The information that we retain includes:
     - intents and their "used" and "ignored" entities because intents influence the
-      next action prediction directly and the latter flags determine whehter the
+      next action prediction directly and the latter flags determine whether the
       listed entities influence the next action prediction
     - entities, their roles and groups, and their `influence_conversation` flag because
       all of those items are used by policies
