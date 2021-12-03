@@ -15,6 +15,7 @@ from rasa.shared.constants import DEFAULT_DOMAIN_PATH
 
 
 def set_test_arguments(parser: argparse.ArgumentParser) -> None:
+    """Sets test arguments for a parser."""
     add_model_param(parser, add_positional_arg=False)
 
     core_arguments = parser.add_argument_group("Core Test Arguments")
