@@ -9,6 +9,7 @@
             "reference/rasa/cli/arguments/evaluate",
             "reference/rasa/cli/arguments/interactive",
             "reference/rasa/cli/arguments/run",
+            "reference/rasa/cli/arguments/test",
             "reference/rasa/cli/arguments/train",
             "reference/rasa/cli/arguments/visualize"
           ],
