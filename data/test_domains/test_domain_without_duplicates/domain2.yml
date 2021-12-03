@@ -13,10 +13,3 @@ responses:
 
   utter_happy:
     - text: "Great, carry on!"
-
-slots:
-  mood:
-    type: bool
-    mappings:
-      - type: from_entity
-        entity: some_slot

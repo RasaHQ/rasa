@@ -192,8 +192,9 @@ class Domain:
 
         Args:
             data: The serialized domain.
-            duplicates: The dictionary of duplicated intents, slots, forms, etc when the
-                domain is built from multiple files.
+            duplicates: A dictionary where keys are `intents`, `slots`, `forms` and
+                `responses` and values are lists of duplicated entries of a
+                corresponding type when the domain is built from multiple files.
 
         Returns:
             The instantiated `Domain` object.
@@ -300,6 +301,7 @@ class Domain:
 
         duplicates: Dict[Text, List[Text]] = {}
 
+        # this code merges lists of dicts of intents
         dict1 = {list(i.keys())[0]: i for i in combined[KEY_INTENTS]}
         dict2 = {list(i.keys())[0]: i for i in domain_dict[KEY_INTENTS]}
         duplicates[KEY_INTENTS] = extract_duplicates(dict1, dict2)
@@ -594,8 +596,9 @@ class Domain:
                 events for entities if there are slots with the same name as the entity.
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
-            duplicates: The dictionary of duplicated intents, slots, forms, etc when the
-                domain is built from multiple files.
+            duplicates: A dictionary where keys are `intents`, `slots`, `forms` and
+                `responses` and values are lists of duplicated entries of a
+                 corresponding type when the domain is built from multiple files.
         """
         self.entities, self.roles, self.groups = self.collect_entity_properties(
             entities
