@@ -49,7 +49,7 @@ sudo mv /etc/datadog-agent/conf.d/nvml.d/conf.yaml.example /etc/datadog-agent/co
 fi
 
 # Apply changes
-sudo service datadog-agent restart
+sudo service datadog-agent stop
 
 sudo ls -al /etc/datadog-agent/conf.d/nvml.d/
 sudo cat /etc/datadog-agent/conf.d/nvml.d/conf.yaml
@@ -58,15 +58,10 @@ sudo datadog-agent status
 
 nvidia-smi
 
-which nvidia-smi
-NVIDIA_SMI_PATH=$(which nvidia-smi)
-ls -al "$NVIDIA_SMI_PATH"
+INSTALL_DIR="/opt/datadog-agent"
+AGENTPATH="$INSTALL_DIR/bin/agent/agent"
+PIDFILE="$INSTALL_DIR/run/agent.pid"
+AGENT_ARGS="run -p $PIDFILE"
+AGENT_USER="dd-agent"
 
-ls -al /usr/lib
-ls -al /usr/lib/nvidia-367
-ls -al /usr/lib/nvidia
-
-sudo su - dd-agent -s /bin/bash -c "$NVIDIA_SMI_PATH"
-sudo su - dd-agent -s /bin/bash -c /usr/local/nvidia/bin/nvidia-smi
-sudo su - dd-agent -s /bin/bash -c /usr/bin/nvidia-smi
-sudo su - dd-agent -s /bin/bash -c nvidia-smi
+sudo -E start-stop-daemon --start --background --quiet  --chuid $AGENT_USER  --pidfile $PIDFILE --user $AGENT_USER --startas  $AGENTPATH -- $AGENT_ARGS

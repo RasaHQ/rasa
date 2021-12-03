@@ -293,18 +293,13 @@ jobs:
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
-      - name: Extract branch name
-        shell: bash
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
-        id: extract_branch
-
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           DATASET: "${{ matrix.dataset }}"
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
-          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          BRANCH: ${{ github.head_ref }}
           GIT_SHA: "${{ github.sha }}"
         run: |
           .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ env.ACCELERATOR_TYPE }}'
@@ -410,7 +405,7 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
-          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          BRANCH: ${{ github.head_ref }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu
@@ -541,11 +536,6 @@ jobs:
           DATASET_COMMIT=$(git rev-parse HEAD)
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
-
-      - name: Extract branch name
-        shell: bash
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
-        id: extract_branch
 
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
