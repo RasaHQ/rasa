@@ -14,7 +14,7 @@ import rasa.shared.utils.common
 from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.importers.autoconfig import TrainingType
 
 logger = logging.getLogger(__name__)
@@ -22,40 +22,46 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SchemaNode:
-    """Represents one node in the schema."""
+    """Represents one node in the schema.
 
-    # `needs` describes which parameters in `fn` (or `constructor_name`
-    # if `eager==False`) are filled by which parent nodes.
+    Args:
+        needs: describes which parameters in `fn` (or `constructor_name`
+            if `eager==False`) are filled by which parent nodes.
+        uses: The class which models the behavior of this specific graph node.
+        constructor_name: The name of the constructor which should be used to
+            instantiate the component. If `eager==False` then the `constructor` can
+            also specify parameters which are filled by parent nodes. This is e.g.
+            useful if a parent node returns a `Resource` and this node wants to
+            directly load itself from this resource.
+        fn: The name of the function which should be called on the instantiated
+            component when the graph is executed. The parameters from `needs` are
+            filled from the parent nodes.
+        config: The user's configuration for this graph node. This configuration
+            does not need to be specify all possible parameters; the default values
+            for missing parameters will be filled in later.
+        eager: If `eager` then the component is instantiated before the graph is run.
+            Otherwise it's instantiated as the graph runs (lazily). Usually we always
+            instantiated lazily during training and eagerly during inference (to
+            avoid that the first prediction takes longer).
+        is_target: If `True` then this node can't be pruned during fingerprinting
+            (it might be replaced with a cached value though). This is e.g. used for
+            all components which train as their result always needs to be added to
+            the model archive so that the data is available during inference.
+        is_input: Nodes with `is_input` are _always_ run (also during the fingerprint
+            run). This makes sure that we e.g. detect changes in file contents.
+        resource: If given, then the graph node is loaded from an existing resource
+            instead of instantiated from scratch. This is e.g. used to load a trained
+            component for predictions.
+    """
+
     needs: Dict[Text, Text]
-    # The class which models the behavior of this specific graph node.
     uses: Type[GraphComponent]
-    # The name of the constructor which should be used to instantiate the component.
-    # If `eager==False` then the `constructor` can also specify parameters which are
-    # filled by parent nodes. This is e.g. useful if a parent node returns a `Resource`
-    # and this node wants to directly load itself from this resource.
     constructor_name: Text
-    # The name of the function which should be called on the instantiated component
-    # when the graph is executed. The parameters from `needs` are filled from the
-    # parent nodes.
     fn: Text
-    # The configuration for this graph node.
     config: Dict[Text, Any]
-    # If `eager` then the component is instantiated before the graph is run. Otherwise
-    # it's instantiated as the graph runs (lazily). Usually we always instantiated
-    # lazily during training and eagerly during inference (to avoid that the first
-    # prediction takes longer).
     eager: bool = False
-    # If `True` then this node can't be pruned during fingerprinting (it might be
-    # replaced with a cached value though). This is e.g. used for all components which
-    # train as their result always needs to be added to the model archive so that the
-    # data is available during inference.
     is_target: bool = False
-    # Nodes with `is_input` are _always_ run (also during the fingerprint run).
-    # This makes sure that we e.g. detect changes in file contents.
     is_input: bool = False
-    # If given, then the graph node is loaded from an existing resource instead of
-    # instantiated from scratch. This is e.g. used to load a trained component for
-    # predictions.
     resource: Optional[Resource] = None
 
 
@@ -396,9 +402,15 @@ class GraphNode:
             # handling of exceptions.
             raise
         except Exception as e:
-            raise GraphComponentException(
-                f"Error initializing graph component for node '{self._node_name}'."
-            ) from e
+            if not isinstance(e, RasaException):
+                raise GraphComponentException(
+                    f"Error initializing graph component for node {self._node_name}."
+                ) from e
+            else:
+                logger.error(
+                    f"Error initializing graph component for node {self._node_name}."
+                )
+                raise
 
     def _get_resource(self, kwargs: Dict[Text, Any]) -> Resource:
         if "resource" in kwargs:
@@ -458,9 +470,15 @@ class GraphNode:
             # handling of exceptions.
             raise
         except Exception as e:
-            raise GraphComponentException(
-                f"Error running graph component for node {self._node_name}."
-            ) from e
+            if not isinstance(e, RasaException):
+                raise GraphComponentException(
+                    f"Error running graph component for node {self._node_name}."
+                ) from e
+            else:
+                logger.error(
+                    f"Error running graph component for node {self._node_name}."
+                )
+                raise
 
         self._run_after_hooks(input_hook_outputs, output)
 

@@ -43,8 +43,6 @@ def add_subparser(
         help="Applies marker conditions to existing trackers.",
     )
 
-    arguments.set_markers_arguments(marker_parser)
-
     markers_subparser = marker_parser.add_subparsers(dest="strategy")
 
     markers_first_n_subparser = markers_subparser.add_parser(
@@ -56,8 +54,10 @@ def add_subparser(
     )
     arguments.set_markers_first_n_arguments(markers_first_n_subparser)
 
+    arguments.set_markers_arguments(markers_first_n_subparser)
+
     markers_sample_subparser = markers_subparser.add_parser(
-        "sample",
+        "sample_n",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -65,13 +65,17 @@ def add_subparser(
     )
     arguments.set_markers_sample_arguments(markers_sample_subparser)
 
-    markers_subparser.add_parser(
+    arguments.set_markers_arguments(markers_sample_subparser)
+
+    markers_all_subparser = markers_subparser.add_parser(
         "all",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Select all trackers.",
     )
+
+    arguments.set_markers_arguments(markers_all_subparser)
 
     marker_parser.set_defaults(func=_run_markers_cli)
 
@@ -102,11 +106,11 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
 def _run_markers(
     seed: Optional[int],
     count: Optional[int],
-    endpoint_config: Text,
+    endpoint_config: Path,
     domain_path: Optional[Text],
     strategy: Text,
-    config: Text,
-    output_filename: Text,
+    config: Path,
+    output_filename: Path,
     stats_file_prefix: Optional[Path] = None,
 ) -> None:
     """Run markers algorithm over specified config and tracker store.
@@ -164,7 +168,9 @@ def _run_markers(
 
     telemetry.track_markers_parsed_count(num_markers, max_depth, branching_factor)
 
-    tracker_loader = _create_tracker_loader(endpoint_config, strategy, count, seed)
+    tracker_loader = _create_tracker_loader(
+        endpoint_config, strategy, domain, count, seed
+    )
 
     def _append_suffix(path: Optional[Path], suffix: Text) -> Optional[Path]:
         return path.parent / (path.name + suffix) if path else None
@@ -181,7 +187,11 @@ def _run_markers(
 
 
 def _create_tracker_loader(
-    endpoint_config: Text, strategy: Text, count: Optional[int], seed: Optional[int]
+    endpoint_config: Text,
+    strategy: Text,
+    domain: Domain,
+    count: Optional[int],
+    seed: Optional[int],
 ) -> MarkerTrackerLoader:
     """Create a tracker loader against the configured tracker store.
 
@@ -189,15 +199,16 @@ def _create_tracker_loader(
         endpoint_config: Path to the endpoint configuration defining the tracker
                          store to use.
         strategy: Strategy to use when selecting trackers to extract from.
+        domain: The domain to use when connecting to the tracker store.
         count: (Optional) Number of trackers to extract from (for any strategy
                except 'all').
         seed: (Optional) The seed to initialise the random number generator for
-              use with the 'sample' strategy.
+              use with the 'sample_n' strategy.
 
     Returns:
         A MarkerTrackerLoader object configured with the specified strategy against
         the configured tracker store.
     """
     endpoints = AvailableEndpoints.read_endpoints(endpoint_config)
-    tracker_store = TrackerStore.create(endpoints.tracker_store)
+    tracker_store = TrackerStore.create(endpoints.tracker_store, domain=domain)
     return MarkerTrackerLoader(tracker_store, strategy, count, seed,)

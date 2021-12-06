@@ -323,7 +323,7 @@ jobs:
         PYTHONIOENCODING: "utf-8"
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
-        DD_ARGS: --ddtrace
+        DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
         poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
@@ -335,7 +335,7 @@ jobs:
         PYTHONIOENCODING: "utf-8"
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
-        DD_ARGS: --ddtrace
+        DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
         mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
@@ -824,7 +824,7 @@ jobs:
       run: poetry build
 
     - name: Publish to PyPI 📦
-      uses: pypa/gh-action-pypi-publish@37e305e7413032d8422456179fee28fac7d25187
+      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}

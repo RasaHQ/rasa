@@ -43,8 +43,8 @@ def _generate_random_example_for_one_session_and_one_marker(
         the plain list of numbers used as "preceding user turns" in that extraction
         result
     """
-    applies = int(rng.choice(10))
-    all_preceding_user_turn_numbers = [int(rng.choice(20)) for _ in range(applies)]
+    applied = int(rng.choice(10))
+    all_preceding_user_turn_numbers = [int(rng.choice(20)) for _ in range(applied)]
     event_list = [
         EventMetaData(
             idx=int(rng.choice(100)), preceding_user_turns=preceding_user_turns
@@ -164,9 +164,9 @@ def test_process_results_overall(seed: int):
     for marker in markers:
         # count how often we generated some results for a session:
         number_lists = preceding_user_turn_numbers_used_per_marker[marker]
-        applies_at_least_once = sum(len(sub_list) > 0 for sub_list in number_lists)
+        applied_at_least_once = sum(len(sub_list) > 0 for sub_list in number_lists)
         # and compare that to the expected count:
-        assert stats.count_if_applied_at_least_once[marker] == applies_at_least_once
+        assert stats.count_if_applied_at_least_once[marker] == applied_at_least_once
         # check if we collected the all the "preceding user turn numbers"
         concatenated_numbers = list(
             itertools.chain.from_iterable(
@@ -218,7 +218,7 @@ def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
             "sender_id": "all",
             "session_idx": "nan",
             "marker": marker_name,
-            "statistic": "number_of_sessions_where_marker_applies_at_least_once",
+            "statistic": "number_of_sessions_where_marker_applied_at_least_once",
             "value": str(stats.count_if_applied_at_least_once[marker_name]),
         }
         row_idx += 1
@@ -226,7 +226,7 @@ def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
             "sender_id": "all",
             "session_idx": "nan",
             "marker": marker_name,
-            "statistic": "percentage_of_sessions_where_marker_applies_at_least_once",
+            "statistic": "percentage_of_sessions_where_marker_applied_at_least_once",
             "value": str(
                 round(
                     stats.count_if_applied_at_least_once[marker_name]
