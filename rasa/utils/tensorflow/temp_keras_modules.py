@@ -22,6 +22,7 @@ from tensorflow.python.keras.utils import tf_utils, version_utils
 from tensorflow.python.profiler import trace
 from tensorflow.python.distribute.coordinator import cluster_coordinator
 
+
 # noinspection PyMethodOverriding
 class TmpKerasModel(Model):
     """Temporary solution. Keras model that uses a custom data adapter inside fit."""
