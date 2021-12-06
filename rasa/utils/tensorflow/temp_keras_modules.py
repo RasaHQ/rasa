@@ -16,12 +16,11 @@ import tensorflow as tf
 from tensorflow.keras.callbacks import Callback, CallbackList, History
 from tensorflow.keras.models import Model
 
-from tensorflow.python.keras.engine import training, training_utils, data_adapter, \
-    base_layer
+from tensorflow.python.keras.engine import training, training_utils, data_adapter
 from tensorflow.python.eager import context
 from tensorflow.python.keras.utils import tf_utils, version_utils
 from tensorflow.python.profiler import trace
-
+from tensorflow.python.distribute.coordinator import cluster_coordinator
 
 # noinspection PyMethodOverriding
 class TmpKerasModel(Model):
@@ -39,7 +38,7 @@ class TmpKerasModel(Model):
     def fit(
         self,
         x: Optional[
-            Union[np.ndarray, tf.Tensor, tf.data.Dataset, tf.keras.utils.Sequence ]
+            Union[np.ndarray, tf.Tensor, tf.data.Dataset, tf.keras.utils.Sequence]
         ] = None,
         y: Optional[
             Union[np.ndarray, tf.Tensor, tf.data.Dataset, tf.keras.utils.Sequence]
@@ -275,8 +274,10 @@ class TmpKerasModel(Model):
         self._check_call_args("fit")
         training._disallow_inside_tf_function("fit")
 
-        if verbose == 'auto':
-            if self.distribute_strategy._should_use_with_coordinator:  # pylint: disable=protected-access
+        if verbose == "auto":
+            if (
+                self.distribute_strategy._should_use_with_coordinator
+            ):  # pylint: disable=protected-access
                 verbose = 2  # Default to epoch-level logging for PSStrategy.
             else:
                 verbose = 1  # Default to batch-level logging otherwise.
@@ -296,9 +297,12 @@ class TmpKerasModel(Model):
                 validation_data
             )
 
-        if self.distribute_strategy._should_use_with_coordinator:  # pylint: disable=protected-access
+        if (
+            self.distribute_strategy._should_use_with_coordinator
+        ):  # pylint: disable=protected-access
             self._cluster_coordinator = cluster_coordinator.ClusterCoordinator(
-                self.distribute_strategy)
+                self.distribute_strategy
+            )
 
         with self.distribute_strategy.scope(), (
             training_utils.RespectCompiledTrainableState(self)
@@ -350,11 +354,12 @@ class TmpKerasModel(Model):
                 with data_handler.catch_stop_iteration():
                     for step in data_handler.steps():
                         with trace.Trace(
-                                'train',
-                                epoch_num=epoch,
-                                step_num=step,
-                                batch_size=batch_size,
-                                _r=1):
+                            "train",
+                            epoch_num=epoch,
+                            step_num=step,
+                            batch_size=batch_size,
+                            _r=1,
+                        ):
                             callbacks.on_train_batch_begin(step)
                             tmp_logs = train_function(iterator)
                             if data_handler.should_sync:
@@ -367,7 +372,7 @@ class TmpKerasModel(Model):
 
                 logs = tf_utils.sync_to_numpy_or_python_type(logs)
                 if logs is None:
-                    raise ValueError('Expect x to be a non-empty array or dataset.')
+                    raise ValueError("Expect x to be a non-empty array or dataset.")
                 epoch_logs = copy.copy(logs)
 
                 # Run validation.
