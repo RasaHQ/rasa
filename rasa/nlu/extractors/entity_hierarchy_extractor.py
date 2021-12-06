@@ -280,7 +280,7 @@ def topdownparser(data: Dict[str, list]) -> dict:
 
 # subclass EntityExtractor to skip featurize_message() in
 # rasa.nlu.model.Interpreter
-class EntityHierarchy(EntityExtractor):
+class EntityHierarchyExtractor(EntityExtractor):
     """EntityHierarchy is a multiple entity per token extractor."""
 
     # Which components are required by this component.
