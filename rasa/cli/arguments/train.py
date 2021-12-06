@@ -8,6 +8,9 @@ from rasa.cli.arguments.default_arguments import (
     add_out_param,
     add_domain_param,
 )
+from rasa.graph_components.providers.training_tracker_provider import (
+    TrainingTrackerProvider,
+)
 from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
 USE_LATEST_MODEL_FOR_FINE_TUNING = True
@@ -133,9 +136,9 @@ def add_dry_run_param(
         "and this information will be printed as the output. The return "
         "code is a 4-bit bitmask that can also be used to determine what exactly needs "
         "to be retrained:\n"
-        "- 1 means Core needs to be retrained\n"
-        "- 2 means NLU needs to be retrained\n"
-        "- 4 means responses in the domain should be updated\n"
+        "- 0 means that no extensive training is required (note that the responses "
+        "still might require updating by running 'rasa train').\n"
+        "- 1 means the model needs to be retrained\n"
         "- 8 means the training was forced (--force argument is specified)",
     )
 
@@ -151,7 +154,7 @@ def add_augmentation_param(
     parser.add_argument(
         "--augmentation",
         type=int,
-        default=50,
+        default=TrainingTrackerProvider.get_default_config()["augmentation_factor"],
         help="How much data augmentation to use during training.",
     )
 
@@ -162,7 +165,7 @@ def add_debug_plots_param(
     """Specifies if conversation flow should be visualized."""
     parser.add_argument(
         "--debug-plots",
-        default=False,
+        default=TrainingTrackerProvider.get_default_config()["debug_plots"],
         action="store_true",
         help="If enabled, will create plots showing checkpoints "
         "and their connections between story blocks in a  "

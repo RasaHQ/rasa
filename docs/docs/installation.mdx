@@ -68,15 +68,15 @@ your machine and continue development locally.
   </TabItem>
 </Tabs>
 
-**Install Rasa Open Source using pip (requires Python 3.6, 3.7, or 3.8).**
+**Install Rasa Open Source using pip (requires Python 3.7, or 3.8).**
 
 ```bash
-pip3 install -U --user pip
+pip3 install -U --user pip && pip3 install rasa
 ```
 
-```bash
-pip3 install rasa
-```
+:::caution
+The command above will upgrade your pip to the latest version. We recommend using pip 21.3 or later due to performance improvements. Previous versions would take long time to resolve dependencies.
+:::
 
 **You are now ready to go! So what's next? You can create a new project by running:**
 
@@ -286,11 +286,6 @@ We recommend using at least the "medium" sized models (`_md`) instead of the spa
 default small `en_core_web_sm` model. Small models require less
 memory to run, but will likely reduce intent classification performance.
 
-:::caution Changed in 2.5
-Support for Spacy 3 was added. In prior versions of Rasa Open Source, to install spaCy with
-its language model for the English language, you need to additionally run
-`python3 -m spacy link en_core_web_md en`.
-:::
 
 ### Dependencies for MITIE
 

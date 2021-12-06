@@ -41,7 +41,7 @@ def test_session_start_is_not_serialised(domain: Domain):
         Story.from_events(tracker.events, "some-story01").story_steps
     )
 
-    expected = """version: "2.0"
+    expected = """version: "3.0"
 stories:
 - story: some-story01
   steps:
@@ -56,7 +56,7 @@ stories:
     assert actual == expected
 
 
-def test_as_story_string_or_statement():
+def test_as_story_string_or_statement_with_slot_was_set():
     import rasa.shared.utils.io
 
     stories = """
@@ -64,27 +64,19 @@ def test_as_story_string_or_statement():
     - story: hello world
       steps:
       - or:
-        - intent: intent1
-        - intent: intent2
-        - intent: intent3
+        - slot_was_set:
+            - name: joe
+        - slot_was_set:
+            - name: bob
       - action: some_action
     """
 
-    reader = YAMLStoryReader(is_used_for_training=False)
+    reader = YAMLStoryReader()
     yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     steps = reader.read_from_parsed_yaml(yaml_content)
 
-    assert len(steps) == 1
-
-    assert (
-        steps[0].as_story_string()
-        == """
-## hello world
-* intent1 OR intent2 OR intent3
-    - some_action
-"""
-    )
+    assert len(steps) == 3
 
 
 def test_cap_length():

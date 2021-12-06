@@ -62,6 +62,7 @@ module.exports = {
             'model-configuration',
             'components',
             'policies',
+            'custom-graph-components',
             'training-data-importers',
             'language-support',
           ],
@@ -75,6 +76,14 @@ module.exports = {
             'custom-actions',
             'forms',
             'default-actions',
+            'slot-validation-actions',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Evaluation',
+          items: [
+            'markers',
           ],
         },
         {
@@ -132,7 +141,7 @@ module.exports = {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: ['changelog', 'migration-guide'],
+      items: ['changelog', 'migration-guide', 'actively-maintained-versions'],
     },
   ],
 };

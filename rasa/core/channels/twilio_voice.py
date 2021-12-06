@@ -85,6 +85,7 @@ class TwilioVoiceInput(InputChannel):
         "Polly.Astrid",
         "Polly.Filiz",
         "Polly.Gwyneth",
+        "Polly.Aditi",
     ]
 
     SUPPORTED_SPEECH_MODELS = ["default", "numbers_and_commands", "phone_call"]
@@ -224,7 +225,7 @@ class TwilioVoiceInput(InputChannel):
             return response.json({"status": "ok"})
 
         @twilio_voice_webhook.route("/webhook", methods=["POST"])
-        async def receive(request: Request) -> Text:
+        async def receive(request: Request) -> HTTPResponse:
             sender_id = request.form.get("From")
             text = request.form.get("SpeechResult")
             input_channel = self.name()

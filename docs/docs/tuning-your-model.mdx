@@ -300,14 +300,14 @@ for both is highly likely to be the same. This is also useful if you don't have 
 
 An alternative to [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which uses pre-trained language
 models such as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
-[HFTransformersNLP](./components.mdx#hftransformersnlp) for a full list of supported language models.
+[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) for a full list of supported language models.
 
 If your training data is not in English you can also use a different variant of a language model which
 is pre-trained in the language specific to your training data.
 For example, there are chinese (`bert-base-chinese`) and japanese (`bert-base-japanese`) variants of the BERT model.
 A full list of different variants of
 these language models is available in the
-[official documentation of the Transformers library](https://huggingface.co/transformers/pretrained_models.html).
+[official documentation of the Transformers library](https://huggingface.co/models?library=tf&sort=downloads).
 
 [spacynlp](./components.mdx#spacyfeaturizer) also provides word embeddings in many different languages,
 so you can use this as another alternative, depending on the language of your training data.
@@ -383,10 +383,6 @@ pipeline:
 ```
 
 ### Accessing Diagnostic Data
-
-:::info New in 2.3
-Diagnostic data was made available.
-:::
 
 To gain a better understanding of what your models do, you can access intermediate results of the prediction process.
 To do this, you need to access the `diagnostic_data` field of the [Message](./reference/rasa/shared/nlu/training_data/message.md#message-objects)

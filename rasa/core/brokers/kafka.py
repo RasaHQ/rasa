@@ -70,7 +70,6 @@ class KafkaEventBroker(EventBroker):
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
             loglevel: Logging level of the kafka logger.
-
         """
         import kafka
 

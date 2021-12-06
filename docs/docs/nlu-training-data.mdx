@@ -168,10 +168,6 @@ When using lookup tables with `RegexFeaturizer`, provide enough examples for the
 
 ## Entities Roles and Groups
 
-:::info New in 2.8
-Entities Roles and Groups is no longer an experimental feature as of 2.8. The feature behaviour remains unchanged.
-:::
-
 Annotating words as custom entities allows you to define certain concepts in your training data.
 For example, you can identify cities by annotating them:
 
@@ -239,16 +235,36 @@ examples for every combination of entity and role or group label.
 To enable the model to generalize, make sure to have some variation in your training examples.
 For example, you should  include examples like `fly TO y FROM x`, not only `fly FROM x TO y`.
 
-To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
-[forms](forms.mdx) or use [custom actions](custom-actions.mdx) to extract the corresponding entity directly from the tracker.
+To fill slots from entities with a specific role/group, you need to define a `from_entity` [slot mapping](./domain.mdx#slot-mappings)
+for the slot and specify the role/group that is required. For example:
+
+```yaml-rasa
+entities:
+   - city:
+       roles:
+       - departure
+       - destination
+
+slots:
+  departure:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: city
+      role: departure
+  destination:
+    type: any
+    mappings:
+    - type: from_entity
+      entity: city
+      role: destination
+```
 
 ### Entity Roles and Groups influencing dialogue predictions
 
-:::caution Changed in 2.1
 If you want to influence the dialogue predictions by roles or groups, you need to modify your stories to contain
 the desired role or group label. You also need to list the corresponding roles and groups of an entity in your
 [domain file](./domain.mdx#entities).
-:::
 
 Let's assume you want to output a different sentence depending on what the user's location is. E.g.
 if the user just arrived from London, you might want to ask how the trip to London was. But if the user is on the way

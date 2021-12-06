@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 import pytest
@@ -13,6 +13,8 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
+    RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
     SIMILARITY_TYPE,
     LOSS_TYPE,
     COSINE,
@@ -21,7 +23,6 @@ from rasa.utils.tensorflow.constants import (
     CROSS_ENTROPY,
     MARGIN,
     AUTO,
-    LINEAR_NORM,
     TOLERANCE,
     CHECKPOINT_MODEL,
     EVAL_NUM_EPOCHS,
@@ -55,15 +56,44 @@ def test_align_token_features():
 
 
 @pytest.mark.parametrize(
-    "input_values, ranking_length, output_values",
+    (
+        "input_values, ranking_length, renormalize, possible_output_values, "
+        " resulting_ranking_length"
+    ),
     [
-        ([0.2, 0.7, 0.1], 2, [0.2222222, 0.77777778, 0.0]),
-        ([0.1, 0.7, 0.1], 5, [0.11111111, 0.77777778, 0.11111111]),
+        # keep the top 2
+        ([0.1, 0.4, 0.01], 2, False, [[0.1, 0.4, 0.0]], 2),
+        # normalize top 2
+        ([0.1, 0.4, 0.01], 2, True, [[0.2, 0.8, 0.0]], 2),
+        # 2 possible values that could be excluded
+        ([0.1, 0.4, 0.1], 2, True, [[0.0, 0.8, 0.2], [0.2, 0.8, 0.0]], 2),
+        # ranking_length > num_confidences => ranking_length := num_confidences
+        ([0.1, 0.3, 0.2], 5, False, [[0.1, 0.3, 0.2]], 3),
+        # ranking_length > num_confidences  => ranking_length := num_confidences
+        ([0.1, 0.3, 0.1], 5, True, [[0.1, 0.3, 0.1]], 3),
+        # ranking_length == 0  => ranking_length := num_confidences
+        ([0.1, 0.3, 0.1], 0, True, [[0.1, 0.3, 0.1]], 3),
     ],
 )
-def test_normalize(input_values, ranking_length, output_values):
-    normalized_values = train_utils.normalize(np.array(input_values), ranking_length)
-    assert np.allclose(normalized_values, np.array(output_values), atol=1e-5)
+def test_rank_and_mask(
+    input_values: List[float],
+    ranking_length: int,
+    possible_output_values: List[List[float]],
+    renormalize: bool,
+    resulting_ranking_length: int,
+):
+    confidences = np.array(input_values)
+    indices, modified_confidences = train_utils.rank_and_mask(
+        confidences=confidences, ranking_length=ranking_length, renormalize=renormalize
+    )
+    assert any(
+        np.allclose(modified_confidences, np.array(possible_output))
+        for possible_output in possible_output_values
+    )
+    assert np.allclose(
+        sorted(input_values, reverse=True)[:resulting_ranking_length],
+        confidences[indices],
+    )
 
 
 @pytest.mark.parametrize(
@@ -98,16 +128,10 @@ def test_init_split_entities_config(
     "component_config, raises_exception",
     [
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, True),
-        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: SOFTMAX}, False),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, False),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, False),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: SOFTMAX}, False),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, False),
         ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: MARGIN}, True),
-        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: SOFTMAX}, True),
         ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: CROSS_ENTROPY}, True),
         ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: MARGIN}, True),
-        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: SOFTMAX}, True),
         ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: CROSS_ENTROPY}, True),
     ],
 )
@@ -127,14 +151,64 @@ def test_confidence_loss_settings(
     [
         ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: INNER}, False),
         ({MODEL_CONFIDENCE: SOFTMAX, SIMILARITY_TYPE: COSINE}, True),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, SIMILARITY_TYPE: INNER}, False),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, SIMILARITY_TYPE: COSINE}, False),
     ],
 )
 def test_confidence_similarity_settings(
     component_config: Dict[Text, Any], raises_exception: bool
 ):
-    component_config[LOSS_TYPE] = SOFTMAX
+    component_config[LOSS_TYPE] = CROSS_ENTROPY
+    if raises_exception:
+        with pytest.raises(InvalidConfigException):
+            train_utils._check_confidence_setting(component_config)
+    else:
+        train_utils._check_confidence_setting(component_config)
+
+
+@pytest.mark.parametrize(
+    "component_config, raises_exception",
+    [
+        (
+            {
+                MODEL_CONFIDENCE: SOFTMAX,
+                SIMILARITY_TYPE: INNER,
+                RENORMALIZE_CONFIDENCES: True,
+                RANKING_LENGTH: 10,
+            },
+            False,
+        ),
+        (
+            {
+                MODEL_CONFIDENCE: SOFTMAX,
+                SIMILARITY_TYPE: INNER,
+                RENORMALIZE_CONFIDENCES: False,
+                RANKING_LENGTH: 10,
+            },
+            False,
+        ),
+        (
+            {
+                MODEL_CONFIDENCE: AUTO,
+                SIMILARITY_TYPE: INNER,
+                RENORMALIZE_CONFIDENCES: True,
+                RANKING_LENGTH: 10,
+            },
+            True,
+        ),
+        (
+            {
+                MODEL_CONFIDENCE: AUTO,
+                SIMILARITY_TYPE: INNER,
+                RENORMALIZE_CONFIDENCES: False,
+                RANKING_LENGTH: 10,
+            },
+            False,
+        ),
+    ],
+)
+def test_confidence_renormalization_settings(
+    component_config: Dict[Text, Any], raises_exception: bool
+):
+    component_config[LOSS_TYPE] = CROSS_ENTROPY
     if raises_exception:
         with pytest.raises(InvalidConfigException):
             train_utils._check_confidence_setting(component_config)
@@ -147,8 +221,6 @@ def test_confidence_similarity_settings(
     [
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, AUTO),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, SOFTMAX),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, LINEAR_NORM,),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, AUTO),
     ],
 )
 def test_update_confidence_type(
@@ -156,14 +228,6 @@ def test_update_confidence_type(
 ):
     component_config = train_utils.update_confidence_type(component_config)
     assert component_config[MODEL_CONFIDENCE] == model_confidence
-
-
-def test_warn_deprecated_model_confidences():
-
-    component_config = {MODEL_CONFIDENCE: LINEAR_NORM}
-
-    with pytest.warns(FutureWarning):
-        train_utils._check_confidence_setting(component_config)
 
 
 @pytest.mark.parametrize(
