@@ -153,26 +153,6 @@ Convert the output predictions for entities to the actual entity tags.
   A map of entity tag type, e.g. entity, role, group, to actual entity tags and
   confidences.
 
-#### override\_defaults
-
-```python
-override_defaults(defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]) -> Dict[Text, Any]
-```
-
-Override default config with the given config.
-
-We cannot use `dict.update` method because configs contain nested dicts.
-
-**Arguments**:
-
-- `defaults` - default config
-- `custom` - user config containing new parameters
-  
-
-**Returns**:
-
-  updated config
-
 #### create\_data\_generators
 
 ```python
