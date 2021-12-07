@@ -186,8 +186,8 @@ jobs:
     name: Model Regression Tests - GPU
     continue-on-error: true
     needs:
-    - deploy_runner_gpu
-    - read_test_configuration
+      - deploy_runner_gpu
+      - read_test_configuration
     env:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
@@ -407,21 +407,20 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
-          poetry run python .github/scripts/mr_generate_summary.py
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         uses: actions/upload-artifact@v2
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          name: report.json
-          path: ./report.json
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          path: report.json
 
   model_regression_test_cpu:
     name: Model Regression Tests - CPU
     continue-on-error: true
     needs:
-    - read_test_configuration
+      - read_test_configuration
     env:
       ACCELERATOR_TYPE: "CPU"
     runs-on: ubuntu-latest
@@ -651,8 +650,10 @@ jobs:
   combine_reports:
     name: Combine reports
     runs-on: ubuntu-latest
+    if: ${{ always() }}
     needs:
       - model_regression_test_cpu
+      - model_regression_test_gpu
 
     steps:
       - name: Checkout git repository 🕝
@@ -844,9 +845,9 @@ jobs:
   remove_runner_gpu:
     name: Delete Github Runner - GPU
     needs:
-    - deploy_runner_gpu
-    - model_regression_test_gpu
-    - combine_reports
+      - deploy_runner_gpu
+      - model_regression_test_gpu
+      - combine_reports
     runs-on: ubuntu-latest
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
