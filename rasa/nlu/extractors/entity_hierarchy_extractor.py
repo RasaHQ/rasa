@@ -96,19 +96,6 @@ def _walkthrough(dict_of_lists: dict) -> list:
 def _topdownparser(data: Dict[str, list]) -> dict:
     """Parse a top-down type entity hierarchy dictionary.
 
-    The format is
-    ```
-    (target-entity):
-      config:
-        structure_only: False
-        mappings:
-          - value: (target-value)  [value key is optional]
-            examples:
-              - text: (source-string) ...
-              - ref: (another target entity) ...
-              - composite: (text {target entity name} text)...
-    ```
-
     Args:
         data (Dict[str,dict]): top down hierarchy loaded from file(s)
 
@@ -329,9 +316,9 @@ class EntityHierarchyExtractor(EntityExtractor):
         """Create a EntityHierachy which is a multiple entity per token extractor.
 
         Args:
-            component_config (Optional[Dict[Text, Any]], optional):
+            component_config (Optional[Dict[Text, Any]], optional): config
                 Defaults to None.
-            entityhierarchy (Optional[Dict[Text, Any]], optional):
+            entityhierarchy (Optional[Dict[Text, Any]], optional): hierarchy
                 Defaults to None.
         """
         super().__init__(component_config)
@@ -614,8 +601,7 @@ class _KeywordProcessor(object):
     """
 
     def __init__(self, case_sensitive=False):
-        """
-        Create a KeywordProcessor.
+        """Create a KeywordProcessor.
 
         Args:
             case_sensitive (boolean): Keyword search should be case sensitive
@@ -794,8 +780,8 @@ class _KeywordProcessor(object):
         """Set of characters that will be considered as part of word.
 
         Args:
-            non_word_boundaries (set(str)):
-                Set of characters that will be considered as part of word.
+            non_word_boundaries (set(str)): Set of characters that
+            will be considered as part of word.
         """
         self.non_word_boundaries = non_word_boundaries
 
@@ -803,8 +789,8 @@ class _KeywordProcessor(object):
         """Add a character that will be considered as part of word.
 
         Args:
-            character (char):
-                Character that will be considered as part of word.
+            character (char): Character that will be considered
+            as part of word.
 
         """
         self.non_word_boundaries.add(character)
@@ -976,10 +962,10 @@ class _KeywordProcessor(object):
             keyword_list (list(str)): List of keywords to add
 
         Examples:
-            >>> keyword_processor.add_keywords_from_list(["java", "python"]})
+            keyword_processor.add_keywords_from_list(["java", "python"]})
+
         Raises:
             AttributeError: If `keyword_list` is not a list.
-
         """
         if not isinstance(keyword_list, list):
             raise AttributeError("keyword_list should be a list")

@@ -1,18 +1,10 @@
-from rasa.shared.nlu.constants import (
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITIES,
-    INTENT,
-    INTENT_NAME_KEY,
-    INTENT_RANKING_KEY,
-    PREDICTED_CONFIDENCE_KEY,
-)
+from rasa.shared.nlu.constants import ENTITIES
 
-from rasa.nlu.extractors.entity_hierarchy_extractor import EntityHierarchyExtractor, _topdownparser
+from rasa.nlu.extractors.entity_hierarchy_extractor import EntityHierarchyExtractor
+from rasa.nlu.extractors.entity_hierarchy_extractor import _topdownparser
 from ruamel.yaml import YAML
 from io import StringIO
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers import whitespace_tokenizer
 
 yaml = YAML(pure=False, typ="safe")
 
