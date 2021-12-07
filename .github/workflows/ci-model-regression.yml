@@ -424,7 +424,6 @@ jobs:
       - name: Stop Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          sudo datadog-agent status  # debug
           sudo service datadog-agent stop
 
   model_regression_test_cpu:
@@ -661,7 +660,6 @@ jobs:
       - name: Stop Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          sudo datadog-agent status  # debug
           sudo service datadog-agent stop
 
   add_comment_results_gpu:
