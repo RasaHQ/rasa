@@ -649,7 +649,7 @@ jobs:
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
-
+    if: always() && (needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success')
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v2
