@@ -538,7 +538,7 @@ jobs:
           DATASET: "${{ matrix.dataset }}"
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
-          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          BRANCH: ${{ github.head_ref }}
           GIT_SHA: "${{ github.sha }}"
         run: |
           .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ env.ACCELERATOR_TYPE }}'
