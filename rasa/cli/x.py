@@ -353,9 +353,7 @@ def rasa_x(args: argparse.Namespace) -> None:
 
     _configure_logging(args)
 
-    if version.parse(rasa.version.__version__) >= version.parse(
-        MINIMUM_COMPATIBLE_VERSION
-    ):
+    if version.parse(rasa.version.__version__) >= version.parse("3.0.0"):
         rasa.shared.utils.io.raise_warning(
             f"Your version of rasa '{rasa.version.__version__}' is currently "
             f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
