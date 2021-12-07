@@ -1,6 +1,5 @@
 import os
 import string
-import io
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Union
 from glob import glob
@@ -69,7 +68,7 @@ def _walkthrough(dict_of_lists: dict) -> list:
         from the lists of the original dict is used.
     """
 
-    def __iterate(the_list: list, __cur=[]):
+    def __iterate(the_list: list, __cur: list = []) -> list:
         par = the_list[0][0]
         pvm = []
         if not isinstance(
@@ -191,7 +190,7 @@ def _topdownparser(data: Dict[str, list]) -> dict:
         e_data_lst: list,
         e_config: dict,
         parent_target_value: Any = None,
-    ):
+    ) -> None:
         """Parse one entity section fro the YAML-derived object.
 
         Args:
@@ -341,7 +340,7 @@ class EntityHierarchyExtractor(EntityExtractor):
         else:
             self._entityhierarchy = {}
 
-    def _parse_prepared_hierarchies(self):
+    def _parse_prepared_hierarchies(self) -> None:
         """Train the flashtext component with prepared hierarchies."""
         for keyword, ent_dict in self._entityhierarchy.get("entities", {}).items():
             # keyword is the full text to be found, the dict contains
@@ -600,7 +599,7 @@ class _KeywordProcessor(object):
           <https://stackoverflow.com/questions/44178449/regex-replace-is-taking-time-for-millions-of-documents-how-to-make-it-faster>`_.
     """
 
-    def __init__(self, case_sensitive=False):
+    def __init__(self, case_sensitive: bool = False):
         """Create a KeywordProcessor.
 
         Args:
@@ -619,7 +618,7 @@ class _KeywordProcessor(object):
         self.case_sensitive = case_sensitive
         self._terms_in_trie = 0
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Return number of terms present in the keyword_trie_dict.
 
         Returns:
@@ -629,7 +628,7 @@ class _KeywordProcessor(object):
         """
         return self._terms_in_trie
 
-    def __contains__(self, word):
+    def __contains__(self, word: str) -> bool:
         """Check if word is present in the keyword_trie_dict.
 
         Args:
@@ -659,7 +658,7 @@ class _KeywordProcessor(object):
                 break
         return self._keyword in current_dict and len_covered == len(word)
 
-    def __getitem__(self, word):
+    def __getitem__(self, word: str) -> Any:
         """If word is present in keyword_trie_dict return the clean name for it.
 
         Args:
@@ -689,7 +688,7 @@ class _KeywordProcessor(object):
         if self._keyword in current_dict and len_covered == len(word):
             return current_dict[self._keyword]
 
-    def __setitem__(self, keyword, clean_name=None):
+    def __setitem__(self, keyword: str, clean_name: Any = None) -> bool:
         """Add keyword to the dictionary.
 
         Pass the keyword and the clean name it maps to.
@@ -722,7 +721,7 @@ class _KeywordProcessor(object):
             current_dict[self._keyword] = clean_name
         return status
 
-    def __delitem__(self, keyword):
+    def __delitem__(self, keyword: str) -> bool:
         """Remove keyword from the dictionary.
 
         Pass the keyword to be deleted.
@@ -769,14 +768,16 @@ class _KeywordProcessor(object):
                 self._terms_in_trie -= 1
         return status
 
-    def __iter__(self):
+    def __iter__(self) -> None:
         """Disabled iteration as get_all_keywords() is the right way to iterate.
 
         Deprecated.
         """
         raise NotImplementedError("Please use get_all_keywords() instead")
 
-    def set_non_word_boundaries(self, non_word_boundaries):
+    def set_non_word_boundaries(
+        self, non_word_boundaries: Union[str, List[str]]
+    ) -> None:
         """Set of characters that will be considered as part of word.
 
         Args:
@@ -785,7 +786,7 @@ class _KeywordProcessor(object):
         """
         self.non_word_boundaries = non_word_boundaries
 
-    def add_non_word_boundary(self, character):
+    def add_non_word_boundary(self, character: str) -> None:
         """Add a character that will be considered as part of word.
 
         Args:
@@ -795,7 +796,7 @@ class _KeywordProcessor(object):
         """
         self.non_word_boundaries.add(character)
 
-    def add_keyword(self, keyword, clean_name=None):
+    def add_keyword(self, keyword: str, clean_name: Any = None) -> bool:
         """Add one or more keywords to the dictionary.
 
         pass the keyword and the clean name it maps to.
@@ -822,7 +823,7 @@ class _KeywordProcessor(object):
         """
         return self.__setitem__(keyword, clean_name)
 
-    def remove_keyword(self, keyword):
+    def remove_keyword(self, keyword: str) -> bool:
         """Remove one or more keywords from the dictionary.
 
         Args:
@@ -844,7 +845,7 @@ class _KeywordProcessor(object):
         """
         return self.__delitem__(keyword)
 
-    def get_keyword(self, word):
+    def get_keyword(self, word: str) -> Any:
         """If word is present in keyword_trie_dict return the clean name for it.
 
         Args:
@@ -863,45 +864,7 @@ class _KeywordProcessor(object):
         """
         return self.__getitem__(word)
 
-    def add_keyword_from_file(self, keyword_file, encoding="utf-8"):
-        """Add keywords from a file.
-
-        Args:
-            keyword_file : path to keywords file
-            encoding : specify the encoding of the file
-
-        Examples:
-            keywords file format can be like:
-
-            >>> # Option 1: keywords.txt content
-            >>> # java_2e=>java
-            >>> # java programing=>java
-            >>> # product management=>product management
-            >>> # product management techniques=>product management
-
-            >>> # Option 2: keywords.txt content
-            >>> # java
-            >>> # python
-            >>> # c++
-
-            >>> keyword_processor.add_keyword_from_file('keywords.txt')
-
-        Raises:
-            IOError: If `keyword_file` path is not valid
-
-        """
-        if not os.path.isfile(keyword_file):
-            raise IOError("Invalid file path {}".format(keyword_file))
-        with io.open(keyword_file, encoding=encoding) as f:
-            for line in f:
-                if "=>" in line:
-                    keyword, clean_name = line.split("=>")
-                    self.add_keyword(keyword, clean_name.strip())
-                else:
-                    keyword = line.strip()
-                    self.add_keyword(keyword)
-
-    def add_keywords_from_dict(self, keyword_dict):
+    def add_keywords_from_dict(self, keyword_dict: dict) -> None:
         """Add keywords from a dictionary.
 
         Args:
@@ -928,7 +891,7 @@ class _KeywordProcessor(object):
             for keyword in keywords:
                 self.add_keyword(keyword, clean_name)
 
-    def remove_keywords_from_dict(self, keyword_dict):
+    def remove_keywords_from_dict(self, keyword_dict: dict) -> None:
         """Remove keywords from a dictionary.
 
         Args:
@@ -955,7 +918,7 @@ class _KeywordProcessor(object):
             for keyword in keywords:
                 self.remove_keyword(keyword)
 
-    def add_keywords_from_list(self, keyword_list):
+    def add_keywords_from_list(self, keyword_list: List[str]) -> None:
         """Add keywords from a list.
 
         Args:
@@ -973,7 +936,7 @@ class _KeywordProcessor(object):
         for keyword in keyword_list:
             self.add_keyword(keyword)
 
-    def remove_keywords_from_list(self, keyword_list):
+    def remove_keywords_from_list(self, keyword_list: List[str]) -> None:
         """Remove keywords present in list.
 
         Args:
@@ -989,7 +952,9 @@ class _KeywordProcessor(object):
         for keyword in keyword_list:
             self.remove_keyword(keyword)
 
-    def get_all_keywords(self, term_so_far="", current_dict=None):
+    def get_all_keywords(
+        self, term_so_far: str = "", current_dict: dict = None
+    ) -> dict:
         """Recursively builds a dictionary of keywords.
 
         And the clean name mapped to those keywords.
@@ -1028,7 +993,7 @@ class _KeywordProcessor(object):
                     terms_present[key] = sub_values[key]
         return terms_present
 
-    def extract_keywords(self, sentence, span_info=False):
+    def extract_keywords(self, sentence: str, span_info: bool = False) -> List[Any]:
         """Search in the string for all keywords present in corpus.
 
         Keywords present are added to a list `keywords_extracted`
@@ -1039,7 +1004,7 @@ class _KeywordProcessor(object):
             for keywords
 
         Returns:
-            keywords_extracted (list(str)): List of terms/keywords
+            keywords_extracted (list(any)): List of terms/keywords/clean names
             found in sentence that match our corpus
         """
         keywords_extracted = []
