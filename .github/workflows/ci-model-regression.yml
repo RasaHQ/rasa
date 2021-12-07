@@ -841,7 +841,6 @@ jobs:
     needs:
       - deploy_runner_gpu
       - model_regression_test_gpu
-      - combine_reports
     runs-on: ubuntu-latest
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
