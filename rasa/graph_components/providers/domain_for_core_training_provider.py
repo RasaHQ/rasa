@@ -6,6 +6,7 @@ from typing import Dict, Text, Any
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import REQUIRED_SLOTS_KEY
 from rasa.shared.core.domain import (
     KEY_RESPONSES,
     Domain,
@@ -88,5 +89,5 @@ class DomainForCoreTrainingProvider(GraphComponent):
         for response_name in serialized_domain[KEY_RESPONSES]:
             serialized_domain[KEY_RESPONSES][response_name] = []
         for form_name in serialized_domain[KEY_FORMS]:
-            serialized_domain[KEY_FORMS][form_name] = {}
+            serialized_domain[KEY_FORMS][form_name] = {REQUIRED_SLOTS_KEY: []}
         return Domain.from_dict(serialized_domain)

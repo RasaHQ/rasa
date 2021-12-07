@@ -1,4 +1,8 @@
+from __future__ import annotations
+from enum import Enum
+
 import rasa.shared.constants as constants
+
 
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
@@ -90,18 +94,27 @@ SLOT_MAPPINGS = "mappings"
 MAPPING_CONDITIONS = "conditions"
 MAPPING_TYPE = "type"
 
-MAPPING_FROM_ENTITY = "from_entity"
-MAPPING_FROM_INTENT = "from_intent"
-MAPPING_FROM_TRIGGER_INTENT = "from_trigger_intent"
-MAPPING_FROM_TEXT = "from_text"
-MAPPING_CUSTOM = "custom"
 
-PREDEFINED_MAPPINGS = {
-    MAPPING_FROM_ENTITY,
-    MAPPING_FROM_INTENT,
-    MAPPING_FROM_TRIGGER_INTENT,
-    MAPPING_FROM_TEXT,
-}
+class SlotMappingType(Enum):
+    """Slot mapping types."""
+
+    FROM_ENTITY = "from_entity"
+    FROM_INTENT = "from_intent"
+    FROM_TRIGGER_INTENT = "from_trigger_intent"
+    FROM_TEXT = "from_text"
+    CUSTOM = "custom"
+
+    def __str__(self) -> str:
+        """Returns the string representation that should be used in config files."""
+        return self.value
+
+    def is_predefined_type(self) -> bool:
+        """Returns True iff the mapping type is predefined.
+
+        That is, to evaluate the mapping no custom action execution is needed.
+        """
+        return self != SlotMappingType.CUSTOM
+
 
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a `SubState`

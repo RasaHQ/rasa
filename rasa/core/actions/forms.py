@@ -7,7 +7,7 @@ from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
 from rasa.shared.core.domain import Domain, KEY_SLOTS
-from rasa.shared.core.constants import MAPPING_FROM_ENTITY
+from rasa.shared.core.constants import SlotMappingType, SLOT_MAPPINGS, MAPPING_TYPE
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
@@ -89,7 +89,7 @@ class FormAction(LoopAction):
         )
 
         return {
-            "type": MAPPING_FROM_ENTITY,
+            "type": str(SlotMappingType.FROM_ENTITY),
             "entity": entity,
             "intent": intent,
             "not_intent": not_intent,
@@ -151,8 +151,8 @@ class FormAction(LoopAction):
         duplicate_entity_slot_mappings = set()
         domain_slots = domain.as_dict().get(KEY_SLOTS)
         for slot in domain.required_slots_for_form(self.name()):
-            for slot_mapping in domain_slots.get(slot).get("mappings"):
-                if slot_mapping.get("type") == MAPPING_FROM_ENTITY:
+            for slot_mapping in domain_slots.get(slot).get(SLOT_MAPPINGS):
+                if slot_mapping.get(MAPPING_TYPE) == str(SlotMappingType.FROM_ENTITY):
                     mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
                     if mapping_as_string in unique_entity_slot_mappings:
                         unique_entity_slot_mappings.remove(mapping_as_string)

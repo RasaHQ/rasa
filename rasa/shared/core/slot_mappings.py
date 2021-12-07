@@ -12,11 +12,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.core.constants import (
     SLOT_MAPPINGS,
-    MAPPING_FROM_INTENT,
-    MAPPING_FROM_TEXT,
-    MAPPING_FROM_TRIGGER_INTENT,
-    MAPPING_FROM_ENTITY,
-    MAPPING_CUSTOM,
+    SlotMappingType,
     MAPPING_CONDITIONS,
 )
 
@@ -49,14 +45,14 @@ class SlotMapping:
             )
 
         validations = {
-            MAPPING_FROM_ENTITY: ["entity"],
-            MAPPING_FROM_INTENT: ["value"],
-            MAPPING_FROM_TRIGGER_INTENT: ["value"],
-            MAPPING_FROM_TEXT: [],
-            MAPPING_CUSTOM: [],
+            SlotMappingType.FROM_ENTITY: ["entity"],
+            SlotMappingType.FROM_INTENT: ["value"],
+            SlotMappingType.FROM_TRIGGER_INTENT: ["value"],
+            SlotMappingType.FROM_TEXT: [],
+            SlotMappingType.CUSTOM: [],
         }
 
-        mapping_type = mapping.get("type")
+        mapping_type = SlotMappingType(mapping.get("type"))
         required_keys = validations.get(mapping_type)
 
         if required_keys is None:
@@ -170,21 +166,24 @@ class SlotMapping:
 
     @staticmethod
     def check_mapping_validity(
-        slot_name: Text, mapping: Dict[Text, Any], domain: "Domain"
+        slot_name: Text,
+        mapping_type: SlotMappingType,
+        mapping: Dict[Text, Any],
+        domain: "Domain",
     ) -> bool:
         """Checks the mapping for validity.
 
         Args:
+            slot_name: The name of the slot to be validated.
+            mapping_type: The type of the slot mapping.
             mapping: Slot mapping.
             domain: The domain to check against.
 
         Returns:
             True, if intent and entity specified in a mapping exist in domain.
         """
-        from rasa.shared.core.constants import MAPPING_TYPE
-
         if (
-            mapping.get(MAPPING_TYPE) == MAPPING_FROM_ENTITY
+            mapping_type == SlotMappingType.FROM_ENTITY
             and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities
         ):
             rasa.shared.utils.io.raise_warning(
@@ -195,7 +194,7 @@ class SlotMapping:
             return False
 
         if (
-            mapping.get(MAPPING_TYPE) == MAPPING_FROM_INTENT
+            mapping_type == SlotMappingType.FROM_INTENT
             and mapping.get(INTENT) not in domain.intents
         ):
             rasa.shared.utils.io.raise_warning(

@@ -12,9 +12,9 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     REQUESTED_SLOT,
-    MAPPING_FROM_ENTITY,
-    MAPPING_FROM_TRIGGER_INTENT,
+    SlotMappingType,
     MAPPING_TYPE,
+    SLOT_MAPPINGS,
 )
 from rasa.shared.core.domain import (
     KEY_ENTITIES,
@@ -37,8 +37,8 @@ def _get_updated_mapping_condition(
     condition: Dict[Text, Text], mapping: Dict[Text, Any], slot_name: Text
 ) -> Dict[Text, Text]:
     if mapping.get(MAPPING_TYPE) not in [
-        MAPPING_FROM_ENTITY,
-        MAPPING_FROM_TRIGGER_INTENT,
+        str(SlotMappingType.FROM_ENTITY),
+        str(SlotMappingType.FROM_TRIGGER_INTENT),
     ]:
         return {**condition, REQUESTED_SLOT: slot_name}
     return condition
@@ -118,13 +118,13 @@ def _migrate_auto_fill(
 ) -> Dict[Text, Any]:
     if slot_name in entities and properties.get("auto_fill", True) is True:
         from_entity_mapping = {
-            "type": MAPPING_FROM_ENTITY,
+            "type": str(SlotMappingType.FROM_ENTITY),
             "entity": slot_name,
         }
-        mappings = properties.get("mappings", [])
+        mappings = properties.get(SLOT_MAPPINGS, [])
         if from_entity_mapping not in mappings:
             mappings.append(from_entity_mapping)
-            properties.update({"mappings": mappings})
+            properties.update({SLOT_MAPPINGS: mappings})
 
     if "auto_fill" in properties:
         del properties["auto_fill"]

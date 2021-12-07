@@ -17,9 +17,9 @@ from rasa.graph_components.providers.domain_for_core_training_provider import (
     DomainForCoreTrainingProvider,
 )
 
-FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY = "config-without-epochs"
-FINGERPRINT_CORE = "domain-without-responses"  # can we change the name of this key?
-FINGERPRINT_NLU = "nlu-labels"
+FINGERPRINT_CONFIG = "fingerprint-config"
+FINGERPRINT_CORE = "fingerprint-core"
+FINGERPRINT_NLU = "fingerprint-nlu"
 FINGERPRINT_VERSION = "rasa-version"
 
 logger = logging.getLogger(__name__)
@@ -139,7 +139,7 @@ class FinetuningValidator(GraphComponent):
 
         fingerprint_config = self._get_fingerprint_of_schema_without_irrelevant_keys()
         self._compare_or_memorize(
-            fingerprint_key=FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
+            fingerprint_key=FINGERPRINT_CONFIG,
             new_fingerprint=fingerprint_config,
             error_message=(
                 "Cannot finetune because more than just the 'epoch' keys have been "
@@ -219,7 +219,7 @@ class FinetuningValidator(GraphComponent):
         Returns:
             fingerprint
         """
-        pruned_domain = DomainForCoreTrainingProvider.create_pruned_version()
+        pruned_domain = DomainForCoreTrainingProvider.create_pruned_version(domain)
         return pruned_domain.fingerprint()
 
     def _get_fingerprint_of_schema_without_irrelevant_keys(self,) -> Text:
