@@ -258,22 +258,15 @@ class FormAction(LoopAction):
         validate_name = f"validate_{self.name()}"
 
         if validate_name not in domain.action_names_or_texts:
-            return events
+            return []
 
         _tracker = self._temporary_tracker(tracker, events, domain)
         _action = RemoteAction(validate_name, self.action_endpoint)
         validate_events = await _action.run(output_channel, nlg, _tracker, domain)
 
-        validated_slot_names = [
-            event.key for event in validate_events if isinstance(event, SlotSet)
-        ]
-
-        # If the custom action doesn't return a SlotSet event for an extracted slot
-        # candidate we assume that it was valid. The custom action has to return a
-        # SlotSet(slot_name, None) event to mark a Slot as invalid.
-        return validate_events + [
-            event for event in events if event.key not in validated_slot_names
-        ]
+        # Only return the validated SlotSet events by the slot validation action to
+        # avoid adding duplicate SlotSet events for slots that are already valid.
+        return validate_events
 
     def _temporary_tracker(
         self,

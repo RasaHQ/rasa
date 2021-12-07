@@ -100,7 +100,6 @@ async def test_activate_with_prefilled_slot():
     )
     assert events == [
         ActiveLoop(form_name),
-        SlotSet(slot_name, slot_value),
         SlotSet(REQUESTED_SLOT, next_slot_to_request),
     ]
 
@@ -275,7 +274,6 @@ async def test_activate_and_immediate_deactivate():
     )
     assert events == [
         ActiveLoop(form_name),
-        SlotSet(slot_name, slot_value),
         SlotSet(REQUESTED_SLOT, None),
         ActiveLoop(None),
     ]
@@ -309,17 +307,14 @@ async def test_set_slot_and_deactivate():
     domain = Domain.from_yaml(domain)
 
     action = FormAction(form_name, None)
-    events = await action.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        tracker,
-        domain,
-    )
-    assert events == [
-        SlotSet(slot_name, slot_value),
-        SlotSet(REQUESTED_SLOT, None),
-        ActiveLoop(None),
-    ]
+
+    with pytest.raises(ActionExecutionRejection):
+        await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
 
 
 async def test_action_rejection():
@@ -384,7 +379,6 @@ async def test_action_rejection():
             [
                 SlotSet("num_people", "so_clean"),
                 SlotSet("some_other_slot", 2),
-                SlotSet("num_tables", 5),
                 SlotSet(REQUESTED_SLOT, None),
                 ActiveLoop(None),
             ],
@@ -394,7 +388,6 @@ async def test_action_rejection():
             [{"event": "slot", "name": "num_people", "value": "so_clean"}],
             [
                 SlotSet("num_people", "so_clean"),
-                SlotSet("num_tables", 5),
                 SlotSet(REQUESTED_SLOT, None),
                 ActiveLoop(None),
             ],
@@ -402,11 +395,7 @@ async def test_action_rejection():
         # Validate function says slot is invalid
         (
             [{"event": "slot", "name": "num_people", "value": None}],
-            [
-                SlotSet("num_people", None),
-                SlotSet("num_tables", 5),
-                SlotSet(REQUESTED_SLOT, "num_people"),
-            ],
+            [SlotSet("num_people", None), SlotSet(REQUESTED_SLOT, "num_people"),],
         ),
         # Validate function decides to request a slot which is not part of the default
         # slot mapping
@@ -427,7 +416,6 @@ async def test_action_rejection():
             [
                 SlotSet("num_people", None),
                 SlotSet(REQUESTED_SLOT, None),
-                SlotSet("num_tables", 5),
                 SlotSet(REQUESTED_SLOT, None),
                 ActiveLoop(None),
             ],
@@ -441,7 +429,6 @@ async def test_action_rejection():
             [
                 SlotSet("num_people", None),
                 ActiveLoop(None),
-                SlotSet("num_tables", 5),
                 SlotSet(REQUESTED_SLOT, None),
                 ActiveLoop(None),
             ],
@@ -449,11 +436,7 @@ async def test_action_rejection():
         # User rejected manually
         (
             [{"event": "action_execution_rejected", "name": "my form"}],
-            [
-                ActionExecutionRejected("my form"),
-                SlotSet("num_people", "hi"),
-                SlotSet("num_tables", 5),
-            ],
+            [ActionExecutionRejected("my form"),],
         ),
     ],
 )
@@ -509,6 +492,7 @@ async def test_validate_slots(
         tracker,
         domain,
     )
+    assert slot_events == [SlotSet(slot_name, slot_value), SlotSet("num_tables", 5)]
     tracker.update_with_events(slot_events, domain)
 
     action_server_url = "http:/my-action-server:5055/webhook"
@@ -525,7 +509,7 @@ async def test_validate_slots(
             tracker,
             domain,
         )
-
+        print([str(e) for e in events])
         assert events == expected_events
 
 
@@ -814,7 +798,7 @@ async def test_extract_requested_slot_default():
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.responses),
     )
-    assert slot_values == [SlotSet("some_slot", "some_value")]
+    assert slot_values == []
 
 
 @pytest.mark.parametrize(
@@ -1488,15 +1472,16 @@ async def test_extract_other_slots_with_matched_mapping_conditions():
         tracker,
         domain,
     )
+    assert slot_events == [SlotSet("name", "Emily")]
     tracker.update_with_events(slot_events, domain)
 
-    form_slot_events = await form.validate(
-        tracker,
-        domain,
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-    )
-    assert form_slot_events == [SlotSet("name", "Emily")]
+    with pytest.raises(ActionExecutionRejection):
+        await form.validate(
+            tracker,
+            domain,
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+        )
 
 
 async def test_extract_other_slots_raises_no_matched_conditions():
