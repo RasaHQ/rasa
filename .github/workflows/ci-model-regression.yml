@@ -687,7 +687,10 @@ jobs:
     name: Add a comment with the results
     runs-on: ubuntu-latest
     needs:
+      - model_regression_test_cpu
+      - model_regression_test_gpu
       - combine_reports
+    if: always() && (needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success')
 
     steps:
       - name: Checkout
