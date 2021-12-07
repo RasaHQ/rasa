@@ -1,5 +1,6 @@
 # Send model regression test results to Segment with a summary
 # of all test results.
+# Also write them into a report file.
 import analytics
 import datetime
 import json
@@ -221,19 +222,18 @@ def generate_json(file, task, data):
     return data
 
 
-if __name__ == "__main__":
-    send_to_datadog(None)
+def send_all_results_to_segment():
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
             if any(f.endswith(valid_name) for valid_name in task_mapping.keys()):
                 push_results(f, os.path.join(dirpath, f))
     analytics.flush()
 
-    data = {}
-    if os.path.exists(SUMMARY_FILE):
-        with open(SUMMARY_FILE) as json_file:
-            data = json.load(json_file)
 
+def create_report_file():
+    assert not os.path.exists(SUMMARY_FILE)  # Debug
+
+    data = {}
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
             if f not in task_mapping.keys():
@@ -243,3 +243,9 @@ if __name__ == "__main__":
 
     with open(SUMMARY_FILE, "w") as f:
         json.dump(data, f, sort_keys=True, indent=2)
+
+
+if __name__ == "__main__":
+    send_to_datadog(None)
+    send_all_results_to_segment()
+    create_report_file()
