@@ -408,6 +408,7 @@ jobs:
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
           poetry run python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -633,6 +634,7 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
+          cat $SUMMARY_FILE
 
       - name: Display structure of downloaded files
         continue-on-error: true
