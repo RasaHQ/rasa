@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import logging
 import os
 import shutil
@@ -308,6 +309,34 @@ def update_existing_keys(
         if k in updated:
             updated[k] = v
     return updated
+
+
+def override_defaults(
+    defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
+) -> Dict[Text, Any]:
+    """Override default config with the given config.
+
+    We cannot use `dict.update` method because configs contain nested dicts.
+
+    Args:
+        defaults: default config
+        custom: user config containing new parameters
+
+    Returns:
+        updated config
+    """
+    config = copy.deepcopy(defaults) if defaults else {}
+
+    if not custom:
+        return config
+
+    for key in custom.keys():
+        if isinstance(config.get(key), dict):
+            config[key].update(custom[key])
+            continue
+        config[key] = custom[key]
+
+    return config
 
 
 class RepeatedLogFilter(logging.Filter):
