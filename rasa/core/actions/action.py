@@ -1190,7 +1190,7 @@ class ActionExtractSlots(Action):
                 ):
                     continue
 
-                if mapping_type.is_predefined():
+                if mapping_type.is_predefined_type():
                     value = extract_slot_value_from_predefined_mapping(
                         mapping_type, mapping, tracker
                     )
