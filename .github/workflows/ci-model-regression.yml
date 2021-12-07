@@ -631,11 +631,6 @@ jobs:
           poetry run python .github/scripts/mr_publish_results.py
           cat $SUMMARY_FILE
 
-      - name: Display structure of downloaded files
-        continue-on-error: true
-        run: ls -R
-        working-directory: "."
-
       - name: Upload an artifact with the report
         uses: actions/upload-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
