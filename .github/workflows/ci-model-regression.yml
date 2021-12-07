@@ -259,8 +259,6 @@ jobs:
           echo "DATASET=${DATASET}" >> $GITHUB_ENV
           echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
           echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
-          echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
-          echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
           echo "EXTERNAL_DATASET_REPOSITORY_BRANCH=${EXTERNAL_DATASET_REPOSITORY_BRANCH}" >> $GITHUB_ENV
           echo "IS_EXTERNAL=${IS_EXTERNAL}" >> $GITHUB_ENV
 
@@ -490,8 +488,6 @@ jobs:
           echo "DATASET=${DATASET}" >> $GITHUB_ENV
           echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
           echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
-          echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
-          echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
           echo "EXTERNAL_DATASET_REPOSITORY_BRANCH=${EXTERNAL_DATASET_REPOSITORY_BRANCH}" >> $GITHUB_ENV
           echo "IS_EXTERNAL=${IS_EXTERNAL}" >> $GITHUB_ENV
 
@@ -698,9 +694,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Download an artifact with the results for the schedule version
+      - name: Download report from last on-schedule regression test
         run: |
-          # Get ID of the schedule workflow
+          # Get ID of last on-schedule workflow
           SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
             | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
@@ -774,9 +770,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Download an artifact with the results for the schedule version
+      - name: Download report from last on-schedule regression test
         run: |
-          # Get ID of the schedule workflow
+          # Get ID of last on-schedule workflow
           SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
             | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
