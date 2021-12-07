@@ -23,7 +23,6 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_RASA_X,
     DEFAULT_RASA_PORT,
     DEFAULT_RASA_X_PORT,
-    MINIMUM_COMPATIBLE_VERSION,
 )
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -357,8 +356,7 @@ def rasa_x(args: argparse.Namespace) -> None:
         rasa.shared.utils.io.raise_warning(
             f"Your version of rasa '{rasa.version.__version__}' is currently "
             f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
-            f"version higher or equal to {MINIMUM_COMPATIBLE_VERSION} "
-            f"will result in errors.",
+            f"version higher or equal to 3.0.0 will result in errors.",
             UserWarning,
         )
 
