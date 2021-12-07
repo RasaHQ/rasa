@@ -224,7 +224,7 @@ jobs:
           BRANCH: ${{ github.ref }}
           GIT_SHA: "${{ github.sha }}"
         run: |
-          .github/scripts/start_dd_agent.sh ${{ secrets.DD_API_KEY }} '${{ env.ACCELERATOR_TYPE }}'
+          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
