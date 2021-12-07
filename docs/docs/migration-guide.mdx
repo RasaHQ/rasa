@@ -1337,14 +1337,14 @@ Let's consider the following 2.0 domain file:
 entities:
  - cuisine
  - number
- slots:
+slots:
    cuisine:
      type: text
    num_people:
      type: float
    outdoor_seating:
      type: bool
- forms:
+forms:
    restaurant_form:
      required_slots:
          cuisine:
@@ -1368,7 +1368,7 @@ The initial result of migrating this domain to 3.0 format would look like this:
 entities:
  - cuisine
  - number
- slots:
+slots:
    cuisine:
      type: text
      mappings:
@@ -1388,7 +1388,7 @@ entities:
      - type: from_intent
        intent: deny
        value: false
- forms:
+forms:
    restaurant_form:
      required_slots:
      - cuisine
@@ -1423,6 +1423,16 @@ the mappings will be applied on each user turn regardless of whether a form is a
 If you have used `FormValidationAction` to define custom extraction and validation code in which you override the
 `required_slots` method, note that `slots_mapped_in_domain` argument has been replaced by the `domain_slots` argument.
 You will need to make this replacement to continue using your custom code.
+
+:::note
+If you have custom validation actions extending `FormValidationAction` which override `required_slots` method, you should
+double-check the dynamic form behavior of your migrated assistant. Slots set by the default action
+[`action_extract_slots`](./default-actions.mdx#action_extract_slots) may need to be reset within the context of your
+form by the custom validation actions for the form's required slots. For example, if your form dynamically adds a required
+slot after the first slot is filled, you may want to reset the potential required slot as part of the first required slot's
+validation method to ensure it will be empty when added.
+
+:::
 
 ## Rasa 2.7 to 2.8
 
