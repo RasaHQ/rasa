@@ -93,7 +93,7 @@ def _walkthrough(dict_of_lists: dict) -> list:
     return [dict(a) for a in __iterate(tups)]
 
 
-def topdownparser(data: Dict[str, list]) -> dict:
+def _topdownparser(data: Dict[str, list]) -> dict:
     """Parse a top-down type entity hierarchy dictionary.
 
     The format is
@@ -146,7 +146,10 @@ def topdownparser(data: Dict[str, list]) -> dict:
         # collect all strings from the examples as list
         # if example is ref, include those as well
         # if example is composite, recurse
-        start: list = data[keyword]
+        refdata: dict = data.get(keyword)
+        if not refdata:
+            raise ValueError(f"Missing entry for {keyword}")
+        start: list = refdata.get(MAPPINGS_KEY)
         # ignore value
         # take only example keys
         results = []
@@ -316,9 +319,7 @@ class EntityHierarchyExtractor(EntityExtractor):
     # This attribute is designed for instance method: `can_handle_language`.
     # Default value is None which means it can handle all languages.
     # This is an important feature for backwards compatibility of components.
-    not_supported_language_list = (
-        None  # TODO add non-whitespace tokenizable languages
-    )
+    not_supported_language_list = None  # TODO add non-whitespace tokenizable languages
 
     def __init__(
         self,
@@ -355,9 +356,7 @@ class EntityHierarchyExtractor(EntityExtractor):
 
     def _parse_prepared_hierarchies(self):
         """Train the flashtext component with prepared hierarchies."""
-        for keyword, ent_dict in self._entityhierarchy.get(
-            "entities", {}
-        ).items():
+        for keyword, ent_dict in self._entityhierarchy.get("entities", {}).items():
             # keyword is the full text to be found, the dict contains
             # entity:value pairs to be set as flashtext can store ANY
             # python object to be returned, we'll use the full dict as
@@ -423,8 +422,7 @@ class EntityHierarchyExtractor(EntityExtractor):
                     logger.info(f"Processed file {fn}")
                 else:
                     logger.warn(
-                        f"{fn} invalid file format: must be a "
-                        "dictionary in YAML"
+                        f"{fn} invalid file format: must be a " "dictionary in YAML"
                     )
         else:
             rasa.shared.utils.io.raise_warning(
@@ -432,7 +430,7 @@ class EntityHierarchyExtractor(EntityExtractor):
                 "is loadable from definition in config."
             )
             return
-        self._entityhierarchy = topdownparser(raw_hierarchy)
+        self._entityhierarchy = _topdownparser(raw_hierarchy)
 
         self._parse_prepared_hierarchies()
 
@@ -474,9 +472,7 @@ class EntityHierarchyExtractor(EntityExtractor):
             # do the lookup of alternative spellings first
             if isinstance(match[0], (str, int, float)):
                 # look it up and replace it
-                match[0] = self._entityhierarchy.get("entities", {}).get(
-                    match[0], {}
-                )
+                match[0] = self._entityhierarchy.get("entities", {}).get(match[0], {})
             matches.append(match)
         # if duplicates are to be ignored, sort the list and remove duplicates
         if not self.include_repeated_entities:
@@ -531,18 +527,14 @@ class EntityHierarchyExtractor(EntityExtractor):
                 # change value of passed entity
                 pos = entity_keys.index(ent.get(ENTITY_ATTRIBUTE_TYPE))
                 entity = entities[pos]
-                entity.update(
-                    {ENTITY_ATTRIBUTE_VALUE: ent.get(ENTITY_ATTRIBUTE_VALUE)}
-                )
+                entity.update({ENTITY_ATTRIBUTE_VALUE: ent.get(ENTITY_ATTRIBUTE_VALUE)})
                 self.add_processor_name(entity)
         # entities.extend(new_ents)
         return entities
 
     # SAFE and LOAD methods
     #
-    def persist(
-        self, file_name: Text, model_dir: Text
-    ) -> Optional[Dict[Text, Any]]:
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this component to disk for future loading."""
         if self._entityhierarchy:
             file_name = file_name + ".json"
@@ -634,13 +626,9 @@ class _KeywordProcessor(object):
         self._white_space_chars = set([".", "\t", "\n", "\a", " ", ","])
         if case_sensitive:
             # python 3.x
-            self.non_word_boundaries = set(
-                string.digits + string.ascii_letters + "_"
-            )
+            self.non_word_boundaries = set(string.digits + string.ascii_letters + "_")
         else:
-            self.non_word_boundaries = set(
-                string.digits + string.ascii_lowercase + "_"
-            )
+            self.non_word_boundaries = set(string.digits + string.ascii_lowercase + "_")
         self.keyword_trie_dict = dict()
         self.case_sensitive = case_sensitive
         self._terms_in_trie = 0
@@ -1049,9 +1037,7 @@ class _KeywordProcessor(object):
             if key == "_keyword_":
                 terms_present[term_so_far] = current_dict[key]
             else:
-                sub_values = self.get_all_keywords(
-                    term_so_far + key, current_dict[key]
-                )
+                sub_values = self.get_all_keywords(term_so_far + key, current_dict[key])
                 for key in sub_values:
                     terms_present[key] = sub_values[key]
         return terms_present
