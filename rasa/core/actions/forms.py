@@ -379,18 +379,10 @@ class FormAction(LoopAction):
         If nothing was extracted reject execution of the form action.
         Subclass this method to add custom validation and rejection logic
         """
-        slot_values = self._get_slot_extractions(tracker, domain)
+        extracted_slot_values = self._get_slot_extractions(tracker, domain)
 
         validation_events = await self.validate_slots(
-            slot_values, tracker, domain, output_channel, nlg
-        )
-
-        some_slots_were_validated = any(
-            isinstance(event, SlotSet)
-            for event in validation_events
-            # Ignore `SlotSet`s  for `REQUESTED_SLOT` as that's not a slot which needs
-            # to be filled by the user.
-            if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
+            extracted_slot_values, tracker, domain, output_channel, nlg
         )
 
         # extract requested slot
@@ -398,7 +390,7 @@ class FormAction(LoopAction):
 
         if (
             slot_to_fill
-            and not some_slots_were_validated
+            and not extracted_slot_values
             and not self._user_rejected_manually(validation_events)
         ):
             # reject to execute the form action

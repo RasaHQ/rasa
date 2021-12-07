@@ -306,15 +306,14 @@ async def test_set_slot_and_deactivate():
     """
     domain = Domain.from_yaml(domain)
 
-    action = FormAction(form_name, None)
-
-    with pytest.raises(ActionExecutionRejection):
-        await action.run(
-            CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.responses),
-            tracker,
-            domain,
-        )
+    form_action = FormAction(form_name, None)
+    events = await form_action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [SlotSet(REQUESTED_SLOT, None), ActiveLoop(None)]
 
 
 async def test_action_rejection():
@@ -401,11 +400,7 @@ async def test_action_rejection():
         # slot mapping
         (
             [{"event": "slot", "name": "requested_slot", "value": "is_outside"}],
-            [
-                SlotSet(REQUESTED_SLOT, "is_outside"),
-                SlotSet("num_people", "hi"),
-                SlotSet("num_tables", 5),
-            ],
+            [SlotSet(REQUESTED_SLOT, "is_outside"),],
         ),
         # Validate function decides that no more slots should be requested
         (
@@ -509,7 +504,6 @@ async def test_validate_slots(
             tracker,
             domain,
         )
-        print([str(e) for e in events])
         assert events == expected_events
 
 
@@ -1475,13 +1469,13 @@ async def test_extract_other_slots_with_matched_mapping_conditions():
     assert slot_events == [SlotSet("name", "Emily")]
     tracker.update_with_events(slot_events, domain)
 
-    with pytest.raises(ActionExecutionRejection):
-        await form.validate(
-            tracker,
-            domain,
-            CollectingOutputChannel(),
-            TemplatedNaturalLanguageGenerator(domain.responses),
-        )
+    form_slot_events = await form.validate(
+        tracker,
+        domain,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+    )
+    assert form_slot_events == []
 
 
 async def test_extract_other_slots_raises_no_matched_conditions():
