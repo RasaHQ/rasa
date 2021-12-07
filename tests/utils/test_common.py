@@ -136,3 +136,13 @@ def test_find_unavailable_packages():
 )
 def test_module_path_from_class(clazz: Type, module_path: Text):
     assert rasa.utils.common.module_path_from_class(clazz) == module_path
+
+
+def test_override_defaults():
+    defaults = {"nested-dict": {"key1": "value1", "key2": "value2"}}
+    custom = {"nested-dict": {"key2": "override-value2"}}
+
+    updated_config = rasa.utils.common.override_defaults(defaults, custom)
+
+    expected_config = {"nested-dict": {"key1": "value1", "key2": "override-value2"}}
+    assert updated_config == expected_config

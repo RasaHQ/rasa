@@ -329,3 +329,46 @@ def test_loading_from_resource_eager(default_model_storage: ModelStorage):
 
     assert actual_node_name == node_name
     assert value == test_value
+
+
+def test_config_with_nested_dict_override(default_model_storage: ModelStorage):
+    class ComponentWithNestedDictConfig(GraphComponent):
+        @staticmethod
+        def get_default_config() -> Dict[Text, Any]:
+            return {"nested-dict": {"key1": "value1", "key2": "value2"}}
+
+        @classmethod
+        def create(
+            cls,
+            config: Dict,
+            model_storage: ModelStorage,
+            resource: Resource,
+            execution_context: ExecutionContext,
+            **kwargs: Any,
+        ) -> ComponentWithNestedDictConfig:
+            return cls()
+
+        def run(self) -> None:
+            return None
+
+    node = GraphNode(
+        node_name="nested_dict_config",
+        component_class=ComponentWithNestedDictConfig,
+        constructor_name="create",
+        component_config={"nested-dict": {"key2": "override-value2"}},
+        fn_name="run",
+        inputs={},
+        eager=True,
+        model_storage=default_model_storage,
+        resource=None,
+        execution_context=ExecutionContext(GraphSchema({}), "123"),
+    )
+
+    expected_config = {"nested-dict": {"key1": "value1", "key2": "override-value2"}}
+
+    for key, value in expected_config.items():
+        assert key in node._component_config
+        if isinstance(value, dict):
+            for nested_key, nested_value in expected_config[key].items():
+                assert nested_key in node._component_config[key]
+                assert node._component_config[key][nested_key] == nested_value
