@@ -236,12 +236,10 @@ if __name__ == "__main__":
 
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
-            print('input file for report.json:', os.path.join(dirpath, f))  # Debug
             if f not in task_mapping.keys():
                 continue
 
             data = generate_json(os.path.join(dirpath, f), task_mapping[f], data)
 
     with open(SUMMARY_FILE, "w") as f:
-        print("data:", data)  # Debug
         json.dump(data, f, sort_keys=True, indent=2)
