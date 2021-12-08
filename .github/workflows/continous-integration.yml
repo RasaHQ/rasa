@@ -308,7 +308,7 @@ jobs:
     - name: Install ddtrace
       if: needs.changes.outputs.backend == 'true'
       run: poetry run pip install -U ddtrace
-      
+
     - name: Test Code 🔍 (monothread)
       # This is a temporary workaround for OOM on Windows caused by increased memory
       # consumption associated with the upgrade of our tensorflow dependency
@@ -321,7 +321,7 @@ jobs:
         PYTHONIOENCODING: "utf-8"
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
-        DD_ARGS: --ddtrace
+        DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
         poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
@@ -333,7 +333,7 @@ jobs:
         PYTHONIOENCODING: "utf-8"
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
-        DD_ARGS: --ddtrace
+        DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
         mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage
