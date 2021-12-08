@@ -43,6 +43,7 @@ END_OF_SENTENCE = "EOS"
 BEGIN_OF_SENTENCE = "BOS"
 
 FEATURES = "features"
+CASE_SENSITIVITY = "prefix_suffix_case_sensitive"
 
 
 @DefaultV1Recipe.register(
@@ -79,7 +80,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
 
     # NOTE: "suffix5" of the token "is" will be "is". Hence, when combining multiple
     # prefixes, short words will be represented/encoded repeatedly.
-    _FUNCTION_DICT: Dict[Text, Callable[[Token], Union[Text, bool, None]]] = {
+    _FUNCTION_DICT_DEFAULT: Dict[Text, Callable[[Token], Union[Text, bool, None]]] = {
         "low": lambda token: token.text.islower(),
         "title": lambda token: token.text.istitle(),
         "prefix5": lambda token: token.text[:5],
@@ -95,14 +96,20 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
         "upper": lambda token: token.text.isupper(),
         "digit": lambda token: token.text.isdigit(),
     }
-
+    _FUNCTION_DICT_LOWER: Dict[Text, Callable[[Token], Union[bool, Text, None]]] = {
+        "prefix5": lambda token: token.text[:5].lower(),
+        "prefix2": lambda token: token.text[:2].lower(),
+        "suffix5": lambda token: token.text[-5:].lower(),
+        "suffix3": lambda token: token.text[-3:].lower(),
+        "suffix2": lambda token: token.text[-2:].lower(),
+        "suffix1": lambda token: token.text[-1:].lower(),
+    }
     SUPPORTED_FEATURES = sorted(
-        set(_FUNCTION_DICT.keys()).union([END_OF_SENTENCE, BEGIN_OF_SENTENCE])
+        set(_FUNCTION_DICT_DEFAULT.keys()).union([END_OF_SENTENCE, BEGIN_OF_SENTENCE])
     )
 
-    @classmethod
     def _extract_raw_features_from_token(
-        cls, feature_name: Text, token: Token, token_position: int, num_tokens: int,
+        self, feature_name: Text, token: Token, token_position: int, num_tokens: int,
     ) -> Text:
         """Extracts a raw feature from the token at the given position.
 
@@ -114,7 +121,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
         Returns:
           the raw feature value as text
         """
-        if feature_name not in cls.SUPPORTED_FEATURES:
+        if feature_name not in self.SUPPORTED_FEATURES:
             raise InvalidConfigException(
                 f"Configured feature '{feature_name}' not valid. Please check "
                 f"'{DOCS_URL_COMPONENTS}' for valid configuration parameters."
@@ -123,7 +130,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
             return str(token_position == num_tokens - 1)
         if feature_name == BEGIN_OF_SENTENCE:
             return str(token_position == 0)
-        return str(cls._FUNCTION_DICT[feature_name](token))
+        return str(self._function_dict[feature_name](token))
 
     @classmethod
     def required_components(cls) -> List[Type]:
@@ -140,6 +147,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
                 ["BOS", "EOS", "low", "upper", "title", "digit"],
                 ["low", "title", "upper"],
             ],
+            CASE_SENSITIVITY: True, 
         }
 
     def __init__(
@@ -161,6 +169,13 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
         self._set_feature_to_idx_dict(
             feature_to_idx_dict or {}, check_consistency_with_config=True
         )
+        self._function_dict = self._FUNCTION_DICT_DEFAULT.copy()
+        self.case_sensitive = self._config.get(CASE_SENSITIVITY, True)
+        if not self.case_sensitive:
+            self._function_dict.update(self._FUNCTION_DICT_LOWER)
+
+
+
 
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
