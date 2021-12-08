@@ -57,7 +57,9 @@ jobs:
     - name: Render help description from template
       id: get_help_description
       run: |
+        cat ./dataset/dataset_config_mapping.json
         OUTPUT=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/model_regression_test_config_comment.tmpl)
+        echo $OUTPUT
         OUTPUT="${OUTPUT//$'\n'/'%0A'}"
         OUTPUT="${OUTPUT//$'\r'/'%0D'}"
         echo "::set-output name=help_description::$OUTPUT"
@@ -443,7 +445,6 @@ jobs:
         run: |-
           sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
-          echo ${{ fromJson(needs.read_test_configuration.outputs.matrix) }}  # debug
 
       - name: Set DATASET and CONFIG variables
         id: set_dataset_config_vars
