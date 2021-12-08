@@ -19,6 +19,7 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "- dataset_commit:${DATASET_COMMIT}"
     echo "- branch:${BRANCH}"
     echo "- git_sha:${GIT_SHA}"
+    echo "- pr_id:${PR_ID:-schedule}"
     echo ""
     echo "process_config:"
     echo "    enabled: false"

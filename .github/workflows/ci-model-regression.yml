@@ -299,6 +299,7 @@ jobs:
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
           GIT_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
         run: |
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
@@ -540,6 +541,7 @@ jobs:
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
           GIT_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
         run: |
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
