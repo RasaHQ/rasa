@@ -1177,6 +1177,8 @@ However, additional parameters exist that can be adapted.
   pos2            Take the first two characters of the Part-of-Speech tag of the token
                   (``SpacyTokenizer`` required).
   ==============  ==========================================================================================
+  prefix_suffix_case_sensitive  Set to False to make prefix and suffix features case insensitive
+  ==============  ==========================================================================================
   ```
 
   As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
@@ -1193,6 +1195,7 @@ However, additional parameters exist that can be adapted.
       ["BOS", "EOS", "low", "upper", "title", "digit"],
       ["low", "title", "upper"],
     ]
+    "prefix_suffix_case_sensitive": True
   ```
 
   This configuration is also the default configuration.
