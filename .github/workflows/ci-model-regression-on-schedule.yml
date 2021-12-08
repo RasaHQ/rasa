@@ -36,6 +36,16 @@ jobs:
     - name: Check if a configuration file exists
       run: test -f .github/configs/mr-test-schedule.json
 
+    - name: Find a comment with configuration
+      uses: tczekajlo/find-comment@master
+      id: fc_config
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        issue-number: ${{ github.event.number }}
+        body-includes: "^/modeltest"
+
+    - run: echo ${{ steps.fc_config.outputs.comment-id }}
+
     - if: steps.fc_config.outputs.comment-id == ''
       run: echo "::error::Cannot find a comment with the configuration"
       name: Log a warning message if a configuration cannot be found
