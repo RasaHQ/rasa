@@ -248,7 +248,10 @@ class FormAction(LoopAction):
 
         Returns:
             The validation events including potential bot messages and `SlotSet` events
-            for the validated slots.
+            for the validated slots, if the custom form validation action is present in
+            domain actions.
+            Otherwise, returns empty list since the extracted slots already have
+            corresponding `SlotSet` events in the tracker.
         """
         logger.debug(f"Validating extracted slots: {slot_candidates}")
         events: List[Union[SlotSet, Event]] = [
@@ -260,12 +263,15 @@ class FormAction(LoopAction):
         if validate_name not in domain.action_names_or_texts:
             return []
 
+        # create temporary tracker with only the SlotSet events added
+        # since last user utterance
         _tracker = self._temporary_tracker(tracker, events, domain)
+
         _action = RemoteAction(validate_name, self.action_endpoint)
         validate_events = await _action.run(output_channel, nlg, _tracker, domain)
 
-        # Only return the validated SlotSet events by the slot validation action to
-        # avoid adding duplicate SlotSet events for slots that are already valid.
+        # Only return the validated SlotSet events by the custom form validation action
+        # to avoid adding duplicate SlotSet events for slots that are already valid.
         return validate_events
 
     def _temporary_tracker(
@@ -374,15 +380,29 @@ class FormAction(LoopAction):
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
     ) -> List[Union[SlotSet, Event]]:
-        """Extract and validate value of requested slot.
+        """Extract and validate value of requested slot and other slots.
 
-        If nothing was extracted reject execution of the form action.
-        Subclass this method to add custom validation and rejection logic
+        Returns:
+            The new validation events created by the custom form validation action
+
+        Raises:
+            ActionExecutionRejection exception to reject execution of form action
+            if nothing was extracted.
+
+        Subclass this method to add custom validation and rejection logic.
         """
         extracted_slot_values = self._get_slot_extractions(tracker, domain)
 
         validation_events = await self.validate_slots(
             extracted_slot_values, tracker, domain, output_channel, nlg
+        )
+
+        some_slots_were_validated = any(
+            isinstance(event, SlotSet)
+            for event in validation_events
+            # Ignore `SlotSet`s  for `REQUESTED_SLOT` as that's not a slot which needs
+            # to be filled by the user.
+            if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
 
         # extract requested slot
@@ -391,6 +411,7 @@ class FormAction(LoopAction):
         if (
             slot_to_fill
             and not extracted_slot_values
+            and not some_slots_were_validated
             and not self._user_rejected_manually(validation_events)
         ):
             # reject to execute the form action
