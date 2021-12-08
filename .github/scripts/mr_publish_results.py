@@ -30,11 +30,11 @@ TYPE = os.environ["TYPE"]
 analytics.write_key = os.environ["SEGMENT_TOKEN"]
 
 task_mapping = {
-    "intent_report.json": "Intent Classification",
-    "CRFEntityExtractor_report.json": "Entity Prediction",
-    "DIETClassifier_report.json": "Entity Prediction",
-    "response_selection_report.json": "Response Selection",
-    "story_report.json": "Story Prediction",
+    "intent_report.json": "intent_classification",
+    "CRFEntityExtractor_report.json": "entity_prediction",
+    "DIETClassifier_report.json": "entity_prediction",
+    "response_selection_report.json": "response_selection",
+    "story_report.json": "story_prediction",
 }
 
 
