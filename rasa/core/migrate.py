@@ -286,7 +286,7 @@ def migrate_domain_format(
         )
 
     # Choose a default output location if nothing was specified
-    if out_path == DEFAULT_DOMAIN_PATH:
+    if out_path is None:
         suffix = DEFAULT_DOMAIN_PATH if migrate_file_only else "new_domain"
         out_path = domain_parent_dir / suffix
 

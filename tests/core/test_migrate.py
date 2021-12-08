@@ -333,6 +333,7 @@ def test_migrate_domain_format_from_dir(tmp_path: Path):
 
     rasa.core.migrate.migrate_domain_format(domain_dir, domain_out_dir)
     domain = Domain.from_directory(str(domain_out_dir))
+
     assert domain
 
     old_domain_path = tmp_path / "original_domain"
@@ -945,8 +946,6 @@ def test_migration_cleanup(tmp_path: Path,):
 def test_migration_stops_when_migrated_files_are_found(tmp_path: Path,):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
-    migrated_domain_dir = tmp_path / "domain2"
-
     prepare_domain_path(
         domain_dir,
         """
@@ -954,3 +953,10 @@ def test_migration_stops_when_migrated_files_are_found(tmp_path: Path,):
         """,
         "domain.yml",
     )
+
+    with pytest.raises(
+            RasaException,
+            match=f"The domain directory '{domain_dir}' does not contain any domain "
+                  f"files.*",
+        ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, None)
