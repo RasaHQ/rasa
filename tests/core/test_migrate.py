@@ -21,7 +21,7 @@ def prepare_domain_path(directory: Path, domain_content: Text, file_name: Text) 
 
 @pytest.fixture()
 def domain_out_file(tmp_path: Path) -> Path:
-    return tmp_path / "new_domain.yml"
+    return tmp_path / "custom_new_domain.yml"
 
 
 def test_migrate_domain_format_with_required_slots(
@@ -595,7 +595,7 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
     }
 
 
-def test_migrate_domain_dir_with_out_path_as_file(tmp_path: Path):
+def test_migrate_domain_dir_with_out_path_None(tmp_path: Path):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
 
@@ -628,9 +628,7 @@ def test_migrate_domain_dir_with_out_path_as_file(tmp_path: Path):
         "forms.yml",
     )
 
-    domain_out = tmp_path / "domain.yml"
-
-    rasa.core.migrate.migrate_domain_format(domain_dir, domain_out)
+    rasa.core.migrate.migrate_domain_format(domain_dir, None)
 
     domain_out = tmp_path / "new_domain"
     assert domain_out.exists()
@@ -678,7 +676,7 @@ def test_migrate_domain_multiple_files_with_duplicate_slots(tmp_path: Path,):
         RasaException,
         match="Domain files with multiple 'slots' sections were provided.",
     ):
-        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+        rasa.core.migrate.migrate_domain_format(domain_dir, None)
 
 
 def test_migrate_domain_with_multiple_files_with_duplicate_forms(tmp_path: Path):
@@ -718,7 +716,7 @@ def test_migrate_domain_with_multiple_files_with_duplicate_forms(tmp_path: Path)
         RasaException,
         match="Domain files with multiple 'forms' sections were provided.",
     ):
-        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+        rasa.core.migrate.migrate_domain_format(domain_dir, None)
 
 
 def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
@@ -757,11 +755,13 @@ def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
         """,
         domain_file_two,
     )
-    rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
-    domain = Domain.from_directory(str(domain_dir))
+
+    new_domain_dir = tmp_path / "migrated_domain"
+    rasa.core.migrate.migrate_domain_format(domain_dir, new_domain_dir)
+    domain = Domain.from_directory(new_domain_dir)
     assert domain
 
-    for file in domain_dir.iterdir():
+    for file in new_domain_dir.iterdir():
         migrated = rasa.shared.utils.io.read_yaml_file(file)
 
         migrated_training_data_version = migrated.get("version")
@@ -781,24 +781,26 @@ def test_migrate_domain_raises_exception_for_non_domain_file(tmp_path: Path):
         nlu:
         - intent: greet
           examples: |
-          - hey
-          - hello
-          - hi
-          - hello there
-          - good morning
-          - good evening
-          - moin
-          - hey there
+            - hey
+            - hello
+            - hi
+            - hello there
+            - good morning
+            - good evening
+            - moin
+            - hey there
         """,
         "domain.yml",
     )
 
+    new_domain_file = tmp_path / "new_domain.yml"
+
     with pytest.raises(
         RasaException,
-        match=f"The file '{re.escape(str(domain_file))}' could not "
+        match=f"The file '{str(domain_file)}' could not "
         f"be validated as a domain file.",
     ):
-        rasa.core.migrate.migrate_domain_format(domain_file, domain_file)
+        rasa.core.migrate.migrate_domain_format(domain_file, new_domain_file)
 
 
 def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
@@ -812,14 +814,36 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
         nlu:
         - intent: greet
           examples: |
-          - hey
-          - hello
-          - hi
-          - hello there
-          - good morning
-          - good evening
-          - moin
-          - hey there
+            - hey
+            - hello
+            - hi
+            - hello there
+            - good morning
+            - good evening
+            - moin
+            - hey there
+        """,
+        "domain.yml",
+    )
+
+    with pytest.raises(
+        RasaException,
+        match=f"The domain directory '{domain_dir}' does not contain any domain files. "
+        f"Please make sure to include these for a successful migration.",
+    ):
+        rasa.core.migrate.migrate_domain_format(domain_dir, None)
+
+
+def test_migrate_domain_raises_for_missing_slots_and_forms(tmp_path: Path):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+        - bla
         """,
         "domain.yml",
     )
@@ -830,7 +854,7 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
         f"are missing slots or forms. "
         f"Please make sure to include these for a successful migration.",
     ):
-        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+        rasa.core.migrate.migrate_domain_format(domain_dir, None)
 
 
 def test_migration_cleanup(tmp_path: Path,):
@@ -881,7 +905,7 @@ def test_migration_cleanup(tmp_path: Path,):
         RasaException,
         match="Domain files with multiple 'slots' sections were provided.",
     ):
-        rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
+        rasa.core.migrate.migrate_domain_format(domain_dir, None)
 
     # here the migration fails but we check if the domain was
     # not deleted in the process of cleanup
@@ -916,3 +940,17 @@ def test_migration_cleanup(tmp_path: Path,):
     )
     assert not Path.exists(current_dir / "original_domain")
     assert not Path.exists(current_dir / "new_domain")
+
+
+def test_migration_stops_when_migrated_files_are_found(tmp_path: Path,):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+    migrated_domain_dir = tmp_path / "domain2"
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "3.0"
+        """,
+        "domain.yml",
+    )
