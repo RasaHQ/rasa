@@ -7,7 +7,7 @@ from rasa.cli.arguments.default_arguments import (
     add_data_param,
     add_domain_param,
 )
-from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH
 
 
 def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> None:

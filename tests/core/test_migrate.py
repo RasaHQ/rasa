@@ -955,8 +955,8 @@ def test_migration_stops_when_migrated_files_are_found(tmp_path: Path,):
     )
 
     with pytest.raises(
-            RasaException,
-            match=f"The domain directory '{domain_dir}' does not contain any domain "
-                  f"files.*",
-        ):
+        RasaException,
+        match=f"The domain directory '{domain_dir}' does not contain any domain "
+        f"files.*",
+    ):
         rasa.core.migrate.migrate_domain_format(domain_dir, None)
