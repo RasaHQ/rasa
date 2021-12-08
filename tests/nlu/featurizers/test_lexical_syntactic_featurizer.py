@@ -69,6 +69,60 @@ def test_text_featurizer(sentence, expected_features):
 
     assert np.all(seq_vec.toarray() == expected_features[:-1])
 
+@pytest.mark.parametrize(
+    "sentence, expected_features",
+    [
+        (
+            "hello goodbye Goodbye",
+            [
+                [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, ],
+                [0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, ],
+                [1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, ],
+            ]
+        ),
+        (
+            "a 1 A",
+            [
+                [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, ],
+                [0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, ],
+                [1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, ],
+            ]
+        ),
+    ],
+)
+def test_text_featurizer_case_insensitive(sentence, expected_features):
+    featurizer = LexicalSyntacticFeaturizer(
+        {
+            "features": [
+                ["BOS"],
+                ["BOS", "EOS", "prefix2", "suffix2"],
+                ["EOS"],
+            ],
+            "prefix_suffix_case_sensitive": False
+        }
+    )
+
+    train_message = Message(data={TEXT: sentence})
+    test_message = Message(data={TEXT: sentence})
+
+    WhitespaceTokenizer().process(train_message)
+    WhitespaceTokenizer().process(test_message)
+
+    featurizer.train(TrainingData([train_message]))
+
+    featurizer.process(test_message)
+
+    seq_vec, sen_vec = test_message.get_sparse_features(TEXT, [])
+    if seq_vec:
+        seq_vec = seq_vec.features
+    if sen_vec:
+        sen_vec = sen_vec.features
+
+    assert isinstance(seq_vec, scipy.sparse.coo_matrix)
+    assert sen_vec is None
+    # DEBUG DEVELOPMENT
+    print(seq_vec.toarray())
+    assert np.all(seq_vec.toarray() == expected_features)
 
 @pytest.mark.parametrize(
     "sentence, expected",
