@@ -69,36 +69,33 @@ def test_text_featurizer(sentence, expected_features):
 
     assert np.all(seq_vec.toarray() == expected_features[:-1])
 
+
 @pytest.mark.parametrize(
     "sentence, expected_features",
     [
         (
             "hello goodbye Goodbye",
             [
-                [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, ],
-                [0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, ],
-                [1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, ],
-            ]
+                [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0,],
+                [0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0,],
+                [1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,],
+            ],
         ),
         (
             "a 1 A",
             [
-                [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, ],
-                [0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, ],
-                [1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, ],
-            ]
+                [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0,],
+                [0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0,],
+                [1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0,],
+            ],
         ),
     ],
 )
 def test_text_featurizer_case_insensitive(sentence, expected_features):
     featurizer = LexicalSyntacticFeaturizer(
         {
-            "features": [
-                ["BOS"],
-                ["BOS", "EOS", "prefix2", "suffix2"],
-                ["EOS"],
-            ],
-            "prefix_suffix_case_sensitive": False
+            "features": [["BOS"], ["BOS", "EOS", "prefix2", "suffix2"], ["EOS"],],
+            "prefix_suffix_case_sensitive": False,
         }
     )
 
@@ -123,6 +120,7 @@ def test_text_featurizer_case_insensitive(sentence, expected_features):
     # DEBUG DEVELOPMENT
     print(seq_vec.toarray())
     assert np.all(seq_vec.toarray() == expected_features)
+
 
 @pytest.mark.parametrize(
     "sentence, expected",

@@ -52,7 +52,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         # As case sensitivity was moved from tokenizer to featurizers,
         # featurizers have to implement a way to deal with case
         # senitivity
-        "prefix_suffix_case_sensitive": True
+        "prefix_suffix_case_sensitive": True,
     }
 
     _function_dict_default: Dict[Text, Callable[[Token], Union[bool, Text, None]]] = {
@@ -82,19 +82,28 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         "suffix2": lambda token: token.text[-2:].lower(),
         "suffix1": lambda token: token.text[-1:].lower(),
     }
+
     def __init__(
         self,
         component_config: Dict[Text, Any],
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
     ):
+        """Create a LexicalSyntacticFeaturizer.
+
+        Args:
+            component_config (Dict[Text, Any]): component config as defined in
+            config.yml
+            feature_to_idx_dict (Optional[Dict[Text, Any]], optional): prepared
+            feature to idx for loading from disk. Defaults to None.
+        """
         super().__init__(component_config)
 
         self.feature_to_idx_dict = feature_to_idx_dict or {}
         self.number_of_features = self._calculate_number_of_features()
         self.function_dict = self._function_dict_default.copy()
-        if not component_config.get("prefix_suffix_case_sensitive",True):
+        if not component_config.get("prefix_suffix_case_sensitive", True):
             self.function_dict.update(self._function_dict_lower)
-        
+
     def _calculate_number_of_features(self) -> int:
         return sum(
             [
@@ -305,12 +314,13 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
         feature_to_idx_dict = io_utils.json_unpickle(feature_to_idx_file)
 
-        return cls(meta, feature_to_idx_dict=feature_to_idx_dict) # Fix for #10471
+        return cls(meta, feature_to_idx_dict=feature_to_idx_dict)  # Fix for #10471
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
 
+        Return the metadata necessary to load the model again.
+        """
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
         io_utils.json_pickle(feature_to_idx_file, self.feature_to_idx_dict)
 
