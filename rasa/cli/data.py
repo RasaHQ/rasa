@@ -239,7 +239,7 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
         )
         telemetry.track_data_convert(args.format, "nlu")
     elif args.format == "yaml":
-        is_watson = WatsonTrainingDataConverter().filter(args.data)
+        is_watson = WatsonTrainingDataConverter().filter(Path(args.data))
         if is_watson:
             rasa.utils.common.run_in_loop(
                 _convert_to_yaml(args.out, args.data, WatsonTrainingDataConverter())
