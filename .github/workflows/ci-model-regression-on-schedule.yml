@@ -108,8 +108,8 @@ jobs:
     name: Model Regression Tests - GPU
     continue-on-error: true
     needs:
-    - deploy_runner_gpu
-    - read_test_configuration
+      - deploy_runner_gpu
+      - read_test_configuration
     env:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
@@ -467,8 +467,8 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs:
-    - deploy_runner_gpu
-    - model_regression_test_gpu
+      - deploy_runner_gpu
+      - model_regression_test_gpu
     env:
       GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Performance Drops'
 
@@ -613,8 +613,8 @@ jobs:
     name: Delete Github Runner - GPU
     if: always()
     needs:
-    - deploy_runner_gpu
-    - model_regression_test_gpu
+      - deploy_runner_gpu
+      - model_regression_test_gpu
     runs-on: ubuntu-latest
 
     steps:
