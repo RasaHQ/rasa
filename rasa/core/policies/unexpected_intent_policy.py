@@ -5,6 +5,7 @@ import tensorflow as tf
 from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, TYPE_CHECKING
 
+import rasa.utils.common
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -889,7 +890,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = train_utils.override_defaults(cls.get_default_config(), meta)
+        meta = rasa.utils.common.override_defaults(cls.get_default_config(), meta)
         return meta
 
     @classmethod
