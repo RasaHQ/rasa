@@ -727,7 +727,6 @@ jobs:
           set -x
           cat report.json
           echo 'report_main.json:'
-          cat report_main.json
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
           echo $OUTPUT
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
