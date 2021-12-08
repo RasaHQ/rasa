@@ -57,9 +57,7 @@ jobs:
     - name: Render help description from template
       id: get_help_description
       run: |
-        cat ./dataset/dataset_config_mapping.json
         OUTPUT=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/model_regression_test_config_comment.tmpl)
-        echo $OUTPUT
         OUTPUT="${OUTPUT//$'\n'/'%0A'}"
         OUTPUT="${OUTPUT//$'\r'/'%0D'}"
         echo "::set-output name=help_description::$OUTPUT"
