@@ -693,6 +693,7 @@ jobs:
 
       - name: Download report from last on-schedule regression test
         run: |
+          set -x
           # Get ID of last on-schedule workflow
           SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \

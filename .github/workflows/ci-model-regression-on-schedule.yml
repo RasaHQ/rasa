@@ -2,9 +2,7 @@
 name: CI - Model Regression
 
 on:
-  schedule:
-    # Run once a week
-    - cron: '1 23 * * */7'
+  push
 
 env:
   GKE_ZONE: us-central1
@@ -38,10 +36,15 @@ jobs:
     - name: Check if a configuration file exists
       run: test -f .github/configs/mr-test-schedule.json
 
-    - name: Set matrix values
+    - if: steps.fc_config.outputs.comment-id == ''
+      run: echo "::error::Cannot find a comment with the configuration"
+      name: Log a warning message if a configuration cannot be found
+
+    - name: Read configuration from a PR comment
+      if: steps.fc_config.outputs.comment-id != ''
       id: set-matrix
-      shell: bash
-      run: echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=.github/configs/mr-test-schedule.json -f .github/templates/model_regression_test_config_to_json.tmpl)"
+      run: |-
+          echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)"
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
@@ -94,15 +97,15 @@ jobs:
           kubectl apply -f runner_deployment.yaml
           kubectl -n github-runner rollout status --timeout=15m deployment/github-runner-$GITHUB_RUN_ID
 
-      - name: Notify slack on failure
-        if: failure()
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
-        with:
-          channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
-          status: FAILED
-          color: danger
+      # - name: Notify slack on failure
+      #   if: failure()
+      #   env:
+      #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      #   uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
+      #   with:
+      #     channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+      #     status: FAILED
+      #     color: danger
 
   model_regression_test_gpu:
     name: Model Regression Tests - GPU
@@ -338,90 +341,90 @@ jobs:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}
           path: report.json
 
-      - name: Check duplicate issue
-        if: failure()
-        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
-        id: issue-exists
-        with:
-          result-encoding: string
-          github-token: ${{ github.token }}
-          script: |
-            // Get all open issues
-            const opts = await github.issues.listForRepo.endpoint.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: ${{ env.GITHUB_ISSUE_LABELS }}
-            });
-            const issues = await github.paginate(opts)
+      # - name: Check duplicate issue
+      #   if: failure()
+      #   uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+      #   id: issue-exists
+      #   with:
+      #     result-encoding: string
+      #     github-token: ${{ github.token }}
+      #     script: |
+      #       // Get all open issues
+      #       const opts = await github.issues.listForRepo.endpoint.merge({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         state: 'open',
+      #         labels: ${{ env.GITHUB_ISSUE_LABELS }}
+      #       });
+      #       const issues = await github.paginate(opts)
 
-            // Check if issue exist by comparing title and body
-            for (const issue of issues) {
-              if (issue.title.includes('${{ env.GITHUB_ISSUE_TITLE }}') &&
-                  issue.body.includes('${{ matrix.dataset }}') &&
-                  issue.body.includes('${{ matrix.config }}')) {
-                  console.log(`Found an exist issue \#${issue.number}. Skip the following steps.`);
-                  return 'true'
-                }
-            }
-            return 'false'
+      #       // Check if issue exist by comparing title and body
+      #       for (const issue of issues) {
+      #         if (issue.title.includes('${{ env.GITHUB_ISSUE_TITLE }}') &&
+      #             issue.body.includes('${{ matrix.dataset }}') &&
+      #             issue.body.includes('${{ matrix.config }}')) {
+      #             console.log(`Found an exist issue \#${issue.number}. Skip the following steps.`);
+      #             return 'true'
+      #           }
+      #       }
+      #       return 'false'
 
-      - name: Create GitHub Issue 📬
-        id: create-issue
-        if: failure() && steps.issue-exists.outputs.result == 'false'
-        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
-        with:
-          # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
-          github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
-          script: |
-            var issue = await github.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '${{ env.GITHUB_ISSUE_TITLE }}',
-              labels: ${{ env.GITHUB_ISSUE_LABELS }},
-              body: '*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: `${{ matrix.config }}` <br> **Dataset**: `${{ matrix.dataset}}`'
-            })
-            return issue.data.number
+      # - name: Create GitHub Issue 📬
+      #   id: create-issue
+      #   if: failure() && steps.issue-exists.outputs.result == 'false'
+      #   uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+      #   with:
+      #     # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
+      #     github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+      #     script: |
+      #       var issue = await github.issues.create({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         title: '${{ env.GITHUB_ISSUE_TITLE }}',
+      #         labels: ${{ env.GITHUB_ISSUE_LABELS }},
+      #         body: '*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: `${{ matrix.config }}` <br> **Dataset**: `${{ matrix.dataset}}`'
+      #       })
+      #       return issue.data.number
 
-      - name: Notify Slack of Failure 😱
-        if: failure()  && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9  # v3
-        with:
-          status: custom
-          fields: workflow,job,commit,repo,ref,author,took
-          custom_payload: |
-            {
-              attachments: [{
-                fallback: 'fallback',
-                color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
-                title: `${process.env.AS_WORKFLOW}`,
-                text: 'Scheduled model regression test failed :no_entry:️',
-                fields: [{
-                  title: 'Configuration',
-                  value: '${{ matrix.config }}',
-                  short: false
-                },
-                {
-                  title: 'Dataset',
-                  value: '${{ matrix.dataset }}',
-                  short: false
-                },
-                {
-                  title: 'GitHub Issue',
-                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
-                  short: false
-                },
-                {
-                  title: 'GitHub Action',
-                  value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
-                  short: false
-                }],
-                actions: [{
-                }]
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+      # - name: Notify Slack of Failure 😱
+      #   if: failure()  && steps.issue-exists.outputs.result == 'false'
+      #   uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9  # v3
+      #   with:
+      #     status: custom
+      #     fields: workflow,job,commit,repo,ref,author,took
+      #     custom_payload: |
+      #       {
+      #         attachments: [{
+      #           fallback: 'fallback',
+      #           color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+      #           title: `${process.env.AS_WORKFLOW}`,
+      #           text: 'Scheduled model regression test failed :no_entry:️',
+      #           fields: [{
+      #             title: 'Configuration',
+      #             value: '${{ matrix.config }}',
+      #             short: false
+      #           },
+      #           {
+      #             title: 'Dataset',
+      #             value: '${{ matrix.dataset }}',
+      #             short: false
+      #           },
+      #           {
+      #             title: 'GitHub Issue',
+      #             value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
+      #             short: false
+      #           },
+      #           {
+      #             title: 'GitHub Action',
+      #             value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+      #             short: false
+      #           }],
+      #           actions: [{
+      #           }]
+      #         }]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
   combine_reports:
     name: Combine reports
@@ -530,84 +533,84 @@ jobs:
 
           echo "::set-output name=is_dropped::$IS_DROPPED"
 
-      - name: Check duplicate issue
-        if: steps.performance.outputs.is_dropped == 'true'
-        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
-        id: issue-exists
-        with:
-          result-encoding: string
-          github-token: ${{ github.token }}
-          script: |
-            // Get all open issues based on labels
-            const opts = await github.issues.listForRepo.endpoint.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: ${{ env.GITHUB_ISSUE_LABELS }}
-            });
-            const issues = await github.paginate(opts)
+      # - name: Check duplicate issue
+      #   if: steps.performance.outputs.is_dropped == 'true'
+      #   uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+      #   id: issue-exists
+      #   with:
+      #     result-encoding: string
+      #     github-token: ${{ github.token }}
+      #     script: |
+      #       // Get all open issues based on labels
+      #       const opts = await github.issues.listForRepo.endpoint.merge({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         state: 'open',
+      #         labels: ${{ env.GITHUB_ISSUE_LABELS }}
+      #       });
+      #       const issues = await github.paginate(opts)
 
-            // Check if issue exist by comparing title
-            for (const issue of issues) {
-              if (issue.title.includes('${{ env.GITHUB_ISSUE_TITLE }}') ) {
-                  console.log(`Found an exist issue \#${issue.number}. Skip the following steps.`);
-                  return 'true'
-                }
-            }
-            return 'false'
+      #       // Check if issue exist by comparing title
+      #       for (const issue of issues) {
+      #         if (issue.title.includes('${{ env.GITHUB_ISSUE_TITLE }}') ) {
+      #             console.log(`Found an exist issue \#${issue.number}. Skip the following steps.`);
+      #             return 'true'
+      #           }
+      #       }
+      #       return 'false'
 
-      - name: Create GitHub Issue 📬
-        id: create-issue
-        if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
-        with:
-          # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
-          github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
-          script: |
-            // Prepare issue body
-            let issue_body = '*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br>'
-            issue_body += `${{ steps.performance.outputs.report_description }}`
+      # - name: Create GitHub Issue 📬
+      #   id: create-issue
+      #   if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
+      #   uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+      #   with:
+      #     # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
+      #     github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+      #     script: |
+      #       // Prepare issue body
+      #       let issue_body = '*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br>'
+      #       issue_body += `${{ steps.performance.outputs.report_description }}`
 
-            // Open issue
-            var issue = await github.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '${{ env.GITHUB_ISSUE_TITLE }}',
-              labels: ${{ env.GITHUB_ISSUE_LABELS }},
-              body: issue_body
-            })
-            return issue.data.number
+      #       // Open issue
+      #       var issue = await github.issues.create({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         title: '${{ env.GITHUB_ISSUE_TITLE }}',
+      #         labels: ${{ env.GITHUB_ISSUE_LABELS }},
+      #         body: issue_body
+      #       })
+      #       return issue.data.number
 
 
-      - name: Notify Slack when Performance Drops 💬
-        if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9 #v3
-        with:
-          status: custom
-          fields: workflow,job,commit,repo,ref,author,took
-          custom_payload: |
-            {
-              attachments: [{
-                fallback: 'fallback',
-                color: 'danger',
-                title: `${process.env.AS_WORKFLOW}`,
-                text: 'Scheduled model regression test performance drops :chart_with_downwards_trend:',
-                fields: [{
-                  title: 'GitHub Issue',
-                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
-                  short: false
-                },
-                {
-                  title: 'GitHub Action',
-                  value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
-                  short: false
-                }],
-                actions: [{
-                }]
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+      # - name: Notify Slack when Performance Drops 💬
+      #   if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
+      #   uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9 #v3
+      #   with:
+      #     status: custom
+      #     fields: workflow,job,commit,repo,ref,author,took
+      #     custom_payload: |
+      #       {
+      #         attachments: [{
+      #           fallback: 'fallback',
+      #           color: 'danger',
+      #           title: `${process.env.AS_WORKFLOW}`,
+      #           text: 'Scheduled model regression test performance drops :chart_with_downwards_trend:',
+      #           fields: [{
+      #             title: 'GitHub Issue',
+      #             value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
+      #             short: false
+      #           },
+      #           {
+      #             title: 'GitHub Action',
+      #             value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+      #             short: false
+      #           }],
+      #           actions: [{
+      #           }]
+      #         }]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
