@@ -2,7 +2,7 @@
 name: CI - Model Regression
 
 on:
-  push
+  pull_request
 
 env:
   GKE_ZONE: us-central1
