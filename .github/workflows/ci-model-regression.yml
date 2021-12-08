@@ -291,6 +291,18 @@ jobs:
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
+      - name: Start Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        env:
+          DATASET: "${{ matrix.dataset }}"
+          CONFIG: "${{ matrix.config }}"
+          DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
+          BRANCH: ${{ github.head_ref }}
+          GIT_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
+        run: |
+          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
+
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -378,11 +390,6 @@ jobs:
         with:
           name: report.json
 
-      - name: Extract branch name
-        shell: bash
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
-        id: extract_branch
-
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
@@ -397,7 +404,7 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
-          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          BRANCH: ${{ github.head_ref }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu
@@ -414,6 +421,11 @@ jobs:
         with:
           name: report.json
           path: ./report.json
+
+      - name: Stop Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |
+          sudo service datadog-agent stop
 
   model_regression_test_cpu:
     name: Model Regression Tests - CPU
@@ -521,6 +533,18 @@ jobs:
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
+      - name: Start Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        env:
+          DATASET: "${{ matrix.dataset }}"
+          CONFIG: "${{ matrix.config }}"
+          DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
+          BRANCH: ${{ github.head_ref }}
+          GIT_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
+        run: |
+          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
+
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -603,11 +627,6 @@ jobs:
         with:
           name: report.json
 
-      - name: Extract branch name
-        shell: bash
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
-        id: extract_branch
-
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
@@ -639,6 +658,11 @@ jobs:
         with:
           name: report.json
           path: ./report.json
+
+      - name: Stop Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |
+          sudo service datadog-agent stop
 
   add_comment_results_gpu:
     name: Add a comment with the results
