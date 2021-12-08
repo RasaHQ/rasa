@@ -1,6 +1,6 @@
 import logging
-import json
 import os
+from rasa.shared.utils.io import read_json_file
 from typing import Any, Dict, List, Text
 from pathlib import Path
 from rasa.shared.nlu.constants import INTENT, ENTITIES, TEXT
@@ -26,13 +26,13 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
             `True` if the given file can be converted, `False` otherwise
         """
         if source_path.is_file:
-            js = self._read_from_json(source_path)
+            js = read_json_file(source_path)
             return self._check_watson_file(js)
         elif source_path.is_dir:
             for root, _, files in os.walk(source_path, followlinks=True):
                 for f in sorted(files):
                     source_path = Path(root, f)
-                    js = self._read_from_json(source_path)
+                    js = read_json_file(source_path)
                     return self._check_watson_file(js)
 
     async def convert_and_write(self, source_path: Path, output_path: Path) -> None:
@@ -40,20 +40,13 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
 
         Args:
             source_path: Path to the training data file.
-
-        Returns:
-            None
         """
         output_nlu_path = self.generate_path_for_converted_training_data_file(
             source_path, output_path
         )
-        js = self._read_from_json(source_path)
+        js = read_json_file(source_path)
         training_data = self.get_training_data(js)
         RasaYAMLWriter().dump(output_nlu_path, training_data)
-
-    def _read_from_json(self, source_path: Path) -> Dict[Text, Any]:
-        with open(source_path, "r", encoding="utf-8") as f:
-            return json.load(f)
 
     def get_training_data(self, js: Dict[Text, Any], **kwargs: Any) -> TrainingData:
         """Loads training data stored in the IBM Watson data format."""
@@ -152,6 +145,8 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
         try:
             if js.get("metadata").get("api_version").get("major_version") == "v2":
                 return True
+            logger.debug("Currently Watson's API Version v2 file is only supported.")
             return False
-        except Exception:
+        except Exception as e:
+            logger.debug(e)
             return False

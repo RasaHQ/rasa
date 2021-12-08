@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
-
+from rasa.shared.utils.io import read_json_file
 from rasa.nlu.training_data.converters.watson_nlu_json_to_yaml_converter import (
     WatsonTrainingDataConverter,
 )
@@ -22,6 +22,12 @@ def test_not_filter():
     filter = WatsonTrainingDataConverter().filter(source)
     if not filter:
         assert True
+
+
+def test_not_empty():
+    source = Path("data/examples/watson/demo_watson_v2.json")
+    js = read_json_file(source)
+    assert len(js.get("intents")) != 0
 
 
 async def test_convert_and_write(tmp_path: Path):
