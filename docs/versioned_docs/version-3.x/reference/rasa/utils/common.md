@@ -135,6 +135,26 @@ Iterate through all the updates and update a value in the original dictionary.
 If the updates contain a key that is not present in the original dict, it will
 be ignored.
 
+#### override\_defaults
+
+```python
+override_defaults(defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]) -> Dict[Text, Any]
+```
+
+Override default config with the given config.
+
+We cannot use `dict.update` method because configs contain nested dicts.
+
+**Arguments**:
+
+- `defaults` - default config
+- `custom` - user config containing new parameters
+  
+
+**Returns**:
+
+  updated config
+
 ## RepeatedLogFilter Objects
 
 ```python
