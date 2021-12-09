@@ -376,7 +376,9 @@ class DefaultV1Recipe(Recipe):
             )
             epoch_fraction = cli_parameters["finetuning_epoch_fraction"]
             if epoch_fraction is not None:
-                config_from_cli[EPOCHS] = math.ceil(old_number_epochs * float(epoch_fraction))
+                config_from_cli[EPOCHS] = math.ceil(
+                    old_number_epochs * float(epoch_fraction)
+                )
 
         return config_from_cli
 

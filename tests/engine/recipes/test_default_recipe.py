@@ -165,7 +165,10 @@ def test_generate_graphs(
     "cli_parameters, expected_config",
     [
         ({}, {"num_threads": 200000, "finetuning_epoch_fraction": 0.75}),
-        ({"num_threads": None}, {"num_threads": 200000, "finetuning_epoch_fraction": 0.75}),
+        (
+            {"num_threads": None},
+            {"num_threads": 200000, "finetuning_epoch_fraction": 0.75},
+        ),
         ({"num_threads": 1}, {"num_threads": 1, "finetuning_epoch_fraction": 0.75}),
         (
             {"num_threads": 1, "finetuning_epoch_fraction": 0.5},
