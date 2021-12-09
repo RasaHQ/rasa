@@ -161,6 +161,36 @@ def test_generate_graphs(
     rasa.engine.validation.validate(model_config)
 
 
+@pytest.mark.parametrize(
+    "cli_parameters, expected_config",
+    [
+        (
+                {},
+                {"num_threads": 200000, "finetuning_epoch_fraction": 0.75}
+        ),
+        (
+                {"num_threads": 1},
+                {"num_threads": 1, "finetuning_epoch_fraction": 0.75}
+        ),
+        (
+                {"num_threads": 1, "finetuning_epoch_fraction": 0.5},
+                # there is no `epochs` value specified so it doesn't get overridden
+                {"num_threads": 1, "finetuning_epoch_fraction": 0.75}
+        ),
+    ],
+)
+def test_nlu_config_doesnt_get_overridden(cli_parameters: Dict[Text, Any], expected_config: Dict[Text, Any]):
+    config = rasa.shared.utils.io.read_yaml_file("data/test_config/config_pretrained_embeddings_mitie.yml")
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
+    model_config = recipe.graph_config_for_recipe(
+        config, cli_parameters, training_type=TrainingType.BOTH, is_finetuning=True
+    )
+
+    train_schema = model_config.train_schema
+    mitie_node = train_schema.nodes.get("train_MitieIntentClassifier6")
+    assert mitie_node.config == expected_config
+
+
 def test_language_returning():
     config = rasa.shared.utils.io.read_yaml(
         """
