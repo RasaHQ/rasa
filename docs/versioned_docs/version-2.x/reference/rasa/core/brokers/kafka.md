@@ -75,3 +75,12 @@ Creates broker. See the parent class for more information.
 
 Publishes events.
 
+#### rasa\_environment
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | rasa_environment() -> Optional[Text]
+```
+
+Get value of the `RASA_ENVIRONMENT` environment variable.
+
