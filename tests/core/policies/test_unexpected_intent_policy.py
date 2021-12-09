@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Optional, List, Dict, Text, Type
 import tensorflow as tf
@@ -489,9 +490,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
-        predicted_similarity,
-        threshold_value,
-        is_unlikely,
+        predicted_similarity: float,
+        threshold_value: float,
+        is_unlikely: bool,
         monkeypatch: MonkeyPatch,
         tmp_path: Path,
     ):
@@ -538,6 +539,8 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             # of the metadata is tested separately and
             # not as part of this test.
             assert prediction.action_metadata is not None
+            # Assert metadata is serializable
+            assert json.dumps(prediction.action_metadata)
 
     @pytest.mark.parametrize(
         "tracker_events, should_skip",
