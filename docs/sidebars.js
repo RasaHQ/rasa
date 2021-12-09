@@ -7,9 +7,9 @@ module.exports = {
       label: 'Building Assistants',
       collapsed: false,
       items: [
-          'installation',
-          'migrate-from',
-          'command-line-interface',
+        'installation',
+        'migrate-from',
+        'command-line-interface',
         {
           type: 'category',
           label: 'Best Practices',
@@ -42,11 +42,16 @@ module.exports = {
               type: 'category',
               label: 'Deploying Your Assistant',
               collapsed: true,
-              items: ['deploy/introduction', 'deploy/deploy-rasa', 'deploy/deploy-action-server', 'deploy/deploy-rasa-x'],
+              items: [
+                'deploy/introduction',
+                'deploy/deploy-rasa',
+                'deploy/deploy-action-server',
+                'deploy/deploy-rasa-x',
+              ],
             },
           ],
         },
-        "glossary",
+        'glossary',
       ],
     },
     {
@@ -87,9 +92,7 @@ module.exports = {
         {
           type: 'category',
           label: 'Evaluation',
-          items: [
-            'markers',
-          ],
+          items: ['markers'],
         },
         {
           type: 'category',
@@ -129,7 +132,7 @@ module.exports = {
       collapsed: true,
       items: [
         'http-api',
-        'nlu-only-server'
+        'nlu-only-server',
         // 'jupyter-notebooks',
       ],
     },
@@ -140,7 +143,8 @@ module.exports = {
       items: [
         'telemetry/telemetry',
         'telemetry/reference',
-        require('./docs/reference/sidebar.json')],
+        // require('./docs/reference/sidebar.json')
+      ],
     },
     {
       type: 'category',

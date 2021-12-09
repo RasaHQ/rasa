@@ -1,0 +1,636 @@
+{
+  "items": [
+    {
+      "items": [
+        {
+          "items": [
+            "reference/rasa/cli/arguments/data",
+            "reference/rasa/cli/arguments/default_arguments",
+            "reference/rasa/cli/arguments/evaluate",
+            "reference/rasa/cli/arguments/interactive",
+            "reference/rasa/cli/arguments/run",
+            "reference/rasa/cli/arguments/test",
+            "reference/rasa/cli/arguments/train",
+            "reference/rasa/cli/arguments/visualize"
+          ],
+          "label": "rasa.cli.arguments",
+          "type": "category"
+        },
+        "reference/rasa/cli/data",
+        "reference/rasa/cli/evaluate",
+        "reference/rasa/cli/export",
+        "reference/rasa/cli/interactive",
+        "reference/rasa/cli/run",
+        "reference/rasa/cli/scaffold",
+        "reference/rasa/cli/shell",
+        "reference/rasa/cli/telemetry",
+        "reference/rasa/cli/test",
+        "reference/rasa/cli/train",
+        "reference/rasa/cli/utils",
+        "reference/rasa/cli/visualize",
+        "reference/rasa/cli/x"
+      ],
+      "label": "rasa.cli",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": ["reference/rasa/core/actions/action", "reference/rasa/core/actions/forms"],
+          "label": "rasa.core.actions",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/core/brokers/broker",
+            "reference/rasa/core/brokers/file",
+            "reference/rasa/core/brokers/kafka",
+            "reference/rasa/core/brokers/pika",
+            "reference/rasa/core/brokers/sql"
+          ],
+          "label": "rasa.core.brokers",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/core/channels/botframework",
+            "reference/rasa/core/channels/callback",
+            "reference/rasa/core/channels/channel",
+            "reference/rasa/core/channels/console",
+            "reference/rasa/core/channels/facebook",
+            "reference/rasa/core/channels/hangouts",
+            "reference/rasa/core/channels/mattermost",
+            "reference/rasa/core/channels/rasa_chat",
+            "reference/rasa/core/channels/rest",
+            "reference/rasa/core/channels/rocketchat",
+            "reference/rasa/core/channels/slack",
+            "reference/rasa/core/channels/socketio",
+            "reference/rasa/core/channels/telegram",
+            "reference/rasa/core/channels/twilio",
+            "reference/rasa/core/channels/twilio_voice",
+            "reference/rasa/core/channels/webexteams"
+          ],
+          "label": "rasa.core.channels",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/core/evaluation/marker",
+            "reference/rasa/core/evaluation/marker_base",
+            "reference/rasa/core/evaluation/marker_stats",
+            "reference/rasa/core/evaluation/marker_tracker_loader",
+            "reference/rasa/core/evaluation/markers"
+          ],
+          "label": "rasa.core.evaluation",
+          "type": "category"
+        },
+        {
+          "items": ["reference/rasa/core/events/init"],
+          "label": "rasa.core.events",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/core/featurizers/_single_state_featurizer",
+            "reference/rasa/core/featurizers/_tracker_featurizers",
+            "reference/rasa/core/featurizers/precomputation",
+            "reference/rasa/core/featurizers/single_state_featurizer",
+            "reference/rasa/core/featurizers/tracker_featurizers"
+          ],
+          "label": "rasa.core.featurizers",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/core/nlg/callback",
+            "reference/rasa/core/nlg/generator",
+            "reference/rasa/core/nlg/interpolator",
+            "reference/rasa/core/nlg/response",
+            "reference/rasa/core/nlg/template"
+          ],
+          "label": "rasa.core.nlg",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/core/policies/_ensemble",
+            "reference/rasa/core/policies/_memoization",
+            "reference/rasa/core/policies/_policy",
+            "reference/rasa/core/policies/_rule_policy",
+            "reference/rasa/core/policies/_ted_policy",
+            "reference/rasa/core/policies/_unexpected_intent_policy",
+            "reference/rasa/core/policies/ensemble",
+            "reference/rasa/core/policies/fallback",
+            "reference/rasa/core/policies/form_policy",
+            "reference/rasa/core/policies/mapping_policy",
+            "reference/rasa/core/policies/memoization",
+            "reference/rasa/core/policies/policy",
+            "reference/rasa/core/policies/rule_policy",
+            "reference/rasa/core/policies/sklearn_policy",
+            "reference/rasa/core/policies/ted_policy",
+            "reference/rasa/core/policies/two_stage_fallback",
+            "reference/rasa/core/policies/unexpected_intent_policy"
+          ],
+          "label": "rasa.core.policies",
+          "type": "category"
+        },
+        {
+          "items": [
+            {
+              "items": [
+                "reference/rasa/core/training/converters/responses_prefix_converter",
+                "reference/rasa/core/training/converters/story_markdown_to_yaml_converter"
+              ],
+              "label": "rasa.core.training.converters",
+              "type": "category"
+            },
+            {
+              "items": [
+                "reference/rasa/core/training/story_reader/markdown_story_reader",
+                "reference/rasa/core/training/story_reader/story_reader",
+                "reference/rasa/core/training/story_reader/story_step_builder",
+                "reference/rasa/core/training/story_reader/yaml_story_reader"
+              ],
+              "label": "rasa.core.training.story_reader",
+              "type": "category"
+            },
+            {
+              "items": ["reference/rasa/core/training/story_writer/yaml_story_writer"],
+              "label": "rasa.core.training.story_writer",
+              "type": "category"
+            },
+            "reference/rasa/core/training/init",
+            "reference/rasa/core/training/data",
+            "reference/rasa/core/training/generator",
+            "reference/rasa/core/training/interactive",
+            "reference/rasa/core/training/loading",
+            "reference/rasa/core/training/story_conflict",
+            "reference/rasa/core/training/structures",
+            "reference/rasa/core/training/training",
+            "reference/rasa/core/training/visualization"
+          ],
+          "label": "rasa.core.training",
+          "type": "category"
+        },
+        "reference/rasa/core/agent",
+        "reference/rasa/core/config",
+        "reference/rasa/core/conversation",
+        "reference/rasa/core/domain",
+        "reference/rasa/core/exceptions",
+        "reference/rasa/core/exporter",
+        "reference/rasa/core/featurizers",
+        "reference/rasa/core/http_interpreter",
+        "reference/rasa/core/interpreter",
+        "reference/rasa/core/jobs",
+        "reference/rasa/core/lock",
+        "reference/rasa/core/lock_store",
+        "reference/rasa/core/migrate",
+        "reference/rasa/core/processor",
+        "reference/rasa/core/registry",
+        "reference/rasa/core/restore",
+        "reference/rasa/core/run",
+        "reference/rasa/core/slots",
+        "reference/rasa/core/test",
+        "reference/rasa/core/tracker_store",
+        "reference/rasa/core/trackers",
+        "reference/rasa/core/train",
+        "reference/rasa/core/utils",
+        "reference/rasa/core/visualize"
+      ],
+      "label": "rasa.core",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": ["reference/rasa/engine/recipes/default_recipe", "reference/rasa/engine/recipes/recipe"],
+          "label": "rasa.engine.recipes",
+          "type": "category"
+        },
+        {
+          "items": ["reference/rasa/engine/runner/dask", "reference/rasa/engine/runner/interface"],
+          "label": "rasa.engine.runner",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/engine/storage/local_model_storage",
+            "reference/rasa/engine/storage/resource",
+            "reference/rasa/engine/storage/storage"
+          ],
+          "label": "rasa.engine.storage",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/engine/training/components",
+            "reference/rasa/engine/training/fingerprinting",
+            "reference/rasa/engine/training/graph_trainer",
+            "reference/rasa/engine/training/hooks"
+          ],
+          "label": "rasa.engine.training",
+          "type": "category"
+        },
+        "reference/rasa/engine/caching",
+        "reference/rasa/engine/exceptions",
+        "reference/rasa/engine/graph",
+        "reference/rasa/engine/loader",
+        "reference/rasa/engine/validation"
+      ],
+      "label": "rasa.engine",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": ["reference/rasa/graph_components/adders/nlu_prediction_to_history_adder"],
+          "label": "rasa.graph_components.adders",
+          "type": "category"
+        },
+        {
+          "items": ["reference/rasa/graph_components/converters/nlu_message_converter"],
+          "label": "rasa.graph_components.converters",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/graph_components/providers/domain_provider",
+            "reference/rasa/graph_components/providers/domain_without_response_provider",
+            "reference/rasa/graph_components/providers/nlu_training_data_provider",
+            "reference/rasa/graph_components/providers/project_provider",
+            "reference/rasa/graph_components/providers/rule_only_provider",
+            "reference/rasa/graph_components/providers/story_graph_provider",
+            "reference/rasa/graph_components/providers/training_tracker_provider"
+          ],
+          "label": "rasa.graph_components.providers",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/graph_components/validators/default_recipe_validator",
+            "reference/rasa/graph_components/validators/finetuning_validator"
+          ],
+          "label": "rasa.graph_components.validators",
+          "type": "category"
+        }
+      ],
+      "label": "rasa.graph_components",
+      "type": "category"
+    },
+    {
+      "items": [
+        "reference/rasa/importers/autoconfig",
+        "reference/rasa/importers/importer",
+        "reference/rasa/importers/multi_project",
+        "reference/rasa/importers/rasa"
+      ],
+      "label": "rasa.importers",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
+            "reference/rasa/nlu/classifiers/_classifier",
+            "reference/rasa/nlu/classifiers/_diet_classifier",
+            "reference/rasa/nlu/classifiers/_fallback_classifier",
+            "reference/rasa/nlu/classifiers/_keyword_intent_classifier",
+            "reference/rasa/nlu/classifiers/_mitie_intent_classifier",
+            "reference/rasa/nlu/classifiers/_sklearn_intent_classifier",
+            "reference/rasa/nlu/classifiers/classifier",
+            "reference/rasa/nlu/classifiers/diet_classifier",
+            "reference/rasa/nlu/classifiers/fallback_classifier",
+            "reference/rasa/nlu/classifiers/keyword_intent_classifier",
+            "reference/rasa/nlu/classifiers/mitie_intent_classifier",
+            "reference/rasa/nlu/classifiers/regex_message_handler",
+            "reference/rasa/nlu/classifiers/sklearn_intent_classifier"
+          ],
+          "label": "rasa.nlu.classifiers",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/nlu/emulators/dialogflow",
+            "reference/rasa/nlu/emulators/emulator",
+            "reference/rasa/nlu/emulators/luis",
+            "reference/rasa/nlu/emulators/no_emulator",
+            "reference/rasa/nlu/emulators/wit"
+          ],
+          "label": "rasa.nlu.emulators",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/nlu/extractors/_crf_entity_extractor",
+            "reference/rasa/nlu/extractors/_duckling_entity_extractor",
+            "reference/rasa/nlu/extractors/_entity_synonyms",
+            "reference/rasa/nlu/extractors/_extractor",
+            "reference/rasa/nlu/extractors/_mitie_entity_extractor",
+            "reference/rasa/nlu/extractors/_regex_entity_extractor",
+            "reference/rasa/nlu/extractors/crf_entity_extractor",
+            "reference/rasa/nlu/extractors/duckling_entity_extractor",
+            "reference/rasa/nlu/extractors/duckling_http_extractor",
+            "reference/rasa/nlu/extractors/entity_synonyms",
+            "reference/rasa/nlu/extractors/extractor",
+            "reference/rasa/nlu/extractors/mitie_entity_extractor",
+            "reference/rasa/nlu/extractors/regex_entity_extractor",
+            "reference/rasa/nlu/extractors/spacy_entity_extractor"
+          ],
+          "label": "rasa.nlu.extractors",
+          "type": "category"
+        },
+        {
+          "items": [
+            {
+              "items": [
+                "reference/rasa/nlu/featurizers/dense_featurizer/_convert_featurizer",
+                "reference/rasa/nlu/featurizers/dense_featurizer/_lm_featurizer",
+                "reference/rasa/nlu/featurizers/dense_featurizer/convert_featurizer",
+                "reference/rasa/nlu/featurizers/dense_featurizer/dense_featurizer",
+                "reference/rasa/nlu/featurizers/dense_featurizer/lm_featurizer",
+                "reference/rasa/nlu/featurizers/dense_featurizer/mitie_featurizer",
+                "reference/rasa/nlu/featurizers/dense_featurizer/spacy_featurizer"
+              ],
+              "label": "rasa.nlu.featurizers.dense_featurizer",
+              "type": "category"
+            },
+            {
+              "items": [
+                "reference/rasa/nlu/featurizers/sparse_featurizer/_count_vectors_featurizer",
+                "reference/rasa/nlu/featurizers/sparse_featurizer/_lexical_syntactic_featurizer",
+                "reference/rasa/nlu/featurizers/sparse_featurizer/_regex_featurizer",
+                "reference/rasa/nlu/featurizers/sparse_featurizer/count_vectors_featurizer",
+                "reference/rasa/nlu/featurizers/sparse_featurizer/lexical_syntactic_featurizer",
+                "reference/rasa/nlu/featurizers/sparse_featurizer/regex_featurizer",
+                "reference/rasa/nlu/featurizers/sparse_featurizer/sparse_featurizer"
+              ],
+              "label": "rasa.nlu.featurizers.sparse_featurizer",
+              "type": "category"
+            },
+            "reference/rasa/nlu/featurizers/featurizer"
+          ],
+          "label": "rasa.nlu.featurizers",
+          "type": "category"
+        },
+        {
+          "items": ["reference/rasa/nlu/schemas/data_schema"],
+          "label": "rasa.nlu.schemas",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/nlu/selectors/_response_selector",
+            "reference/rasa/nlu/selectors/response_selector"
+          ],
+          "label": "rasa.nlu.selectors",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/nlu/tokenizers/_jieba_tokenizer",
+            "reference/rasa/nlu/tokenizers/_tokenizer",
+            "reference/rasa/nlu/tokenizers/_whitespace_tokenizer",
+            "reference/rasa/nlu/tokenizers/convert_tokenizer",
+            "reference/rasa/nlu/tokenizers/jieba_tokenizer",
+            "reference/rasa/nlu/tokenizers/lm_tokenizer",
+            "reference/rasa/nlu/tokenizers/mitie_tokenizer",
+            "reference/rasa/nlu/tokenizers/spacy_tokenizer",
+            "reference/rasa/nlu/tokenizers/tokenizer",
+            "reference/rasa/nlu/tokenizers/whitespace_tokenizer"
+          ],
+          "label": "rasa.nlu.tokenizers",
+          "type": "category"
+        },
+        {
+          "items": [
+            {
+              "items": [
+                "reference/rasa/nlu/training_data/converters/nlg_markdown_to_yaml_converter",
+                "reference/rasa/nlu/training_data/converters/nlu_markdown_to_yaml_converter"
+              ],
+              "label": "rasa.nlu.training_data.converters",
+              "type": "category"
+            },
+            {
+              "items": [
+                "reference/rasa/nlu/training_data/formats/dialogflow",
+                "reference/rasa/nlu/training_data/formats/luis",
+                "reference/rasa/nlu/training_data/formats/markdown",
+                "reference/rasa/nlu/training_data/formats/markdown_nlg",
+                "reference/rasa/nlu/training_data/formats/rasa",
+                "reference/rasa/nlu/training_data/formats/rasa_yaml",
+                "reference/rasa/nlu/training_data/formats/readerwriter",
+                "reference/rasa/nlu/training_data/formats/wit"
+              ],
+              "label": "rasa.nlu.training_data.formats",
+              "type": "category"
+            },
+            "reference/rasa/nlu/training_data/entities_parser",
+            "reference/rasa/nlu/training_data/loading",
+            "reference/rasa/nlu/training_data/lookup_tables_parser",
+            "reference/rasa/nlu/training_data/message",
+            "reference/rasa/nlu/training_data/synonyms_parser",
+            "reference/rasa/nlu/training_data/training_data",
+            "reference/rasa/nlu/training_data/util"
+          ],
+          "label": "rasa.nlu.training_data",
+          "type": "category"
+        },
+        {
+          "items": [
+            {
+              "items": [
+                "reference/rasa/nlu/utils/hugging_face/hf_transformers",
+                "reference/rasa/nlu/utils/hugging_face/transformers_pre_post_processors"
+              ],
+              "label": "rasa.nlu.utils.hugging_face",
+              "type": "category"
+            },
+            "reference/rasa/nlu/utils/init",
+            "reference/rasa/nlu/utils/_mitie_utils",
+            "reference/rasa/nlu/utils/_spacy_utils",
+            "reference/rasa/nlu/utils/bilou_utils",
+            "reference/rasa/nlu/utils/mitie_utils",
+            "reference/rasa/nlu/utils/pattern_utils",
+            "reference/rasa/nlu/utils/spacy_utils"
+          ],
+          "label": "rasa.nlu.utils",
+          "type": "category"
+        },
+        "reference/rasa/nlu/components",
+        "reference/rasa/nlu/config",
+        "reference/rasa/nlu/convert",
+        "reference/rasa/nlu/model",
+        "reference/rasa/nlu/persistor",
+        "reference/rasa/nlu/registry",
+        "reference/rasa/nlu/run",
+        "reference/rasa/nlu/test",
+        "reference/rasa/nlu/train"
+      ],
+      "label": "rasa.nlu",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
+            {
+              "items": [
+                {
+                  "items": [
+                    "reference/rasa/shared/core/training_data/story_reader/markdown_story_reader",
+                    "reference/rasa/shared/core/training_data/story_reader/story_reader",
+                    "reference/rasa/shared/core/training_data/story_reader/story_step_builder",
+                    "reference/rasa/shared/core/training_data/story_reader/yaml_story_reader"
+                  ],
+                  "label": "rasa.shared.core.training_data.story_reader",
+                  "type": "category"
+                },
+                {
+                  "items": [
+                    "reference/rasa/shared/core/training_data/story_writer/markdown_story_writer",
+                    "reference/rasa/shared/core/training_data/story_writer/story_writer",
+                    "reference/rasa/shared/core/training_data/story_writer/yaml_story_writer"
+                  ],
+                  "label": "rasa.shared.core.training_data.story_writer",
+                  "type": "category"
+                },
+                "reference/rasa/shared/core/training_data/loading",
+                "reference/rasa/shared/core/training_data/structures",
+                "reference/rasa/shared/core/training_data/visualization"
+              ],
+              "label": "rasa.shared.core.training_data",
+              "type": "category"
+            },
+            "reference/rasa/shared/core/conversation",
+            "reference/rasa/shared/core/domain",
+            "reference/rasa/shared/core/events",
+            "reference/rasa/shared/core/generator",
+            "reference/rasa/shared/core/slot_mappings",
+            "reference/rasa/shared/core/slots",
+            "reference/rasa/shared/core/trackers"
+          ],
+          "label": "rasa.shared.core",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/shared/importers/autoconfig",
+            "reference/rasa/shared/importers/importer",
+            "reference/rasa/shared/importers/multi_project",
+            "reference/rasa/shared/importers/rasa",
+            "reference/rasa/shared/importers/utils"
+          ],
+          "label": "rasa.shared.importers",
+          "type": "category"
+        },
+        {
+          "items": [
+            {
+              "items": [
+                {
+                  "items": [
+                    "reference/rasa/shared/nlu/training_data/formats/dialogflow",
+                    "reference/rasa/shared/nlu/training_data/formats/luis",
+                    "reference/rasa/shared/nlu/training_data/formats/markdown",
+                    "reference/rasa/shared/nlu/training_data/formats/markdown_nlg",
+                    "reference/rasa/shared/nlu/training_data/formats/rasa",
+                    "reference/rasa/shared/nlu/training_data/formats/rasa_yaml",
+                    "reference/rasa/shared/nlu/training_data/formats/readerwriter",
+                    "reference/rasa/shared/nlu/training_data/formats/wit"
+                  ],
+                  "label": "rasa.shared.nlu.training_data.formats",
+                  "type": "category"
+                },
+                {
+                  "items": ["reference/rasa/shared/nlu/training_data/schemas/data_schema"],
+                  "label": "rasa.shared.nlu.training_data.schemas",
+                  "type": "category"
+                },
+                "reference/rasa/shared/nlu/training_data/entities_parser",
+                "reference/rasa/shared/nlu/training_data/features",
+                "reference/rasa/shared/nlu/training_data/loading",
+                "reference/rasa/shared/nlu/training_data/lookup_tables_parser",
+                "reference/rasa/shared/nlu/training_data/message",
+                "reference/rasa/shared/nlu/training_data/synonyms_parser",
+                "reference/rasa/shared/nlu/training_data/training_data",
+                "reference/rasa/shared/nlu/training_data/util"
+              ],
+              "label": "rasa.shared.nlu.training_data",
+              "type": "category"
+            },
+            "reference/rasa/shared/nlu/interpreter"
+          ],
+          "label": "rasa.shared.nlu",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/shared/utils/cli",
+            "reference/rasa/shared/utils/common",
+            "reference/rasa/shared/utils/io",
+            "reference/rasa/shared/utils/pykwalify_extensions",
+            "reference/rasa/shared/utils/validation"
+          ],
+          "label": "rasa.shared.utils",
+          "type": "category"
+        },
+        "reference/rasa/shared/data",
+        "reference/rasa/shared/exceptions"
+      ],
+      "label": "rasa.shared",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
+            "reference/rasa/utils/tensorflow/callback",
+            "reference/rasa/utils/tensorflow/crf",
+            "reference/rasa/utils/tensorflow/data_generator",
+            "reference/rasa/utils/tensorflow/environment",
+            "reference/rasa/utils/tensorflow/exceptions",
+            "reference/rasa/utils/tensorflow/layers",
+            "reference/rasa/utils/tensorflow/layers_utils",
+            "reference/rasa/utils/tensorflow/model_data",
+            "reference/rasa/utils/tensorflow/model_data_utils",
+            "reference/rasa/utils/tensorflow/models",
+            "reference/rasa/utils/tensorflow/numpy",
+            "reference/rasa/utils/tensorflow/rasa_layers",
+            "reference/rasa/utils/tensorflow/temp_keras_modules",
+            "reference/rasa/utils/tensorflow/transformer"
+          ],
+          "label": "rasa.utils.tensorflow",
+          "type": "category"
+        },
+        "reference/rasa/utils/common",
+        "reference/rasa/utils/converter",
+        "reference/rasa/utils/endpoints",
+        "reference/rasa/utils/features",
+        "reference/rasa/utils/io",
+        "reference/rasa/utils/plotting",
+        "reference/rasa/utils/pykwalify_extensions",
+        "reference/rasa/utils/train_utils",
+        "reference/rasa/utils/validation"
+      ],
+      "label": "rasa.utils",
+      "type": "category"
+    },
+    "reference/rasa/main",
+    "reference/rasa/api",
+    "reference/rasa/data",
+    "reference/rasa/exceptions",
+    "reference/rasa/jupyter",
+    "reference/rasa/model",
+    "reference/rasa/model_testing",
+    "reference/rasa/model_training",
+    "reference/rasa/run",
+    "reference/rasa/server",
+    "reference/rasa/telemetry",
+    "reference/rasa/test",
+    "reference/rasa/train",
+    "reference/rasa/validator"
+  ],
+  "label": "Code reference",
+  "type": "category"
+}

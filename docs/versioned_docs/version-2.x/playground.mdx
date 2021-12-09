@@ -5,9 +5,10 @@ title: 'Rasa Playground'
 abstract: Learn the basics of building an assistant with Rasa Open Source with this interactive guide. You will be able to customize the assistant, talk to it and download the project so you can continue to build.
 hide_table_of_contents: true
 ---
+
 import useBaseUrl from '@docusaurus/useBaseUrl';
-import Prototyper, { DownloadButton, TrainButton } from '@theme/Prototyper';
-import AssistantBuilder from '@theme/AssistantBuilder';
+import Prototyper, { DownloadButton, TrainButton } from '@theme/custom/Prototyper';
+import AssistantBuilder from '@theme/custom/AssistantBuilder';
 
 <Prototyper
   startPrototyperApi="https://trainer-service.prototyping.rasa.com/startPrototyping"
@@ -34,10 +35,7 @@ In this guide, we are creating an assistant that helps users subscribe to a news
 
 What are the various things people might say to an assistant that can help them subscribe to a newsletter?
 
-For an assistant to recognize what a user is saying no matter how the user phrases their message, we need to provide example messages the assistant can learn from.
-We group these examples according to the idea or the goal the message is expressing, which is also called the intent.
-In the code block on the right, we have added an intent called greet, which contains example
-messages like “Hi”, “Hey”, and “good morning”.
+For an assistant to recognize what a user is saying no matter how the user phrases their message, we need to provide example messages the assistant can learn from. We group these examples according to the idea or the goal the message is expressing, which is also called the intent. In the code block on the right, we have added an intent called greet, which contains example messages like “Hi”, “Hey”, and “good morning”.
 
 Intents and their examples are used as training data for the assistant's Natural Language Understanding (NLU) model.
 
@@ -80,8 +78,7 @@ Now that the assistant understands a few messages users might say, it needs resp
 
 “Hello, how can I help you?” and “what’s your email address?” are some of the responses our assistant will use. You’ll see how to connect user messages and responses in the next steps.
 
-In the code block below, we have listed some responses and added one or more text
-options for each of them. If a response has multiple text options, one of these options will be chosen at random whenever that response is predicted.
+In the code block below, we have listed some responses and added one or more text options for each of them. If a response has multiple text options, one of these options will be chosen at random whenever that response is predicted.
 
 [Learn more about responses](./responses.mdx)
 
@@ -111,8 +108,7 @@ responses:
 <AssistantBuilder.Section value="stories">
 <AssistantBuilder.Text>
 
-[Stories](./stories.mdx) are example conversations that train an assistant to respond correctly depending on what the user has said previously in the conversation.
-The story format shows the intent of the user message followed by the assistant’s action or response.
+[Stories](./stories.mdx) are example conversations that train an assistant to respond correctly depending on what the user has said previously in the conversation. The story format shows the intent of the user message followed by the assistant’s action or response.
 
 Your first story should show a conversation flow where the assistant helps the user accomplish their goal in a straightforward way. Later, you can add stories for situations where the user doesn't want to provide their information or switches to another topic.
 
@@ -142,8 +138,7 @@ stories:
 
 There are many situations where an assistant needs to collect information from the user. For example, when a user wants to subscribe to a newsletter, the assistant must ask for their email address.
 
-You can do this in Rasa using a form. In the code block below, we added the
-`newsletter_form` and used it to collect an email address from the user.
+You can do this in Rasa using a form. In the code block below, we added the `newsletter_form` and used it to collect an email address from the user.
 
 [Learn more about forms here](./forms.mdx)
 
@@ -168,12 +163,7 @@ Rules describe parts of conversations that should always follow the same path no
 
 We want our assistant to always respond to a certain intent with a specific action, so we use a rule to map that action to the intent.
 
-In the code block below, we have added a rule that triggers the
-`newsletter_form` whenever the user expresses the intent “subscribe”.
-We’ve also added a rule that triggers the `utter_subscribed` action once all the
-required information has been provided.
-The second rule only applies when the `newsletter_form` is active to begin with; once
-it is no longer active (`active_loop: null`), the form is complete.
+In the code block below, we have added a rule that triggers the `newsletter_form` whenever the user expresses the intent “subscribe”. We’ve also added a rule that triggers the `utter_subscribed` action once all the required information has been provided. The second rule only applies when the `newsletter_form` is active to begin with; once it is no longer active (`active_loop: null`), the form is complete.
 
 [Learn more about rules and how to write them.](./rules.mdx)
 
@@ -225,14 +215,11 @@ You can download this project and continue building to create a more advanced as
 
 [Install Rasa open source to keep building.](./installation.mdx)
 
-<br/>
+<br />
 
-When you train a model, you always want to check that your assistant still behaves as
-you expect. You can do that by talking to your assistant and seeing that it works.
-However, as your assistant becomes more complex, you will want to use test stories to
-ensure your model makes correct predictions.
+When you train a model, you always want to check that your assistant still behaves as you expect. You can do that by talking to your assistant and seeing that it works. However, as your assistant becomes more complex, you will want to use test stories to ensure your model makes correct predictions.
 
-<br/>
+<br />
 
 Try running `rasa test` to make sure that your assistant passes your tests:
 
@@ -250,10 +237,6 @@ stories:
   - action:  utter_subscribed
 ```
 
-Check out other docs pages to learn more about
-[Rasa’s CLI](./command-line-interface.mdx),
-[Domains](./domain.mdx),
-[Actions](./actions.mdx),
-and your config’s [Pipeline](./tuning-your-model.mdx) and [Policies](./policies.mdx).
+Check out other docs pages to learn more about [Rasa’s CLI](./command-line-interface.mdx), [Domains](./domain.mdx), [Actions](./actions.mdx), and your config’s [Pipeline](./tuning-your-model.mdx) and [Policies](./policies.mdx).
 
 </Prototyper>
