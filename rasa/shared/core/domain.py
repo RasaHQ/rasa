@@ -1698,7 +1698,7 @@ class Domain:
     def utterances_for_response(self) -> Set[Text]:
         """Returns utterance set which should have a response.
 
-        Will filter out utterrances which are subintent (retrieval intent) types.
+        Will filter out utterances which are subintent (retrieval intent) types.
         eg. if actions have ['utter_chitchat', 'utter_chitchat/greet'], this
         will only return ['utter_chitchat/greet'] as only that will need a
         response.
