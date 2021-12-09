@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from asyncio import AbstractEventLoop
@@ -8,6 +9,7 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.exceptions import RasaException
+import rasa.shared.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -194,10 +196,24 @@ class KafkaEventBroker(EventBroker):
         else:
             partition_key = None
 
+        headers = [
+            (
+                "RASA_ENVIRONMENT",
+                bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
+            )
+        ]
+
         logger.debug(
-            f"Calling kafka send({self.topic}, value={event}, key={partition_key!s})"
+            f"Calling kafka send({self.topic}, value={event},"
+            f" key={partition_key!s}, headers={headers})"
         )
-        self.producer.send(self.topic, value=event, key=partition_key)
+
+        self.producer.send(self.topic, value=event, key=partition_key, headers=headers)
 
     def _close(self) -> None:
         self.producer.close()
+
+    @rasa.shared.utils.common.lazy_property
+    def rasa_environment(self) -> Optional[Text]:
+        """Get value of the `RASA_ENVIRONMENT` environment variable."""
+        return os.environ.get("RASA_ENVIRONMENT")

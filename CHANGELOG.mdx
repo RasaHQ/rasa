@@ -298,6 +298,26 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 - [#10065](https://github.com/rasahq/rasa/issues/10065), [#10084](https://github.com/rasahq/rasa/issues/10084), [#10086](https://github.com/rasahq/rasa/issues/10086), [#10131](https://github.com/rasahq/rasa/issues/10131), [#9078](https://github.com/rasahq/rasa/issues/9078), [#9131](https://github.com/rasahq/rasa/issues/9131), [#9135](https://github.com/rasahq/rasa/issues/9135), [#9557](https://github.com/rasahq/rasa/issues/9557)
 
 
+## [2.8.16] - 2021-12-09
+### Improvements
+- [#10413](https://github.com/rasahq/rasa/issues/10413): The value of the `RASA_ENVIRONMENT` environmental variable is sent as a header in messages logged by `KafkaEventBroker`.
+  This value was previously only made available by `PikaEventConsumer`.
+
+### Bugfixes
+- [#10458](https://github.com/rasahq/rasa/issues/10458): Make `action_metadata` json serializable and make it available on the tracker. This is a backport of a fix in 3.0.0.
+
+
+## [2.8.15] - 2021-11-25
+### Bugfixes
+- [#10381](https://github.com/rasahq/rasa/issues/10381): Validate regular
+  expressions in nlu training data configuration.
+
+## [2.8.14] - 2021-11-18
+### Bugfixes
+- [#10241](https://github.com/rasahq/rasa/issues/10241): Bump TensorFlow version to 2.6.2. _We have plans to port this
+  change to 3.x (see [this issue](https://github.com/RasaHQ/rasa/issues/10378))_.
+- [#10257](https://github.com/rasahq/rasa/issues/10257): Downgrade google-auth to <2.
+
 ## [2.8.13] - 2021-11-11
 ### Bugfixes
 - [#9949](https://github.com/rasahq/rasa/issues/9949): Fixed new intent creation in `rasa interactive` command. Previously, this failed with 500
