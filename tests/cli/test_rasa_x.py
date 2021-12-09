@@ -1,7 +1,10 @@
+import argparse
 from pathlib import Path
 
 import pytest
 from typing import Callable, Dict
+
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
 
@@ -155,3 +158,24 @@ async def test_pull_runtime_config_from_server():
 
         assert rasa.shared.utils.io.read_file(endpoints_path) == endpoint_config
         assert rasa.shared.utils.io.read_file(credentials_path) == credentials
+
+
+def test_rasa_x_raises_warning_above_version_3(
+    monkeypatch: MonkeyPatch, run: Callable[..., RunResult],
+):
+    def mock_run_locally(args):
+        return None
+
+    monkeypatch.setattr(x, "run_locally", mock_run_locally)
+    monkeypatch.setattr(rasa.version, "__version__", "3.0.0")
+
+    args = argparse.Namespace(loglevel=None, log_file=None, production=None)
+    with pytest.warns(
+        UserWarning,
+        match="Your version of rasa '3.0.0' is currently not supported by Rasa X.",
+    ):
+        x.rasa_x(args)
+
+    monkeypatch.setattr(target=rasa.version, name="__version__", value="2.8.0")
+    with pytest.warns(None):
+        x.rasa_x(args)
