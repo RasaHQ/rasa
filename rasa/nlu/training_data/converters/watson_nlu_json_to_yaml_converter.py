@@ -40,6 +40,8 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
 
         Args:
             source_path: Path to the training data file.
+        Returns:
+            yaml file written to the output path
         """
         output_nlu_path = self.generate_path_for_converted_training_data_file(
             source_path, output_path
@@ -83,7 +85,11 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
         training_examples.append(Message(data={INTENT: intent, TEXT: text}))
 
     def _unpack_entity_examples(
-        self, text: str, intent: str, training_examples: List, all_entities: List,
+        self,
+        text: str,
+        intent: str,
+        training_examples: List,
+        all_entities: List,
     ) -> List:
         examples_with_entities = []
         all_entity_names = set().union(*(d.keys() for d in all_entities))
@@ -136,7 +142,10 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
             for entity in entities:
                 for val in entity.get("values"):
                     entity_synonyms.append(
-                        {"value": val.get("value"), "synonyms": val.get("synonyms"),}
+                        {
+                            "value": val.get("value"),
+                            "synonyms": val.get("synonyms"),
+                        }
                     )
         return entity_synonyms
 
