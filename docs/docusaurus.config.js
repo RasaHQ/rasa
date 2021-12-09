@@ -9,7 +9,7 @@ Schema.validate = (config) => ({ value: config });
 module.exports = tabula.use({
   title: 'Rasa Open Source Documentation',
   tagline: 'An open source machine learning framework for automated text and voice-based conversations',
-  baseUrl: '/docs/rasa/',
+  baseUrl: '/rasa/',
   url: 'https://rasa.com/docs/rasa/',
   productLogo: '/img/logo-rasa-oss.png',
   productKey: 'rasa',
