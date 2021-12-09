@@ -863,7 +863,7 @@ class Agent:
 
         if isinstance(domain, str):
             domain = Domain.load(domain)
-            domain.check_missing_responses()
+            domain.check_missing_templates()
             return domain
         elif isinstance(domain, Domain):
             return domain
