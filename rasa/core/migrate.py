@@ -281,13 +281,13 @@ def migrate_domain_format(
         backup_location_str = "directory" if backup_location.isdir() else "file"
         raise RasaException(
             f"The domain from '{domain_path}' could not be migrated since the "
-            f"a {backup_location_str} {backup_location} already exists."
-            f"Please remove that there is no file or folder at {backup_location}."
+            f"{backup_location_str} '{backup_location}' already exists."
+            f"Please make sure that there is no {back_up_location_str} at '{backup_location}'."
         )
 
     # Choose a default output location if nothing was specified
     if out_path is None:
-        suffix = DEFAULT_DOMAIN_PATH if migrate_file_only else "new_domain"
+        suffix = "new_domain.yml" if migrate_file_only else "new_domain"
         out_path = domain_parent_dir / suffix
 
     # Ensure the output location is not already in-use
@@ -295,14 +295,14 @@ def migrate_domain_format(
         if out_path.is_dir() and any(out_path.iterdir()):
             raise RasaException(
                 f"The domain from '{domain_path}' could not be migrated to "
-                f"{out_path} because that folder is not empty."
-                "Please remove the folder and try again."
+                f"'{out_path}' because that folder is not empty."
+                "Please remove the contents of the folder and try again."
             )
     else:
         if out_path.is_file():
             raise RasaException(
                 f"The domain from '{domain_path}' could not be migrated to "
-                f"{out_path} because a file already exists."
+                f"'{out_path}' because a file already exists."
                 "Please remove the file and try again."
             )
 
@@ -332,8 +332,8 @@ def migrate_domain_format(
         if not migrate_file_only:
             if not out_path.is_dir():
                 rasa.shared.utils.io.raise_warning(
-                    f"The out path provided did not exist yet. Created directory "
-                    f"{out_path}."
+                    f"The out path provided does not exist. Created directory "
+                    f"'{out_path}'."
                 )
                 out_path.mkdir(parents=True)
                 created_out_dir = True
