@@ -76,19 +76,13 @@ def test_text_featurizer(sentence, expected_features):
         (
             "goodbye Goodbye GOODBYE gOoDbyE",
             [
-                [1.0, 1.0,], # check if all 
-                [1.0, 1.0,], # spellings of
-                [1.0, 1.0,], # goodbye are
-                [1.0, 1.0,], # featurized the same.
+                [1.0, 1.0,],  # check if all
+                [1.0, 1.0,],  # spellings of
+                [1.0, 1.0,],  # goodbye are
+                [1.0, 1.0,],  # featurized the same.
             ],
         ),
-        (
-            "a A",
-            [
-                [1.0, 1.0,], # is A
-                [1.0, 1.0,], # equal to a?
-            ],
-        ),
+        ("a A", [[1.0, 1.0,], [1.0, 1.0,],],),  # is A  # equal to a?
     ],
 )
 def test_text_featurizer_case_insensitive(sentence, expected_features):
@@ -118,10 +112,10 @@ def test_text_featurizer_case_insensitive(sentence, expected_features):
     assert isinstance(seq_vec, scipy.sparse.coo_matrix)
     assert sen_vec is None
     assert np.all(seq_vec.toarray() == expected_features)
-    
+
     # check pairwise equality of features
-    for i in range(seq_vec.shape[0]-1):
-        assert np.all(seq_vec.toarray()[i] == seq_vec.toarray()[i+1]) 
+    for i in range(seq_vec.shape[0] - 1):
+        assert np.all(seq_vec.toarray()[i] == seq_vec.toarray()[i + 1])
 
 
 @pytest.mark.parametrize(
