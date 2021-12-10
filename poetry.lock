@@ -2487,7 +2487,7 @@ name = "sentencepiece"
 version = "0.1.96"
 description = "SentencePiece python wrapper"
 category = "main"
-optional = true
+optional = false
 python-versions = "*"
 
 [[package]]
@@ -3340,7 +3340,7 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.10"
-content-hash = "32bd7fdef782af99c187f800ece5a6be68fa64ae2fc98095e81e893a2d0f8f9d"
+content-hash = "c42459dbda4249ab80211ba37e7a24acfbe810c40ce484d2e21bcfc05bbd2984"
 
 [metadata.files]
 absl-py = [
