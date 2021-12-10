@@ -311,12 +311,22 @@ class RedisTrackerStore(TrackerStore):
         record_exp: Optional[float] = None,
         key_prefix: Optional[Text] = None,
         use_ssl: bool = False,
+        ssl_keyfile: Optional[Text] = None,
+        ssl_certfile: Optional[Text] = None,
+        ssl_ca_certs: Optional[Text] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
         import redis
 
         self.red = redis.StrictRedis(
-            host=host, port=port, db=db, password=password, ssl=use_ssl
+            host=host,
+            port=port,
+            db=db,
+            password=password,
+            ssl=use_ssl,
+            ssl_keyfile=ssl_keyfile,
+            ssl_certfile=ssl_certfile,
+            ssl_ca_certs=ssl_ca_certs,
         )
         self.record_exp = record_exp
 
@@ -418,7 +428,9 @@ class DynamoTrackerStore(TrackerStore):
         except self.client.exceptions.ResourceNotFoundException:
             table = dynamo.create_table(
                 TableName=self.table_name,
-                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"},],
+                KeySchema=[
+                    {"AttributeName": "sender_id", "KeyType": "HASH"},
+                ],
                 AttributeDefinitions=[
                     {"AttributeName": "sender_id", "AttributeType": "S"},
                 ],
@@ -444,7 +456,9 @@ class DynamoTrackerStore(TrackerStore):
         """Serializes the tracker, returns object with decimal types."""
         d = tracker.as_dialogue().as_dict()
         d.update(
-            {"sender_id": tracker.sender_id,}
+            {
+                "sender_id": tracker.sender_id,
+            }
         )
         # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
         return core_utils.replace_floats_with_decimals(d)
