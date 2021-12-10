@@ -1829,6 +1829,17 @@ class Domain:
 
     def check_missing_templates(self) -> None:
         """Warn user of utterance names which have no specified response."""
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "The terminology 'template' is deprecated "
+            "and replaced by 'response'. "
+            "Please use `check_missing_responses` "
+            "instead of `check_missing_templates`.",
+            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+        )
+        self.check_missing_responses()
+
+    def check_missing_responses(self) -> None:
+        """Warn user of utterance names which have no specified response."""
         missing_responses = self.utterances_for_response - set(self.responses)
 
         for response in missing_responses:

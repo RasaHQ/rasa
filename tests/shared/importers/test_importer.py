@@ -359,7 +359,7 @@ async def test_subintent_response_matches_with_action(project: Text):
     # Test retrieval intent response is matched correctly to actions
     # ie. utter_chitchat/faq response compatible with action utter_chitchat
     with pytest.warns(None) as record:
-        domain.check_missing_templates()
+        domain.check_missing_responses()
     assert not record
 
 
@@ -374,7 +374,7 @@ async def test_response_missing(project: Text):
 
     domain = await importer.get_domain()
     with pytest.warns(UserWarning) as record:
-        domain.check_missing_templates()
+        domain.check_missing_responses()
 
     assert (
         "Action 'utter_chitchat' is listed as a response action in the domain "

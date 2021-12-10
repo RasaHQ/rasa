@@ -329,7 +329,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
         )
 
         existing_domain = existing_domain.merge(domain_with_retrieval_intents)
-        existing_domain.check_missing_templates()
+        existing_domain.check_missing_responses()
 
         return existing_domain
 
