@@ -140,7 +140,10 @@ them. Otherwise there is no validation.
 **Returns**:
 
   The validation events including potential bot messages and `SlotSet` events
-  for the validated slots.
+  for the validated slots, if the custom form validation action is present in
+  domain actions.
+  Otherwise, returns empty list since the extracted slots already have
+  corresponding `SlotSet` events in the tracker.
 
 #### validate
 
@@ -148,10 +151,19 @@ them. Otherwise there is no validation.
  | async validate(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
 ```
 
-Extract and validate value of requested slot.
+Extract and validate value of requested slot and other slots.
 
-If nothing was extracted reject execution of the form action.
-Subclass this method to add custom validation and rejection logic
+**Returns**:
+
+  The new validation events created by the custom form validation action
+  
+
+**Raises**:
+
+  ActionExecutionRejection exception to reject execution of form action
+  if nothing was extracted.
+  
+  Subclass this method to add custom validation and rejection logic.
 
 #### request\_next\_slot
 
