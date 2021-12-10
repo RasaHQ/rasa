@@ -125,24 +125,67 @@ class Domain:
         return cls([], [], [], {}, [], {})
 
     @classmethod
-    def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
-        if not paths:
+    def load(cls, path: Union[Text, Path]) -> "Domain":
+        """Loads the domain based on the dir/file path."""
+        if not path:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
                 "to a valid domain file."
             )
-        elif not isinstance(paths, list) and not isinstance(paths, set):
-            paths = [paths]
-
         domain = Domain.empty()
-        for path in paths:
-            other = cls.from_path(path)
-            domain = domain.merge(other)
+
+        # validate the domain file/s and return a domain_dict
+        # create a configured domain object from the domain_dict
+        # merge this into the empty domain
+        configured_domain_dict = cls.validate_and_merge_domain_files(path)
+        domain = domain.merge(cls.from_dict(configured_domain_dict))
 
         return domain
 
+    @staticmethod
+    def validate_and_merge_domain_files(path: Union[Text, Path]):
+        """Validates and merges the domain file/files based on the dir/file path."""
+        paths = []
+        if os.path.isfile(path):
+            paths.append(path)
+
+        if os.path.isdir(path):
+            for filename in os.listdir(path):
+                if filename.endswith(".yml"):
+                    path_to_file = os.path.join(path, filename)
+                    paths.append(path_to_file)
+
+        domains = []
+
+        for path in paths:
+            yaml = rasa.shared.utils.io.read_file(path)
+            try:
+                rasa.shared.utils.validation.validate_yaml_schema(
+                    yaml, DOMAIN_SCHEMA_FILE
+                )
+                data = rasa.shared.utils.io.read_yaml(yaml)
+                rasa.shared.utils.validation.validate_training_data_format_version(
+                    data, path
+                )
+                domains.append(data)
+            except (YamlException, TypeError) as e:
+                e.filename = path
+                raise e
+
+        domain_dict = collections.defaultdict(list)
+
+        for dct in domains:
+            for k, v in dct.items():
+                if isinstance(v, list):
+                    domain_dict[k].extend(v)
+                else:
+                    if not domain_dict[k].count(v):
+                        domain_dict[k].append(v)
+        return domain_dict
+
     @classmethod
     def from_path(cls, path: Union[Text, Path]) -> "Domain":
+        """Loads a domain from a path."""
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
@@ -230,6 +273,7 @@ class Domain:
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
+
                 if Domain.is_domain_file(full_path):
                     other = Domain.from_file(full_path)
                     domain = other.merge(domain)
@@ -1411,8 +1455,8 @@ class Domain:
                 ),
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
             },
-            KEY_INTENTS: self._transform_intents_for_file(),
             KEY_ENTITIES: self._transform_entities_for_file(),
+            KEY_INTENTS: self._transform_intents_for_file(),
             KEY_SLOTS: self._slot_definitions(),
             KEY_RESPONSES: self.responses,
             KEY_ACTIONS: self._custom_actions,
@@ -1480,11 +1524,12 @@ class Domain:
                 intent_props[USE_ENTITIES_KEY] = True
             elif len(use_entities) <= len(self.entities) / 2:
                 intent_props[USE_ENTITIES_KEY] = list(use_entities)
+                intent_props[USE_ENTITIES_KEY].sort()
             else:
                 intent_props[IGNORE_ENTITIES_KEY] = list(ignore_entities)
+                intent_props[IGNORE_ENTITIES_KEY].sort()
             intent_props.pop(USED_ENTITIES_KEY)
             intents_for_file.append({intent_name: intent_props})
-
         return intents_for_file
 
     def _transform_entities_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:

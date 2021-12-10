@@ -682,6 +682,27 @@ def test_load_domain_from_directory_tree(tmp_path: Path):
     assert set(actual.user_actions) == set(expected)
 
 
+def test_transform_intents_for_files_with_entities():
+    domain_path = "data/test_domains/test_domain_from_directory2"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_intents_for_file()
+
+    expected = [
+        {"question": {"use_entities": True}},
+        {
+            "support_banning": {
+                "use_entities": ["anti_person_land_mines", "automatic_rifles"]
+            }
+        },
+        {"certify": {"use_entities": True}},
+        {"play": {"use_entities": ["ball", "chess"]}},
+        {"stow_away": {"use_entities": True}},
+        {"escape": {"ignore_entities": ["chess"]}},
+    ]
+
+    assert transformed == expected
+
+
 def test_domain_warnings(domain: Domain):
     warning_types = [
         "action_warnings",
