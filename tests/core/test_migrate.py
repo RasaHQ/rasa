@@ -1,9 +1,10 @@
 import itertools
-import os
+import shutil
 import re
 import textwrap
 from pathlib import Path
 from typing import Text, Any, Tuple, Callable
+from unittest.mock import patch, call
 
 import pytest
 
@@ -877,11 +878,57 @@ def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path,):
         migrate.migrate_domain_format(domain_dir, None)
 
 
+def test_migrate_folder_only_migrates_domain_files(tmp_path: Path):
+    domain_dir = tmp_path / "domain"
+    domain_dir.mkdir()
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        entities:
+            - outdoor
+        slots:
+          outdoor_seating:
+           type: bool
+           influence_conversation: false
+        """,
+        "slots.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        version: "2.0"
+        forms:
+          reservation_form:
+            required_slots:
+               outdoor_seating:
+               - type: from_intent
+                 value: true
+                 intent: confirm
+        """,
+        "forms.yml",
+    )
+
+    prepare_domain_path(
+        domain_dir,
+        """
+        not a domain file.
+        """,
+        "not-a-domain-file.yml",
+    )
+
+    out_dir = tmp_path / "out_dir"
+    migrate.migrate_domain_format(domain_dir, out_dir)
+    assert set(out_dir.iterdir()) == {"forms.yml", "slots.yml"}  # ignores non-domain
+
+
 def example_migrate_folder_fails_because_multiple_slots_sections(
     path: Path,
 ) -> Tuple[Path, Text]:
     domain_dir = path / "domain"
-    domain_dir.mkdir(parents=True)
+    domain_dir.mkdir()
 
     prepare_domain_path(
         domain_dir,
@@ -962,19 +1009,29 @@ def test_migrate_domain_cleanups_after_raising(
         expected_out_path = f"{expected_out_path}{migrate.YML_SUFFIX}"
 
     # create the folder if needed
-    if not migrating_file_only and out_path is not None and out_dir_exists:
-        out_path.mkdir(parents=True)
+    if not migrating_file_only and out_dir_exists:
+        expected_out_path.mkdir(parents=True)
 
+    # migrate!
     with pytest.raises(RasaException, match=error_msg_match):
         migrate.migrate_domain_format(domain_path, out_path)
-
     assert Path.exists(domain_path)
     assert all(Path.exists(file) for file in domain_files)
     assert not Path.exists(expected_backup_path)
-
-    # if and only if the folder didn't exist before, it should not exist afterwards
-    if not migrating_file_only and out_path is not None:
+    if not migrating_file_only:
+        # if and only if the folder didn't exist before, it should not exist afterwards
         assert Path.exists(expected_out_path) == out_dir_exists
+
+    # ... and to assert we really did remove something:
+    expected_to_be_removed = [call(expected_backup_path)]
+    if not out_dir_exists:  # only removed if it didn't exist
+        expected_to_be_removed.append(call(expected_out_path))
+    patching = [shutil, "rmtree"] if not migrating_file_only else [Path, "unlink"]
+    with patch.object(*patching) as removal:
+        with pytest.raises(RasaException, match=error_msg_match):
+            migrate.migrate_domain_format(domain_path, out_path)
+        assert removal.call_count == 1 + (not out_dir_exists)
+        removal.assert_has_calls(expected_to_be_removed)
 
 
 @pytest.mark.parametrize("migrate_file_only", [True, False])
@@ -1000,7 +1057,7 @@ def test_migrate_domain_raises_when_backup_location_exists(
     else:
         domain_path = domain_dir / domain_file_name
         backup_location = domain_dir / (migrate.ORIGINAL_DOMAIN + migrate.YML_SUFFIX)
-        with open(backup_location, "w") as fp:
+        with open(backup_location, "w"):
             pass
 
     with pytest.raises(
@@ -1038,7 +1095,7 @@ def test_migrate_domain_raises_when_output_location_is_used(
         non_empty_existing_dir.mkdir()
         # in contrast to the backup location, the output directory may exist
         # but must be empty
-        with open(non_empty_existing_dir / "bla.txt", "w") as fp:
+        with open(non_empty_existing_dir / "bla.txt", "w"):
             pass
 
     else:
@@ -1049,7 +1106,7 @@ def test_migrate_domain_raises_when_output_location_is_used(
         else:
             out_path = tmp_path / "my_custom_file_name.yml"
             existing_file = out_path
-        with open(existing_file, "w") as fp:
+        with open(existing_file, "w"):
             pass
 
     with pytest.raises(
