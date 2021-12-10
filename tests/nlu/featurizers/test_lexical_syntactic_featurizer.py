@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import scipy.sparse
-from typing import Text
+from typing import Text, List
 
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -85,7 +85,9 @@ def test_text_featurizer(sentence, expected_features):
         ("a A", [[1.0, 1.0,], [1.0, 1.0,],],),  # is A  # equal to a?
     ],
 )
-def test_text_featurizer_case_insensitive(sentence: Text, expected_features: List[float]):
+def test_text_featurizer_case_insensitive(
+    sentence: Text, expected_features: List[float]
+):
     featurizer = LexicalSyntacticFeaturizer(
         {
             "features": [[], ["prefix2", "suffix2"], [],],
