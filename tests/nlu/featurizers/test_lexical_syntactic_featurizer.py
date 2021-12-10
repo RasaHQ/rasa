@@ -85,7 +85,7 @@ def test_text_featurizer(sentence, expected_features):
         ("a A", [[1.0, 1.0,], [1.0, 1.0,],],),  # is A  # equal to a?
     ],
 )
-def test_text_featurizer_case_insensitive(sentence, expected_features):
+def test_text_featurizer_case_insensitive(sentence: Text, expected_features: List[float]):
     featurizer = LexicalSyntacticFeaturizer(
         {
             "features": [[], ["prefix2", "suffix2"], [],],
