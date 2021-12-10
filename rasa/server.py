@@ -840,8 +840,8 @@ def create_app(
     async def execute_action(request: Request, conversation_id: Text) -> HTTPResponse:
         rasa.shared.utils.io.raise_warning(
             'The "POST /conversations/<conversation_id>/execute"'
-            ' endpoint is deprecated. Inserting actions to the tracker externally'
-            ' should be avoided. Actions should be predicted by the policies only.',
+            " endpoint is deprecated. Inserting actions to the tracker externally"
+            " should be avoided. Actions should be predicted by the policies only.",
             category=FutureWarning,
         )
         request_params = request.json
