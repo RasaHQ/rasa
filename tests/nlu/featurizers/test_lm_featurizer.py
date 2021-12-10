@@ -332,12 +332,12 @@ class TestShapeValuesTrainAndProcess:
             assert np.allclose(
                 computed_sequence_vec[: len(expected_sequence_vec[index]), 0],
                 expected_sequence_vec[index],
-                atol=1e-4,
+                atol=1e-3,
             )
 
             # Look at the first value of first five dimensions
             assert np.allclose(
-                computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-4
+                computed_sentence_vec[0][:5], expected_cls_vec[index], atol=1e-3
             )
 
             (intent_sequence_vec, intent_sentence_vec) = messages[
