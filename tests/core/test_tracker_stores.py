@@ -194,6 +194,7 @@ def test_redis_tracker_store_valid_key_prefix(domain: Domain):
 
 
 def test_redis_tracker_store_ssl(domain: Domain):
+    store = InMemoryTrackerStore(domain)
 
     tracker_store = RedisTrackerStore(
         domain=domain,
