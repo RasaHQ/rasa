@@ -194,8 +194,6 @@ def test_redis_tracker_store_valid_key_prefix(domain: Domain):
 
 
 def test_redis_tracker_store_ssl(domain: Domain):
-    store = InMemoryTrackerStore(domain)
-
     tracker_store = RedisTrackerStore(
         domain=domain,
         host="localhost",
@@ -209,7 +207,7 @@ def test_redis_tracker_store_ssl(domain: Domain):
         ssl_ca_certs="my-bundle.ca-bundle",
     )
 
-    assert isinstance(tracker_store, type(TrackerStore.create(store, domain)))
+    assert isinstance(tracker_store, type(RedisTrackerStore))
 
 
 def test_exception_tracker_store_from_endpoint_config(
