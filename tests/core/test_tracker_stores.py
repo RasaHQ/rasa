@@ -207,7 +207,7 @@ def test_redis_tracker_store_ssl(domain: Domain):
         ssl_ca_certs="my-bundle.ca-bundle",
     )
 
-    assert isinstance(tracker_store, type(RedisTrackerStore))
+    assert isinstance(tracker_store, RedisTrackerStore)
 
 
 def test_exception_tracker_store_from_endpoint_config(
