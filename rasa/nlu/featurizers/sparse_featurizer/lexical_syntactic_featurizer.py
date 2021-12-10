@@ -91,10 +91,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         """Create a LexicalSyntacticFeaturizer.
 
         Args:
-            component_config (Dict[Text, Any]): component config as defined in
-            config.yml
-            feature_to_idx_dict (Optional[Dict[Text, Any]], optional): prepared
-            feature to idx for loading from disk. Defaults to None.
+            component_config: Component config as defined in config.yml
+            feature_to_idx_dict: Prepared feature to idx for loading from disk
         """
         super().__init__(component_config)
 
