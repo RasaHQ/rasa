@@ -242,6 +242,7 @@ def validate_training_data_format_version(
         return True
 
     try:
+        version_value = version_value.strip("\"'")
         parsed_version = version.parse(version_value)
         latest_version = version.parse(LATEST_TRAINING_DATA_FORMAT_VERSION)
 

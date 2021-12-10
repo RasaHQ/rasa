@@ -8,7 +8,6 @@ import rasa.shared.utils.cli
 from rasa.shared.constants import (
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
-    DEFAULT_DOMAIN_PATH,
 )
 from rasa.shared.core.constants import ACTIVE_LOOP, REQUESTED_SLOT
 from rasa.shared.core.domain import (
@@ -19,6 +18,10 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.exceptions import RasaException
+
+ORIGINAL_DOMAIN = "original_domain"  # not a default, fixed
+DEFAULT_NEW_DOMAIN = "new_domain"
+YML_SUFFIX = ".yml"
 
 
 def _create_back_up(
@@ -274,35 +277,39 @@ def migrate_domain_format(
     # Ensure the backup location does not exist yet
     # Note: We demand that file as well as folder with this name gets deleted before
     # the command is run to avoid confusion afterwards.
-    suffix = "original_domain"
-    suffix = f"{suffix}.yml" if migrate_file_only else suffix
+    suffix = f"{ORIGINAL_DOMAIN}{YML_SUFFIX}" if migrate_file_only else ORIGINAL_DOMAIN
     backup_location = domain_parent_dir / suffix
     if backup_location.exists():
-        backup_location_str = "directory" if backup_location.isdir() else "file"
+        backup_location_str = "directory" if backup_location.is_dir() else "file"
         raise RasaException(
-            f"The domain from '{domain_path}' could not be migrated since the "
+            f"The domain could not be migrated since the "
             f"{backup_location_str} '{backup_location}' already exists."
-            f"Please make sure that there is no {back_up_location_str} at '{backup_location}'."
+            f"Please make sure that there is no {backup_location_str} at "
+            f"'{backup_location}'."
         )
 
     # Choose a default output location if nothing was specified
     if out_path is None:
-        suffix = "new_domain.yml" if migrate_file_only else "new_domain"
+        suffix = (
+            f"{DEFAULT_NEW_DOMAIN}{YML_SUFFIX}"
+            if migrate_file_only
+            else DEFAULT_NEW_DOMAIN
+        )
         out_path = domain_parent_dir / suffix
 
     # Ensure the output location is not already in-use
     if not migrate_file_only:
         if out_path.is_dir() and any(out_path.iterdir()):
             raise RasaException(
-                f"The domain from '{domain_path}' could not be migrated to "
+                f"The domain could not be migrated to "
                 f"'{out_path}' because that folder is not empty."
                 "Please remove the contents of the folder and try again."
             )
     else:
         if out_path.is_file():
             raise RasaException(
-                f"The domain from '{domain_path}' could not be migrated to "
-                f"'{out_path}' because a file already exists."
+                f"The domain could not be migrated to "
+                f"'{out_path}' because that file already exists."
                 "Please remove the file and try again."
             )
 
@@ -331,11 +338,7 @@ def migrate_domain_format(
         created_out_dir = False
         if not migrate_file_only:
             if not out_path.is_dir():
-                rasa.shared.utils.io.raise_warning(
-                    f"The out path provided does not exist. Created directory "
-                    f"'{out_path}'."
-                )
-                out_path.mkdir(parents=True)
+                out_path.mkdir()
                 created_out_dir = True
             backup_location.mkdir()
             original_domain = _migrate_domain_files(
