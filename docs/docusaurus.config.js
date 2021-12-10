@@ -1,3 +1,5 @@
+// @ts-check
+
 const tabula = require('@rasahq/docusaurus-preset-tabula');
 
 // const algoliaTheme_ = require('@docusaurus/theme-search-algolia');
@@ -9,8 +11,6 @@ Schema.validate = (config) => ({ value: config });
 module.exports = tabula.use({
   title: 'Rasa Open Source Documentation',
   tagline: 'An open source machine learning framework for automated text and voice-based conversations',
-  baseUrl: '/rasa/',
-  url: 'https://rasa.com/docs/rasa/',
   productLogo: '/img/logo-rasa-oss.png',
   productKey: 'rasa',
   staticDirectories: [],
