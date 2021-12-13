@@ -16,6 +16,15 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.16] - 2021-12-09
+### Improvements
+- [#10413](https://github.com/rasahq/rasa/issues/10413): The value of the `RASA_ENVIRONMENT` environmental variable is sent as a header in messages logged by `KafkaEventBroker`.
+  This value was previously only made available by `PikaEventConsumer`.
+
+### Bugfixes
+- [#10458](https://github.com/rasahq/rasa/issues/10458): Make `action_metadata` json serializable and make it available on the tracker. This is a backport of a fix in 3.0.0.
+
+
 ## [2.8.15] - 2021-11-25
 ### Bugfixes
 - [#10381](https://github.com/rasahq/rasa/issues/10381): Validate regular
