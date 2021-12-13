@@ -88,7 +88,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         component_config: Dict[Text, Any],
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
     ):
-        """Create a LexicalSyntacticFeaturizer.
+        """Creates a LexicalSyntacticFeaturizer.
 
         Args:
             component_config: Component config as defined in config.yml
