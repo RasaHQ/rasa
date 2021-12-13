@@ -34,7 +34,6 @@ from rasa.shared.constants import (
 )
 import rasa.shared.core.constants
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
-import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
@@ -42,6 +41,11 @@ from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
+from rasa.shared.nlu.constants import (
+    RESPONSE_IDENTIFIER_DELIMITER,
+    INTENT_NAME_KEY,
+    ENTITIES,
+)
 
 
 if TYPE_CHECKING:
@@ -873,7 +877,7 @@ class Domain:
         These responses have a `/` symbol in their name. Use that to filter them from
         the rest.
         """
-        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
+        return RESPONSE_IDENTIFIER_DELIMITER in response[0]
 
     def _add_default_slots(self) -> None:
         """Sets up the default slots and slot values for the domain."""
@@ -1101,9 +1105,7 @@ class Domain:
         Wherever an entity has a role or group specified as well, an additional role-
         or group-specific entity name is added.
         """
-        intent_name = latest_message.intent.get(
-            rasa.shared.nlu.constants.INTENT_NAME_KEY
-        )
+        intent_name = latest_message.intent.get(INTENT_NAME_KEY)
         intent_config = self.intent_config(intent_name)
         entities = latest_message.entities
 
@@ -1159,7 +1161,7 @@ class Domain:
         # be hashed for deduplication).
         entities = tuple(
             self._get_featurized_entities(latest_message).intersection(
-                set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+                set(sub_state.get(ENTITIES, ()))
             )
         )
         # Sort entities so that any derived state representation is consistent across
@@ -1168,9 +1170,9 @@ class Domain:
         entities = tuple(sorted(entities))
 
         if entities:
-            sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
+            sub_state[ENTITIES] = entities
         else:
-            sub_state.pop(rasa.shared.nlu.constants.ENTITIES, None)
+            sub_state.pop(ENTITIES, None)
 
         return sub_state
 
@@ -1849,6 +1851,27 @@ class Domain:
                 )
             )
 
+    @property
+    def utterances_for_response(self) -> Set[Text]:
+        """Returns utterance set which should have a response.
+
+        Will filter out utterances which are subintent (retrieval intent) types.
+        eg. if actions have ['utter_chitchat', 'utter_chitchat/greet'], this
+        will only return ['utter_chitchat/greet'] as only that will need a
+        response.
+        """
+        utterances = set()
+        subintent_parents = set()
+        for action in self.action_names_or_texts:
+            if not action.startswith(rasa.shared.constants.UTTER_PREFIX):
+                continue
+            action_parent_split = action.split(RESPONSE_IDENTIFIER_DELIMITER)
+            if len(action_parent_split) == 2:
+                action_parent = action_parent_split[0]
+                subintent_parents.add(action_parent)
+            utterances.add(action)
+        return utterances - subintent_parents
+
     def check_missing_templates(self) -> None:
         """Warn user of utterance names which have no specified response."""
         rasa.shared.utils.io.raise_deprecation_warning(
@@ -1862,22 +1885,15 @@ class Domain:
 
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""
-        utterances = [
-            action
-            for action in self.action_names_or_texts
-            if action.startswith(rasa.shared.constants.UTTER_PREFIX)
-        ]
+        missing_responses = self.utterances_for_response - set(self.responses)
 
-        missing_responses = [t for t in utterances if t not in self.responses.keys()]
-
-        if missing_responses:
-            for response in missing_responses:
-                rasa.shared.utils.io.raise_warning(
-                    f"Action '{response}' is listed as a "
-                    f"response action in the domain file, but there is "
-                    f"no matching response defined. Please check your domain.",
-                    docs=DOCS_URL_RESPONSES,
-                )
+        for response in missing_responses:
+            rasa.shared.utils.io.raise_warning(
+                f"Action '{response}' is listed as a "
+                f"response action in the domain file, but there is "
+                f"no matching response defined. Please check your domain.",
+                docs=DOCS_URL_RESPONSES,
+            )
 
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
