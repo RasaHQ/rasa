@@ -58,7 +58,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
                 "DIETClassifier",
                 "ResponseSelector",
                 "EntitySynonymMapper",
-                "EntityHierarchyExtractor"
+                "EntityHierarchyExtractor",
             ),
         ),
         (
