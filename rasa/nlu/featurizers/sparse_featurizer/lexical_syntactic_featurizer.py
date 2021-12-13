@@ -51,7 +51,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         ],
         # As case sensitivity was moved from tokenizer to featurizers,
         # featurizers have to implement a way to deal with case
-        # senitivity
+        # sensitivity
         "prefix_suffix_case_sensitive": True,
     }
 
