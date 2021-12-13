@@ -317,7 +317,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
-        Return the metadata necessary to load the model again.
+        Returns the metadata necessary to load the model again.
         """
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
         io_utils.json_pickle(feature_to_idx_file, self.feature_to_idx_dict)
