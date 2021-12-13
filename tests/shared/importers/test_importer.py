@@ -346,6 +346,43 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     assert "utter_chitchat" in domain.action_names_or_texts
 
 
+async def test_subintent_response_matches_with_action(project: Text):
+    """Tests retrieval intent responses are matched correctly to actions."""
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = "data/test_domains/simple_retrieval_intent.yml"
+    data_path = "data/test/simple_retrieval_intent_nlu.yml"
+    importer = TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, data_path
+    )
+
+    domain = await importer.get_domain()
+    # Test retrieval intent response is matched correctly to actions
+    # ie. utter_chitchat/faq response compatible with action utter_chitchat
+    with pytest.warns(None) as record:
+        domain.check_missing_responses()
+    assert not record
+
+
+async def test_response_missing(project: Text):
+    """Tests warning when response is missing."""
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = "data/test_domains/missing_chitchat_response.yml"
+    data_path = "data/test/simple_retrieval_intent_nlu.yml"
+    importer = TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, data_path
+    )
+
+    domain = await importer.get_domain()
+    with pytest.warns(UserWarning) as record:
+        domain.check_missing_responses()
+
+    assert (
+        "Action 'utter_chitchat' is listed as a response action in the domain "
+        "file, but there is no matching response defined. Please check your "
+        "domain."
+    ) == record[0].message.args[0]
+
+
 async def test_nlu_data_domain_sync_responses(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default.yml"
