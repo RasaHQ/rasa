@@ -94,11 +94,11 @@ def prepare_ml_model_perf_metric(result: Dict[str, Any]) -> List[Tuple[str, floa
     for metric_name, metric_value in result.items():
         if isinstance(metric_value, float):
             metric_full_name = f"{task}.{metric_name}"
-            metric_tuples.append((metric_full_name, metric_value))
+            metric_tuples.append((metric_full_name, float(metric_value)))
         elif isinstance(metric_value, dict):
             for mname, mval in metric_value.items():
                 metric_full_name = f"{task}.{metric_name}.{mname}"
-                metric_tuples.append((metric_full_name, mval))
+                metric_tuples.append((metric_full_name, float(mval)))
         else:
             raise Exception(f'metric_value {metric_value} has',
                             f'unexpected type {type(metric_value)}')
@@ -175,7 +175,7 @@ def send_to_datadog(results: List[Dict[str, Any]]):
             Series(
                 metric=f"{METRIC_ML_PREFIX}.{metric_name}.gauge",
                 type="gauge",
-                points=[Point([timestamp, metric_value])],
+                points=[Point([timestamp, float(metric_value)])],
                 tags=tags_list,
             )
         )
