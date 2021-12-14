@@ -381,15 +381,6 @@ jobs:
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
 
-      # Download the results of the previous runs
-      # The report file is extended with new results every next job run
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        continue-on-error: true
-        with:
-          name: report.json
-
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
@@ -616,15 +607,6 @@ jobs:
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
-
-      # Download the results of the previous runs
-      # The report file is extended with new results every next job run
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        continue-on-error: true
-        with:
-          name: report.json
 
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
