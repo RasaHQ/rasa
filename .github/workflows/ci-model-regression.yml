@@ -301,6 +301,7 @@ jobs:
           GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
@@ -546,6 +547,7 @@ jobs:
           GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"

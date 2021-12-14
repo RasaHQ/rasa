@@ -224,6 +224,7 @@ jobs:
           BRANCH: ${{ github.ref }}
           GITHUB_SHA: "${{ github.sha }}"
           TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: "main"
         run: |
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
