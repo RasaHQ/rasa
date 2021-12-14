@@ -640,7 +640,7 @@ jobs:
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
-          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          BRANCH: ${{ github.head_ref }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu

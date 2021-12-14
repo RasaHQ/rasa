@@ -22,6 +22,7 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.constants import POLICY_PRIORITY
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -392,7 +393,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         self._warn_if_no_rule_policy_is_contained()
         self._raise_if_domain_contains_form_names_but_no_rule_policy_given(domain)
         self._raise_if_a_rule_policy_is_incompatible_with_domain(domain)
-        self._warn_if_priorities_are_not_unique()
+        self._validate_policy_priorities()
         self._warn_if_rule_based_data_is_unused_or_missing(story_graph=story_graph)
 
     def _warn_if_no_rule_policy_is_contained(self) -> None:
@@ -443,12 +444,26 @@ class DefaultV1RecipeValidator(GraphComponent):
                     config=schema_node.config, domain=domain
                 )
 
-    def _warn_if_priorities_are_not_unique(self) -> None:
-        """Warns if the priorities of the policies are not unique."""
+    def _validate_policy_priorities(self) -> None:
+        """Checks if every policy has a valid priority value.
+
+        A policy must have a priority value. The priority values of
+        the policies used in the configuration should be unique.
+
+        Raises:
+            `InvalidConfigException` if any of the policies doesn't have a priority
+        """
         priority_dict = defaultdict(list)
         for schema_node in self._policy_schema_nodes:
-            default_priority = schema_node.uses.get_default_config()["priority"]
-            priority = schema_node.config.get("priority", default_priority)
+            default_config = schema_node.uses.get_default_config()
+            if POLICY_PRIORITY not in default_config:
+                raise InvalidConfigException(
+                    f"Found a policy {schema_node.uses.__name__} which has no "
+                    f"priority. Every policy must have a priority value which you "
+                    f"can set in the `get_default_config` method of your policy."
+                )
+            default_priority = default_config[POLICY_PRIORITY]
+            priority = schema_node.config.get(POLICY_PRIORITY, default_priority)
             priority_dict[priority].append(schema_node.uses)
 
         for k, v in priority_dict.items():
