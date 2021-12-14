@@ -75,7 +75,7 @@ def send_to_datadog(results: List[Dict[str, Any]]):
             "file_name": "intent_report.json", "task": "Intent Classification"},
         ]
     """
-
+    print("results", results)  # Debug
     # Initialize
     tags = {
         "dataset": os.environ["DATASET_NAME"],
