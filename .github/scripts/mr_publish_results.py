@@ -79,7 +79,7 @@ def send_to_datadog(context):
         "pr_url": os.environ["PR_URL"],
         "accelerator_type": os.environ["ACCELERATOR_TYPE"],
         "github_run_id": os.environ["GITHUB_RUN_ID"],
-        "github_sha": os.environ["GITHUB_SHA"],
+        "git_sha": os.environ["GITHUB_SHA"],
         "github_event": os.environ["GITHUB_EVENT_NAME"],
         "type": os.environ["TYPE"],
         "branch": os.environ["BRANCH"],
