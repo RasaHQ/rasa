@@ -21,6 +21,7 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "- git_sha:${GIT_SHA}"
     echo "- pr_id:${PR_ID:-schedule}"
     echo "- pr_url:${PR_URL:-schedule}"
+    echo "- type:${TYPE}"
     echo ""
     echo "process_config:"
     echo "    enabled: false"

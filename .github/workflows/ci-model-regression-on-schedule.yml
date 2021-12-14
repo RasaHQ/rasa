@@ -223,6 +223,7 @@ jobs:
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.ref }}
           GIT_SHA: "${{ github.sha }}"
+          TYPE: "${{ matrix.type }}"
         run: |
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
