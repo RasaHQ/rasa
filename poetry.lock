@@ -2369,7 +2369,7 @@ tqdm = "*"
 
 [[package]]
 name = "sanic"
-version = "21.9.0"
+version = "21.6.2"
 description = "A web server and web framework that's written to go fast. Build fast. Run fast."
 category = "main"
 optional = false
@@ -2382,13 +2382,13 @@ multidict = ">=5.0,<6.0"
 sanic-routing = ">=0.7,<1.0"
 ujson = {version = ">=1.35", markers = "sys_platform != \"win32\" and implementation_name == \"cpython\""}
 uvloop = {version = ">=0.5.3", markers = "sys_platform != \"win32\" and implementation_name == \"cpython\""}
-websockets = ">=10.0"
+websockets = ">=9.0"
 
 [package.extras]
-all = ["pytest-sanic", "pytest-cov", "sphinx (>=2.1.2)", "mypy (>=0.901)", "tox", "sphinx-rtd-theme (>=0.4.3)", "pytest (==5.2.1)", "pytest-sugar", "sanic-testing (>=0.7.0)", "uvicorn (<0.15.0)", "beautifulsoup4", "pygments", "towncrier", "m2r2", "docutils", "flake8", "pytest-benchmark", "gunicorn (==20.0.4)", "coverage (==5.3)", "bandit", "chardet (>=3.0.0,<4.0.0)", "black", "isort (>=5.0.0)", "types-ujson"]
-dev = ["sanic-testing (>=0.7.0)", "pytest (==5.2.1)", "coverage (==5.3)", "gunicorn (==20.0.4)", "pytest-cov", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "chardet (>=3.0.0,<4.0.0)", "flake8", "black", "isort (>=5.0.0)", "bandit", "mypy (>=0.901)", "docutils", "pygments", "uvicorn (<0.15.0)", "tox", "towncrier", "types-ujson"]
-docs = ["sphinx (>=2.1.2)", "sphinx-rtd-theme (>=0.4.3)", "docutils", "pygments", "m2r2"]
-test = ["sanic-testing (>=0.7.0)", "pytest (==5.2.1)", "coverage (==5.3)", "gunicorn (==20.0.4)", "pytest-cov", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "chardet (>=3.0.0,<4.0.0)", "flake8", "black", "isort (>=5.0.0)", "bandit", "mypy (>=0.901)", "docutils", "pygments", "uvicorn (<0.15.0)", "types-ujson"]
+all = ["sanic-testing (>=0.7.0b1)", "pytest (==5.2.1)", "multidict (>=5.0,<6.0)", "gunicorn (==20.0.4)", "pytest-cov", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "aiofiles", "tox", "black", "flake8", "bandit", "towncrier", "sphinx (>=2.1.2)", "sphinx-rtd-theme", "recommonmark (>=0.5.0)", "docutils", "pygments", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
+dev = ["sanic-testing (>=0.7.0b1)", "pytest (==5.2.1)", "multidict (>=5.0,<6.0)", "gunicorn (==20.0.4)", "pytest-cov", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "aiofiles", "tox", "black", "flake8", "bandit", "towncrier", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
+docs = ["sphinx (>=2.1.2)", "sphinx-rtd-theme", "recommonmark (>=0.5.0)", "docutils", "pygments"]
+test = ["sanic-testing (>=0.7.0b1)", "pytest (==5.2.1)", "multidict (>=5.0,<6.0)", "gunicorn (==20.0.4)", "pytest-cov", "beautifulsoup4", "pytest-sanic", "pytest-sugar", "pytest-benchmark", "uvloop (>=0.5.3)", "ujson (>=1.35)"]
 
 [[package]]
 name = "sanic-cors"
@@ -3322,7 +3322,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.9"
-content-hash = "809189cd763268f887b797c4f6bcc5d6782eaac01377ceea1c4ffa4d90fcfcad"
+content-hash = "f3816c692f059f8abe1409781c63d8c50efbd11effd39b9b2c052dd0e62892a8"
 
 [metadata.files]
 absl-py = [
@@ -5049,8 +5049,8 @@ sacremoses = [
     {file = "sacremoses-0.0.46.tar.gz", hash = "sha256:4b1fe8813915c7a2647728a46ebbf0d1a65eabb7ca05ba10efeb0548547eea38"},
 ]
 sanic = [
-    {file = "sanic-21.9.0-py3-none-any.whl", hash = "sha256:fab00ce2e79731833554a16f647fa524bbb47fcf8dae38a666a32bf89e03ec0c"},
-    {file = "sanic-21.9.0.tar.gz", hash = "sha256:73a7312379761d5fa31606060886795f549361c96ad1bd83f481e048ec9273aa"},
+    {file = "sanic-21.6.2-py3-none-any.whl", hash = "sha256:4e066581ea4f36fbc1c04461a497d010f7f83ef1dc91a03dbf40b14ae9c25839"},
+    {file = "sanic-21.6.2.tar.gz", hash = "sha256:c35513d7dd68266f90c247cf8be710dacd5bbf60c6a4ffdb5c70829dffe8b795"},
 ]
 sanic-cors = [
     {file = "Sanic-Cors-1.0.0.tar.gz", hash = "sha256:d6109b342afcaa053db663d92d44f4f61e59cdb0d0a3c1857dcc9812a6595a61"},
