@@ -298,7 +298,7 @@ jobs:
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
-          GIT_SHA: "${{ github.sha }}"
+          GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
         run: |
@@ -543,7 +543,7 @@ jobs:
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
-          GIT_SHA: "${{ github.sha }}"
+          GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
         run: |

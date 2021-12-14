@@ -73,7 +73,7 @@ def send_to_datadog(context):
         "config": os.environ["CONFIG"],
         "dataset_commit": os.environ["DATASET_COMMIT"],
         "branch": os.environ["BRANCH"],
-        "git_sha": os.environ["GITHUB_SHA"],
+        "github_sha": os.environ["GITHUB_SHA"],
         "pr_id": os.environ["PR_ID"],
         "pr_url": os.environ["PR_URL"],
         "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
