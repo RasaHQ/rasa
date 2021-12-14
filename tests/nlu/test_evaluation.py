@@ -594,7 +594,7 @@ async def test_run_cv_evaluation_with_response_selector():
 )  # these can take a longer time than the default timeout
 async def test_run_cv_evaluation_lookup_tables():
     td = rasa.shared.nlu.training_data.loading.load_data(
-        "../../data/test/demo-rasa-lookup-ents.yml"
+        "data/test/demo-rasa-lookup-ents.yml"
     )
 
     nlu_config = {
