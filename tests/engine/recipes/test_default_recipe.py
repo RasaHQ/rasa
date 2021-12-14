@@ -162,26 +162,41 @@ def test_generate_graphs(
 
 
 @pytest.mark.parametrize(
-    "cli_parameters, expected_config",
+    "cli_parameters, check_node, expected_config",
     [
-        ({}, {"num_threads": 200000, "finetuning_epoch_fraction": 0.75}),
         (
-            {"num_threads": None},
+            {},
+            "train_MitieIntentClassifier6",
             {"num_threads": 200000, "finetuning_epoch_fraction": 0.75},
         ),
-        ({"num_threads": 1}, {"num_threads": 1, "finetuning_epoch_fraction": 0.75}),
+        (
+            {"num_threads": None},
+            "train_MitieIntentClassifier6",
+            {"num_threads": 200000, "finetuning_epoch_fraction": 0.75},
+        ),
+        (
+            {"num_threads": 1},
+            "train_MitieIntentClassifier6",
+            {"num_threads": 1, "finetuning_epoch_fraction": 0.75},
+        ),
         (
             {"num_threads": 1, "finetuning_epoch_fraction": 0.5},
+            "train_MitieIntentClassifier6",
             # there is no `epochs` value specified so it doesn't get overridden
             {"num_threads": 1, "finetuning_epoch_fraction": 0.75},
+        ),
+        (
+            {"finetuning_epoch_fraction": 0.5},
+            "train_DIETClassifier7",
+            {"epochs": 150, "num_threads": 200000, "finetuning_epoch_fraction": 0.5},
         ),
     ],
 )
 def test_nlu_config_doesnt_get_overridden(
-    cli_parameters: Dict[Text, Any], expected_config: Dict[Text, Any]
+    cli_parameters: Dict[Text, Any], check_node: Text, expected_config: Dict[Text, Any]
 ):
     config = rasa.shared.utils.io.read_yaml_file(
-        "data/test_config/config_pretrained_embeddings_mitie.yml"
+        "data/test_config/config_pretrained_embeddings_mitie_diet.yml"
     )
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
     model_config = recipe.graph_config_for_recipe(
@@ -189,7 +204,7 @@ def test_nlu_config_doesnt_get_overridden(
     )
 
     train_schema = model_config.train_schema
-    mitie_node = train_schema.nodes.get("train_MitieIntentClassifier6")
+    mitie_node = train_schema.nodes.get(check_node)
     assert mitie_node.config == expected_config
 
 
