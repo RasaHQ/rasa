@@ -1,11 +1,12 @@
 # Send model regression test results to Segment with a summary
 # of all test results.
-from typing import Any, Dict, List
-import analytics
+from typing import Any, Dict, List, Tuple
+import copy
 import datetime
 import json
 import os
 
+import analytics
 from datadog_api_client.v1 import ApiClient, Configuration
 from datadog_api_client.v1.api.metrics_api import MetricsApi
 from datadog_api_client.v1.model.metrics_payload import MetricsPayload
@@ -66,8 +67,55 @@ def transform_to_seconds(duration: str) -> float:
     return overall_seconds
 
 
+def prepare_ml_model_perf_metric(result: Dict[str, Any]) -> List[Tuple[str, float]]:
+    """Converts a nested result dict into a list of metrics.
+
+    Args:
+        result: Example
+            {
+                'accuracy': 1.0,
+                'weighted avg': {
+                    'precision': 1.0,
+                    'recall': 1.0,
+                    'f1-score': 1.0,
+                    'support': 28
+                }
+        }
+
+    Returns:
+        List of tuples
+            each tuple is a metric name, metric value
+    """
+    metric_tuples = []
+    result = copy.deepcopy(result)
+    result.pop("file_name", None)
+    task = result.pop("task", None)
+
+    for metric_name, metric_value in result.items():
+        if isinstance(metric_value, float):
+            metric_full_name = f"{task}.{metric_name}"
+            metric_tuples.append((metric_full_name, metric_value))
+        elif isinstance(metric_value, dict):
+            for mname, mval in metric_value.items():
+                metric_full_name = f"{task}.{metric_name}.{mname}"
+                metric_tuples.append((metric_full_name, mval))
+        else:
+            raise Exception(f'metric_value {metric_value} has',
+                            f'unexpected type {type(metric_value)}')
+    return metric_tuples
+
+
+def prepare_ml_model_perf_metrics(results) -> List[Tuple[str, float]]:
+    metric_tuples = []
+    for result in results:
+        new_metric_tuples = prepare_ml_model_perf_metric(result)
+        metric_tuples.extend(new_metric_tuples)
+
+    return metric_tuples
+
+
 def send_to_datadog(results: List[Dict[str, Any]]):
-    """Send metrics to datadog
+    """Sends metrics to datadog.
 
     Args:
         results: [
@@ -121,19 +169,16 @@ def send_to_datadog(results: List[Dict[str, Any]]):
         )
 
     # Send metrics about ML model performance
-    for result in results:
-        for metric_name, metric_value in result.items:
-            if metric_name in ["file_name", "task"]:
-                continue
-            metric_full_name = f"{result['task']} {metric_name}"
-            series.append(
-                Series(
-                    metric=f"{METRIC_ML_PREFIX}.{metric_full_name}.gauge",
-                    type="gauge",
-                    points=[Point([timestamp, metric_value])],
-                    tags=tags_list,
-                )
+    series_ml_model_perf_metrics = prepare_ml_model_perf_metrics(results)
+    for metric_name, metric_value in series_ml_model_perf_metrics:
+        series.append(
+            Series(
+                metric=f"{METRIC_ML_PREFIX}.{metric_name}.gauge",
+                type="gauge",
+                points=[Point([timestamp, metric_value])],
+                tags=tags_list,
             )
+        )
 
     body = MetricsPayload(series=series)
     with ApiClient(Configuration()) as api_client:
