@@ -625,7 +625,8 @@ async def test_run_cv_evaluation_lookup_tables():
     assert len(entity_results.test[regex_extractor_name]["Precision"]) == n_folds
     assert len(entity_results.test[regex_extractor_name]["F1-score"]) == n_folds
 
-    # All entities in the test set appear in the lookup table, so should get perfect scores
+    # All entities in the test set appear in the lookup table,
+    # so should get perfect scores
     for fold in range(n_folds):
         assert entity_results.test[regex_extractor_name]["Accuracy"][fold] == 1.0
         assert entity_results.test[regex_extractor_name]["Precision"][fold] == 1.0
