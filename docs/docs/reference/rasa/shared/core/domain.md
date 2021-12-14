@@ -76,7 +76,7 @@ Loads the `Domain` from YAML text after validating it.
 
 ```python
  | @classmethod
- | from_dict(cls, data: Dict) -> "Domain"
+ | from_dict(cls, data: Dict, duplicates: Optional[Dict[Text, List[Text]]] = None) -> "Domain"
 ```
 
 Deserializes and creates domain.
@@ -84,6 +84,9 @@ Deserializes and creates domain.
 **Arguments**:
 
 - `data` - The serialized domain.
+- `duplicates` - A dictionary where keys are `intents`, `slots`, `forms` and
+  `responses` and values are lists of duplicated entries of a
+  corresponding type when the domain is built from multiple files.
   
 
 **Returns**:
@@ -110,6 +113,15 @@ Merge this domain with another one, combining their attributes.
 List attributes like ``intents`` and ``actions`` will be deduped
 and merged. Single attributes will be taken from `self` unless
 override is `True`, in which case they are taken from `domain`.
+
+#### collect\_slots
+
+```python
+ | @staticmethod
+ | collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]
+```
+
+Collects a list of slots from a dictionary.
 
 #### retrieval\_intents
 
@@ -164,7 +176,7 @@ Get intent properties for a domain from what is provided by a domain file.
 #### \_\_init\_\_
 
 ```python
- | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
+ | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default(), duplicates: Optional[Dict[Text, List[Text]]] = None) -> None
 ```
 
 Creates a `Domain`.
@@ -183,6 +195,9 @@ Creates a `Domain`.
   events for entities if there are slots with the same name as the entity.
 - `session_config` - Configuration for conversation sessions. Conversations are
   restarted at the end of a session.
+- `duplicates` - A dictionary where keys are `intents`, `slots`, `forms` and
+  `responses` and values are lists of duplicated entries of a
+  corresponding type when the domain is built from multiple files.
 
 #### \_\_deepcopy\_\_
 
