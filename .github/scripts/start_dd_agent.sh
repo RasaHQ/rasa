@@ -18,7 +18,7 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "- config:${CONFIG}"
     echo "- dataset_commit:${DATASET_COMMIT}"
     echo "- branch:${BRANCH}"
-    echo "- github_sha:${GIT_SHA}"
+    echo "- github_sha:${GITHUB_SHA}"
     echo "- pr_id:${PR_ID:-schedule}"
     echo "- pr_url:${PR_URL:-schedule}"
     echo "- type:${TYPE}"

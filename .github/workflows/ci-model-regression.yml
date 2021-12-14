@@ -408,6 +408,7 @@ jobs:
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
+          GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
@@ -649,6 +650,7 @@ jobs:
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
+          GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
