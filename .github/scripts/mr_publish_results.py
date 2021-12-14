@@ -1,5 +1,6 @@
 # Send model regression test results to Segment with a summary
 # of all test results.
+from typing import Any, Dict, List
 import analytics
 import datetime
 import json
@@ -14,7 +15,8 @@ from datadog_api_client.v1.model.series import Series
 
 DD_ENV = "rasa-regression-tests"
 DD_SERVICE = "rasa"
-METRIC_PREFIX = "rasa.perf.benchmark."
+METRIC_RUNTIME_PREFIX = "rasa.perf.benchmark."
+METRIC_ML_PREFIX = "rasa.perf.ml."
 IS_EXTERNAL = os.environ["IS_EXTERNAL"]
 DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 EXTERNAL_DATASET_REPOSITORY_BRANCH = None
@@ -64,7 +66,16 @@ def transform_to_seconds(duration: str) -> float:
     return overall_seconds
 
 
-def send_to_datadog(context):
+def send_to_datadog(results: List[Dict[str, Any]]):
+    """Send metrics to datadog
+
+    Args:
+        results: [
+            {"accuracy": 0.9035, "micro avg": 0.8800,
+            "file_name": "intent_report.json", "task": "Intent Classification"},
+        ]
+    """
+
     # Initialize
     tags = {
         "dataset": os.environ["DATASET_NAME"],
@@ -88,25 +99,41 @@ def send_to_datadog(context):
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
 
-    # Send  metrics
-    metrics = {
+    # Prepare
+    timestamp = datetime.datetime.now().timestamp()
+    series = []
+
+    # Send metrics about runtime
+    metrics_runtime = {
         "test_run_time": os.environ["TEST_RUN_TIME"],
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
         "total_run_time": os.environ["TOTAL_RUN_TIME"],
     }
-    timestamp = datetime.datetime.now().timestamp()
-
-    series = []
-    for metric_name, metric_value in metrics.items():
+    for metric_name, metric_value in metrics_runtime.items():
         overall_seconds = transform_to_seconds(metric_value)
         series.append(
             Series(
-                metric=f"{METRIC_PREFIX}{metric_name}.gauge",
+                metric=f"{METRIC_RUNTIME_PREFIX}{metric_name}.gauge",
                 type="gauge",
                 points=[Point([timestamp, overall_seconds])],
                 tags=tags_list,
             )
         )
+
+    # Send metrics about ML model performance
+    for result in results:
+        for metric_name, metric_value in result.items:
+            if metric_name in ["file_name", "task"]:
+                continue
+            metric_full_name = f"{result['task']} {metric_name}"
+            series.append(
+                Series(
+                    metric=f"{METRIC_ML_PREFIX}.{metric_full_name}.gauge",
+                    type="gauge",
+                    points=[Point([timestamp, metric_value])],
+                    tags=tags_list,
+                )
+            )
 
     body = MetricsPayload(series=series)
     with ApiClient(Configuration()) as api_client:
@@ -176,14 +203,30 @@ def read_results(file):
 
 
 def push_results(file_name, file):
-    result = read_results(file)
-    result["file_name"] = file_name
-    result["task"] = task_mapping[file_name]
+    result = get_result(file_name, file)
     send_to_segment(result)
 
 
+def get_result(file_name, file):
+    result = read_results(file)
+    result["file_name"] = file_name
+    result["task"] = task_mapping[file_name]
+    return result
+
+
+def send_all_to_datadog():
+    results = []
+    for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
+        for f in files:
+            if any(f.endswith(valid_name) for valid_name in task_mapping.keys()):
+                result = get_result(f, os.path.join(dirpath, f))
+                results.append(result)
+    send_to_datadog(results)
+
+
 if __name__ == "__main__":
-    send_to_datadog(None)
+    send_all_to_datadog()
+
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
             if any(f.endswith(valid_name) for valid_name in task_mapping.keys()):
