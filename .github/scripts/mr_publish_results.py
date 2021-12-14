@@ -123,7 +123,6 @@ def send_to_datadog(results: List[Dict[str, Any]]):
             "file_name": "intent_report.json", "task": "Intent Classification"},
         ]
     """
-    print("results", results)  # Debug
     # Initialize
     tags = {
         "dataset": os.environ["DATASET_NAME"],
@@ -173,7 +172,7 @@ def send_to_datadog(results: List[Dict[str, Any]]):
     for metric_name, metric_value in series_ml_model_perf_metrics:
         series.append(
             Series(
-                metric=f"{METRIC_ML_PREFIX}.{metric_name}.gauge",
+                metric=f"{METRIC_ML_PREFIX}{metric_name}.gauge",
                 type="gauge",
                 points=[Point([timestamp, float(metric_value)])],
                 tags=tags_list,
