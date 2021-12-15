@@ -136,6 +136,12 @@ your bot and tell you about new messages. If you are running locally, you can
    sending of messages, you'll be prompted to **reinstall your app** which you will
    need to do. Otherwise, Slack will confirm your change with a **Success!**)
 
+:::note invite to channels
+As per [Slack docs](https://api.slack.com/authentication/basics#calling), make
+sure you invite your bot to a channel it should be accessing. You can do this
+by using `/invite` in the channel.
+:::
+
 Your bot is now ready to go and will receive webhook notifications about new messages.
 ## Optional: Interactive Components
 After you've completed [Sending Messages](./slack.mdx#sending-messages) and
