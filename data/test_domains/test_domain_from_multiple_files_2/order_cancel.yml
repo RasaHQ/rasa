@@ -17,3 +17,11 @@ entities:
 - pistachio_robot
 - caramel_robot
 - rum_and_raisin_robot
+
+forms:
+  robot_form:
+    ignored_intents: 
+    - chitchat
+    required_slots:
+        - activate_sim
+        - link_3g_coverage

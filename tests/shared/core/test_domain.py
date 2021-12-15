@@ -649,37 +649,25 @@ def test_collect_intent_properties(
 
 
 def test_load_domain_from_directory_tree(tmp_path: Path):
-    root_domain = {"actions": ["utter_root", "utter_root2"]}
-    utils.dump_obj_as_yaml_to_file(tmp_path / "domain_pt1.yml", root_domain)
+    path = "data/test_domains/test_domain_from_directory_tree"
 
-    subdirectory_1 = tmp_path / "Skill 1"
-    subdirectory_1.mkdir()
-    skill_1_domain = {"actions": ["utter_skill_1"]}
-    utils.dump_obj_as_yaml_to_file(subdirectory_1 / "domain_pt2.yml", skill_1_domain)
-
-    subdirectory_2 = tmp_path / "Skill 2"
-    subdirectory_2.mkdir()
-    skill_2_domain = {"actions": ["utter_skill_2"]}
-    utils.dump_obj_as_yaml_to_file(subdirectory_2 / "domain_pt3.yml", skill_2_domain)
-
-    subsubdirectory = subdirectory_2 / "Skill 2-1"
-    subsubdirectory.mkdir()
-    skill_2_1_domain = {"actions": ["utter_subskill", "utter_root"]}
-    # Check if loading from `.yaml` also works
-    utils.dump_obj_as_yaml_to_file(
-        subsubdirectory / "domain_pt4.yaml", skill_2_1_domain
-    )
-
-    actual = Domain.load(str(tmp_path))
+    actual = Domain.load(path)
     expected = [
-        "utter_root",
-        "utter_root2",
-        "utter_skill_1",
-        "utter_skill_2",
-        "utter_subskill",
+        "action_utter_main_menu",
+        "utter_3g_general",
+        "utter_3g_specific",
+        "utter_non_general",
+        "action_utter_3g_general",
+        "utter_home_service",
+        "utter_service_issues",
+        "utter_phone_service_support",
+        "utter_home_service_support",
+        "utter_cancel_service",
+        "utter_cancel_home_service",
+        "utter_cancel_service_line",
     ]
 
-    assert set(actual.user_actions) == set(expected)
+    assert set(actual) == set(expected)
 
 
 def test_transform_intents_for_files_with_entities():
@@ -701,6 +689,167 @@ def test_transform_intents_for_files_with_entities():
     ]
 
     assert transformed == expected
+
+
+def test_validate_and_merge_domain_from_multiple_files():
+    domain_path = "data/test_domains/test_domain_from_multiple_files_2"
+    domain = Domain.validate_and_merge_domain_files(domain_path)
+    version = domain["version"]
+    session_config = domain["session_config"]
+    intents = domain["intents"]
+    actions = domain["actions"]
+    slots = domain["slots"]
+    entities = domain["entities"]
+    forms = domain["forms"]
+    expected_version = ["2.0"]
+    expected_session_config = [
+        {"session_expiration_time": 360, "carry_over_slots_to_new_session": True}
+    ]
+    expected_intents = [
+        "bot_challenge",
+        "endless_love",
+        "thanks",
+        "are_you_there",
+        "greeting",
+        "profanity",
+        "affirm",
+        "deny",
+        "main_menu",
+        "self_service",
+        "3g_network",
+        "cancel_service",
+        "home_service",
+        "service_troubleshooting",
+        "device_service_support",
+        "home_service_support",
+        "unsure_service_support",
+        "cancel_home_service",
+        "cancel_service_line",
+        "activate_wallet",
+        "lost_wallet",
+        {"shop_robot": {"use_entities": ["pistachio_robot"]}},
+        {
+            "shop_robot_chocolate": {
+                "ignore_entities": [
+                    "caramel_robot",
+                    "strawberry_robot",
+                    "rum_and_raisin_robot",
+                    "vanilla_robot",
+                    "other_robot",
+                ]
+            }
+        },
+        {
+            "shop_wallets": {
+                "use_entities": ["caramel_robot"],
+                "ignore_entities": ["chocolate_robot"],
+            }
+        },
+        {"shop_soups": {"use_entities": True}},
+        {"shop_clocks": {"use_entities": False}},
+        {"shop_lampshades": {"use_entities": False}},
+        {"view_deals": {"use_entities": True}},
+        {"delay": {"use_entities": ["chocolate_robot", "strawberry_robot"]}},
+        "order_cancel",
+        "order_cancel_recent",
+        "order_cancelled",
+    ]
+    expected_actions = [
+        "action_utter_previous_message",
+        "action_utter_smalltalk_greeting",
+        "utter_thanks_response",
+        "utter_profanity",
+        "utter_tmo_love",
+        "utter_bot_challenge",
+        "utter_im_here",
+        "utter_smalltalk_greeting",
+        "action_utter_main_menu",
+        "utter_3g_general",
+        "utter_3g_specific",
+        "utter_non_general",
+        "action_utter_3g_general",
+        "utter_home_service",
+        "utter_service_issues",
+        "utter_phone_service_support",
+        "utter_home_service_support",
+        "utter_cancel_service",
+        "utter_cancel_home_service",
+        "utter_cancel_service_line",
+        "utter_activate_wallet_options",
+        "utter_loststolen_wallet",
+        "action_delay_20_seconds",
+        "action_utter_shop_menu",
+        "action_delay_15_seconds",
+        "utter_anythingelse_menu",
+        "utter_std_shop_menu",
+        "utter_shopwallets",
+        "utter_shoplampshades",
+        "utter_shopsoups",
+        "utter_shopclocks",
+        "action_utter_robot_menu",
+        "utter_order_cancel",
+        "utter_order_cancelled",
+        "utter_order_cancel_recent",
+    ]
+    expected_slots = [
+        {
+            "link_coverage_map": {"type": "text", "influence_conversation": False},
+            "link_3g_coverage": {"type": "text", "influence_conversation": False},
+            "link_shop_3g_phones": {"type": "text", "influence_conversation": False},
+        },
+        {
+            "homeService": {"type": "text", "influence_conversation": False},
+            "homeServiceEligibility": {"type": "text", "influence_conversation": False},
+            "homeServiceOrderStatus": {"type": "text", "influence_conversation": False},
+        },
+        {
+            "lostOrStolen": {"type": "text", "influence_conversation": False},
+            "activate_sim": {"type": "text", "influence_conversation": False},
+            "activate_esim": {"type": "text", "influence_conversation": False},
+        },
+        {
+            "shopChocolateWallets": {"type": "text", "influence_conversation": False},
+            "shopStrawberryWallets": {"type": "text", "influence_conversation": False},
+            "shopOtherWallets": {"type": "text", "influence_conversation": False},
+            "shop3GWallets": {"type": "text", "influence_conversation": False},
+            "shopClockCovers": {"type": "text", "influence_conversation": False},
+            "shopClockAdapters": {"type": "text", "influence_conversation": False},
+            "shopMindspace": {"type": "text", "influence_conversation": False},
+            "shopAllLampshades": {"type": "text", "influence_conversation": False},
+            "shopSoupChocolate": {"type": "text", "influence_conversation": False},
+            "shopSoupStrawberry": {"type": "text", "influence_conversation": False},
+            "shopAllSoups": {"type": "text", "influence_conversation": False},
+            "shopClocksChocolate": {"type": "text", "influence_conversation": False},
+            "shopClocksStrawberry": {"type": "text", "influence_conversation": False},
+            "shopAllClocks": {"type": "text", "influence_conversation": False},
+            "deals": {"type": "text", "influence_conversation": False},
+        },
+    ]
+    expected_entities = [
+        "chocolate_robot",
+        "other_robot",
+        "strawberry_robot",
+        "vanilla_robot",
+        "pistachio_robot",
+        "caramel_robot",
+        "rum_and_raisin_robot",
+    ]
+    expected_forms = [
+        {
+            "robot_form": {
+                "ignored_intents": ["chitchat"],
+                "required_slots": ["activate_sim", "link_3g_coverage"],
+            }
+        }
+    ]
+
+    assert version == expected_version
+    assert session_config == expected_session_config
+    assert intents == expected_intents
+    assert actions == expected_actions
+    assert slots == expected_slots
+    assert entities == expected_entities
+    assert forms == expected_forms
 
 
 def test_domain_warnings(domain: Domain):
@@ -1289,7 +1438,6 @@ slots:
 
 
 def test_slot_order_is_preserved_when_merging():
-
     slot_1 = """
   b:
     type: text

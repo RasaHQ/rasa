@@ -143,7 +143,7 @@ class Domain:
         # create a configured domain object from the domain_dict
         # merge this into the empty domain
         configured_domain_dict = cls.validate_and_merge_domain_files(path)
-        domain = domain.merge(cls.from_dict(configured_domain_dict))
+        domain = cls.from_dict(configured_domain_dict)
 
         return domain
 
@@ -251,7 +251,7 @@ class Domain:
             slots,
             responses,
             data.get(KEY_ACTIONS, []),
-            data.get(KEY_FORMS, {}),
+            forms,
             data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             **additional_arguments,
@@ -259,6 +259,9 @@ class Domain:
 
     @staticmethod
     def _get_session_config(session_config: Dict) -> SessionConfig:
+        if isinstance(session_config, list):
+            session_config = session_config[0]
+
         session_expiration_time_min = session_config.get(SESSION_EXPIRATION_TIME_KEY)
 
         if session_expiration_time_min is None:
@@ -273,7 +276,6 @@ class Domain:
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
-
         domain = Domain.empty()
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
@@ -359,6 +361,9 @@ class Domain:
         slots = []
         # make a copy to not alter the input dictionary
         slot_dict = copy.deepcopy(slot_dict)
+        if isinstance(slot_dict, list):
+            slot_dict = slot_dict[0]
+
         # Don't sort the slots, see https://github.com/RasaHQ/rasa-x/issues/3900
         for slot_name in slot_dict:
             slot_type = slot_dict[slot_name].pop("type", None)
@@ -649,7 +654,6 @@ class Domain:
         self.session_config = session_config
 
         self._custom_actions = action_names
-
         # only includes custom actions and utterance actions
         self.user_actions = self._combine_with_responses(action_names, responses)
 
@@ -1705,9 +1709,14 @@ class Domain:
         actions: List[Text], responses: Dict[Text, Any]
     ) -> List[Text]:
         """Combines actions with utter actions listed in responses section."""
-        unique_utter_actions = [
-            action for action in sorted(list(responses.keys())) if action not in actions
-        ]
+        unique_utter_actions = []
+        if responses:
+            unique_utter_actions = [
+                action
+                for action in sorted(list(responses.keys()))
+                if action not in actions
+            ]
+
         return actions + unique_utter_actions
 
     @staticmethod
