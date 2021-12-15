@@ -47,7 +47,7 @@ optional arguments:
                         False)
   --num-threads NUM_THREADS
                         Maximum amount of threads to use when training.
-                        (default: 1)
+                        (default: None)
   --fixed-model-name FIXED_MODEL_NAME
                         If set, the name of the model file/directory will be
                         set to the given name. (default: None)
@@ -63,7 +63,7 @@ optional arguments:
   --epoch-fraction EPOCH_FRACTION
                         Fraction of epochs which are currently specified in
                         the model configuration which should be used when
-                        finetuning a model. (default: 1.0)
+                        finetuning a model. (default: None)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
