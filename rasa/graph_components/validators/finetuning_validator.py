@@ -235,6 +235,7 @@ class FinetuningValidator(GraphComponent):
         for node_name, node_dict in schema_as_dict["nodes"].items():
             config_copy = copy.deepcopy(node_dict["config"])
             config_copy.pop(EPOCHS, None)
+            config_copy.pop("finetuning_epoch_fraction", None)
             # ignore default values since they're filled in anyway later and can
             # end up in configs (or not) in mysterious ways
             defaults = graph_schema.nodes[node_name].uses.get_default_config()
