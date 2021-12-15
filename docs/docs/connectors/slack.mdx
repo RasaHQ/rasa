@@ -136,6 +136,13 @@ your bot and tell you about new messages. If you are running locally, you can
    sending of messages, you'll be prompted to **reinstall your app** which you will
    need to do. Otherwise, Slack will confirm your change with a **Success!**)
 
+## Optional: Initial message
+   If you want to have the bot greet message appear every time when user opens its chat (e.g. for the first time) you want
+   to send some subscribe to `app_home_opened` event. This will automatically redirect to expected `init` intent in your 
+   domain (it might be smart to handle if a user has already encountered a chatbot and not react to this event every single
+   time).
+
+
 Your bot is now ready to go and will receive webhook notifications about new messages.
 ## Optional: Interactive Components
 After you've completed [Sending Messages](./slack.mdx#sending-messages) and
