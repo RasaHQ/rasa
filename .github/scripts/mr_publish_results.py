@@ -337,6 +337,6 @@ def create_report_file():
 
 
 if __name__ == "__main__":
-    send_to_datadog(None)
+    send_all_to_datadog(None)
     send_all_results_to_segment()
     create_report_file()
