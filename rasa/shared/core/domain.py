@@ -2023,14 +2023,12 @@ class SlotMapping(Enum):
 
 
 def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
-    if isinstance(forms, list):
-        if not all(isinstance(form_name, str) for form_name in forms):
-            raise InvalidDomain(
-                f"If you use the deprecated list syntax for forms, "
-                f"all form names have to be strings. Please see "
-                f"{DOCS_URL_FORMS} for more information."
-            )
-
+    if not all(isinstance(form_name, str) for form_name in forms):
+        raise InvalidDomain(
+            f"If you use the deprecated list syntax for forms, "
+            f"all form names have to be strings. Please see "
+            f"{DOCS_URL_FORMS} for more information."
+        )
         return
 
     if not isinstance(forms, dict):
