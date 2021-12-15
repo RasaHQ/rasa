@@ -298,9 +298,12 @@ jobs:
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
-          GIT_SHA: "${{ github.sha }}"
+          GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
+          TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |
+          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
@@ -396,6 +399,8 @@ jobs:
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
+          GITHUB_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu
@@ -530,9 +535,12 @@ jobs:
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
-          GIT_SHA: "${{ github.sha }}"
+          GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
+          TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |
+          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
@@ -623,6 +631,8 @@ jobs:
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
+          GITHUB_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu
