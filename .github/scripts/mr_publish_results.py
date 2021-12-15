@@ -1,10 +1,10 @@
 # Send model regression test results to Segment with a summary
 # of all test results.
-from typing import Any, Dict, List, Tuple
 import copy
 import datetime
 import json
 import os
+from typing import Any, Dict, List, Tuple
 
 import analytics
 from datadog_api_client.v1 import ApiClient, Configuration
@@ -12,7 +12,6 @@ from datadog_api_client.v1.api.metrics_api import MetricsApi
 from datadog_api_client.v1.model.metrics_payload import MetricsPayload
 from datadog_api_client.v1.model.point import Point
 from datadog_api_client.v1.model.series import Series
-
 
 DD_ENV = "rasa-regression-tests"
 DD_SERVICE = "rasa"
@@ -72,15 +71,11 @@ def prepare_ml_model_perf_metric(result: Dict[str, Any]) -> List[Tuple[str, floa
 
     Args:
         result: Example
-            {
-                'accuracy': 1.0,
-                'weighted avg': {
-                    'precision': 1.0,
-                    'recall': 1.0,
-                    'f1-score': 1.0,
-                    'support': 28
-                }
-        }
+            {'accuracy': 1.0,
+             'weighted avg': {
+                'precision': 1.0, 'recall': 1.0, 'f1-score': 1.0, 'support': 28
+             }
+            }
 
     Returns:
         List of tuples
