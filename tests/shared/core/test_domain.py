@@ -683,7 +683,7 @@ def test_load_domain_from_directory_tree(tmp_path: Path):
 
 
 def test_transform_intents_for_files_with_entities():
-    domain_path = "data/test_domains/test_domain_from_directory2"
+    domain_path = "data/test_domains/test_domain_from_multiple_files"
     domain = Domain.load(domain_path)
     transformed = domain._transform_intents_for_file()
 
@@ -691,7 +691,7 @@ def test_transform_intents_for_files_with_entities():
         {"question": {"use_entities": True}},
         {
             "support_banning": {
-                "use_entities": ["anti_person_land_mines", "automatic_rifles"]
+                "use_entities": ["anti_freeze_elixr", "automatic_blankets"]
             }
         },
         {"certify": {"use_entities": True}},

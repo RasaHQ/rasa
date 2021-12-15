@@ -1,0 +1,24 @@
+version: "2.0"
+session_config:
+  session_expiration_time: 360
+  carry_over_slots_to_new_session: true
+
+intents:
+- bot_challenge
+- endless_love
+- thanks
+- are_you_there
+- greeting
+- profanity
+- affirm
+- deny
+
+actions:
+- action_utter_previous_message
+- action_utter_smalltalk_greeting
+- utter_thanks_response
+- utter_profanity
+- utter_tmo_love
+- utter_bot_challenge
+- utter_im_here
+- utter_smalltalk_greeting

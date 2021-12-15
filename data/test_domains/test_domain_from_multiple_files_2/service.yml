@@ -1,0 +1,37 @@
+version: "2.0"
+session_config:
+  session_expiration_time: 360
+  carry_over_slots_to_new_session: true
+
+
+intents:
+- cancel_service
+- home_service
+- service_troubleshooting
+- device_service_support
+- home_service_support
+- unsure_service_support
+- cancel_home_service
+- cancel_service_line
+
+
+slots:
+  homeService:
+    type: text
+    influence_conversation: false
+  homeServiceEligibility:
+    type: text
+    influence_conversation: false
+  homeServiceOrderStatus:
+    type: text
+    influence_conversation: false
+
+
+actions:
+- utter_home_service
+- utter_service_issues
+- utter_phone_service_support
+- utter_home_service_support
+- utter_cancel_service
+- utter_cancel_home_service
+- utter_cancel_service_line

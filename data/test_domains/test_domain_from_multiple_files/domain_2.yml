@@ -1,0 +1,14 @@
+version: "2.0"
+
+intents:
+  - support_banning:
+      use_entities:
+        - automatic_blankets
+        - anti_freeze_elixr
+  - certify:
+      use_entities: true
+
+entities:
+  - automatic_blankets
+  - anti_freeze_elixr
+  - tornadoes

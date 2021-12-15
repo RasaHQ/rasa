@@ -1,0 +1,22 @@
+version: "2.0"
+
+intents:
+- 3g_network
+
+slots:
+  link_coverage_map:
+    type: text
+    influence_conversation: false
+  link_3g_coverage:
+    type: text
+    influence_conversation: false
+  link_shop_3g_phones:
+    type: text
+    influence_conversation: false
+
+actions:
+- utter_3g_general
+- utter_3g_specific
+- utter_non_general
+- action_utter_3g_general
+

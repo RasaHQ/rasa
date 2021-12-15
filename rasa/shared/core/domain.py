@@ -136,6 +136,7 @@ class Domain:
                 "No domain file was specified. Please specify a path "
                 "to a valid domain file."
             )
+
         domain = Domain.empty()
 
         # validate the domain file/s and return a domain_dict

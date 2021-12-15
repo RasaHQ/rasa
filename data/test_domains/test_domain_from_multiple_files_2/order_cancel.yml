@@ -1,0 +1,19 @@
+version: "2.0"
+session_config:
+  session_expiration_time: 360
+  carry_over_slots_to_new_session: true
+
+intents:
+- order_cancel
+- order_cancel_recent
+- order_cancelled
+
+actions: 
+- utter_order_cancel
+- utter_order_cancelled
+- utter_order_cancel_recent
+
+entities:
+- pistachio_robot
+- caramel_robot
+- rum_and_raisin_robot

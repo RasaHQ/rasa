@@ -1,0 +1,25 @@
+version: "2.0"
+session_config:
+  session_expiration_time: 360
+  carry_over_slots_to_new_session: true
+
+intents:
+- activate_wallet
+- lost_wallet
+
+slots:
+  lostOrStolen:
+    type: text
+    influence_conversation: false
+  activate_sim:
+    type: text
+    influence_conversation: false
+  activate_esim:
+    type: text
+    influence_conversation: false
+
+
+actions:
+- utter_activate_wallet_options
+- utter_loststolen_wallet
+- action_delay_20_seconds
