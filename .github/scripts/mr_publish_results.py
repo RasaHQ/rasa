@@ -122,7 +122,7 @@ def prepare_ml_metric(result: Dict[str, Any]) -> Dict[str, float]:
     return metrics_ml
 
 
-def prepare_ml_metrics(results: Dict[str, Any]) -> Dict[str, float]:
+def prepare_ml_metrics(results: List[Dict[str, Any]]) -> Dict[str, float]:
     metrics_ml = {}
     for result in results:
         new_metrics_ml = prepare_ml_metric(result)
@@ -156,7 +156,7 @@ def prepare_tags() -> List[str]:
     return tags_list
 
 
-def send_to_datadog(results: Dict[str, Any]):
+def send_to_datadog(results: List[Dict[str, Any]]):
     """Sends metrics to datadog."""
     # Prepare
     tags_list = prepare_tags()
@@ -196,7 +196,7 @@ def send_to_datadog(results: Dict[str, Any]):
             print(response)
 
 
-def send_to_segment(context):
+def send_to_segment(context: Dict[str, Any]):
     global IS_EXTERNAL
     global DATASET_REPOSITORY_BRANCH
 
@@ -238,7 +238,7 @@ def send_to_segment(context):
     )
 
 
-def read_results(file):
+def read_results(file: str) -> Dict[str, Any]:
     with open(file) as json_file:
         data = json.load(json_file)
 
@@ -254,13 +254,13 @@ def read_results(file):
     return result
 
 
-def push_results(file_name, file):
+def push_results(file_name: str, file: str):
     result = get_result(file_name, file)
     result["task"] = task_mapping_segment[file_name]
     send_to_segment(result)
 
 
-def get_result(file_name, file):
+def get_result(file_name: str, file: str) -> Dict[str, Any]:
     result = read_results(file)
     result["file_name"] = file_name
     result["task"] = task_mapping[file_name]
@@ -277,7 +277,7 @@ def send_all_to_datadog():
     send_to_datadog(results)
 
 
-def generate_json(file, task, data):
+def generate_json(file: str, task: str, data: dict) -> dict:
     global IS_EXTERNAL
     global DATASET_REPOSITORY_BRANCH
 
@@ -335,6 +335,6 @@ def create_report_file():
 
 
 if __name__ == "__main__":
-    send_all_to_datadog(None)
+    send_all_to_datadog()
     send_all_results_to_segment()
     create_report_file()
