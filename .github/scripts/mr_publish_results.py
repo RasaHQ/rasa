@@ -100,8 +100,10 @@ def prepare_ml_model_perf_metric(result: Dict[str, Any]) -> List[Tuple[str, floa
                 metric_full_name = f"{task}.{metric_name}.{mname}"
                 metric_tuples.append((metric_full_name, float(mval)))
         else:
-            raise Exception(f'metric_value {metric_value} has',
-                            f'unexpected type {type(metric_value)}')
+            raise Exception(
+                f"metric_value {metric_value} has",
+                f"unexpected type {type(metric_value)}",
+            )
     return metric_tuples
 
 
@@ -183,7 +185,7 @@ def send_to_datadog(results: List[Dict[str, Any]]):
     with ApiClient(Configuration()) as api_client:
         api_instance = MetricsApi(api_client)
         response = api_instance.submit_metrics(body=body)
-        if response.get('status') != 'ok':
+        if response.get("status") != "ok":
             print(response)
 
 
