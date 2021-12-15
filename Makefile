@@ -70,6 +70,9 @@ install:
 install-mitie:
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
 
+install-mrtest-dep:
+	poetry run python -m pip install -U analytics-python==1.4.0 datadog-api-client==1.6.0 datadog==0.42.0
+
 install-full: install install-mitie
 	poetry install -E full
 
@@ -205,7 +208,7 @@ test-performance: test-marker
 
 test-gh-actions: PYTEST_MARKER=category_gh_actions
 test-gh-actions: DD_ARGS := $(or $(DD_ARGS),)
-test-gh-actions: test-marker
+test-gh-actions: install-mrtest-dep test-marker
 
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
