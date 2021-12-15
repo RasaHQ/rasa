@@ -37,6 +37,14 @@ task_mapping = {
     "story_report.json": "story_prediction",
 }
 
+task_mapping_segment = {
+    "intent_report.json": "Intent Classification",
+    "CRFEntityExtractor_report.json": "Entity Prediction",
+    "DIETClassifier_report.json": "Entity Prediction",
+    "response_selection_report.json": "Response Selection",
+    "story_report.json": "Story Prediction",
+}
+
 
 def transform_to_seconds(duration: str) -> float:
     """Transform string (with hours, minutes, and seconds) to seconds.
@@ -184,7 +192,7 @@ def read_results(file):
 def push_results(file_name, file):
     result = read_results(file)
     result["file_name"] = file_name
-    result["task"] = task_mapping[file_name]
+    result["task"] = task_mapping_segment[file_name]
     send_to_segment(result)
 
 
@@ -225,7 +233,7 @@ def generate_json(file, task, data):
 def send_all_results_to_segment():
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
-            if any(f.endswith(valid_name) for valid_name in task_mapping.keys()):
+            if any(f.endswith(valid_name) for valid_name in task_mapping_segment.keys()):
                 push_results(f, os.path.join(dirpath, f))
     analytics.flush()
 
