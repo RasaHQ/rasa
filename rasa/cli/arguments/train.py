@@ -179,7 +179,6 @@ def _add_num_threads_param(
     parser.add_argument(
         "--num-threads",
         type=int,
-        default=1,
         help="Maximum amount of threads to use when training.",
     )
 
@@ -223,7 +222,6 @@ def add_finetune_params(
     parser.add_argument(
         "--epoch-fraction",
         type=float,
-        default=1.0,
         help="Fraction of epochs which are currently specified in the model "
         "configuration which should be used when finetuning a model.",
     )
