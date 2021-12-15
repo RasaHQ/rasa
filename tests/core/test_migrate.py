@@ -924,6 +924,7 @@ def test_migrate_folder_only_migrates_domain_files(tmp_path: Path):
     assert set(f.name for f in out_dir.iterdir()) == {"forms.yml", "slots.yml"}
     # i.e. the not-a-domain-file is not migrated
 
+
 def example_migrate_folder_fails_because_multiple_slots_sections(
     path: Path,
 ) -> Tuple[Path, Text]:
