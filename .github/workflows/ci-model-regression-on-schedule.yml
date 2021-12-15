@@ -1,5 +1,5 @@
 # The docs: https://www.notion.so/rasa/The-CI-for-model-regression-tests-92af7185e08e4fb2a0c764770a8e9095
-name: CI - Model Regression
+name: CI - Model Regression on schedule
 
 on:
   schedule:
@@ -222,7 +222,9 @@ jobs:
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.ref }}
-          GIT_SHA: "${{ github.sha }}"
+          GITHUB_SHA: "${{ github.sha }}"
+          TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: "main"
         run: |
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
@@ -315,11 +317,12 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
-          PR_URL: ""
           DATASET_REPOSITORY_BRANCH: "main"
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.ref }}
+          PR_ID: "${{ github.event.number }}"
+          PR_URL: ""
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu
