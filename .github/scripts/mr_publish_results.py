@@ -66,7 +66,15 @@ def transform_to_seconds(duration: str) -> float:
     return overall_seconds
 
 
-def prepare_ml_model_perf_metric(result: Dict[str, Any]) -> List[Dict[str, float]]:
+def prepare_runtime_metrics() -> Dict[str, float]:
+    return {
+        "test_run_time": os.environ["TEST_RUN_TIME"],
+        "train_run_time": os.environ["TRAIN_RUN_TIME"],
+        "total_run_time": os.environ["TOTAL_RUN_TIME"],
+    }
+
+
+def prepare_ml_metric(result: Dict[str, Any]) -> Dict[str, float]:
     """Converts a nested result dict into a list of metrics.
 
     Args:
@@ -78,8 +86,7 @@ def prepare_ml_model_perf_metric(result: Dict[str, Any]) -> List[Dict[str, float
             }
 
     Returns:
-        List of tuples
-            each tuple is a metric name, metric value
+        Dict of metric name and metric value
     """
     metrics_ml = {}
     result = copy.deepcopy(result)
@@ -102,25 +109,16 @@ def prepare_ml_model_perf_metric(result: Dict[str, Any]) -> List[Dict[str, float
     return metrics_ml
 
 
-def prepare_ml_model_perf_metrics(results) -> List[Dict[str, float]]:
+def prepare_ml_metrics(results: Dict[str, Any]) -> Dict[str, float]:
     metrics_ml = {}
     for result in results:
-        new_metric_tuples = prepare_ml_model_perf_metric(result)
-        metrics_ml.update(new_metric_tuples)
+        new_metrics_ml = prepare_ml_metric(result)
+        metrics_ml.update(new_metrics_ml)
 
     return metrics_ml
 
 
-def send_to_datadog(results: List[Dict[str, Any]]):
-    """Sends metrics to datadog.
-
-    Args:
-        results: [
-            {"accuracy": 0.9035, "micro avg": 0.8800,
-            "file_name": "intent_report.json", "task": "Intent Classification"},
-        ]
-    """
-    # Initialize
+def prepare_tags() -> List[str]:
     tags = {
         "dataset": os.environ["DATASET_NAME"],
         "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
@@ -142,17 +140,18 @@ def send_to_datadog(results: List[Dict[str, Any]]):
         "service": DD_SERVICE,
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
+    return tags_list
 
+
+def send_to_datadog(results: Dict[str, Any]):
+    """Sends metrics to datadog."""
     # Prepare
+    tags_list = prepare_tags()
     timestamp = datetime.datetime.now().timestamp()
     series = []
 
     # Send metrics about runtime
-    metrics_runtime = {
-        "test_run_time": os.environ["TEST_RUN_TIME"],
-        "train_run_time": os.environ["TRAIN_RUN_TIME"],
-        "total_run_time": os.environ["TOTAL_RUN_TIME"],
-    }
+    metrics_runtime = prepare_runtime_metrics()
     for metric_name, metric_value in metrics_runtime.items():
         overall_seconds = transform_to_seconds(metric_value)
         series.append(
@@ -165,7 +164,7 @@ def send_to_datadog(results: List[Dict[str, Any]]):
         )
 
     # Send metrics about ML model performance
-    metrics_ml = prepare_ml_model_perf_metrics(results)
+    metrics_ml = prepare_ml_metrics(results)
     for metric_name, metric_value in metrics_ml.items():
         series.append(
             Series(
