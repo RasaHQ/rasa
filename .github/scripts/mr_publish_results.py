@@ -158,6 +158,8 @@ def prepare_tags() -> List[str]:
 
 def send_to_datadog(results: List[Dict[str, Any]]):
     """Sends metrics to datadog."""
+    print('results:', results)
+
     # Prepare
     tags_list = prepare_tags()
     timestamp = datetime.datetime.now().timestamp()
@@ -178,6 +180,7 @@ def send_to_datadog(results: List[Dict[str, Any]]):
 
     # Send metrics about ML model performance
     metrics_ml = prepare_ml_metrics(results)
+    print('metrics_ml:', metrics_ml)
     for metric_name, metric_value in metrics_ml.items():
         series.append(
             Series(
