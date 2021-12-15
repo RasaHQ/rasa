@@ -6,12 +6,6 @@ import os
 from pathlib import Path
 from typing import Dict
 
-REPORTS_DIR = Path(os.environ['REPORTS_DIR'])
-print("REPORTS_DIR", list(REPORTS_DIR.glob("*")))
-
-SUMMARY_FILE = os.environ["SUMMARY_FILE"]
-print("SUMMARY_FILE", SUMMARY_FILE)
-
 
 def combine_result(result1: Dict[str, dict], result2: Dict[str, dict]) -> Dict[str, dict]:
     import copy
@@ -30,13 +24,13 @@ def combine_result(result1: Dict[str, dict], result2: Dict[str, dict]) -> Dict[s
 
 if __name__ == "__main__":
     data = {}
-
-    reports_paths = list(REPORTS_DIR.glob("*/report.json"))
-    print('reports_paths', reports_paths)
+    reports_dir = Path(os.environ['REPORTS_DIR'])
+    reports_paths = list(reports_dir.glob("*/report.json"))
 
     for report_path in reports_paths:
         report_dict = json.load(open(report_path))
         data = combine_result(data, report_dict)
 
-    with open(SUMMARY_FILE, "w") as f:
+    summary_file = os.getenv("SUMMARY_FILE")
+    with open(summary_file, "w") as f:
         json.dump(data, f, sort_keys=True, indent=2)

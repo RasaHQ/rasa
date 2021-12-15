@@ -18,17 +18,17 @@ DD_ENV = "rasa-regression-tests"
 DD_SERVICE = "rasa"
 METRIC_RUNTIME_PREFIX = "rasa.perf.benchmark."
 METRIC_ML_PREFIX = "rasa.perf.ml."
-IS_EXTERNAL = os.environ["IS_EXTERNAL"]
-DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
+IS_EXTERNAL = os.getenv("IS_EXTERNAL")
+DATASET_REPOSITORY_BRANCH = os.getenv("DATASET_REPOSITORY_BRANCH")
 CONFIG_REPOSITORY = "training-data"
-CONFIG_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
+CONFIG_REPOSITORY_BRANCH = os.getenv("DATASET_REPOSITORY_BRANCH")
 
-SUMMARY_FILE = os.environ["SUMMARY_FILE"]
-CONFIG = os.environ["CONFIG"]
-DATASET = os.environ["DATASET_NAME"]
-TYPE = os.environ["TYPE"]
+SUMMARY_FILE = os.getenv("SUMMARY_FILE")
+CONFIG = os.getenv("CONFIG")
+DATASET = os.getenv("DATASET_NAME")
+TYPE = os.getenv("TYPE")
 
-analytics.write_key = os.environ["SEGMENT_TOKEN"]
+analytics.write_key = os.getenv("SEGMENT_TOKEN")
 
 task_mapping = {
     "intent_report.json": "intent_classification",
