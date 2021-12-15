@@ -18,7 +18,6 @@ DD_SERVICE = "rasa"
 METRIC_PREFIX = "rasa.perf.benchmark."
 IS_EXTERNAL = os.environ["IS_EXTERNAL"]
 DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
-EXTERNAL_DATASET_REPOSITORY_BRANCH = None
 CONFIG_REPOSITORY = "training-data"
 CONFIG_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 
@@ -81,24 +80,24 @@ def transform_to_seconds(duration: str) -> float:
 def send_to_datadog(context):
     # Initialize
     tags = {
+        "env": DD_ENV,
+        "service": DD_SERVICE,
+        "accelerator_type": os.environ["ACCELERATOR_TYPE"],
         "dataset": os.environ["DATASET_NAME"],
+        "config": os.environ["CONFIG"],
+        "dataset_commit": os.environ["DATASET_COMMIT"],
+        "branch": os.environ["BRANCH"],
+        "github_sha": os.environ["GITHUB_SHA"],
+        "pr_id": os.environ["PR_ID"],
+        "pr_url": os.environ["PR_URL"],
         "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
         "external_dataset_repository": IS_EXTERNAL,
         "config_repository": CONFIG_REPOSITORY,
         "config_repository_branch": CONFIG_REPOSITORY_BRANCH,
-        "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
-        "dataset_commit": os.environ["DATASET_COMMIT"],
         "workflow": os.environ["GITHUB_WORKFLOW"],
-        "config": os.environ["CONFIG"],
-        "pr_url": os.environ["PR_URL"],
-        "accelerator_type": os.environ["ACCELERATOR_TYPE"],
         "github_run_id": os.environ["GITHUB_RUN_ID"],
-        "github_sha": os.environ["GITHUB_SHA"],
         "github_event": os.environ["GITHUB_EVENT_NAME"],
         "type": os.environ["TYPE"],
-        "branch": os.environ["BRANCH"],
-        "env": DD_ENV,
-        "service": DD_SERVICE,
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
 
@@ -155,7 +154,6 @@ def send_to_segment(context):
             "external_dataset_repository": IS_EXTERNAL,
             "config_repository": CONFIG_REPOSITORY,
             "config_repository_branch": CONFIG_REPOSITORY_BRANCH,
-            "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
             "dataset_commit": os.environ["DATASET_COMMIT"],
             "workflow": os.environ["GITHUB_WORKFLOW"],
             "config": os.environ["CONFIG"],
