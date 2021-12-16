@@ -1,21 +1,23 @@
-# Send model regression test results to Segment with a summary
-# of all test results.
+# Send model regression test results to Segment and Datadog
+# with a summary of all test results.
 # Also write them into a report file.
-import analytics
+import copy
 import datetime
 import json
 import os
+from typing import Any, Dict, List
 
+import analytics
 from datadog_api_client.v1 import ApiClient, Configuration
 from datadog_api_client.v1.api.metrics_api import MetricsApi
 from datadog_api_client.v1.model.metrics_payload import MetricsPayload
 from datadog_api_client.v1.model.point import Point
 from datadog_api_client.v1.model.series import Series
 
-
 DD_ENV = "rasa-regression-tests"
 DD_SERVICE = "rasa"
-METRIC_PREFIX = "rasa.perf.benchmark."
+METRIC_RUNTIME_PREFIX = "rasa.perf.benchmark."
+METRIC_ML_PREFIX = "rasa.perf.ml."
 IS_EXTERNAL = os.environ["IS_EXTERNAL"]
 DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 CONFIG_REPOSITORY = "training-data"
@@ -77,8 +79,59 @@ def transform_to_seconds(duration: str) -> float:
     return overall_seconds
 
 
-def send_to_datadog(context):
-    # Initialize
+def prepare_runtime_metrics() -> Dict[str, float]:
+    return {
+        "test_run_time": os.environ["TEST_RUN_TIME"],
+        "train_run_time": os.environ["TRAIN_RUN_TIME"],
+        "total_run_time": os.environ["TOTAL_RUN_TIME"],
+    }
+
+
+def prepare_ml_metric(result: Dict[str, Any]) -> Dict[str, float]:
+    """Converts a nested result dict into a list of metrics.
+
+    Args:
+        result: Example
+            {'accuracy': 1.0,
+             'weighted avg': {
+                'precision': 1.0, 'recall': 1.0, 'f1-score': 1.0, 'support': 28
+             }
+            }
+
+    Returns:
+        Dict of metric name and metric value
+    """
+    metrics_ml = {}
+    result = copy.deepcopy(result)
+    result.pop("file_name", None)
+    task = result.pop("task", None)
+
+    for metric_name, metric_value in result.items():
+        if isinstance(metric_value, float):
+            metric_full_name = f"{task}.{metric_name}"
+            metrics_ml[metric_full_name] = float(metric_value)
+        elif isinstance(metric_value, dict):
+            for mname, mval in metric_value.items():
+                metric_full_name = f"{task}.{metric_name}.{mname}"
+                metrics_ml[metric_full_name] = float(mval)
+        else:
+            raise Exception(
+                f"metric_value {metric_value} has",
+                f"unexpected type {type(metric_value)}",
+            )
+    return metrics_ml
+
+
+def prepare_ml_metrics(results: List[Dict[str, Any]]) -> Dict[str, float]:
+    metrics_ml = {}
+    for result in results:
+        new_metrics_ml = prepare_ml_metric(result)
+        metrics_ml.update(new_metrics_ml)
+
+    return metrics_ml
+
+
+def prepare_tags() -> List[str]:
     tags = {
         "env": DD_ENV,
         "service": DD_SERVICE,
@@ -100,23 +153,37 @@ def send_to_datadog(context):
         "type": os.environ["TYPE"],
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
+    return tags_list
 
-    # Send  metrics
-    metrics = {
-        "test_run_time": os.environ["TEST_RUN_TIME"],
-        "train_run_time": os.environ["TRAIN_RUN_TIME"],
-        "total_run_time": os.environ["TOTAL_RUN_TIME"],
-    }
+
+def send_to_datadog(results: List[Dict[str, Any]]):
+    """Sends metrics to datadog."""
+    # Prepare
+    tags_list = prepare_tags()
     timestamp = datetime.datetime.now().timestamp()
-
     series = []
-    for metric_name, metric_value in metrics.items():
+
+    # Send metrics about runtime
+    metrics_runtime = prepare_runtime_metrics()
+    for metric_name, metric_value in metrics_runtime.items():
         overall_seconds = transform_to_seconds(metric_value)
         series.append(
             Series(
-                metric=f"{METRIC_PREFIX}{metric_name}.gauge",
+                metric=f"{METRIC_RUNTIME_PREFIX}{metric_name}.gauge",
                 type="gauge",
                 points=[Point([timestamp, overall_seconds])],
+                tags=tags_list,
+            )
+        )
+
+    # Send metrics about ML model performance
+    metrics_ml = prepare_ml_metrics(results)
+    for metric_name, metric_value in metrics_ml.items():
+        series.append(
+            Series(
+                metric=f"{METRIC_ML_PREFIX}{metric_name}.gauge",
+                type="gauge",
+                points=[Point([timestamp, float(metric_value)])],
                 tags=tags_list,
             )
         )
@@ -125,11 +192,11 @@ def send_to_datadog(context):
     with ApiClient(Configuration()) as api_client:
         api_instance = MetricsApi(api_client)
         response = api_instance.submit_metrics(body=body)
-        if response.get('status') != 'ok':
+        if response.get("status") != "ok":
             print(response)
 
 
-def send_to_segment(context):
+def send_to_segment(context: Dict[str, Any]):
     global IS_EXTERNAL
     global DATASET_REPOSITORY_BRANCH
 
@@ -171,7 +238,7 @@ def send_to_segment(context):
     )
 
 
-def read_results(file):
+def read_results(file: str) -> Dict[str, Any]:
     with open(file) as json_file:
         data = json.load(json_file)
 
@@ -187,14 +254,30 @@ def read_results(file):
     return result
 
 
-def push_results(file_name, file):
-    result = read_results(file)
-    result["file_name"] = file_name
+def push_results(file_name: str, file: str):
+    result = get_result(file_name, file)
     result["task"] = task_mapping_segment[file_name]
     send_to_segment(result)
 
 
-def generate_json(file, task, data):
+def get_result(file_name: str, file: str) -> Dict[str, Any]:
+    result = read_results(file)
+    result["file_name"] = file_name
+    result["task"] = task_mapping[file_name]
+    return result
+
+
+def send_all_to_datadog():
+    results = []
+    for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
+        for f in files:
+            if any(f.endswith(valid_name) for valid_name in task_mapping.keys()):
+                result = get_result(f, os.path.join(dirpath, f))
+                results.append(result)
+    send_to_datadog(results)
+
+
+def generate_json(file: str, task: str, data: dict) -> dict:
     global IS_EXTERNAL
     global DATASET_REPOSITORY_BRANCH
 
@@ -237,8 +320,6 @@ def send_all_results_to_segment():
 
 
 def create_report_file():
-    assert not os.path.exists(SUMMARY_FILE)  # Debug
-
     data = {}
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
@@ -252,6 +333,6 @@ def create_report_file():
 
 
 if __name__ == "__main__":
-    send_to_datadog(None)
+    send_all_to_datadog()
     send_all_results_to_segment()
     create_report_file()
