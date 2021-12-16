@@ -1,4 +1,5 @@
 import contextlib
+import os
 import subprocess
 import shutil
 
@@ -31,3 +32,9 @@ def test_action_server_start(simple_project: Text):
     with run_in_rasa_project(simple_project, ["run", "actions"]) as process:
         assert "Starting action endpoint server..." in read_process_line(process)
         assert "Action endpoint is up and running on " in read_process_line(process)
+
+
+def test_action_server_start_formbot(formbot_project: Text):
+    with run_in_rasa_project(formbot_project, ["run", "actions"]) as process:
+        assert "Starting action endpoint server..." in read_process_line(process)
+        assert "Registered function for 'validate_restaurant_form'" in read_process_line(process)
