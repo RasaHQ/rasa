@@ -164,9 +164,9 @@ memory-profiler = "^0.58.0"
 psutil = "^5.8.0"
 mypy-extensions = "^0.4.3"
 sanic-testing = "^0.7.0"
-analytics-python = "*"
-datadog-api-client = "*"
-datadog = "*"
+analytics-python = "^1.4.0"
+datadog-api-client = "^1.7.0"
+datadog = "^0.43.0"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
