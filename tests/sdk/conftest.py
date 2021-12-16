@@ -1,12 +1,6 @@
 import pytest
-import shutil
-import os
-
-from pathlib import Path
 from rasa.cli import scaffold
-from subprocess import check_call
 from _pytest.tmpdir import TempdirFactory
-from typing import Text
 
 
 @pytest.fixture(scope="session")
