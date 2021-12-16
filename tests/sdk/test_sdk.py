@@ -7,30 +7,27 @@ from typing import Text
 
 
 @contextlib.contextmanager
-def run_in_rasa(project_dir: Text, command_args):
+def run_in_rasa_project(project_dir: Text, command_args):
     args = [shutil.which("rasa")] + list(command_args)
     process = subprocess.Popen(args, stderr=subprocess.PIPE, cwd=project_dir)
     try:
-        output = process.communicate()[1]
-        if output:
-            yield output.decode("utf-8")
-        else:
-            yield ""
+        yield process
     finally:
         process.terminate()
 
 
+def read_process_line(process) -> Text:
+    return process.stderr.readline().decode("utf-8")
+
+
 def test_action_server_start_in_empty_dir():
     temp_dir = Path.cwd()
-    with run_in_rasa(str(temp_dir), ["run", "actions"]) as output:
-        assert "Starting action endpoint server..." in output
-        assert "Failed to register package 'actions'" in output
+    with run_in_rasa_project(str(temp_dir), ["run", "actions"]) as process:
+        assert "Starting action endpoint server..." in read_process_line(process)
+        assert "Failed to register package 'actions'" in read_process_line(process)
 
 
 def test_action_server_start(simple_project: Text):
-    print(simple_project)
-
-    with run_in_rasa(simple_project, ["run", "actions"]) as output:
-        print(output)
-        assert "Starting action endpoint server..." in output
-        assert "Action endpoint is up and running on" in output
+    with run_in_rasa_project(simple_project, ["run", "actions"]) as process:
+        assert "Starting action endpoint server..." in read_process_line(process)
+        assert "Action endpoint is up and running on " in read_process_line(process)
