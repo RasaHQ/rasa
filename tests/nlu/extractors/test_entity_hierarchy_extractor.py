@@ -8,7 +8,7 @@ from rasa.shared.nlu.training_data.message import Message
 
 yaml = YAML(pure=False, typ="safe")
 
-entities_yaml = """
+entities_raw_hierarchy = """
 festnetz:
   mappings:
   - value: true
@@ -67,7 +67,7 @@ entities_topdown = {
 
 
 def test_parser():
-    stream = StringIO(entities_yaml)
+    stream = StringIO(entities_raw_hierarchy)
     entities_definitions = yaml.load(stream=stream)
     parser_results = _topdownparser(data=entities_definitions)
 

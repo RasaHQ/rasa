@@ -39,6 +39,7 @@ EXAMPLE_TEXT_ALT_SPELLING = "alternatives"
 DONT_CREATE_ENTITY = "structure_only"
 MAPPINGS_KEY = "mappings"
 CONFIG_KEY = "config"
+ENTITY_HIERARCHY_KEY = "entity_hierarchy"
 
 logger = logging.getLogger(__file__)
 
@@ -397,18 +398,30 @@ class EntityHierarchyExtractor(EntityExtractor):
                 logger.debug(f"reading file {fn}")
                 filecontent = read_yaml_file(fn)
                 if isinstance(filecontent, dict):
-                    if [k for k in filecontent if k in raw_hierarchy]:
-                        raise ValueError(
-                            "Duplicate key(s) "
-                            f"{[k for k in filecontent if k in raw_hierarchy]}"
-                            f" found in file {fn}"
-                        )  # TODO replace by proper RasaException
-                        # for invalid keys in YAML
-                    raw_hierarchy.update(filecontent)
-                    logger.info(f"Processed file {fn}")
+                    entitycontent = filecontent.get(ENTITY_HIERARCHY_KEY)
+                    if entitycontent:
+                        # ignore other yaml files
+                        if isinstance(entitycontent, dict):
+                            if [k for k in entitycontent if k in raw_hierarchy]:
+                                dup_key = [
+                                    k for k in entitycontent if k in raw_hierarchy
+                                ]
+                                raise ValueError(
+                                    "Duplicate key(s) "
+                                    f"{dup_key}"
+                                    f" found in file {fn}"
+                                )  # TODO replace by proper RasaException
+                                # for invalid keys in YAML
+                            raw_hierarchy.update(entitycontent)
+                            logger.info(f"Processed file {fn}")
+                        else:
+                            logger.warn(
+                                f"{fn} invalid file format: entity_hierarchy must "
+                                "contain be a dictionary in YAML"
+                            )
                 else:
                     logger.warn(
-                        f"{fn} invalid file format: must be a " "dictionary in YAML"
+                        f"{fn} invalid file format: must be a dictionary in YAML"
                     )
         else:
             rasa.shared.utils.io.raise_warning(
