@@ -35,6 +35,8 @@ def test_action_server_start(simple_project: Text):
 
 
 def test_action_server_start_formbot(formbot_project: Text):
+    # test_check_for_unseen_feature
     with run_in_rasa_project(formbot_project, ["run", "actions"]) as process:
         assert "Starting action endpoint server..." in read_process_line(process)
         assert "Registered function for 'validate_restaurant_form'" in read_process_line(process)
+
