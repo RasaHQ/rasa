@@ -154,6 +154,7 @@ nodes:
     config:
       epochs: 50
       constrain_similarities: true
+      finetuning_epoch_fraction: 0.5
     eager: false
     is_target: true
     is_input: false
@@ -178,6 +179,7 @@ nodes:
     config:
       epochs: 50
       constrain_similarities: true
+      finetuning_epoch_fraction: 0.5
     eager: false
     is_target: true
     is_input: false
@@ -262,6 +264,7 @@ nodes:
     config:
       max_history: 5
       epochs: 50
+      finetuning_epoch_fraction: 0.5
     eager: false
     is_target: true
     is_input: false
@@ -277,6 +280,7 @@ nodes:
       max_history: 5
       epochs: 50
       constrain_similarities: true
+      finetuning_epoch_fraction: 0.5
     eager: false
     is_target: true
     is_input: false

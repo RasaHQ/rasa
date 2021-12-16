@@ -1,5 +1,5 @@
 # The docs: https://www.notion.so/rasa/The-CI-for-model-regression-tests-92af7185e08e4fb2a0c764770a8e9095
-name: CI - Model Regression
+name: CI - Model Regression on schedule
 
 on:
   schedule:
@@ -108,8 +108,8 @@ jobs:
     name: Model Regression Tests - GPU
     continue-on-error: true
     needs:
-    - deploy_runner_gpu
-    - read_test_configuration
+      - deploy_runner_gpu
+      - read_test_configuration
     env:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
@@ -118,7 +118,7 @@ jobs:
 
     runs-on: [self-hosted, gpu]
     strategy:
-      max-parallel: 1
+      max-parallel: 3
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
 
     steps:
@@ -215,6 +215,19 @@ jobs:
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
+      - name: Start Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        env:
+          DATASET: "${{ matrix.dataset }}"
+          CONFIG: "${{ matrix.config }}"
+          DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
+          BRANCH: ${{ github.ref }}
+          GITHUB_SHA: "${{ github.sha }}"
+          TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: "main"
+        run: |
+          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
+
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -293,20 +306,6 @@ jobs:
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
 
-      # Download the results of the previous runs
-      # The report file is extended with new results every next job run
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        continue-on-error: true
-        with:
-          name: report.json
-
-      - name: Extract branch name
-        shell: bash
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
-        id: extract_branch
-
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
@@ -318,26 +317,31 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
-          PR_URL: ""
           DATASET_REPOSITORY_BRANCH: "main"
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
-          BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          BRANCH: ${{ github.ref }}
+          PR_ID: "${{ github.event.number }}"
+          PR_URL: ""
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
-          poetry run python .github/scripts/mr_generate_summary.py
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         uses: actions/upload-artifact@v2
         with:
-          name: report.json
-          path: ./report.json
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          path: report.json
+
+      - name: Stop Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |
+          sudo service datadog-agent stop
 
       - name: Check duplicate issue
         if: failure()
@@ -424,13 +428,52 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
+  combine_reports:
+    name: Combine reports
+    runs-on: ubuntu-latest
+    needs:
+      - model_regression_test_gpu
+    if: always() && needs.model_regression_test_gpu.result == 'success'
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.7 🐍
+        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+        with:
+          python-version: 3.7
+
+      - name: Get reports
+        uses: actions/download-artifact@v2
+        with:
+          path: reports/
+
+      - name: Display structure of downloaded files
+        continue-on-error: true
+        run: ls -R
+        working-directory: reports/
+
+      - name: Merge all reports
+        env:
+          SUMMARY_FILE: "./report.json"
+          REPORTS_DIR: "reports/"
+        run: |
+          python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
+
+      - name: Upload an artifact with the overall report
+        uses: actions/upload-artifact@v2
+        with:
+          name: report.json
+          path: ./report.json
+
   analyse_performance:
     name: Analyse Performance
     runs-on: ubuntu-latest
     if: always()
     needs:
-    - deploy_runner_gpu
-    - model_regression_test_gpu
+      - deploy_runner_gpu
+      - model_regression_test_gpu
     env:
       GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Performance Drops'
 
@@ -575,8 +618,8 @@ jobs:
     name: Delete Github Runner - GPU
     if: always()
     needs:
-    - deploy_runner_gpu
-    - model_regression_test_gpu
+      - deploy_runner_gpu
+      - model_regression_test_gpu
     runs-on: ubuntu-latest
 
     steps:
