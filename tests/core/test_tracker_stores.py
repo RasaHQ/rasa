@@ -193,6 +193,23 @@ def test_redis_tracker_store_valid_key_prefix(domain: Domain):
     )
 
 
+def test_redis_tracker_store_ssl(domain: Domain):
+    tracker_store = RedisTrackerStore(
+        domain=domain,
+        host="localhost",
+        port=6379,
+        db=0,
+        password="password",
+        record_exp=3000,
+        use_ssl=True,
+        ssl_keyfile="keyfile.key",
+        ssl_certfile="certfile.crt",
+        ssl_ca_certs="my-bundle.ca-bundle",
+    )
+
+    assert isinstance(tracker_store, RedisTrackerStore)
+
+
 def test_exception_tracker_store_from_endpoint_config(
     domain: Domain, monkeypatch: MonkeyPatch, endpoints_path: Text
 ):

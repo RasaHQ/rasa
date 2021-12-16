@@ -311,12 +311,22 @@ class RedisTrackerStore(TrackerStore):
         record_exp: Optional[float] = None,
         key_prefix: Optional[Text] = None,
         use_ssl: bool = False,
+        ssl_keyfile: Optional[Text] = None,
+        ssl_certfile: Optional[Text] = None,
+        ssl_ca_certs: Optional[Text] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
         import redis
 
         self.red = redis.StrictRedis(
-            host=host, port=port, db=db, password=password, ssl=use_ssl
+            host=host,
+            port=port,
+            db=db,
+            password=password,
+            ssl=use_ssl,
+            ssl_keyfile=ssl_keyfile,
+            ssl_certfile=ssl_certfile,
+            ssl_ca_certs=ssl_ca_certs,
         )
         self.record_exp = record_exp
 
