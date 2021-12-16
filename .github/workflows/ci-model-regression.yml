@@ -156,6 +156,7 @@ jobs:
       - name: Get TensorFlow version
         run: |-
           # Read TF version, trim special characters ^~><+
+          set -x
           TF_VERSION=$(grep "tensorflow =" pyproject.toml | sed 's/^[^"]*"\([^"]*\),.*/\1/' | sed 's/[\^~><=]//g')
           # Keep the first 3 characters, e.g. we keep 2.3 if TF_VERSION is 2.3.4
           TF_VERSION=${TF_VERSION::3}
