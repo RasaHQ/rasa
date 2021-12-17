@@ -9,3 +9,4 @@ pipeline:
 - name: "RegexFeaturizer"
 - name: "MitieFeaturizer"
 - name: "SklearnIntentClassifier"
+

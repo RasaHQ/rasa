@@ -1,0 +1,176 @@
+---
+id: deploy-using-rei
+sidebar_label: Deploying a Rasa Assistant using Rasa Ephemeral Installer (REI)
+title: Deploying a Rasa Assistant using Rasa Ephemeral Installer (REI)
+description: Learn how to build a Rasa assistant using REI and Kubernetes.
+---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+<!-- this file is version specific, do not use `@site/...` syntax -->
+import variables from '../variables.json';
+
+:::note
+Are you unfamiliar with Docker, Kubernetes and Helm? Check out "[Understanding Rasa Deployments](https://www.youtube.com/watch?v=aAs_RS0ueEw&list=PL75e0qA87dlHmfmu7oPPYA22fmc6GJ2aW)" on our [YouTube channel](https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ).
+:::
+
+If you would like to deploy Rasa Assistant using the [Rasa OSS Helm chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) on your machine,
+you can use Rasa Ephemeral Installer which installs all tools and creates a local Kubernetes cluster that allows you to use the [Rasa OSS Helm chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa).
+
+We recommend this method as an alternative to docker-compose.
+
+## Create a local Kubernetes cluster via REI
+
+The Rasa Ephemeral Install installs the following tools and creates a local Kubernetes cluster using `kind`.
+
+Tools installed by [REI](https://github.com/RasaHQ/REI):
+
+- [docker](https://www.docker.com/)
+- [kind](https://kind.sigs.k8s.io/)
+- [kubectl](https://kubernetes.io/docs/reference/kubectl/kubectl/)
+- [helm](https://helm.sh/)
+- [rasactl](https://github.com/RasaHQ/rasactl)
+
+1. Simply execute the following command.
+
+  ```text
+  curl -O https://rei.rasa.com/rei.sh && bash rei.sh -y
+  ```
+
+  After a few minutes, all components should be installed and a local Kubernetes cluster created.
+
+  :::tip
+
+  You can use the `kubectl cluster-info` to verify if all is good.
+
+  :::
+
+## Deploy Rasa Open Source Assistant
+
+1. Add the Rasa Helm chart repository to helm.
+
+  ```text
+  helm repo add rasa https://helm.rasa.com
+  helm repo update
+  ```
+
+2. Deploy Rasa Open Source server by using the rasa helm chart.
+
+  ```text
+  helm install --namespace <NAMESPACE> <RELEASE_NAME> rasa/rasa
+  ```
+
+  For example:
+
+  ```text
+  helm install --namespace rasa-oss rasa rasa/rasa
+  ```
+
+  :::tip
+  If a namespace that you'd like to use doesn't exist you can use the `--create-namespace` to create it.
+  :::
+
+## Access Rasa Open Source Assistant
+
+By default the Rasa deployment is exposed via the `rasa` (`<release name>`) service and accessible only within a Kubernetes cluster. You can get the IP address using this command:
+
+```text
+export SERVICE_PORT=$(kubectl get --namespace <your namespace> \
+  -o jsonpath="{.spec.ports[0].port}" services <release name>)
+
+kubectl port-forward --namespace <your namespace> \
+  svc/<release name> ${SERVICE_PORT}:${SERVICE_PORT} &
+```
+
+### Accessing Assistant from your local machine
+
+The example above describe how to access Rasa Open Source Assistant by using `kubectl port-forward`. The other option is to expose your deployment
+on `NodePort` and access it directly.
+
+1. Prepare configuration that switch the rasa service to `NodePort`.
+
+  ```yaml
+  # rasa-values.yaml
+  service:
+    type: "NodePort"
+  ```
+
+2. Upgrade deployment.
+
+  ```text
+  helm upgrade --namespace <NAMESPACE> --reuse-values -f rasa-values.yaml <RELEASE NAME> rasa/rasa
+  ```
+
+3. Get the node port and address for the rasa service
+
+  ```text
+  export NODE_PORT=$(kubectl get --namespace <NAMESPACE> -o jsonpath="{.spec.ports[0].nodePort}" services <RELEASE NAME>)
+
+  $ curl http://127.0.0.1:${NODE_PORT}
+  Hello from Rasa: 2.8.7
+  ```
+
+## Configuration
+
+Prepare an empty file called `rasa-values.yaml` which will include all your custom
+configuration for the installation with Helm.
+
+All available values and more examples you can find in [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#values).
+
+:::note
+The default configuration of the Rasa chart deploys a Rasa Open Source Server, downloads a model, and serves the downloaded model.
+Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#quick-start) to check out more examples of configuration.
+
+:::
+
+### Loading an initial model
+
+The first time you install Rasa, you may not have a model server available yet, or you may want an lightweight model for testing the deployment.
+For this purpose, you can choose between training or downloading an initial model. By default, the Rasa chart downloads an example model from GitHub.
+To use this option, you don't have to change anything.
+
+If you want to define an existing model to download from a URL you define instead, update your `rasa-values.yaml` with the URL according to the following configuration:
+
+  ```yaml
+  # rasa-values.yaml
+  applicationSettings:
+    initialModel: "https://github.com/RasaHQ/rasa-x-demo/blob/master/models/model.tar.gz?raw=true"
+  ```
+:::note
+The URL for the initial model download has to point to a tar.gz file and must not require authentication.
+
+:::
+
+Apply changes by executing the command:
+
+```text
+helm upgrade --reuse-values -f rasa-values.yaml \
+  --namespace <NAMESPACE> <RELEASE_NAME> rasa/rasa
+```
+
+In [the rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) you can find more [options for loading models](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#options-for-loading-models).
+
+### Configuring Channels
+
+You can enable messaging channels by specifying credentials in `rasa-values.yaml` in the same way you would define them in `credentials.yml` when running locally.
+
+For example, to enable the REST channel, update your rasa-values.yaml file with the following channel configuration:
+
+```yaml
+# rasa-values.yaml
+applicationSettings:
+  # (...)
+  credentials:
+    # (...)
+    additionalChannelCredentials:
+      rest:
+```
+
+:::note
+For the rest channel, no credentials are required. To learn more see: https://rasa.com/docs/rasa/connectors/your-own-website)
+:::
+
+## Next steps
+
+- [Learn how to deploy Rasa X / Enterprise](https://rasa.com/docs/rasa-x/installation-and-setup/installation-guide)
+- [Learn how to connect Rasa OSS to Rasa X / Enterprise](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#2-connect-rasa-open-source-deployment-the-rasa-helm-chart)
+- Visit [Rasa OSS Helm chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa)
