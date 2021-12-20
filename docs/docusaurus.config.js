@@ -37,4 +37,10 @@ module.exports = tabula.use({
     textColor: '#fff', // Defaults to `#000`.
     // isCloseable: false, // Defaults to `true`.
   },
+  /* NEW OPTIONS TO CREATE */
+
+  navbarItems: {},
+  footerItems: {},
+  remarkPlugins: [],
+  rehypePlugins: [],
 });

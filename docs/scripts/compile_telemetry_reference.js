@@ -1,10 +1,10 @@
 const fs = require('fs');
-const config = require("../package.json").telemetryReference;
-const eventsSchema = require("../docs/telemetry/events.json");
+const config = require('../package.json').telemetryReference;
+const eventsSchema = require('../docs/telemetry/events.json');
 
 const { writeFile } = fs.promises;
 
-const isFrontendEvent = (event) => event.indexOf(" ") === -1 && event.indexOf(":") !== -1;
+const isFrontendEvent = (event) => event.indexOf(' ') === -1 && event.indexOf(':') !== -1;
 
 const MDX_HEADER = `---
 id: reference
@@ -13,8 +13,8 @@ title: Telemetry Event Reference
 abstract: |
   Event descriptions of telemetry data we report in order to improve our products.
 ---
-Telemetry events are only reported if telemetry is enabled. A detailed explanation 
-on the reasoning behind collecting optional telemetry events can be found in our 
+Telemetry events are only reported if telemetry is enabled. A detailed explanation
+on the reasoning behind collecting optional telemetry events can be found in our
 [telemetry documentation](./telemetry.mdx).
 `;
 
@@ -24,15 +24,18 @@ const renderEventBadge = (event) => {
 };
 
 const renderTelemetryEventDetails = (type, properties) => {
-  const renderEnum = (_enum) => _enum.length ? ` Can be one of: ${_enum.map(e => `\`"${e}"\``).join(', ')}.` : '';
+  const renderEnum = (_enum) =>
+    _enum.length ? ` Can be one of: ${_enum.map((e) => `\`"${e}"\``).join(', ')}.` : '';
 
   switch (type) {
     case 'object':
       return `Event properties:\n
 ${Object.entries(properties)
-  .map(([property, { type, description, enum: _enum = [] }]) => `- \`${property}\` *(${type})*: ${description}${renderEnum(_enum)}`)
-  .join('\n')
-}
+  .map(
+    ([property, { type, description, enum: _enum = [] }]) =>
+      `- \`${property}\` *(${type})*: ${description}${renderEnum(_enum)}`,
+  )
+  .join('\n')}
 `;
     case 'null':
       return '';
@@ -50,16 +53,18 @@ const renderTelemetryEventDescription = (event, schema) => {
   throw new Error(`Missing description for event ${event}`);
 };
 
-const renderTelemetryEvent = (event, schema) => (`
+const renderTelemetryEvent = (event, schema) => `
 ### ${event}
 ${renderEventBadge(event)} ${renderTelemetryEventDescription(event, schema)}
 ${renderTelemetryEventDetails(schema.type, schema.properties)}
-`);
+`;
 
-const renderTelemetrySection = (section, events) => (`
+const renderTelemetrySection = (section, events) => `
 ## ${section}
-${Object.entries(events).map(([event, schema]) => renderTelemetryEvent(event, schema)).join('\n')}
-`);
+${Object.entries(events)
+  .map(([event, schema]) => renderTelemetryEvent(event, schema))
+  .join('\n')}
+`;
 
 /**
     This function is used to write the reference of our telemetry events
@@ -68,7 +73,6 @@ ${Object.entries(events).map(([event, schema]) => renderTelemetryEvent(event, sc
     - outputPath:     where to output the telemetry reference (mdx file)
 */
 async function writeTelemetryReference({ outputPath }) {
-
   const sections = Object.fromEntries(eventsSchema.sections.map((section) => [section, {}]));
   Object.entries(eventsSchema.events).forEach(([event, schema]) => {
     const section = schema.section || eventsSchema.defaultSection;
@@ -79,10 +83,11 @@ async function writeTelemetryReference({ outputPath }) {
   });
 
   // const content = Object.entries(eventsSchema.events).map(([event, schema]) => renderTelemetryEvent(event, schema)).join('\n');
-  const content = Object.entries(sections).map(([section, events]) => renderTelemetrySection(section, events)).join('\n');
+  const content = Object.entries(sections)
+    .map(([section, events]) => renderTelemetrySection(section, events))
+    .join('\n');
   await writeFile(outputPath, `${MDX_HEADER}\n\n${content}`);
-};
-
+}
 
 console.info('Compiling telemetry reference');
 writeTelemetryReference(config);
