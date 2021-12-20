@@ -7,18 +7,11 @@ import CodeBlock from '@theme-init/CodeBlock';
 
 const withLiveEditor = (Component) => {
   return (props) => {
-    const {isClient} = useDocusaurusContext();
+    const { isClient } = useDocusaurusContext();
     const prismTheme = usePrismTheme();
 
     if (props.live) {
-      return (
-        <Playground
-          key={isClient}
-          scope={ReactLiveScope}
-          theme={prismTheme}
-          {...props}
-        />
-      );
+      return <Playground key={isClient} scope={ReactLiveScope} theme={prismTheme} {...props} />;
     }
 
     return <Component {...props} />;

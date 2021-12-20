@@ -24,9 +24,9 @@ const Prototyper = ({
   const [trainingData, setTrainingData] = React.useState({});
   const [pollingIntervalId, setPollingIntervalId] = React.useState(null);
 
-  const [baseUrl, setBaseUrl] = React.useState("");
+  const [baseUrl, setBaseUrl] = React.useState('');
   const [tracker, setTracker] = React.useState({});
-  const [chatState, setChatState] = React.useState("not_trained");
+  const [chatState, setChatState] = React.useState('not_trained');
 
   // FIXME: once we can use `rasa-ui` outside of `rasa-x`, we can remove this
   const insertChatBlockScript = () => {
@@ -56,44 +56,50 @@ const Prototyper = ({
     }
   }, [pollingIntervalId, setPollingIntervalId]);
 
-  const onLiveCodeStart = React.useCallback((name, value) => {
-    setTrainingData((prevTrainingData) => ({...prevTrainingData, [name]: value}));
-  }, [setTrainingData]);
+  const onLiveCodeStart = React.useCallback(
+    (name, value) => {
+      setTrainingData((prevTrainingData) => ({ ...prevTrainingData, [name]: value }));
+    },
+    [setTrainingData],
+  );
 
-  const onLiveCodeChange = React.useCallback((name, value) => {
-    setTrainingData((prevTrainingData) => ({ ...prevTrainingData, [name]: value }));
+  const onLiveCodeChange = React.useCallback(
+    (name, value) => {
+      setTrainingData((prevTrainingData) => ({ ...prevTrainingData, [name]: value }));
 
-    if (chatState === "ready") {
-      clearPollingInterval();
-      setChatState("needs_to_be_retrained");
-      updateChatBlock();
-    }
+      if (chatState === 'ready') {
+        clearPollingInterval();
+        setChatState('needs_to_be_retrained');
+        updateChatBlock();
+      }
 
-    if (!hasStarted) {
-      // track the start here
-      setHasStarted(true);
-      fetch(startPrototyperApi, {
-        method: 'POST',
-        headers: jsonHeaders,
-        body: JSON.stringify({
-          tracking_id: trackingId,
-          editor: 'main',
-        }),
-      });
-    }
-  }, [
-    clearPollingInterval,
-    hasStarted,
-    setHasStarted,
-    trackingId,
-    chatState,
-    setChatState,
-    setTrainingData,
-    jsonHeaders
-  ]);
+      if (!hasStarted) {
+        // track the start here
+        setHasStarted(true);
+        fetch(startPrototyperApi, {
+          method: 'POST',
+          headers: jsonHeaders,
+          body: JSON.stringify({
+            tracking_id: trackingId,
+            editor: 'main',
+          }),
+        });
+      }
+    },
+    [
+      clearPollingInterval,
+      hasStarted,
+      setHasStarted,
+      trackingId,
+      chatState,
+      setChatState,
+      setTrainingData,
+      jsonHeaders,
+    ],
+  );
 
   const trainModel = (trainingData) => {
-    setChatState("training");
+    setChatState('training');
     clearPollingInterval();
 
     fetch(trainModelApi, {
@@ -149,7 +155,7 @@ const Prototyper = ({
       .then((tracker) => {
         setBaseUrl(baseUrl);
         setTracker(tracker);
-        setChatState("ready");
+        setChatState('ready');
       });
   };
 
@@ -167,7 +173,7 @@ const Prototyper = ({
   };
 
   const startFetchingTracker = (baseUrl) => {
-    setChatState("deploying");
+    setChatState('deploying');
     fetchTracker(baseUrl);
 
     const updateIntervalId = setInterval(() => {

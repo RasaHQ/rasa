@@ -6,7 +6,7 @@ export default (function () {
   }
 
   return {
-    onRouteUpdate({location}) {
+    onRouteUpdate({ location }) {
       if (location) {
         setTimeout(() => {
           window.dataLayer.push({

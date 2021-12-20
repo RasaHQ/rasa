@@ -1,9 +1,8 @@
 const path = require('path');
 
-
 // FIXME: this package is copied from
 // https://github.com/facebook/docusaurus/tree/afe9ff91a4247316f0081c9b080655d575298416/packages/docusaurus-theme-live-codeblock/src
-module.exports = function() {
+module.exports = function () {
   return {
     name: 'theme-live-codeblock',
 

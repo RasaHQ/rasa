@@ -9,7 +9,7 @@ const DownloadButton = (props) => {
   return (
     <RasaButton
       onClick={prototyperContext.downloadProject}
-      disabled={prototyperContext.chatState !== "ready"}
+      disabled={prototyperContext.chatState !== 'ready'}
       {...props}
     >
       Download project

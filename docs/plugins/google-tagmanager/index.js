@@ -54,7 +54,7 @@ module.exports = function (context, options) {
           {
             tagName: 'script',
             attributes: {
-              'type': 'opt-in',
+              type: 'opt-in',
               'data-type': 'text/javascript',
               'data-name': 'analytics',
             },
@@ -74,15 +74,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             tagName: 'script',
             attributes: {
               defer: true,
-              src: 'https://assets.rasa.com/scripts/klaro_config.js'
-            }
+              src: 'https://assets.rasa.com/scripts/klaro_config.js',
+            },
           },
           {
             tagName: 'script',
             attributes: {
               defer: true,
-              src: 'https://assets.rasa.com/scripts/klaro.js'
-            }
+              src: 'https://assets.rasa.com/scripts/klaro.js',
+            },
           },
         ],
         preBodyTags: [],
