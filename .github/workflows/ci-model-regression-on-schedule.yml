@@ -79,7 +79,7 @@ jobs:
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -390,7 +390,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure()  && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9  # v3
+        uses: 8398a7/action-slack@c9ff874f8549f97317ec9f6162d5449ee77bc984  # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -586,7 +586,7 @@ jobs:
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9 #v3
+        uses: 8398a7/action-slack@c9ff874f8549f97317ec9f6162d5449ee77bc984 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -624,7 +624,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}

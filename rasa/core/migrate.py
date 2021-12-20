@@ -109,9 +109,12 @@ def _migrate_form_slots(
             required_slots.append(slot_name)
 
         new_forms[form_name] = {
-            IGNORED_INTENTS: ignored_intents,
             REQUIRED_SLOTS_KEY: required_slots,
         }
+
+        if ignored_intents:
+            new_forms[form_name][IGNORED_INTENTS] = ignored_intents
+
     return new_forms, updated_slots
 
 
