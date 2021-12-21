@@ -165,8 +165,12 @@ jobs:
           if [[ ${{ strategy.job-total }} -gt $num_max_replicas ]]; then
             NUM_REPLICAS=$num_max_replicas
           else
-            matrix = ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
-            echo $matrix
+            matrix=${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+            matrix_to_echo2=$(echo $matrix | jq )
+            echo $matrix_to_echo2
+            matrix_to_echo=$(echo $matrix | jq '.[]')
+            echo $matrix_to_echo
+
             NUM_REPLICAS=${{ strategy.job-total }}
           fi
           echo NUM_REPLICAS=$NUM_REPLICAS >> $GITHUB_ENV
