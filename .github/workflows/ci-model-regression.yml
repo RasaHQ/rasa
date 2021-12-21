@@ -193,7 +193,7 @@ jobs:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       ACCELERATOR_TYPE: "GPU"
-    runs-on: [self-hosted, gpu]
+    runs-on: [self-hosted, gpu, "${{ github.run_id }}"]
     strategy:
       max-parallel: 3
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
