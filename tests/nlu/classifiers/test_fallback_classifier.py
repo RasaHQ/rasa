@@ -12,7 +12,7 @@ from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.fallback_classifier import (
     THRESHOLD_KEY,
     AMBIGUITY_THRESHOLD_KEY,
-    FallbackClassifierGraphComponent,
+    FallbackClassifier,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
@@ -29,8 +29,8 @@ def create_fallback_classifier(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
 ):
-    classifier = FallbackClassifierGraphComponent.create(
-        {**FallbackClassifierGraphComponent.get_default_config(), **component_config},
+    classifier = FallbackClassifier.create(
+        {**FallbackClassifier.get_default_config(), **component_config},
         default_model_storage,
         Resource("fallback"),
         default_execution_context,

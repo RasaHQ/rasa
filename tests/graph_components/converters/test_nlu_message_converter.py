@@ -3,6 +3,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.converters.nlu_message_converter import NLUMessageConverter
+from rasa.shared.nlu.constants import TEXT, TEXT_TOKENS
 from rasa.shared.nlu.training_data.message import Message
 
 
@@ -17,12 +18,13 @@ def test_nlu_message_converter_converts_message(
     )
 
     message = UserMessage(text="Hello", metadata=None)
-    nlu_message = component.convert_user_message(message)
+    nlu_message = component.convert_user_message([message])
     assert len(nlu_message) == 1
     assert isinstance(nlu_message[0], Message)
 
     assert nlu_message[0].get("text") == "Hello"
     assert nlu_message[0].get("metadata") is None
+    assert nlu_message[0].output_properties == {TEXT_TOKENS, TEXT}
 
 
 def test_nlu_message_converter_converts_message_with_metadata(
@@ -33,7 +35,7 @@ def test_nlu_message_converter_converts_message_with_metadata(
     )
 
     message = UserMessage(text="Hello", metadata={"test_key": "test_value"})
-    nlu_message = component.convert_user_message(message)
+    nlu_message = component.convert_user_message([message])
     assert len(nlu_message) == 1
     assert isinstance(nlu_message[0], Message)
 
@@ -51,6 +53,5 @@ def test_nlu_message_converter_handles_no_user_message(
         default_execution_context,
     )
 
-    message = None
-    nlu_message = component.convert_user_message(message)
+    nlu_message = component.convert_user_message([])
     assert len(nlu_message) == 0

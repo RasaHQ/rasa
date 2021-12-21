@@ -1,5 +1,5 @@
 # The docs: https://www.notion.so/rasa/The-CI-for-model-regression-tests-92af7185e08e4fb2a0c764770a8e9095
-name: CI - Model Regression
+name: CI - Model Regression on schedule
 
 on:
   schedule:
@@ -57,13 +57,29 @@ jobs:
           curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           chmod 755 gomplate
 
+      - name: Get TensorFlow version
+        run: |-
+          # Read TF version from poetry.lock file
+          pip install toml
+          TF_VERSION=$(scripts/read_tensorflow_version.sh)
+          echo "TensorFlow version: $TF_VERSION"
+          echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
+
+       # Use compatible CUDA/cuDNN with the given TF version
+      - name: Prepare GitHub runner image tag
+        run: |-
+          GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
+          echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
+          echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
+
       - name: Render deployment template
         run: |-
+          export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
           export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -92,8 +108,8 @@ jobs:
     name: Model Regression Tests - GPU
     continue-on-error: true
     needs:
-    - deploy_runner_gpu
-    - read_test_configuration
+      - deploy_runner_gpu
+      - read_test_configuration
     env:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
@@ -102,7 +118,7 @@ jobs:
 
     runs-on: [self-hosted, gpu]
     strategy:
-      max-parallel: 1
+      max-parallel: 3
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
 
     steps:
@@ -149,6 +165,12 @@ jobs:
               && echo "::set-output name=is_config_exists::false" && exit 0)
           fi
 
+          # Skip job if dataset is Hermit and config is BERT + DIET(seq) + ResponseSelector(t2t) or Sparse + BERT + DIET(seq) + ResponseSelector(t2t)
+          if [[ "${{ matrix.dataset }}" == "Hermit" && "${{ matrix.config }}" =~ "BERT + DIET(seq) + ResponseSelector(t2t)" ]]; then
+            echo "::warning::This ${{ matrix.dataset }} dataset / ${{ matrix.config }} config is currently being skipped due to OOM associated with the upgrade to TF 2.6." \
+              && echo "::set-output name=is_config_exists::false" && exit 0
+          fi
+
           # Skip job if a given type is not available for a given dataset
           if [[ -z "${DOMAIN_FILE}" && "${{ matrix.type }}" == "core" ]]; then
             echo "::warning::The ${{ matrix.dataset }} dataset doesn't include core type. Skipping the job." \
@@ -161,8 +183,6 @@ jobs:
           echo "DATASET=${DATASET}" >> $GITHUB_ENV
           echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
           echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
-          echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
-          echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
           echo "EXTERNAL_DATASET_REPOSITORY_BRANCH=${EXTERNAL_DATASET_REPOSITORY_BRANCH}" >> $GITHUB_ENV
           echo "IS_EXTERNAL=${IS_EXTERNAL}" >> $GITHUB_ENV
 
@@ -194,6 +214,19 @@ jobs:
           DATASET_COMMIT=$(git rev-parse HEAD)
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
+
+      - name: Start Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        env:
+          DATASET: "${{ matrix.dataset }}"
+          CONFIG: "${{ matrix.config }}"
+          DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
+          BRANCH: ${{ github.ref }}
+          GITHUB_SHA: "${{ github.sha }}"
+          TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: "main"
+        run: |
+          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
@@ -227,6 +260,10 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
+      - name: Install datadog-api-client
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: poetry run pip install -U datadog-api-client
+
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
@@ -238,7 +275,6 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          TF_DETERMINISTIC_OPS: 1 # Run GPUs in a deterministic mode
         run: |-
           poetry run rasa --version
 
@@ -270,15 +306,6 @@ jobs:
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
 
-      # Download the results of the previous runs
-      # The report file is extended with new results every next job run
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        continue-on-error: true
-        with:
-          name: report.json
-
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
@@ -290,22 +317,31 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
-          PR_URL: ""
           DATASET_REPOSITORY_BRANCH: "main"
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
+          BRANCH: ${{ github.ref }}
+          PR_ID: "${{ github.event.number }}"
+          PR_URL: ""
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.eu
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
-          poetry run python .github/scripts/mr_generate_summary.py
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         uses: actions/upload-artifact@v2
         with:
-          name: report.json
-          path: ./report.json
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          path: report.json
+
+      - name: Stop Datadog Agent
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |
+          sudo service datadog-agent stop
 
       - name: Check duplicate issue
         if: failure()
@@ -354,7 +390,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure()  && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@047b09b154480ed39076984b64f324fff010d703  # v3
+        uses: 8398a7/action-slack@c9ff874f8549f97317ec9f6162d5449ee77bc984  # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -392,13 +428,52 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
+  combine_reports:
+    name: Combine reports
+    runs-on: ubuntu-latest
+    needs:
+      - model_regression_test_gpu
+    if: always() && needs.model_regression_test_gpu.result == 'success'
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.7 🐍
+        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+        with:
+          python-version: 3.7
+
+      - name: Get reports
+        uses: actions/download-artifact@v2
+        with:
+          path: reports/
+
+      - name: Display structure of downloaded files
+        continue-on-error: true
+        run: ls -R
+        working-directory: reports/
+
+      - name: Merge all reports
+        env:
+          SUMMARY_FILE: "./report.json"
+          REPORTS_DIR: "reports/"
+        run: |
+          python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
+
+      - name: Upload an artifact with the overall report
+        uses: actions/upload-artifact@v2
+        with:
+          name: report.json
+          path: ./report.json
+
   analyse_performance:
     name: Analyse Performance
     runs-on: ubuntu-latest
     if: always()
     needs:
-    - deploy_runner_gpu
-    - model_regression_test_gpu
+      - deploy_runner_gpu
+      - model_regression_test_gpu
     env:
       GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Performance Drops'
 
@@ -406,9 +481,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Download an artifact with the results for the schedule version
+      - name: Download report from last on-schedule regression test
         run: |
-          # Get ID of the schedule workflow
+          # Get ID of last on-schedule workflow
           SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
             | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
@@ -511,7 +586,7 @@ jobs:
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@047b09b154480ed39076984b64f324fff010d703 #v3
+        uses: 8398a7/action-slack@c9ff874f8549f97317ec9f6162d5449ee77bc984 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -543,13 +618,13 @@ jobs:
     name: Delete Github Runner - GPU
     if: always()
     needs:
-    - deploy_runner_gpu
-    - model_regression_test_gpu
+      - deploy_runner_gpu
+      - model_regression_test_gpu
     runs-on: ubuntu-latest
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}

@@ -1,6 +1,7 @@
+import itertools
 import logging
 from collections import defaultdict
-from typing import Set, Text, Optional, Dict, Any
+from typing import Set, Text, Optional, Dict, Any, List
 
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
@@ -9,15 +10,24 @@ from rasa.shared.constants import (
     DOCS_URL_FORMS,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
+    REQUIRED_SLOTS_KEY,
 )
-from rasa.shared.core.domain import Domain
+from rasa.shared.core import constants
+from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
 from rasa.shared.core.events import ActionExecuted, ActiveLoop
 from rasa.shared.core.events import UserUttered
+from rasa.shared.core.domain import (
+    KEY_INTENTS,
+    KEY_RESPONSES,
+    KEY_SLOTS,
+    KEY_FORMS,
+    Domain,
+)
 from rasa.shared.core.generator import TrainingDataGenerator
+from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -44,7 +54,6 @@ class Validator:
         self.domain = domain
         self.intents = intents
         self.story_graph = story_graph
-        self.nlu_config = RasaNLUModelConfig(config)
 
     @classmethod
     def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
@@ -56,15 +65,22 @@ class Validator:
 
         return cls(domain, intents, story_graph, config)
 
+    def _non_default_intents(self) -> List[Text]:
+        return [
+            item
+            for item in self.domain.intents
+            if item not in constants.DEFAULT_INTENTS
+        ]
+
     def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
         everything_is_alright = True
 
         nlu_data_intents = {e.data["intent"] for e in self.intents.intent_examples}
 
-        for intent in self.domain.intents:
+        for intent in self._non_default_intents():
             if intent not in nlu_data_intents:
-                logger.debug(
+                rasa.shared.utils.io.raise_warning(
                     f"The intent '{intent}' is listed in the domain file, but "
                     f"is not found in the NLU training data."
                 )
@@ -132,9 +148,11 @@ class Validator:
                 )
                 everything_is_alright = False
 
-        for intent in self.domain.intents:
+        for intent in self._non_default_intents():
             if intent not in stories_intents:
-                logger.debug(f"The intent '{intent}' is not used in any story.")
+                rasa.shared.utils.io.raise_warning(
+                    f"The intent '{intent}' is not used in any story or rule."
+                )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -193,7 +211,9 @@ class Validator:
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                logger.debug(f"The utterance '{utterance}' is not used in any story.")
+                rasa.shared.utils.io.raise_warning(
+                    f"The utterance '{utterance}' is not used in any story or rule."
+                )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -281,7 +301,7 @@ class Validator:
 
         # Create a list of `StoryConflict` objects
         conflicts = rasa.core.training.story_conflict.find_story_conflicts(
-            trackers, self.domain, max_history, self.nlu_config
+            trackers, self.domain, max_history,
         )
 
         if not conflicts:
@@ -307,14 +327,40 @@ class Validator:
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
         return intents_are_valid and stories_are_valid and there_is_no_duplication
 
+    def verify_domain_duplicates(self) -> bool:
+        """Verifies that there are no duplicated dictionaries in multiple domain files.
+
+        Returns:
+            `True` if duplicates exist.
+        """
+        logger.info("Checking duplicates across domain files...")
+
+        all_valid = True
+
+        if not self.domain.duplicates:
+            return True
+
+        for key in [KEY_INTENTS, KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            duplicates = self.domain.duplicates.get(key)
+            if duplicates:
+                duplicates_str = ", ".join(duplicates)
+                rasa.shared.utils.io.raise_warning(
+                    f"The following duplicated {key} has been found "
+                    + f"across multiple domain files: {duplicates_str}",
+                    docs=DOCS_URL_DOMAINS,
+                )
+                all_valid = False
+
+        return all_valid
+
     def verify_form_slots(self) -> bool:
         """Verifies that form slots match the slot mappings in domain."""
         domain_slot_names = [slot.name for slot in self.domain.slots]
         everything_is_alright = True
 
         for form in self.domain.form_names:
-            form_slots = self.domain.slot_mapping_for_form(form)
-            for slot in form_slots.keys():
+            form_slots = self.domain.required_slots_for_form(form)
+            for slot in form_slots:
                 if slot in domain_slot_names:
                     continue
                 else:
@@ -323,6 +369,56 @@ class Validator:
                         f"is not present in the domain slots."
                         f"Please add the correct slot or check for typos.",
                         docs=DOCS_URL_DOMAINS,
+                    )
+                    everything_is_alright = False
+
+        return everything_is_alright
+
+    def verify_slot_mappings(self) -> bool:
+        """Verifies that slot mappings match forms."""
+        everything_is_alright = True
+
+        all_form_slots = [
+            required_slots[REQUIRED_SLOTS_KEY]
+            for required_slots in self.domain.forms.values()
+        ]
+        all_required_slots = set(itertools.chain.from_iterable(all_form_slots))
+
+        for slot in self.domain.slots:
+            for mapping in slot.mappings:
+                for condition in mapping.get(MAPPING_CONDITIONS, []):
+                    condition_active_loop = condition.get(ACTIVE_LOOP)
+                    if (
+                        condition_active_loop
+                        and condition_active_loop not in self.domain.form_names
+                    ):
+                        rasa.shared.utils.io.raise_warning(
+                            f"Slot '{slot.name}' has a mapping condition for form "
+                            f"'{condition_active_loop}' which is not listed in "
+                            f"domain forms. Please add this form to the forms section "
+                            f"or check for typos."
+                        )
+                        everything_is_alright = False
+
+                    form_slots = self.domain.forms.get(condition_active_loop, {}).get(
+                        REQUIRED_SLOTS_KEY, {}
+                    )
+                    if form_slots and slot.name not in form_slots:
+                        rasa.shared.utils.io.raise_warning(
+                            f"Slot '{slot.name}' has a mapping condition for form "
+                            f"'{condition_active_loop}', but it's not present in "
+                            f"'{condition_active_loop}' form's '{REQUIRED_SLOTS_KEY}'. "
+                            f"The slot needs to be added to this key."
+                        )
+                        everything_is_alright = False
+
+                if (
+                    mapping.get("type") == str(SlotMapping.FROM_TRIGGER_INTENT)
+                    and slot.name not in all_required_slots
+                ):
+                    rasa.shared.utils.io.raise_warning(
+                        f"Slot '{slot.name}' has a 'from_trigger_intent' mapping, "
+                        f"but it's not listed in any form '{REQUIRED_SLOTS_KEY}'."
                     )
                     everything_is_alright = False
 

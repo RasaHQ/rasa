@@ -4,6 +4,7 @@ import importlib.util
 import logging
 from multiprocessing.process import BaseProcess
 from multiprocessing import get_context
+from packaging import version
 import os
 import signal
 import sys
@@ -78,7 +79,7 @@ def _rasa_service(
     from rasa.core.run import serve_application
 
     # needs separate logging configuration as it is started in its own process
-    rasa.utils.common.set_log_level(args.loglevel)
+    rasa.utils.common.configure_logging_and_warnings(args.loglevel)
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
     if not credentials_path:
@@ -249,7 +250,7 @@ def generate_rasa_x_token(length: int = 16) -> Text:
 
 def _configure_logging(args: argparse.Namespace) -> None:
     from rasa.core.utils import configure_file_logging
-    from rasa.utils.common import set_log_level
+    from rasa.utils.common import configure_logging_and_warnings
 
     log_level = args.loglevel or DEFAULT_LOG_LEVEL_RASA_X
 
@@ -259,8 +260,10 @@ def _configure_logging(args: argparse.Namespace) -> None:
     logging.basicConfig(level=log_level)
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
-    set_log_level(log_level)
-    configure_file_logging(logging.root, args.log_file)
+    configure_logging_and_warnings(
+        log_level, warn_only_once=False, filter_repeated_logs=False
+    )
+    configure_file_logging(logging.root, args.log_file, False)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)
@@ -349,6 +352,14 @@ def rasa_x(args: argparse.Namespace) -> None:
 
     _configure_logging(args)
 
+    if version.parse(rasa.version.__version__) >= version.parse("3.0.0"):
+        rasa.shared.utils.io.raise_warning(
+            f"Your version of rasa '{rasa.version.__version__}' is currently "
+            f"not supported by Rasa X. Running `rasa x` CLI command with rasa "
+            f"version higher or equal to 3.0.0 will result in errors.",
+            UserWarning,
+        )
+
     if args.production:
         run_in_production(args)
     else:
@@ -433,7 +444,7 @@ def _get_credentials_and_endpoints_paths(
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
-        endpoints_config_path, credentials_path = rasa.utils.common.run_in_loop(
+        endpoints_config_path, credentials_path = asyncio.run(
             _pull_runtime_config_from_server(config_endpoint)
         )
 

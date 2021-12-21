@@ -128,29 +128,6 @@ async def test_console_input():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-def test_facebook_channel():
-    # START DOC INCLUDE
-    from rasa.core.channels.facebook import FacebookInput
-
-    input_channel = FacebookInput(
-        fb_verify="YOUR_FB_VERIFY",
-        # you need tell facebook this token, to confirm your URL
-        fb_secret="YOUR_FB_SECRET",  # your app secret
-        fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"
-        # token for the page you subscribed to
-    )
-
-    s = rasa.core.run.configure_app([input_channel], port=5004)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    routes_list = utils.list_routes(s)
-
-    assert routes_list["fb_webhook.health"].startswith("/webhooks/facebook")
-    assert routes_list["fb_webhook.webhook"].startswith("/webhooks/facebook/webhook")
-
-
-# USED FOR DOCS - don't rename without changing in the docs
 def test_webexteams_channel():
     # START DOC INCLUDE
     from rasa.core.channels.webexteams import WebexTeamsInput
@@ -596,7 +573,9 @@ def test_register_channel_without_route():
     rasa.core.channels.channel.register([input_channel], app, route=None)
 
     routes_list = utils.list_routes(app)
-    assert routes_list["custom_webhook_RestInput.receive"].startswith("/webhook")
+    assert routes_list[
+        "tests.core.test_channels.custom_webhook_RestInput.receive"
+    ].startswith("/webhook")
 
 
 def test_channel_registration_with_absolute_url_prefix_overwrites_route():
@@ -616,8 +595,12 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     # Assure that an absolute url returned by `url_prefix` overwrites route parameter
     # given in `register`.
     routes_list = utils.list_routes(app)
-    assert routes_list["custom_webhook_RestInput.health"].startswith(test_route)
-    assert ignored_base_route not in routes_list.get("custom_webhook_RestInput.health")
+    assert routes_list[
+        "tests.core.test_channels.custom_webhook_RestInput.health"
+    ].startswith(test_route)
+    assert ignored_base_route not in routes_list.get(
+        "tests.core.test_channels.custom_webhook_RestInput.health"
+    )
 
 
 @pytest.mark.parametrize(

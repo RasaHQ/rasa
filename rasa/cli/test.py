@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 from typing import List, Optional, Text, Dict, Union, Any
+import asyncio
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
@@ -21,7 +22,6 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
-    DEFAULT_DOMAIN_PATH,
 )
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
@@ -92,7 +92,7 @@ def _print_core_test_execution_info(args: argparse.Namespace) -> None:
         )
 
 
-def run_core_test(args: argparse.Namespace) -> None:
+async def run_core_test_async(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.model_testing import (
         test_core_models_in_directory,
@@ -126,11 +126,11 @@ def run_core_test(args: argparse.Namespace) -> None:
         )
 
         if args.evaluate_model_directory:
-            test_core_models_in_directory(
+            await test_core_models_in_directory(
                 args.model, stories, output, use_conversation_test_files=args.e2e
             )
         else:
-            test_core(
+            await test_core(
                 model=model_path,
                 stories=stories,
                 output=output,
@@ -139,7 +139,7 @@ def run_core_test(args: argparse.Namespace) -> None:
             )
 
     else:
-        test_core_models(
+        await test_core_models(
             args.model, stories, output, use_conversation_test_files=args.e2e
         )
 
@@ -155,6 +155,7 @@ async def run_nlu_test_async(
     percentages: List[int],
     runs: int,
     no_errors: bool,
+    domain_path: Text,
     all_args: Dict[Text, Any],
 ) -> None:
     """Runs NLU tests.
@@ -171,6 +172,7 @@ async def run_nlu_test_async(
                           or not.
         percentages: defines the exclusion percentage of the training data.
         runs: number of comparison runs to make.
+        domain_path: path to domain.
         no_errors: indicates if incorrect predictions should be written to a file
                    or not.
     """
@@ -182,7 +184,7 @@ async def run_nlu_test_async(
 
     data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
+        training_data_paths=[data_path], domain_path=domain_path,
     )
     nlu_data = test_data_importer.get_nlu_data()
 
@@ -227,13 +229,13 @@ async def run_nlu_test_async(
         config_importer = TrainingDataImporter.load_from_dict(config_path=config)
 
         config_dict = config_importer.get_config()
-        perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
+        await perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
     else:
         model_path = rasa.cli.utils.get_validated_path(
             models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        test_nlu(model_path, data_path, output, all_args)
+        await test_nlu(model_path, data_path, output, all_args)
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
@@ -242,7 +244,8 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     Args:
         args: the parsed CLI arguments for 'rasa test nlu'.
     """
-    rasa.utils.common.run_in_loop(
+
+    asyncio.run(
         run_nlu_test_async(
             args.config,
             args.nlu,
@@ -252,9 +255,19 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             args.percentages,
             args.runs,
             args.no_errors,
+            args.domain,
             vars(args),
         )
     )
+
+
+def run_core_test(args: argparse.Namespace) -> None:
+    """Runs Core tests.
+
+    Args:
+        args: the parsed CLI arguments for 'rasa test core'.
+    """
+    asyncio.run(run_core_test_async(args))
 
 
 def test(args: argparse.Namespace) -> None:

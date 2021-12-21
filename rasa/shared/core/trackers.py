@@ -31,6 +31,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     ENTITIES,
+    METADATA_MODEL_ID,
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -57,7 +58,6 @@ from rasa.shared.core.events import (
     ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
-    EntitiesAdded,
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
@@ -115,7 +115,7 @@ class AnySlotDict(dict):
     e.g. properly featurizing the slot."""
 
     def __missing__(self, key: Text) -> Slot:
-        value = self[key] = Slot(key)
+        value = self[key] = Slot(key, mappings=[])
         return value
 
     def __contains__(self, key: Text) -> bool:
@@ -220,6 +220,9 @@ class DialogueStateTracker:
         self.latest_bot_utterance = None
         self._reset()
         self.active_loop: "TrackerActiveLoop" = {}
+
+        # Optional model_id to add to all events.
+        self.model_id: Optional[Text] = None
 
     ###
     # Public tracker interface
@@ -641,21 +644,11 @@ class DialogueStateTracker:
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
 
+        if self.model_id and METADATA_MODEL_ID not in event.metadata:
+            event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
+
         self.events.append(event)
         event.apply_to(self)
-
-        if domain and isinstance(event, (UserUttered, EntitiesAdded)):
-            if isinstance(event, UserUttered):
-                # Rather get entities from `parse_data` as
-                # `DefinePrevUserUtteredEntities` might have already affected the
-                # `UserUttered.entities` attribute (this might e.g. happen when the
-                # `InMemoryTrackerStore` is used).
-                entities = event.parse_data[ENTITIES]
-            else:
-                entities = event.entities
-
-            for e in domain.slots_for_entities(entities):
-                self.update(e)
 
     def update_with_events(
         self,

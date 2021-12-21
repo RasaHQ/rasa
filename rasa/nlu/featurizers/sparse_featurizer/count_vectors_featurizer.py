@@ -2,14 +2,15 @@ from __future__ import annotations
 import logging
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set
+from typing import Any, Dict, List, Optional, Text, Tuple, Set, Type
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer2
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
@@ -28,19 +29,16 @@ from rasa.shared.nlu.constants import (
     INTENT_RESPONSE_KEY,
     ACTION_NAME,
 )
-from rasa.nlu.featurizers.sparse_featurizer._count_vectors_featurizer import (
-    CountVectorsFeaturizer,
-)
-
-# TODO: remove after all references to old featurizer have been removed
-CountVectorsFeaturizer = CountVectorsFeaturizer
 
 BUFFER_SLOTS_PREFIX = "buf_"
 
 logger = logging.getLogger(__name__)
 
 
-class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
+@DefaultV1Recipe.register(
+    DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=True
+)
+class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
     All tokens which consist only of digits (e.g. 123 and 99
@@ -51,11 +49,16 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     from https://arxiv.org/abs/1810.07150.
     """
 
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return [Tokenizer]
+
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """Returns the component's default config."""
         return {
-            **SparseFeaturizer2.get_default_config(),
+            **SparseFeaturizer.get_default_config(),
             # whether to use a shared vocab
             "use_shared_vocab": False,
             # the parameters are taken from
@@ -231,7 +234,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> CountVectorsFeaturizerGraphComponent:
+    ) -> CountVectorsFeaturizer:
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -602,19 +605,19 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
             return [], []
 
     def train(
-        self, training_data: TrainingData, spacy_nlp: Optional[SpacyModel] = None,
+        self, training_data: TrainingData, model: Optional[SpacyModel] = None,
     ) -> Resource:
         """Trains the featurizer.
 
         Take parameters from config and
         construct a new count vectorizer using the sklearn framework.
         """
-        if spacy_nlp is not None:
+        if model is not None:
             # create spacy lemma_ for OOV_words
             self.OOV_words = [
                 t.lemma_ if self.use_lemma else t.text
                 for w in self.OOV_words
-                for t in spacy_nlp.model(w)
+                for t in model.model(w)
             ]
 
         # process sentences and collect data for all attributes
@@ -785,7 +788,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> CountVectorsFeaturizerGraphComponent:
+    ) -> CountVectorsFeaturizer:
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_dir:
@@ -824,7 +827,7 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                 return ftr
 
         except (ValueError, FileNotFoundError, FileIOException):
-            logger.warning(
+            logger.debug(
                 f"Failed to load `{cls.__class__.__name__}` from model storage. "
                 f"Resource '{resource.name}' doesn't exist."
             )
@@ -838,11 +841,4 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        pass
-
-    @classmethod
-    def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
-    ) -> None:
-        """Validates that the featurizer is compatible with the given tokenizer."""
         pass

@@ -5,7 +5,7 @@ import pytest
 from rasa.shared.nlu.constants import TEXT, SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLReader
 
 
@@ -221,7 +221,7 @@ def test_convert_tags_to_entities(
     tags: Dict[Text, List[Text]],
     confidences: Dict[Text, List[float]],
     expected_entities: List[Dict[Text, Any]],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     extractor = EntityExtractorMixin()
 
@@ -396,7 +396,7 @@ def test_split_entities_by_comma(
     tags: Dict[Text, List[Text]],
     confidences: Dict[Text, List[float]],
     expected_entities: List[Dict[Text, Any]],
-    whitespace_tokenizer: WhitespaceTokenizerGraphComponent,
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     extractor = EntityExtractorMixin()
 
@@ -419,7 +419,7 @@ def test_split_entities_by_comma(
     "text, warnings",
     [
         (
-            'version: "2.0"\n'
+            'version: "3.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -427,7 +427,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            'version: "2.0"\n'
+            'version: "3.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -435,7 +435,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            'version: "2.0"\n'
+            'version: "3.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -444,7 +444,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            'version: "2.0"\n'
+            'version: "3.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -453,7 +453,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            'version: "2.0"\n'
+            'version: "3.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -464,7 +464,7 @@ def test_split_entities_by_comma(
     ],
 )
 def test_check_correct_entity_annotations(
-    text: Text, warnings: int, whitespace_tokenizer: WhitespaceTokenizerGraphComponent
+    text: Text, warnings: int, whitespace_tokenizer: WhitespaceTokenizer
 ):
     reader = RasaYAMLReader()
 

@@ -124,7 +124,11 @@ class Cacheable(Protocol):
 
     @classmethod
     def from_cache(
-        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+        cls,
+        node_name: Text,
+        directory: Path,
+        model_storage: ModelStorage,
+        output_fingerprint: Text,
     ) -> Cacheable:
         """Loads `Cacheable` from cache.
 
@@ -133,6 +137,9 @@ class Cacheable(Protocol):
             directory: Directory containing the persisted `Cacheable`.
             model_storage: The current model storage (e.g. used when restoring
                 `Resource` objects so that they can fill the model storage with data).
+            output_fingerprint: The fingerprint of the cached result (e.g. used when
+                restoring `Resource` objects as the fingerprint can not be easily
+                calculated from the object itself).
 
         Returns:
             Instantiated `Cacheable`.
@@ -162,13 +169,12 @@ class LocalTrainingCache(TrainingCache):
 
         The `Cache` setting can be configured via environment variables.
         """
-        self._cache_location = Path(
-            os.environ.get(CACHE_LOCATION_ENV, DEFAULT_CACHE_LOCATION)
-        )
+        self._cache_location = LocalTrainingCache._get_cache_location()
 
         self._max_cache_size = float(
             os.environ.get(CACHE_SIZE_ENV, DEFAULT_CACHE_SIZE_MB)
         )
+
         self._cache_database_name = os.environ.get(
             CACHE_DB_NAME_ENV, DEFAULT_CACHE_NAME
         )
@@ -183,6 +189,10 @@ class LocalTrainingCache(TrainingCache):
         self._sessionmaker = self._create_database()
 
         self._drop_cache_entries_from_incompatible_versions()
+
+    @staticmethod
+    def _get_cache_location() -> Path:
+        return Path(os.environ.get(CACHE_LOCATION_ENV, DEFAULT_CACHE_LOCATION))
 
     def _create_database(self) -> sqlalchemy.orm.sessionmaker:
         if self._is_disabled():
@@ -297,16 +307,18 @@ class LocalTrainingCache(TrainingCache):
         # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this
         # leads to errors on Windows when the context manager tries to delete an
         # already deleted temporary directory (e.g. https://bugs.python.org/issue29982)
-        with rasa.model.TempDirectoryPath(tempfile.mkdtemp()) as temp_dir:
+        with rasa.utils.common.TempDirectoryPath(tempfile.mkdtemp()) as temp_dir:
             tmp_path = Path(temp_dir)
             try:
 
                 output.to_cache(tmp_path, model_storage)
 
-                logger.debug(f"Caching output of type '{type(output)}' succeeded.")
+                logger.debug(
+                    f"Caching output of type '{type(output).__name__}' succeeded."
+                )
             except Exception as e:
                 logger.error(
-                    f"Caching output of type '{type(output)}' failed with the "
+                    f"Caching output of type '{type(output).__name__}' failed with the "
                     f"following error:\n{e}"
                 )
                 return None, None
@@ -314,7 +326,7 @@ class LocalTrainingCache(TrainingCache):
             output_size = rasa.utils.common.directory_size_in_mb(tmp_path)
             if output_size > self._max_cache_size:
                 logger.debug(
-                    f"Caching result of type '{type(output)}' was skipped "
+                    f"Caching result of type '{type(output).__name__}' was skipped "
                     f"because it exceeds the maximum cache size of "
                     f"{self._max_cache_size} MiB."
                 )
@@ -402,7 +414,11 @@ class LocalTrainingCache(TrainingCache):
             return None
 
         return self._load_from_cache(
-            result_location, result_type, node_name, model_storage
+            result_location,
+            result_type,
+            node_name,
+            model_storage,
+            output_fingerprint_key,
         )
 
     def _get_cached_result(
@@ -429,6 +445,7 @@ class LocalTrainingCache(TrainingCache):
         result_type: Text,
         node_name: Text,
         model_storage: ModelStorage,
+        output_fingerprint_key: Text,
     ) -> Optional[Cacheable]:
         try:
             module = rasa.shared.utils.common.class_from_module_path(result_type)
@@ -441,7 +458,9 @@ class LocalTrainingCache(TrainingCache):
                 )
                 return None
 
-            return module.from_cache(node_name, path_to_cached, model_storage)
+            return module.from_cache(
+                node_name, path_to_cached, model_storage, output_fingerprint_key
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to restore cached output of type '{result_type}' from "

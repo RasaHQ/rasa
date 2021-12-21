@@ -11,6 +11,10 @@ import fakeredis
 import freezegun
 import pytest
 
+from rasa.core.actions.action import ActionExtractSlots
+from rasa.core.channels import CollectingOutputChannel
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+from rasa.core.training import load_data
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core import training
@@ -72,7 +76,11 @@ from tests.core.utilities import (
     get_tracker,
 )
 
-from rasa.shared.nlu.constants import ACTION_NAME, PREDICTED_CONFIDENCE_KEY
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    METADATA_MODEL_ID,
+    PREDICTED_CONFIDENCE_KEY,
+)
 
 test_domain = Domain.load("data/test_moodbot/domain.yml")
 
@@ -312,7 +320,7 @@ def test_get_latest_entity_values(
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
-def test_tracker_update_slots_with_entity(domain: Domain):
+async def test_tracker_update_slots_with_entity(domain: Domain):
     tracker = DialogueStateTracker("default", domain.slots)
 
     test_entity = domain.entities[0]
@@ -335,6 +343,15 @@ def test_tracker_update_slots_with_entity(domain: Domain):
         ),
         domain,
     )
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(events, domain)
 
     assert tracker.get_slot(test_entity) == expected_slot_value
 
@@ -519,7 +536,7 @@ def _load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueState
 def test_dump_and_restore_as_json(
     default_agent: Agent, tmp_path: Path, stories_path: Text
 ):
-    trackers = default_agent.load_data(stories_path)
+    trackers = load_data(stories_path, default_agent.domain)
 
     for tracker in trackers:
         out_path = tmp_path / "dumped_tracker.json"
@@ -743,7 +760,7 @@ def test_tracker_does_not_modify_slots(
     slot_type: Type[Slot], initial_value: Any, value_to_set: Any
 ):
     slot_name = "some-slot"
-    slot = slot_type(slot_name, initial_value)
+    slot = slot_type(slot_name, mappings=[{}], initial_value=initial_value)
     tracker = DialogueStateTracker("some-conversation-id", [slot])
 
     # change the slot value in the tracker
@@ -1359,21 +1376,27 @@ def test_policy_prediction_reflected_in_tracker_state():
     assert tracker.latest_message.parse_data["entities"] == nlu_entities
 
 
-def test_autofill_slots_for_policy_entities():
+async def test_fill_slots_for_policy_entities():
     policy_entity, policy_entity_value = "policy_entity", "end-to-end"
     nlu_entity, nlu_entity_value = "nlu_entity", "nlu rocks"
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "2.0"
+            version: "3.0"
             entities:
             - {nlu_entity}
             - {policy_entity}
             slots:
                 {nlu_entity}:
                     type: text
+                    mappings:
+                    - type: from_entity
+                      entity: {nlu_entity}
                 {policy_entity}:
                     type: text
+                    mappings:
+                    - type: from_entity
+                      entity: {policy_entity}
             """
         )
     )
@@ -1399,10 +1422,6 @@ def test_autofill_slots_for_policy_entities():
         slots=domain.slots,
     )
 
-    # Slots are correctly set
-    assert tracker.slots[nlu_entity].value == nlu_entity_value
-    assert tracker.slots[policy_entity].value == policy_entity_value
-
     expected_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(
@@ -1414,8 +1433,6 @@ def test_autofill_slots_for_policy_entities():
                 {"entity": policy_entity, "value": policy_entity_value},
             ],
         ),
-        # SlotSet event added for entity predicted by NLU
-        SlotSet(nlu_entity, nlu_entity_value),
         DefinePrevUserUtteredFeaturization(True),
         EntitiesAdded(
             entities=[
@@ -1423,19 +1440,30 @@ def test_autofill_slots_for_policy_entities():
                 {"entity": nlu_entity, "value": nlu_entity_value},
             ]
         ),
-        # SlotSet event added for entity predicted by policies
-        # This event is somewhat duplicate. We don't deduplicate as this is a true
-        # reflection of the given events and it doesn't change the actual state.
         SlotSet(nlu_entity, nlu_entity_value),
         SlotSet(policy_entity, policy_entity_value),
     ]
+
+    action_extract_slots = ActionExtractSlots(action_endpoint=None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    tracker.update_with_events(events, domain)
+
+    # Slots are correctly set
+    assert tracker.slots[nlu_entity].value == nlu_entity_value
+    assert tracker.slots[policy_entity].value == policy_entity_value
 
     for actual, expected in zip(tracker.events, expected_events):
         assert actual == expected
 
 
 def test_tracker_fingerprinting_consistency():
-    slot = TextSlot(name="name", influence_conversation=True)
+    slot = TextSlot(name="name", mappings=[{}], influence_conversation=True)
     slot.value = "example"
     tr1 = DialogueStateTracker("test_sender_id", slots=[slot])
     tr2 = DialogueStateTracker("test_sender_id", slots=[slot])
@@ -1445,7 +1473,7 @@ def test_tracker_fingerprinting_consistency():
 
 
 def test_tracker_unique_fingerprint(domain: Domain):
-    slot = TextSlot(name="name", influence_conversation=True)
+    slot = TextSlot(name="name", mappings=[{}], influence_conversation=True)
     slot.value = "example"
     tr = DialogueStateTracker("test_sender_id", slots=[slot])
     f1 = tr.fingerprint()
@@ -1453,7 +1481,7 @@ def test_tracker_unique_fingerprint(domain: Domain):
     event1 = UserUttered(
         text="hello",
         parse_data={
-            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+            "intent": {"name": "greet", "confidence": 0.9604260921478271},
             "entities": [
                 {"entity": "city", "value": "London"},
                 {"entity": "count", "value": 1},
@@ -1462,9 +1490,9 @@ def test_tracker_unique_fingerprint(domain: Domain):
             "message_id": "3f4c04602a4947098c574b107d3ccc59",
             "metadata": {},
             "intent_ranking": [
-                {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
-                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748},
-                {"id": 0, "name": "deny", "confidence": 0.011255578137934208},
+                {"name": "greet", "confidence": 0.9604260921478271},
+                {"name": "goodbye", "confidence": 0.01835782080888748},
+                {"name": "deny", "confidence": 0.011255578137934208},
             ],
         },
     )
@@ -1497,7 +1525,7 @@ def test_tracker_fingerprint_story_reading(domain: Domain):
             else:
                 events.append(evts)
 
-        slot = TextSlot(name="name", influence_conversation=True)
+        slot = TextSlot(name="name", mappings=[{}], influence_conversation=True)
         slot.value = "example"
 
         tracker = DialogueStateTracker.from_events("sender_id", events, [slot])
@@ -1512,3 +1540,18 @@ def test_tracker_fingerprint_story_reading(domain: Domain):
     f2 = tracker2.fingerprint()
 
     assert f1 == f2
+
+
+def test_model_id_is_added_to_events():
+    tracker = DialogueStateTracker("bloop", [])
+    tracker.model_id = "some_id"
+    tracker.update(ActionExecuted())
+    tracker.update_with_events([UserUttered(), SessionStarted()], None)
+    assert all(e.metadata[METADATA_MODEL_ID] == "some_id" for e in tracker.events)
+
+
+def test_model_id_is_not_added_to_events_with_id():
+    tracker = DialogueStateTracker("bloop", [])
+    tracker.model_id = "some_id"
+    tracker.update(ActionExecuted(metadata={METADATA_MODEL_ID: "old_id"}))
+    assert tracker.events[-1].metadata[METADATA_MODEL_ID] == "old_id"

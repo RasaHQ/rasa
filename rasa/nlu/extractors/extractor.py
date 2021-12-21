@@ -29,11 +29,6 @@ from rasa.shared.nlu.constants import (
 )
 import rasa.utils.train_utils
 
-from rasa.nlu.extractors._extractor import EntityExtractor
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-EntityExtractor = EntityExtractor
-
 
 class EntityTagSpec(NamedTuple):
     """Specification of an entity tag present in the training data."""

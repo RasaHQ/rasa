@@ -24,9 +24,9 @@ def test_rasa_file_importer(project: Text):
 
     domain = importer.get_domain()
     assert len(domain.intents) == 7 + len(DEFAULT_INTENTS)
-    assert domain.slots == [AnySlot(SESSION_START_METADATA_SLOT)]
+    assert domain.slots == [AnySlot(SESSION_START_METADATA_SLOT, mappings=[{}])]
     assert domain.entities == []
-    assert len(domain.action_names_or_texts) == 18
+    assert len(domain.action_names_or_texts) == 19
     assert len(domain.responses) == 6
 
     stories = importer.get_stories()
@@ -37,7 +37,7 @@ def test_rasa_file_importer(project: Text):
 
     nlu_data = importer.get_nlu_data("en")
     assert len(nlu_data.intents) == 7
-    assert len(nlu_data.intent_examples) == 69
+    assert len(nlu_data.intent_examples) == 68
 
 
 def test_read_conversation_tests(project: Text):

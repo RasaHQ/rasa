@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3.0"
 
 intents:
   - greet
@@ -19,24 +19,45 @@ slots:
   object_type:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: object_type
   mention:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: mention
   attribute:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: attribute
   hotel:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: hotel
   restaurant:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: restaurant
   city:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: city
   cuisine:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: cuisine
 
 actions:
 - action_query_knowledge_base

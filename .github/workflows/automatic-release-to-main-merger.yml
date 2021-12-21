@@ -5,6 +5,8 @@ on:
   pull_request:
     branches:
     - '[0-9]+.[0-9]+.x'
+    # Don't merge 2.8.x into main
+    - '!2.8.x'
 
     types:
     # means that the PR is closed, we still have to check if it was merged
@@ -80,7 +82,7 @@ jobs:
 
       - name: Create new branch 🐣
         if: always()
-        uses: peterjgrainger/action-create-branch@385b67cce679227d7470f00ce18d7a64405a18f1
+        uses: peterjgrainger/action-create-branch@6077a814b288c2b02107e92c5fe3ea28d85a8ecf
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -88,7 +90,7 @@ jobs:
 
       - name: Open pull request ☄️
         if: always()
-        uses: repo-sync/pull-request@65194d8015be7624d231796ddee1cd52a5023cb3
+        uses: repo-sync/pull-request@5ba2c80b97c87b9174c1548141b7acd80f6376e1
         with:
           # using this token to make sure it triggers other actions
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}

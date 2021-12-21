@@ -47,7 +47,7 @@ def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunR
     )
 
     simple_test_story_yaml = """
-version: "2.0"
+version: "3.0"
 stories:
 - story: unlikely path
   steps:
@@ -161,7 +161,7 @@ def test_test_nlu_cross_validation_with_autoconfig(
     nlu_path = str(testdir.tmpdir / "nlu.yml")
     shutil.copy(str(moodbot_nlu_data_path), nlu_path)
     write_yaml(
-        {"language": "en", "pipeline": [], "policies": [],}, config_path,
+        {"language": "en", "pipeline": None, "policies": None,}, config_path,
     )
     args = [
         shutil.which("rasa"),
@@ -188,6 +188,7 @@ def test_test_nlu_comparison(run_in_simple_project: Callable[..., RunResult]):
     write_yaml({"pipeline": "KeywordIntentClassifier"}, "config.yml")
     write_yaml({"pipeline": "KeywordIntentClassifier"}, "config2.yml")
 
+    # TODO: Loading still needs fixing
     run_in_simple_project(
         "test",
         "nlu",
@@ -265,9 +266,10 @@ def test_test_help(run: Callable[..., RunResult]):
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU]
-                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                 [--successes] [--no-errors] [--no-warnings] [--out OUT]
+                 [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                 [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--no-plot] [--successes] [--no-errors] [--no-warnings]
+                 [--out OUT]
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -281,9 +283,9 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                     [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                     [--successes] [--no-errors] [--no-warnings]"""
+                     [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                     [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                     [--no-plot] [--successes] [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

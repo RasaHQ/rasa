@@ -495,6 +495,8 @@ class UserUttered(Event):
         """Returns full retrieval intent name or `None` if no retrieval intent."""
         return self.intent.get(FULL_RETRIEVAL_INTENT_NAME_KEY)
 
+    # Note that this means two UserUttered events with the same text, intent
+    # and entities but _different_ timestamps will be considered equal.
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, UserUttered):
@@ -503,11 +505,13 @@ class UserUttered(Event):
         return (
             self.text,
             self.intent_name,
-            [jsonpickle.encode(ent) for ent in self.entities],
+            [
+                jsonpickle.encode(sorted(ent)) for ent in self.entities
+            ],  # TODO: test? Or fix in regex_message_handler?
         ) == (
             other.text,
             other.intent_name,
-            [jsonpickle.encode(ent) for ent in other.entities],
+            [jsonpickle.encode(sorted(ent)) for ent in other.entities],
         )
 
     def __str__(self) -> Text:

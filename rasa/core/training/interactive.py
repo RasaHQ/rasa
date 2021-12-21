@@ -61,7 +61,6 @@ from rasa.shared.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-import rasa.core.interpreter
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
@@ -1425,7 +1424,7 @@ async def _plot_trackers(
     if unconfirmed:
         event_sequences[-1].extend(unconfirmed)
 
-    graph = await visualize_neighborhood(
+    graph = visualize_neighborhood(
         event_sequences[-1], event_sequences, output_file=None, max_history=2
     )
 
@@ -1624,15 +1623,15 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
-    def visualisation_html(request: Request) -> HTTPResponse:
-        return response.file(visualization.visualization_html_path())
+    async def visualisation_html(request: Request) -> HTTPResponse:
+        return await response.file(visualization.visualization_html_path())
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request: Request,) -> HTTPResponse:
+    async def visualisation_png(request: Request,) -> HTTPResponse:
         try:
             headers = {"Cache-Control": "no-cache"}
-            return response.file(os.path.abspath(image_path), headers=headers)
+            return await response.file(os.path.abspath(image_path), headers=headers)
         except FileNotFoundError:
             return response.text("", 404)
 

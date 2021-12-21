@@ -1,3 +1,7 @@
+# The config recipe.
+# https://rasa.com/docs/rasa/model-configuration/
+recipe: default.v1
+
 # Configuration for the Rasa NLU components.
 # https://rasa.com/docs/rasa/components
 language: en

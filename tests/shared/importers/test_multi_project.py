@@ -1,19 +1,16 @@
 from pathlib import Path
 from typing import Dict, Text
 
+from _pytest.tmpdir import TempPathFactory
 import pytest
 import os
 
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
-from rasa.shared.constants import (
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_CORE_SUBDIRECTORY_NAME,
-)
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 import rasa.utils.io
-from rasa import model
 from rasa.core import utils
-from rasa.shared.core.domain import Domain
 from rasa.shared.importers.multi_project import MultiProjectImporter
 
 
@@ -247,7 +244,7 @@ def test_single_additional_file(tmp_path: Path):
     assert selector.is_imported(str(additional_file))
 
 
-async def test_multi_project_training(trained_async):
+async def test_multi_project_training(trained_async, tmp_path_factory: TempPathFactory):
     example_directory = "data/test_multi_domain"
     config_file = os.path.join(example_directory, "config.yml")
     domain_file = os.path.join(example_directory, "domain.yml")
@@ -261,12 +258,11 @@ async def test_multi_project_training(trained_async):
         persist_nlu_training_data=True,
     )
 
-    unpacked = model.unpack_model(trained_stack_model_path)
-
-    domain_file = os.path.join(
-        unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
+    storage_path = tmp_path_factory.mktemp("storage_path")
+    model_storage, model_metadata = LocalModelStorage.from_model_archive(
+        storage_path, trained_stack_model_path
     )
-    domain = Domain.load(domain_file)
+    domain = model_metadata.domain
 
     expected_intents = {
         "greet",
@@ -279,8 +275,11 @@ async def test_multi_project_training(trained_async):
 
     assert all([i in domain.intents for i in expected_intents])
 
-    nlu_training_data_file = os.path.join(unpacked, "nlu", "training_data.yml")
-    nlu_training_data = RasaYAMLReader().read(nlu_training_data_file)
+    with model_storage.read_from(
+        Resource("nlu_training_data_provider")
+    ) as resource_dir:
+        nlu_training_data_file = resource_dir / "training_data.yml"
+        nlu_training_data = RasaYAMLReader().read(nlu_training_data_file)
 
     assert expected_intents == nlu_training_data.intents
 

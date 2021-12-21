@@ -1,30 +1,59 @@
 from __future__ import annotations
 
 import dataclasses
-import typing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple
-
 
 from rasa.engine.exceptions import (
     GraphComponentException,
     GraphSchemaException,
 )
 import rasa.shared.utils.common
+import rasa.utils.common
 from rasa.engine.storage.resource import Resource
 
-if typing.TYPE_CHECKING:
-    from rasa.engine.storage.storage import ModelStorage
-
+from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.exceptions import InvalidConfigException, RasaException
+from rasa.shared.importers.autoconfig import TrainingType
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class SchemaNode:
-    """Represents one node in the schema."""
+    """Represents one node in the schema.
+
+    Args:
+        needs: describes which parameters in `fn` (or `constructor_name`
+            if `eager==False`) are filled by which parent nodes.
+        uses: The class which models the behavior of this specific graph node.
+        constructor_name: The name of the constructor which should be used to
+            instantiate the component. If `eager==False` then the `constructor` can
+            also specify parameters which are filled by parent nodes. This is e.g.
+            useful if a parent node returns a `Resource` and this node wants to
+            directly load itself from this resource.
+        fn: The name of the function which should be called on the instantiated
+            component when the graph is executed. The parameters from `needs` are
+            filled from the parent nodes.
+        config: The user's configuration for this graph node. This configuration
+            does not need to be specify all possible parameters; the default values
+            for missing parameters will be filled in later.
+        eager: If `eager` then the component is instantiated before the graph is run.
+            Otherwise it's instantiated as the graph runs (lazily). Usually we always
+            instantiated lazily during training and eagerly during inference (to
+            avoid that the first prediction takes longer).
+        is_target: If `True` then this node can't be pruned during fingerprinting
+            (it might be replaced with a cached value though). This is e.g. used for
+            all components which train as their result always needs to be added to
+            the model archive so that the data is available during inference.
+        is_input: Nodes with `is_input` are _always_ run (also during the fingerprint
+            run). This makes sure that we e.g. detect changes in file contents.
+        resource: If given, then the graph node is loaded from an existing resource
+            instead of instantiated from scratch. This is e.g. used to load a trained
+            component for predictions.
+    """
 
     needs: Dict[Text, Text]
     uses: Type[GraphComponent]
@@ -49,14 +78,14 @@ class GraphSchema:
         Returns:
             The graph schema in a format which can be dumped as JSON or other formats.
         """
-        serializable_graph_schema = {}
+        serializable_graph_schema = {"nodes": {}}
         for node_name, node in self.nodes.items():
             serializable = dataclasses.asdict(node)
 
             # Classes are not JSON serializable (surprise)
             serializable["uses"] = f"{node.uses.__module__}.{node.uses.__name__}"
 
-            serializable_graph_schema[node_name] = serializable
+            serializable_graph_schema["nodes"][node_name] = serializable
 
         return serializable_graph_schema
 
@@ -75,7 +104,7 @@ class GraphSchema:
                 found.
         """
         nodes = {}
-        for node_name, serialized_node in serialized_graph_schema.items():
+        for node_name, serialized_node in serialized_graph_schema["nodes"].items():
             try:
                 serialized_node[
                     "uses"
@@ -103,9 +132,11 @@ class GraphSchema:
         """Returns the names of all target nodes."""
         return [node_name for node_name, node in self.nodes.items() if node.is_target]
 
-    def minimal_graph_schema(self) -> GraphSchema:
+    def minimal_graph_schema(self, targets: Optional[List[Text]] = None) -> GraphSchema:
         """Returns a new schema where all nodes are a descendant of a target."""
-        dependencies = self._all_dependencies_schema(self.target_names)
+        dependencies = self._all_dependencies_schema(
+            targets if targets else self.target_names
+        )
 
         return GraphSchema(
             {
@@ -119,7 +150,10 @@ class GraphSchema:
         required = []
         for target in targets:
             required.append(target)
-            target_dependencies = self.nodes[target].needs.values()
+            try:
+                target_dependencies = self.nodes[target].needs.values()
+            except KeyError:  # This can happen if the target is an input placeholder.
+                continue
             for dependency in target_dependencies:
                 required += self._all_dependencies_schema([dependency])
 
@@ -128,6 +162,11 @@ class GraphSchema:
 
 class GraphComponent(ABC):
     """Interface for any component which will run in a graph."""
+
+    @classmethod
+    def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
+        return []
 
     @classmethod
     @abstractmethod
@@ -321,10 +360,9 @@ class GraphNode:
         self._constructor_fn: Callable = getattr(
             self._component_class, self._constructor_name
         )
-        self._component_config: Dict[Text, Any] = {
-            **self._component_class.get_default_config(),
-            **component_config,
-        }
+        self._component_config: Dict[Text, Any] = rasa.utils.common.override_defaults(
+            self._component_class.get_default_config(), component_config,
+        )
         self._fn_name: Text = fn_name
         self._fn: Callable = getattr(self._component_class, self._fn_name)
         self._inputs: Dict[Text, Text] = inputs
@@ -345,9 +383,9 @@ class GraphNode:
 
     def _load_component(self, **kwargs: Any) -> None:
         logger.debug(
-            f"Node {self._node_name} loading "
-            f"{self._component_class.__name__}.{self._constructor_name} "
-            f"with config: {self._component_config}, and kwargs: {kwargs}."
+            f"Node '{self._node_name}' loading "
+            f"'{self._component_class.__name__}.{self._constructor_name}' "
+            f"and kwargs: '{kwargs}'."
         )
 
         constructor = getattr(self._component_class, self._constructor_name)
@@ -359,10 +397,20 @@ class GraphNode:
                 execution_context=self._execution_context,
                 **kwargs,
             )
+        except InvalidConfigException:
+            # Pass through somewhat expected exception to allow more fine granular
+            # handling of exceptions.
+            raise
         except Exception as e:
-            raise GraphComponentException(
-                f"Error initializing graph component for node {self._node_name}."
-            ) from e
+            if not isinstance(e, RasaException):
+                raise GraphComponentException(
+                    f"Error initializing graph component for node {self._node_name}."
+                ) from e
+            else:
+                logger.error(
+                    f"Error initializing graph component for node {self._node_name}."
+                )
+                raise
 
     def _get_resource(self, kwargs: Dict[Text, Any]) -> Resource:
         if "resource" in kwargs:
@@ -378,10 +426,6 @@ class GraphNode:
 
         # The component gets a chance to persist itself
         return Resource(self._node_name)
-
-    def parent_node_names(self) -> List[Text]:
-        """The names of the parent nodes of this node."""
-        return list(self._inputs.values())
 
     def __call__(
         self, *inputs_from_previous_nodes: Tuple[Text, Any]
@@ -415,17 +459,26 @@ class GraphNode:
             run_kwargs = kwargs
 
         logger.debug(
-            f"Node {self._node_name} running "
-            f"{self._component_class.__name__}.{self._fn_name} "
-            f"with kwargs: {run_kwargs}."
+            f"Node '{self._node_name}' running "
+            f"'{self._component_class.__name__}.{self._fn_name}'."
         )
 
         try:
             output = self._fn(self._component, **run_kwargs)
+        except InvalidConfigException:
+            # Pass through somewhat expected exception to allow more fine granular
+            # handling of exceptions.
+            raise
         except Exception as e:
-            raise GraphComponentException(
-                f"Error running graph component for node {self._node_name}."
-            ) from e
+            if not isinstance(e, RasaException):
+                raise GraphComponentException(
+                    f"Error running graph component for node {self._node_name}."
+                ) from e
+            else:
+                logger.error(
+                    f"Error running graph component for node {self._node_name}."
+                )
+                raise
 
         self._run_after_hooks(input_hook_outputs, output)
 
@@ -447,7 +500,7 @@ class GraphNode:
                 )
             except Exception as e:
                 raise GraphComponentException(
-                    f"Error running after hook for node {self._node_name}."
+                    f"Error running after hook for node '{self._node_name}'."
                 ) from e
 
     def _run_before_hooks(self, received_inputs: Dict[Text, Any]) -> List[Dict]:
@@ -467,7 +520,7 @@ class GraphNode:
                 input_hook_outputs.append(hook_output)
             except Exception as e:
                 raise GraphComponentException(
-                    f"Error running before hook for node {self._node_name}."
+                    f"Error running before hook for node '{self._node_name}'."
                 ) from e
         return input_hook_outputs
 
@@ -494,3 +547,15 @@ class GraphNode:
             resource=schema_node.resource,
             hooks=hooks,
         )
+
+
+@dataclass()
+class GraphModelConfiguration:
+    """The model configuration to run as a graph during training and prediction."""
+
+    train_schema: GraphSchema
+    predict_schema: GraphSchema
+    training_type: TrainingType
+    language: Optional[Text]
+    core_target: Optional[Text]
+    nlu_target: Optional[Text]

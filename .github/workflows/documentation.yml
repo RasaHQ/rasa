@@ -20,12 +20,85 @@ concurrency:
 env:
   DOCS_FOLDER: docs
   DOCS_BRANCH: documentation
+  TAG_NAME: ${GITHUB_REF#refs/tags/}
+  IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
+  IS_MAIN_BRANCH: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
+  evaluate_release_tag:
+    name: Evaluate release tag
+    runs-on: ubuntu-latest
+    if: github.repository == 'RasaHQ/rasa'  # don't run this for main branches of forks, would fail anyways
+    outputs:
+      build_docs: ${{ steps.check_tag.outputs.build_docs }}
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Check if tag version is equal or higher than the latest tagged Rasa version
+      id: rasa_get_version
+      run: |
+        # Get latest tagged Rasa version
+        git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
+        # Fetch branch history
+        git fetch --prune --unshallow
+        LATEST_TAGGED_NON_ALPHA_RASA_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | head -n1)
+
+        echo "LATEST_TAGGED_NON_ALPHA_RASA_VERSION=${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" >> $GITHUB_ENV
+
+        # Return 'true' if tag version is equal or higher than the latest tagged Rasa version
+        IS_LATEST_VERSION=$((printf '%s\n%s\n' "${LATEST_TAGGED_NON_ALPHA_RASA_VERSION}" "$TAG_NAME" \
+          | sort -V -C && echo true || echo false) || true)
+
+
+        if [[ "${IS_LATEST_VERSION}" == "true" && "$TAG_NAME" =~ ^[0-9.]+$ ]]; then
+          echo "::set-output name=is_latest_version::true"
+        else
+          echo "::set-output name=is_latest_version::false"
+        fi
+
+
+    # MAJOR.MINOR.MICRO(PATCH)
+    # docs are built on every minor tag for the latest major (when 3.0 is out, the latest major is 3.0)
+    # (technically it'll be always the latest version)
+    #
+    # docs are built on every micro tag for the latest minor of
+    # - the latest major (when 3.0 is out, the latest major is 3.0)
+    # - the previous major (when 3.0 is out, the previous major is 2.0, the latest minor on this version being 2.8)
+    - name: Check if it's a micro tag for the latest minor
+      if: env.IS_TAG_BUILD == 'true' || env.IS_MAIN_BRANCH == 'true'
+      id: check_tag
+      run: |
+        IS_LATEST_VERSION=${{ steps.rasa_get_version.outputs.is_latest_version }}
+
+        # the latest major (when 3.0 is out, the latest major is 3.0)
+        # build docs on push to the main branch
+        if [[ "${IS_LATEST_VERSION}" == "true" || "${IS_MAIN_BRANCH}" == "true" ]]; then
+          echo "::set-output name=build_docs::true"
+          exit 0
+        fi
+
+        # the previous major (when 3.0 is out, the previous major is 2.0, the latest minor on this version being 2.8)
+        CURRENT_MAJOR_VERSION=$(echo ${LATEST_TAGGED_NON_ALPHA_RASA_VERSION} | awk -F\. '{print $1}')
+        PREVIOUS_MAJOR_LATEST_VERSION=$(git tag | sort -r -V | grep -E "^[0-9.]+$" | grep -vE "^${CURRENT_MAJOR_VERSION}" | head -n1)
+
+        # Return 'true' if tag version is equal or higher than the latest previous major version
+        IS_PREVIOUS_MAJOR_LATEST_VERSION=$((printf '%s\n%s\n' "${PREVIOUS_MAJOR_LATEST_VERSION}" "$TAG_NAME" \
+          | sort -V -C && echo true || echo false) || true)
+
+        if [[ "${IS_PREVIOUS_MAJOR_LATEST_VERSION}" == "true" ]]; then
+          echo "::set-output name=build_docs::true"
+          exit 0
+        fi
+
+        echo "::set-output name=build_docs::false"
+
   docs:
     name: Build Docs
     runs-on: ubuntu-latest
-    if: github.repository == 'RasaHQ/rasa'  # don't run this for main branches of forks, would fail anyways
+    needs: [ evaluate_release_tag ]
+    if: github.repository == 'RasaHQ/rasa' && needs.evaluate_release_tag.outputs.build_docs == 'true'  # don't run this for main branches of forks, would fail anyways
 
     steps:
     - name: Checkout git repository 🕝
