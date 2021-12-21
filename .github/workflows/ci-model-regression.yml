@@ -166,7 +166,7 @@ jobs:
             NUM_REPLICAS=$num_max_replicas
           else
 
-            echo ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+            echo ${{fromJson(needs.read_test_configuration.outputs.matrix)}} | jq '.'
 
             NUM_REPLICAS=${{ strategy.job-total }}
           fi
