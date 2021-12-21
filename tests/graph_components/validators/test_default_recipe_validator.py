@@ -3,6 +3,9 @@ from pathlib import Path
 import rasa.shared.utils.io
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.resource import Resource
+
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from typing import Dict, List, Optional, Set, Text, Any, Tuple, Type
 import re
@@ -10,8 +13,13 @@ import re
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
+from rasa.engine.graph import (
+    GraphComponent,
+    ExecutionContext,
+    GraphSchema,
+    SchemaNode,
+)
 
-from rasa.engine.graph import GraphComponent, GraphSchema, SchemaNode
 from rasa.graph_components.validators.default_recipe_validator import (
     POLICY_CLASSSES,
     DefaultV1RecipeValidator,
@@ -916,6 +924,29 @@ def test_core_warn_if_policy_priorities_are_not_unique(
         with pytest.warns(None) as records:
             validator.validate(importer)
         assert len(records) == 0
+
+
+def test_core_raise_if_policy_has_no_priority():
+    class PolicyWithoutPriority(Policy, GraphComponent):
+        def __init__(
+            self,
+            config: Dict[Text, Any],
+            model_storage: ModelStorage,
+            resource: Resource,
+            execution_context: ExecutionContext,
+        ) -> None:
+            super().__init__(
+                config, model_storage, resource, execution_context,
+            )
+
+    nodes = {"policy": SchemaNode("", PolicyWithoutPriority, "", "", {})}
+    graph_schema = GraphSchema(nodes)
+    importer = DummyImporter()
+    validator = DefaultV1RecipeValidator(graph_schema)
+    with pytest.raises(
+        InvalidConfigException, match="Every policy must have a priority value"
+    ):
+        validator.validate(importer)
 
 
 @pytest.mark.parametrize("policy_type_consuming_rule_data", [RulePolicy])

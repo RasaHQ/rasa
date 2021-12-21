@@ -161,6 +161,53 @@ def test_generate_graphs(
     rasa.engine.validation.validate(model_config)
 
 
+@pytest.mark.parametrize(
+    "cli_parameters, check_node, expected_config",
+    [
+        (
+            {},
+            "train_MitieIntentClassifier6",
+            {"num_threads": 200000, "finetuning_epoch_fraction": 0.75},
+        ),
+        (
+            {"num_threads": None},
+            "train_MitieIntentClassifier6",
+            {"num_threads": 200000, "finetuning_epoch_fraction": 0.75},
+        ),
+        (
+            {"num_threads": 1},
+            "train_MitieIntentClassifier6",
+            {"num_threads": 1, "finetuning_epoch_fraction": 0.75},
+        ),
+        (
+            {"num_threads": 1, "finetuning_epoch_fraction": 0.5},
+            "train_MitieIntentClassifier6",
+            # there is no `epochs` value specified so it doesn't get overridden
+            {"num_threads": 1, "finetuning_epoch_fraction": 0.75},
+        ),
+        (
+            {"finetuning_epoch_fraction": 0.5},
+            "train_DIETClassifier7",
+            {"epochs": 150, "num_threads": 200000, "finetuning_epoch_fraction": 0.5},
+        ),
+    ],
+)
+def test_nlu_config_doesnt_get_overridden(
+    cli_parameters: Dict[Text, Any], check_node: Text, expected_config: Dict[Text, Any]
+):
+    config = rasa.shared.utils.io.read_yaml_file(
+        "data/test_config/config_pretrained_embeddings_mitie_diet.yml"
+    )
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
+    model_config = recipe.graph_config_for_recipe(
+        config, cli_parameters, training_type=TrainingType.BOTH, is_finetuning=True
+    )
+
+    train_schema = model_config.train_schema
+    mitie_node = train_schema.nodes.get(check_node)
+    assert mitie_node.config == expected_config
+
+
 def test_language_returning():
     config = rasa.shared.utils.io.read_yaml(
         """
@@ -193,7 +240,7 @@ def test_tracker_generator_parameter_interpolation():
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
-        config, {"augmentation": augmentation, "debug_plots": debug_plots},
+        config, {"augmentation_factor": augmentation, "debug_plots": debug_plots},
     )
 
     node = model_config.train_schema.nodes["training_tracker_provider"]

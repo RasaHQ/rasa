@@ -17,12 +17,14 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa shell`            |Loads your trained model and lets you talk to your assistant on the command line.                                                         |
 |`rasa run`              |Starts a server with your trained model.                                                                                                  |
 |`rasa run actions`      |Starts an action server using the Rasa SDK.                                                                                               |
-|`rasa visualize`        |Generates a visual representation of your stories.                                                                                                                                                            |
+|`rasa visualize`        |Generates a visual representation of your stories.                                                                                        |
 |`rasa test`             |Tests a trained Rasa model on any files starting with `test_`.                                                                            |
 |`rasa data split nlu`   |Performs a 80/20 split of your NLU training data.                                                                                         |
 |`rasa data convert`     |Converts training data between different formats.                                                                                         |
-|`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                                             |
+|`rasa data migrate`     |Migrates 2.0 domain to 3.0 format.                                                                                                        |
+|`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                         |
 |`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                            |
+|`rasa evaluate markers` |Extracts markers from an existing tracker store.                                                                                                |
 |`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
 
@@ -354,6 +356,46 @@ You can specify the input file or directory, output file or directory, and the o
 ```text [rasa data convert nlu --help]
 ```
 
+## rasa data migrate
+
+The domain is the only data file whose format changed between 2.0 and 3.0.
+You can automatically migrate a 2.0 domain to the 3.0 format.
+
+You can start the migration by running:
+
+```bash
+rasa data migrate
+```
+
+You can specify the input file or directory and the output file or directory with the following arguments:
+
+```bash
+rasa data migrate -d DOMAIN --out OUT_PATH
+```
+
+If no arguments are specified, the default domain path (`domain.yml`) will be used for both input and output files.
+
+This command will also back-up your 2.0 domain file(s) into a different `original_domain.yml` file or
+directory labeled `original_domain`.
+
+Note that the slots in the migrated domain will contain [mapping conditions](./domain.mdx#mapping-conditions) if these
+slots are part of a form's `required_slots`.
+
+:::caution
+Exceptions will be raised and the migration process terminated if invalid domain files are provided or if they are
+already in the 3.0 format, if slots or forms are missing from your original files or if the slots or forms sections
+are spread across multiple domain files.
+This is done to avoid duplication of migrated sections in your domain files.
+Please make sure all your slots' or forms' definitions are grouped into a single file.
+
+:::
+
+You can learn more about this command by running:
+
+```bash
+rasa data migrate --help
+```
+
 ## rasa data validate
 
 You can check your domain, NLU data, or story data for mistakes and inconsistencies. 
@@ -418,6 +460,54 @@ should be published:
 This command is most commonly used to import old conversations into Rasa X to annotate
 them. Read more about [importing conversations into Rasa X](https://rasa.com/docs/rasa-x/installation-and-setup/deploy#1-import-existing-conversations-from-rasa-open-source).
 :::
+
+## rasa evaluate markers
+
+:::caution
+
+This feature is currently experimental and might change or be removed in the future. Share your feedback in the forum to help us make it production-ready.
+
+:::
+
+The following command applies the [markers](./markers.mdx) you defined in your marker configuration file,
+to pre-existing dialogues stored in your [tracker store](./tracker-stores.mdx), and produces `.csv` files containing
+the extracted markers and summary statistics:
+
+```bash
+rasa evaluate markers all extracted_markers.csv
+```
+
+Use the following arguments to configure the marker extraction process:
+
+```
+usage: rasa evaluate markers [-h] [-v] [-vv] [--quiet] [--config CONFIG] [--no-stats | --stats-file-prefix [STATS_FILE_PREFIX]] [--endpoints ENDPOINTS] [-d DOMAIN] output_filename {first_n,sample,all} ...
+
+positional arguments:
+  output_filename       The filename to write the extracted markers to (CSV format).
+  {first_n,sample,all}
+    first_n             Select trackers sequentially until N are taken.
+    sample              Select trackers by sampling N.
+    all                 Select all trackers.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --config CONFIG       The config file(s) containing marker definitions. This can be a single YAML file, or a directory that contains several files with marker definitions in it. The content of these files will be read and
+                        merged together. (default: markers.yml)
+  --no-stats            Do not compute summary statistics. (default: True)
+  --stats-file-prefix [STATS_FILE_PREFIX]
+                        The common file prefix of the files where we write out the compute statistics. More precisely, the file prefix must consist of a common path plus a common file prefix, to which suffixes `-overall.csv` and
+                        `-per-session.csv` will be added automatically. (default: stats)
+  --endpoints ENDPOINTS
+                        Configuration file for the tracker store as a yml file. (default: endpoints.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification. This can be a single YAML file, or a directory that contains several files with domain specifications in it. The content of these files will be read and merged together. (default:
+                        domain.yml)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default: None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default: None)
+```
 
 ## rasa x
 

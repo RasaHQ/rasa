@@ -1461,12 +1461,14 @@ def generate_folds(
                 training_examples=train,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
+                lookup_tables=training_data.lookup_tables,
                 responses=training_data.responses,
             ),
             TrainingData(
                 training_examples=test,
                 entity_synonyms=training_data.entity_synonyms,
                 regex_features=training_data.regex_features,
+                lookup_tables=training_data.lookup_tables,
                 responses=training_data.responses,
             ),
         )
@@ -1771,6 +1773,8 @@ async def compare_nlu(
 
     Returns: training examples per run
     """
+    import rasa.model_training
+
     training_examples_per_run = []
 
     for run in range(runs):

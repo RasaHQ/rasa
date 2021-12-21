@@ -21,13 +21,11 @@ policies:
 
 Define a form by adding it to the `forms` section in your [domain](./domain.mdx).
 The name of the form is also the name of the action which you can use in
-[stories](./stories.mdx) or [rules](./rules.mdx) to handle form executions. You also
-need to define [slot mappings](./forms.mdx#slot-mappings) for each slot which your
-form should fill.
-You can specify one or more slot mappings for each slot to be filled.
+[stories](./stories.mdx) or [rules](./rules.mdx) to handle form executions.
+You will need to specify a list of slot names to the mandatory `required_slots` key.
 
 The following example form `restaurant_form` will fill the slot
-`cuisine` from an extracted entity `cuisine` and slot `num_people` from entity `number`.
+`cuisine` and slot `num_people`.
 
 ```yaml-rasa
 entities:
@@ -53,7 +51,7 @@ forms:
 
 You can define a list of intents to ignore for the whole form under the 
 `ignored_intents` key. Intents listed under `ignored_intents` will be added to the
-`not_intent` key of each slot mapping in the form.
+`not_intent` key of each slot mapping.
 
 For example, if you do not want any of the required slots of a form to be filled when
 the intent is `chitchat`, then you would need to define the following (after the form
@@ -116,7 +114,7 @@ A form will automatically deactivate itself once all required slots are filled.
 You can describe your assistant's behavior for the end of a form with a rule or a story.
 If you don't add an applicable story or rule, the assistant will automatically listen
 for the next user message after the form is finished.
-The following example runs the utterance `utter_all_slots_filled` as soon as the form
+The following example runs the utterances `utter_submit` and `utter_slots_values` as soon as the form
 `your_form` filled all required slots.
 
 ```yaml-rasa
@@ -142,160 +140,14 @@ write stories or rules for this case.
 
 ### Slot Mappings
 
-Rasa Open Source comes with four predefined mappings to fill the slots of a form
-based on the latest user message. Please see
-[Custom Slot Mappings](./forms.mdx#custom-slot-mappings) if you need a custom function
-to extract the required information.
+:::caution Changed in 3.0
+As of 3.0, [slot mappings](./domain.mdx#slot-mappings) are defined in the `slots` section of the domain.
+This change allows the same slot mapping to be reused across multiple forms, removing any unnecessary duplication.
+Please follow the [migration guide](./migration-guide.mdx#slot-mappings) to update your assistant.
 
-#### from_entity
-
-The `from_entity` mapping fills slots based on extracted entities.
-It will look for an entity called `entity_name` to fill a slot `slot_name`.
-If `intent_name` is `None`, the slot will be filled regardless of intent name.
-Otherwise, the slot will only be filled if the user's intent is `intent_name`.
-
-If `role_name` and/or `group_name` are provided, the role/group
-label of the entity also needs to match the given values. The slot mapping will not
-apply if the intent of the message is `excluded_intent`. Note that you can
-also define lists of intents for the parameters `intent` and `not_intent`.
-
-```yaml-rasa
-entities:
-- entity_name
-slots:
-  slot_name:
-    type: any
-    mappings:
-    - type: from_entity
-      entity: entity_name
-      role: role_name
-      group: group name
-      intent: intent_name
-      not_intent: excluded_intent
-forms:
-  your_form:
-    required_slots:
-        - slot_name
-```
-
-In `from_entity` mapping, when an extracted entity uniquely maps onto a slot,
-the slot will be filled even if this slot wasn't requested by the form.
-The extracted entity will be ignored if the mapping is not unique.
-
-```yaml-rasa
-slots:
-  departure_city:
-    type: text
-    mappings:
-    - type: from_entity
-      entity: city
-      role: from
-    - type: from_entity
-      entity: city
-  arrival_city:
-    type: text
-    mappings:
-    - type: from_entity
-      entity: city
-      role: to
-    - type: from_entity
-      entity: city
-  arrival_date:
-    type: any
-    mappings:
-    - type: from_entity
-      entity: date
-forms:
-  your_form:
-    required_slots:
-        - departure_city
-        - arrival_city
-        - arrival_date
-```
-
-In the example above, an entity `date` uniquely sets the slot `arrival_date`,
-an entity `city` with a role `from` uniquely sets the slot `departure_city` and
-an entity `city` with a role `to` uniquely sets the slot `arrival_city`,
-therefore they can be used to fit corresponding slots
-even if these slots were not requested.
-However, entity `city` without a role can fill both `departure_city` and `arrival_city`
-slots, depending which one is requested, so if an entity `city` is extracted when
-slot `arrival_date` is requested, it'll be ignored by the form.
-
-
-#### from_text
-
-The `from_text` mapping will use the text of the next user utterance to fill the slot
-`slot_name`. If `intent_name` is `None`, the slot will be filled regardless of intent name.
-Otherwise, the slot will only be filled if the user's intent is `intent_name`.
-
-The slot mapping will not apply if the intent of the message is `excluded_intent`.
-Note that you can define lists of intents for the parameters `intent` and `not_intent`.
-
-```yaml-rasa
-slots:
-  slot_name:
-    type: text
-    mappings:
-    - type: from_text
-      intent: intent_name
-      not_intent: excluded_intent
-forms:
-  your_form:
-    required_slots:
-        - slot_name
-```
-
-#### from_intent
-
-The `from_intent` mapping will fill slot `slot_name` with value `my_value` if
-user intent is `intent_name` or `None`. The slot mapping will not
-apply if the intent of the message is `excluded_intent`. Note that you can
-also define lists of intents for the parameters `intent` and `not_intent`.
-
-:::note
-The `from_intent` slot mapping will not apply during the initial activation of the form. To fill
-a slot based on the intent that activated the form, use the `from_trigger_intent`
-mapping.
+Note specifically the role of [Mapping Conditions](./domain.mdx#mapping-conditions) and the
+[unique entity mapping](./domain.mdx#unique-from_entity-mapping-matching) constraint.
 :::
-
-```yaml-rasa
-slots:
-  slot_name:
-    type: any
-    mappings:
-    - type: from_intent
-      value: my_value
-      intent: intent_name
-      not_intent: excluded_intent
-forms:
-  your_form:
-    required_slots:
-        - slot_name
-```
-
-#### from_trigger_intent
-
-The `from_trigger_intent` mapping will fill slot `slot_name` with value `my_value`
-if the form was activated by a user message with intent `intent_name`.
-The slot mapping will not apply if the intent of the message is
-`excluded_intent`. Note that you can
-also define lists of intents for the parameters `intent` and `not_intent`.
-
-```yaml-rasa
-slots:
-  slot_name:
-    type: any
-    mappings:
-    - type: from_trigger_intent
-      value: my_value
-      intent: intent_name
-      not_intent: excluded_intent
-forms:
-  your_form:
-    required_slots:
-        - slot_name
-```
 
 ### Writing Stories / Rules for Unhappy Form Paths
 
@@ -384,7 +236,7 @@ actions:
 - validate_restaurant_form
 ```
 
-When the form is executed it will run your custom action.
+When the form is executed it will run your custom action after every user turn to validate the latest filled slots.
 
 This custom action can extend `FormValidationAction` class to simplify
 the process of validating extracted slots. In this case, you need to write functions
@@ -434,7 +286,12 @@ to fully customize the validation process.
 
 ### Custom Slot Mappings
 
-If none of the predefined [Slot Mappings](./forms.mdx#slot-mappings) fit your use
+:::caution Changed in 3.0
+The `slots_mapped_in_domain` argument provided to the `required_slots` method of `FormValidationAction`
+has been replaced by the `domain_slots` argument, please update your custom actions to the new argument name.
+:::
+
+If none of the predefined [Slot Mappings](./domain.mdx#slot-mappings) fit your use
 case, you can use the
 [Custom Action](./actions.mdx#custom-actions) `validate_<form_name>` to write your own
 extraction code. Rasa Open Source will trigger this action when the form is run.
@@ -445,14 +302,20 @@ to extract customs slots:
 
 1. Define a method `extract_<slot_name>` for every slot that should be mapped in a
    custom way.
-2. Make sure that in the domain file you list for your form only those slots that use 
-[predefined mappings](./forms.mdx#slot-mappings).
-3. Override `required_slots` to add all slots with custom mappings to the list of slots
-   the form should request.
+2. In your domain file, for your form's `required_slots`, list all required slots, with both predefined and custom mappings.
+
+In addition, you can override the `required_slots` method to add dynamically requested slots: you can read more in the
+[Dynamic Form Behavior](./forms.mdx#dynamic-form-behavior) section.
+
+:::note
+If you have added a slot with a custom mapping in the `slots` section of the domain file which you only
+want to be validated within the context of a form by a custom action extending `FormValidationAction`,
+please make sure that this slot has a mapping of type `custom` and that the slot name is included in the
+form's `required_slots`.
+:::
 
 The following example shows the implementation of a form which extracts a slot
-`outdoor_seating` in a custom way, in addition to the slots which use 
-[predefined mappings](./forms.mdx#slot-mappings).
+`outdoor_seating` in a custom way, in addition to the slots which use predefined mappings.
 The method `extract_outdoor_seating` sets the slot `outdoor_seating` based on whether
 the keyword `outdoor` was present in the last user message.
 
@@ -467,16 +330,6 @@ from rasa_sdk.forms import FormValidationAction
 class ValidateRestaurantForm(FormValidationAction):
     def name(self) -> Text:
         return "validate_restaurant_form"
-
-    async def required_slots(
-        self,
-        slots_mapped_in_domain: List[Text],
-        dispatcher: "CollectingDispatcher",
-        tracker: "Tracker",
-        domain: "DomainDict",
-    ) -> Optional[List[Text]]:
-        required_slots = slots_mapped_in_domain + ["outdoor_seating"]
-        return required_slots
 
     async def extract_outdoor_seating(
         self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
@@ -521,18 +374,18 @@ class ValidateRestaurantForm(FormValidationAction):
 
     async def required_slots(
         self,
-        slots_mapped_in_domain: List[Text],
+        domain_slots: List[Text],
         dispatcher: "CollectingDispatcher",
         tracker: "Tracker",
         domain: "DomainDict",
-    ) -> Optional[List[Text]]:
+    ) -> List[Text]:
         additional_slots = ["outdoor_seating"]
         if tracker.slots.get("outdoor_seating") is True:
             # If the user wants to sit outside, ask
             # if they want to sit in the shade or in the sun.
             additional_slots.append("shade_or_sun")
 
-        return additional_slots + slots_mapped_in_domain
+        return additional_slots + domain_slots
 ```
 
 ### The requested_slot slot

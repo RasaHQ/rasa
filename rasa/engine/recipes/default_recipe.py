@@ -363,7 +363,7 @@ class DefaultV1Recipe(Recipe):
         config_from_cli = {
             param: cli_parameters[param]
             for param in cli_args_mapping.get(component, [])
-            if param in cli_parameters
+            if param in cli_parameters and cli_parameters[param] is not None
         }
 
         if (
@@ -374,9 +374,11 @@ class DefaultV1Recipe(Recipe):
             old_number_epochs = component_config.get(
                 EPOCHS, component.get_default_config()[EPOCHS]
             )
-            epoch_fraction = float(cli_parameters["finetuning_epoch_fraction"])
-
-            config_from_cli[EPOCHS] = math.ceil(old_number_epochs * epoch_fraction)
+            epoch_fraction = cli_parameters.get("finetuning_epoch_fraction", 1.0)
+            config_from_cli["finetuning_epoch_fraction"] = epoch_fraction
+            config_from_cli[EPOCHS] = math.ceil(
+                old_number_epochs * float(epoch_fraction)
+            )
 
         return config_from_cli
 
@@ -474,11 +476,8 @@ class DefaultV1Recipe(Recipe):
             constructor_name="create",
             fn="provide",
             config={
-                config_key: cli_parameters[param]
-                for param, config_key in {
-                    "debug_plots": "debug_plots",
-                    "augmentation": "augmentation_factor",
-                }.items()
+                param: cli_parameters[param]
+                for param in ["debug_plots", "augmentation_factor"]
                 if param in cli_parameters
             },
         )

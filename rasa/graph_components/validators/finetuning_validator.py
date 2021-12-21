@@ -134,7 +134,7 @@ class FinetuningValidator(GraphComponent):
                 )
         self._fingerprints[FINGERPRINT_VERSION] = rasa_version
 
-        fingerprint_config = self._get_fingerprint_of_schema_without_epochs_config()
+        fingerprint_config = self._get_fingerprint_of_schema_without_irrelevant_keys()
         self._compare_or_memorize(
             fingerprint_key=FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
             new_fingerprint=fingerprint_config,
@@ -220,16 +220,28 @@ class FinetuningValidator(GraphComponent):
         domain.responses = {}
         return domain.fingerprint()
 
-    def _get_fingerprint_of_schema_without_epochs_config(self,) -> Text:
-        """Returns a fingerprint of the given configuration with "epoch" keys removed.
+    def _get_fingerprint_of_schema_without_irrelevant_keys(self,) -> Text:
+        """Returns a fingerprint of the given schema with certain items removed.
+
+        These items include specifications that do not influence actual training
+        results such as "eager" mode. The only configuration (in your config) that is
+        allowed to change is the number of `epochs`.
 
         Returns:
             fingerprint
         """
-        schema_as_dict = self._execution_context.graph_schema.as_dict()
-        for node_dict in schema_as_dict["nodes"].values():
+        graph_schema = self._execution_context.graph_schema
+        schema_as_dict = graph_schema.as_dict()
+        for node_name, node_dict in schema_as_dict["nodes"].items():
             config_copy = copy.deepcopy(node_dict["config"])
             config_copy.pop(EPOCHS, None)
+            config_copy.pop("finetuning_epoch_fraction", None)
+            # ignore default values since they're filled in anyway later and can
+            # end up in configs (or not) in mysterious ways
+            defaults = graph_schema.nodes[node_name].uses.get_default_config()
+            for key, default_value in defaults.items():
+                if key in config_copy and config_copy[key] == default_value:
+                    config_copy.pop(key)
             node_dict["config"] = config_copy
             node_dict.pop("eager")
             node_dict.pop("constructor_name")

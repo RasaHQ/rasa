@@ -1,5 +1,4 @@
 from pathlib import Path
-import copy
 import numpy as np
 from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 
@@ -298,35 +297,6 @@ def entity_label_to_tags(
     return predicted_tags, confidence_values
 
 
-def override_defaults(
-    defaults: Optional[Dict[Text, Any]], custom: Optional[Dict[Text, Any]]
-) -> Dict[Text, Any]:
-    """Override default config with the given config.
-
-    We cannot use `dict.update` method because configs contain nested dicts.
-
-    Args:
-        defaults: default config
-        custom: user config containing new parameters
-
-    Returns:
-        updated config
-    """
-    if defaults:
-        config = copy.deepcopy(defaults)
-    else:
-        config = {}
-
-    if custom:
-        for key in custom.keys():
-            if isinstance(config.get(key), dict):
-                config[key].update(custom[key])
-            else:
-                config[key] = custom[key]
-
-    return config
-
-
 def create_data_generators(
     model_data: RasaModelData,
     batch_sizes: Union[int, List[int]],
@@ -471,7 +441,8 @@ def _check_evaluation_setting(component_config: Dict[Text, Any]) -> None:
         and component_config[EVAL_NUM_EPOCHS] > component_config[EPOCHS]
     ):
         warning = (
-            f"the value of '{EVAL_NUM_EPOCHS}' is greater than the value of '{EPOCHS}'."
+            f"'{EVAL_NUM_EPOCHS}={component_config[EVAL_NUM_EPOCHS]}' is "
+            f"greater than '{EPOCHS}={component_config[EPOCHS]}'."
             f" No evaluation will occur."
         )
         if component_config[CHECKPOINT_MODEL]:
@@ -556,9 +527,7 @@ def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
     ):
         rasa.shared.utils.io.raise_warning(
             f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
-            f"to set it to `True` when using cross-entropy loss. It will be set to "
-            f"`True` by default, "
-            f"Rasa Open Source 3.0.0 onwards.",
+            f"to set it to `True` when using cross-entropy loss.",
             category=UserWarning,
         )
 

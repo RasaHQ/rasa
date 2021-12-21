@@ -173,7 +173,7 @@ async def test_default_slot_value_if_unfeaturized_slot():
     assert not warnings
 
 
-def test_can_read_test_story_with_entities_slot_autofill(domain: Domain):
+def test_can_read_test_story_with_entities(domain: Domain):
     trackers = training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities.yml",
         domain,
@@ -567,6 +567,8 @@ def test_or_statement_with_slot_was_set():
             - name: joe
         - slot_was_set:
             - name: bob
+        - slot_was_set:
+            - name: null
     """
 
     reader = YAMLStoryReader()
@@ -574,7 +576,7 @@ def test_or_statement_with_slot_was_set():
 
     steps = reader.read_from_parsed_yaml(yaml_content)
 
-    assert len(steps) == 2
+    assert len(steps) == 3
 
     slot = steps[0].events[3]
     assert isinstance(slot, SlotSet)
@@ -585,6 +587,11 @@ def test_or_statement_with_slot_was_set():
     assert isinstance(slot, SlotSet)
     assert slot.key == "name"
     assert slot.value == "bob"
+
+    slot = steps[2].events[3]
+    assert isinstance(slot, SlotSet)
+    assert slot.key == "name"
+    assert slot.value is None
 
 
 @pytest.mark.parametrize(

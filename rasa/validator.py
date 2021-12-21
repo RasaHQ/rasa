@@ -1,7 +1,7 @@
 import itertools
 import logging
 from collections import defaultdict
-from typing import Set, Text, Optional, Dict, Any
+from typing import Set, Text, Optional, Dict, Any, List
 
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
@@ -12,10 +12,17 @@ from rasa.shared.constants import (
     DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
 )
+from rasa.shared.core import constants
 from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
-from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, ActiveLoop
 from rasa.shared.core.events import UserUttered
+from rasa.shared.core.domain import (
+    KEY_INTENTS,
+    KEY_RESPONSES,
+    KEY_SLOTS,
+    KEY_FORMS,
+    Domain,
+)
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -58,15 +65,22 @@ class Validator:
 
         return cls(domain, intents, story_graph, config)
 
+    def _non_default_intents(self) -> List[Text]:
+        return [
+            item
+            for item in self.domain.intents
+            if item not in constants.DEFAULT_INTENTS
+        ]
+
     def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
         everything_is_alright = True
 
         nlu_data_intents = {e.data["intent"] for e in self.intents.intent_examples}
 
-        for intent in self.domain.intents:
+        for intent in self._non_default_intents():
             if intent not in nlu_data_intents:
-                logger.debug(
+                rasa.shared.utils.io.raise_warning(
                     f"The intent '{intent}' is listed in the domain file, but "
                     f"is not found in the NLU training data."
                 )
@@ -134,9 +148,11 @@ class Validator:
                 )
                 everything_is_alright = False
 
-        for intent in self.domain.intents:
+        for intent in self._non_default_intents():
             if intent not in stories_intents:
-                logger.debug(f"The intent '{intent}' is not used in any story.")
+                rasa.shared.utils.io.raise_warning(
+                    f"The intent '{intent}' is not used in any story or rule."
+                )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -195,7 +211,9 @@ class Validator:
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                logger.debug(f"The utterance '{utterance}' is not used in any story.")
+                rasa.shared.utils.io.raise_warning(
+                    f"The utterance '{utterance}' is not used in any story or rule."
+                )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -308,6 +326,32 @@ class Validator:
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
         return intents_are_valid and stories_are_valid and there_is_no_duplication
+
+    def verify_domain_duplicates(self) -> bool:
+        """Verifies that there are no duplicated dictionaries in multiple domain files.
+
+        Returns:
+            `True` if duplicates exist.
+        """
+        logger.info("Checking duplicates across domain files...")
+
+        all_valid = True
+
+        if not self.domain.duplicates:
+            return True
+
+        for key in [KEY_INTENTS, KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            duplicates = self.domain.duplicates.get(key)
+            if duplicates:
+                duplicates_str = ", ".join(duplicates)
+                rasa.shared.utils.io.raise_warning(
+                    f"The following duplicated {key} has been found "
+                    + f"across multiple domain files: {duplicates_str}",
+                    docs=DOCS_URL_DOMAINS,
+                )
+                all_valid = False
+
+        return all_valid
 
     def verify_form_slots(self) -> bool:
         """Verifies that form slots match the slot mappings in domain."""

@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3.0"
 intents:
   - request_restaurant:
       use_entities: []
@@ -61,7 +61,7 @@ slots:
       - active_loop: restaurant_form
         requested_slot: preferences
     - type: from_text
-      not_intent: affirm
+      not_intent: deny
       conditions:
       - active_loop: restaurant_form
         requested_slot: preferences

@@ -177,9 +177,7 @@ By default Rasa Open Source uses `FormAction` for processing any
 [form logic](forms.mdx). You can override this default action with a custom action by
 adding a custom action with the form's name to the domain.
 Overriding the default action for forms should **only** be used during the process of
-migrating from Rasa Open Source 1 to 2. In this case you can override the default
-action to instruct Rasa Open Source to use the deprecated `FormAction` which is part of
-the Rasa SDK.
+migrating from Rasa Open Source 1.0 to 2.0.
 
 ## action_unlikely_intent
 
@@ -228,5 +226,34 @@ takes its presence into account so that [conversation behaviour is customizable]
 
 :::note
 `action_unlikely_intent` cannot be included in the training stories. It can **only** be added to rules.
+
+:::
+
+## action_extract_slots
+
+This action runs after each user turn, before the next assistant action prediction and execution.
+`action_extract_slots` loops through the [slot mappings](./domain.mdx#slot-mappings) of each domain slot in order to set or update
+slots throughout the conversation with information extracted from the latest user message.
+
+If `action_extract_slots` finds a [custom slot mapping](./domain.mdx#custom-slot-mappings), it will check first if a custom action was defined in the
+mapping via the `action` key and then run it.
+
+After applying all the slot mappings, `action_extract_slots` will run the custom validation action
+`action_validate_slot_mappings` if it is present in the domain actions. Otherwise it will immediately return the already
+extracted slots.
+
+Note that custom actions used by slot mappings or slot mapping validation should only return events of type `SlotSet` or
+`BotUttered`. Events of any other type are not permitted and will be ignored when updating the tracker.
+
+The default action `action_extract_slots` replaces the slot extraction previously executed by `FormAction`.
+If you wish to set a slot based on information extracted from intents that trigger forms, you must explicitly specify a
+mapping that does not contain the `conditions` key. A slot mapping with `conditions` applies only once the specified form is active.
+`action_extract_slots` runs directly after each user message, and thus before the activation of the form.
+Therefore a mapping that should apply to user messages that trigger a form must not specify `conditions`, or the form
+will re-ask for the slot once it is activated.
+
+:::note
+If `action_default_fallback` is the next action predicted and executed by the assistant, this will result in a
+`UserUtteranceReverted` event which will unset the slots previously filled in the last user turn.
 
 :::

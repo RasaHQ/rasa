@@ -8,6 +8,9 @@ from rasa.cli.arguments.default_arguments import (
     add_out_param,
     add_domain_param,
 )
+from rasa.graph_components.providers.training_tracker_provider import (
+    TrainingTrackerProvider,
+)
 from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
 
 USE_LATEST_MODEL_FOR_FINE_TUNING = True
@@ -151,7 +154,7 @@ def add_augmentation_param(
     parser.add_argument(
         "--augmentation",
         type=int,
-        default=50,
+        default=TrainingTrackerProvider.get_default_config()["augmentation_factor"],
         help="How much data augmentation to use during training.",
     )
 
@@ -162,7 +165,7 @@ def add_debug_plots_param(
     """Specifies if conversation flow should be visualized."""
     parser.add_argument(
         "--debug-plots",
-        default=False,
+        default=TrainingTrackerProvider.get_default_config()["debug_plots"],
         action="store_true",
         help="If enabled, will create plots showing checkpoints "
         "and their connections between story blocks in a  "
@@ -176,7 +179,6 @@ def _add_num_threads_param(
     parser.add_argument(
         "--num-threads",
         type=int,
-        default=1,
         help="Maximum amount of threads to use when training.",
     )
 
@@ -220,7 +222,6 @@ def add_finetune_params(
     parser.add_argument(
         "--epoch-fraction",
         type=float,
-        default=1.0,
         help="Fraction of epochs which are currently specified in the model "
         "configuration which should be used when finetuning a model.",
     )

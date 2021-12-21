@@ -1,4 +1,5 @@
 from typing import Text, List, Optional, Union, Any, Dict, Set
+import itertools
 import logging
 import json
 
@@ -20,6 +21,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     ActiveLoop,
     ActionExecutionRejected,
+    Restarted,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.slot_mappings import SlotMapping
@@ -159,9 +161,10 @@ class FormAction(LoopAction):
 
         return unique_entity_slot_mappings
 
-    def _entity_mapping_is_unique(
+    def entity_mapping_is_unique(
         self, slot_mapping: Dict[Text, Any], domain: Domain
     ) -> bool:
+        """Verifies if the from_entity mapping is unique."""
         if not self._have_unique_entity_mappings_been_initialized:
             # create unique entity mappings on the first call
             self._unique_entity_mappings = self._create_unique_entity_mappings(domain)
@@ -245,7 +248,10 @@ class FormAction(LoopAction):
 
         Returns:
             The validation events including potential bot messages and `SlotSet` events
-            for the validated slots.
+            for the validated slots, if the custom form validation action is present in
+            domain actions.
+            Otherwise, returns empty list since the extracted slots already have
+            corresponding `SlotSet` events in the tracker.
         """
         logger.debug(f"Validating extracted slots: {slot_candidates}")
         events: List[Union[SlotSet, Event]] = [
@@ -255,22 +261,18 @@ class FormAction(LoopAction):
         validate_name = f"validate_{self.name()}"
 
         if validate_name not in domain.action_names_or_texts:
-            return events
+            return []
 
+        # create temporary tracker with only the SlotSet events added
+        # since last user utterance
         _tracker = self._temporary_tracker(tracker, events, domain)
+
         _action = RemoteAction(validate_name, self.action_endpoint)
         validate_events = await _action.run(output_channel, nlg, _tracker, domain)
 
-        validated_slot_names = [
-            event.key for event in validate_events if isinstance(event, SlotSet)
-        ]
-
-        # If the custom action doesn't return a SlotSet event for an extracted slot
-        # candidate we assume that it was valid. The custom action has to return a
-        # SlotSet(slot_name, None) event to mark a Slot as invalid.
-        return validate_events + [
-            event for event in events if event.key not in validated_slot_names
-        ]
+        # Only return the validated SlotSet events by the custom form validation action
+        # to avoid adding duplicate SlotSet events for slots that are already valid.
+        return validate_events
 
     def _temporary_tracker(
         self,
@@ -307,35 +309,24 @@ class FormAction(LoopAction):
     def _get_events_since_last_user_uttered(
         tracker: "DialogueStateTracker",
     ) -> List[SlotSet]:
-        if tracker.latest_message in tracker.events:
-            index = tracker.events.index(tracker.latest_message)
-        else:
-            index = 0
-
-        tracker_events = list(tracker.events)
+        # TODO: Better way to get this latest_message index is through an instance
+        # variable, eg. tracker.latest_message_index
+        index_from_end = next(
+            (
+                i
+                for i, event in enumerate(reversed(tracker.events))
+                if event == Restarted() or event == tracker.latest_message
+            ),
+            len(tracker.events) - 1,
+        )
+        index = len(tracker.events) - index_from_end - 1
         events_since_last_user_uttered = [
-            event for event in tracker_events[index:] if isinstance(event, SlotSet)
+            event
+            for event in itertools.islice(tracker.events, index, None)
+            if isinstance(event, SlotSet)
         ]
 
         return events_since_last_user_uttered
-
-    def _slot_is_set_by_non_unique_entity_mappings(
-        self,
-        mapping: Dict[Text, Any],
-        slot_name: Text,
-        tracker: "DialogueStateTracker",
-        domain: Domain,
-    ) -> bool:
-        if mapping.get("type") != str(SlotMapping.FROM_ENTITY):
-            return False
-
-        if self.get_slot_to_fill(tracker) == slot_name:
-            return False
-
-        if self._entity_mapping_is_unique(mapping, domain):
-            return False
-
-        return True
 
     def _update_slot_values(
         self,
@@ -347,13 +338,20 @@ class FormAction(LoopAction):
         slot_mappings = self.get_mappings_for_slot(event.key, domain)
 
         for mapping in slot_mappings:
-
-            if not self._slot_is_set_by_non_unique_entity_mappings(
-                mapping, event.key, tracker, domain
-            ):
-                slot_values[event.key] = event.value
+            slot_values[event.key] = event.value
 
         return slot_values
+
+    def _add_dynamic_slots_requested_by_dynamic_forms(
+        self, tracker: "DialogueStateTracker", domain: Domain,
+    ) -> Set[Text]:
+        required_slots = set(self.required_slots(domain))
+        requested_slot = self.get_slot_to_fill(tracker)
+
+        if requested_slot:
+            required_slots.add(requested_slot)
+
+        return required_slots
 
     def _get_slot_extractions(
         self, tracker: "DialogueStateTracker", domain: Domain,
@@ -363,12 +361,12 @@ class FormAction(LoopAction):
         )
         slot_values = {}
 
-        for event in events_since_last_user_uttered:
-            if not tracker.active_loop:
-                # pre-filled slots were already validated at form activation
-                break
+        required_slots = self._add_dynamic_slots_requested_by_dynamic_forms(
+            tracker, domain
+        )
 
-            if event.key not in self.required_slots(domain):
+        for event in events_since_last_user_uttered:
+            if event.key not in required_slots:
                 continue
 
             slot_values = self._update_slot_values(event, tracker, domain, slot_values)
@@ -382,23 +380,28 @@ class FormAction(LoopAction):
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
     ) -> List[Union[SlotSet, Event]]:
-        """Extract and validate value of requested slot.
+        """Extract and validate value of requested slot and other slots.
 
-        If nothing was extracted reject execution of the form action.
-        Subclass this method to add custom validation and rejection logic
+        Returns:
+            The new validation events created by the custom form validation action
+
+        Raises:
+            ActionExecutionRejection exception to reject execution of form action
+            if nothing was extracted.
+
+        Subclass this method to add custom validation and rejection logic.
         """
-        slot_values = self._get_slot_extractions(tracker, domain)
+        extracted_slot_values = self._get_slot_extractions(tracker, domain)
 
         validation_events = await self.validate_slots(
-            slot_values, tracker, domain, output_channel, nlg
+            extracted_slot_values, tracker, domain, output_channel, nlg
         )
 
         some_slots_were_validated = any(
-            isinstance(event, SlotSet)
+            isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
             for event in validation_events
             # Ignore `SlotSet`s  for `REQUESTED_SLOT` as that's not a slot which needs
             # to be filled by the user.
-            if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
         )
 
         # extract requested slot
@@ -406,6 +409,7 @@ class FormAction(LoopAction):
 
         if (
             slot_to_fill
+            and not extracted_slot_values
             and not some_slots_were_validated
             and not self._user_rejected_manually(validation_events)
         ):
@@ -529,8 +533,11 @@ class FormAction(LoopAction):
            - the form is called after `action_listen`
            - form validation was not cancelled
         """
-        # no active_loop means that it is called during activation
-        needs_validation = not tracker.active_loop or (
+        # No active_loop means there are no form filled slots to validate yet
+        if not tracker.active_loop:
+            return []
+
+        needs_validation = (
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and not tracker.active_loop.get(LOOP_INTERRUPTED, False)
         )
