@@ -9,7 +9,7 @@ metadata:
     app: github-runner
     pod: github-runner-{{getenv "GITHUB_RUN_ID"}}
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: github-runner
