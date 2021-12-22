@@ -159,7 +159,6 @@ jobs:
 
       # Use compatible CUDA/cuDNN with the given TF version
       - name: Prepare GitHub runner image tag
-        id: prepare-runner
         run: |-
           GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
