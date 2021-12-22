@@ -234,7 +234,7 @@ livedocs:
 
 BRANCH ?= main
 preview-docs:
-	cd docs/ && yarn build && yarn deploy-preview --alias=$(BRANCH)
+	cd docs/ && yarn build && yarn deploy-preview --alias=$(BRANCH) --message="Preview for branch $(BRANCH)"
 
 publish-docs:
 	cd docs/ && yarn build && yarn deploy

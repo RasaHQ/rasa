@@ -231,8 +231,8 @@ jobs:
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        BRANCH: ${{ env.GITHUB_REF_NAME }}
-      run: make preview-docs
+      run: |
+        make preview-docs BRANCH=${{ github.github.ref_name }}
 
 
   publish_docs:
