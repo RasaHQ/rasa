@@ -203,9 +203,9 @@ def test_validate_files_form_not_found_invalid_domain(
 
 
 def test_validate_files_with_active_loop_null(tmp_path: Path):
-    file_name = tmp_path / f"rules.yml"
+    file_name = tmp_path / "rules.yml"
     file_name.write_text(
-        f"""
+        """
         version: "3.0"
         rules:
         - rule: test path
