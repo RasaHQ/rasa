@@ -161,7 +161,7 @@ jobs:
       - name: get matrix size
         id: get-matrix-size
         env:
-          matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix).include}}
+          matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
         run: |
           set -x
           echo "$matrix"
