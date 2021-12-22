@@ -1,0 +1,9 @@
+version: "2.0"
+
+intents:
+  - utter_subskill
+  - utter_subroot
+
+entities:
+  - cluedo
+  - monopoly
