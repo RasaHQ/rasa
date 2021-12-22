@@ -272,9 +272,11 @@ jobs:
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        DOCS_SITE_BASE_URL: /docs/rasa
+        BRANCH: ${{ github.ref_name }}
       run: |
-        make preview-docs BRANCH=${{ github.github.ref_name }}
-        DEPLOY_URL="https://rasa.com/docs/rasa"
+        make preview-docs
+        DEPLOY_URL="https://$BRANCH--rasahq-docs-rasa-v2.netlify.app/${DOCS_SITE_BASE_URL}"
         echo "::set-output name=preview_url::$DEPLOY_URL"
 
     - name: Create a comment with help description
@@ -285,8 +287,7 @@ jobs:
         id: comment_docs_previews
         github-token: ${{ secrets.GITHUB_TOKEN }}
         body: |
-          🚀 A preview of the docs have been deployed at the following URL:
-          ${{ steps.preview_draft_build.outputs.preview_url }}
+          🚀 A preview of the docs have been deployed at the following URL: ${{ steps.preview_draft_build.outputs.preview_url }}
 
   publish_docs:
     name: Publish Docs

@@ -232,9 +232,8 @@ docs: prepare-docs
 livedocs:
 	cd docs/ && poetry run yarn start
 
-BRANCH ?= main
 preview-docs:
-	cd docs/ && yarn build && yarn deploy-preview --alias=$(BRANCH) --message="Preview for branch $(BRANCH)"
+	cd docs/ && yarn build && yarn deploy-preview --alias=${BRANCH} --message="Preview for branch ${BRANCH}"
 
 publish-docs:
 	cd docs/ && yarn build && yarn deploy
