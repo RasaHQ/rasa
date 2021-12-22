@@ -472,8 +472,8 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs:
-      - deploy_runner_gpu
       - model_regression_test_gpu
+      - combine_reports
     env:
       GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Performance Drops'
 
