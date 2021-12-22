@@ -29,6 +29,35 @@ env:
   IS_MAIN_BRANCH: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
+  changes:
+    name: Check for file changes
+    runs-on: ubuntu-latest
+    # don't run this for main branches of forks; only on pull request (not needed elsewhere)
+    if: github.repository == 'RasaHQ/rasa' && github.event_name == 'pull_request'
+    outputs:
+      # Both of the outputs below are strings but only one exists at any given time
+      backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
+      docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
+      docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
+        # Run the normal filters if the all-tests-required label is not set
+        id: changed-files
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: .github/change_filters.yml
+      - name: Set all filters to true if all tests are required
+        # Set all filters to true if the all-tests-required label is set
+        # Bypasses all the change filters in change_filters.yml and forces all outputs to true
+        id: run-all
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
+        run: |
+          echo "::set-output name=backend::true"
+          echo "::set-output name=docker::true"
+          echo "::set-output name=docs::true"
+
   evaluate_release_tag:
     name: Evaluate release tag
     runs-on: ubuntu-latest
@@ -180,34 +209,41 @@ jobs:
   preview_docs:
     name: Preview Docs
     runs-on: ubuntu-latest
+    needs: [ changes ]
     # don't run this for main branches of forks; only run on pull requests
     if: github.repository == 'RasaHQ/rasa' && github.event_name == 'pull_request'
 
     steps:
     - name: Checkout git repository 🕝
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: 3.7
 
     - name: Set up Node 12.x 🦙
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/setup-node@v2.3.0
       with:
         node-version: '12.x'
 
     - name: Read Poetry Version 🔢
+      if: needs.changes.outputs.docs == 'true'
       run: |
         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
       shell: bash
 
     - name: Install poetry 🦄
+      if: needs.changes.outputs.docs == 'true'
       uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
@@ -215,6 +251,7 @@ jobs:
         restore-keys: ${{ runner.os }}-poetry-3.7-non-full
 
     - name: Load Yarn Cached Packages ⬇
+      if: needs.changes.outputs.docs == 'true'
       uses: actions/cache@v1
       with:
         path: docs/node_modules
@@ -222,18 +259,34 @@ jobs:
         restore-keys: ${{ runner.os }}-yarn-12.x
 
     - name: Install Dependencies 📦
+      if: needs.changes.outputs.docs == 'true'
       run: make install install-docs
 
     - name: Pre-build Docs 🧶
+      if: needs.changes.outputs.docs == 'true'
       run: make prepare-docs
 
     - name: Preview draft build 🔬
+      if: needs.changes.outputs.docs == 'true'
+      id: preview_draft_build
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
       run: |
         make preview-docs BRANCH=${{ github.github.ref_name }}
+        DEPLOY_URL="https://rasa.com/docs/rasa"
+        echo "::set-output name=preview_url::$DEPLOY_URL"
 
+    - name: Create a comment with help description
+      if: needs.changes.outputs.docs == 'true'
+      uses: RasaHQ/create-comment@v1
+      with:
+        mode: 'delete-previous'
+        id: comment_docs_previews
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        body: |
+          🚀 A preview of the docs have been deployed at the following URL:
+          ${{ steps.preview_draft_build.outputs.preview_url }}
 
   publish_docs:
     name: Publish Docs
