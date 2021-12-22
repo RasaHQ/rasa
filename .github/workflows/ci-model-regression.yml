@@ -162,7 +162,8 @@ jobs:
         id: get-matrix-size
         env:
           matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix).include}}
-        run: |-
+        run: |
+          set -x
           echo "$matrix"
           matrix_length=$(echo $matrix | jq '.[] | length')
           echo "::set-output name=matrix_length::$matrix_length"
