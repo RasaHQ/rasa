@@ -29,5 +29,6 @@ Loads trained component (see parent class for full docstring).
 ```
 
 Persist this model into the passed directory.
+
 Return the metadata necessary to load the model again.
 

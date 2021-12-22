@@ -637,6 +637,20 @@ Returns a dictionary with entries for `intent_warnings`,
 `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
 from domain warnings in case they are not featurized.
 
+#### utterances\_for\_response
+
+```python
+ | @property
+ | utterances_for_response() -> Set[Text]
+```
+
+Returns utterance set which should have a response.
+
+Will filter out utterances which are subintent (retrieval intent) types.
+eg. if actions have [&#x27;utter_chitchat&#x27;, &#x27;utter_chitchat/greet&#x27;], this
+will only return [&#x27;utter_chitchat/greet&#x27;] as only that will need a
+response.
+
 #### check\_missing\_templates
 
 ```python
