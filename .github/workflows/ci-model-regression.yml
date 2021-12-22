@@ -169,7 +169,17 @@ jobs:
             NUM_REPLICAS=$num_max_replicas
           else
 
-            echo ${{fromJson(needs.read_test_configuration.outputs.matrix)}} | jq '.'
+            { # try
+              echo ${{fromJson(needs.read_test_configuration.outputs.matrix)}} | jq '.[] | length'
+            } || { # catch
+              echo "caught"
+            }
+            { # try
+              echo ${{needs.read_test_configuration.outputs.matrix}} | jq '.[] | length'
+            } || { # catch
+              echo "caught2"
+            }
+            echo ${{needs.read_test_configuration.outputs.matrix}} | jq '.[] | length'
 
             NUM_REPLICAS=${{ strategy.job-total }}
           fi
