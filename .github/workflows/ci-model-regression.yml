@@ -81,7 +81,7 @@ jobs:
       id: set-matrix
       run: |-
           matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
-          matrix_length=$(echo $matrix | jq '.[] | length')
+          matrix_length=$(echo $matrix | jq '.[] | length | tonumber')
           echo "::set-output name=matrix_length::$matrix_length"
           echo "::set-output name=matrix::$matrix"
 
