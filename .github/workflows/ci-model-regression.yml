@@ -135,6 +135,7 @@ jobs:
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
     outputs:
       matrix: ${{ steps.prepare-runner.outputs.num_replicas }}
+      matrix_length: ${{ steps.get-matrix-size.outputs.matrix_length }}
 
     steps:
       - name: Checkout
@@ -155,6 +156,17 @@ jobs:
           echo "TensorFlow version: $TF_VERSION"
           echo TF_VERSION=$TF_VERSION >> $GITHUB_ENV
 
+      # https://github.community/t/getting-object-length/17802/3
+      # TODO .include ?
+      - name: get matrix size
+        id: get-matrix-size
+        env:
+          matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix).include}}
+        run: |-
+          echo "$matrix"
+          matrix_length=$(echo $matrix | jq '.[] | length')
+          echo "::set-output name=matrix_length::$matrix_length"
+
       # Use compatible CUDA/cuDNN with the given TF version
       - name: Prepare GitHub runner image tag
         id: prepare-runner
@@ -170,16 +182,16 @@ jobs:
           else
 
             { # try
-              echo ${{fromJson(needs.read_test_configuration.outputs.matrix)}} | jq '.[] | length'
+              echo ${{needs.deploy_runner_gpu.outputs.matrix_length}}
             } || { # catch
               echo "caught"
             }
             { # try
-              echo ${{needs.read_test_configuration.outputs.matrix}} | jq '.[] | length'
+              echo ${{ steps.get-matrix-size.outputs.matrix_length }}
             } || { # catch
               echo "caught2"
             }
-            echo ${{needs.read_test_configuration.outputs.matrix}} | jq '.[] | length'
+            echo ${{ steps.get-matrix-size.outputs.matrix_length }}
 
             NUM_REPLICAS=${{ strategy.job-total }}
           fi
