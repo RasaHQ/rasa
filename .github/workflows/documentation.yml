@@ -273,10 +273,10 @@ jobs:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         DOCS_SITE_BASE_URL: /docs/rasa
-        BRANCH: ${{ github.ref_name }}
+        PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
       run: |
         make preview-docs
-        DEPLOY_URL="https://$BRANCH--rasahq-docs-rasa-v2.netlify.app/${DOCS_SITE_BASE_URL}"
+        DEPLOY_URL="https://$PULL_REQUEST_NUMBER--rasahq-docs-rasa-v2.netlify.app/${DOCS_SITE_BASE_URL}"
         echo "::set-output name=preview_url::$DEPLOY_URL"
 
     - name: Create a comment with help description

@@ -233,7 +233,7 @@ livedocs:
 	cd docs/ && poetry run yarn start
 
 preview-docs:
-	cd docs/ && yarn build && yarn deploy-preview --alias=${BRANCH} --message="Preview for branch ${BRANCH}"
+	cd docs/ && yarn build && yarn deploy-preview --alias=${PULL_REQUEST_NUMBER} --message="Preview for Pull Request #${PULL_REQUEST_NUMBER}"
 
 publish-docs:
 	cd docs/ && yarn build && yarn deploy
