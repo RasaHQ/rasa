@@ -232,6 +232,13 @@ docs: prepare-docs
 livedocs:
 	cd docs/ && poetry run yarn start
 
+BRANCH ?= main
+preview-docs:
+	cd docs/ && yarn build && yarn deploy-preview --alias=$(BRANCH)
+
+publish-docs:
+	cd docs/ && yarn build && yarn deploy
+
 release:
 	poetry run python scripts/release.py
 
