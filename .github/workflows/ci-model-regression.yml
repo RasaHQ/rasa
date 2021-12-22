@@ -79,7 +79,13 @@ jobs:
       if: steps.fc_config.outputs.comment-id != ''
       id: set-matrix
       run: |-
-          echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)"
+          set -x
+          matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
+          echo "$matrix"
+          matrix_length=$(echo $matrix | jq '.[] | length')
+          echo "$matrix_length"
+          echo "::set-output name=matrix_length::$matrix_length"
+          echo "::set-output name=matrix::$matrix"
 
     - name: Update the comment with the configuration
       uses: peter-evans/create-or-update-comment@v1
@@ -161,7 +167,7 @@ jobs:
       - name: get matrix size
         id: get-matrix-size
         env:
-          matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+          matrix: ${{ fromJson(needs.read_test_configuration.outputs.matrix) }}
         run: |
           set -x
           echo "$matrix"
