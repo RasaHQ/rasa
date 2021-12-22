@@ -168,10 +168,11 @@ jobs:
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
 
           num_max_replicas=3
-          if [[ ${{ strategy.job-total }} -gt $num_max_replicas ]]; then
+          matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
+          if [[ $matrix_length -gt $num_max_replicas ]]; then
             NUM_REPLICAS=$num_max_replicas
           else
-            NUM_REPLICAS=${{ needs.read_test_configuration.outputs.matrix_length }}
+            NUM_REPLICAS=$matrix_length
           fi
           echo NUM_REPLICAS=$NUM_REPLICAS >> $GITHUB_ENV
           echo "::set-output name=num_replicas::${NUM_REPLICAS}"
