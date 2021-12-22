@@ -15,8 +15,8 @@ module.exports = configure({
   openApiSpecs: [
     {
       id: 'rasa-http-api',
-      specPath: '/spec/rasa.yml',
-      pagePath: '/pages/http-api/',
+      specPath: require.resolve('./static/spec/rasa.yml'),
+      pagePath: '/apis/http/',
     },
   ],
   /**
@@ -42,4 +42,6 @@ module.exports = configure({
     backgroundColor: '#6200F5', // Defaults to `#fff`.
     textColor: '#fff', // Defaults to `#000`.
   },
+  // @ts-ignore
+  package: require('./package.json'),
 });

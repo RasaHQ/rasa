@@ -2,10 +2,13 @@
   "name": "rasa-docs",
   "version": "0.0.0",
   "private": true,
+  "docusaurus": {
+    "port": 3000
+  },
   "scripts": {
     "pre-build": "yarn copy-md-files && yarn variables && yarn program-outputs && yarn included-sources && yarn autodoc && yarn telemetry",
     "start": "yarn pre-build && yarn develop",
-    "develop": "docusaurus start --port 3000",
+    "develop": "docusaurus start --port $npm_package_docusaurus_port",
     "preview": "yarn build && yarn serve",
     "swizzle": "docusaurus swizzle @docusaurus/theme-classic",
     "build": "docusaurus build --out-dir build/docs/rasa",
@@ -33,6 +36,7 @@
     "fibers": "^5.0.0",
     "fs-extra": "^9.0.1",
     "globby": "^11.0.4",
+    "mobx": "6.3.9",
     "postcss-preset-env": "^6.7.0",
     "postcss-pseudo-any": "^1.0.1",
     "prism-react-renderer": "^1.2.1",
