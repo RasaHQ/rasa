@@ -2,6 +2,9 @@
   "name": "rasa-docs",
   "version": "0.1.0-alpha.0",
   "private": true,
+  "engines": {
+    "node": ">=14"
+  },
   "docusaurus": {
     "port": 3000
   },
