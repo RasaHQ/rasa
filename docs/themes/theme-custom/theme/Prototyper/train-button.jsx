@@ -1,6 +1,6 @@
 import React from 'react';
 
-import RasaButton from '../RasaButton';
+import RasaButton from '../Button';
 import PrototyperContext from './context';
 
 const TrainButton = (props) => {

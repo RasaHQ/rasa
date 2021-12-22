@@ -14,9 +14,9 @@ module.exports = configure({
    */
   openApiSpecs: [
     {
-      title: 'Rasa HTTP API',
-      specUrl: '/spec/rasa.yml',
-      slug: '/pages/http-api',
+      id: 'rasa-http-api',
+      specPath: '/spec/rasa.yml',
+      pagePath: '/pages/http-api/',
     },
   ],
   /**
@@ -27,23 +27,6 @@ module.exports = configure({
    * themes
    */
   productLogo: '/img/logo-rasa-oss.png',
-  projectLinks: [
-    {
-      label: 'Rasa Open Source',
-      name: 'rasa',
-      devPort: '3000',
-    },
-    {
-      label: 'Rasa Enterprise',
-      name: 'rasa-x',
-      devPort: '3001',
-    },
-    {
-      label: 'Rasa Action Server',
-      name: 'rasa-sdk',
-      devPort: '3002',
-    },
-  ],
   legacyVersions: [
     {
       label: 'Legacy 1.x',
