@@ -213,7 +213,7 @@ class KafkaEventBroker(EventBroker):
         """Returns processed partition key for message in bytes format."""
         partition_key = bytes(partition_seed, encoding=DEFAULT_ENCODING)
         return partition_key
-    
+
     def _get_messsage_headers(self) -> List[Any]:
         """Creates message headers using environmental variables."""
         headers = [
@@ -222,7 +222,7 @@ class KafkaEventBroker(EventBroker):
                 bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
             )
         ]
-        return headers 
+        return headers
 
     @rasa.shared.utils.common.lazy_property
     def rasa_environment(self) -> Optional[Text]:
