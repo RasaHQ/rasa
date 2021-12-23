@@ -8,6 +8,7 @@ import pytest
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
 
+from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
@@ -21,7 +22,7 @@ from rasa.exceptions import (
     PublishingError,
 )
 from tests.conftest import MockExporter, random_user_uttered_event
-
+from rasa.shared.utils.io import DEFAULT_ENCODING
 
 @pytest.mark.parametrize(
     "requested_ids,available_ids,expected",
@@ -308,3 +309,29 @@ async def test_closing_broker_sync():
     # run the export function
     with pytest.warns(FutureWarning):
         await exporter.publish_events()
+
+def test_kafka_partition_key_creation():
+    event_broker = KafkaEventBroker(Mock(), Mock())
+    sender_id = uuid.uuid4().hex
+
+    
+    assert type(event_broker._get_partition_key(sender_id)) is bytes
+
+    with pytest.raises(TypeError):
+       _ = event_broker._get_partition_key(None)
+ 
+def test_kafka__header_creation(monkeypatch):
+    event_broker = KafkaEventBroker(Mock(), Mock())
+    exporter = MockExporter(event_broker=event_broker) 
+
+    ascii_str = "AaBbCc123" + "{`,~,!,@,#,$,%,^,&,*,(,),_,-,+,=,{,[,},},|,\,:,;,',<,,,>,.,?,/}"
+    extended_str = ascii_str + "トグラムÄ/äöüß/ϕϚϡ/АБВГДЕ"
+    monkeypatch.setenv("RASA_ENVIRONMENT", extended_str)
+    headers = event_broker._get_messsage_headers()
+    assert extended_str == headers[0][1].decode(DEFAULT_ENCODING)
+    
+def test_kafka_header_creation_without_env_variables():
+    event_broker = KafkaEventBroker(Mock(), Mock())
+    exporter = MockExporter(event_broker=event_broker) 
+
+    headers = event_broker._get_messsage_headers()

@@ -191,18 +191,16 @@ class KafkaEventBroker(EventBroker):
                 f"Cannot initialise `KafkaEventBroker`: {e}"
             )
 
+    def _close(self) -> None:
+        self.producer.close()
+
     def _publish(self, event: Dict[Text, Any]) -> None:
         if self.partition_by_sender:
-            partition_key = bytes(event.get("sender_id"), encoding=DEFAULT_ENCODING)
+            partition_key = self._create_partition_key(event.get("sender_id"))
         else:
             partition_key = None
 
-        headers = [
-            (
-                "RASA_ENVIRONMENT",
-                bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
-            )
-        ]
+        headers = self._create_message_header()
 
         logger.debug(
             f"Calling kafka send({self.topic}, value={event},"
@@ -211,10 +209,22 @@ class KafkaEventBroker(EventBroker):
 
         self.producer.send(self.topic, value=event, key=partition_key, headers=headers)
 
-    def _close(self) -> None:
-        self.producer.close()
+    def _get_partition_key(self, partition_seed: Text) -> bytes:
+        """Returns processed partition key for message in bytes format."""
+        partition_key = bytes(partition_seed, encoding=DEFAULT_ENCODING)
+        return partition_key
+    
+    def _get_messsage_headers(self) -> List[Any]:
+        """Creates message headers using environmental variables."""
+        headers = [
+            (
+                "RASA_ENVIRONMENT",
+                bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
+            )
+        ]
+        return headers 
 
     @rasa.shared.utils.common.lazy_property
     def rasa_environment(self) -> Optional[Text]:
         """Get value of the `RASA_ENVIRONMENT` environment variable."""
-        return os.environ.get("RASA_ENVIRONMENT")
+        return os.environ.get("RASA_ENVIRONMENT", "")
