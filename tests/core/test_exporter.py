@@ -313,8 +313,7 @@ async def test_closing_broker_sync():
 def test_kafka_partition_key_creation():
     event_broker = KafkaEventBroker(Mock(), Mock())
     sender_id = uuid.uuid4().hex
-
-    
+   
     assert type(event_broker._get_partition_key(sender_id)) is bytes
 
     with pytest.raises(TypeError):
