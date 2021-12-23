@@ -303,7 +303,7 @@ class Domain:
         if not domain2:
             return domain1
 
-        if domain1 == {}:
+        if not domain1:
             return domain2
 
         domain_dict = domain2
