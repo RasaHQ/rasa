@@ -324,7 +324,7 @@ def test_kafka_partition_key_creation():
 def test_kafka__header_creation(monkeypatch):
     event_broker = KafkaEventBroker(Mock(), Mock())
 
-    ascii_str = "AaBbCc123" + " " +  "{`~!@#$%^&*()_-+={[}}|:;'<>.?/}"
+    ascii_str = "AaBbCc123" + " " + "{`~!@#$%^&*()_-+={[}}|:;'<>.?/}"
     extended_str = ascii_str + "トグラムÄ/äöüß/ϕϚϡ/АБВГДЕ"
     monkeypatch.setenv("RASA_ENVIRONMENT", extended_str)
     headers = event_broker._get_messsage_headers()
@@ -335,4 +335,3 @@ def test_kafka_header_creation_without_env_variables():
     event_broker = KafkaEventBroker(Mock(), Mock())
     headers = event_broker._get_messsage_headers()
     assert headers[0][1].decode(DEFAULT_ENCODING) == ""
-
