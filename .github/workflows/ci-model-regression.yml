@@ -363,6 +363,7 @@ jobs:
             export DATASET=.
           fi
 
+          export TF_FORCE_GPU_ALLOW_GROWTH=true
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
             poetry run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
@@ -595,6 +596,7 @@ jobs:
             export DATASET=.
           fi
 
+          export TF_FORCE_GPU_ALLOW_GROWTH=true
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
             poetry run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
