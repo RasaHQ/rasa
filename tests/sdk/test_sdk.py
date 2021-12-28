@@ -1,10 +1,12 @@
 import contextlib
-import os
 import subprocess
 import shutil
+import uuid
 
 from pathlib import Path
 from typing import Text
+from rasa.core.processor import MessageProcessor
+from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 
 
 @contextlib.contextmanager
@@ -35,8 +37,35 @@ def test_action_server_start(simple_project: Text):
 
 
 def test_action_server_start_formbot(formbot_project: Text):
-    # test_check_for_unseen_feature
     with run_in_rasa_project(formbot_project, ["run", "actions"]) as process:
         assert "Starting action endpoint server..." in read_process_line(process)
-        assert "Registered function for 'validate_restaurant_form'" in read_process_line(process)
+        assert (
+            "Registered function for 'validate_restaurant_form'"
+            in read_process_line(process)
+        )
 
+
+async def test_action_server_use_formbot(
+    formbot_project: Text, default_processor: MessageProcessor
+):
+    # test_update_tracker_session_with_metadata
+    with run_in_rasa_project(formbot_project, ["run", "actions"]) as process:
+        for i in range(3):
+            # we need to make sure the server has started and all the functions are registered
+            read_process_line(process)
+
+        sender_id = uuid.uuid4().hex
+
+        message = UserMessage(
+            text="hi", output_channel=CollectingOutputChannel(), sender_id=sender_id,
+        )
+        await default_processor.handle_message(message)
+        message = UserMessage(
+            text="im looking for a restaurant",
+            output_channel=CollectingOutputChannel(),
+            sender_id=sender_id,
+        )
+        await default_processor.handle_message(message)
+
+        tracker = default_processor.tracker_store.retrieve(sender_id)
+        events = list(tracker.events)
