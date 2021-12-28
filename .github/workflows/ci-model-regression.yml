@@ -26,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix_length: ${{ steps.set-matrix.outputs.matrix_length }}
       configuration_id: ${{ steps.fc_config.outputs.comment-id }}
 
     steps:
@@ -80,7 +81,10 @@ jobs:
       if: steps.fc_config.outputs.comment-id != ''
       id: set-matrix
       run: |-
-          echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)"
+          matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
+          matrix_length=$(echo $matrix | jq '.[] | length')
+          echo "::set-output name=matrix_length::$matrix_length"
+          echo "::set-output name=matrix::$matrix"
 
     - name: Update the comment with the configuration
       uses: peter-evans/create-or-update-comment@v1
@@ -161,6 +165,15 @@ jobs:
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
 
+          num_max_replicas=3
+          matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
+          if [[ $matrix_length -gt $num_max_replicas ]]; then
+            NUM_REPLICAS=$num_max_replicas
+          else
+            NUM_REPLICAS=$matrix_length
+          fi
+          echo NUM_REPLICAS=$NUM_REPLICAS >> $GITHUB_ENV
+
       - name: Render deployment template
         run: |-
           export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
@@ -195,7 +208,7 @@ jobs:
       ACCELERATOR_TYPE: "GPU"
     runs-on: [self-hosted, gpu, "${{ github.run_id }}"]
     strategy:
-      max-parallel: 3
+      # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
