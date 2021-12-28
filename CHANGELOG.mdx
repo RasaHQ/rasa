@@ -16,6 +16,15 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.18] - 2021-12-27
+### Bugfixes
+- [#10137](https://github.com/rasahq/rasa/issues/10137): Fixes Domain loading when domain config uses multiple yml files.
+
+  Previously not all configures attributes were necessarily known
+  when merging Domains, and in the case of ``entities`
+  were not being properly assigned to ``intents``.
+
+
 ## [2.8.17] - 2021-12-21
 ### Bugfixes
 - [#10741](https://github.com/rasahq/rasa/issues/10741): Fix load method of LexicalSyntacticFeaturizer to make the class inheritable.
