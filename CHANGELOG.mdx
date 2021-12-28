@@ -16,11 +16,16 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.19] - 2021-12-28
+### Bugfixes
+- a small bugfix to domain merging.
+
+
 ## [2.8.18] - 2021-12-27
 ### Bugfixes
 - [#10137](https://github.com/rasahq/rasa/issues/10137): Fixes Domain loading when domain config uses multiple yml files.
 
-  Previously not all configures attributes were necessarily known
+  Previously not all configured attributes were necessarily known
   when merging Domains, and in the case of ``entities`
   were not being properly assigned to ``intents``.
 
