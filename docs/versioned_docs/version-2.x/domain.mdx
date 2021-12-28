@@ -49,17 +49,18 @@ intents:
     use_entities:
       - name
       - first_name
+- farewell:
     ignore_entities:
-      - location
-      - age
+      - last_name
 ```
+You can only `use_entities` _or_ `ignore_entities` for a single intent.
 
 Excluded entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
 an intent where you don't care about the entities being picked up.
 
-If you list your intents without this parameter, the entities will be
-featurized as normal.
+If you list your intents without a `use_entities` or `ignore_entities` 
+parameter, the entities will be featurized as normal.
 
 :::note
 If you want these entities not to influence action prediction,
@@ -83,6 +84,9 @@ entities:
    - membership_type  # custom entity extracted by DIETClassifier
    - priority         # custom entity extracted by DIETClassifier
 ```
+
+When using multiple domain files, entities can be specified in any domain file, 
+and can be used or ignored by any intent in any domain file.
 
 If you are using the feature [Entity Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups) you also
 need to list the roles and groups of an entity in this section.

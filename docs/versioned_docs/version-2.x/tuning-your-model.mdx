@@ -389,8 +389,8 @@ Diagnostic data was made available.
 :::
 
 To gain a better understanding of what your models do, you can access intermediate results of the prediction process.
-To do this, you need to access the `diagnostic_data` field of the [Message](./reference/rasa/shared/nlu/training_data/message.md#message-objects)
-and [Prediction](./reference/rasa/core/policies/policy.md#policyprediction-objects) objects, which contain
+To do this, you need to access the `diagnostic_data` field of the [Message](reference/rasa/shared/nlu/training_data/message.md)
+and [Prediction](reference/rasa/core/policies/policy.md#predict_action_probabilities) objects, which contain
 information about attention weights and other intermediate results of the inference computation.
 You can use this information for debugging and fine-tuning, e.g. with [RasaLit](https://github.com/RasaHQ/rasalit).
 
