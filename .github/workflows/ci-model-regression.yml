@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix_length: ${{ steps.set-matrix.outputs.matrix_length }}
       configuration_id: ${{ steps.fc_config.outputs.comment-id }}
 
     steps:
@@ -79,7 +80,10 @@ jobs:
       if: steps.fc_config.outputs.comment-id != ''
       id: set-matrix
       run: |-
-          echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)"
+          matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
+          matrix_length=$(echo $matrix | jq '.[] | length')
+          echo "::set-output name=matrix_length::$matrix_length"
+          echo "::set-output name=matrix::$matrix"
 
     - name: Update the comment with the configuration
       uses: peter-evans/create-or-update-comment@v1
@@ -160,6 +164,15 @@ jobs:
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
 
+          num_max_replicas=3
+          matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
+          if [[ $matrix_length -gt $num_max_replicas ]]; then
+            NUM_REPLICAS=$num_max_replicas
+          else
+            NUM_REPLICAS=$matrix_length
+          fi
+          echo NUM_REPLICAS=$NUM_REPLICAS >> $GITHUB_ENV
+
       - name: Render deployment template
         run: |-
           export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
@@ -167,7 +180,7 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -192,9 +205,9 @@ jobs:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       ACCELERATOR_TYPE: "GPU"
-    runs-on: [self-hosted, gpu]
+    runs-on: [self-hosted, gpu, "${{ github.run_id }}"]
     strategy:
-      max-parallel: 3
+      # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
@@ -745,7 +758,7 @@ jobs:
           echo "::set-output name=result::$OUTPUT"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v2.1.1
+        uses: marocchino/sticky-pull-request-comment@v2.2.0
         if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -783,7 +796,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
