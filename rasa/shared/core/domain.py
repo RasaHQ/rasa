@@ -275,11 +275,6 @@ class Domain:
         domain_dict = domain.as_dict()
         combined = self.as_dict()
 
-        def extract_duplicates(
-            dict1: Dict[Text, Any], dict2: Dict[Text, Any],
-        ) -> List[Text]:
-            return [value for value in dict1.keys() if value in dict2.keys()]
-
         if override:
             config = domain_dict["config"]
             for key, val in config.items():
@@ -292,14 +287,6 @@ class Domain:
             combined[KEY_INTENTS] = self.merge_lists_of_dicts(
                 combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
             )
-        # duplicates: Dict[Text, List[Text]] = {}
-
-        # # this code merges lists of dicts of intents
-        # dict1 = {list(i.keys())[0]: i for i in combined[KEY_INTENTS]}
-        # dict2 = {list(i.keys())[0]: i for i in domain_dict[KEY_INTENTS]}
-        # duplicates[KEY_INTENTS] = extract_duplicates(dict1, dict2)
-        # combined[KEY_INTENTS] = list(self.merge_dicts(dict1, dict2, override).values())
-
         # remove existing forms from new actions
         for form in combined[KEY_FORMS]:
             if form in domain_dict[KEY_ACTIONS]:
@@ -309,10 +296,8 @@ class Domain:
             combined[key] = self.merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
-            # duplicates[key] = extract_duplicates(combined[key], domain_dict[key])
             combined[key] = self.merge_dicts(combined[key], domain_dict[key], override)
 
-        # return self.__class__.from_dict(combined, duplicates)
         return self.__class__.from_dict(combined)
 
     def merge_domain_dicts(
@@ -375,7 +360,7 @@ class Domain:
         tempDict2: Dict[Text, Any],
         override_existing_values: bool = False,
     ) -> Dict[Text, Any]:
-        """Merges 2 dicts."""
+        """Merges two dicts."""
         if override_existing_values:
             merged_dicts, b = tempDict1.copy(), tempDict2.copy()
 
@@ -386,7 +371,7 @@ class Domain:
 
     @staticmethod
     def merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
-        """Merges 2 lists."""
+        """Merges two lists."""
         return sorted(list(set(list1 + list2)))
 
     @staticmethod
@@ -395,7 +380,7 @@ class Domain:
         dict_list2: List[Dict],
         override_existing_values: bool = False,
     ) -> List[Dict]:
-        """Merges 2 dict lists."""
+        """Merges two dict lists."""
         dict1 = {
             (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
             for i in dict_list1
