@@ -335,19 +335,6 @@ async def test_train_persist_load_with_only_entity_recognition(
     create_diet(config, load=True, finetune=True)
 
 
-async def test_train_persist_load_with_only_entity_recognition(
-    create_train_load_and_process_diet: Callable[..., Message],
-    create_diet: Callable[..., DIETClassifier],
-):
-    config = {ENTITY_RECOGNITION: True, INTENT_CLASSIFICATION: False, EPOCHS: 1}
-    create_train_load_and_process_diet(
-        config,
-        training_data="data/examples/rasa/demo-rasa-multi-intent.yml",
-        expect_intent=False,
-    )
-    create_diet(config, load=True, finetune=True)
-
-
 async def test_process_empty_input(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
