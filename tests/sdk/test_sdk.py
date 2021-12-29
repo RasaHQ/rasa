@@ -71,4 +71,7 @@ async def test_action_server_use_formbot(
         tracker = default_processor.tracker_store.retrieve(sender_id)
         events = list(tracker.events)
 
+        # we can check the events and make sure they contain
+        # the required ones
+
         print(events)
