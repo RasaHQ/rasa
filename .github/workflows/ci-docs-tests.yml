@@ -60,11 +60,24 @@ jobs:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
       uses: actions/cache@v2
       with:
-        path: ~/.cache/pypoetry/virtualenvs
+        path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-docs-tests')
+      run: rm -r .venv
+
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-docs-tests'))
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      if: needs.changes.outputs.docs == 'true'
+      run: poetry config virtualenvs.in-project true
 
     - name: Load Yarn Cached Packages ⬇
       uses: actions/cache@v2
