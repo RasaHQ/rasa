@@ -335,6 +335,17 @@ async def test_train_persist_load_with_only_entity_recognition(
     create_diet(config, load=True, finetune=True)
 
 
+@pytest.mark.timeout(120, func_only=True)
+async def test_train_persist_load_with_only_intent_classification(
+    create_train_load_and_process_diet: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
+):
+    create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1,},
+    )
+    create_diet({MASKED_LM: True, EPOCHS: 1}, load=True, finetune=True)
+
+
 async def test_process_empty_input(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
