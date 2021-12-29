@@ -51,7 +51,8 @@ async def test_action_server_use_formbot(
     # test_update_tracker_session_with_metadata
     with run_in_rasa_project(formbot_project, ["run", "actions"]) as process:
         for i in range(3):
-            # we need to make sure the server has started and all the functions are registered
+            # we need to make sure the server has started and
+            # all the functions are registered
             read_process_line(process)
 
         sender_id = uuid.uuid4().hex
@@ -69,3 +70,5 @@ async def test_action_server_use_formbot(
 
         tracker = default_processor.tracker_store.retrieve(sender_id)
         events = list(tracker.events)
+
+        print(events)
