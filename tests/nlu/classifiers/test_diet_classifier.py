@@ -335,15 +335,28 @@ async def test_train_persist_load_with_only_entity_recognition(
     create_diet(config, load=True, finetune=True)
 
 
-@pytest.mark.timeout(120, func_only=True)
-async def test_train_persist_load_with_only_intent_classification(
+async def test_train_persist_load_with_only_entity_recognition(
     create_train_load_and_process_diet: Callable[..., Message],
     create_diet: Callable[..., DIETClassifier],
 ):
+    config = {ENTITY_RECOGNITION: True, INTENT_CLASSIFICATION: False, EPOCHS: 1}
     create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1,},
+        config,
+        training_data="data/examples/rasa/demo-rasa-multi-intent.yml",
+        expect_intent=False,
     )
-    create_diet({MASKED_LM: True, EPOCHS: 1}, load=True, finetune=True)
+    create_diet(config, load=True, finetune=True)
+
+
+async def test_process_empty_input(
+    create_train_load_and_process_diet: Callable[..., Message],
+):
+    message = create_train_load_and_process_diet(
+        diet_config={EPOCHS: 1}, message_text="", expect_intent=False
+    )
+    assert message.get(TEXT) == ""
+    assert message.get(INTENT)["name"] is None
+    assert message.get(INTENT)["confidence"] == 0.0
 
 
 @pytest.mark.parametrize(
