@@ -1000,9 +1000,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     def process(self, messages: List[Message]) -> List[Message]:
         """Augments the message with intents, entities, and diagnostic data."""
         for message in messages:
-            print(message.__dict__)
             out = self._predict(message) if message.get(TEXT) else None
-            print(message.__dict__)
 
             if self.component_config[INTENT_CLASSIFICATION]:
                 label, label_ranking = self._predict_label(out)
