@@ -1,4 +1,5 @@
 version: "2.0"
 
 intents:
+  - utter_skill_1
   - utter_skill_2

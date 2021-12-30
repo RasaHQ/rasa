@@ -317,7 +317,9 @@ class Domain:
         if override or domain2.get("session_config"):
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
-        if combined[KEY_INTENTS] or domain_dict[KEY_INTENTS]:
+        if combined.get(KEY_INTENTS) or domain_dict.get(KEY_INTENTS):
+            combined[KEY_INTENTS] = combined.get(KEY_INTENTS, [])
+            domain_dict[KEY_INTENTS] = domain_dict.get(KEY_INTENTS, [])
             combined[KEY_INTENTS] = self.merge_lists_of_dicts(
                 combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
             )
