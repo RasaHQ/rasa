@@ -33,7 +33,7 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "process_config:"
     echo "    enabled: false"
     echo "apm_config:"
-    echo "    enabled: false"
+    echo "    enabled: true"
     echo "use_dogstatsd: true"
 } >> $DATADOG_YAML_PATH
 
