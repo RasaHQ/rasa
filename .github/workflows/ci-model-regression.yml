@@ -315,11 +315,6 @@ jobs:
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
-          DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
-          DD_SITE: datadoghq.eu
-          DD_VERSION: 0.57.0
-          DD_AGENT_HOST: datadog-agent
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
@@ -564,11 +559,6 @@ jobs:
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
-          DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
-          DD_SITE: datadoghq.eu
-          DD_VERSION: 0.57.0
-          DD_AGENT_HOST: datadog-agent
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
