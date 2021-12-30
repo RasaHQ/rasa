@@ -63,10 +63,6 @@ LD_LIBRARY_PATH="/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/l
 
 sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH $AGENT_ARGS"
 
-sudo netstat -plnt
-
-sudo datadog-agent status
-
 sleep 10
-
+sudo netstat -plnt
 sudo datadog-agent status
