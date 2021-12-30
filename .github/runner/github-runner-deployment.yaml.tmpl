@@ -45,6 +45,8 @@ spec:
           requests:
             nvidia.com/gpu: 1
             memory: 10G
+        ports:
+        - containerPort: 8126
         env:
         - name: POD_NAME
           valueFrom:
