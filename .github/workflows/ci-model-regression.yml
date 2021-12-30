@@ -351,9 +351,9 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
-      - name: Install datadog-api-client
+      - name: Install datadog dependencies
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U datadog-api-client
+        run: poetry run pip install -U datadog-api-client ddtrace
 
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -593,9 +593,9 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
-      - name: Install datadog-api-client
+      - name: Install datadog dependencies
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U datadog-api-client
+        run: poetry run pip install -U datadog-api-client ddtrace
 
       - name: Run test
         id: run_test
