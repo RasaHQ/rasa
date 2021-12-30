@@ -353,7 +353,7 @@ jobs:
 
       - name: Install datadog dependencies
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U datadog-api-client ddtrace
+        run: poetry run pip install -U datadog-api-client==1.7.0 ddtrace==0.57.0
 
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -371,6 +371,8 @@ jobs:
           DD_LOGS_INJECTION: true
           DD_ENV: rasa-regression-tests
           DD_SERVICE: rasa
+          DD_VERSION: 0.57.0
+          DD_AGENT_HOST: datadog-agent
         run: |-
           poetry run rasa --version
 
@@ -595,7 +597,7 @@ jobs:
 
       - name: Install datadog dependencies
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U datadog-api-client ddtrace
+        run: poetry run pip install -U datadog-api-client==1.7.0 ddtrace==0.57.0
 
       - name: Run test
         id: run_test
@@ -608,6 +610,8 @@ jobs:
           DD_LOGS_INJECTION: true
           DD_ENV: rasa-regression-tests
           DD_SERVICE: rasa
+          DD_VERSION: 0.57.0
+          DD_AGENT_HOST: datadog-agent
         run: |-
           poetry run rasa --version
 
