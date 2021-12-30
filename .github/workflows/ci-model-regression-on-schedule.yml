@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix_length: ${{ steps.set-matrix.outputs.matrix_length }}
     steps:
     - name: Checkout main
       uses: actions/checkout@v2
@@ -41,7 +42,11 @@ jobs:
     - name: Set matrix values
       id: set-matrix
       shell: bash
-      run: echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=.github/configs/mr-test-schedule.json -f .github/templates/model_regression_test_config_to_json.tmpl)"
+      run: |-
+        matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=.github/configs/mr-test-schedule.json -f .github/templates/model_regression_test_config_to_json.tmpl)
+        matrix_length=$(echo $matrix | jq '.[] | length')
+        echo "::set-output name=matrix_length::$matrix_length"
+        echo "::set-output name=matrix::$matrix"
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
@@ -72,6 +77,15 @@ jobs:
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
 
+          num_max_replicas=3
+          matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
+          if [[ $matrix_length -gt $num_max_replicas ]]; then
+            NUM_REPLICAS=$num_max_replicas
+          else
+            NUM_REPLICAS=$matrix_length
+          fi
+          echo NUM_REPLICAS=$NUM_REPLICAS >> $GITHUB_ENV
+
       - name: Render deployment template
         run: |-
           export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
@@ -79,7 +93,7 @@ jobs:
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -115,10 +129,9 @@ jobs:
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       ACCELERATOR_TYPE: "GPU"
       GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Failed'
-
-    runs-on: [self-hosted, gpu]
+    runs-on: [self-hosted, gpu, "${{ github.run_id }}"]
     strategy:
-      max-parallel: 3
+      # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
 
     steps:
@@ -390,7 +403,7 @@ jobs:
 
       - name: Notify Slack of Failure 😱
         if: failure()  && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9  # v3
+        uses: 8398a7/action-slack@c9ff874f8549f97317ec9f6162d5449ee77bc984  # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -472,8 +485,8 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs:
-      - deploy_runner_gpu
       - model_regression_test_gpu
+      - combine_reports
     env:
       GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Performance Drops'
 
@@ -586,7 +599,7 @@ jobs:
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: 8398a7/action-slack@c84a35cfa82a01f3733a3cbf5d5260123e55c2f9 #v3
+        uses: 8398a7/action-slack@c9ff874f8549f97317ec9f6162d5449ee77bc984 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -624,7 +637,7 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
