@@ -100,9 +100,7 @@ def main() -> None:
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
 
-    log_level = (
-        cmdline_arguments.loglevel if hasattr(cmdline_arguments, "loglevel") else None
-    )
+    log_level = cmdline_arguments.loglevel
     configure_logging_and_warnings(
         log_level, warn_only_once=True, filter_repeated_logs=True
     )
