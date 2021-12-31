@@ -33,7 +33,6 @@ class KafkaEventBroker(EventBroker):
         ssl_keyfile: Optional[Text] = None,
         ssl_check_hostname: bool = False,
         security_protocol: Text = "SASL_PLAINTEXT",
-        loglevel: Union[int, Text] = logging.ERROR,
         **kwargs: Any,
     ) -> None:
         """Kafka event broker.
@@ -67,7 +66,6 @@ class KafkaEventBroker(EventBroker):
                 should verify that the certificate matches the brokers hostname.
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
-            loglevel: Logging level of the kafka logger.
         """
         import kafka
 
@@ -84,8 +82,6 @@ class KafkaEventBroker(EventBroker):
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
-
-        logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
     async def from_endpoint_config(
