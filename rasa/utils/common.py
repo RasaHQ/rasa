@@ -27,7 +27,7 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_MATPLOTLIB,
-    ENV_LOG_LEVEL_PIKA,
+    ENV_LOG_LEVEL_RABBITMQ,
     ENV_LOG_LEVEL_KAFKA,
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
@@ -152,7 +152,7 @@ def configure_library_logging() -> None:
     update_socketio_log_level()
     update_matplotlib_log_level(library_log_level)
     update_kafka_log_level(library_log_level)
-    update_pika_log_level(library_log_level)
+    update_rabbitmq_log_level(library_log_level)
 
 
 def update_apscheduler_log_level() -> None:
@@ -267,13 +267,14 @@ def update_kafka_log_level(library_log_level: Text) -> None:
     logging.getLogger("kafka").setLevel(log_level)
 
 
-def update_pika_log_level(library_log_level: Text) -> None:
+def update_rabbitmq_log_level(library_log_level: Text) -> None:
     """Set the log level of pika.
 
     Uses the library specific log level or the general libraries log level.
     """
-    log_level = os.environ.get(ENV_LOG_LEVEL_PIKA, library_log_level)
-    logging.getLogger("pika").setLevel(log_level)
+    log_level = os.environ.get(ENV_LOG_LEVEL_RABBITMQ, library_log_level)
+    logging.getLogger("aio_pika").setLevel(log_level)
+    logging.getLogger("aiormq").setLevel(log_level)
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
