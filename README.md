@@ -369,7 +369,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git checkout 1.2.x
     git pull origin 1.2.x
     git tag 1.2.0 -m "next release"
-    git push origin 1.2.0
+    git push origin 1.2.0 --tags
     ```
     GitHub will build this tag and publish the build artifacts.
 8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
