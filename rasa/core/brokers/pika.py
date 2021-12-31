@@ -69,7 +69,6 @@ class PikaEventBroker(EventBroker):
                 If nothing is mentioned then the default exchange name would be used.
         """
         super().__init__()
-        _set_pika_log_levels(log_level)
 
         self.host = host
         self.username = username
@@ -349,9 +348,3 @@ def _create_rabbitmq_ssl_options(
         }
 
     return None
-
-
-def _set_pika_log_levels(log_level: Union[Text, int]) -> None:
-    pika_loggers = ["aio_pika", "aiormq"]
-    for logger_name in pika_loggers:
-        logging.getLogger(logger_name).setLevel(log_level)
