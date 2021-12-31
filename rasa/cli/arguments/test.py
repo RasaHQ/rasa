@@ -9,6 +9,7 @@ from rasa.cli.arguments.default_arguments import (
     add_nlu_data_param,
     add_endpoint_param,
     add_out_param,
+    add_domain_param,
 )
 from rasa.model import get_latest_model
 
@@ -113,7 +114,7 @@ def add_test_nlu_argument_group(
         "multiple configs or a folder of configs are passed, models "
         "will be trained and compared directly.",
     )
-
+    add_domain_param(parser)
     cross_validation_arguments = parser.add_argument_group("Cross Validation")
     cross_validation_arguments.add_argument(
         "--cross-validation",

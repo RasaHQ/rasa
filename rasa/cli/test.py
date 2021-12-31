@@ -21,7 +21,6 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
-    DEFAULT_DOMAIN_PATH,
 )
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
@@ -155,6 +154,7 @@ async def run_nlu_test_async(
     percentages: List[int],
     runs: int,
     no_errors: bool,
+    domain_path: Text,
     all_args: Dict[Text, Any],
 ) -> None:
     """Runs NLU tests.
@@ -173,6 +173,8 @@ async def run_nlu_test_async(
         runs: number of comparison runs to make.
         no_errors: indicates if incorrect predictions should be written to a file
                    or not.
+        domain_path: path to a domain file or a directory containing domain
+                     specifications.
     """
     from rasa.model_testing import (
         compare_nlu_models,
@@ -182,7 +184,7 @@ async def run_nlu_test_async(
 
     data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
+        training_data_paths=[data_path], domain_path=domain_path,
     )
     nlu_data = await test_data_importer.get_nlu_data()
 
@@ -249,6 +251,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             args.percentages,
             args.runs,
             args.no_errors,
+            args.domain,
             vars(args),
         )
     )
