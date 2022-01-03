@@ -16,7 +16,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
@@ -343,26 +343,37 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     def _back_to_the_future(
         tracker: DialogueStateTracker, again: bool = False
     ) -> Optional[DialogueStateTracker]:
-        """Send Marty to the past to get
-        the new featurization for the future"""
+        """Truncates the tracker to the next `ActionExecuted` or `UserUttered` event.
 
-        idx_of_first_action = None
-        idx_of_second_action = None
+        Args:
+            tracker: The tracker to truncate.
+            again: When true, truncate tracker at the second action or
+                user utterance. Otherwise truncate to the firt action or
+                user utterance.
+
+        Returns:
+            The truncated tracker if there were actions or user utterances
+            present. If none are found, returns `None`.
+        """
+        idx_of_first_action_or_user = None
+        idx_of_second_action_or_user = None
 
         applied_events = tracker.applied_events()
 
-        # we need to find second executed action
+        # We need to find the second `ActionExecuted` or `UserUttered` event.
         for e_i, event in enumerate(applied_events):
-            # find second ActionExecuted
-            if isinstance(event, ActionExecuted):
-                if idx_of_first_action is None:
-                    idx_of_first_action = e_i
+            if isinstance(event, ActionExecuted) or isinstance(event, UserUttered):
+                if idx_of_first_action_or_user is None:
+                    idx_of_first_action_or_user = e_i
                 else:
-                    idx_of_second_action = e_i
+                    idx_of_second_action_or_user = e_i
                     break
 
-        # use first action, if we went first time and second action, if we went again
-        idx_to_use = idx_of_second_action if again else idx_of_first_action
+        # use first action/user utterance, if we went first time and
+        # second action/user utterance, if we went again
+        idx_to_use = (
+            idx_of_second_action_or_user if again else idx_of_first_action_or_user
+        )
         if idx_to_use is None:
             return None
 
