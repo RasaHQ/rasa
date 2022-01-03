@@ -35,6 +35,7 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -462,12 +463,16 @@ def _get_max_applied_events_for_max_history(
 ) -> Optional[int]:
     """Computes the number of events in the tracker that correspond to max_history.
 
+    To ensure that the last user utterance is correctly included in the prediction
+    states, return the index of the most recent `action_listen` event occuring
+    before the tracker would be truncated according to the value of `max_history`.
+
     Args:
         tracker: Some tracker holding the events
         max_history: The number of actions to count
 
     Returns:
-        The number of actions, as counted from the end of the event list, that should
+        The number of events, as counted from the end of the event list, that should
         be taken into accout according to the `max_history` setting. If all events
         should be taken into account, the return value is `None`.
     """
@@ -479,8 +484,8 @@ def _get_max_applied_events_for_max_history(
         num_events += 1
         if isinstance(event, ActionExecuted):
             num_actions += 1
-        if num_actions > max_history:
-            return num_events
+            if num_actions > max_history and event.action_name == ACTION_LISTEN_NAME:
+                return num_events
     return None
 
 
