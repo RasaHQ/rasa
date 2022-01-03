@@ -552,12 +552,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   Include a [Tokenizer](./components.mdx#tokenizers) component before this component.
 
   You should specify what language model to load via the parameter `model_name`. See the below table for the
-  available language models.
-  Additionally, you can also specify the architecture variation of the chosen language model by specifying the
-  parameter `model_weights`.
-  The full list of supported architectures can be found in the
-  [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
-  If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+  currently supported language models. The weights to be loaded can be specified by the additional parameter
+  `model_weights`. If left empty, it uses the default model weights listed in the table.
+
+  Apart from the default pretrained model weights, further models can be used from
+  [HuggingFace models](https://huggingface.co/models) provided the following conditions are met:
+
+  * The model architecture is one of the supported language models
+  * The model has pretrained Tensorflow weights (check for `tf_model.h5` in the "Files and versions" section)
+  * The model uses the default tokenizer (e.g. `TFBertModel` must use `BertTokenizer`)
 
   ```
   +----------------+--------------+-------------------------+
