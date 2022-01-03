@@ -816,7 +816,6 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             == UTTER_BYE_ACTION
         )
 
-
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
     def test_augmented_prediction_across_max_history_actions(
         self,
@@ -1156,6 +1155,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             ]
             == UTTER_ACTION_4
         )
+
 
 @pytest.mark.parametrize(
     "policy,supported_data",
