@@ -582,6 +582,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
+            config={"max_history": max_history},
         )
 
         GREET_INTENT_NAME = "greet"
