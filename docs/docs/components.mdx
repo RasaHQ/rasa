@@ -555,13 +555,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   currently supported language models. The weights to be loaded can be specified by the additional parameter
   `model_weights`. If left empty, it uses the default model weights listed in the table.
 
-  Apart from the default pretrained model weights, further models can be used from
-  [HuggingFace models](https://huggingface.co/models) provided the following conditions are met:
-
-  * The model architecture is one of the supported language models
-  * The model has pretrained Tensorflow weights (check for `tf_model.h5` in the "Files and versions" section)
-  * The model uses the default tokenizer (e.g. `TFBertModel` must use `BertTokenizer`)
-
   ```
   +----------------+--------------+-------------------------+
   | Language Model | Parameter    | Default value for       |
@@ -581,7 +574,25 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   +----------------+--------------+-------------------------+
   ```
 
-  The following configuration loads the language model BERT:
+  Apart from the default pretrained model weights, further models can be used from
+  [HuggingFace models](https://huggingface.co/models) provided the following conditions are met (the mentioned
+  files can be found in the "Files and versions" section of the model website):
+
+  * The model architecture is one of the supported language models (check that the `model_type` in `config.json` is
+    listed in the table's column `model_name`)
+  * The model has pretrained Tensorflow weights (check that the file `tf_model.h5` exists)
+  * The model uses the default tokenizer (`config.json` should not contain a custom `tokenizer_class` setting)
+
+  :::note
+  The `LaBSE` weights that are loaded as default for the `bert` architecture provide a multi-lingual model trained on
+  112 languages (see the original paper [here](https://arxiv.org/pdf/2007.01852.pdf)). We strongly encourage using this
+  as a baseline and testing your bot end-to-end before trying to optimize this component with other
+  weights/architectures.
+  :::
+
+
+  The following configuration loads the language model BERT with `rasa/LaBSE` weights, which can be found
+  [here](https://huggingface.co/rasa/LaBSE/tree/main):
 
   ```yaml-rasa
   pipeline:
