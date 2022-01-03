@@ -187,9 +187,7 @@ class Domain:
             raise e
 
     @classmethod
-    def from_dict(
-        cls, data: Dict, duplicates: Optional[Dict[Text, List[Text]]] = None
-    ) -> "Domain":
+    def from_dict(cls, data: Dict) -> "Domain":
         """Deserializes and creates domain.
 
         Args:
@@ -213,6 +211,7 @@ class Domain:
 
         forms = data.get(KEY_FORMS, {})
         _validate_forms(forms)
+        duplicates = data.get("duplicates", None)
 
         return cls(
             intents,
@@ -265,7 +264,6 @@ class Domain:
         and merged. Single attributes will be taken from `self` unless
         override is `True`, in which case they are taken from `domain`.
         """
-
         if not domain or domain.is_empty():
             return self
 
@@ -332,7 +330,12 @@ class Domain:
         if override or domain2.get("session_config"):
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
+        duplicates: Dict[Text, List[Text]] = {}
+
         if combined.get(KEY_INTENTS) or domain_dict.get(KEY_INTENTS):
+            duplicates[KEY_INTENTS] = self.extract_duplicates(
+                combined.get(KEY_INTENTS, []), domain_dict.get(KEY_INTENTS, [])
+            )
             combined[KEY_INTENTS] = combined.get(KEY_INTENTS, [])
             domain_dict[KEY_INTENTS] = domain_dict.get(KEY_INTENTS, [])
             combined[KEY_INTENTS] = self.merge_lists_of_dicts(
@@ -345,16 +348,59 @@ class Domain:
                 domain_dict[KEY_ACTIONS].remove(form)
 
         for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
+            duplicates[key] = self.extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
             combined[key] = self.merge_lists(
                 combined.get(key, []), domain_dict.get(key, [])
             )
 
         for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            duplicates[key] = self.extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
             combined[key] = self.merge_dicts(
                 combined.get(key, {}), domain_dict.get(key, {}), override
             )
 
+        if duplicates:
+            duplicates = self.clean_duplicates(duplicates)
+            combined.update({"duplicates": duplicates})
         return combined
+
+    @staticmethod
+    def extract_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]:
+        """Extracts duplicates from two lists."""
+        if list1:
+            dict1 = {
+                (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
+                for i in list1
+            }
+        else:
+            dict1 = {}
+
+        if list2:
+            dict2 = {
+                (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
+                for i in list2
+            }
+        else:
+            dict2 = {}
+
+        set1 = set(dict1.keys())
+        set2 = set(dict2.keys())
+        dupes = set1.intersection(set2)
+        return sorted(list(dupes))
+
+    @staticmethod
+    def clean_duplicates(dupes: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Removes keys for empty values."""
+        duplicates = dupes.copy()
+        for k in dupes:
+            if not dupes[k]:
+                duplicates.pop(k)
+
+        return duplicates
 
     @staticmethod
     def merge_dicts(

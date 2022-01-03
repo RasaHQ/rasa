@@ -1815,6 +1815,9 @@ def test_domain_with_duplicates():
     }
     assert domain.intents == expected_intents
     assert domain.responses == expected_responses
+    assert domain.duplicates["slots"] == ["mood"]
+    assert domain.duplicates["responses"] == ["utter_did_that_help", "utter_greet"]
+    assert domain.duplicates["intents"] == ["greet"]
 
 
 def test_domain_duplicates_when_one_domain_file():
