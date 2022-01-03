@@ -232,6 +232,10 @@ class Validator:
                     # We've seen this loop before, don't alert on it twice
                     continue
 
+                if not event.name:
+                    # To support setting `active_loop` to `null`
+                    continue
+
                 if event.name not in self.domain.form_names:
                     rasa.shared.utils.io.raise_warning(
                         f"The form '{event.name}' is used in the "
