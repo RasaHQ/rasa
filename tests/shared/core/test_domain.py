@@ -1820,6 +1820,15 @@ def test_domain_with_duplicates():
     assert domain.duplicates["intents"] == ["greet"]
 
 
+def test_domain_without_duplicates():
+    """
+    Check if a domain without duplicated slots, responses and intents contains
+    nothing in `duplicates` field.
+    """
+    domain = Domain.from_directory("data/test_domains/test_domain_without_duplicates/")
+    assert domain.duplicates == {}
+
+
 def test_domain_duplicates_when_one_domain_file():
     """
     Check if a domain with duplicated slots, responses and intents contains
