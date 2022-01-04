@@ -1,13 +1,21 @@
+import os
 import logging
 from pathlib import Path
 from typing import Any, Text, Type
+from unittest import mock
 
 import pytest
 
 from rasa.core.agent import Agent
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.utils.common
-from rasa.utils.common import RepeatedLogFilter, find_unavailable_packages
+from rasa.utils.common import (
+    RepeatedLogFilter,
+    find_unavailable_packages,
+    configure_logging_and_warnings,
+)
+from rasa.shared.constants import DEFAULT_LOG_LEVEL
+from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES
 import tests.conftest
 
 
@@ -146,3 +154,45 @@ def test_override_defaults():
 
     expected_config = {"nested-dict": {"key1": "value1", "key2": "override-value2"}}
     assert updated_config == expected_config
+
+
+def test_cli_missing_log_level_default_used():
+    """Test CLI without log level parameter or env var uses default."""
+    configure_logging_and_warnings()
+    rasa_logger = logging.getLogger("rasa")
+    # Default log level is currently INFO
+    rasa_logger.level == logging.INFO
+    matplotlib_logger = logging.getLogger("matplotlib")
+    # Default log level for libraries is currently ERROR
+    matplotlib_logger.level == logging.ERROR
+
+
+def test_cli_log_level_debug_used():
+    """Test CLI with log level uses for rasa logger whereas libraries stay default."""
+    configure_logging_and_warnings(logging.DEBUG)
+    rasa_logger = logging.getLogger("rasa")
+    rasa_logger.level == logging.DEBUG
+    matplotlib_logger = logging.getLogger("matplotlib")
+    # Default log level for libraries is currently ERROR
+    matplotlib_logger.level == logging.ERROR
+
+
+@mock.patch.dict(os.environ, {"LOG_LEVEL": "WARNING"})
+def test_cli_log_level_overrides_env_var_used():
+    """Test CLI log level has precedence over env var."""
+    configure_logging_and_warnings(logging.DEBUG)
+    rasa_logger = logging.getLogger("rasa")
+    rasa_logger.level == logging.DEBUG
+    matplotlib_logger = logging.getLogger("matplotlib")
+    # Default log level for libraries is currently ERROR
+    matplotlib_logger.level == logging.ERROR
+
+
+@mock.patch.dict(os.environ, {"LOG_LEVEL": "WARNING", "LOG_LEVEL_MATPLOTLIB": "INFO"})
+def test_cli_missing_log_level_env_var_used():
+    """Test CLI without log level uses env var for both rasa and libraries."""
+    configure_logging_and_warnings()
+    rasa_logger = logging.getLogger("rasa")
+    rasa_logger.level == logging.WARNING
+    matplotlib_logger = logging.getLogger("matplotlib")
+    matplotlib_logger.level == logging.INFO
