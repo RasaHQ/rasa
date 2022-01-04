@@ -1,9 +1,5 @@
 #!/bin/bash
 
-set -x
-
-sudo netstat -plnt
-
 DD_API_KEY=$1
 ACCELERATOR_TYPE=$2
 
@@ -11,6 +7,10 @@ ACCELERATOR_TYPE=$2
 DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY DD_SITE="datadoghq.eu" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
 DATADOG_YAML_PATH=/etc/datadog-agent/datadog.yaml
 sudo chmod 666 $DATADOG_YAML_PATH
+
+set -x
+
+sudo netstat -plnt
 
 # Associate metrics with tags and env
 {
@@ -34,10 +34,10 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "- github_run_id:${GITHUB_RUN_ID:-none}"
     echo "- github_event:${GITHUB_EVENT_NAME:-none}"
     echo ""
-    echo "process_config:"
-    echo "    enabled: false"
     echo "apm_config:"
     echo "    enabled: true"
+    echo "process_config:"
+    echo "    enabled: false"
     echo "use_dogstatsd: true"
 } >> $DATADOG_YAML_PATH
 
@@ -62,6 +62,7 @@ AGENT_USER="dd-agent"
 LD_LIBRARY_PATH="/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
 
 sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH $AGENT_ARGS"
+sudo service datadog-agent restart
 
 sleep 10
 sudo netstat -plnt
