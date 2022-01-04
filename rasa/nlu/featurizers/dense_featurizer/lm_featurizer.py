@@ -189,10 +189,10 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         Returns: Cleaned up token ids and token strings.
         """
         token_ids_string = [
-            (id, self.tokenizer.convert_tokens_to_string(token))
-            for id, token in zip(split_token_ids, token_strings)
+            (id_, self.tokenizer.convert_tokens_to_string(token))
+            for id_, token in zip(split_token_ids, token_strings)
         ]
-        token_ids_string = [(id, token) for id, token in token_ids_string if token]
+        token_ids_string = [(id_, token) for id_, token in token_ids_string if token]
 
         token_ids: List[int]
         token_strings: List[Text]
@@ -718,7 +718,6 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         Args:
             training_data: NLU training data to be tokenized and featurized
-            config: NLU pipeline config consisting of all components.
         """
         batch_size = 64
 
