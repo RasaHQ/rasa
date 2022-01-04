@@ -50,6 +50,3 @@ fi
 # Apply changes
 sudo service datadog-agent stop
 sudo service datadog-agent restart
-
-sleep 10
-sudo datadog-agent status
