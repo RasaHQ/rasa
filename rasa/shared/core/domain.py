@@ -197,6 +197,7 @@ class Domain:
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
         forms = data.get(KEY_FORMS, {})
+        duplicates = data.get("duplicates", None)
 
         _validate_slot_mappings(forms)
 
@@ -209,6 +210,7 @@ class Domain:
             data.get(KEY_FORMS, {}),
             data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
+            duplicates=duplicates,
             **additional_arguments,
         )
 
@@ -317,7 +319,12 @@ class Domain:
         if override or domain2.get("session_config"):
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
+        duplicates: Dict[Text, List[Text]] = {}
+
         if combined.get(KEY_INTENTS) or domain_dict.get(KEY_INTENTS):
+            duplicates[KEY_INTENTS] = self.extract_duplicates(
+                combined.get(KEY_INTENTS, []), domain_dict.get(KEY_INTENTS, [])
+            )
             combined[KEY_INTENTS] = combined.get(KEY_INTENTS, [])
             domain_dict[KEY_INTENTS] = domain_dict.get(KEY_INTENTS, [])
             combined[KEY_INTENTS] = self.merge_lists_of_dicts(
@@ -330,16 +337,60 @@ class Domain:
                 domain_dict[KEY_ACTIONS].remove(form)
 
         for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
+            duplicates[key] = self.extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
             combined[key] = self.merge_lists(
                 combined.get(key, []), domain_dict.get(key, [])
             )
 
         for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            duplicates[key] = self.extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
             combined[key] = self.merge_dicts(
                 combined.get(key, {}), domain_dict.get(key, {}), override
             )
 
+        if duplicates:
+            duplicates = self.clean_duplicates(duplicates)
+            combined.update({"duplicates": duplicates})
+
         return combined
+
+    @staticmethod
+    def extract_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]:
+        """Extracts duplicates from two lists."""
+        if list1:
+            dict1 = {
+                (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
+                for i in list1
+            }
+        else:
+            dict1 = {}
+
+        if list2:
+            dict2 = {
+                (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
+                for i in list2
+            }
+        else:
+            dict2 = {}
+
+        set1 = set(dict1.keys())
+        set2 = set(dict2.keys())
+        dupes = set1.intersection(set2)
+        return sorted(list(dupes))
+
+    @staticmethod
+    def clean_duplicates(dupes: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Removes keys for empty values."""
+        duplicates = dupes.copy()
+        for k in dupes:
+            if not dupes[k]:
+                duplicates.pop(k)
+
+        return duplicates
 
     @staticmethod
     def merge_dicts(
@@ -347,7 +398,7 @@ class Domain:
         tempDict2: Dict[Text, Any],
         override_existing_values: bool = False,
     ) -> Dict[Text, Any]:
-        """Merges 2 dicts."""
+        """Merges two dicts."""
         if override_existing_values:
             merged_dicts, b = tempDict1.copy(), tempDict2.copy()
 
@@ -637,6 +688,7 @@ class Domain:
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
+        duplicates: Optional[Dict[Text, List[Text]]] = None,
     ) -> None:
         """Creates a `Domain`.
 
@@ -653,6 +705,9 @@ class Domain:
                 events for entities if there are slots with the same name as the entity.
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
+            duplicates: A dictionary where keys are `intents`, `slots`, `forms` and
+                `responses` and values are lists of duplicated entries of a
+                corresponding type when the domain is built from multiple files.
         """
         self.entities, self.roles, self.groups = self.collect_entity_properties(
             entities
@@ -673,6 +728,7 @@ class Domain:
 
         self.action_texts = action_texts or []
         self.session_config = session_config
+        self.duplicates = duplicates
 
         self._custom_actions = action_names
 
@@ -1831,7 +1887,6 @@ class Domain:
 
         def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]) -> Text:
             """Return a message given a list of duplicates."""
-
             message = ""
             for name, action_name in mappings:
                 if message:
@@ -1846,7 +1901,6 @@ class Domain:
             duplicates: List[Tuple[List[Text], Text]]
         ) -> Text:
             """Return a message given a list of duplicates."""
-
             message = ""
             for d, name in duplicates:
                 if d:
