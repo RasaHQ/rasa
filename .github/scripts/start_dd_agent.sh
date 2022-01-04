@@ -62,7 +62,7 @@ AGENT_USER="dd-agent"
 LD_LIBRARY_PATH="/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
 
 sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH $AGENT_ARGS"
-sudo service datadog-agent restart
+# sudo service datadog-agent restart
 
 sleep 10
 sudo netstat -plnt
