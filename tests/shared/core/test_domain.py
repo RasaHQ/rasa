@@ -1680,3 +1680,12 @@ def test_domain_without_duplicates():
     """
     domain = Domain.from_directory("data/test_domains/test_domain_without_duplicates/")
     assert domain.duplicates == {}
+
+
+def test_domain_duplicates_when_one_domain_file():
+    """
+    Check if a domain with duplicated slots, responses and intents contains
+    a correct information in `duplicates` field.
+    """
+    domain = Domain.from_file(path="data/test_domains/default.yml")
+    assert domain.duplicates is None
