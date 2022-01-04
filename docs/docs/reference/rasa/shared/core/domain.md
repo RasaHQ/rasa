@@ -76,7 +76,7 @@ Loads the `Domain` from YAML text after validating it.
 
 ```python
  | @classmethod
- | from_dict(cls, data: Dict, duplicates: Optional[Dict[Text, List[Text]]] = None) -> "Domain"
+ | from_dict(cls, data: Dict) -> "Domain"
 ```
 
 Deserializes and creates domain.
@@ -113,6 +113,69 @@ Merge this domain with another one, combining their attributes.
 List attributes like ``intents`` and ``actions`` will be deduped
 and merged. Single attributes will be taken from `self` unless
 override is `True`, in which case they are taken from `domain`.
+
+#### merge\_domain\_dicts
+
+```python
+ | merge_domain_dicts(domain1: Dict, domain2: Dict, override: bool = False) -> Dict[Text, Any]
+```
+
+Merges this domain dict with another one, combining their attributes.
+
+This is used when multiple domain yml files are configured in a single
+directory. Unlike the merge method above, which merges Domain objects by
+creating each object then merging it with the previous, this method merges
+domain dicts, and ensures all attributes (like ``intents``, ``entities``, and
+``actions``) are known to the Domain when the object is created.
+
+List attributes like ``intents`` and ``actions`` are deduped
+and merged. Single attributes are taken from `domain1` unless
+override is `True`, in which case they are taken from `domain2`.
+
+#### extract\_duplicates
+
+```python
+ | @staticmethod
+ | extract_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]
+```
+
+Extracts duplicates from two lists.
+
+#### clean\_duplicates
+
+```python
+ | @staticmethod
+ | clean_duplicates(dupes: Dict[Text, Any]) -> Dict[Text, Any]
+```
+
+Removes keys for empty values.
+
+#### merge\_dicts
+
+```python
+ | @staticmethod
+ | merge_dicts(tempDict1: Dict[Text, Any], tempDict2: Dict[Text, Any], override_existing_values: bool = False) -> Dict[Text, Any]
+```
+
+Merges two dicts.
+
+#### merge\_lists
+
+```python
+ | @staticmethod
+ | merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]
+```
+
+Merges two lists.
+
+#### merge\_lists\_of\_dicts
+
+```python
+ | @staticmethod
+ | merge_lists_of_dicts(dict_list1: List[Dict], dict_list2: List[Dict], override_existing_values: bool = False) -> List[Dict]
+```
+
+Merges two dict lists.
 
 #### collect\_slots
 
