@@ -116,7 +116,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         self.model_weights = self._config["model_weights"]
         self.model_config = AutoConfig.from_pretrained(self.model_weights)
         self.cache_dir = self._config["cache_dir"]
-        self.max_model_sequence_length = self.model_config.max_length
+        self.max_model_sequence_length = self.model_config.max_position_embeddings
 
     def _load_model_instance(self) -> None:
         """Tries to load the model instance.
@@ -217,9 +217,14 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         sentence_embeddings = []
         post_processed_sequence_embeddings = []
 
-        for example_embedding, mask in zip(sequence_embeddings, special_tokens_mask):
+        for example_embedding, example_mask in zip(
+            sequence_embeddings, special_tokens_mask
+        ):
 
-            example_post_processed_embedding = example_embedding[~mask]
+            # The mask gets inverted, so the embeddings of special tokens are discarded
+            example_post_processed_embedding = example_embedding[
+                ~np.array(example_mask)
+            ]
             example_sentence_embedding = np.mean(
                 example_post_processed_embedding, axis=0
             )
