@@ -366,11 +366,7 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          DD_ARGS: "--ddtrace"
           DD_PROFILING_ENABLED: true
-          DD_LOGS_INJECTION: true
-          DD_ENV: rasa-regression-tests
-          DD_SERVICE: rasa
         run: |-
           poetry run rasa --version
 
@@ -603,11 +599,7 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          DD_ARGS: "--ddtrace"
           DD_PROFILING_ENABLED: true
-          DD_LOGS_INJECTION: true
-          DD_ENV: rasa-regression-tests
-          DD_SERVICE: rasa
         run: |-
           poetry run rasa --version
 

@@ -8,10 +8,6 @@ DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY DD_SITE="datadoghq.eu" bash -c "
 DATADOG_YAML_PATH=/etc/datadog-agent/datadog.yaml
 sudo chmod 666 $DATADOG_YAML_PATH
 
-set -x
-
-sudo netstat -plnt
-
 # Associate metrics with tags and env
 {
     echo "env: rasa-regression-tests"
