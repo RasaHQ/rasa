@@ -4,6 +4,8 @@ import logging
 
 from typing import Any, Text, List, Dict, Tuple, Type
 
+from transformers import AutoConfig, AutoTokenizer, TFAutoModel
+
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -110,31 +112,11 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         This includes the model name, model weights, cache directory and the
         maximum sequence length the model can handle.
         """
-        from rasa.nlu.utils.hugging_face.registry import (
-            model_class_dict,
-            model_weights_defaults,
-        )
-
         self.model_name = self._config["model_name"]
-
-        if self.model_name not in model_class_dict:
-            raise KeyError(
-                f"'{self.model_name}' not a valid model name. Choose from "
-                f"{str(list(model_class_dict.keys()))} or create"
-                f"a new class inheriting from this class to support your model."
-            )
-
         self.model_weights = self._config["model_weights"]
+        self.model_config = AutoConfig.from_pretrained(self.model_weights)
         self.cache_dir = self._config["cache_dir"]
-
-        if not self.model_weights:
-            logger.info(
-                f"Model weights not specified. Will choose default model "
-                f"weights: {model_weights_defaults[self.model_name]}"
-            )
-            self.model_weights = model_weights_defaults[self.model_name]
-
-        self.max_model_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
+        self.max_model_sequence_length = self.model_config.max_length
 
     def _load_model_instance(self) -> None:
         """Tries to load the model instance.
@@ -142,17 +124,12 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         Model loading should be skipped in unit tests.
         See unit tests for examples.
         """
-        from rasa.nlu.utils.hugging_face.registry import (
-            model_class_dict,
-            model_tokenizer_dict,
-        )
-
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
 
-        self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
+        self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
-        self.model = model_class_dict[self.model_name].from_pretrained(
+        self.model = TFAutoModel.from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
 
@@ -188,12 +165,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         Returns: Augmented list of token ids for each example in the batch.
         """
-        from rasa.nlu.utils.hugging_face.registry import (
-            model_special_tokens_pre_processors,
-        )
-
         augmented_tokens = [
-            model_special_tokens_pre_processors[self.model_name](example_token_ids)
+            self.tokenizer.build_inputs_with_special_tokens(example_token_ids)
             for example_token_ids in token_ids
         ]
         return augmented_tokens
@@ -215,33 +188,41 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         Returns: Cleaned up token ids and token strings.
         """
-        from rasa.nlu.utils.hugging_face.registry import model_tokens_cleaners
+        token_ids_string = [
+            (id, self.tokenizer.convert_tokens_to_string(token))
+            for id, token in zip(split_token_ids, token_strings)
+        ]
+        token_ids_string = [(id, token) for id, token in token_ids_string if token]
 
-        return model_tokens_cleaners[self.model_name](split_token_ids, token_strings)
+        token_ids: List[int]
+        token_strings: List[Text]
+        # return as individual token ids and token strings
+        token_ids, token_strings = zip(*token_ids_string)
+        return token_ids, token_strings
 
+    @staticmethod
     def _post_process_sequence_embeddings(
-        self, sequence_embeddings: np.ndarray
+        sequence_embeddings: np.ndarray, special_tokens_mask: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Computes sentence and sequence level representations for relevant tokens.
 
         Args:
             sequence_embeddings: Sequence level dense features received as output from
             language model.
+            special_tokens_mask: A boolean mask signifying the special tokens added by
+            the tokenizer.
 
         Returns: Sentence and sequence level representations.
         """
-        from rasa.nlu.utils.hugging_face.registry import (
-            model_embeddings_post_processors,
-        )
-
         sentence_embeddings = []
         post_processed_sequence_embeddings = []
 
-        for example_embedding in sequence_embeddings:
-            (
-                example_sentence_embedding,
-                example_post_processed_embedding,
-            ) = model_embeddings_post_processors[self.model_name](example_embedding)
+        for example_embedding, mask in zip(sequence_embeddings, special_tokens_mask):
+
+            example_post_processed_embedding = example_embedding[~mask]
+            example_sentence_embedding = np.mean(
+                example_post_processed_embedding, axis=0
+            )
 
             sentence_embeddings.append(example_sentence_embedding)
             post_processed_sequence_embeddings.append(example_post_processed_embedding)
@@ -362,6 +343,25 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         attention_mask = np.array(attention_mask).astype(np.float32)
         return attention_mask
+
+    def _compute_special_tokens_mask(
+        self, batch_token_ids: List[List[int]]
+    ) -> np.ndarray:
+        """Computes a mask for the special tokens added by the tokenizer.
+
+        This mask will be used to filter out the special tokens before creating a sequence embedding.
+
+        Returns: Computed attention mask, 1 for special tokens, 0 for normal tokens
+        tokens.
+        """
+        special_tokens_mask = []
+
+        for token_ids in batch_token_ids:
+            special_tokens_mask.append(
+                [id_ in self.tokenizer.all_special_ids for id_ in token_ids]
+            )
+
+        return np.array(special_tokens_mask)
 
     def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
@@ -593,6 +593,11 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             batch_token_ids
         )
 
+        # Keep a mask of the special tokens that got added
+        special_tokens_mask = self._compute_special_tokens_mask(
+            batch_token_ids_augmented
+        )
+
         # Compute sequence lengths for all examples
         (
             actual_sequence_lengths,
@@ -629,7 +634,9 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         (
             sentence_embeddings,
             sequence_embeddings,
-        ) = self._post_process_sequence_embeddings(sequence_nonpadded_embeddings)
+        ) = self._post_process_sequence_embeddings(
+            sequence_nonpadded_embeddings, special_tokens_mask
+        )
 
         # Pad zeros for examples which were truncated in inference mode.
         # This is intentionally done after sentence embeddings have been
