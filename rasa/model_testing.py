@@ -128,7 +128,7 @@ async def test_core(
     model: Optional[Text] = None,
     stories: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
-    additional_arguments: Optional[Dict] = None,,
+    additional_arguments: Optional[Dict] = None,
     use_conversation_test_files: bool = False,
 ) -> None:
     """Tests a trained Core model against a set of test stories."""
