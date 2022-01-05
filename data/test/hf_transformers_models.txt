@@ -40,6 +40,8 @@ https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt
 26bc1ad6c0ac742e9b52263248f6d0f00068293b33709fae12320c0e35ccfbbb.542ce4285a40d23a559526243235df47c5f75c197f04f37d1a0c124c32c9a084
 https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-config.json
 4dad0251492946e18ac39290fcfe91b89d370fee250efe9521476438fe8ca185.7156163d5fdc189c3016baca0775ffce230789d7fa2a42ef516483e4ca884517
+https://cdn.huggingface.co/bert-base-uncased-tf_model.h5
+336363d3718f8cc6432db4a768a053f96a9eae064c8c96aff2bc69fe73929770.4733ec82e81d40e9cf5fd04556267d8958fb150e9339390fc64206b7e5a79c83.h5
 https://s3.amazonaws.com/models.huggingface.co/bert/distilbert-base-uncased-config.json
 a41e817d5c0743e29e86ff85edc8c257e61bc8d88e4271bb1b243b6e7614c633.8949e27aafafa845a18d98a0e3a88bc2d248bbc32a1b75947366664658f23b1c
 https://cdn.huggingface.co/distilbert-base-uncased-tf_model.h5
