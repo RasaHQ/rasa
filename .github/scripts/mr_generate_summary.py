@@ -31,6 +31,6 @@ if __name__ == "__main__":
         report_dict = json.load(open(report_path))
         data = combine_result(data, report_dict)
 
-    summary_file = os.getenv("SUMMARY_FILE")
+    summary_file = os.environ["SUMMARY_FILE"]
     with open(summary_file, "w") as f:
         json.dump(data, f, sort_keys=True, indent=2)
