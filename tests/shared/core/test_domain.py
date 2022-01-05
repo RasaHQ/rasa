@@ -14,7 +14,7 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     IGNORED_INTENTS,
 )
-from rasa.core import training, utils
+from rasa.core import training
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
 from rasa.shared.core.constants import (
@@ -415,7 +415,11 @@ def test_merge_yaml_domains_with_default_intents(default_intent: Text):
     assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
 
     # ensure that the default intent is contain the domain's dictionary dump
-    assert list(domain.as_dict()["intents"][1].keys())[0] == default_intent
+    domain_intents = []
+    for intent in domain.as_dict()["intents"]:
+        domain_intents.append(list(intent)[0])
+
+    assert default_intent in domain_intents
 
 
 def test_merge_session_config_if_first_is_not_default():
@@ -665,38 +669,181 @@ def test_collect_intent_properties(
     )
 
 
-def test_load_domain_from_directory_tree(tmp_path: Path):
-    root_domain = {"actions": ["utter_root", "utter_root2"]}
-    utils.dump_obj_as_yaml_to_file(tmp_path / "domain_pt1.yml", root_domain)
+def test_load_domain_from_directory_tree():
+    domain_path = "data/test_domains/test_domain_from_directory_tree"
 
-    subdirectory_1 = tmp_path / "Skill 1"
-    subdirectory_1.mkdir()
-    skill_1_domain = {"actions": ["utter_skill_1"]}
-    utils.dump_obj_as_yaml_to_file(subdirectory_1 / "domain_pt2.yml", skill_1_domain)
-
-    subdirectory_2 = tmp_path / "Skill 2"
-    subdirectory_2.mkdir()
-    skill_2_domain = {"actions": ["utter_skill_2"]}
-    utils.dump_obj_as_yaml_to_file(subdirectory_2 / "domain_pt3.yml", skill_2_domain)
-
-    subsubdirectory = subdirectory_2 / "Skill 2-1"
-    subsubdirectory.mkdir()
-    skill_2_1_domain = {"actions": ["utter_subskill", "utter_root"]}
-    # Check if loading from `.yaml` also works
-    utils.dump_obj_as_yaml_to_file(
-        subsubdirectory / "domain_pt4.yaml", skill_2_1_domain
-    )
-
-    actual = Domain.load(str(tmp_path))
-    expected = [
+    actual = Domain.load(domain_path)
+    expected_intents = [
         "utter_root",
         "utter_root2",
         "utter_skill_1",
         "utter_skill_2",
         "utter_subskill",
     ]
+    expected_entities = [
+        "ball",
+        "chess",
+        "monopoly",
+        "cluedo",
+        "pandemic",
+    ]
+    expected_responses = {
+        "utter_greet": [{"text": "Hey! How are you?"}],
+        "utter_cheer_up": [
+            {
+                "text": "Here is something to cheer you up:",
+                "image": "https://i.imgur.com/nGF1K8f.jpg",
+            }
+        ],
+    }
+    assert set(expected_intents).issubset(set(actual.intents))
+    assert set(expected_entities) == (set(actual.entities))
+    assert set(expected_responses) == (set(actual.responses))
 
-    assert set(actual.user_actions) == set(expected)
+
+def test_domain_from_multiple_files():
+    domain_path = "data/test_domains/test_domain_from_multiple_files"
+    domain = Domain.load(domain_path)
+
+    expected_intents = [
+        "affirm",
+        "are_you_there",
+        "back",
+        "bot_challenge",
+        "cure_network",
+        "delay",
+        "deny",
+        "device_selection_scaffold",
+        "drum_clocks",
+        "drum_lampshades",
+        "drum_robot",
+        "drum_robot_chocolate",
+        "drum_soups",
+        "drum_wallets",
+        "endless_love",
+        "exchange_wallet",
+        "finish_humble_selection",
+        "finish_selection",
+        "finish_selection_line",
+        "greeting",
+        "humble_selection",
+        "humble_selection_scaffold",
+        "main_menu",
+        "nlu_fallback",
+        "open_wallet",
+        "out_of_scope",
+        "profanity",
+        "restart",
+        "run_finish",
+        "run_finish_recent",
+        "run_finished",
+        "selection_troubleshooting",
+        "self_selection",
+        "session_start",
+        "thanks",
+        "unsure_selection_scaffold",
+        "view_offers",
+    ]
+    expected_entities = [
+        "caramel_robot",
+        "chocolate_robot",
+        "other_robot",
+        "pistachio_robot",
+        "rum_and_raisin_robot",
+        "strawberry_robot",
+        "vanilla_robot",
+    ]
+    expected_actions = [
+        "action_increase_15",
+        "action_prevent_20",
+        "action_utter_cure_standard",
+        "action_utter_drum_menu",
+        "action_utter_main_menu",
+        "action_utter_previous_message",
+        "action_utter_robot_menu",
+        "action_utter_smalltalk_greeting",
+        "utter_anythingelse_menu",
+        "utter_bot_challenge",
+        "utter_cure_specific",
+        "utter_cure_standard",
+        "utter_drumclocks",
+        "utter_drumlampshades",
+        "utter_drumsoups",
+        "utter_drumwallets",
+        "utter_finish_humble_selection",
+        "utter_finish_selection",
+        "utter_finish_selection_line",
+        "utter_greengrey_wallet",
+        "utter_horn_selection_scaffold",
+        "utter_humble_selection",
+        "utter_humble_selection_scaffold",
+        "utter_im_here",
+        "utter_non_standard",
+        "utter_open_wallet_options",
+        "utter_profanity",
+        "utter_run_finish",
+        "utter_run_finish_recent",
+        "utter_run_finished",
+        "utter_selection_issues",
+        "utter_smalltalk_greeting",
+        "utter_std_drum_menu",
+        "utter_thanks_response",
+        "utter_tmo_love",
+        "utter_amazement",
+        "utter_default",
+        "utter_goodbye",
+        "utter_greet",
+    ]
+    expected_forms = {
+        "robot_form": {"required_slots": ["propose_simulation", "display_cure_method"]}
+    }
+    expected_responses = {
+        "utter_greet": [{"text": "hey there!"}],
+        "utter_goodbye": [{"text": "goodbye :("}],
+        "utter_default": [{"text": "default message"}],
+        "utter_amazement": [{"text": "awesomness!"}],
+    }
+    expected_slots = [
+        "activate_double_simulation",
+        "activate_simulation",
+        "display_cure_method",
+        "display_drum_cure_horns",
+        "display_method_artwork",
+        "drumAllClocks",
+        "drumAllLampshades",
+        "drumAllSoups",
+        "drumChocolateWallets",
+        "drumClockAdapters",
+        "drumClockCovers",
+        "drumClocksChocolate",
+        "drumClocksStrawberry",
+        "drumMindspace",
+        "drumOtherWallets",
+        "drumSnareWallets",
+        "drumSoupChocolate",
+        "drumSoupStrawberry",
+        "drumStrawberryWallets",
+        "greenOrGrey",
+        "humbleSelection",
+        "humbleSelectionManagement",
+        "humbleSelectionStatus",
+        "offers",
+        "requested_slot",
+        "session_started_metadata",
+    ]
+
+    domain_slots = []
+
+    for slot in domain.slots:
+        domain_slots.append(slot.name)
+
+    assert expected_intents == domain.intents
+    assert expected_entities == domain.entities
+    assert expected_actions == domain.user_actions
+    assert expected_responses == domain.responses
+    assert expected_forms == domain.forms
+    assert domain.session_config.session_expiration_time == 360
+    assert expected_slots == sorted(domain_slots)
 
 
 def test_domain_warnings(domain: Domain):
@@ -870,13 +1017,34 @@ def test_transform_intents_for_file_default():
     transformed = domain._transform_intents_for_file()
 
     expected = [
-        {"greet": {USE_ENTITIES_KEY: ["name"]}},
+        {"ask": {USE_ENTITIES_KEY: True}},
         {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
         {"goodbye": {USE_ENTITIES_KEY: []}},
-        {"thank": {USE_ENTITIES_KEY: []}},
-        {"ask": {USE_ENTITIES_KEY: True}},
-        {"why": {USE_ENTITIES_KEY: []}},
+        {"greet": {USE_ENTITIES_KEY: ["name"]}},
         {"pure_intent": {USE_ENTITIES_KEY: True}},
+        {"thank": {USE_ENTITIES_KEY: []}},
+        {"why": {USE_ENTITIES_KEY: []}},
+    ]
+
+    assert transformed == expected
+
+
+def test_transform_intents_for_files_with_entities():
+    domain_path = "data/test_domains/test_domain_from_directory_for_entities"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_intents_for_file()
+
+    expected = [
+        {"certify": {USE_ENTITIES_KEY: True}},
+        {"play": {USE_ENTITIES_KEY: ["ball", "chess"]}},
+        {"question": {USE_ENTITIES_KEY: True}},
+        {"stow_away": {USE_ENTITIES_KEY: True}},
+        {
+            "support_encouraging": {
+                USE_ENTITIES_KEY: ["anti_freeze_blankets", "automatic_cupcakes"]
+            }
+        },
+        {"vacationing": {"ignore_entities": ["tornadoes"]}},
     ]
 
     assert transformed == expected
@@ -888,9 +1056,9 @@ def test_transform_intents_for_file_with_mapping():
     transformed = domain._transform_intents_for_file()
 
     expected = [
-        {"greet": {"triggers": "utter_greet", USE_ENTITIES_KEY: True}},
         {"default": {"triggers": "utter_default", USE_ENTITIES_KEY: True}},
         {"goodbye": {USE_ENTITIES_KEY: True}},
+        {"greet": {"triggers": "utter_greet", USE_ENTITIES_KEY: True}},
     ]
 
     assert transformed == expected
@@ -902,8 +1070,8 @@ def test_transform_intents_for_file_with_entity_roles_groups():
     transformed = domain._transform_intents_for_file()
 
     expected = [
-        {"inform": {USE_ENTITIES_KEY: ["GPE"]}},
         {"greet": {USE_ENTITIES_KEY: ["name"]}},
+        {"inform": {USE_ENTITIES_KEY: ["GPE"]}},
     ]
 
     assert transformed == expected
@@ -924,20 +1092,20 @@ def test_clean_domain_for_file():
     cleaned = Domain.load(domain_path).cleaned_domain()
 
     expected = {
+        "entities": ["name", "unrelated_recognized_entity", "other"],
         "intents": [
-            {"greet": {USE_ENTITIES_KEY: ["name"]}},
+            "ask",
             {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
             {"goodbye": {USE_ENTITIES_KEY: []}},
-            {"thank": {USE_ENTITIES_KEY: []}},
-            "ask",
-            {"why": {USE_ENTITIES_KEY: []}},
+            {"greet": {USE_ENTITIES_KEY: ["name"]}},
             "pure_intent",
+            {"thank": {USE_ENTITIES_KEY: []}},
+            {"why": {USE_ENTITIES_KEY: []}},
         ],
-        "entities": ["name", "unrelated_recognized_entity", "other"],
         "responses": {
-            "utter_greet": [{"text": "hey there!"}],
-            "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],
+            "utter_goodbye": [{"text": "goodbye :("}],
+            "utter_greet": [{"text": "hey there!"}],
         },
         "session_config": {
             "carry_over_slots_to_new_session": True,
@@ -1608,7 +1776,66 @@ def test_domain_invalid_yml_in_folder():
     Check if invalid YAML files in a domain folder lead to the proper UserWarning
     """
     with pytest.warns(UserWarning, match="The file .* your file\\."):
-        Domain.from_directory("data/test_domains/test_domain_from_directory1/")
+        Domain.from_directory("data/test_domains/test_domain_from_directory/")
+
+
+def test_domain_with_duplicates():
+    """
+    Check if a domain with duplicated slots, responses and intents in domain files
+    removes the duplications in the domain.
+    """
+    domain = Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
+    expected_intents = [
+        "affirm",
+        "back",
+        "bot_challenge",
+        "deny",
+        "goodbye",
+        "greet",
+        "mood_great",
+        "mood_unhappy",
+        "nlu_fallback",
+        "out_of_scope",
+        "restart",
+        "session_start",
+        "test",
+    ]
+    expected_responses = {
+        "utter_greet": [{"text": "Hey! How are you?"}],
+        "utter_did_that_help": [{"text": "Did that help you?"}],
+        "utter_happy": [{"text": "Great, carry on!"}],
+        "utter_cheer_up": [
+            {
+                "text": "Here is something to cheer you up:",
+                "image": "https://i.imgur.com/nGF1K8f.jpg",
+            }
+        ],
+        "utter_goodbye": [{"text": "Bye"}],
+        "utter_iamabot": [{"text": "I am a bot, powered by Rasa."}],
+    }
+    assert domain.intents == expected_intents
+    assert domain.responses == expected_responses
+    assert domain.duplicates["slots"] == ["mood"]
+    assert domain.duplicates["responses"] == ["utter_did_that_help", "utter_greet"]
+    assert domain.duplicates["intents"] == ["greet"]
+
+
+def test_domain_without_duplicates():
+    """
+    Check if a domain without duplicated slots, responses and intents contains
+    nothing in `duplicates` field.
+    """
+    domain = Domain.from_directory("data/test_domains/test_domain_without_duplicates/")
+    assert domain.duplicates == {}
+
+
+def test_domain_duplicates_when_one_domain_file():
+    """
+    Check if a domain with duplicated slots, responses and intents contains
+    a correct information in `duplicates` field.
+    """
+    domain = Domain.from_file(path="data/test_domains/default.yml")
+    assert domain.duplicates is None
 
 
 def test_domain_fingerprint_consistency_across_runs():
