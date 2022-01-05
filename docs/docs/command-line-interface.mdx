@@ -6,6 +6,28 @@ description: Command line interface for open source chatbot framework Rasa. Lear
 abstract: The command line interface (CLI) gives you easy-to-remember commands for common tasks. This page describes the behavior of the commands and the parameters you can pass to them.
 ---
 
+## Cheat Sheet
+
+
+|        Command         |                                                                  Effect                                                                  |
+|------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+|`rasa init`             |Creates a new project with example training data, actions, and config files.                                                              |
+|`rasa train`            |Trains a model using your NLU data and stories, saves trained model in `./models`.                                                        |
+|`rasa interactive`      |Starts an interactive learning session to create new training data by chatting to your assistant.                                         |
+|`rasa shell`            |Loads your trained model and lets you talk to your assistant on the command line.                                                         |
+|`rasa run`              |Starts a server with your trained model.                                                                                                  |
+|`rasa run actions`      |Starts an action server using the Rasa SDK.                                                                                               |
+|`rasa visualize`        |Generates a visual representation of your stories.                                                                                        |
+|`rasa test`             |Tests a trained Rasa model on any files starting with `test_`.                                                                            |
+|`rasa data split nlu`   |Performs a 80/20 split of your NLU training data.                                                                                         |
+|`rasa data convert`     |Converts training data between different formats.                                                                                         |
+|`rasa data migrate`     |Migrates 2.0 domain to 3.0 format.                                                                                                        |
+|`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                         |
+|`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                            |
+|`rasa evaluate markers` |Extracts markers from an existing tracker store.                                                                                                |
+|`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
+|`rasa -h`               |Shows all available commands.                                                                                                             |
+
 ## Log Level
 
 Rasa produces log messages at several different levels (eg. warning, info, error and so on). You can control which level of logs you would like to see with `--verbose` (same as `-v`) or `--debug` (same as `-vv`) as optional command line arguments. See each command below for more explanation on what these arguments mean.
@@ -32,28 +54,6 @@ LOG_LEVEL_LIBRARIES=DEBUG LOG_LEVEL_MATPLOTLIB=DEBUG rasa shell --verbose
 ```
 
 As an aside, CLI log level sets the level at the root logger (which has the important handler - coloredlogs handler); this means even if an environment variable sets a library logger to a lower level, root logger will reject messages from that library. By default CLI log level is set to `INFO` if not given.
-
-## Cheat Sheet
-
-
-|        Command         |                                                                  Effect                                                                  |
-|------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-|`rasa init`             |Creates a new project with example training data, actions, and config files.                                                              |
-|`rasa train`            |Trains a model using your NLU data and stories, saves trained model in `./models`.                                                        |
-|`rasa interactive`      |Starts an interactive learning session to create new training data by chatting to your assistant.                                         |
-|`rasa shell`            |Loads your trained model and lets you talk to your assistant on the command line.                                                         |
-|`rasa run`              |Starts a server with your trained model.                                                                                                  |
-|`rasa run actions`      |Starts an action server using the Rasa SDK.                                                                                               |
-|`rasa visualize`        |Generates a visual representation of your stories.                                                                                        |
-|`rasa test`             |Tests a trained Rasa model on any files starting with `test_`.                                                                            |
-|`rasa data split nlu`   |Performs a 80/20 split of your NLU training data.                                                                                         |
-|`rasa data convert`     |Converts training data between different formats.                                                                                         |
-|`rasa data migrate`     |Migrates 2.0 domain to 3.0 format.                                                                                                        |
-|`rasa data validate`    |Checks the domain, NLU and conversation data for inconsistencies.                                                                         |
-|`rasa export`           |Exports conversations from a tracker store to an event broker.                                                                            |
-|`rasa evaluate markers` |Extracts markers from an existing tracker store.                                                                                                |
-|`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
-|`rasa -h`               |Shows all available commands.                                                                                                             |
 
 ## rasa init
 
