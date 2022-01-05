@@ -14,8 +14,6 @@ from rasa.utils.common import (
     find_unavailable_packages,
     configure_logging_and_warnings,
 )
-from rasa.shared.constants import DEFAULT_LOG_LEVEL
-from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES
 import tests.conftest
 
 
