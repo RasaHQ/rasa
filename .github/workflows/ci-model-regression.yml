@@ -137,7 +137,7 @@ jobs:
     name: Deploy selfhosted Runner
     needs: read_test_configuration
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
+    if: "( contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') || contains(github.event.pull_request.labels.*.name, 'runner:rasacpu') ) && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
       - name: Checkout
@@ -178,6 +178,7 @@ jobs:
         run: |-
           export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
           export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
+          export ACCELERATOR_TYPE=${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }}
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
@@ -204,13 +205,16 @@ jobs:
     env:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
-      ACCELERATOR_TYPE: "GPU"
-    runs-on: [self-hosted, gpu, "${{ github.run_id }}"]
+      ACCELERATOR_TYPE: ${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }} ""
+    runs-on:
+      - self-hosted
+      - "${{ lowercase(env.ACCELERATOR_TYPE) }}"
+      - "${{ github.run_id }}"
     strategy:
       # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
       fail-fast: false
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
+    if: "( contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') || contains(github.event.pull_request.labels.*.name, 'runner:rasacpu') ) && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
       - name: Checkout
@@ -357,7 +361,7 @@ jobs:
         run: poetry run pip install -U datadog-api-client
 
       - name: Validate that GPUs are working
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && env.ACCELERATOR_TYPE == 'GPU'
         run: |-
           poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
 
@@ -367,7 +371,12 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
+          CUDA_VISIBLE_DEVICES: ${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }}
         run: |-
+          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }} == "CPU" ]]; then
+            export CUDA_VISIBLE_DEVICES=-1
+          fi
+
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -447,7 +456,7 @@ jobs:
       max-parallel: 3
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
       fail-fast: false
-    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
+    if: "!( contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') || contains(github.event.pull_request.labels.*.name, 'runner:rasacpu') ) && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
       - name: Checkout
@@ -778,12 +787,20 @@ jobs:
           label: 'status:model-regression-tests'
           type: remove
 
-      - name: Remove 'runner:gpu' label
+      - name: Remove 'runner:rasagpu' label
         continue-on-error: true
         uses: buildsville/add-remove-label@v1
         with:
           token: ${{secrets.GITHUB_TOKEN}}
-          label: 'runner:gpu'
+          label: 'runner:rasagpu'
+          type: remove
+
+      - name: Remove 'runner:rasacpu' label
+        continue-on-error: true
+        uses: buildsville/add-remove-label@v1
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          label: 'runner:rasacpu'
           type: remove
 
   remove_runner_selfhosted:
@@ -792,7 +809,7 @@ jobs:
       - deploy_runner_selfhosted
       - model_regression_test_selfhosted
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "( contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') || contains(github.event.pull_request.labels.*.name, 'runner:rasacpu') ) && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps:
       # Setup gcloud CLI

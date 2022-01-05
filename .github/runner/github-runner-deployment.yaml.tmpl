@@ -43,7 +43,9 @@ spec:
           limits:
             nvidia.com/gpu: 1
           requests:
+            {{ if eq (getenv "ACCELERATOR_TYPE") "gpu" }}
             nvidia.com/gpu: 1
+            {{ end }}
             memory: 10G
         env:
         - name: POD_NAME
@@ -53,7 +55,7 @@ spec:
         # RUNNER_LABELS - defines labels
         # with which a github-runner will be registered
         - name: RUNNER_LABELS
-          value: "self-hosted,gpu,kubernetes,{{getenv "GITHUB_RUN_ID"}}"
+          value: "self-hosted,{{getenv "ACCELERATOR_TYPE" | strings.ToLower}},kubernetes,{{getenv "GITHUB_RUN_ID"}}"
         # GITHUB_OWNER - a name of the repository owner
         - name: GITHUB_OWNER
           valueFrom:
