@@ -126,3 +126,15 @@ Checks whether the domain returned by the importer is empty.
 
 An empty domain or one that uses deprecated Mapping Policy is invalid.
 
+#### verify\_domain\_duplicates
+
+```python
+ | verify_domain_duplicates() -> bool
+```
+
+Verifies that there are no duplicated dictionaries in multiple domain files.
+
+**Returns**:
+
+  `True` if duplicates exist.
+

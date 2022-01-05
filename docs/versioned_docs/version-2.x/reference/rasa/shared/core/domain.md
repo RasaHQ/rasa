@@ -129,6 +129,24 @@ List attributes like ``intents`` and ``actions`` are deduped
 and merged. Single attributes are taken from `domain1` unless
 override is `True`, in which case they are taken from `domain2`.
 
+#### extract\_duplicates
+
+```python
+ | @staticmethod
+ | extract_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]
+```
+
+Extracts duplicates from two lists.
+
+#### clean\_duplicates
+
+```python
+ | @staticmethod
+ | clean_duplicates(dupes: Dict[Text, Any]) -> Dict[Text, Any]
+```
+
+Removes keys for empty values.
+
 #### merge\_dicts
 
 ```python
@@ -136,7 +154,7 @@ override is `True`, in which case they are taken from `domain2`.
  | merge_dicts(tempDict1: Dict[Text, Any], tempDict2: Dict[Text, Any], override_existing_values: bool = False) -> Dict[Text, Any]
 ```
 
-Merges 2 dicts.
+Merges two dicts.
 
 #### merge\_lists
 
@@ -218,7 +236,7 @@ Get intent properties for a domain from what is provided by a domain file.
 #### \_\_init\_\_
 
 ```python
- | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
+ | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default(), duplicates: Optional[Dict[Text, List[Text]]] = None) -> None
 ```
 
 Creates a `Domain`.
@@ -237,6 +255,9 @@ Creates a `Domain`.
   events for entities if there are slots with the same name as the entity.
 - `session_config` - Configuration for conversation sessions. Conversations are
   restarted at the end of a session.
+- `duplicates` - A dictionary where keys are `intents`, `slots`, `forms` and
+  `responses` and values are lists of duplicated entries of a
+  corresponding type when the domain is built from multiple files.
 
 #### \_\_deepcopy\_\_
 
