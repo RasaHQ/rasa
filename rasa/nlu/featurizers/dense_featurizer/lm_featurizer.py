@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import logging
+import re
 
 from typing import Any, Text, List, Dict, Tuple, Type
 
@@ -30,13 +31,13 @@ from rasa.utils import train_utils
 
 logger = logging.getLogger(__name__)
 
-MAX_SEQUENCE_LENGTHS = {
-    "bert": 512,
-    "gpt": 512,
-    "gpt2": 512,
-    "xlnet": NO_LENGTH_RESTRICTION,
-    "distilbert": 512,
-    "roberta": 512,
+MODEL_WEIGHTS_DEFAULT = {
+    "bert": "rasa/LaBSE",
+    "gpt": "openai-gpt",
+    "gpt2": "gpt2",
+    "xlnet": "xlnet-base-cased",
+    "distilbert": "distilbert-base-uncased",
+    "roberta": "roberta-base",
 }
 
 
@@ -114,6 +115,20 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         """
         self.model_name = self._config["model_name"]
         self.model_weights = self._config["model_weights"]
+
+        if self.model_weights is None:
+            if self.model_name in MODEL_WEIGHTS_DEFAULT:
+                self.model_weights = MODEL_WEIGHTS_DEFAULT[self.model_name]
+                logger.info(
+                    f"Model weights not specified. Will choose default model "
+                    f"weights: {self.model_weights}"
+                )
+            else:
+                raise ValueError(
+                    f"No model_weights specified and there is no default weights available for "
+                    f"the provided model_name {self.model_name}. Please specify model_weights explicitly."
+                )
+
         self.model_config = AutoConfig.from_pretrained(self.model_weights)
         self.cache_dir = self._config["cache_dir"]
         self.max_model_sequence_length = self.model_config.max_position_embeddings
@@ -189,7 +204,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         Returns: Cleaned up token ids and token strings.
         """
         token_ids_string = [
-            (id_, self.tokenizer.convert_tokens_to_string(token))
+            (id_, re.sub(r"##|▁|Ġ", "", token))
             for id_, token in zip(split_token_ids, token_strings)
         ]
         token_ids_string = [(id_, token) for id_, token in token_ids_string if token]
@@ -202,7 +217,9 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
     @staticmethod
     def _post_process_sequence_embeddings(
-        sequence_embeddings: np.ndarray, special_tokens_mask: np.ndarray
+        sequence_embeddings: np.ndarray,
+        special_tokens_mask: np.ndarray,
+        cls_token_idxs: List[Any],
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Computes sentence and sequence level representations for relevant tokens.
 
@@ -211,23 +228,30 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             language model.
             special_tokens_mask: A boolean mask signifying the special tokens added by
             the tokenizer.
+            cls_token_idxs: A list with the index of the [CLS] token, if present, otherwise
+            containing `None` for an example.
 
         Returns: Sentence and sequence level representations.
         """
         sentence_embeddings = []
         post_processed_sequence_embeddings = []
 
-        for example_embedding, example_mask in zip(
-            sequence_embeddings, special_tokens_mask
+        for example_embedding, example_mask, example_cls_token_idx in zip(
+            sequence_embeddings, special_tokens_mask, cls_token_idxs
         ):
 
             # The mask gets inverted, so the embeddings of special tokens are discarded
             example_post_processed_embedding = example_embedding[
                 ~np.array(example_mask)
             ]
-            example_sentence_embedding = np.mean(
-                example_post_processed_embedding, axis=0
-            )
+
+            # Use embedding of [CLS] token for BERT style architectures
+            if example_cls_token_idx is not None:
+                example_sentence_embedding = example_embedding[example_cls_token_idx]
+            else:
+                example_sentence_embedding = np.mean(
+                    example_post_processed_embedding, axis=0
+                )
 
             sentence_embeddings.append(example_sentence_embedding)
             post_processed_sequence_embeddings.append(example_post_processed_embedding)
@@ -351,22 +375,39 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
     def _compute_special_tokens_mask(
         self, batch_token_ids: List[List[int]]
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, List[Any]]:
         """Computes a mask for the special tokens added by the tokenizer.
 
         This mask will be used to filter out the special tokens before creating a sequence embedding.
 
-        Returns: Computed attention mask, 1 for special tokens, 0 for normal tokens
-        tokens.
+        Returns:  Computed mask, 1 for special tokens, 0 for normal tokens.
+                  List of indices of the [CLS] token, if present, otherwise None.
         """
         special_tokens_mask = []
+        cls_token_idxs = []
 
         for token_ids in batch_token_ids:
-            special_tokens_mask.append(
-                [id_ in self.tokenizer.all_special_ids for id_ in token_ids]
-            )
+            mask = [id_ in self.tokenizer.all_special_ids for id_ in token_ids]
 
-        return np.array(special_tokens_mask)
+            # Truncate the mask to the maximum sequence lenght of the model
+            if (
+                self.max_model_sequence_length != NO_LENGTH_RESTRICTION
+                and len(mask) > self.max_model_sequence_length
+            ):
+                mask = mask[: self.max_model_sequence_length]
+
+            special_tokens_mask.append(mask)
+
+            # Keep the CLS token position for BERT style architectures
+            if self.tokenizer.cls_token == "[CLS]":
+                try:
+                    cls_idx = token_ids.index(self.tokenizer.cls_token_id)
+                except ValueError:
+                    cls_idx = None
+            else:
+                cls_idx = None
+            cls_token_idxs.append(cls_idx)
+        return np.array(special_tokens_mask), cls_token_idxs
 
     def _extract_sequence_lengths(
         self, batch_token_ids: List[List[int]]
@@ -599,7 +640,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         )
 
         # Keep a mask of the special tokens that got added
-        special_tokens_mask = self._compute_special_tokens_mask(
+        special_tokens_mask, cls_token_idxs = self._compute_special_tokens_mask(
             batch_token_ids_augmented
         )
 
@@ -640,7 +681,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             sentence_embeddings,
             sequence_embeddings,
         ) = self._post_process_sequence_embeddings(
-            sequence_nonpadded_embeddings, special_tokens_mask
+            sequence_nonpadded_embeddings, special_tokens_mask, cls_token_idxs
         )
 
         # Pad zeros for examples which were truncated in inference mode.
