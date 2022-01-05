@@ -187,8 +187,9 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         ]
         return augmented_tokens
 
+    @staticmethod
     def _lm_specific_token_cleanup(
-        self, split_token_ids: List[int], token_strings: List[Text]
+        split_token_ids: List[int], token_strings: List[Text]
     ) -> Tuple[List[int], List[Text]]:
         """Cleans up special chars added by tokenizers of language models.
 
