@@ -210,9 +210,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         ]
         token_ids_string = [(id_, token) for id_, token in token_ids_string if token]
 
-        token_ids: List[int]
-        token_strings: List[Text]
         # return as individual token ids and token strings
+        token_ids: List[int]
         token_ids, token_strings = zip(*token_ids_string)
         return token_ids, token_strings
 
