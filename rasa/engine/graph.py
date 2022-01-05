@@ -11,10 +11,11 @@ from rasa.engine.exceptions import (
     GraphSchemaException,
 )
 import rasa.shared.utils.common
+import rasa.utils.common
 from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.shared.importers.autoconfig import TrainingType
 
 logger = logging.getLogger(__name__)
@@ -359,10 +360,9 @@ class GraphNode:
         self._constructor_fn: Callable = getattr(
             self._component_class, self._constructor_name
         )
-        self._component_config: Dict[Text, Any] = {
-            **self._component_class.get_default_config(),
-            **component_config,
-        }
+        self._component_config: Dict[Text, Any] = rasa.utils.common.override_defaults(
+            self._component_class.get_default_config(), component_config,
+        )
         self._fn_name: Text = fn_name
         self._fn: Callable = getattr(self._component_class, self._fn_name)
         self._inputs: Dict[Text, Text] = inputs
@@ -402,9 +402,15 @@ class GraphNode:
             # handling of exceptions.
             raise
         except Exception as e:
-            raise GraphComponentException(
-                f"Error initializing graph component for node '{self._node_name}'."
-            ) from e
+            if not isinstance(e, RasaException):
+                raise GraphComponentException(
+                    f"Error initializing graph component for node {self._node_name}."
+                ) from e
+            else:
+                logger.error(
+                    f"Error initializing graph component for node {self._node_name}."
+                )
+                raise
 
     def _get_resource(self, kwargs: Dict[Text, Any]) -> Resource:
         if "resource" in kwargs:
@@ -464,9 +470,15 @@ class GraphNode:
             # handling of exceptions.
             raise
         except Exception as e:
-            raise GraphComponentException(
-                f"Error running graph component for node {self._node_name}."
-            ) from e
+            if not isinstance(e, RasaException):
+                raise GraphComponentException(
+                    f"Error running graph component for node {self._node_name}."
+                ) from e
+            else:
+                logger.error(
+                    f"Error running graph component for node {self._node_name}."
+                )
+                raise
 
         self._run_after_hooks(input_hook_outputs, output)
 

@@ -39,6 +39,7 @@ from rasa.shared.core.constants import (
     ACTION_VALIDATE_SLOT_MAPPINGS,
     MAPPING_TYPE,
     PREDEFINED_MAPPINGS,
+    LOOP_REJECTED,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -922,9 +923,9 @@ class ActionDefaultAskAffirmation(Action):
 
         intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
 
-        intent_ranking: List["IntentPrediction"] = (
-            latest_message.parse_data.get(INTENT_RANKING_KEY) or []
-        )
+        intent_ranking: List["IntentPrediction"] = latest_message.parse_data.get(
+            INTENT_RANKING_KEY
+        ) or []
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
@@ -977,13 +978,19 @@ class ActionExtractSlots(Action):
 
     @staticmethod
     def _matches_mapping_conditions(
-        mapping: Dict[Text, Any],
-        tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
     ) -> bool:
         slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
 
         if not slot_mapping_conditions:
             return True
+
+        if (
+            tracker.active_loop
+            and tracker.active_loop.get(LOOP_REJECTED)
+            and tracker.get_slot(REQUESTED_SLOT) == slot_name
+        ):
+            return False
 
         # check if found mapping conditions matches form
         for condition in slot_mapping_conditions:
@@ -1000,13 +1007,14 @@ class ActionExtractSlots(Action):
 
     @staticmethod
     def _verify_mapping_conditions(
-        mapping: Dict[Text, Any],
-        tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", slot_name: Text
     ) -> bool:
         if mapping.get(MAPPING_CONDITIONS) and mapping.get(MAPPING_TYPE) != str(
             SlotMapping.FROM_TRIGGER_INTENT
         ):
-            if not ActionExtractSlots._matches_mapping_conditions(mapping, tracker):
+            if not ActionExtractSlots._matches_mapping_conditions(
+                mapping, tracker, slot_name
+            ):
                 return False
 
         return True
@@ -1068,11 +1076,7 @@ class ActionExtractSlots(Action):
             return [], executed_custom_actions
 
         slot_events = await self._run_custom_action(
-            custom_action,
-            output_channel,
-            nlg,
-            tracker,
-            domain,
+            custom_action, output_channel, nlg, tracker, domain,
         )
 
         executed_custom_actions.add(custom_action)
@@ -1170,7 +1174,9 @@ class ActionExtractSlots(Action):
                 if not intent_is_desired:
                     continue
 
-                if not ActionExtractSlots._verify_mapping_conditions(mapping, tracker):
+                if not ActionExtractSlots._verify_mapping_conditions(
+                    mapping, tracker, slot.name
+                ):
                     continue
 
                 if self._fails_unique_entity_mapping_check(
@@ -1216,16 +1222,12 @@ class ActionExtractSlots(Action):
 
 
 def extract_slot_value_from_predefined_mapping(
-    mapping: Dict[Text, Any],
-    tracker: "DialogueStateTracker",
+    mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
 ) -> List[Any]:
     """Extracts slot value if slot has an applicable predefined mapping."""
     should_fill_entity_slot = mapping.get(MAPPING_TYPE) == str(
         SlotMapping.FROM_ENTITY
-    ) and SlotMapping.entity_is_desired(
-        mapping,
-        tracker,
-    )
+    ) and SlotMapping.entity_is_desired(mapping, tracker,)
 
     should_fill_intent_slot = mapping.get(MAPPING_TYPE) == str(SlotMapping.FROM_INTENT)
 

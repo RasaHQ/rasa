@@ -128,7 +128,7 @@ def init_project(args: argparse.Namespace, path: Text) -> None:
     """Inits project."""
     os.chdir(path)
     create_initial_project(".")
-    print("Created project directory at '{}'.".format(os.path.abspath(path)))
+    print(f"Created project directory at '{os.getcwd()}'.")
     print_train_or_instructions(args)
 
 

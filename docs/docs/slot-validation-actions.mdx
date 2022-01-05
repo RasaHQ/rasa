@@ -5,105 +5,39 @@ title: Slot Validation Actions
 abstract: A slot validation action is a special type of custom action, designed to handle custom extraction and/or validation of slot values. This can be used to validate slots with predefined mappings or extract slots with custom mappings.
 ---
 
-Rasa SDK provides three base classes that you can inherit from in order to implement custom slot extraction and
-validation logic:
+You can do custom extraction and validation of slot values by writing custom actions in three different ways.
 
-## `Action` class
+## `action_validate_slot_mappings`
 
-You can use this class to create a regular [custom action](./custom-actions.mdx). The base class will not prevent you
-from returning arbitrary events, however a slot validation action should only return `SlotSet` and `BotUttered` events.
-Any other event type will be filtered out by the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots).
-The name of the custom action must be specified in the `action` key of the relevant
-[custom slot mapping](./domain.mdx#custom-slot-mappings) in the domain.
-Note that the action name must be listed in the domain `actions` section too.
-
-## `ValidationAction` class
-
-You can extend the `ValidationAction` class in the Rasa SDK to define custom extraction and / or validation of slots that
+You can use the `action_validate_slot_mappings` action to define custom extraction and / or validation of slots that
 can be set or updated outside of a form context.
 
-:::note
-`ValidationAction` is intended for extracting slots **outside** the context of a form.
-It will ignore extraction and validation methods for any slots that have a form specified under the slot mapping's `conditions`.
-It will not run these methods when the specified form is active nor when no form is active.
-Please extend the [`FormValidationAction`](./slot-validation-actions.mdx#formvalidationaction-class) class for applying
-custom slot mappings only within the context of a form.
-:::
-
-Note that you do not need to implement the `name` method in the custom action extending `ValidationAction`, since this
-is already provided: `action_validate_slot_mappings`. However this name must be added to the domain `actions` list.
-If you override the `name` method, the custom validation action will not run because the original name is hardcoded
-in the call that the default action `action_extract_slots` makes to the action server.
+This action is called automatically at the end of the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots),
+so the name must not be changed. If you are using Rasa SDK, you should extend the Rasa SDK [`ValidationAction` class](https://rasa.com/docs/action-server/validation-action#how-to-subclass-validationaction).
+If you are using a different action server, you will need to implement an action class with equivalent functionality to
+the Rasa SDK class. Please see [the action server docs](https://rasa.com/docs/action-server/validation-action#validationaction-class-implementation) for details.
 
 With this option, you do not need to specify the `action` key in the [custom slot mapping](./domain.mdx#custom-slot-mappings),
 since the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots) runs `action_validate_slot_mappings`
 automatically if present in the `actions` section of the domain.
 
-### Validation of Slots with Predefined Mappings
+## `validate_<form name>`
 
-To validate slots with a predefined mapping, you must write functions named `validate_<slot_name>`.
-
-In the following example, the value for slot `location` is capitalized only if the extracted value is of type string:
-
-```python
-from typing import Text, Any, Dict
-
-from rasa_sdk import Tracker, ValidationAction
-from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.types import DomainDict
+Custom actions named `validate_<form name>` will run automatically if the form it specifies in its name is activated.
+If you are using Rasa SDK, the custom action should inherit from the Rasa SDK [`FormValidationAction` class](https://rasa.com/docs/action-server/validation-action#formvalidationaction-class).
+If you are not using Rasa SDK, you will need to implement an action or action class with equivalent functionality to the
+`FormValidationClass` in your custom action server. Please see [the action server docs](https://rasa.com/docs/action-server/validation-action#formvalidationaction-class-implementation) for details.
 
 
-class ValidatePredefinedSlots(ValidationAction):
-    def validate_location(
-        self,
-        slot_value: Any,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: DomainDict,
-    ) -> Dict[Text, Any]:
-        """Validate location value."""
-        if isinstance(slot_value, str):
-            # validation succeeded, capitalize the value of the "location" slot
-            return {"location": slot_value.capitalize()}
-        else:
-            # validation failed, set this slot to None
-            return {"location": None}
-```
+## Regular Custom Action
 
-### Extraction of Custom Slot Mappings
-
-In order to define custom extraction code, you must write an `extract_<slot_name>` method for every slot with a
-custom slot mapping.
-
-The following example shows the implementation of a custom action that extracts the slot `count_of_insults` to keep
-track of the user's attitude.
-
-```python
-from typing import Dict, Text, Any
-
-from rasa_sdk import Tracker
-from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.forms import ValidationAction
-
-
-class ValidateCustomSlotMappings(ValidationAction):
-    async def extract_count_of_insults(
-        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict
-    ) -> Dict[Text, Any]:
-        intent_of_last_user_message = tracker.get_intent_of_latest_message()
-        current_count_of_insults = tracker.get_slot("count_of_insults")
-        if intent_of_last_user_message == "insult":
-           current_count_of_insults += 1
-
-        return {"count_of_insults": current_count_of_insults}
-```
-
-## `FormValidationAction` class
-
-A `FormValidationAction` custom action will only run if the form it specifies in its name is activated.
-If certain custom slot mappings should only be extracted and / or validated within the context of a form,
-the custom action should inherit from `FormValidationAction` rather than from `ValidationAction`.
-Since `FormValidationAction` runs on every user turn only as long as the form is active, it is not required to use
-mapping conditions for custom slot mappings defined in a custom action extending `FormValidationAction`.
-
-To learn more about how to implement this class, see Forms [Advanced Usage](./forms.mdx#advanced-usage).
+You can use a regular custom action [custom action](./custom-actions.mdx) that returns [`slot`](https://rasa.com/docs/action-server/events#slot)
+events for custom slot extraction. Use this option if neither [`action_validate_slot_mappings`](#action_validate_slot_mappings) or
+[`validate_<form name>`](#validate_form-name) meet your needs.
+For example, if you want to reuse the same custom action explicitly in a story or rule, you should use a regular custom
+action for custom slot extraction.
+A slot validation action should only return `slot` and [`bot`](https://rasa.com/docs/action-server/events#bot) events.
+Any other event type will be filtered out by the default action [`action_extract_slots`](./default-actions.mdx#action_extract_slots).
+The name of the custom action must be specified in the `action` key of the relevant [custom slot mapping](./domain.mdx#custom-slot-mappings)
+in the domain.
+Note that the action name must be listed in the domain `actions` section too.

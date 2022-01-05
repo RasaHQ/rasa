@@ -30,7 +30,7 @@ def test_migrate_domain_format_with_required_slots(
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
-        version: "3.0"
+        version: "2.0"
         intents:
         - greet
         - affirm
@@ -76,6 +76,9 @@ def test_migrate_domain_format_with_required_slots(
     assert old_domain_path
 
     migrated_domain = rasa.shared.utils.io.read_yaml_file(domain_out_file)
+
+    migrated_training_data_version = migrated_domain.get("version")
+    assert migrated_training_data_version == '"3.0"'
 
     migrated_slots = migrated_domain.get("slots")
     expected_slots = {
@@ -133,7 +136,7 @@ def test_migrate_domain_form_without_required_slots(
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
-        version: "3.0"
+        version: "2.0"
         intents:
         - greet
         - affirm
@@ -247,7 +250,7 @@ def test_migrate_domain_with_diff_slot_types(
     existing_domain_file = prepare_domain_path(
         tmp_path,
         f"""
-        version: "3.0"
+        version: "2.0"
         entities:
             - outdoor
         slots:
@@ -299,7 +302,7 @@ def test_migrate_domain_format_from_dir(tmp_path: Path):
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         entities:
             - outdoor
         slots:
@@ -313,7 +316,7 @@ def test_migrate_domain_format_from_dir(tmp_path: Path):
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         forms:
           reservation_form:
             required_slots:
@@ -340,13 +343,17 @@ def test_migrate_domain_format_from_dir(tmp_path: Path):
 
     for file in domain_out_dir.iterdir():
         assert file.name in ["slots.yml", "forms.yml"]
+        migrated_file = rasa.shared.utils.io.read_yaml_file(file)
+
+        migrated_training_data_version = migrated_file.get("version")
+        assert migrated_training_data_version == '"3.0"'
 
 
 def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
-        version: "3.0"
+        version: "2.0"
         intents:
         - greet
         entities:
@@ -386,12 +393,15 @@ def test_migrate_domain_all_keys(tmp_path: Path, domain_out_file: Path):
     migrated_actions = migrated_domain.get("actions")
     assert "action_check_time" in migrated_actions
 
+    migrated_training_data_version = migrated_domain.get("version")
+    assert migrated_training_data_version == '"3.0"'
+
 
 def test_migrate_domain_format_with_custom_slot(tmp_path: Path, domain_out_file: Path):
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
-        version: "3.0"
+        version: "2.0"
         intents:
         - greet
         - affirm
@@ -447,7 +457,7 @@ def test_migrate_domain_with_no_requested_slot_for_from_entity_mappings(
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
-        version: "3.0"
+        version: "2.0"
         intents:
         - greet
         - affirm
@@ -499,7 +509,7 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
     existing_domain_file = prepare_domain_path(
         tmp_path,
         """
-        version: "3.0"
+        version: "2.0"
         intents:
         - greet
         - affirm
@@ -592,7 +602,7 @@ def test_migrate_domain_dir_with_out_path_as_file(tmp_path: Path):
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         entities:
             - outdoor
         slots:
@@ -606,7 +616,7 @@ def test_migrate_domain_dir_with_out_path_as_file(tmp_path: Path):
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         forms:
           reservation_form:
             required_slots:
@@ -639,7 +649,7 @@ def test_migrate_domain_multiple_files_with_duplicate_slots(tmp_path: Path,):
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         entities:
             - outdoor
         slots:
@@ -653,7 +663,7 @@ def test_migrate_domain_multiple_files_with_duplicate_slots(tmp_path: Path,):
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         entities:
             - outdoor
         slots:
@@ -678,7 +688,7 @@ def test_migrate_domain_with_multiple_files_with_duplicate_forms(tmp_path: Path)
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         forms:
           reservation_form:
             required_slots:
@@ -693,7 +703,7 @@ def test_migrate_domain_with_multiple_files_with_duplicate_forms(tmp_path: Path)
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         forms:
           reservation_form:
             required_slots:
@@ -720,7 +730,7 @@ def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         entities:
         - outdoor
         slots:
@@ -734,7 +744,7 @@ def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         intents:
         - greet
         forms:
@@ -753,6 +763,10 @@ def test_migrate_domain_from_dir_with_other_sections(tmp_path: Path):
 
     for file in domain_dir.iterdir():
         migrated = rasa.shared.utils.io.read_yaml_file(file)
+
+        migrated_training_data_version = migrated.get("version")
+        assert migrated_training_data_version == '"3.0"'
+
         if file.name == domain_file_one:
             assert migrated.get("entities") == ["outdoor"]
         elif file.name == domain_file_two:
@@ -763,7 +777,7 @@ def test_migrate_domain_raises_exception_for_non_domain_file(tmp_path: Path):
     domain_file = prepare_domain_path(
         tmp_path,
         """
-        version: "3.0"
+        version: "2.0"
         nlu:
         - intent: greet
           examples: |
@@ -794,7 +808,7 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
     prepare_domain_path(
         domain_dir,
         """
-        version: "3.0"
+        version: "2.0"
         nlu:
         - intent: greet
           examples: |
