@@ -205,7 +205,7 @@ jobs:
     env:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
-      ACCELERATOR_TYPE: ${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }} ""
+      ACCELERATOR_TYPE: ${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }}
     runs-on:
       - self-hosted
       - "${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'gpu' || 'cpu' }}"
@@ -372,9 +372,11 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
+          set -x  # debug
           if [[ ${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }} == "CPU" ]]; then
             export CUDA_VISIBLE_DEVICES=-1
           fi
+          set +x  # debug
 
           poetry run rasa --version
 
