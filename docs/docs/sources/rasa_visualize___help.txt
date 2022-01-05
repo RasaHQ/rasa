@@ -21,6 +21,10 @@ optional arguments:
                         None)
 
 Python Logging Options:
+  You can control level of log messages printed. In addition to these
+  arguments, a more fine grained configuration can be achieved with
+  environment variables. See online documentation for more info.
+
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
                         None)
   -vv, --debug          Print lots of debugging statements. Sets logging level

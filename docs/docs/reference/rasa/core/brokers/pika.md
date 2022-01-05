@@ -13,9 +13,7 @@ Pika-based event broker for publishing messages to RabbitMQ.
 #### \_\_init\_\_
 
 ```python
- | __init__(host: Text, username: Text, password: Text, port: Union[int, Text] = 5672, queues: Union[List[Text], Tuple[Text], Text, None] = None, should_keep_unpublished_messages: bool = True, raise_on_failure: bool = False, log_level: Union[Text, int] = os.environ.get(
- |             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
- |         ), event_loop: Optional[AbstractEventLoop] = None, connection_attempts: int = 20, retry_delay_in_seconds: float = 5, exchange_name: Text = RABBITMQ_EXCHANGE, **kwargs: Any, ,)
+ | __init__(host: Text, username: Text, password: Text, port: Union[int, Text] = 5672, queues: Union[List[Text], Tuple[Text], Text, None] = None, should_keep_unpublished_messages: bool = True, raise_on_failure: bool = False, event_loop: Optional[AbstractEventLoop] = None, connection_attempts: int = 20, retry_delay_in_seconds: float = 5, exchange_name: Text = RABBITMQ_EXCHANGE, **kwargs: Any, ,)
 ```
 
 Initialise RabbitMQ event broker.
@@ -32,7 +30,6 @@ Initialise RabbitMQ event broker.
   case of errors.
 - `raise_on_failure` - Whether to raise an exception if publishing fails. If
   `False`, keep retrying.
-- `log_level` - Logging level.
 - `event_loop` - The event loop which will be used to run `async` functions. If
   `None` `asyncio.get_event_loop()` is used to get a loop.
 - `connection_attempts` - Number of attempts for connecting to RabbitMQ before
