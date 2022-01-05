@@ -33,7 +33,6 @@ def test_generate_json():
 
 
 def test_transform_to_seconds():
-    assert os.environ["IS_EXTERNAL"] == "false"
     assert 87.0 == transform_to_seconds("1m27s")
     assert 87.3 == transform_to_seconds("1m27.3s")
     assert 27.0 == transform_to_seconds("27s")
