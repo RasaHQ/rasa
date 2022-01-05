@@ -208,7 +208,7 @@ jobs:
       ACCELERATOR_TYPE: ${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }} ""
     runs-on:
       - self-hosted
-      - "${{ lowercase(env.ACCELERATOR_TYPE) }}"
+      - "${{ env.ACCELERATOR_TYPE }} | tr '[:upper:]' '[:lower:]'"
       - "${{ github.run_id }}"
     strategy:
       # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
