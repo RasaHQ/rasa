@@ -198,7 +198,7 @@ jobs:
           kubectl -n github-runner rollout status --timeout=15m deployment/github-runner-$GITHUB_RUN_ID
 
   model_regression_test_selfhosted:
-    name: Model Regression Tests - GPU
+    name: Model Regression Tests - selfhosted
     needs:
       - deploy_runner_selfhosted
       - read_test_configuration
@@ -361,7 +361,7 @@ jobs:
         run: poetry run pip install -U datadog-api-client
 
       - name: Validate that GPUs are working
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && env.ACCELERATOR_TYPE == 'GPU'
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && ${{ env.ACCELERATOR_TYPE }} == 'GPU'
         run: |-
           poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
 
@@ -371,7 +371,6 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
-          CUDA_VISIBLE_DEVICES: ${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }}
         run: |-
           if [[ ${{ contains(github.event.pull_request.labels.*.name, 'runner:rasagpu') && 'GPU' || 'CPU' }} == "CPU" ]]; then
             export CUDA_VISIBLE_DEVICES=-1
