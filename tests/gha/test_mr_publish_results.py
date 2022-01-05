@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import sys
-
+from unittest import mock
 
 REPO_DIR = Path(__file__).parents[2]
 sys.path.append(str(REPO_DIR / ".github/scripts"))
@@ -9,7 +9,27 @@ from mr_publish_results import (  # noqa: E402
     prepare_ml_metric,
     prepare_ml_metrics,
     transform_to_seconds,
+    generate_json,
 )
+
+ENV_VARS = {"IS_EXTERNAL": "false",
+        "DATASET_REPOSITORY_BRANCH": 'main',
+        "CONFIG": 'Sparse + BERT + DIET(seq) + ResponseSelector(t2t)',
+        "DATASET": 'financial-demo',
+        "CONFIG_REPOSITORY_BRANCH": 'main',
+        "DATASET_COMMIT": "52a3ad3eb5292d56542687e23b06703431f15ead",
+        "ACCELERATOR_TYPE": "CPU",
+        "TEST_RUN_TIME": "1m54s",
+        "TRAIN_RUN_TIME": "4m4s",
+        "TOTAL_RUN_TIME": "5m58s",
+        "TYPE": "nlu",
+        }
+
+@mock.patch.dict(os.environ, ENV_VARS, clear=True)
+def test_generate_json():
+    f = Path(__file__).parent / 'test_data' / 'intent_report.json'
+    result = generate_json(f, task='intent_classification', data={})
+    assert result['financial-demo']['Sparse + BERT + DIET(seq) + ResponseSelector(t2t)']
 
 
 def test_transform_to_seconds():
