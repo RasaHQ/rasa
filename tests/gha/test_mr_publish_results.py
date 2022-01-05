@@ -1,5 +1,7 @@
+import os
 from pathlib import Path
 import sys
+
 
 REPO_DIR = Path(__file__).parents[2]
 sys.path.append(str(REPO_DIR / ".github/scripts"))
@@ -11,6 +13,7 @@ from mr_publish_results import (  # noqa: E402
 
 
 def test_transform_to_seconds():
+    assert os.environ["IS_EXTERNAL"] == "false"
     assert 87.0 == transform_to_seconds("1m27s")
     assert 87.3 == transform_to_seconds("1m27.3s")
     assert 27.0 == transform_to_seconds("27s")
@@ -58,7 +61,7 @@ def test_prepare_ml_model_perf_metrics():
     assert len(metrics_ml) == 17
 
 
-def test_prepare_ml_model_perf_metric():
+def test_prepare_ml_model_perf_metrics_simple():
     result = {
         "accuracy": 1.0,
         "weighted avg": {"precision": 1, "recall": 1.0, "f1-score": 1, "support": 28},
