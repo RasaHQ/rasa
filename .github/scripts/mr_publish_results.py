@@ -235,6 +235,9 @@ def read_results(file: str) -> Dict[str, Any]:
     with open(file) as json_file:
         data = json.load(json_file)
 
+        print('file:', file)
+        print('data:', data)
+
         keys = [
             "accuracy",
             "weighted avg",
