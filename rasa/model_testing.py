@@ -195,7 +195,7 @@ async def test_nlu(
     from rasa.nlu.test import run_evaluation
 
     rasa.shared.utils.io.create_directory(output_directory)
-    
+
     if not additional_arguments:
         additional_arguments = {}
 
