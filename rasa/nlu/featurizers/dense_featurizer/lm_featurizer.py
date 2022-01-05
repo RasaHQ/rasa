@@ -125,8 +125,9 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
                 )
             else:
                 raise ValueError(
-                    f"No model_weights specified and there is no default weights available for "
-                    f"the provided model_name {self.model_name}. Please specify model_weights explicitly."
+                    f"No model_weights specified and there is no default weights"
+                    f" available for the provided model_name {self.model_name}. Please"
+                    f" specify model_weights explicitly."
                 )
 
         self.model_config = AutoConfig.from_pretrained(self.model_weights)
@@ -228,8 +229,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             language model.
             special_tokens_mask: A boolean mask signifying the special tokens added by
             the tokenizer.
-            cls_token_idxs: A list with the index of the [CLS] token, if present, otherwise
-            containing `None` for an example.
+            cls_token_idxs: A list with the index of the [CLS] token, if present,
+            otherwise containing `None` for an example.
 
         Returns: Sentence and sequence level representations.
         """
@@ -378,7 +379,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
     ) -> Tuple[np.ndarray, List[Any]]:
         """Computes a mask for the special tokens added by the tokenizer.
 
-        This mask will be used to filter out the special tokens before creating a sequence embedding.
+        This mask will be used to filter out the special tokens before creating a
+        sequence embedding.
 
         Returns:  Computed mask, 1 for special tokens, 0 for normal tokens.
                   List of indices of the [CLS] token, if present, otherwise None.
