@@ -31,7 +31,7 @@ Note that CLI config sets the lowest level log messages to be handled, hence fol
 LOG_LEVEL_LIBRARIES=DEBUG LOG_LEVEL_MATPLOTLIB=DEBUG rasa shell --verbose
 ```
 
-As an aside, CLI log level sets the level at the root logger (which has the important handler - coloredlogs handler); this means even if an environment variable sets a library logger to a lower level, root logger will reject it. By default CLI log level is set to `INFO` if not given.
+As an aside, CLI log level sets the level at the root logger (which has the important handler - coloredlogs handler); this means even if an environment variable sets a library logger to a lower level, root logger will reject messages from that library. By default CLI log level is set to `INFO` if not given.
 
 ## Cheat Sheet
 
