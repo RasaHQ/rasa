@@ -133,10 +133,10 @@ def prepare_tags() -> List[str]:
         "github_sha": os.environ["GITHUB_SHA"],
         "pr_id": os.environ["PR_ID"],
         "pr_url": os.environ["PR_URL"],
-        "dataset_repository_branch": os.environ['DATASET_REPOSITORY_BRANCH'],
-        "external_dataset_repository": os.environ['IS_EXTERNAL'],
+        "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
+        "external_dataset_repository": os.environ["IS_EXTERNAL"],
         "config_repository": CONFIG_REPOSITORY,
-        "config_repository_branch": os.environ['DATASET_REPOSITORY_BRANCH'],
+        "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
         "workflow": os.environ["GITHUB_WORKFLOW"],
         "github_run_id": os.environ["GITHUB_RUN_ID"],
         "github_event": os.environ["GITHUB_EVENT_NAME"],
@@ -187,7 +187,10 @@ def send_to_datadog(results: List[Dict[str, Any]]):
 
 
 def _send_to_segment(context: Dict[str, Any]):
-    is_external, dataset_repository_branch = _get_is_external_and_dataset_repository_branch()
+    (
+        is_external,
+        dataset_repository_branch,
+    ) = _get_is_external_and_dataset_repository_branch()
 
     jobID = os.environ["GITHUB_RUN_ID"]
 
@@ -220,9 +223,10 @@ def _send_to_segment(context: Dict[str, Any]):
         },
     )
 
+
 def _get_is_external_and_dataset_repository_branch():
-    is_external = os.environ['IS_EXTERNAL']
-    dataset_repository_branch = os.environ['DATASET_REPOSITORY_BRANCH']
+    is_external = os.environ["IS_EXTERNAL"]
+    dataset_repository_branch = os.environ["DATASET_REPOSITORY_BRANCH"]
     if str(is_external).lower() in ("yes", "true", "t", "1"):
         is_external = True
         dataset_repository_branch = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
@@ -271,7 +275,10 @@ def send_all_to_datadog():
 
 
 def generate_json(file: str, task: str, data: dict) -> dict:
-    is_external, dataset_repository_branch = _get_is_external_and_dataset_repository_branch()
+    (
+        is_external,
+        dataset_repository_branch,
+    ) = _get_is_external_and_dataset_repository_branch()
     config = os.environ["CONFIG"]
     dataset = os.environ["DATASET"]
 
@@ -303,7 +310,9 @@ def send_all_results_to_segment():
     analytics.write_key = os.environ["SEGMENT_TOKEN"]
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
-            if any(f.endswith(valid_name) for valid_name in task_mapping_segment.keys()):
+            if any(
+                f.endswith(valid_name) for valid_name in task_mapping_segment.keys()
+            ):
                 _push_results(f, os.path.join(dirpath, f))
     analytics.flush()
 
