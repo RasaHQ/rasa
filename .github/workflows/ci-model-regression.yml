@@ -133,8 +133,8 @@ jobs:
 
           Used configuration can be found in [the comment.](https://github.com/${{ github.repository }}/pull/${{ github.event.number}}#issuecomment-${{ steps.fc_config_update.outputs.comment-id }})
 
-  deploy_runner_gpu:
-    name: Deploy Github Runner - GPU
+  deploy_runner_selfhosted:
+    name: Deploy selfhosted Runner
     needs: read_test_configuration
     runs-on: ubuntu-latest
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
@@ -196,10 +196,10 @@ jobs:
           kubectl apply -f runner_deployment.yaml
           kubectl -n github-runner rollout status --timeout=15m deployment/github-runner-$GITHUB_RUN_ID
 
-  model_regression_test_gpu:
+  model_regression_test_selfhosted:
     name: Model Regression Tests - GPU
     needs:
-      - deploy_runner_gpu
+      - deploy_runner_selfhosted
       - read_test_configuration
     env:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
@@ -673,8 +673,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - model_regression_test_cpu
-      - model_regression_test_gpu
-    if: always() && (needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success')
+      - model_regression_test_selfhosted
+    if: always() && (needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_selfhosted.result == 'success')
 
     steps:
       - name: Checkout git repository 🕝
@@ -786,11 +786,11 @@ jobs:
           label: 'runner:gpu'
           type: remove
 
-  remove_runner_gpu:
-    name: Delete Github Runner - GPU
+  remove_runner_selfhosted:
+    name: Delete selfhosted Runner
     needs:
-      - deploy_runner_gpu
-      - model_regression_test_gpu
+      - deploy_runner_selfhosted
+      - model_regression_test_selfhosted
     runs-on: ubuntu-latest
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
