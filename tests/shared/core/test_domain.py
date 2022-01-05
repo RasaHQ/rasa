@@ -1628,3 +1628,64 @@ def test_domain_invalid_yml_in_folder():
     """
     with pytest.warns(UserWarning, match="The file .* your file\\."):
         Domain.from_directory("data/test_domains/test_domain_from_directory/")
+
+
+def test_domain_with_duplicates():
+    """
+    Check if a domain with duplicated slots, responses and intents contains
+    a correct information in `duplicates` field.
+    Check if a domain with duplicated slots, responses and intents in domain files
+    removes the duplications in the domain.
+    """
+    domain = Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
+    expected_intents = [
+        "affirm",
+        "back",
+        "bot_challenge",
+        "deny",
+        "goodbye",
+        "greet",
+        "mood_great",
+        "mood_unhappy",
+        "nlu_fallback",
+        "out_of_scope",
+        "restart",
+        "session_start",
+        "test",
+    ]
+    expected_responses = {
+        "utter_did_that_help": [{"text": "Did that help you?"}],
+        "utter_greet": [{"text": "Hey! How are you?"}],
+        "utter_happy": [{"text": "Great, carry on!"}],
+        "utter_cheer_up": [
+            {
+                "text": "Here is something to cheer you up:",
+                "image": "https://i.imgur.com/nGF1K8f.jpg",
+            }
+        ],
+        "utter_goodbye": [{"text": "Bye"}],
+        "utter_iamabot": [{"text": "I am a bot, powered by Rasa."}],
+    }
+    assert domain.intents == expected_intents
+    assert domain.responses == expected_responses
+    assert domain.duplicates["slots"] == ["mood"]
+    assert domain.duplicates["responses"] == ["utter_did_that_help", "utter_greet"]
+    assert domain.duplicates["intents"] == ["greet"]
+
+
+def test_domain_without_duplicates():
+    """
+    Check if a domain without duplicated slots, responses and intents contains
+    nothing in `duplicates` field.
+    """
+    domain = Domain.from_directory("data/test_domains/test_domain_without_duplicates/")
+    assert domain.duplicates == {}
+
+
+def test_domain_duplicates_when_one_domain_file():
+    """
+    Check if a domain with duplicated slots, responses and intents contains
+    a correct information in `duplicates` field.
+    """
+    domain = Domain.from_file(path="data/test_domains/default.yml")
+    assert domain.duplicates is None
