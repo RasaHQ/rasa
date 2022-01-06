@@ -200,7 +200,7 @@ class KafkaEventBroker(EventBroker):
         else:
             partition_key = None
 
-        headers = self._create_message_header()
+        headers = self._get_message_headers()
 
         logger.debug(
             f"Calling kafka send({self.topic}, value={event},"
@@ -209,7 +209,7 @@ class KafkaEventBroker(EventBroker):
 
         self.producer.send(self.topic, value=event, key=partition_key, headers=headers)
 
-    def _get_partition_key(self, partition_seed: Text) -> bytes:
+    def _get_partition_key(self, partition_seed: Text) -> Optional[Text]:
         """Returns processed partition key for message in bytes format."""
         partition_key = bytes(partition_seed, encoding=DEFAULT_ENCODING)
         return partition_key
@@ -227,4 +227,4 @@ class KafkaEventBroker(EventBroker):
     @rasa.shared.utils.common.lazy_property
     def rasa_environment(self) -> Optional[Text]:
         """Get value of the `RASA_ENVIRONMENT` environment variable."""
-        return os.environ.get("RASA_ENVIRONMENT", "")
+        return os.environ.get("RASA_ENVIRONMENT", "RASA_ENVIRONMENT_NOT_SET")

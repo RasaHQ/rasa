@@ -334,4 +334,4 @@ def test_kafka__header_creation(monkeypatch):
 def test_kafka_header_creation_without_env_variables():
     event_broker = KafkaEventBroker(Mock(), Mock())
     headers = event_broker._get_messsage_headers()
-    assert headers[0][1].decode(DEFAULT_ENCODING) == ""
+    assert headers[0][1].decode(DEFAULT_ENCODING) == "RASA_ENVIRONMENT_NOT_SET"
