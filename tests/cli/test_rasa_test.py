@@ -234,9 +234,10 @@ def test_test_help(run: Callable[..., RunResult]):
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU]
-                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                 [--successes] [--no-errors] [--no-warnings] [--out OUT]
+                 [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                 [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--no-plot] [--successes] [--no-errors] [--no-warnings]
+                 [--out OUT]
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -250,9 +251,9 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                     [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                     [--successes] [--no-errors] [--no-warnings]"""
+                     [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                     [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                     [--no-plot] [--successes] [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
