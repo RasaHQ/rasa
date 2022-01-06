@@ -52,9 +52,6 @@ sudo service datadog-agent stop
 
 set -x
 
-# Restart agent (such that APM is working properly)
-sudo service datadog-agent restart
-
 # Restart agent (such that GPU/NVML metrics are collected)
 INSTALL_DIR="/opt/datadog-agent"
 AGENTPATH="$INSTALL_DIR/bin/agent/agent"
@@ -62,6 +59,9 @@ PIDFILE="$INSTALL_DIR/run/agent.pid"
 AGENT_ARGS="run -p $PIDFILE"
 AGENT_USER="dd-agent"
 LD_LIBRARY_PATH="/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
-sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH $AGENT_ARGS"
+sudo -E start-stop-daemon --verbose --start --background --quiet --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH $AGENT_ARGS"
+
+# Restart agent (such that APM is working properly)
+sudo service datadog-agent restart
 
 # Note: It seems wasteful to restart the agent twice.
