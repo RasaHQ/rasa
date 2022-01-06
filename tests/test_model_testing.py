@@ -448,9 +448,9 @@ def test_differently_ordered_entity_predictions_tolerated():
 
 def test_nlu_can_handle_missing_additional_arguments():
     """This is a regression test for issue-10587
-    
-    Calling this function with no parameters should not cause it 
+
+    Calling this function with no parameters should not cause it
     to throw an error
-    
+
     """
     test_nlu(model=None, nlu_data=None, additional_arguments=None)
