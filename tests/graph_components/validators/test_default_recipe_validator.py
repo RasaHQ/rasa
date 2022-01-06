@@ -46,7 +46,7 @@ from rasa.core.policies.policy import Policy
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ENTITY_ATTRIBUTE_GROUP,
@@ -464,7 +464,7 @@ def test_nlu_raise_if_more_than_one_tokenizer(nodes: Dict[Text, SchemaNode]):
 
 def test_nlu_do_not_raise_if_two_tokenizers_with_end_to_end():
     config = rasa.shared.utils.io.read_yaml_file(
-        "rasa/shared/importers/default_config.yml"
+        "rasa/engine/recipes/config_files/default_config.yml"
     )
     graph_config = DefaultV1Recipe().graph_config_for_recipe(
         config, cli_parameters={}, training_type=TrainingType.END_TO_END

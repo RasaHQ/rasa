@@ -14,7 +14,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.core.domain import Domain
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 

@@ -1,12 +1,13 @@
 import logging
-from typing import Dict, List, Optional, Text, Union
+import os
+from typing import Dict, List, Optional, Text, Union, Any
 
 import rasa.shared.data
+from rasa.engine.recipes.recipe import Recipe
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers import utils
-from rasa.shared.importers import autoconfig
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -40,11 +41,26 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths, YAMLStoryReader.is_test_stories_file
         )
 
-        self.config = autoconfig.get_configuration(config_file, training_type)
+        self.config_file_path = config_file
 
-    def get_config(self) -> Dict:
+    def get_model_config(
+        self,
+        cli_par: Dict[Text, Any],
+        training_type: TrainingType = TrainingType.BOTH,
+        is_finetuning: bool = False,
+    ) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
-        return self.config
+        if not self.config_file_path or not os.path.exists(self.config_file_path):
+            logger.debug("No configuration file was provided to the RasaFileImporter.")
+            return {}
+
+        config = rasa.shared.utils.io.read_model_configuration(self.config_file_path)
+        recipe = Recipe.recipe_for_name(config.get("recipe"))
+        config = recipe.auto_configure(self.config_file_path, config, training_type,)
+        model_config = recipe.graph_config_for_recipe(
+            config, cli_par, training_type=training_type, is_finetuning=is_finetuning,
+        )
+        return model_config
 
     def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""

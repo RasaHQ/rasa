@@ -16,7 +16,7 @@ from rasa.engine.storage.resource import Resource
 
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import InvalidConfigException, RasaException
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 
 logger = logging.getLogger(__name__)
 

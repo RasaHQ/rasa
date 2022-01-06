@@ -6,7 +6,7 @@ from typing import Text, Dict, Any, Optional
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.shared.exceptions import RasaException
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 
 
 class InvalidRecipeException(RasaException):

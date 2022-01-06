@@ -19,7 +19,7 @@ from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 import rasa.engine.validation
 from rasa.shared.importers.rasa import RasaFileImporter
 
@@ -35,7 +35,7 @@ def test_recipe_for_name():
     [
         # The default config is the config which most users run
         (
-            "rasa/shared/importers/default_config.yml",
+            "rasa/engine/recipes/config_files/default_config.yml",
             "data/graph_schemas/default_config_e2e_train_schema.yml",
             "data/graph_schemas/default_config_e2e_predict_schema.yml",
             TrainingType.END_TO_END,
@@ -43,21 +43,21 @@ def test_recipe_for_name():
         ),
         # The default config without end to end
         (
-            "rasa/shared/importers/default_config.yml",
+            "rasa/engine/recipes/config_files/default_config.yml",
             "data/graph_schemas/default_config_train_schema.yml",
             "data/graph_schemas/default_config_predict_schema.yml",
             TrainingType.BOTH,
             False,
         ),
         (
-            "rasa/shared/importers/default_config.yml",
+            "rasa/engine/recipes/config_files/default_config.yml",
             "data/graph_schemas/default_config_core_train_schema.yml",
             "data/graph_schemas/default_config_core_predict_schema.yml",
             TrainingType.CORE,
             False,
         ),
         (
-            "rasa/shared/importers/default_config.yml",
+            "rasa/engine/recipes/config_files/default_config.yml",
             "data/graph_schemas/default_config_nlu_train_schema.yml",
             "data/graph_schemas/default_config_nlu_predict_schema.yml",
             TrainingType.NLU,
@@ -109,7 +109,7 @@ def test_recipe_for_name():
         ),
         # A full model which wants to be finetuned
         (
-            "rasa/shared/importers/default_config.yml",
+            "rasa/engine/recipes/config_files/default_config.yml",
             "data/graph_schemas/default_config_finetune_schema.yml",
             "data/graph_schemas/default_config_predict_schema.yml",
             TrainingType.BOTH,
@@ -317,7 +317,7 @@ def test_epoch_fraction_cli_param():
     expected_train_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
     config = rasa.shared.utils.io.read_yaml_file(
-        "rasa/shared/importers/default_config.yml"
+        "rasa/engine/recipes/config_files/default_config.yml"
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)

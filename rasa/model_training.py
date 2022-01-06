@@ -21,7 +21,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import telemetry
 from rasa.shared.core.domain import Domain
@@ -207,12 +207,9 @@ def _train_graph(
 
     is_finetuning = model_to_finetune is not None
 
-    config = file_importer.get_config()
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
-    model_configuration = recipe.graph_config_for_recipe(
-        config, kwargs, training_type=training_type, is_finetuning=is_finetuning
+    model_configuration = file_importer.get_model_config(
+        kwargs, training_type, is_finetuning,
     )
-
     rasa.engine.validation.validate(model_configuration)
 
     with tempfile.TemporaryDirectory() as temp_model_dir:

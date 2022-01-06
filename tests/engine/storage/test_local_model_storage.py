@@ -15,7 +15,7 @@ from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.storage.resource import Resource
 from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.core.domain import Domain
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 

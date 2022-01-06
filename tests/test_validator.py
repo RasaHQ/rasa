@@ -6,7 +6,7 @@ from _pytest.logging import LogCaptureFixture
 from rasa.validator import Validator
 
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.core.domain import Domain
 from pathlib import Path
 

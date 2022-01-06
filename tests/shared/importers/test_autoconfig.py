@@ -14,7 +14,7 @@ from rasa.shared.importers import autoconfig
 CONFIG_FOLDER = Path("data/test_config")
 
 SOME_CONFIG = CONFIG_FOLDER / "stack_config.yml"
-DEFAULT_CONFIG = Path("rasa/shared/importers/default_config.yml")
+DEFAULT_CONFIG = Path("rasa/engine/recipes/config_files/default_config.yml")
 
 
 @pytest.mark.parametrize(
