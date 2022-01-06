@@ -647,7 +647,7 @@ class YAMLStoryReader(StoryReader):
                 f"Failed to parse arguments in line '{match.string}'. "
                 f"Failed to interpret some parts. "
                 f"Make sure your regex string is in the following format:"
-                f"\<intent_name>@<confidence-value><dictionary of entities> "
+                f"\<intent_name>@<confidence-value><dictionary of entities> "  # noqa:  W505, W605, E501
                 f"Continuing without {match.group('rest')}. ",
             )
 
