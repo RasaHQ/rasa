@@ -35,6 +35,7 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "process_config:"
     echo "    enabled: false"
     echo "use_dogstatsd: true"
+    echo "kubelet_tls_verify: false"
 } >> $DATADOG_YAML_PATH
 
 # Enable system_core integration
@@ -51,7 +52,6 @@ fi
 sudo service datadog-agent stop
 
 set -x
-date  # Debug
 
 # Restart agent (such that GPU/NVML metrics are collected)
 # Adusted code from /etc/init/datadog-agent-process.conf
@@ -61,18 +61,18 @@ PIDFILE="$INSTALL_DIR/run/agent.pid"
 AGENT_USER="dd-agent"
 LD_LIBRARY_PATH="/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
 sudo -E start-stop-daemon --verbose --start --background --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH run -p $PIDFILE"
-date  # Debug
 
 TRACE_AGENTPATH="$INSTALL_DIR/embedded/bin/trace-agent"
 TRACE_PIDFILE="$INSTALL_DIR/run/trace-agent.pid"
 sudo -E start-stop-daemon --verbose --start --background --chuid $AGENT_USER --pidfile $TRACE_PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $TRACE_AGENTPATH --config $DATADOG_YAML_PATH --pid $TRACE_PIDFILE"
-date  # Debug
 
 PROCESS_AGENTPATH="$INSTALL_DIR/embedded/bin/process-agent"
 PROCESS_PIDFILE="$INSTALL_DIR/run/process-agent.pid"
 SYSTEM_PROBE_YAML="/etc/datadog-agent/system-probe.yaml"
 sudo -E start-stop-daemon --verbose --start --background --chuid $AGENT_USER --pidfile $PROCESS_PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $PROCESS_AGENTPATH --config=$DATADOG_YAML_PATH --sysprobe-config=$SYSTEM_PROBE_YAML --pid=$PROCESS_PIDFILE"
-date  # Debug
+
+sudo -E start-stop-daemon --verbose --start --background --chuid $AGENT_USER --pidfile /opt/datadog-agent/run/security-agent.pid --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH /opt/datadog-agent/embedded/bin/security-agent start -c /etc/datadog-agent/datadog.yaml -c /etc/datadog-agent/security-agent.yaml -p /opt/datadog-agent/run/security-agent.pid"
+sudo -E start-stop-daemon --verbose --start --background --chuid $AGENT_USER --pidfile /opt/datadog-agent/run/system-probe.pid --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH /opt/datadog-agent/embedded/bin/system-probe run --config=/etc/datadog-agent/system-probe.yaml --pid=/opt/datadog-agent/run/system-probe.pid"
 
 sleep 10
 sudo datadog-agent status
