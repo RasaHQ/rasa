@@ -76,7 +76,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                 f"Failed to parse arguments in line "
                 f"'{user_input}'. Failed to decode parameters. "
                 f"Make sure your regex message is in the format:"
-                f"\<intent_name>@<confidence-value><dictionary of entities> "
+                f"\<intent_name>@<confidence-value><dictionary of entities>"  # noqa:  W505, W605, E501
                 f"Error: {e}",
             )
             return []
