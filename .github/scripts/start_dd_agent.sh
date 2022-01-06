@@ -51,20 +51,29 @@ fi
 sudo service datadog-agent stop
 
 set -x
+date  # Debug
 
 # Restart agent (such that GPU/NVML metrics are collected)
+# Adusted code from /etc/init/datadog-agent-process.conf
 INSTALL_DIR="/opt/datadog-agent"
 AGENTPATH="$INSTALL_DIR/bin/agent/agent"
 PIDFILE="$INSTALL_DIR/run/agent.pid"
-AGENT_ARGS="run -p $PIDFILE"
 AGENT_USER="dd-agent"
 LD_LIBRARY_PATH="/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
-sudo -E start-stop-daemon --verbose --start --background --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH $AGENT_ARGS"
+sudo -E start-stop-daemon --verbose --start --background --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH run -p $PIDFILE"
+date  # Debug
 
-# Restart agent (such that APM is working properly)
-# sudo service datadog-agent restart
+TRACE_AGENTPATH="$INSTALL_DIR/embedded/bin/trace-agent"
+TRACE_PIDFILE="$INSTALL_DIR/run/trace-agent.pid"
+sudo -E start-stop-daemon --verbose --start --background --chuid $AGENT_USER --pidfile $TRACE_PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $TRACE_AGENTPATH --config $DATADOG_YAML_PATH --pid $TRACE_PIDFILE"
+date  # Debug
 
-# Note: It seems wasteful to restart the agent twice.
+PROCESS_AGENTPATH="$INSTALL_DIR/embedded/bin/process-agent"
+PROCESS_PIDFILE="$INSTALL_DIR/run/process-agent.pid"
+SYSTEM_PROBE_YAML="/etc/datadog-agent/system-probe.yaml"
+sudo -E start-stop-daemon --verbose --start --background --chuid $AGENT_USER --pidfile $TRACE_PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $PROCESS_AGENTPATH --config=$DATADOG_YAML_PATH --sysprobe-config=$SYSTEM_PROBE_YAML --pid=$PROCESS_PIDFILE"
+date  # Debug
 
 sleep 10
 sudo datadog-agent status
+sudo datadog-agent health
