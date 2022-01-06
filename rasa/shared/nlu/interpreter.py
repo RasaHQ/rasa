@@ -6,7 +6,7 @@ from typing import Text, Optional, Dict, Any, Union, List, Tuple
 
 import rasa.shared
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DOCS_URL_STORIES
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message
 
@@ -74,11 +74,10 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         except (JSONDecodeError, ValueError) as e:
             rasa.shared.utils.io.raise_warning(
                 f"Failed to parse arguments in line "
-                f"'{user_input}'. Failed to decode parameters "
-                f"as a json object. Make sure the intent "
-                f"is followed by a proper json object. "
+                f"'{user_input}'. Failed to decode parameters. "
+                f"Make sure your regex message is in the format:"
+                f"\<intent_name>@<confidence-value><dictionary of entities>"  # noqa:  W505, W605, E501
                 f"Error: {e}",
-                docs=DOCS_URL_STORIES,
             )
             return []
 
@@ -95,7 +94,6 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                 f"'{confidence_str}'. Make sure the intent confidence is an "
                 f"@ followed by a decimal number. "
                 f"Error: {e}",
-                docs=DOCS_URL_STORIES,
             )
             return 0.0
 
