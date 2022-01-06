@@ -18,6 +18,7 @@ concurrency:
 env:
   GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
+  TF_FORCE_GPU_ALLOW_GROWTH: true
 
 jobs:
   read_test_configuration:

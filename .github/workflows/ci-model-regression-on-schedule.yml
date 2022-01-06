@@ -9,6 +9,7 @@ on:
 env:
   GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
+  TF_FORCE_GPU_ALLOW_GROWTH: true
   GITHUB_ISSUE_LABELS: '["type:bug :bug:", "tool:model-regression-tests"]'
   PERFORMANCE_DROP_THRESHOLD: -0.05
 

@@ -10,7 +10,6 @@ from urllib.parse import urlparse
 
 import aio_pika
 
-from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.exceptions import RasaException
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
 from rasa.core.brokers.broker import EventBroker
@@ -37,9 +36,6 @@ class PikaEventBroker(EventBroker):
         queues: Union[List[Text], Tuple[Text], Text, None] = None,
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
-        log_level: Union[Text, int] = os.environ.get(
-            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
-        ),
         event_loop: Optional[AbstractEventLoop] = None,
         connection_attempts: int = 20,
         retry_delay_in_seconds: float = 5,
@@ -59,7 +55,6 @@ class PikaEventBroker(EventBroker):
                 case of errors.
             raise_on_failure: Whether to raise an exception if publishing fails. If
                 `False`, keep retrying.
-            log_level: Logging level.
             event_loop: The event loop which will be used to run `async` functions. If
                 `None` `asyncio.get_event_loop()` is used to get a loop.
             connection_attempts: Number of attempts for connecting to RabbitMQ before
@@ -69,7 +64,6 @@ class PikaEventBroker(EventBroker):
                 If nothing is mentioned then the default exchange name would be used.
         """
         super().__init__()
-        _set_pika_log_levels(log_level)
 
         self.host = host
         self.username = username
@@ -349,9 +343,3 @@ def _create_rabbitmq_ssl_options(
         }
 
     return None
-
-
-def _set_pika_log_levels(log_level: Union[Text, int]) -> None:
-    pika_loggers = ["aio_pika", "aiormq"]
-    for logger_name in pika_loggers:
-        logging.getLogger(logger_name).setLevel(log_level)
