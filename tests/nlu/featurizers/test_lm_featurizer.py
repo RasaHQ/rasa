@@ -809,7 +809,7 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
 
 @pytest.mark.parametrize(
     "model_name, model_weights, should_raise",
-    [("bert", None, False), ("albert", None, True),],
+    [("distilbert", None, False), ("albert", None, True),],
 )
 def test_lm_featurizer_no_default_weights_raises(
     model_name: Text,
