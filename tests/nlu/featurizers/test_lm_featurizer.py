@@ -805,3 +805,27 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     result, _ = lm_featurizer._tokenize_example(message, TEXT)
 
     assert [(token.text, token.start) for token in result] == expected_feature_tokens
+
+
+@pytest.mark.parametrize(
+    "model_name, model_weights, should_raise",
+    [("bert", None, False), ("albert", None, True),],
+)
+def test_lm_featurizer_no_default_weights_raises(
+    model_name: Text,
+    model_weights: Tuple[Text, None],
+    should_raise: bool,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
+):
+    config = {
+        "model_name": model_name,
+        "model_weights": model_weights,
+    }
+
+    if should_raise:
+        with pytest.raises(ValueError, match=r"No model_weights specified .*"):
+            _ = create_language_model_featurizer(config)
+    else:
+        _ = create_language_model_featurizer(config)

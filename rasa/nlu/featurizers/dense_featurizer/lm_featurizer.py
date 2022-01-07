@@ -130,9 +130,9 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
                     f" specify model_weights explicitly."
                 )
 
-        self.model_config = AutoConfig.from_pretrained(self.model_weights)
         self.cache_dir = self._config["cache_dir"]
-        self.max_model_sequence_length = self.model_config.max_position_embeddings
+        model_config = AutoConfig.from_pretrained(self.model_weights)
+        self.max_model_sequence_length = model_config.max_position_embeddings
 
     def _load_model_instance(self) -> None:
         """Tries to load the model instance.
@@ -156,6 +156,14 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         # Also, this does not hurt the model predictions since we use an attention mask
         # while feeding input.
         self.pad_token_id = self.tokenizer.unk_token_id
+
+        # Get the special token ids that are added by the tokenizer (e.g. [CLS]) so
+        # they can be removed from the output.
+        # Remove the UNK token since we're interested in the tokens that are added
+        # additionally to the existing tokens, whereas the UNK token can represent an
+        # original token and should therefore not be filtered from the output.
+        self.special_token_ids = self.tokenizer.all_special_ids.copy()
+        self.special_token_ids.remove(self.tokenizer.unk_token_id)
 
     def _lm_tokenize(self, text: Text) -> Tuple[List[int], List[Text]]:
         """Passes the text through the tokenizer of the language model.
@@ -389,7 +397,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         cls_token_idxs = []
 
         for token_ids in batch_token_ids:
-            mask = [id_ in self.tokenizer.all_special_ids for id_ in token_ids]
+            mask = [id_ in self.special_token_ids for id_ in token_ids]
 
             # Truncate the mask to the maximum sequence lenght of the model
             if (
