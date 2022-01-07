@@ -142,6 +142,7 @@ def train_persist_load_with_different_settings(
         assert classified_message2.fingerprint() == classified_message.fingerprint()
 
         return loaded_selector
+
     return inner
 
 
