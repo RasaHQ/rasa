@@ -51,7 +51,6 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
 
 
-
 @pytest.fixture()
 def response_selector_training_data() -> TrainingData:
     # use data that include some responses
