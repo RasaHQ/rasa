@@ -28,6 +28,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
 
 
 class RasaCustomLayer(tf.keras.layers.Layer):
@@ -805,6 +806,7 @@ class RasaSequenceLayer(RasaCustomLayer):
         transformer_units = config[TRANSFORMER_SIZE]
         if isinstance(transformer_units, dict):
             transformer_units = transformer_units[attribute]
+        transformer_units = transformer_units or DEFAULT_TRANSFORMER_SIZE
 
         return transformer_layers, transformer_units
 

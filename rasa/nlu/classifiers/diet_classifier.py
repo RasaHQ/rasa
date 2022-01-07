@@ -31,7 +31,7 @@ from rasa.utils.tensorflow.model_data import (
     FeatureSignature,
     FeatureArray,
 )
-from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.constants import TOKENS_NAMES, DEFAULT_TRANSFORMER_SIZE
 from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     TEXT,
@@ -154,7 +154,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # Whether to share the hidden layer weights between user message and labels.
             SHARE_HIDDEN_LAYERS: False,
             # Number of units in transformer
-            TRANSFORMER_SIZE: 256,
+            TRANSFORMER_SIZE: DEFAULT_TRANSFORMER_SIZE,
             # Number of transformer layers
             NUM_TRANSFORMER_LAYERS: 2,
             # Number of attention heads in transformer
