@@ -752,6 +752,7 @@ def with_model_id(event: Event, model_id: Text) -> Event:
     new_event.metadata[METADATA_MODEL_ID] = model_id
     return new_event
 
+
 @pytest.fixture(autouse=True)
 def sanic_test_mode(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(Sanic, "test_mode", True)
