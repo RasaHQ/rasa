@@ -455,6 +455,7 @@ def rasa_server(stack_agent: Agent) -> Sanic:
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
+
 @pytest.fixture
 def rasa_non_trained_server(empty_agent: Agent) -> Sanic:
     app = server.create_app(agent=empty_agent)
