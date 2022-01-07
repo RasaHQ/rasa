@@ -455,7 +455,6 @@ def rasa_server(stack_agent: Agent) -> Sanic:
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
-
 @pytest.fixture
 def rasa_non_trained_server(empty_agent: Agent) -> Sanic:
     app = server.create_app(agent=empty_agent)
@@ -752,3 +751,7 @@ def with_model_id(event: Event, model_id: Text) -> Event:
     new_event = copy.deepcopy(event)
     new_event.metadata[METADATA_MODEL_ID] = model_id
     return new_event
+
+@pytest.fixture(autouse=True)
+def sanic_test_mode(monkeypatch: MonkeyPatch):
+    monkeypatch.setattr(Sanic, "test_mode", True)
