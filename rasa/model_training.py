@@ -15,7 +15,6 @@ import randomname
 
 import rasa.engine.validation
 from rasa.engine.caching import LocalTrainingCache
-from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
