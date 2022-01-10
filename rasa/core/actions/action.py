@@ -1165,6 +1165,7 @@ class ActionExtractSlots(Action):
         for slot in user_slots:
             for mapping in slot.mappings:
                 mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
+
                 if not SlotMapping.check_mapping_validity(
                     slot_name=slot.name,
                     mapping_type=mapping_type,
@@ -1247,7 +1248,7 @@ def extract_slot_value_from_predefined_mapping(
         for active_loop in mapping.get(MAPPING_CONDITIONS, [])
     ]
     should_fill_trigger_slot = (
-        mapping.get(MAPPING_TYPE) == SlotMappingType.FROM_TRIGGER_INTENT
+        mapping_type == SlotMappingType.FROM_TRIGGER_INTENT
         and tracker.active_loop_name not in active_loops_in_mapping_conditions
     )
 
