@@ -2,6 +2,7 @@ from typing import Tuple
 import tempfile
 import uuid
 
+import numpy as np
 from tqdm import tqdm 
 import pandas as pd
 
@@ -203,6 +204,7 @@ def get_featurizer(test_case) -> Tuple[str, LanguageModelFeaturizer]:
         execution_context= ExecutionContext(GraphSchema({}), uuid.uuid4().hex),
     )
 
+
 def run(test_case) -> pd.DataFrame:
     # simluates only `test_lm_featurizer_shapes_in_process_training_data`
     # but `test_lm_featurizer_shapes_in_process_messages` should do the same
@@ -247,23 +249,24 @@ def run(test_case) -> pd.DataFrame:
 
         assert intent_sequence_vec is None
         assert intent_sentence_vec is None
-
-        def max_abs_diff(a,b):
-            return max([abs(x-y) for x,y in zip(a,b)])
         row =  {
             'model_name' : test_case['model_name'],
             'model_weights' : test_case['model_weights'],
             'text' : messages[index].get('text'),
-            'sequence_expected' : computed_sequence_vec[: len(expected_sequence_vec[index]), 0],
-            'sequence_actual' : expected_sequence_vec[index],
+            'sequence_expected' : expected_sequence_vec[index], 
+            'sequence_actual' : computed_sequence_vec[: len(expected_sequence_vec[index]), 0].tolist(),
             'sentence_expected' : expected_cls_vec[index],
-            'sentence_actual' : computed_sentence_vec[0][:5],
+            'sentence_actual' : computed_sentence_vec[0][:5].tolist(),
+            
+            'sequence_actual_full' : computed_sequence_vec[:, 0].tolist(),
+            'sentence_actual_full' : computed_sentence_vec[0].tolist(),
         }
+        
         for key in ['sequence', 'sentence']:
-            row[f"{key}_diff"] = max_abs_diff(row[f"{key}_expected"], row[f"{key}_actual"])
+            row[f"{key}_diff"] = np.max(np.absolute(np.array(row[f"{key}_expected"]) - row[f"{key}_actual"]))
         comparison = comparison.append(row, ignore_index=True)
         
-    comparison = comparison.reset_index(drop=True)
+    #comparison = comparison.reset_index(drop=True)
     return comparison
 
 def collect_comparisons(test_cases) -> pd.DataFrame:
