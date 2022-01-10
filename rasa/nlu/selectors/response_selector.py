@@ -90,6 +90,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_RANKING_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
+    DEFAULT_TRANSFORMER_SIZE,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -127,9 +128,6 @@ class ResponseSelector(DIETClassifier):
     However, in this implementation the `mu` parameter is treated differently
     and additional hidden layers are added together with dropout.
     """
-
-    # The `transformer_size` to use as a default when the transformer is enabled.
-    default_transformer_size_when_enabled = 256
 
     @classmethod
     def required_components(cls) -> List[Type]:
@@ -399,13 +397,11 @@ class ResponseSelector(DIETClassifier):
                 f"`{self.component_config[TRANSFORMER_SIZE]}` for "
                 f"{selector_name}, but a positive size is required when using "
                 f"`{NUM_TRANSFORMER_LAYERS} > 0`. {selector_name} will proceed, using "
-                f"`{TRANSFORMER_SIZE}={self.default_transformer_size_when_enabled}`. "
+                f"`{TRANSFORMER_SIZE}={DEFAULT_TRANSFORMER_SIZE}`. "
                 f"Alternatively, specify a different value in the component's config.",
                 category=UserWarning,
             )
-            self.component_config[
-                TRANSFORMER_SIZE
-            ] = self.default_transformer_size_when_enabled
+            self.component_config[TRANSFORMER_SIZE] = DEFAULT_TRANSFORMER_SIZE
 
     def _check_config_params_when_transformer_enabled(self) -> None:
         """Checks & corrects config parameters when the transformer is enabled.
