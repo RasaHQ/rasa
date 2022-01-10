@@ -50,7 +50,7 @@ class SlotMapping:
         except ValueError:
             raise InvalidDomain(
                 f"Your domain uses an invalid slot mapping of type "
-                f"'{mapping_type}' for slot '{slot_name}'. Please see "
+                f"'{mapping.get(MAPPING_TYPE)}' for slot '{slot_name}'. Please see "
                 f"{DOCS_URL_SLOTS} for more information."
             )
 
