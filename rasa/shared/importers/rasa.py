@@ -1,13 +1,13 @@
 import logging
 import os
-from typing import Dict, List, Optional, Text, Union, Any
+from typing import Dict, List, Optional, Text, Union
 
 import rasa.shared.data
 from rasa.engine.recipes.recipe import Recipe
+
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers import utils
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -26,7 +26,6 @@ class RasaFileImporter(TrainingDataImporter):
         config_file: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
-        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ):
 
         self._domain_path = domain_path
@@ -41,26 +40,21 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths, YAMLStoryReader.is_test_stories_file
         )
 
-        self.config_file_path = config_file
+        self.config_file = config_file
 
-    def get_model_config(
-        self,
-        cli_par: Dict[Text, Any],
-        training_type: TrainingType = TrainingType.BOTH,
-        is_finetuning: bool = False,
-    ) -> Dict:
-        """Retrieves model config (see parent class for full docstring)."""
-        if not self.config_file_path or not os.path.exists(self.config_file_path):
+    def get_config(self) -> Dict:
+        """Retrieves config in dict format (see parent class for full docstring).
+
+        It also auto-configures it, ie. missing defaults are added.
+        """
+        if not self.config_file or not os.path.exists(self.config_file):
             logger.debug("No configuration file was provided to the RasaFileImporter.")
             return {}
 
-        config = rasa.shared.utils.io.read_model_configuration(self.config_file_path)
+        config = rasa.shared.utils.io.read_model_configuration(self.config_file)
         recipe = Recipe.recipe_for_name(config.get("recipe"))
-        config = recipe.auto_configure(self.config_file_path, config, training_type,)
-        model_config = recipe.graph_config_for_recipe(
-            config, cli_par, training_type=training_type, is_finetuning=is_finetuning,
-        )
-        return model_config
+        config = recipe.auto_configure(self.config_file, config)
+        return config
 
     def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""

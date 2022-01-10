@@ -837,8 +837,8 @@ class DefaultV1Recipe(Recipe):
         )
         return node_with_e2e_features
 
+    @staticmethod
     def auto_configure(
-        self,
         config_file_path: Optional[Text],
         config: Dict,
         training_type: Optional[TrainingType] = TrainingType.BOTH,
@@ -851,16 +851,17 @@ class DefaultV1Recipe(Recipe):
         Args:
             config_file_path: The path to the configuration file.
             config: Configuration in dictionary format.
-            training_type: NLU, CORE or BOTH depending on what is trained.
+            training_type: Optional training type to auto-configure. By default
+            both core and NLU will be auto-configured.
         """
-        missing_keys = self._get_missing_config_keys(config, training_type)
-        keys_to_configure = self._get_unspecified_autoconfigurable_keys(
+        missing_keys = DefaultV1Recipe._get_missing_config_keys(config, training_type)
+        keys_to_configure = DefaultV1Recipe._get_unspecified_autoconfigurable_keys(
             config, training_type
         )
 
         if keys_to_configure:
-            config = self.complete_config(config, keys_to_configure)
-            self._dump_config(
+            config = DefaultV1Recipe.complete_config(config, keys_to_configure)
+            DefaultV1Recipe._dump_config(
                 config, config_file_path, missing_keys, keys_to_configure, training_type
             )
 
@@ -929,7 +930,7 @@ class DefaultV1Recipe(Recipe):
         return config
 
     @staticmethod
-    def dump_config(
+    def _dump_config(
         config: Dict[Text, Any],
         config_file_path: Text,
         missing_keys: Set[Text],

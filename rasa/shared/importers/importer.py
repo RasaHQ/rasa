@@ -6,6 +6,8 @@ import rasa.shared.constants
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
+from rasa.engine.graph import GraphModelConfiguration
+from rasa.engine.recipes.recipe import Recipe
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -56,6 +58,23 @@ class TrainingDataImporter:
         """
         raise NotImplementedError()
 
+    def get_model_config(
+        self,
+        cli_par: Dict[Text, Any],
+        training_type: TrainingType = TrainingType.BOTH,
+        is_finetuning: bool = False,
+    ) -> GraphModelConfiguration:
+        """Retrieves model config object.
+
+        Used both by E2EImporter and NLUDataImporter
+        """
+        config = self.get_config()
+        recipe = Recipe.recipe_for_name(config.get("recipe"))
+        model_config = recipe.graph_config_for_recipe(
+            config, cli_par, training_type=training_type, is_finetuning=is_finetuning,
+        )
+        return model_config
+
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves the NLU training data that should be used for training.
 
@@ -72,13 +91,11 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a configuration file."""
-
         config = rasa.shared.utils.io.read_config_file(config_path)
         return TrainingDataImporter.load_from_dict(
-            config, config_path, domain_path, training_data_paths, training_type
+            config, config_path, domain_path, training_data_paths
         )
 
     @staticmethod
@@ -91,9 +108,8 @@ class TrainingDataImporter:
 
         Instance loaded from configuration file will only read Core training data.
         """
-
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths, TrainingType.CORE
+            config_path, domain_path, training_data_paths
         )
         return importer
 
@@ -107,9 +123,8 @@ class TrainingDataImporter:
 
         Instance loaded from configuration file will only read NLU training data.
         """
-
         importer = TrainingDataImporter.load_from_config(
-            config_path, domain_path, training_data_paths, TrainingType.NLU
+            config_path, domain_path, training_data_paths
         )
 
         if isinstance(importer, E2EImporter):
@@ -125,26 +140,22 @@ class TrainingDataImporter:
         config_path: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
-
         from rasa.shared.importers.rasa import RasaFileImporter
 
         config = config or {}
         importers = config.get("importers", [])
         importers = [
             TrainingDataImporter._importer_from_dict(
-                importer, config_path, domain_path, training_data_paths, training_type
+                importer, config_path, domain_path, training_data_paths
             )
             for importer in importers
         ]
         importers = [importer for importer in importers if importer]
         if not importers:
             importers = [
-                RasaFileImporter(
-                    config_path, domain_path, training_data_paths, training_type
-                )
+                RasaFileImporter(config_path, domain_path, training_data_paths)
             ]
 
         return E2EImporter(ResponsesSyncImporter(CombinedDataImporter(importers)))
@@ -155,7 +166,6 @@ class TrainingDataImporter:
         config_path: Text,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
-        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> Optional["TrainingDataImporter"]:
         from rasa.shared.importers.multi_project import MultiProjectImporter
         from rasa.shared.importers.rasa import RasaFileImporter
@@ -173,8 +183,6 @@ class TrainingDataImporter:
             except (AttributeError, ImportError):
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None
-
-        importer_config = dict(training_type=training_type, **importer_config)
 
         constructor_arguments = rasa.shared.utils.common.minimal_kwargs(
             importer_config, importer_class
