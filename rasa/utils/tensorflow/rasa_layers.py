@@ -809,8 +809,7 @@ class RasaSequenceLayer(RasaCustomLayer):
         transformer_units = config[TRANSFORMER_SIZE]
         if isinstance(transformer_units, dict):
             transformer_units = transformer_units[attribute]
-        if transformer_layers > 0 and (not transformer_units or transformer_units < 1):
-            transformer_units = DEFAULT_TRANSFORMER_SIZE
+        transformer_units = transformer_units or DEFAULT_TRANSFORMER_SIZE
 
         return transformer_layers, transformer_units
 
