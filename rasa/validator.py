@@ -9,7 +9,13 @@ from rasa.shared.constants import (
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
 )
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    KEY_INTENTS,
+    KEY_RESPONSES,
+    KEY_SLOTS,
+    KEY_FORMS,
+    Domain,
+)
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.generator import TrainingDataGenerator
@@ -319,3 +325,29 @@ class Validator:
                 return False
 
         return True
+
+    def verify_domain_duplicates(self) -> bool:
+        """Verifies that there are no duplicated dictionaries in multiple domain files.
+
+        Returns:
+            `True` if duplicates exist.
+        """
+        logger.info("Checking duplicates across domain files...")
+
+        all_valid = True
+
+        if not self.domain.duplicates:
+            return True
+
+        for key in [KEY_INTENTS, KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            duplicates = self.domain.duplicates.get(key)
+            if duplicates:
+                duplicates_str = ", ".join(duplicates)
+                rasa.shared.utils.io.raise_warning(
+                    f"The following duplicated {key} has been found "
+                    + f"across multiple domain files: {duplicates_str}",
+                    docs=DOCS_URL_DOMAINS,
+                )
+                all_valid = False
+
+        return all_valid
