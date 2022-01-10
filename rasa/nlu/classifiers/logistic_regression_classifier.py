@@ -79,21 +79,22 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         """
         X = []
         y = []
-        for e in training_data.training_examples:
-            if e.get(INTENT):
-                if e.get("text"):
-                    # First element is sequence features, second is sentence features
-                    sparse_feats = e.get_sparse_features(attribute=TEXT)[1]
-                    # First element is sequence features, second is sentence features
-                    dense_feats = e.get_dense_features(attribute=TEXT)[1]
-                    together = hstack(
-                        [
-                            csr_matrix(sparse_feats.features if sparse_feats else []),
-                            csr_matrix(dense_feats.features if dense_feats else []),
-                        ]
-                    )
-                    X.append(together)
-                    y.append(e.get(INTENT))
+        
+        examples = [e for e in training_data.intent_examples if (e.get("intent") and e.get("text"))]
+        
+        for e in examples:
+            # First element is sequence features, second is sentence features
+            sparse_feats = e.get_sparse_features(attribute=TEXT)[1]
+            # First element is sequence features, second is sentence features
+            dense_feats = e.get_dense_features(attribute=TEXT)[1]
+            together = hstack(
+                [
+                    csr_matrix(sparse_feats.features if sparse_feats else []),
+                    csr_matrix(dense_feats.features if dense_feats else []),
+                ]
+            )
+            X.append(together)
+            y.append(e.get(INTENT))
         return vstack(X), y
 
     def train(self, training_data: TrainingData) -> Resource:
