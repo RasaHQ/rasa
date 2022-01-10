@@ -196,7 +196,7 @@ nodes:
   domain_for_core_training_provider:
     needs:
       domain: domain_provider
-    uses: rasa.graph_components.providers.domain_without_response_provider.DomainWithoutResponsesProvider
+    uses: rasa.graph_components.providers.domain_for_core_provider.rasa.graph_components.providers.domain_for_core_provider
     constructor_name: create
     fn: provide
     config: {}
