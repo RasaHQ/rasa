@@ -39,6 +39,7 @@ MODEL_WEIGHTS_DEFAULT = {
     "distilbert": "distilbert-base-uncased",
     "roberta": "roberta-base",
 }
+CLS_TOKEN = "[CLS]"
 
 
 @DefaultV1Recipe.register(
@@ -408,8 +409,9 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
             special_tokens_mask.append(mask)
 
-            # Keep the CLS token position for BERT style architectures
-            if self.tokenizer.cls_token == "[CLS]":
+            # Keep the CLS token position for BERT style architectures to build
+            # a sentence representation
+            if CLS_TOKEN in self.tokenizer.all_special_tokens:
                 try:
                     cls_idx = token_ids.index(self.tokenizer.cls_token_id)
                 except ValueError:
