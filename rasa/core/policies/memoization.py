@@ -11,7 +11,7 @@ import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_POLICIES
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
@@ -160,7 +160,7 @@ class MemoizationPolicy(Policy):
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
-        if self.ENABLE_FEATURE_STRING_COMPRESSION:
+        if False:  # self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(
                 bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
             )
@@ -287,40 +287,37 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     """
 
     @staticmethod
-    def _back_to_the_future(
+    def _truncate_leading_events_until_action_executed(
         tracker: DialogueStateTracker, again: bool = False
     ) -> Optional[DialogueStateTracker]:
-        """Truncates the tracker to the next `ActionExecuted` or `UserUttered` event.
+        """Truncates the tracker to begin at the next `ActionExecuted` event.
 
         Args:
             tracker: The tracker to truncate.
-            again: When true, truncate tracker at the second action or
-                user utterance. Otherwise truncate to the firt action or
-                user utterance.
+            again: When true, truncate tracker at the second action.
+                Otherwise truncate to the first action.
 
         Returns:
-            The truncated tracker if there were actions or user utterances
-            present. If none are found, returns `None`.
+            The truncated tracker if there were actions present.
+            If none are found, returns `None`.
         """
-        idx_of_first_action_or_user = None
-        idx_of_second_action_or_user = None
+        idx_of_first_action = None
+        idx_of_second_action = None
 
         applied_events = tracker.applied_events()
 
         # We need to find the second `ActionExecuted` or `UserUttered` event.
         for e_i, event in enumerate(applied_events):
-            if isinstance(event, ActionExecuted) or isinstance(event, UserUttered):
-                if idx_of_first_action_or_user is None:
-                    idx_of_first_action_or_user = e_i
+            if isinstance(event, ActionExecuted):
+                if idx_of_first_action is None:
+                    idx_of_first_action = e_i
                 else:
-                    idx_of_second_action_or_user = e_i
+                    idx_of_second_action = e_i
                     break
 
         # use first action/user utterance, if we went first time and
         # second action/user utterance, if we went again
-        idx_to_use = (
-            idx_of_second_action_or_user if again else idx_of_first_action_or_user
-        )
+        idx_to_use = idx_of_second_action if again else idx_of_first_action
         if idx_to_use is None:
             return None
 
@@ -329,19 +326,19 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         if not events:
             return None
 
-        mcfly_tracker = tracker.init_copy()
+        truncated_tracker = tracker.init_copy()
         for e in events:
-            mcfly_tracker.update(e)
+            truncated_tracker.update(e)
 
-        return mcfly_tracker
+        return truncated_tracker
 
-    def _recall_using_delorean(
+    def _recall_using_truncation(
         self, old_states: List[State], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
-        """Applies to the future idea to change the past and get the new future.
+        """Attempts to match memorized states to progressively shorter trackers.
 
-        Recursively go to the past to correctly forget slots,
-        and then back to the future to recall.
+        This matching will iteratively remove prior slot setting events and
+        other actions, looking for the first matching memorized state sequence.
 
         Args:
             old_states: List of states.
@@ -354,10 +351,12 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         logger.debug("Launch DeLorean...")
 
         # Truncate the tracker based on `max_history`
-        mcfly_tracker = _trim_tracker_by_max_history(tracker, self.max_history)
-        mcfly_tracker = self._back_to_the_future(mcfly_tracker)
-        while mcfly_tracker is not None:
-            states = self._prediction_states(mcfly_tracker, domain,)
+        truncated_tracker = _trim_tracker_by_max_history(tracker, self.max_history)
+        truncated_tracker = self._truncate_leading_events_until_action_executed(
+            truncated_tracker
+        )
+        while truncated_tracker is not None:
+            states = self._prediction_states(truncated_tracker, domain,)
 
             if old_states != states:
                 # check if we like new futures
@@ -368,7 +367,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 old_states = states
 
             # go back again
-            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True)
+            truncated_tracker = self._truncate_leading_events_until_action_executed(
+                truncated_tracker, again=True
+            )
 
         # No match found
         logger.debug(f"Current tracker state {old_states}")
@@ -393,7 +394,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(states, tracker, domain,)
+            return self._recall_using_truncation(states, tracker, domain,)
         else:
             return predicted_action_name
 
