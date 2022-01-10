@@ -53,7 +53,8 @@ def configure_file_logging(
         )
         socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
         syslog_handler = logging.handlers.SysLogHandler(
-            address=(syslog_address, syslog_port), socktype=socktype,
+            address=(syslog_address, syslog_port),
+            socktype=socktype,
         )
         syslog_handler.setLevel(logger_obj.level)
         syslog_handler.setFormatter(formatter)
@@ -125,9 +126,7 @@ def list_routes(app: Sanic) -> Dict[Text, Text]:
         for arg in route._params:
             options[arg] = f"[{arg}]"
 
-        handlers = [
-            (list(route.methods)[0], route.name.replace("rasa.server.", ""))
-        ]
+        handlers = [(list(route.methods)[0], route.name.replace("rasa.server.", ""))]
 
         for method, name in handlers:
             full_endpoint = "/" + "/".join(endpoint)
