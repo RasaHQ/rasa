@@ -12,6 +12,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.core.constants import (
     SLOT_MAPPINGS,
+    MAPPING_TYPE,
     SlotMappingType,
     MAPPING_CONDITIONS,
 )
@@ -44,6 +45,15 @@ class SlotMapping:
                 f"{DOCS_URL_SLOTS} for more information."
             )
 
+        try:
+            mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
+        except ValueError:
+            raise InvalidDomain(
+                f"Your domain uses an invalid slot mapping of type "
+                f"'{mapping_type}' for slot '{slot_name}'. Please see "
+                f"{DOCS_URL_SLOTS} for more information."
+            )
+
         validations = {
             SlotMappingType.FROM_ENTITY: ["entity"],
             SlotMappingType.FROM_INTENT: ["value"],
@@ -52,16 +62,7 @@ class SlotMapping:
             SlotMappingType.CUSTOM: [],
         }
 
-        mapping_type = SlotMappingType(mapping.get("type"))
         required_keys = validations.get(mapping_type)
-
-        if required_keys is None:
-            raise InvalidDomain(
-                f"Your domain uses an invalid slot mapping of type "
-                f"'{mapping_type}' for slot '{slot_name}'. Please see "
-                f"{DOCS_URL_SLOTS} for more information."
-            )
-
         for required_key in required_keys:
             if mapping.get(required_key) is None:
                 raise InvalidDomain(
