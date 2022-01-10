@@ -9,6 +9,7 @@ on:
 env:
   GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
+  TF_FORCE_GPU_ALLOW_GROWTH: true
   GITHUB_ISSUE_LABELS: '["type:bug :bug:", "tool:model-regression-tests"]'
   PERFORMANCE_DROP_THRESHOLD: -0.05
 
@@ -18,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix_length: ${{ steps.set-matrix.outputs.matrix_length }}
     steps:
     - name: Checkout main
       uses: actions/checkout@v2
@@ -41,7 +43,11 @@ jobs:
     - name: Set matrix values
       id: set-matrix
       shell: bash
-      run: echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=.github/configs/mr-test-schedule.json -f .github/templates/model_regression_test_config_to_json.tmpl)"
+      run: |-
+        matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=.github/configs/mr-test-schedule.json -f .github/templates/model_regression_test_config_to_json.tmpl)
+        matrix_length=$(echo $matrix | jq '.[] | length')
+        echo "::set-output name=matrix_length::$matrix_length"
+        echo "::set-output name=matrix::$matrix"
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
@@ -71,6 +77,15 @@ jobs:
           GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
+
+          num_max_replicas=3
+          matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
+          if [[ $matrix_length -gt $num_max_replicas ]]; then
+            NUM_REPLICAS=$num_max_replicas
+          else
+            NUM_REPLICAS=$matrix_length
+          fi
+          echo NUM_REPLICAS=$NUM_REPLICAS >> $GITHUB_ENV
 
       - name: Render deployment template
         run: |-
@@ -117,7 +132,7 @@ jobs:
       GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Failed'
     runs-on: [self-hosted, gpu, "${{ github.run_id }}"]
     strategy:
-      max-parallel: 3
+      # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
 
     steps:

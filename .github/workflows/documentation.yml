@@ -160,11 +160,23 @@ jobs:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
       uses: actions/cache@v1
       with:
-        path: ~/.cache/pypoetry/virtualenvs
+        path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-3.7-non-full
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true'
+      run: rm -r .venv
+
+    - name: Create virtual environment
+      if: steps.cache-poetry.outputs.cache-hit != 'true'
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      run: poetry config virtualenvs.in-project true
 
     - name: Load Yarn Cached Packages ⬇
       uses: actions/cache@v1
@@ -243,12 +255,25 @@ jobs:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
       if: needs.changes.outputs.docs == 'true'
       uses: actions/cache@v1
       with:
-        path: ~/.cache/pypoetry/virtualenvs
+        path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-3.7-non-full
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.docs == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-preview-docs')
+      run: rm -r .venv
+
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-preview-docs')) && needs.changes.outputs.docs == 'true'
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      if: needs.changes.outputs.docs == 'true'
+      run: poetry config virtualenvs.in-project true
 
     - name: Load Yarn Cached Packages ⬇
       if: needs.changes.outputs.docs == 'true'
