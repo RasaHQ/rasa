@@ -79,9 +79,13 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         """
         X = []
         y = []
-        
-        examples = [e for e in training_data.intent_examples if (e.get("intent") and e.get("text"))]
-        
+
+        examples = [
+            e
+            for e in training_data.intent_examples
+            if (e.get("intent") and e.get("text"))
+        ]
+
         for e in examples:
             # First element is sequence features, second is sentence features
             sparse_feats = e.get_sparse_features(attribute=TEXT)[1]
