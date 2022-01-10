@@ -287,7 +287,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     """
 
     @staticmethod
-    def _truncate_leading_events_until_action_executed(
+    def _strip_leading_events_until_action_executed(
         tracker: DialogueStateTracker, again: bool = False
     ) -> Optional[DialogueStateTracker]:
         """Truncates the tracker to begin at the next `ActionExecuted` event.
@@ -352,7 +352,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         # Truncate the tracker based on `max_history`
         truncated_tracker = _trim_tracker_by_max_history(tracker, self.max_history)
-        truncated_tracker = self._truncate_leading_events_until_action_executed(
+        truncated_tracker = self._strip_leading_events_until_action_executed(
             truncated_tracker
         )
         while truncated_tracker is not None:
@@ -367,7 +367,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 old_states = states
 
             # go back again
-            truncated_tracker = self._truncate_leading_events_until_action_executed(
+            truncated_tracker = self._strip_leading_events_until_action_executed(
                 truncated_tracker, again=True
             )
 
