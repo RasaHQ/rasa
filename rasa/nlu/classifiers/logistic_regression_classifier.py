@@ -24,8 +24,11 @@ logger = logging.getLogger(__name__)
     DefaultV1Recipe.ComponentType.INTENT_CLASSIFIER, is_trainable=True
 )
 class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
+    """Intent classifier using the Logistic Regression."""
+
     @classmethod
     def required_components(cls) -> List[Type]:
+        """Components that should be included in the pipeline before this component."""
         return [Featurizer]
 
     @staticmethod
@@ -35,6 +38,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
+        """The component's default config (see parent class for full docstring)."""
         return {"class_weight": "balanced", "max_iter": 100, "solver": "lbfgs"}
 
     def __init__(
@@ -44,6 +48,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
     ) -> None:
+        """Construct a new classifier."""
         self.name = name
         self.clf = LogisticRegression(
             solver=config["solver"],
@@ -56,7 +61,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         self._resource = resource
 
     def _create_X(self, messages: List[Message]) -> csr_matrix:
-        """This method creates a sparse X array that can be used for predicting"""
+        """This method creates a sparse X array that can be used for predicting."""
         X = []
         for e in messages:
             # First element is sequence features, second is sentence features
@@ -73,10 +78,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         return vstack(X)
 
     def _create_training_matrix(self, training_data: TrainingData):
-        """
-        This method creates a scikit-learn compatible (X, y)-pair for training
-        the logistic regression model.
-        """
+        """This method creates a scikit-learn compatible (X, y) training pairs."""
         X = []
         y = []
 
@@ -102,6 +104,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         return vstack(X), y
 
     def train(self, training_data: TrainingData) -> Resource:
+        """Train the intent classifier on a data set."""
         X, y = self._create_training_matrix(training_data)
         if X.shape[0] == 0:
             logger.debug(
@@ -123,9 +126,11 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> GraphComponent:
+        """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, execution_context.node_name, model_storage, resource)
 
     def process(self, messages: List[Message]) -> List[Message]:
+        """Return the most likely intent and its probability for a message."""
         X = self._create_X(messages)
         pred = self.clf.predict(X)
         probas = self.clf.predict_proba(X)
@@ -145,6 +150,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         return messages
 
     def persist(self) -> None:
+        """Persist this model into the passed directory."""
         with self._model_storage.write_to(self._resource) as model_dir:
             dump(self.clf, model_dir / f"{self.name}.joblib")
 
@@ -156,6 +162,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> GraphComponent:
+        """Loads trained component (see parent class for full docstring)."""
         with model_storage.read_from(resource) as model_dir:
             classifier = load(model_dir / f"{resource.name}.joblib")
             component = cls(
@@ -165,6 +172,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             return component
 
     def process_training_data(self, training_data: TrainingData) -> TrainingData:
+        """Process the training data."""
         self.process(training_data.training_examples)
         return training_data
 
