@@ -18,7 +18,7 @@ jobs:
         test:
         - test-gh-actions
         os: [ ubuntu-latest ]
-        python-version: [ 3.7, 3.8 ]
+        python-version: [ 3.7 ]
 
     steps:
     - name: Checkout git repository 🕝
@@ -68,9 +68,7 @@ jobs:
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        make install-full | tee .output
-        if grep 'The lock file is not up to date' .output; then exit 1; fi
-        make prepare-tests-ubuntu
+        make install
 
     - name: Test Code 🔍
       env:
@@ -78,4 +76,3 @@ jobs:
         PYTHONIOENCODING: "utf-8"
       run: |
         make ${{ matrix.test }}
-        poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
