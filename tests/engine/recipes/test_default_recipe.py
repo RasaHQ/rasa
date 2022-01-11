@@ -1,8 +1,14 @@
-from typing import Text, Dict, Any
+from typing import Text, Dict, Any, Set
+import shutil
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.capture import CaptureFixture
+from pathlib import Path
+from unittest.mock import Mock
 
 import rasa.shared.utils.io
+from rasa.shared.constants import CONFIG_AUTOCONFIGURABLE_KEYS
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import GraphSchema, GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import (
@@ -22,6 +28,12 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.data import TrainingType
 import rasa.engine.validation
 from rasa.shared.importers.rasa import RasaFileImporter
+
+
+CONFIG_FOLDER = Path("data/test_config")
+
+SOME_CONFIG = CONFIG_FOLDER / "stack_config.yml"
+DEFAULT_CONFIG = Path("rasa/engine/recipes/config_files/default_config.yml")
 
 
 def test_recipe_for_name():
@@ -450,3 +462,202 @@ def test_train_core_without_nlu_pipeline():
         DefaultV1Recipe().graph_config_for_recipe(
             {"policies": []}, {}, TrainingType.CORE,
         )
+
+
+@pytest.mark.parametrize(
+    "config_path, expected_keys_to_configure",
+    [
+        (Path("rasa/cli/initial_project/config.yml"), {"pipeline", "policies"}),
+        (CONFIG_FOLDER / "config_policies_empty.yml", {"policies"}),
+        (CONFIG_FOLDER / "config_pipeline_empty.yml", {"pipeline"}),
+        (CONFIG_FOLDER / "config_policies_missing.yml", {"policies"}),
+        (CONFIG_FOLDER / "config_pipeline_missing.yml", {"pipeline"}),
+        (SOME_CONFIG, set()),
+    ],
+)
+def test_get_configuration(
+    config_path: Path, expected_keys_to_configure: Set[Text], monkeypatch: MonkeyPatch
+):
+    def complete_config(_, keys_to_configure: Set[Text]) -> Set[Text]:
+        return keys_to_configure
+
+    monkeypatch.setattr(DefaultV1Recipe, "_dump_config", Mock())
+    # This means get_configuration below will only return keys to configure,
+    # ie. missing keys
+    monkeypatch.setattr(DefaultV1Recipe, "complete_config", complete_config)
+
+    # We read config file first to find which recipe to use.
+    config = rasa.shared.utils.io.read_model_configuration(config_path)
+    keys_to_configure = DefaultV1Recipe.auto_configure(str(config_path), config)
+
+    if not expected_keys_to_configure:
+        # auto_configure short circuits if no keys are missing and doesn't run patched
+        # function above. In that case whole document is returned with all keys intact.
+        expected_keys_to_configure = {"language", "pipeline", "policies", "recipe"}
+
+    assert sorted(keys_to_configure) == sorted(expected_keys_to_configure)
+
+
+@pytest.mark.parametrize(
+    "language, keys_to_configure",
+    [
+        ("en", {"policies"}),
+        ("en", {"pipeline"}),
+        ("fr", {"pipeline"}),
+        ("en", {"policies", "pipeline"}),
+    ],
+)
+def test_auto_configure(language: Text, keys_to_configure: Set[Text]):
+    expected_config = rasa.shared.utils.io.read_config_file(DEFAULT_CONFIG)
+
+    config = DefaultV1Recipe.complete_config({"language": language}, keys_to_configure)
+
+    for k in keys_to_configure:
+        assert config[k] == expected_config[k]  # given keys are configured correctly
+
+    assert config.get("language") == language
+    config.pop("language")
+    assert len(config) == len(keys_to_configure)  # no other keys are configured
+
+
+@pytest.mark.parametrize(
+    "config_path, missing_keys",
+    [
+        (CONFIG_FOLDER / "config_language_only.yml", {"pipeline", "policies"}),
+        (CONFIG_FOLDER / "config_policies_missing.yml", {"policies"}),
+        (CONFIG_FOLDER / "config_pipeline_missing.yml", {"pipeline"}),
+        (SOME_CONFIG, []),
+    ],
+)
+def test_add_missing_config_keys_to_file(
+    tmp_path: Path, config_path: Path, missing_keys: Set[Text]
+):
+    config_file = str(tmp_path / "config.yml")
+    shutil.copyfile(str(config_path), config_file)
+
+    DefaultV1Recipe._add_missing_config_keys_to_file(config_file, missing_keys)
+
+    config_after_addition = rasa.shared.utils.io.read_config_file(config_file)
+
+    assert all(key in config_after_addition for key in missing_keys)
+
+
+def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
+
+    config_path = tmp_path / "non_existent_config.yml"
+
+    config = rasa.shared.utils.io.read_config_file(str(SOME_CONFIG))
+
+    DefaultV1Recipe._dump_config(config, str(config_path), set(), {"policies"})
+
+    assert not config_path.exists()
+
+    captured = capsys.readouterr()
+    assert "has been removed or modified" in captured.out
+
+
+# Test a few cases that are known to be potentially tricky (have failed in the past)
+@pytest.mark.parametrize(
+    "input_file, expected_file, autoconfig_keys",
+    [
+        (
+            "config_with_comments.yml",
+            "config_with_comments_after_dumping.yml",
+            {"policies"},
+        ),  # comments in various positions
+        (
+            "config_empty_en.yml",
+            "config_empty_en_after_dumping.yml",
+            {"policies", "pipeline"},
+        ),  # no empty lines
+        (
+            "config_empty_fr.yml",
+            "config_empty_fr_after_dumping.yml",
+            {"policies", "pipeline"},
+        ),  # no empty lines, with different language
+        (
+            "config_with_comments_after_dumping.yml",
+            "config_with_comments_after_dumping.yml",
+            {"policies"},
+        ),  # with previous auto config that needs to be overwritten
+    ],
+)
+def test_dump_config(
+    tmp_path: Path,
+    input_file: Text,
+    expected_file: Text,
+    capsys: CaptureFixture,
+    autoconfig_keys: Set[Text],
+):
+    config_file = str(tmp_path / "config.yml")
+    shutil.copyfile(str(CONFIG_FOLDER / input_file), config_file)
+    old_config = rasa.shared.utils.io.read_model_configuration(config_file)
+    DefaultV1Recipe.auto_configure(config_file, old_config)
+    new_config = rasa.shared.utils.io.read_model_configuration(config_file)
+
+    expected = rasa.shared.utils.io.read_model_configuration(
+        CONFIG_FOLDER / expected_file
+    )
+
+    assert new_config == expected
+
+    captured = capsys.readouterr()
+    assert "does not exist or is empty" not in captured.out
+
+    for k in CONFIG_AUTOCONFIGURABLE_KEYS:
+        if k in autoconfig_keys:
+            assert k in captured.out
+        else:
+            assert k not in captured.out
+
+
+@pytest.mark.parametrize(
+    "input_file, expected_file, training_type",
+    [
+        (
+            "config_empty_en.yml",
+            "config_empty_en_after_dumping.yml",
+            TrainingType.BOTH,
+        ),
+        (
+            "config_empty_en.yml",
+            "config_empty_en_after_dumping_core.yml",
+            TrainingType.CORE,
+        ),
+        (
+            "config_empty_en.yml",
+            "config_empty_en_after_dumping_nlu.yml",
+            TrainingType.NLU,
+        ),
+    ],
+)
+def test_get_configuration_for_different_training_types(
+    tmp_path: Path, input_file: Text, expected_file: Text, training_type: TrainingType,
+):
+    config_file = str(tmp_path / "config.yml")
+    shutil.copyfile(str(CONFIG_FOLDER / input_file), config_file)
+    config = rasa.shared.utils.io.read_model_configuration(config_file)
+
+    DefaultV1Recipe.auto_configure(config_file, config, training_type)
+
+    actual = rasa.shared.utils.io.read_file(config_file)
+
+    expected = rasa.shared.utils.io.read_file(str(CONFIG_FOLDER / expected_file))
+
+    assert actual == expected
+
+
+def test_comment_causing_invalid_autoconfig(tmp_path: Path):
+    """Regression test for https://github.com/RasaHQ/rasa/issues/6948."""
+    config_file = tmp_path / "config.yml"
+    shutil.copyfile(
+        str(CONFIG_FOLDER / "config_with_comment_between_suggestions.yml"), config_file
+    )
+    config = rasa.shared.utils.io.read_model_configuration(config_file)
+
+    _ = DefaultV1Recipe.auto_configure(str(config_file), config)
+
+    # This should not throw
+    dumped = rasa.shared.utils.io.read_yaml_file(config_file)
+
+    assert dumped
