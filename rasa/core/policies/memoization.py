@@ -368,9 +368,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                     break
 
         # use first action, if we went first time and second action, if we went again
-        idx_to_use = (
-            idx_of_second_action if again else idx_of_first_action
-        )
+        idx_to_use = idx_of_second_action if again else idx_of_first_action
         if idx_to_use is None:
             return None
 
@@ -392,7 +390,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         domain: Domain,
         rule_only_data: Optional[Dict[Text, Any]],
     ) -> Optional[Text]:
-         """Attempts to match memorized states to progressively shorter trackers.
+        """Attempts to match memorized states to progressively shorter trackers.
 
         This matching will iteratively remove prior slot setting events and
         other actions, looking for the first matching memorized state sequence.
@@ -410,7 +408,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         logger.debug("Launch DeLorean...")
 
         # Truncate the tracker based on `max_history`
-        mcfly_tracker = _trim_tracker_by_max_history(
+        truncated_tracker = _trim_tracker_by_max_history(
             tracker, self.config[POLICY_MAX_HISTORY]
         )
         truncated_tracker = self._strip_leading_events_until_action_executed(
