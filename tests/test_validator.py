@@ -45,7 +45,6 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
         config_file="data/test_moodbot/config.yml",
         domain_path="data/test_moodbot/domain.yml",
         training_data_paths=[story_file_name, nlu_data_path],
-        training_type=TrainingType.NLU,
     )
 
     validator = Validator.from_importer(importer)
@@ -134,7 +133,6 @@ def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
         config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=[story_file_name],
-        training_type=TrainingType.NLU,
     )
     validator = Validator.from_importer(importer)
     assert not validator.verify_story_structure(ignore_warnings=False)
@@ -167,7 +165,6 @@ def test_verify_correct_e2e_story_structure(tmp_path: Path):
         config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=[story_file_name],
-        training_type=TrainingType.NLU,
     )
     validator = Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=False)
@@ -193,7 +190,6 @@ def test_verify_correct_e2e_story_structure_with_intents(tmp_path: Path):
         config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=[story_file_name],
-        training_type=TrainingType.NLU,
     )
     validator = Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=False)
@@ -479,7 +475,6 @@ def test_response_selector_responses_in_domain_no_errors():
         training_data_paths=[
             "data/test_yaml_stories/test_base_retrieval_intent_story.yml"
         ],
-        training_type=TrainingType.CORE,
     )
     validator = Validator.from_importer(importer)
     assert validator.verify_utterances_in_stories(ignore_warnings=True)
