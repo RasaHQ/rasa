@@ -400,7 +400,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         for token_ids in batch_token_ids:
             mask = [id_ in self.special_token_ids for id_ in token_ids]
 
-            # Truncate the mask to the maximum sequence lenght of the model
+            # Truncate the mask to the maximum sequence length of the model
             if (
                 self.max_model_sequence_length != NO_LENGTH_RESTRICTION
                 and len(mask) > self.max_model_sequence_length
