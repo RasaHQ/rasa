@@ -394,7 +394,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_truncation(states, tracker, domain,)
+            return self._recall_using_truncation(states, tracker, domain)
         else:
             return predicted_action_name
 
