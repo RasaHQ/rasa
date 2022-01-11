@@ -160,7 +160,7 @@ class MemoizationPolicy(Policy):
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
-        if False:  # self.ENABLE_FEATURE_STRING_COMPRESSION:
+        if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(
                 bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
             )
@@ -306,7 +306,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         applied_events = tracker.applied_events()
 
-        # We need to find the second `ActionExecuted` or `UserUttered` event.
+        # we need to find second executed action
         for e_i, event in enumerate(applied_events):
             if isinstance(event, ActionExecuted):
                 if idx_of_first_action is None:
