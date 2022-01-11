@@ -190,7 +190,8 @@ class TrainingDataImporter:
 
         return importer_class(
             config_path, domain_path, training_data_paths, **constructor_arguments
-        )
+        )  # type: ignore[call-arg]
+        # mypy ignore needed because RasaFileImporter and MultiFI have different arguments
 
     def fingerprint(self) -> Text:
         """Returns a random fingerprint as data shouldn't be cached."""
