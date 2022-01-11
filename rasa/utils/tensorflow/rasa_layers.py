@@ -799,6 +799,9 @@ class RasaSequenceLayer(RasaCustomLayer):
 
         The config can contain these directly (same for all attributes) or specified
         separately for each attribute.
+        If a transformer is used (e.i. if `transformer_layers` is positive),
+        the default `transformer_size` which is `None` breaks things. Thus,
+        we need to set a reasonable default value so that the model works fine.
         """
         transformer_layers = config[NUM_TRANSFORMER_LAYERS]
         if isinstance(transformer_layers, dict):
@@ -806,7 +809,8 @@ class RasaSequenceLayer(RasaCustomLayer):
         transformer_units = config[TRANSFORMER_SIZE]
         if isinstance(transformer_units, dict):
             transformer_units = transformer_units[attribute]
-        transformer_units = transformer_units or DEFAULT_TRANSFORMER_SIZE
+        if transformer_layers > 0 and (not transformer_units or transformer_units < 1):
+            transformer_units = DEFAULT_TRANSFORMER_SIZE
 
         return transformer_layers, transformer_units
 
