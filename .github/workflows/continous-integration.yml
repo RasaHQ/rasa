@@ -225,7 +225,6 @@ jobs:
         - test-full-model-training
         - test-other-unit-tests
         - test-performance
-        - test-gh-actions
         os: [ ubuntu-latest, windows-latest ]
         python-version: [ 3.7, 3.8 ]
 
