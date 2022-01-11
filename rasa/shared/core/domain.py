@@ -31,16 +31,20 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
 )
 import rasa.shared.core.constants
-from rasa.shared.core.slot_mappings import SlotMapping
+from rasa.shared.core.constants import (
+    SlotMappingType,
+    MAPPING_TYPE,
+    MAPPING_CONDITIONS,
+)
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
+import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
-from rasa.shared.core.constants import MAPPING_CONDITIONS
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
@@ -210,13 +214,13 @@ class Domain:
         _validate_forms(forms)
 
         return cls(
-            intents,
-            data.get(KEY_ENTITIES, {}),
-            slots,
-            responses,
-            data.get(KEY_ACTIONS, []),
-            data.get(KEY_FORMS, {}),
-            data.get(KEY_E2E_ACTIONS, []),
+            intents=intents,
+            entities=data.get(KEY_ENTITIES, {}),
+            slots=slots,
+            responses=responses,
+            action_names=data.get(KEY_ACTIONS, []),
+            forms=data.get(KEY_FORMS, {}),
+            action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             **additional_arguments,
         )
@@ -1222,8 +1226,8 @@ class Domain:
                 matching_entities = []
 
                 for mapping in slot.mappings:
-                    if mapping.get("type") != str(
-                        SlotMapping.FROM_ENTITY
+                    if mapping[MAPPING_TYPE] != str(
+                        SlotMappingType.FROM_ENTITY
                     ) or mapping.get(MAPPING_CONDITIONS):
                         continue
 
@@ -1793,10 +1797,10 @@ class Domain:
         for slot in self.slots:
             total_mappings += len(slot.mappings)
             for mapping in slot.mappings:
-                if mapping.get("type") == str(SlotMapping.CUSTOM):
+                if mapping[MAPPING_TYPE] == str(SlotMappingType.CUSTOM):
                     custom_mappings += 1
 
-                if "conditions" in mapping:
+                if MAPPING_CONDITIONS in mapping:
                     conditional_mappings += 1
 
         return (total_mappings, custom_mappings, conditional_mappings)

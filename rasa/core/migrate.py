@@ -9,14 +9,19 @@ from rasa.shared.constants import (
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
 )
-from rasa.shared.core.constants import ACTIVE_LOOP, REQUESTED_SLOT
+from rasa.shared.core.constants import (
+    ACTIVE_LOOP,
+    REQUESTED_SLOT,
+    SlotMappingType,
+    MAPPING_TYPE,
+    SLOT_MAPPINGS,
+)
 from rasa.shared.core.domain import (
     KEY_ENTITIES,
     KEY_SLOTS,
     KEY_FORMS,
     Domain,
 )
-from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.exceptions import RasaException
 
 
@@ -31,9 +36,9 @@ def _create_back_up(
 def _get_updated_mapping_condition(
     condition: Dict[Text, Text], mapping: Dict[Text, Any], slot_name: Text
 ) -> Dict[Text, Text]:
-    if mapping.get("type") not in [
-        str(SlotMapping.FROM_ENTITY),
-        str(SlotMapping.FROM_TRIGGER_INTENT),
+    if mapping.get(MAPPING_TYPE) not in [
+        str(SlotMappingType.FROM_ENTITY),
+        str(SlotMappingType.FROM_TRIGGER_INTENT),
     ]:
         return {**condition, REQUESTED_SLOT: slot_name}
     return condition
@@ -113,13 +118,13 @@ def _migrate_auto_fill(
 ) -> Dict[Text, Any]:
     if slot_name in entities and properties.get("auto_fill", True) is True:
         from_entity_mapping = {
-            "type": str(SlotMapping.FROM_ENTITY),
+            "type": str(SlotMappingType.FROM_ENTITY),
             "entity": slot_name,
         }
-        mappings = properties.get("mappings", [])
+        mappings = properties.get(SLOT_MAPPINGS, [])
         if from_entity_mapping not in mappings:
             mappings.append(from_entity_mapping)
-            properties.update({"mappings": mappings})
+            properties.update({SLOT_MAPPINGS: mappings})
 
     if "auto_fill" in properties:
         del properties["auto_fill"]
