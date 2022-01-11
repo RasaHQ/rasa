@@ -315,8 +315,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                     idx_of_second_action = e_i
                     break
 
-        # use first action/user utterance, if we went first time and
-        # second action/user utterance, if we went again
+        # use first action, if we went first time and second action, if we went again
         idx_to_use = idx_of_second_action if again else idx_of_first_action
         if idx_to_use is None:
             return None
