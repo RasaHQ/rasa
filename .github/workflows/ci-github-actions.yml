@@ -50,21 +50,6 @@ jobs:
       if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
       run: rm -r .venv
 
-      # Poetry >= 1.1.0b uses virtualenv to create a virtual environment.
-      # The virtualenv simply doesn't work on Windows with our setup,
-      # that's why we use venv to create virtual environment
-    - name: Create virtual environment
-      if: steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
-      run: python -m venv create .venv
-
-    - name: Set up virtual environment
-      # Poetry on Windows cannot pick up the virtual environments directory properly,
-      # and it creates a new one every time the pipeline runs.
-      # This step solves this problem — it tells poetry to always use `.venv` directory inside
-      # the project itself, which also makes it easier for us to determine the correct directory
-      # that needs to be cached.
-      run: poetry config virtualenvs.in-project true
-
     - name: Test Code 🔍
       run: |
         make ${{ matrix.test }}
