@@ -799,7 +799,7 @@ class RasaSequenceLayer(RasaCustomLayer):
 
         The config can contain these directly (same for all attributes) or specified
         separately for each attribute.
-        If a transformer is used (e.i. if `transformer_layers` is positive),
+        If a transformer is used (e.i. if `number_of_transformer_layers` is positive),
         the default `transformer_size` which is `None` breaks things. Thus,
         we need to set a reasonable default value so that the model works fine.
         """
