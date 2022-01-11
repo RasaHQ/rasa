@@ -321,7 +321,7 @@ def test_kafka_partition_key_creation():
         _ = event_broker._get_partition_key(None)
 
 
-def test_kafka__header_creation(monkeypatch):
+def test_kafka_header_creation(monkeypatch):
     event_broker = KafkaEventBroker(Mock(), Mock())
 
     ascii_str = "AaBbCc123" + " " + "{`~!@#$%^&*()_-+={[}}|:;'<>.?/}"

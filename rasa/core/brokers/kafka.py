@@ -196,7 +196,7 @@ class KafkaEventBroker(EventBroker):
 
     def _publish(self, event: Dict[Text, Any]) -> None:
         if self.partition_by_sender:
-            partition_key = self._create_partition_key(event.get("sender_id"))
+            partition_key = self._get_partition_key(event.get("sender_id"))
         else:
             partition_key = None
 
