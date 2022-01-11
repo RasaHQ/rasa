@@ -646,8 +646,9 @@ class YAMLStoryReader(StoryReader):
             rasa.shared.utils.io.raise_warning(
                 f"Failed to parse arguments in line '{match.string}'. "
                 f"Failed to interpret some parts. "
+                f"Make sure your regex string is in the following format:"
+                f"\<intent_name>@<confidence-value><dictionary of entities> "  # noqa:  W505, W605, E501
                 f"Continuing without {match.group('rest')}. ",
-                docs=DOCS_URL_STORIES,
             )
 
         # Add the results to the message.
