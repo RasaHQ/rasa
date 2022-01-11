@@ -356,7 +356,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             truncated_tracker
         )
         while truncated_tracker is not None:
-            states = self._prediction_states(truncated_tracker, domain,)
+            states = self._prediction_states(truncated_tracker, domain)
 
             if old_states != states:
                 # check if we like new futures
