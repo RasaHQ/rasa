@@ -48,6 +48,7 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
 
 
 @pytest.fixture()
@@ -139,6 +140,8 @@ def train_persist_load_with_different_settings(
         classified_message2 = loaded_selector.process([message2])[0]
 
         assert classified_message2.fingerprint() == classified_message.fingerprint()
+
+        return loaded_selector
 
     return inner
 
@@ -576,7 +579,6 @@ def test_sets_integer_transformer_size_when_needed(
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     """ResponseSelector ensures sensible transformer size when transformer enabled."""
-    default_transformer_size = 256
     with pytest.warns(UserWarning) as records:
         selector = create_response_selector(config)
 
@@ -587,7 +589,7 @@ def test_sets_integer_transformer_size_when_needed(
         # check that the specific warning was raised
         assert any(warning_str in record.message.args[0] for record in records)
         # check that transformer size got set to the new default
-        assert selector.component_config[TRANSFORMER_SIZE] == default_transformer_size
+        assert selector.component_config[TRANSFORMER_SIZE] == DEFAULT_TRANSFORMER_SIZE
     else:
         # check that the specific warning was not raised
         assert not any(warning_str in record.message.args[0] for record in records)
@@ -595,6 +597,22 @@ def test_sets_integer_transformer_size_when_needed(
         assert selector.component_config[TRANSFORMER_SIZE] == config.get(
             TRANSFORMER_SIZE, None  # None is the default transformer size
         )
+
+
+def test_transformer_size_gets_corrected(train_persist_load_with_different_settings,):
+    """Tests that the default value of `transformer_size` which is `None` is
+    corrected if transformer layers are enabled in `ResponseSelector`.
+    """
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    config_params = {EPOCHS: 1, NUM_TRANSFORMER_LAYERS: 1}
+
+    selector = train_persist_load_with_different_settings(
+        pipeline, config_params, False,
+    )
+    assert selector.component_config[TRANSFORMER_SIZE] == DEFAULT_TRANSFORMER_SIZE
 
 
 @pytest.mark.timeout(120)
