@@ -11,10 +11,8 @@ from rasa.shared.core.domain import (
     KEY_RESPONSES,
     Domain,
     SESSION_CONFIG_KEY,
-    KEY_SLOTS,
     KEY_FORMS,
 )
-from rasa.shared.core.constants import SLOT_MAPPINGS
 
 
 class DomainForCoreTrainingProvider(GraphComponent):
@@ -31,7 +29,8 @@ class DomainForCoreTrainingProvider(GraphComponent):
     - response keys (i.e. `utter_*) because those keys may appear in stories
     - form names because those appear in stories
     - how slots are filled (i.e. 'mappings' key under 'slots') because a domain instance
-      needs to be created by core during training
+      needs to be created by core during training time to parse the training data
+      properly
 
     This information that we drop (or replace with default values) includes:
     - the 'session_config' which determines details of a session e.g. whether data is
@@ -44,8 +43,10 @@ class DomainForCoreTrainingProvider(GraphComponent):
     References:
         - `rasa.core.featurizer.tracker_featurizer.py` (used by all policies)
         - `rasa.core.featurizer.single_state_featurizer.py` (used by ML policies)
-        - `rasa.shared.core.domain.get_active_state` (used by above)
-        - `rasa.shared.core.slots.as_features` (used by above)
+        - `rasa.shared.core.domain.get_active_state` (used by above references)
+        - `rasa.shared.core.slots.as_features` (used by above references)
+        - `rasa.shared.core.training_data.structures.StoryStep.explicit_events`
+           (i.e. slots needed for core training)
     """
 
     @classmethod
