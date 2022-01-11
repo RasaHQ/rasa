@@ -65,14 +65,6 @@ jobs:
       # that needs to be cached.
       run: poetry config virtualenvs.in-project true
 
-    - name: Install Dependencies 📦
-      run: |
-        sudo apt-get -y install libpq-dev
-        make install
-
     - name: Test Code 🔍
-      env:
-        JOBS: 1  # TODO 2
-        PYTHONIOENCODING: "utf-8"
       run: |
         make ${{ matrix.test }}
