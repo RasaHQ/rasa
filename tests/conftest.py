@@ -80,7 +80,6 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "core", "test_examples.py").absolute(),
     ],
     "category_performance": [Path("tests", "test_memory_leak.py").absolute()],
-    "category_gh_actions": [Path(".github", "tests").absolute()],
 }
 
 
