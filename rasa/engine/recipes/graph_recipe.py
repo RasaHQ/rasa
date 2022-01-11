@@ -1,13 +1,8 @@
 from rasa.engine.recipes.recipe import Recipe
-from rasa.engine.graph import (
-    GraphSchema,
-    GraphComponent,
-    SchemaNode,
-    GraphModelConfiguration,
-)
+from rasa.engine.graph import GraphModelConfiguration
 from rasa.shared.data import TrainingType
 
-from typing import Dict, Text, Any, Tuple, Type, Optional, List, Callable, Set, Union
+from typing import Dict, Text, Any
 
 
 class GraphV1Recipe(Recipe):
