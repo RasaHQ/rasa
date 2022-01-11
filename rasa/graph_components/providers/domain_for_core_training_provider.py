@@ -30,13 +30,13 @@ class DomainForCoreTrainingProvider(GraphComponent):
       pre-featurization of slot values
     - response keys (i.e. `utter_*) because those keys may appear in stories
     - form names because those appear in stories
+    - how slots are filled (i.e. 'mappings' key under 'slots') because a domain instance
+      needs to be created by core during training
 
     This information that we drop (or replace with default values) includes:
     - the 'session_config' which determines details of a session e.g. whether data is
       transferred from one session to the next (this is replaced with defaults as it
       cannot just be removed)
-    - how slots are filled (i.e. 'mappings' key under 'slots') because slots are not
-      actually extracted by core components
     - the actual text of a 'response' because those are only used by response selectors
     - the actual configuration of 'forms' because those are not actually executed
       by core components
@@ -84,8 +84,6 @@ class DomainForCoreTrainingProvider(GraphComponent):
 
         serialized_domain.pop("config", None)  # `store_entities_as_slots`
         serialized_domain.pop(SESSION_CONFIG_KEY, None)
-        for slot in serialized_domain[KEY_SLOTS]:
-            serialized_domain[KEY_SLOTS][slot][SLOT_MAPPINGS] = []
         for response_name in serialized_domain[KEY_RESPONSES]:
             serialized_domain[KEY_RESPONSES][response_name] = []
         for form_name in serialized_domain[KEY_FORMS]:

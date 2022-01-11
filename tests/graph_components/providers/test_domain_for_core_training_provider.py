@@ -76,13 +76,6 @@ def test_provide_removes_or_replaces_expected_information(
         if key in ["config", SESSION_CONFIG_KEY]:
             assert modified_dict[key] == default_dict[key]
 
-        # for slots, we drop the specification of how they are filled
-        elif key == KEY_SLOTS:
-            for slot_key in original_dict[key]:
-                assert modified_dict[key][slot_key][SLOT_MAPPINGS] == []
-                original_dict[key][slot_key][SLOT_MAPPINGS] = []  # drop for comparison
-                assert original_dict[key][slot_key] == modified_dict[key][slot_key]
-
         # for responses, we only keep the keys
         elif key == KEY_RESPONSES:
             assert set(modified_dict[key].keys()) == set(original_dict[key].keys())
