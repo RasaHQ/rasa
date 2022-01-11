@@ -351,10 +351,9 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         )
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
-    def test_aug_pred_connects_different_memoizations(self, max_history):
-        """Tests memoization works for a memoized state sequence that starts
-        with a user utterance that leads to memoized state that does not
-        have user utterance information.
+    def test_aug_pred_without_intent(self, max_history):
+        """Tests memoization works for a memoized state sequence that does
+        not have a user utterance.
         """
         policy = self.create_policy(
             featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history), priority=1
@@ -367,7 +366,6 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         UTTER_ACTION_2 = "utter_2"
         UTTER_ACTION_3 = "utter_3"
         UTTER_ACTION_4 = "utter_4"
-        UTTER_BYE_ACTION = "utter_goodbye"
         domain = Domain.from_yaml(
             f"""
             intents:
@@ -381,20 +379,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             - {UTTER_ACTION_4}
             """
         )
-        training_story1 = TrackerWithCachedStates.from_events(
-            "training story",
-            [
-                ActionExecuted(ACTION_LISTEN_NAME),
-                UserUttered(intent={"name": GREET_INTENT_NAME}),
-                ActionExecuted(UTTER_ACTION_1),
-                ActionExecuted(UTTER_ACTION_2),
-                ActionExecuted(UTTER_ACTION_3),
-                ActionExecuted(ACTION_LISTEN_NAME),
-            ],
-            domain=domain,
-            slots=domain.slots,
-        )
-        training_story2 = TrackerWithCachedStates.from_events(
+        training_story = TrackerWithCachedStates.from_events(
             "training story",
             [
                 ActionExecuted(UTTER_ACTION_3),
@@ -406,36 +391,13 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         )
 
         interpreter = RegexInterpreter()
-        policy.train([training_story1, training_story2], domain, interpreter)
+        policy.train([training_story], domain, interpreter)
 
-        test_story1 = TrackerWithCachedStates.from_events(
+        test_story = TrackerWithCachedStates.from_events(
             "test story",
             [
                 ActionExecuted(ACTION_LISTEN_NAME),
                 UserUttered(intent={"name": GREET_INTENT_NAME}),
-                ActionExecuted(UTTER_ACTION_1),
-                ActionExecuted(UTTER_ACTION_2),
-                # ActionExecuted(UTTER_ACTION_3),
-            ],
-            domain=domain,
-            slots=domain.slots,
-        )
-        prediction1 = policy.predict_action_probabilities(
-            test_story1, domain, interpreter
-        )
-        assert (
-            domain.action_names_or_texts[
-                prediction1.probabilities.index(max(prediction1.probabilities))
-            ]
-            == UTTER_ACTION_3
-        )
-
-        test_story2 = TrackerWithCachedStates.from_events(
-            "test story",
-            [
-                UserUttered(intent={"name": GREET_INTENT_NAME}),
-                ActionExecuted(UTTER_BYE_ACTION),
-                UserUttered(intent={"name": GOODBYE_INTENT_NAME}),
                 ActionExecuted(UTTER_ACTION_1),
                 ActionExecuted(UTTER_ACTION_2),
                 ActionExecuted(UTTER_ACTION_3),
@@ -444,13 +406,12 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             domain=domain,
             slots=domain.slots,
         )
-
-        prediction2 = policy.predict_action_probabilities(
-            test_story2, domain, interpreter
+        prediction = policy.predict_action_probabilities(
+            test_story, domain, interpreter
         )
         assert (
             domain.action_names_or_texts[
-                prediction2.probabilities.index(max(prediction2.probabilities))
+                prediction.probabilities.index(max(prediction.probabilities))
             ]
             == UTTER_ACTION_4
         )
