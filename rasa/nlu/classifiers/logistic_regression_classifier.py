@@ -90,8 +90,8 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
 
         for e in examples:
             # First element is sequence features, second is sentence features
+            # for intent classification we're only interested in sentence features
             sparse_feats = e.get_sparse_features(attribute=TEXT)[1]
-            # First element is sequence features, second is sentence features
             dense_feats = e.get_dense_features(attribute=TEXT)[1]
             together = hstack(
                 [
