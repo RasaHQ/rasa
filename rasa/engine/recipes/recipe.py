@@ -29,6 +29,7 @@ class Recipe(abc.ABC):
             graph schemas.
         """
         from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+        from rasa.engine.recipes.graph_recipe import GraphV1Recipe
 
         if name is None:
             rasa.shared.utils.io.raise_deprecation_warning(
@@ -37,7 +38,10 @@ class Recipe(abc.ABC):
                 f"'{DefaultV1Recipe.name}'."
             )
             return DefaultV1Recipe()
-        recipes = {DefaultV1Recipe.name: DefaultV1Recipe}
+        recipes = {
+            DefaultV1Recipe.name: DefaultV1Recipe,
+            GraphV1Recipe.name: GraphV1Recipe,
+        }
 
         recipe_constructor = recipes.get(name)
         if recipe_constructor:
