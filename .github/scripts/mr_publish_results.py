@@ -282,9 +282,9 @@ def generate_json(file: str, task: str, data: dict) -> dict:
     config = os.environ["CONFIG"]
     dataset = os.environ["DATASET"]
 
-    if not dataset in data:
+    if dataset not in data:
         data = {dataset: {config: {}}, **data}
-    elif not config in data[dataset]:
+    elif config not in data[dataset]:
         data[dataset] = {config: {}, **data[dataset]}
 
     data[dataset][config] = {

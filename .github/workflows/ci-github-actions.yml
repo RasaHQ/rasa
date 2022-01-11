@@ -50,6 +50,11 @@ jobs:
       if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
       run: rm -r .venv
 
+    - name: Lint Code 🎎
+      run: |
+        poetry run flake8 .github/scripts --extend-ignore D
+        poetry run black --check .github/scripts
+
     - name: Test Code 🔍
       run: |
         make ${{ matrix.test }}
