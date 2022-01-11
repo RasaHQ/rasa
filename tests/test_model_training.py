@@ -7,7 +7,7 @@ import os
 import textwrap
 from pathlib import Path
 from typing import Text
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from _pytest.capture import CaptureFixture
