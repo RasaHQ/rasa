@@ -8,10 +8,6 @@ on:
     - '*'
   pull_request:
 
-concurrency:
-  group: continous-integration-${{ github.ref }}  # branch or tag name
-  cancel-in-progress: false  # TODO true
-
 jobs:
   test:
     name: Run Tests
