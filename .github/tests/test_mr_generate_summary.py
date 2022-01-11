@@ -1,8 +1,6 @@
-from pathlib import Path
 import sys
 
-REPO_DIR = Path(__file__).parents[2]
-sys.path.append(str(REPO_DIR / ".github/scripts"))
+sys.path.append(".github/scripts")
 from mr_generate_summary import combine_result  # noqa: E402
 
 

@@ -3,8 +3,7 @@ from pathlib import Path
 import sys
 from unittest import mock
 
-REPO_DIR = Path(__file__).parents[2]
-sys.path.append(str(REPO_DIR / ".github/scripts"))
+sys.path.append(".github/scripts")
 from mr_publish_results import (  # noqa: E402
     prepare_ml_metric,
     prepare_ml_metrics,
