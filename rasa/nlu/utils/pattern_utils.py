@@ -62,7 +62,7 @@ def _generate_lookup_regex(
 
     if use_word_boundaries:
         # regex matching elements with word boundaries on either side
-        return "(\\b" + "\\b|\\b".join(elements_sanitized) + "\\b)"
+        return "(?<!\\w)" + "(?!\\w)|(?<!\\w)".join(elements_sanitized) + "(?!\\w)"
     else:
         return "(" + "|".join(elements_sanitized) + ")"
 
