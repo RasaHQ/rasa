@@ -13,7 +13,6 @@ from rasa.shared.core.domain import (
     KEY_RESPONSES,
     Domain,
     SESSION_CONFIG_KEY,
-    KEY_SLOTS,
     KEY_FORMS,
     SESSION_EXPIRATION_TIME_KEY,
     CARRY_OVER_SLOTS_KEY,
@@ -21,7 +20,6 @@ from rasa.shared.core.domain import (
 from rasa.graph_components.providers.domain_for_core_training_provider import (
     DomainForCoreTrainingProvider,
 )
-from rasa.shared.core.constants import SLOT_MAPPINGS
 from rasa.shared.constants import REQUIRED_SLOTS_KEY
 
 
