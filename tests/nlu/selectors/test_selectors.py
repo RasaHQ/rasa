@@ -438,6 +438,34 @@ async def test_margin_loss_is_not_normalized(
     assert len(response_ranking) == 9
 
 
+async def test_process_empty_input(
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
+):
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, "data/test_selectors"
+    )
+
+    response_selector = create_response_selector({EPOCHS: 1})
+    response_selector.train(training_data=training_data)
+
+    message = Message(data={TEXT: ""})
+    message = process_message(loaded_pipeline, message)
+
+    classified_message = response_selector.process([message])[0]
+    output = classified_message.get("response_selector").get("default").get("response")
+
+    assert classified_message.get(TEXT) == ""
+    assert not output.get("responses")
+    assert output.get("confidence") == 0.0
+    assert not output.get("intent_response_key")
+
+
 @pytest.mark.parametrize(
     "classifier_params, output_length, sums_up_to_1",
     [

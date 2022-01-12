@@ -14,6 +14,8 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.fixture()
@@ -31,6 +33,35 @@ def default_sklearn_intent_classifier(
         Resource("sklearn"),
         default_execution_context,
     )
+
+
+def test_process_empty_input(
+    training_data: TrainingData,
+    default_sklearn_intent_classifier: SklearnIntentClassifier,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    spacy_nlp_component: SpacyNLP,
+    spacy_model: SpacyModel,
+):
+    training_data = spacy_nlp_component.process_training_data(
+        training_data, spacy_model
+    )
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline=[{"component": SpacyTokenizer}, {"component": SpacyFeaturizer},],
+        training_data=training_data,
+    )
+    default_sklearn_intent_classifier.train(training_data)
+    classifier = SklearnIntentClassifier.load(
+        SklearnIntentClassifier.get_default_config(),
+        default_model_storage,
+        Resource("sklearn"),
+        default_execution_context,
+    )
+    message = Message(data={TEXT: ""})
+    processed_message = classifier.process([message])[0]
+    assert processed_message.get(TEXT) == ""
+    assert not processed_message.get(INTENT)
 
 
 def test_persist_and_load(
