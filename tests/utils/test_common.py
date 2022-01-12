@@ -131,7 +131,10 @@ def test_find_unavailable_packages():
     [
         (Path, "pathlib.Path"),
         (Agent, "rasa.core.agent.Agent"),
-        (DIETClassifier, "rasa.nlu.classifiers.diet_classifier.DIETClassifier",),
+        (
+            DIETClassifier,
+            "rasa.nlu.classifiers.diet_classifier.DIETClassifier",
+        ),
     ],
 )
 def test_module_path_from_class(clazz: Type, module_path: Text):

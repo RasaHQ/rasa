@@ -70,7 +70,8 @@ def test_train_finetune(
     run_in_simple_project: Callable[..., RunResult], capsys: CaptureFixture
 ):
     run_in_simple_project(
-        "train", "--finetune",
+        "train",
+        "--finetune",
     )
 
     output = capsys.readouterr().out

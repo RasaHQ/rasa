@@ -40,7 +40,10 @@ def _probabilities_with_action_unlikely_intent_for(
     _original = DefaultPolicyPredictionEnsemble.combine_predictions_from_kwargs
 
     def combine_predictions_from_kwargs(
-        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        **kwargs: Any,
     ) -> PolicyPrediction:
         latest_event = tracker.events[-1]
         if (
@@ -73,9 +76,7 @@ def _probabilities_with_action_unlikely_intent_for(
 
 def _custom_prediction_states_for_rules(
     ignore_action_unlikely_intent: bool = False,
-) -> Callable[
-    [RulePolicy, DialogueStateTracker, Domain, bool], List[State],
-]:
+) -> Callable[[RulePolicy, DialogueStateTracker, Domain, bool], List[State],]:
     """Creates prediction states for `RulePolicy`.
 
     `RulePolicy` does not ignore `action_unlikely_intent` in reality.
@@ -522,7 +523,9 @@ async def test_action_unlikely_intent_warning_and_story_error(
     agent = await _train_rule_based_agent(train_file_name, True)
 
     result = await rasa.core.test.test(
-        str(test_file_name), agent, out_directory=str(tmp_path),
+        str(test_file_name),
+        agent,
+        out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 0

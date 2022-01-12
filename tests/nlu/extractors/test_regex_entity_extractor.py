@@ -116,7 +116,12 @@ def create_or_load_extractor(
         (
             {"use_word_boundaries": False},
             "北京和上海都是大城市。",
-            [{"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],}],
+            [
+                {
+                    "name": "city",
+                    "elements": ["北京", "上海", "广州", "深圳", "杭州"],
+                }
+            ],
             [
                 {
                     ENTITY_ATTRIBUTE_TYPE: "city",
@@ -139,7 +144,10 @@ def create_or_load_extractor(
             {"use_word_boundaries": False},
             "小明正要去北京拜访老李。",
             [
-                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
+                {
+                    "name": "city",
+                    "elements": ["北京", "上海", "广州", "深圳", "杭州"],
+                },
                 {"name": "person", "elements": ["小明", "小红", "小王", "小李"]},
             ],
             [
@@ -164,7 +172,10 @@ def create_or_load_extractor(
             {"use_word_boundaries": False},
             "Rasa 真好用。",
             [
-                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
+                {
+                    "name": "city",
+                    "elements": ["北京", "上海", "广州", "深圳", "杭州"],
+                },
                 {"name": "person", "elements": ["小明", "小红", "小王", "小李"]},
             ],
             [],

@@ -831,7 +831,8 @@ class DIET2DIET(DIET):
         #   effective sequence length of these features being 1 or 0.
         # We need to combine the two lengths to correctly get the last position.
         sentence_feature_lengths = self._get_sentence_feature_lengths(
-            self.tf_label_data, LABEL,
+            self.tf_label_data,
+            LABEL,
         )
         sentence_label = self._last_token(
             label_transformed, sequence_feature_lengths + sentence_feature_lengths

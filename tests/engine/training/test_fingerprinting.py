@@ -11,10 +11,14 @@ from tests.engine.training.test_components import FingerprintableText
 
 def test_fingerprint_stays_same():
     key1 = fingerprinting.calculate_fingerprint_key(
-        TEDPolicy, TEDPolicy.get_default_config(), {"input": FingerprintableText("Hi")},
+        TEDPolicy,
+        TEDPolicy.get_default_config(),
+        {"input": FingerprintableText("Hi")},
     )
     key2 = fingerprinting.calculate_fingerprint_key(
-        TEDPolicy, TEDPolicy.get_default_config(), {"input": FingerprintableText("Hi")},
+        TEDPolicy,
+        TEDPolicy.get_default_config(),
+        {"input": FingerprintableText("Hi")},
     )
 
     assert key1 == key2
@@ -37,7 +41,9 @@ def test_fingerprint_changes_due_to_class():
 
 def test_fingerprint_changes_due_to_config():
     key1 = fingerprinting.calculate_fingerprint_key(
-        TEDPolicy, {}, {"input": FingerprintableText("Hi")},
+        TEDPolicy,
+        {},
+        {"input": FingerprintableText("Hi")},
     )
     key2 = fingerprinting.calculate_fingerprint_key(
         ResponseSelector,
@@ -50,7 +56,9 @@ def test_fingerprint_changes_due_to_config():
 
 def test_fingerprint_changes_due_to_inputs():
     key1 = fingerprinting.calculate_fingerprint_key(
-        TEDPolicy, {}, {"input": FingerprintableText("Hi")},
+        TEDPolicy,
+        {},
+        {"input": FingerprintableText("Hi")},
     )
     key2 = fingerprinting.calculate_fingerprint_key(
         ResponseSelector,
@@ -63,14 +71,18 @@ def test_fingerprint_changes_due_to_inputs():
 
 def test_fingerprint_changes_due_to_changed_source(monkeypatch: MonkeyPatch):
     key1 = fingerprinting.calculate_fingerprint_key(
-        TEDPolicy, {}, {"input": FingerprintableText("Hi")},
+        TEDPolicy,
+        {},
+        {"input": FingerprintableText("Hi")},
     )
 
     get_source_mock = Mock(return_value="other implementation")
     monkeypatch.setattr(inspect, inspect.getsource.__name__, get_source_mock)
 
     key2 = fingerprinting.calculate_fingerprint_key(
-        TEDPolicy, {}, {"input": FingerprintableText("Hi")},
+        TEDPolicy,
+        {},
+        {"input": FingerprintableText("Hi")},
     )
 
     assert key1 != key2

@@ -14,7 +14,8 @@ from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 
 def create_spacy_featurizer(config: Dict[Text, Any]) -> SpacyFeaturizer:
     return SpacyFeaturizer(
-        {**SpacyFeaturizer.get_default_config(), **config}, "spacy_featurizer",
+        {**SpacyFeaturizer.get_default_config(), **config},
+        "spacy_featurizer",
     )
 
 

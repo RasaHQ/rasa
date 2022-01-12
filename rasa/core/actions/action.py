@@ -1240,7 +1240,10 @@ def extract_slot_value_from_predefined_mapping(
     """Extracts slot value if slot has an applicable predefined mapping."""
     should_fill_entity_slot = (
         mapping_type == SlotMappingType.FROM_ENTITY
-        and SlotMapping.entity_is_desired(mapping, tracker,)
+        and SlotMapping.entity_is_desired(
+            mapping,
+            tracker,
+        )
     )
 
     should_fill_intent_slot = mapping_type == SlotMappingType.FROM_INTENT

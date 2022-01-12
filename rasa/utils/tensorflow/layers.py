@@ -1439,7 +1439,9 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         pos_labels_embed = tf.expand_dims(
-            batch_labels_embed, axis=1, name="expand_pos_labels",
+            batch_labels_embed,
+            axis=1,
+            name="expand_pos_labels",
         )
 
         # Pick random examples from the batch
@@ -1457,7 +1459,9 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         # Get binary indicators of whether a candidate is positive or not
         pos_neg_indicators = self._get_pos_neg_indicators(
-            all_labels_ids, batch_labels_ids, candidate_ids,
+            all_labels_ids,
+            batch_labels_ids,
+            candidate_ids,
         )
 
         return (

@@ -656,7 +656,10 @@ class YAMLStoryReader(StoryReader):
             PREDICTED_CONFIDENCE_KEY: confidence,
         }
         intent_ranking = [
-            {INTENT_NAME_KEY: intent_name, PREDICTED_CONFIDENCE_KEY: confidence,}
+            {
+                INTENT_NAME_KEY: intent_name,
+                PREDICTED_CONFIDENCE_KEY: confidence,
+            }
         ]
         message_data = {}
         message_data[TEXT] = user_text

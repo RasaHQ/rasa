@@ -59,7 +59,9 @@ def test_graph_trainer_returns_model_metadata(
                 uses=PersistableTestComponent,
                 fn="train",
                 constructor_name="create",
-                config={"test_value": test_value,},
+                config={
+                    "test_value": test_value,
+                },
                 is_target=True,
             ),
             "load": SchemaNode(
@@ -495,7 +497,8 @@ def test_graph_trainer_train_logging_with_cached_components(
 
 
 def test_resources_fingerprints_are_unique_when_cached(
-    temp_cache: LocalTrainingCache, train_with_schema: Callable,
+    temp_cache: LocalTrainingCache,
+    train_with_schema: Callable,
 ):
     train_schema = GraphSchema(
         {
@@ -542,7 +545,8 @@ def test_resources_fingerprints_are_unique_when_cached(
 
 
 def test_resources_fingerprints_remain_after_being_cached(
-    temp_cache: LocalTrainingCache, train_with_schema: Callable,
+    temp_cache: LocalTrainingCache,
+    train_with_schema: Callable,
 ):
     train_schema = GraphSchema(
         {
@@ -613,7 +617,11 @@ def test_exception_handling_for_on_before_hook(
     default_execution_context: ExecutionContext,
 ):
     schema_node = SchemaNode(
-        needs={}, uses=ProvideX, fn="provide", constructor_name="create", config={},
+        needs={},
+        uses=ProvideX,
+        fn="provide",
+        constructor_name="create",
+        config={},
     )
 
     class MyHook(GraphNodeHook):

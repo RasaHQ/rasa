@@ -114,7 +114,9 @@ def test_markers_cli_results_save_correctly(
 
     endpoints_path = write_endpoint_config_to_yaml(
         tmp_path,
-        {"tracker_store": {"type": "sql", "db": db_path.replace("\\", "\\\\")},},
+        {
+            "tracker_store": {"type": "sql", "db": db_path.replace("\\", "\\\\")},
+        },
     )
 
     markers_path = write_markers_config_to_yaml(

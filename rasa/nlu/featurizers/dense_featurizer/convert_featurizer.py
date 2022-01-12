@@ -337,7 +337,10 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
             "sequence_encoding"
         ].numpy()
 
-    def process_training_data(self, training_data: TrainingData,) -> TrainingData:
+    def process_training_data(
+        self,
+        training_data: TrainingData,
+    ) -> TrainingData:
         """Featurize all message attributes in the training data with the ConveRT model.
 
         Args:

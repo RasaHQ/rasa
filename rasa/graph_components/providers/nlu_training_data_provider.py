@@ -14,7 +14,10 @@ class NLUTrainingDataProvider(GraphComponent):
     """Provides NLU training data during training."""
 
     def __init__(
-        self, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource,
+        self,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
     ) -> None:
         """Creates a new NLU training data provider."""
         self._config = config
@@ -45,7 +48,10 @@ class NLUTrainingDataProvider(GraphComponent):
                 filename=DEFAULT_TRAINING_DATA_OUTPUT_PATH,
             )
 
-    def provide(self, importer: TrainingDataImporter,) -> TrainingData:
+    def provide(
+        self,
+        importer: TrainingDataImporter,
+    ) -> TrainingData:
         """Provides nlu training data during training."""
         if "language" in self._config:
             training_data = importer.get_nlu_data(language=self._config["language"])

@@ -183,7 +183,11 @@ def test_story_visualization_with_merging(domain: Domain):
         "data/test_yaml_stories/stories.yml", domain
     )
     generated_graph = visualization.visualize_stories(
-        story_steps, domain, output_file=None, max_history=3, should_merge_nodes=True,
+        story_steps,
+        domain,
+        output_file=None,
+        max_history=3,
+        should_merge_nodes=True,
     )
     assert 15 < len(generated_graph.nodes()) < 33
 

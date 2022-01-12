@@ -104,7 +104,9 @@ def test_directories_are_equal(tmp_path_factory: TempPathFactory):
     assert rasa.utils.io.are_directories_equal(dir1, dir2)
 
 
-def test_directories_are_equal_sub_dir(tmp_path_factory: TempPathFactory,):
+def test_directories_are_equal_sub_dir(
+    tmp_path_factory: TempPathFactory,
+):
     dir1 = tmp_path_factory.mktemp("dir1")
     (dir1 / "dir").mkdir()
     (dir1 / "dir" / "file.txt").write_text("Hello!")
@@ -128,7 +130,9 @@ def test_directories_are_equal_different_file_content(
     assert not rasa.utils.io.are_directories_equal(dir1, dir2)
 
 
-def test_directories_are_equal_extra_file(tmp_path_factory: TempPathFactory,):
+def test_directories_are_equal_extra_file(
+    tmp_path_factory: TempPathFactory,
+):
     dir1 = tmp_path_factory.mktemp("dir1")
     (dir1 / "file.txt").write_text("Hello!")
 

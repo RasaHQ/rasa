@@ -1013,7 +1013,10 @@ def track_nlu_model_test(test_data: "TrainingData") -> None:
 
 @ensure_telemetry_enabled
 def track_markers_extraction_initiated(
-    strategy: Text, only_extract: bool, seed: bool, count: Optional[int],
+    strategy: Text,
+    only_extract: bool,
+    seed: bool,
+    count: Optional[int],
 ) -> None:
     """Track when a user tries to extract success markers.
 
@@ -1043,7 +1046,8 @@ def track_markers_extracted(trackers_count: int) -> None:
         trackers_count: The actual number of trackers processed
     """
     _track(
-        TELEMETRY_MARKERS_EXTRACTED_EVENT, {"trackers_count": trackers_count},
+        TELEMETRY_MARKERS_EXTRACTED_EVENT,
+        {"trackers_count": trackers_count},
     )
 
 
@@ -1055,7 +1059,8 @@ def track_markers_stats_computed(trackers_count: int) -> None:
         trackers_count: The actual number of trackers processed
     """
     _track(
-        TELEMETRY_MARKERS_STATS_COMPUTED_EVENT, {"trackers_count": trackers_count},
+        TELEMETRY_MARKERS_STATS_COMPUTED_EVENT,
+        {"trackers_count": trackers_count},
     )
 
 

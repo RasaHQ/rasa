@@ -130,10 +130,20 @@ class DialogflowReader(TrainingDataReader):
 
         if entity["isRegexp"]:
             regex_features = DialogflowReader._extract_regex_features(entity, examples)
-            return TrainingData([], entity_synonyms, regex_features, [],)
+            return TrainingData(
+                [],
+                entity_synonyms,
+                regex_features,
+                [],
+            )
         else:
             lookup_tables = DialogflowReader._extract_lookup_tables(entity, examples)
-            return TrainingData([], entity_synonyms, [], lookup_tables,)
+            return TrainingData(
+                [],
+                entity_synonyms,
+                [],
+                lookup_tables,
+            )
 
     @staticmethod
     def _read_examples(

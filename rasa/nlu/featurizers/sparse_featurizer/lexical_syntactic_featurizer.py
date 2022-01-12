@@ -102,7 +102,11 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
 
     @classmethod
     def _extract_raw_features_from_token(
-        cls, feature_name: Text, token: Token, token_position: int, num_tokens: int,
+        cls,
+        feature_name: Text,
+        token: Token,
+        token_position: int,
+        num_tokens: int,
     ) -> Text:
         """Extracts a raw feature from the token at the given position.
 

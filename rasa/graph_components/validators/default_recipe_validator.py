@@ -354,7 +354,9 @@ class DefaultV1RecipeValidator(GraphComponent):
                 docs=f"{DOCS_URL_COMPONENTS}#regexentityextractor",
             )
 
-    def _raise_if_featurizers_are_not_compatible(self,) -> None:
+    def _raise_if_featurizers_are_not_compatible(
+        self,
+    ) -> None:
         """Raises or warns if there are problems regarding the featurizers.
 
         Raises:
@@ -408,7 +410,8 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
     def _raise_if_domain_contains_form_names_but_no_rule_policy_given(
-        self, domain: Domain,
+        self,
+        domain: Domain,
     ) -> None:
         """Validates that there exists a rule policy if forms are defined.
 
@@ -430,7 +433,8 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
     def _raise_if_a_rule_policy_is_incompatible_with_domain(
-        self, domain: Domain,
+        self,
+        domain: Domain,
     ) -> None:
         """Validates the rule policies against the domain.
 

@@ -605,7 +605,9 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
             return [], []
 
     def train(
-        self, training_data: TrainingData, model: Optional[SpacyModel] = None,
+        self,
+        training_data: TrainingData,
+        model: Optional[SpacyModel] = None,
     ) -> Resource:
         """Trains the featurizer.
 

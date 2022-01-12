@@ -324,7 +324,9 @@ class CoreFeaturizationInputConverter(GraphComponent):
         return cls()
 
     def convert_for_training(
-        self, domain: Domain, story_graph: StoryGraph,
+        self,
+        domain: Domain,
+        story_graph: StoryGraph,
     ) -> TrainingData:
         """Creates de-duplicated training data.
 

@@ -642,7 +642,9 @@ def test_migrate_domain_dir_with_out_path_as_file(tmp_path: Path):
     assert domain
 
 
-def test_migrate_domain_multiple_files_with_duplicate_slots(tmp_path: Path,):
+def test_migrate_domain_multiple_files_with_duplicate_slots(
+    tmp_path: Path,
+):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
 
@@ -833,7 +835,9 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
         rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
 
 
-def test_migration_cleanup(tmp_path: Path,):
+def test_migration_cleanup(
+    tmp_path: Path,
+):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
     migrated_domain_dir = tmp_path / "domain2"

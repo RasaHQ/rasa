@@ -114,7 +114,9 @@ def _migrate_form_slots(
 
 
 def _migrate_auto_fill(
-    slot_name: Text, properties: Dict[Text, Any], entities: List[Text],
+    slot_name: Text,
+    properties: Dict[Text, Any],
+    entities: List[Text],
 ) -> Dict[Text, Any]:
     if slot_name in entities and properties.get("auto_fill", True) is True:
         from_entity_mapping = {
@@ -179,7 +181,10 @@ def _assemble_new_domain(
 
 
 def _write_final_domain(
-    domain_file: Path, new_forms: Dict, new_slots: Dict, out_file: Path,
+    domain_file: Path,
+    new_forms: Dict,
+    new_slots: Dict,
+    out_file: Path,
 ) -> None:
     if domain_file.is_dir():
         for file in domain_file.iterdir():

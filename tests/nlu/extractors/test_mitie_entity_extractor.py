@@ -61,7 +61,10 @@ def create_or_load_mitie_extractor(
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=Resource("MitieEntityExtractor"),
-            config={**MitieEntityExtractor.get_default_config(), **config,},
+            config={
+                **MitieEntityExtractor.get_default_config(),
+                **config,
+            },
         )
 
     return inner

@@ -58,7 +58,9 @@ class MemoryLeakTest(abc.ABC):
 
     @pytest.mark.timeout(720, func_only=True)
     def test_for_memory_leak(
-        self, name_for_dumped_files: Text, tmp_path: Path,
+        self,
+        name_for_dumped_files: Text,
+        tmp_path: Path,
     ) -> None:
         # Run as separate process to avoid other things affecting the memory usage.
         # Unfortunately `memory-profiler` doesn't work properly with

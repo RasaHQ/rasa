@@ -108,7 +108,9 @@ class GraphTrainer:
         graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
         return self._model_storage.create_model_package(
-            output_filename, model_configuration, domain,
+            output_filename,
+            model_configuration,
+            domain,
         )
 
     def fingerprint(

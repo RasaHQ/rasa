@@ -304,7 +304,10 @@ class RasaModel(TmpKerasModel):
         """
         outputs = {}
         (data_generator, _,) = rasa.utils.train_utils.create_data_generators(
-            model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False,
+            model_data=model_data,
+            batch_sizes=batch_size,
+            epochs=1,
+            shuffle=False,
         )
         data_iterator = iter(data_generator)
         while True:
@@ -555,7 +558,8 @@ class TransformerRasaModel(RasaModel):
         label_data: RasaModelData,
     ) -> None:
         super().__init__(
-            name=name, random_seed=config[RANDOM_SEED],
+            name=name,
+            random_seed=config[RANDOM_SEED],
         )
 
         self.config = config
@@ -765,7 +769,10 @@ class TransformerRasaModel(RasaModel):
         )
 
     def _prepare_dot_product_loss(
-        self, name: Text, scale_loss: bool, prefix: Text = "loss",
+        self,
+        name: Text,
+        scale_loss: bool,
+        prefix: Text = "loss",
     ) -> None:
         self._tf_layers[f"{prefix}.{name}"] = self.dot_product_loss_layer(
             self.config[NUM_NEG],
@@ -840,7 +847,9 @@ class TransformerRasaModel(RasaModel):
         return tf.zeros([batch_dim], dtype=tf.int32)
 
     def _get_sentence_feature_lengths(
-        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text,
+        self,
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        key: Text,
     ) -> tf.Tensor:
         """Fetches the sequence lengths of sentence-level features per input example.
 

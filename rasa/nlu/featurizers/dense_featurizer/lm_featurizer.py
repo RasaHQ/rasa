@@ -57,7 +57,9 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         return [Tokenizer]
 
     def __init__(
-        self, config: Dict[Text, Any], execution_context: ExecutionContext,
+        self,
+        config: Dict[Text, Any],
+        execution_context: ExecutionContext,
     ) -> None:
         """Initializes the featurizer with the model in the config."""
         super(LanguageModelFeaturizer, self).__init__(
@@ -701,7 +703,10 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         return batch_docs
 
-    def process_training_data(self, training_data: TrainingData,) -> TrainingData:
+    def process_training_data(
+        self,
+        training_data: TrainingData,
+    ) -> TrainingData:
         """Computes tokens and dense features for each message in training data.
 
         Args:

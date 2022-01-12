@@ -47,8 +47,12 @@ TEST_EVENT = {
             "chitchat": {
                 "response": {
                     "id": -2223917631873543698,
-                    "responses": [{"text": "I am called Retrieval Bot!"},],
-                    "response_templates": [{"text": "I am called Retrieval Bot!"},],
+                    "responses": [
+                        {"text": "I am called Retrieval Bot!"},
+                    ],
+                    "response_templates": [
+                        {"text": "I am called Retrieval Bot!"},
+                    ],
                     "confidence": 0.9660752415657043,
                     "intent_response_key": "chitchat/ask_name",
                     "utter_action": "utter_chitchat/ask_name",

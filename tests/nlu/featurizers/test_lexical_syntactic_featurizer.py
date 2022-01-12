@@ -36,7 +36,10 @@ def create_lexical_syntactic_featurizer(
 ) -> Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizer]:
     def inner(config: Dict[Text, Any]):
         return LexicalSyntacticFeaturizer.create(
-            config={**LexicalSyntacticFeaturizer.get_default_config(), **config,},
+            config={
+                **LexicalSyntacticFeaturizer.get_default_config(),
+                **config,
+            },
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=resource_lexical_syntactic_featurizer,
@@ -52,7 +55,11 @@ def create_lexical_syntactic_featurizer(
         (
             "hello goodbye hello",
             None,
-            [["BOS", "upper"], ["BOS", "EOS", "prefix2", "digit"], ["EOS", "low"],],
+            [
+                ["BOS", "upper"],
+                ["BOS", "EOS", "prefix2", "digit"],
+                ["EOS", "low"],
+            ],
             [
                 [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0],
                 [0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0],
@@ -63,7 +70,11 @@ def create_lexical_syntactic_featurizer(
         (
             "a 1",
             None,
-            [["BOS", "upper"], ["BOS", "EOS", "prefix2", "digit"], ["EOS", "low"],],
+            [
+                ["BOS", "upper"],
+                ["BOS", "EOS", "prefix2", "digit"],
+                ["EOS", "low"],
+            ],
             [
                 [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0],
                 [1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0],
@@ -249,7 +260,10 @@ def test_create_train_load_and_process(
     featurizer.train(TrainingData([message]))
 
     loaded_featurizer = LexicalSyntacticFeaturizer.load(
-        config={**LexicalSyntacticFeaturizer.get_default_config(), **config,},
+        config={
+            **LexicalSyntacticFeaturizer.get_default_config(),
+            **config,
+        },
         model_storage=default_model_storage,
         execution_context=default_execution_context,
         resource=resource_lexical_syntactic_featurizer,
@@ -287,7 +301,13 @@ def test_validate_config(config: Dict[Text, Any], raises: bool):
 
 @pytest.mark.parametrize(
     "sentence, feature_config, expected_features",
-    [("The sun is shining", [["pos", "pos2"]], np.ones(shape=(4, 2)),),],
+    [
+        (
+            "The sun is shining",
+            [["pos", "pos2"]],
+            np.ones(shape=(4, 2)),
+        ),
+    ],
 )
 def test_warn_if_part_of_speech_features_cannot_be_computed(
     create_lexical_syntactic_featurizer: Callable[

@@ -91,7 +91,11 @@ class MemoizationPolicy(Policy):
     ) -> None:
         """Initialize the policy."""
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer,
+            config,
+            model_storage,
+            resource,
+            execution_context,
+            featurizer,
         )
         self.lookup = lookup or {}
 
@@ -458,7 +462,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
 
 def _get_max_applied_events_for_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
+    tracker: DialogueStateTracker,
+    max_history: Optional[int],
 ) -> Optional[int]:
     """Computes the number of events in the tracker that correspond to max_history.
 
@@ -485,7 +490,8 @@ def _get_max_applied_events_for_max_history(
 
 
 def _trim_tracker_by_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
+    tracker: DialogueStateTracker,
+    max_history: Optional[int],
 ) -> DialogueStateTracker:
     """Removes events from the tracker until it has `max_history` actions.
 

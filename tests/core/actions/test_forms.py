@@ -196,7 +196,8 @@ responses:
         DefinePrevUserUtteredFeaturization(False),
     ]
     tracker.update_with_events(
-        next_events, domain,
+        next_events,
+        domain,
     )
     events_expected.extend(next_events)
 
@@ -394,13 +395,18 @@ async def test_action_rejection():
         # Validate function says slot is invalid
         (
             [{"event": "slot", "name": "num_people", "value": None}],
-            [SlotSet("num_people", None), SlotSet(REQUESTED_SLOT, "num_people"),],
+            [
+                SlotSet("num_people", None),
+                SlotSet(REQUESTED_SLOT, "num_people"),
+            ],
         ),
         # Validate function decides to request a slot which is not part of the default
         # slot mapping
         (
             [{"event": "slot", "name": "requested_slot", "value": "is_outside"}],
-            [SlotSet(REQUESTED_SLOT, "is_outside"),],
+            [
+                SlotSet(REQUESTED_SLOT, "is_outside"),
+            ],
         ),
         # Validate function decides that no more slots should be requested
         (
@@ -431,7 +437,9 @@ async def test_action_rejection():
         # User rejected manually
         (
             [{"event": "action_execution_rejected", "name": "my form"}],
-            [ActionExecutionRejected("my form"),],
+            [
+                ActionExecutionRejected("my form"),
+            ],
         ),
     ],
 )
@@ -542,7 +550,10 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
             ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "slot_2"),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("hello", intent={"name": "greet", "confidence": 1.0},),
+            UserUttered(
+                "hello",
+                intent={"name": "greet", "confidence": 1.0},
+            ),
             ActionExecutionRejected(form_name),
             ActionExecuted("utter_greet"),
         ],
@@ -692,7 +703,8 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
 
 
 @pytest.mark.parametrize(
-    "utterance_name", ["utter_ask_my_form_num_people", "utter_ask_num_people"],
+    "utterance_name",
+    ["utter_ask_my_form_num_people", "utter_ask_num_people"],
 )
 def test_name_of_utterance(utterance_name: Text):
     form_name = "my_form"
@@ -967,7 +979,10 @@ async def test_extract_other_slots_with_entity(
                     "type": "any",
                     "mappings": some_other_slot_mapping,
                 },
-                "some_slot": {"type": "any", "mappings": some_slot_mapping,},
+                "some_slot": {
+                    "type": "any",
+                    "mappings": some_slot_mapping,
+                },
             },
             "forms": {
                 form_name: {REQUIRED_SLOTS_KEY: ["some_other_slot", "some_slot"]}
@@ -1126,7 +1141,8 @@ async def test_ask_for_slot_if_not_utter_ask(
     ],
 )
 async def test_ignored_intents_with_slot_type_from_entity(
-    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]],
+    ignored_intents: Union[Text, List[Text]],
+    slot_not_intent: Union[Text, List[Text]],
 ):
     form_name = "some_form"
     entity_name = "some_slot"
@@ -1219,7 +1235,8 @@ async def test_ignored_intents_with_slot_type_from_entity(
     ],
 )
 async def test_ignored_intents_with_slot_type_from_text(
-    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]],
+    ignored_intents: Union[Text, List[Text]],
+    slot_not_intent: Union[Text, List[Text]],
 ):
     form_name = "some_form"
     entity_name = "some_slot"
@@ -1453,7 +1470,9 @@ async def test_extract_other_slots_with_matched_mapping_conditions():
             UserUttered(
                 "My name is Emily.",
                 intent={"name": "inform", "confidence": 1.0},
-                entities=[{"entity": "name", "value": "Emily"},],
+                entities=[
+                    {"entity": "name", "value": "Emily"},
+                ],
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1525,7 +1544,9 @@ async def test_extract_other_slots_raises_no_matched_conditions():
             UserUttered(
                 "My name is Emily.",
                 intent={"name": "inform", "confidence": 1.0},
-                entities=[{"entity": "name", "value": "Emily"},],
+                entities=[
+                    {"entity": "name", "value": "Emily"},
+                ],
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1587,7 +1608,9 @@ async def test_action_extract_slots_custom_mapping_with_condition():
         mocked.post(
             action_server_url,
             payload={
-                "events": [{"event": "slot", "name": "custom_slot", "value": "test"},]
+                "events": [
+                    {"event": "slot", "name": "custom_slot", "value": "test"},
+                ]
             },
         )
 
@@ -1651,7 +1674,9 @@ async def test_form_slots_empty_with_restart():
             UserUttered(
                 "My name is Emily.",
                 intent={"name": "inform", "confidence": 1.0},
-                entities=[{"entity": "name", "value": "Emily"},],
+                entities=[
+                    {"entity": "name", "value": "Emily"},
+                ],
             ),
             SlotSet("name", "emily"),
             Restarted(),

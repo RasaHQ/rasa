@@ -205,7 +205,8 @@ class Features:
 
     @staticmethod
     def groupby_attribute(
-        features_list: List[Features], attributes: Optional[Iterable[Text]] = None,
+        features_list: List[Features],
+        attributes: Optional[Iterable[Text]] = None,
     ) -> Dict[Text, List[Features]]:
         """Groups the given features according to their attribute.
 
@@ -236,7 +237,8 @@ class Features:
 
     @staticmethod
     def combine(
-        features_list: List[Features], expected_origins: Optional[List[Text]] = None,
+        features_list: List[Features],
+        expected_origins: Optional[List[Text]] = None,
     ) -> Features:
         """Combine features of the same type and level that describe the same attribute.
 
@@ -361,11 +363,14 @@ class Features:
                 # sequence feature that is (not) sparse before sentence feature that is
                 # (not) sparse
                 sublist = Features.filter(
-                    features_list=features_list, type=type, is_sparse=is_sparse,
+                    features_list=features_list,
+                    type=type,
+                    is_sparse=is_sparse,
                 )
                 if sublist:
                     combined_feature = Features.combine(
-                        sublist, expected_origins=expected_origins,
+                        sublist,
+                        expected_origins=expected_origins,
                     )
                     output.append(combined_feature)
         return output

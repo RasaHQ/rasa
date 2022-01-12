@@ -116,7 +116,10 @@ class RegexFeaturizer(SparseFeaturizer, GraphComponent):
             else:
                 self.known_patterns.append(extra_pattern)
 
-    def train(self, training_data: TrainingData,) -> Resource:
+    def train(
+        self,
+        training_data: TrainingData,
+    ) -> Resource:
         """Trains the component with all patterns extracted from training data."""
         patterns_from_data = pattern_utils.extract_patterns(
             training_data,

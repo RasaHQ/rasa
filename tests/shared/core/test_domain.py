@@ -1302,20 +1302,27 @@ def test_form_invalid_required_slots_raises():
             KEY_SLOTS: {
                 "my_slot": {
                     "type": "text",
-                    "mappings": [{"type": "from_entity", "intent": "greet"},],
+                    "mappings": [
+                        {"type": "from_entity", "intent": "greet"},
+                    ],
                 }
-            }
-        },
-        {
-            KEY_SLOTS: {
-                "my_slot": {"type": "text", "mappings": [{"type": "from_intent"}],}
             }
         },
         {
             KEY_SLOTS: {
                 "my_slot": {
                     "type": "text",
-                    "mappings": [{"type": "from_intent", "value": None},],
+                    "mappings": [{"type": "from_intent"}],
+                }
+            }
+        },
+        {
+            KEY_SLOTS: {
+                "my_slot": {
+                    "type": "text",
+                    "mappings": [
+                        {"type": "from_intent", "value": None},
+                    ],
                 }
             }
         },
@@ -1331,7 +1338,9 @@ def test_form_invalid_required_slots_raises():
             KEY_SLOTS: {
                 "my_slot": {
                     "type": "text",
-                    "mappings": [{"type": "from_trigger_intent", "value": None},],
+                    "mappings": [
+                        {"type": "from_trigger_intent", "value": None},
+                    ],
                 }
             }
         },

@@ -23,7 +23,8 @@ def training_data(nlu_data_path: Text) -> TrainingData:
 
 @pytest.fixture()
 def default_sklearn_intent_classifier(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
 ):
     return SklearnIntentClassifier.create(
         SklearnIntentClassifier.get_default_config(),
@@ -47,7 +48,10 @@ def test_persist_and_load(
     )
 
     training_data, loaded_pipeline = train_and_preprocess(
-        pipeline=[{"component": SpacyTokenizer}, {"component": SpacyFeaturizer},],
+        pipeline=[
+            {"component": SpacyTokenizer},
+            {"component": SpacyFeaturizer},
+        ],
         training_data=training_data,
     )
     default_sklearn_intent_classifier.train(training_data)

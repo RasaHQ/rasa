@@ -1075,7 +1075,10 @@ slots:
 
     form_conversation = DialogueStateTracker.from_events(
         "slot rule test",
-        evts=[ActionExecuted(ACTION_LISTEN_NAME), UserUttered(intent={"name": "i1"}),],
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "i1"}),
+        ],
         domain=domain,
         slots=domain.slots,
     )
@@ -1926,7 +1929,8 @@ async def test_one_stage_fallback_rule(policy: RulePolicy):
         is_rule_tracker=True,
     )
     policy.train(
-        [greet_rule_which_only_applies_at_start, fallback_recover_rule], domain,
+        [greet_rule_which_only_applies_at_start, fallback_recover_rule],
+        domain,
     )
 
     # RulePolicy predicts fallback action
@@ -2545,7 +2549,8 @@ def test_do_not_hide_rule_turn_with_loops_in_stories(policy: RulePolicy):
     form_activation_story.is_rule_tracker = False
 
     policy.train(
-        [form_activation_rule, form_activation_story], domain,
+        [form_activation_rule, form_activation_story],
+        domain,
     )
     assert policy.lookup[RULE_ONLY_LOOPS] == []
 
@@ -2605,7 +2610,8 @@ def test_hide_rule_turn_with_loops_as_followup_action(policy: RulePolicy):
     form_activation_story.is_rule_tracker = False
 
     policy.train(
-        [form_activation_rule, GREET_RULE, form_activation_story], domain,
+        [form_activation_rule, GREET_RULE, form_activation_story],
+        domain,
     )
     assert policy.lookup[RULE_ONLY_LOOPS] == []
 
@@ -3001,7 +3007,9 @@ def test_rule_with_multiple_slots(policy: RulePolicy):
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": intent_1},),
+            UserUttered(
+                intent={"name": intent_1},
+            ),
             SlotSet(slot_1, value_1),
             SlotSet(slot_2, value_2),
             ActionExecuted(utter_1),
@@ -3014,7 +3022,10 @@ def test_rule_with_multiple_slots(policy: RulePolicy):
     # the order of slots set doesn't matter for prediction
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("haha", intent={"name": intent_1},),
+        UserUttered(
+            "haha",
+            intent={"name": intent_1},
+        ),
         SlotSet(slot_2, value_2),
         SlotSet(slot_1, value_1),
     ]
@@ -3069,7 +3080,9 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": intent_1},),
+            UserUttered(
+                intent={"name": intent_1},
+            ),
             SlotSet(slot_1, value_1),
             SlotSet(slot_2, value_2),
             ActionExecuted(utter_1),
@@ -3101,7 +3114,10 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
     # ignore action_unlikely_intent.
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("haha", intent={"name": intent_1},),
+        UserUttered(
+            "haha",
+            intent={"name": intent_1},
+        ),
         SlotSet(slot_2, value_2),
         SlotSet(slot_1, value_1),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
@@ -3118,7 +3134,10 @@ def test_include_action_unlikely_intent(policy: RulePolicy):
     # anywhere else also triggers utter_2
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("dummy", intent={"name": intent_2},),
+        UserUttered(
+            "dummy",
+            intent={"name": intent_2},
+        ),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
     ]
     prediction = policy.predict_action_probabilities(

@@ -481,7 +481,8 @@ async def test_undo_latest_msg(mock_endpoint):
 
 
 async def test_write_stories_to_file(
-    mock_endpoint: EndpointConfig, tmp_path,
+    mock_endpoint: EndpointConfig,
+    tmp_path,
 ):
     tracker_dump = rasa.shared.utils.io.read_file(
         "data/test_trackers/tracker_moodbot_with_new_utterances.json"
@@ -620,7 +621,11 @@ async def test_filter_intents_before_save_nlu_file(domain_path: Text):
 
 @pytest.mark.parametrize(
     "path, expected_format",
-    [("bla.json", RASA), ("other.yml", RASA_YAML), ("unknown", UNK),],
+    [
+        ("bla.json", RASA),
+        ("other.yml", RASA_YAML),
+        ("unknown", UNK),
+    ],
 )
 def test_get_nlu_target_format(path: Text, expected_format: Text):
     assert interactive._get_nlu_target_format(path) == expected_format
@@ -772,7 +777,12 @@ async def test_correct_question_for_action_name_was_asked(
     monkeypatch.setattr(
         interactive,
         "_request_action_from_user",
-        AsyncMock(return_value=("action_another_one", False,)),
+        AsyncMock(
+            return_value=(
+                "action_another_one",
+                False,
+            )
+        ),
     )
 
     mocked_send_action = AsyncMock()

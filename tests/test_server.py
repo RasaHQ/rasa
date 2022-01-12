@@ -235,7 +235,9 @@ def background_server(
         import sys
 
         monkeypatch.setattr(
-            sys.modules["rasa.model_training"], "train", mocked_training_function,
+            sys.modules["rasa.model_training"],
+            "train",
+            mocked_training_function,
         )
 
         from rasa import __main__
@@ -439,7 +441,9 @@ async def test_parse_without_nlu_model(rasa_app_core: SanicASGITestClient):
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
-async def test_parse_on_invalid_emulation_mode(rasa_app: SanicASGITestClient,):
+async def test_parse_on_invalid_emulation_mode(
+    rasa_app: SanicASGITestClient,
+):
     _, response = await rasa_app.post(
         "/model/parse?emulation_mode=ANYTHING", json={"text": "hello"}
     )
@@ -557,7 +561,8 @@ async def test_train_with_retrieval_events_success(
 
 
 def assert_trained_model(
-    response_body: bytes, tmp_path_factory: TempPathFactory,
+    response_body: bytes,
+    tmp_path_factory: TempPathFactory,
 ) -> None:
     # save model to temporary file
 
@@ -573,7 +578,8 @@ def assert_trained_model(
 
 
 async def test_train_with_yaml(
-    rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory,
+    rasa_app: SanicASGITestClient,
+    tmp_path_factory: TempPathFactory,
 ):
     training_data = """
 version: "3.0"
@@ -791,7 +797,9 @@ async def test_evaluate_stories_end_to_end(
     }
 
 
-async def test_add_message(rasa_app: SanicASGITestClient,):
+async def test_add_message(
+    rasa_app: SanicASGITestClient,
+):
 
     conversation_id = "test_add_message_test_id"
 
@@ -858,7 +866,8 @@ async def test_evaluate_invalid_intent_model_file(rasa_app: SanicASGITestClient)
 
 async def test_evaluate_intent_without_body(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
-        "/model/test/intents", headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+        "/model/test/intents",
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
     )
 
     assert response.status == HTTPStatus.BAD_REQUEST
@@ -1180,12 +1189,15 @@ async def test_predict_invalid_entities_format(rasa_app: SanicASGITestClient):
 
 async def test_predict_empty_request_body(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
-        "/model/predict", headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        "/model/predict",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_append_events_empty_request_body(rasa_app: SanicASGITestClient,):
+async def test_append_events_empty_request_body(
+    rasa_app: SanicASGITestClient,
+):
     _, response = await rasa_app.post(
         "/conversations/testid/tracker/events",
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},

@@ -85,14 +85,17 @@ class LocalModelStorage(ModelStorage):
 
     @staticmethod
     def _extract_archive_to_directory(
-        model_archive_path: Union[Text, Path], temporary_directory: Path,
+        model_archive_path: Union[Text, Path],
+        temporary_directory: Path,
     ) -> None:
         with TarSafe.open(model_archive_path, mode="r:gz") as tar:
             tar.extractall(temporary_directory)
         LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
 
     @staticmethod
-    def _assert_not_rasa2_archive(temporary_directory: Path,) -> None:
+    def _assert_not_rasa2_archive(
+        temporary_directory: Path,
+    ) -> None:
         fingerprint_file = Path(temporary_directory) / "fingerprint.json"
         if fingerprint_file.is_file():
             serialized_fingerprint = rasa.shared.utils.io.read_json_file(
@@ -108,7 +111,8 @@ class LocalModelStorage(ModelStorage):
     ) -> None:
         for path in (temporary_directory / MODEL_ARCHIVE_COMPONENTS_DIR).glob("*"):
             shutil.move(
-                str(path), str(storage_path),
+                str(path),
+                str(storage_path),
             )
 
     @staticmethod
@@ -183,7 +187,10 @@ class LocalModelStorage(ModelStorage):
         return model_metadata
 
     @staticmethod
-    def _persist_metadata(metadata: ModelMetadata, temporary_directory: Path,) -> None:
+    def _persist_metadata(
+        metadata: ModelMetadata,
+        temporary_directory: Path,
+    ) -> None:
 
         rasa.shared.utils.io.dump_obj_as_json_to_file(
             temporary_directory / MODEL_ARCHIVE_METADATA_FILE, metadata.as_dict()

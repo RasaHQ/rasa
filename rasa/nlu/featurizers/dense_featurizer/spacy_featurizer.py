@@ -47,7 +47,11 @@ class SpacyFeaturizer(DenseFeaturizer, GraphComponent):
             POOLING: MEAN_POOLING,
         }
 
-    def __init__(self, config: Dict[Text, Any], name: Text,) -> None:
+    def __init__(
+        self,
+        config: Dict[Text, Any],
+        name: Text,
+    ) -> None:
         """Initializes SpacyFeaturizer."""
         super().__init__(name, config)
         self.pooling_operation = self._config[POOLING]

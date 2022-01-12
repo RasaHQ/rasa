@@ -29,7 +29,10 @@ from rasa.core.constants import DIALOGUE
 
 
 def test_dot_product_loss_inner_sim():
-    layer = DotProductLoss(0, similarity_type=INNER,)
+    layer = DotProductLoss(
+        0,
+        similarity_type=INNER,
+    )
     a = tf.constant([[[1.0, 0.0, 2.0]], [[1.0, 0.0, 2.0]]])
     b = tf.constant([[[1.0, 0.0, -2.0]], [[1.0, 0.0, -2.0]]])
     mask = tf.constant([[1.0, 0.0]])
@@ -243,7 +246,10 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
         pos_neg_labels.numpy()
         == np.array(
             [
-                [1, 0,],  # l0 is an actual positive example in `batch_labels_embed[0]`,
+                [
+                    1,
+                    0,
+                ],  # l0 is an actual positive example in `batch_labels_embed[0]`,
                 # whereas l2 is not
                 [
                     0,
@@ -330,13 +336,19 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
         pos_neg_labels.numpy()
         == np.array(
             [
-                [1, 0,],  # l0 is an actual positive example in `batch_labels_embed[0]`,
+                [
+                    1,
+                    0,
+                ],  # l0 is an actual positive example in `batch_labels_embed[0]`,
                 # whereas l2 is not
                 [
                     0,
                     0,
                 ],  # Neither l0 nor l1 are positive examples in `batch_labels_embed[1]`
-                [1, 0,],  # l3 is an actual positive example in `batch_labels_embed[2]`,
+                [
+                    1,
+                    0,
+                ],  # l3 is an actual positive example in `batch_labels_embed[2]`,
                 # whereas l1 is not
             ]
         )
@@ -459,7 +471,10 @@ def test_randomly_connected_dense_all_inputs_connected():
 def test_dense_for_sparse_get_feature_type(
     layer_name: Text, expected_feature_type: Union[Text, None]
 ):
-    layer = DenseForSparse(name=layer_name, units=10,)
+    layer = DenseForSparse(
+        name=layer_name,
+        units=10,
+    )
     assert layer.get_feature_type() == expected_feature_type
 
 
@@ -489,5 +504,8 @@ def test_dense_for_sparse_get_feature_type(
 def test_dense_for_sparse_get_attribute(
     layer_name: Text, expected_attribute: Union[Text, None]
 ):
-    layer = DenseForSparse(name=layer_name, units=10,)
+    layer = DenseForSparse(
+        name=layer_name,
+        units=10,
+    )
     assert layer.get_attribute() == expected_attribute

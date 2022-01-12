@@ -11,7 +11,10 @@ from rasa.shared.core.events import (
 TEST_DEFAULT_DIALOGUE = Dialogue(
     name="default",
     events=[
-        ActionExecuted(action_name="action_listen", timestamp=1551952977.4850519,),
+        ActionExecuted(
+            action_name="action_listen",
+            timestamp=1551952977.4850519,
+        ),
         UserUttered(
             entities=[{"end": 19, "entity": "name", "start": 14, "value": "Peter"}],
             intent={"confidence": 0.0, "name": "greet"},
@@ -29,7 +32,10 @@ TEST_DEFAULT_DIALOGUE = Dialogue(
             timestamp=1551953035.076376,
         ),
         SlotSet(key="name", timestamp=1551953035.076385, value="Peter"),
-        ActionExecuted(action_name="utter_greet", timestamp=1551953040.607782,),
+        ActionExecuted(
+            action_name="utter_greet",
+            timestamp=1551953040.607782,
+        ),
         BotUttered(
             data={"attachment": None, "buttons": None, "elements": None},
             text="hey there Peter!",
@@ -40,7 +46,10 @@ TEST_DEFAULT_DIALOGUE = Dialogue(
 TEST_FORMBOT_DIALOGUE = Dialogue(
     name="formbot",
     events=[
-        ActionExecuted(action_name="action_listen", timestamp=1551884035.892855,),
+        ActionExecuted(
+            action_name="action_listen",
+            timestamp=1551884035.892855,
+        ),
         UserUttered(
             intent={"confidence": 0.3748943507671356, "name": "greet"},
             parse_data={
@@ -128,7 +137,8 @@ TEST_FORMBOT_DIALOGUE = Dialogue(
             timestamp=1551884208.092693,
         ),
         ActionExecuted(
-            action_name="action_deactivate_loop", timestamp=1551884214.951055,
+            action_name="action_deactivate_loop",
+            timestamp=1551884214.951055,
         ),
         ActiveLoop(name=None, timestamp=1551884214.9510589),
         SlotSet(key="requested_slot", timestamp=1551884214.951062, value=None),
@@ -143,7 +153,10 @@ TEST_FORMBOT_DIALOGUE = Dialogue(
 TEST_MOODBOT_DIALOGUE = Dialogue(
     name="moodbot",
     events=[
-        ActionExecuted(action_name="action_listen", timestamp=1551883958.346432,),
+        ActionExecuted(
+            action_name="action_listen",
+            timestamp=1551883958.346432,
+        ),
         UserUttered(
             intent={"confidence": 0.44488201660555066, "name": "greet"},
             parse_data={

@@ -968,7 +968,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         ranking = [(idx, casted_message_sim[idx]) for idx in ranked_label_indices]
         label_ranking = [
-            {"name": self.index_label_id_mapping[label_idx], "confidence": score,}
+            {
+                "name": self.index_label_id_mapping[label_idx],
+                "confidence": score,
+            }
             for label_idx, score in ranking
         ]
 
@@ -1726,7 +1729,8 @@ class DIET(TransformerRasaModel):
             tf_batch_data, TEXT
         )
         sentence_feature_lengths = self._get_sentence_feature_lengths(
-            tf_batch_data, TEXT,
+            tf_batch_data,
+            TEXT,
         )
 
         text_transformed, _, _, _, _, attention_weights = self._tf_layers[

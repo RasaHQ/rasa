@@ -52,7 +52,10 @@ class FallbackClassifier(GraphComponent, IntentClassifier):
             AMBIGUITY_THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
         }
 
-    def __init__(self, config: Dict[Text, Any],) -> None:
+    def __init__(
+        self,
+        config: Dict[Text, Any],
+    ) -> None:
         """Constructs a new fallback classifier."""
         self.component_config = config
 

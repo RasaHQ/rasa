@@ -240,7 +240,11 @@ def test_count_vector_featurizer_shared_vocab(
     create_featurizer: Callable[..., CountVectorsFeaturizer],
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-    ftr = create_featurizer({"use_shared_vocab": True,})
+    ftr = create_featurizer(
+        {
+            "use_shared_vocab": True,
+        }
+    )
 
     train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
@@ -323,7 +327,10 @@ def test_count_vector_featurizer_oov_words(
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
     ftr = create_featurizer(
-        {"OOV_token": "__oov__", "OOV_words": ["oov_word0", "OOV_word1"],}
+        {
+            "OOV_token": "__oov__",
+            "OOV_words": ["oov_word0", "OOV_word1"],
+        }
     )
     train_message = Message(data={TEXT: sentence})
     whitespace_tokenizer.process([train_message])
@@ -397,7 +404,13 @@ def test_count_vector_featurizer_char(
     create_featurizer: Callable[..., CountVectorsFeaturizer],
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-    ftr = create_featurizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char",})
+    ftr = create_featurizer(
+        {
+            "min_ngram": 1,
+            "max_ngram": 2,
+            "analyzer": "char",
+        }
+    )
 
     train_message = Message(data={TEXT: sentence})
     whitespace_tokenizer.process([train_message])
@@ -621,7 +634,11 @@ def test_count_vector_featurizer_action_attribute_featurization(
     create_featurizer: Callable[..., CountVectorsFeaturizer],
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-    ftr = create_featurizer({"token_pattern": r"(?u)\b\w+\b",})
+    ftr = create_featurizer(
+        {
+            "token_pattern": r"(?u)\b\w+\b",
+        }
+    )
 
     train_message = Message(data={TEXT: sentence})
     # this is needed for a valid training example
@@ -687,7 +704,11 @@ def test_count_vector_featurizer_process_by_attribute(
     create_featurizer: Callable[..., CountVectorsFeaturizer],
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
-    ftr = create_featurizer({"token_pattern": r"(?u)\b\w+\b",})
+    ftr = create_featurizer(
+        {
+            "token_pattern": r"(?u)\b\w+\b",
+        }
+    )
 
     # add a second example that has some response, so that the vocabulary for
     # response exists
@@ -773,7 +794,10 @@ def test_cvf_incremental_training(
 
 @pytest.mark.parametrize(
     "initial_train_text, additional_train_text, " "use_shared_vocab",
-    [("am I the coolest person?", "no", True), ("rasa rasa", "sara sara", False),],
+    [
+        ("am I the coolest person?", "no", True),
+        ("rasa rasa", "sara sara", False),
+    ],
 )
 def test_use_shared_vocab_exception(
     initial_train_text: Text,

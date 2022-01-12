@@ -191,7 +191,11 @@ class MitieEntityExtractor(GraphComponent, EntityExtractorMixin):
                 continue
         return sample
 
-    def process(self, messages: List[Message], model: MitieModel,) -> List[Message]:
+    def process(
+        self,
+        messages: List[Message],
+        model: MitieModel,
+    ) -> List[Message]:
         """Extracts entities from messages and appends them to the attribute.
 
         If no patterns where found during training, then the given messages will not
@@ -217,7 +221,9 @@ class MitieEntityExtractor(GraphComponent, EntityExtractorMixin):
         return messages
 
     def _extract_entities(
-        self, message: Message, mitie_model: MitieModel,
+        self,
+        message: Message,
+        mitie_model: MitieModel,
     ) -> List[Dict[Text, Any]]:
         """Extract entities of the given type from the given user message.
 
@@ -234,7 +240,8 @@ class MitieEntityExtractor(GraphComponent, EntityExtractorMixin):
         entities = []
         token_texts = [token.text for token in tokens]
         mitie_entities = self._ner.extract_entities(
-            token_texts, mitie_model.word_feature_extractor,
+            token_texts,
+            mitie_model.word_feature_extractor,
         )
         for e in mitie_entities:
             if len(e[0]):

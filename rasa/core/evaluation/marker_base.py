@@ -567,11 +567,15 @@ class Marker(ABC):
         tag, _ = MarkerRegistry.get_non_negated_tag(tag_or_negated_tag=tag)
         if tag in MarkerRegistry.operator_tag_to_marker_class:
             marker = OperatorMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name,
+                tag=tag,
+                sub_config=sub_marker_config,
+                name=name,
             )
         elif tag in MarkerRegistry.condition_tag_to_marker_class:
             marker = ConditionMarker.from_tag_and_sub_config(
-                tag=tag, sub_config=sub_marker_config, name=name,
+                tag=tag,
+                sub_config=sub_marker_config,
+                name=name,
             )
         else:
             raise InvalidMarkerConfig(
@@ -671,7 +675,10 @@ class Marker(ABC):
 
     @staticmethod
     def _write_relevant_events(
-        writer: WriteRow, sender_id: Text, session_idx: int, session: SessionEvaluation,
+        writer: WriteRow,
+        sender_id: Text,
+        session_idx: int,
+        session: SessionEvaluation,
     ) -> None:
         for marker_name, meta_data_per_relevant_event in session.items():
             for event_meta_data in meta_data_per_relevant_event:
@@ -775,7 +782,9 @@ class OperatorMarker(Marker, ABC):
 
     @staticmethod
     def from_tag_and_sub_config(
-        tag: Text, sub_config: Any, name: Optional[Text] = None,
+        tag: Text,
+        sub_config: Any,
+        name: Optional[Text] = None,
     ) -> OperatorMarker:
         """Creates an operator marker from the given config.
 

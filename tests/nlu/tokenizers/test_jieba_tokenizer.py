@@ -20,7 +20,10 @@ from rasa.shared.nlu.constants import TEXT, INTENT
 def create_jieba(config: Optional[Dict] = None) -> JiebaTokenizer:
     config = config if config else {}
     return JiebaTokenizer.create(
-        {**JiebaTokenizer.get_default_config(), **config}, None, None, None,
+        {**JiebaTokenizer.get_default_config(), **config},
+        None,
+        None,
+        None,
     )
 
 

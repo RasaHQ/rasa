@@ -29,7 +29,10 @@ class TrainingDataImporter:
         """
         raise NotImplementedError()
 
-    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
+    def get_stories(
+        self,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
         Args:
@@ -204,7 +207,10 @@ class NluDataImporter(TrainingDataImporter):
         """Retrieves model domain (see parent class for full docstring)."""
         return Domain.empty()
 
-    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
+    def get_stories(
+        self,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return StoryGraph([])
 
@@ -248,7 +254,10 @@ class CombinedDataImporter(TrainingDataImporter):
         )
 
     @rasa.shared.utils.common.cached_method
-    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
+    def get_stories(
+        self,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         stories = [
             importer.get_stories(exclusion_percentage) for importer in self._importers
@@ -370,7 +379,10 @@ class ResponsesSyncImporter(TrainingDataImporter):
             {},
         )
 
-    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
+    def get_stories(
+        self,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return self._importer.get_stories(exclusion_percentage)
 
@@ -450,7 +462,10 @@ class E2EImporter(TrainingDataImporter):
             action_texts=additional_e2e_action_names,
         )
 
-    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
+    def get_stories(
+        self,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
         See parent class for details.

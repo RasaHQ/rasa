@@ -85,7 +85,9 @@ class SingleStateFeaturizer:
         ]
 
     def prepare_for_training(
-        self, domain: Domain, bilou_tagging: bool = False,
+        self,
+        domain: Domain,
+        bilou_tagging: bool = False,
     ) -> None:
         """Gets necessary information for featurization from domain.
 
@@ -258,7 +260,9 @@ class SingleStateFeaturizer:
             if state_type == PREVIOUS_ACTION:
                 state_features.update(
                     self._extract_state_features(
-                        sub_state, precomputations=precomputations, sparse=True,
+                        sub_state,
+                        precomputations=precomputations,
+                        sparse=True,
                     )
                 )
             # featurize user only if it is "real" user input,
@@ -267,7 +271,9 @@ class SingleStateFeaturizer:
 
                 state_features.update(
                     self._extract_state_features(
-                        sub_state, precomputations=precomputations, sparse=True,
+                        sub_state,
+                        precomputations=precomputations,
+                        sparse=True,
                     )
                 )
                 if sub_state.get(ENTITIES):

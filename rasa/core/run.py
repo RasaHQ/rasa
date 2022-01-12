@@ -96,7 +96,12 @@ def configure_app(
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(
-        logger, log_file, use_syslog, syslog_address, syslog_port, syslog_protocol,
+        logger,
+        log_file,
+        use_syslog,
+        syslog_address,
+        syslog_port,
+        syslog_protocol,
     )
 
     if enable_api:
@@ -215,7 +220,11 @@ def serve_application(
     )
 
     rasa.utils.common.update_sanic_log_level(
-        log_file, use_syslog, syslog_address, syslog_port, syslog_protocol,
+        log_file,
+        use_syslog,
+        syslog_address,
+        syslog_port,
+        syslog_protocol,
     )
 
     app.run(

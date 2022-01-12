@@ -422,7 +422,11 @@ class Policy(GraphComponent):
             )
 
         return cls(
-            config, model_storage, resource, execution_context, featurizer=featurizer,
+            config,
+            model_storage,
+            resource,
+            execution_context,
+            featurizer=featurizer,
         )
 
     def _default_predictions(self, domain: Domain) -> List[float]:

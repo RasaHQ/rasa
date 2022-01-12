@@ -197,7 +197,9 @@ class SocketIOInput(InputChannel):
                 jwt_payload = None
                 if auth and auth.get("token"):
                     jwt_payload = rasa.core.channels.channel.decode_bearer_token(
-                        auth.get("token"), self.jwt_key, self.jwt_algorithm,
+                        auth.get("token"),
+                        self.jwt_key,
+                        self.jwt_algorithm,
                     )
 
                 if jwt_payload:

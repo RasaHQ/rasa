@@ -156,7 +156,12 @@ class RulePolicy(MemoizationPolicy):
         config[POLICY_MAX_HISTORY] = None
 
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer, lookup,
+            config,
+            model_storage,
+            resource,
+            execution_context,
+            featurizer,
+            lookup,
         )
 
         self._fallback_action_name = config["core_fallback_action_name"]

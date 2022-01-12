@@ -165,7 +165,8 @@ def train(
         training_type = TrainingType.CORE
 
     with telemetry.track_model_training(
-        file_importer, model_type="rasa",
+        file_importer,
+        model_type="rasa",
     ):
         return _train_graph(
             file_importer,
@@ -232,7 +233,8 @@ def _train_graph(
         full_model_path = Path(output_path, model_name)
 
         with telemetry.track_model_training(
-            file_importer, model_type=training_type.model_type,
+            file_importer,
+            model_type=training_type.model_type,
         ):
             trainer.train(
                 model_configuration,

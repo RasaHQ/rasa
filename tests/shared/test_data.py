@@ -119,7 +119,12 @@ def test_get_core_nlu_files(project):
                 "data/examples/dialogflow/package.json",
             ],
         ),
-        ("luis", ["data/examples/luis/demo-restaurants_v7.json",],),
+        (
+            "luis",
+            [
+                "data/examples/luis/demo-restaurants_v7.json",
+            ],
+        ),
         (
             "rasa",
             [
