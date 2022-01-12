@@ -923,9 +923,9 @@ class ActionDefaultAskAffirmation(Action):
 
         intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
 
-        intent_ranking: List["IntentPrediction"] = latest_message.parse_data.get(
-            INTENT_RANKING_KEY
-        ) or []
+        intent_ranking: List["IntentPrediction"] = (
+            latest_message.parse_data.get(INTENT_RANKING_KEY) or []
+        )
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
@@ -1076,7 +1076,11 @@ class ActionExtractSlots(Action):
             return [], executed_custom_actions
 
         slot_events = await self._run_custom_action(
-            custom_action, output_channel, nlg, tracker, domain,
+            custom_action,
+            output_channel,
+            nlg,
+            tracker,
+            domain,
         )
 
         executed_custom_actions.add(custom_action)

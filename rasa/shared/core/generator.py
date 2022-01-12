@@ -85,7 +85,9 @@ class TrackerWithCachedStates(DialogueStateTracker):
         return tracker
 
     def past_states_for_hashing(
-        self, domain: Domain, omit_unset_slots: bool = False,
+        self,
+        domain: Domain,
+        omit_unset_slots: bool = False,
     ) -> Deque[FrozenState]:
         """Generates and caches the past states of this tracker based on the history.
 
@@ -190,8 +192,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             self._states_for_hashing.append(frozen_state)
 
     def update(self, event: Event, skip_states: bool = False) -> None:
-        """Modify the state of the tracker according to an ``Event``. """
-
+        """Modify the state of the tracker according to an ``Event``."""
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
 
