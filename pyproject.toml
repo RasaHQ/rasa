@@ -166,7 +166,7 @@ sanic-testing = "^0.7.0"
 spacy = [ "spacy",]
 jieba = [ "jieba",]
 transformers = [ "transformers", "sentencepiece"]
-full = [ "spacy", "transformers", "jieba",]
+full = [ "spacy", "transformers", "sentencepiece", "jieba",]
 gh-release-notes = [ "github3.py",]
 
 [tool.poetry.scripts]
