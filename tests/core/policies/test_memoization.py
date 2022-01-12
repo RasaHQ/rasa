@@ -334,7 +334,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
                 ActionExecuted(UTTER_ACTION_3),
                 ActionExecuted(UTTER_ACTION_4),
                 ActionExecuted(UTTER_ACTION_5),
-                # ActionExecuted(ACTION_LISTEN_NAME),
+                # No prediction should be made here.
             ],
             domain=domain,
             slots=domain.slots,
@@ -343,12 +343,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         prediction2 = policy.predict_action_probabilities(
             test_story2_no_match_expected, domain, interpreter
         )
-        assert (
-            domain.action_names_or_texts[
-                prediction2.probabilities.index(max(prediction2.probabilities))
-            ]
-            == ACTION_LISTEN_NAME
-        )
+        assert all([prob == 0.0 for prob in prediction2.probabilities])
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
     def test_aug_pred_without_intent(self, max_history):
