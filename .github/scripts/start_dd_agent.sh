@@ -74,4 +74,3 @@ sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pid
 
 sleep 10
 sudo datadog-agent status
-sudo datadog-agent health
