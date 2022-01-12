@@ -3,7 +3,6 @@ import os
 from typing import Dict, List, Optional, Text, Union
 
 import rasa.shared.data
-from rasa.engine.recipes.recipe import Recipe
 
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers import utils
@@ -52,8 +51,6 @@ class RasaFileImporter(TrainingDataImporter):
             return {}
 
         config = rasa.shared.utils.io.read_model_configuration(self.config_file)
-        recipe = Recipe.recipe_for_name(config.get("recipe"))
-        config = recipe.auto_configure(self.config_file, config)
         return config
 
     def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:

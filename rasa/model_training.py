@@ -15,6 +15,7 @@ import randomname
 
 import rasa.engine.validation
 from rasa.engine.caching import LocalTrainingCache
+from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
@@ -206,8 +207,13 @@ def _train_graph(
 
     is_finetuning = model_to_finetune is not None
 
-    model_configuration = file_importer.get_model_config(
-        kwargs, training_type, is_finetuning,
+    config = file_importer.get_config()
+    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    config = recipe.auto_configure(
+        file_importer.get_config_file_for_auto_config(), config, training_type,
+    )
+    model_configuration = recipe.graph_config_for_recipe(
+        config, kwargs, training_type=training_type, is_finetuning=is_finetuning,
     )
     rasa.engine.validation.validate(model_configuration)
 

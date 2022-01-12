@@ -6,15 +6,12 @@ import rasa.shared.constants
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
-from rasa.engine.graph import GraphModelConfiguration
-from rasa.engine.recipes.recipe import Recipe
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
-from rasa.shared.data import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
 
 logger = logging.getLogger(__name__)
@@ -57,23 +54,6 @@ class TrainingDataImporter:
             The configuration as dictionary.
         """
         raise NotImplementedError()
-
-    def get_model_config(
-        self,
-        cli_par: Dict[Text, Any],
-        training_type: TrainingType = TrainingType.BOTH,
-        is_finetuning: bool = False,
-    ) -> GraphModelConfiguration:
-        """Retrieves model config object.
-
-        Used both by E2EImporter and NLUDataImporter
-        """
-        config = self.get_config()
-        recipe = Recipe.recipe_for_name(config.get("recipe"))
-        model_config = recipe.graph_config_for_recipe(
-            config, cli_par, training_type=training_type, is_finetuning=is_finetuning,
-        )
-        return model_config
 
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves the NLU training data that should be used for training.
@@ -229,6 +209,11 @@ class NluDataImporter(TrainingDataImporter):
         """Retrieves NLU training data (see parent class for full docstring)."""
         return self._importer.get_nlu_data(language)
 
+    @rasa.shared.utils.common.cached_method
+    def get_config_file_for_auto_config(self):
+        """Returns config file path for auto-config only if there is a single one."""
+        return self._importer.get_config_file_for_auto_config()
+
 
 class CombinedDataImporter(TrainingDataImporter):
     """A `TrainingDataImporter` that combines multiple importers.
@@ -285,6 +270,13 @@ class CombinedDataImporter(TrainingDataImporter):
             lambda merged, other: merged.merge(other), nlu_data, TrainingData()
         )
 
+    @rasa.shared.utils.common.cached_method
+    def get_config_file_for_auto_config(self):
+        """Returns config file path for auto-config only if there is a single one."""
+        if len(self._importers) != 1:
+            return None
+        return self._importers[0].config_file
+
 
 class ResponsesSyncImporter(TrainingDataImporter):
     """Importer that syncs `responses` between Domain and NLU training data.
@@ -301,6 +293,11 @@ class ResponsesSyncImporter(TrainingDataImporter):
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         return self._importer.get_config()
+
+    @rasa.shared.utils.common.cached_method
+    def get_config_file_for_auto_config(self):
+        """Returns config file path for auto-config only if there is a single one."""
+        return self._importer.get_config_file_for_auto_config()
 
     @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
@@ -473,6 +470,11 @@ class E2EImporter(TrainingDataImporter):
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         return self.importer.get_config()
+
+    @rasa.shared.utils.common.cached_method
+    def get_config_file_for_auto_config(self):
+        """Returns config file path for auto-config only if there is a single one."""
+        return self.importer.get_config_file_for_auto_config()
 
     @rasa.shared.utils.common.cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
