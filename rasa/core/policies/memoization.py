@@ -338,7 +338,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         This method iteratively removes the oldest events up to the next action
         executed and checks if the truncated event sequence matches some memorized
-        states, until a match has been found or until the even sequence has been exhausted.
+        states, until a match has been found or until the even sequence has been
+        exhausted.
 
         Args:
             old_states: List of states.
