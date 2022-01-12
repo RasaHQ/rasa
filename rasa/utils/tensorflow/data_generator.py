@@ -3,7 +3,7 @@ from typing import List, Union, Text, Optional, Any, Tuple, Dict
 import logging
 import scipy.sparse
 import numpy as np
-import tensorflow as tf
+from tensorflow.python.keras.utils.data_utils import Sequence
 
 from rasa.utils.tensorflow.constants import SEQUENCE, BALANCED
 from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
@@ -11,7 +11,7 @@ from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
 logger = logging.getLogger(__name__)
 
 
-class RasaDataGenerator(tf.keras.utils.Sequence):
+class RasaDataGenerator(Sequence):
     """Abstract data generator."""
 
     def __init__(

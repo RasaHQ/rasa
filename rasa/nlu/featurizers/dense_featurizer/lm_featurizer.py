@@ -3,6 +3,7 @@ import numpy as np
 import logging
 
 from typing import Any, Text, List, Dict, Tuple, Type
+import tensorflow as tf
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
@@ -467,7 +468,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             Sequence level representations from the language model.
         """
         model_outputs = self.model(
-            np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
+            tf.convert_to_tensor(padded_token_ids),
+            attention_mask=tf.convert_to_tensor(batch_attention_mask),
         )
 
         # sequence hidden states is always the first output from all models

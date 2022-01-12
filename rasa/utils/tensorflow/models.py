@@ -49,7 +49,7 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
 )
-from keras.utils import tf_utils
+from tensorflow.python.keras.utils import tf_utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
 
