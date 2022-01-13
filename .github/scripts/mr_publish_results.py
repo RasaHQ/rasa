@@ -5,7 +5,7 @@ import copy
 import datetime
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import analytics
 from datadog_api_client.v1 import ApiClient, Configuration
@@ -146,7 +146,7 @@ def prepare_tags() -> List[str]:
     return tags_list
 
 
-def send_to_datadog(results: List[Dict[str, Any]]):
+def send_to_datadog(results: List[Dict[str, Any]]) -> None:
     """Sends metrics to datadog."""
     # Prepare
     tags_list = prepare_tags()
@@ -186,7 +186,7 @@ def send_to_datadog(results: List[Dict[str, Any]]):
             print(response)
 
 
-def _send_to_segment(context: Dict[str, Any]):
+def _send_to_segment(context: Dict[str, Any]) -> None:
     (
         is_external,
         dataset_repository_branch,
@@ -224,7 +224,7 @@ def _send_to_segment(context: Dict[str, Any]):
     )
 
 
-def _get_is_external_and_dataset_repository_branch():
+def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, str]:
     is_external = os.environ["IS_EXTERNAL"]
     dataset_repository_branch = os.environ["DATASET_REPOSITORY_BRANCH"]
     if is_external.lower() in ("yes", "true", "t", "1"):
@@ -251,7 +251,7 @@ def read_results(file: str) -> Dict[str, Any]:
     return result
 
 
-def _push_results(file_name: str, file: str):
+def _push_results(file_name: str, file: str) -> None:
     result = get_result(file_name, file)
     result["task"] = task_mapping_segment[file_name]
     _send_to_segment(result)
@@ -264,7 +264,7 @@ def get_result(file_name: str, file: str) -> Dict[str, Any]:
     return result
 
 
-def send_all_to_datadog():
+def send_all_to_datadog() -> None:
     results = []
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
@@ -306,7 +306,7 @@ def generate_json(file: str, task: str, data: dict) -> dict:
     return data
 
 
-def send_all_results_to_segment():
+def send_all_results_to_segment() -> None:
     analytics.write_key = os.environ["SEGMENT_TOKEN"]
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
@@ -317,7 +317,7 @@ def send_all_results_to_segment():
     analytics.flush()
 
 
-def create_report_file():
+def create_report_file() -> None:
     data = {}
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
