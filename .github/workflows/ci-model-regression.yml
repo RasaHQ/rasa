@@ -673,33 +673,6 @@ jobs:
         run: |
           sudo service datadog-agent stop
 
-  set_job_success_status:
-    name: Set job success status
-    runs-on: ubuntu-latest
-    needs:
-      - model_regression_test_cpu
-      - model_regression_test_gpu
-    if: always()
-    steps:
-      - name: Set return code
-        run: |
-          set -x  # Debug
-          echo ${{ needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success' }}
-          echo ${{ needs.model_regression_test_cpu.result == 'success'}}
-          echo ${{ needs.model_regression_test_gpu.result == 'success'}}
-
-          succeeded=${{ needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success' }}
-          if [[ $succeeded == "false" ]]; then
-            echo "Status: Failed"
-            exit 1
-          elif [[ $succeeded == "true" ]]; then
-            echo "Status: Succeeded"
-            exit 0
-          else
-            echo "Status: Not sure what happened"
-            exit 2
-          fi
-
   combine_reports:
     name: Combine reports
     runs-on: ubuntu-latest
@@ -707,8 +680,25 @@ jobs:
       - model_regression_test_cpu
       - model_regression_test_gpu
     if: (needs.model_regression_test_cpu.result != 'skipped' || needs.model_regression_test_gpu.result != 'skipped') && always()
+    outputs:
+      success_status: ${{ steps.set-success-status.outputs.success_status }}
 
     steps:
+      - name: Set success status
+        id: set-success-status
+        run: |-
+          succeeded=${{ needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success' }}
+          if [[ $succeeded == "false" ]]; then
+            success_status="Failed"
+          elif [[ $succeeded == "true" ]]; then
+            echo "Status: Succeeded"
+            success_status="Succeeded"
+          else
+            success_status="Not sure what happened"
+          fi
+          echo $success_status
+          echo "::set-output name=success_status::$success_status"
+
       - name: Checkout git repository 🕝
         uses: actions/checkout@v2
 
@@ -740,6 +730,28 @@ jobs:
         with:
           name: report.json
           path: ./report.json
+
+
+  set_job_success_status:
+    name: Set job success status
+    runs-on: ubuntu-latest
+    needs:
+      - combine_reports
+    if: always() && needs.combine_reports.result == 'success'
+    steps:
+      - name: Set return code
+        run: |
+          set -x  # Debug
+          success_status=${{ needs.combine_reports.outputs.success_status }}
+          echo "Status: $success_status"
+          if [[ $success_status == "Failed" ]]; then
+            echo "Status: Failed"
+            exit 1
+          elif [[ $success_status == "Succeeded" ]]; then
+            exit 0
+          else
+            exit 2
+          fi
 
   add_comment_results:
     name: Add a comment with the results
@@ -797,6 +809,7 @@ jobs:
           header: ${{ github.run_id }}
           append: true
           message: |-
+            Success status of the run: ${{ needs.combine_reports.outputs.success_status }}
 
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
