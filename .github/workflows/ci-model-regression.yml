@@ -695,10 +695,9 @@ jobs:
           if [[ $succeeded == "false" ]]; then
             success_status="Failed"
           elif [[ $succeeded == "true" ]]; then
-            echo "Status: Succeeded"
             success_status="Succeeded"
           else
-            success_status="Not sure what happened"
+            success_status="Unknown"
           fi
           echo $success_status
           echo "::set-output name=success_status::$success_status"
@@ -735,7 +734,6 @@ jobs:
           name: report.json
           path: ./report.json
 
-
   set_job_success_status:
     name: Set job success status
     runs-on: ubuntu-latest
@@ -745,16 +743,12 @@ jobs:
     steps:
       - name: Set return code
         run: |
-          set -x  # Debug
           success_status=${{ needs.combine_reports.outputs.success_status }}
           echo "Status: $success_status"
-          if [[ $success_status == "Failed" ]]; then
-            echo "Status: Failed"
-            exit 1
-          elif [[ $success_status == "Succeeded" ]]; then
+          if [[ $success_status == "Succeeded" ]]; then
             exit 0
           else
-            exit 2
+            exit 1
           fi
 
   add_comment_results:
