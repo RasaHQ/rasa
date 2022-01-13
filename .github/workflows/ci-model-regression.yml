@@ -706,7 +706,7 @@ jobs:
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
-    if: always()
+    if: (needs.model_regression_test_cpu.result != 'skipped' || needs.model_regression_test_gpu.result != 'skipped') && always()
 
     steps:
       - name: Checkout git repository 🕝
