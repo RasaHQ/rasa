@@ -349,6 +349,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             tracker: The tracker to truncate.
             again: When true, truncate tracker at the second action.
                 Otherwise truncate to the first action.
+
         Returns:
             The truncated tracker if there were actions present.
             If none are found, returns `None`.
@@ -392,8 +393,10 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     ) -> Optional[Text]:
         """Attempts to match memorized states to progressively shorter trackers.
 
-        This matching will iteratively remove prior slot setting events and
-        other actions, looking for the first matching memorized state sequence.
+        This method iteratively removes the oldest events up to the next action
+        executed and checks if the truncated event sequence matches some memorized
+        states, until a match has been found or until the even sequence has been
+        exhausted.
 
         Args:
             old_states: List of states.
