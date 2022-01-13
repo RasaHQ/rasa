@@ -50,6 +50,10 @@ jobs:
       if: steps.cache-poetry.outputs.cache-hit == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
       run: rm -r .venv
 
+    - name: Install Dependencies 📦
+      run: |
+        make install
+
     - name: Lint Code 🎎
       run: |
         poetry run flake8 .github/scripts --extend-ignore D
