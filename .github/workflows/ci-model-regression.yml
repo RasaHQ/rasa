@@ -10,6 +10,7 @@ on:
   pull_request:
     types: [opened, synchronize, labeled]
 
+
 concurrency:
   group: ci-model-regression-${{ github.ref }}  # branch or tag name
   cancel-in-progress: true
