@@ -231,8 +231,6 @@ jobs:
           DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
-          exit 1
-
           # determine extra environment variables
           # - CONFIG
           # - DATASET
@@ -475,8 +473,6 @@ jobs:
           DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
-          exit 1
-
           # determine extra environment variables
           # - CONFIG
           # - DATASET
@@ -809,7 +805,7 @@ jobs:
           header: ${{ github.run_id }}
           append: true
           message: |-
-            Success status of the run: ${{ needs.combine_reports.outputs.success_status }}
+            Status of the run: ${{ needs.combine_reports.outputs.success_status }}
 
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
