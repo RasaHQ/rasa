@@ -227,12 +227,12 @@ def _send_to_segment(context: Dict[str, Any]):
 def _get_is_external_and_dataset_repository_branch():
     is_external = os.environ["IS_EXTERNAL"]
     dataset_repository_branch = os.environ["DATASET_REPOSITORY_BRANCH"]
-    if str(is_external).lower() in ("yes", "true", "t", "1"):
-        is_external = True
+    if is_external.lower() in ("yes", "true", "t", "1"):
+        is_external_flag = True
         dataset_repository_branch = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
     else:
-        is_external = False
-    return is_external, dataset_repository_branch
+        is_external_flag = False
+    return is_external_flag, dataset_repository_branch
 
 
 def read_results(file: str) -> Dict[str, Any]:
