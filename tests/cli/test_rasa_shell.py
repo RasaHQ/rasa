@@ -22,7 +22,9 @@ def test_shell_help(run: Callable[..., RunResult]):
                   [--syslog-port SYSLOG_PORT]
                   [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
                   [-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
-                  """ + cors_lines + """
+                  """
+        + cors_lines
+        + """
                   [--response-timeout RESPONSE_TIMEOUT]
                   [--remote-storage REMOTE_STORAGE]
                   [--ssl-certificate SSL_CERTIFICATE]

@@ -1,12 +1,9 @@
 import sys
-import pytest
 import argparse
-from typing import Callable, Dict
-from pathlib import Path
 from pathlib import Path
 
 import pytest
-from typing import Callable, Dict, Text
+from typing import Callable, Dict
 
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
@@ -37,7 +34,9 @@ def test_x_help(run: Callable[..., RunResult]):
               [--syslog-address SYSLOG_ADDRESS] [--syslog-port SYSLOG_PORT]
               [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
               [-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
-              """ + cors_lines + """
+              """
+        + cors_lines
+        + """
               [--remote-storage REMOTE_STORAGE]
               [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
               [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]

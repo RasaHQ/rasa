@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Callable, Text
+from typing import Callable
 from _pytest.pytester import RunResult
 
 
@@ -27,12 +27,14 @@ def test_run_help(run: Callable[..., RunResult],):
         cors_lines = "[--cors [CORS [CORS ...]]] [--enable-api]"
 
     help_text = (
-            """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
+        """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--use-syslog] [--syslog-address SYSLOG_ADDRESS]
                 [--syslog-port SYSLOG_PORT]
                 [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
                 [-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
-                """ + cors_lines + """ 
+                """
+        + cors_lines
+        + """ 
                 [--response-timeout RESPONSE_TIMEOUT]
                 [--remote-storage REMOTE_STORAGE]
                 [--ssl-certificate SSL_CERTIFICATE]

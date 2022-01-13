@@ -5,7 +5,7 @@ from pathlib import Path
 
 from _pytest.capture import CaptureFixture
 import pytest
-from typing import Callable, Text
+from typing import Callable
 from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
 
