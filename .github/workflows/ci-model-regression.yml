@@ -231,6 +231,8 @@ jobs:
           DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
+          exit 1
+
           # determine extra environment variables
           # - CONFIG
           # - DATASET
@@ -473,6 +475,8 @@ jobs:
           DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
+          exit 1
+
           # determine extra environment variables
           # - CONFIG
           # - DATASET
@@ -669,13 +673,40 @@ jobs:
         run: |
           sudo service datadog-agent stop
 
+  set_job_success_status:
+    name: Set job success status
+    runs-on: ubuntu-latest
+    needs:
+      - model_regression_test_cpu
+      - model_regression_test_gpu
+    if: always()
+    steps:
+      - name: Set return code
+        run: |
+          set -x  # Debug
+          echo ${{ needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success' }}
+          echo ${{ needs.model_regression_test_cpu.result == 'success'}}
+          echo ${{ needs.model_regression_test_gpu.result == 'success'}}
+
+          succeeded=${{ needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success' }}
+          if [[ $succeeded == "false" ]]; then
+            echo "Status: Failed"
+            exit 1
+          elif [[ $succeeded == "true" ]]; then
+            echo "Status: Succeeded"
+            exit 0
+          else
+            echo "Status: Not sure what happened"
+            exit 2
+          fi
+
   combine_reports:
     name: Combine reports
     runs-on: ubuntu-latest
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
-    if: always() && (needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success')
+    if: always()
 
     steps:
       - name: Checkout git repository 🕝
