@@ -210,7 +210,7 @@ class NluDataImporter(TrainingDataImporter):
         return self._importer.get_nlu_data(language)
 
     @rasa.shared.utils.common.cached_method
-    def get_config_file_for_auto_config(self):
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
         return self._importer.get_config_file_for_auto_config()
 
@@ -271,7 +271,7 @@ class CombinedDataImporter(TrainingDataImporter):
         )
 
     @rasa.shared.utils.common.cached_method
-    def get_config_file_for_auto_config(self):
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
         if len(self._importers) != 1:
             return None
@@ -295,7 +295,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
         return self._importer.get_config()
 
     @rasa.shared.utils.common.cached_method
-    def get_config_file_for_auto_config(self):
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
         return self._importer.get_config_file_for_auto_config()
 
@@ -472,7 +472,7 @@ class E2EImporter(TrainingDataImporter):
         return self.importer.get_config()
 
     @rasa.shared.utils.common.cached_method
-    def get_config_file_for_auto_config(self):
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
         return self.importer.get_config_file_for_auto_config()
 

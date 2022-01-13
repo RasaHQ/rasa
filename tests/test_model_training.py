@@ -228,7 +228,7 @@ def test_train_core_autoconfig(
 
     mocked_auto_configure.assert_called_once()
     _, args, _ = mocked_auto_configure.mock_calls[0]
-    assert len(args) == 2
+    assert args[2] == TrainingType.CORE
 
 
 def test_train_nlu_autoconfig(
@@ -251,7 +251,7 @@ def test_train_nlu_autoconfig(
 
     mocked_auto_configuration.assert_called_once()
     _, args, _ = mocked_auto_configuration.mock_calls[0]
-    assert len(args) == 2
+    assert args[2] == TrainingType.NLU
 
 
 def new_model_path_in_same_dir(old_model_path: Text) -> Text:
