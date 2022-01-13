@@ -683,7 +683,7 @@ jobs:
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
-    if: (needs.model_regression_test_cpu.result != 'skipped' || needs.model_regression_test_gpu.result != 'skipped') && always()
+    if: ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) && always()
     outputs:
       success_status: ${{ steps.set-success-status.outputs.success_status }}
 
