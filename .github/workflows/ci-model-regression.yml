@@ -231,6 +231,10 @@ jobs:
           DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
+          if [[ "${{ env.DATASET_NAME }}" == "helpdesk-assistant" ]]; then
+            exit 1
+          fi
+
           # determine extra environment variables
           # - CONFIG
           # - DATASET
@@ -473,6 +477,10 @@ jobs:
           DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
+          if [[ "${{ env.DATASET_NAME }}" == "helpdesk-assistant" ]]; then
+            exit 1
+          fi
+
           # determine extra environment variables
           # - CONFIG
           # - DATASET
