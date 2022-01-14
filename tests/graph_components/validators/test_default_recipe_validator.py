@@ -1024,8 +1024,13 @@ def test_no_warnings_with_default_project(tmp_path: Path):
         training_data_paths=[str(tmp_path / "data")],
     )
 
+    config = DefaultV1Recipe.auto_configure(
+        importer.get_config_file_for_auto_config(),
+        importer.get_config(),
+        TrainingType.END_TO_END,
+    )
     graph_config = DefaultV1Recipe().graph_config_for_recipe(
-        importer.get_config(), cli_parameters={}, training_type=TrainingType.END_TO_END
+        config, cli_parameters={}, training_type=TrainingType.END_TO_END
     )
     validator = DefaultV1RecipeValidator(graph_config.train_schema)
 

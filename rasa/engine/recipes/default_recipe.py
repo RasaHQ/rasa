@@ -848,6 +848,10 @@ class DefaultV1Recipe(Recipe):
         Keys that are provided and have a value in the file are kept. Keys that are not
         provided are configured automatically.
 
+        Note that this needs to be called explicitly; ie. we cannot
+        auto-configure automatically from importers because importers are not
+        allowed to access stuff outside shared package.
+
         Args:
             config_file_path: The path to the configuration file.
             config: Configuration in dictionary format.
