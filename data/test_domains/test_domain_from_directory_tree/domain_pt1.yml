@@ -1,0 +1,8 @@
+version: "2.0"
+
+intents:
+  - utter_root
+  - utter_root2
+
+entities:
+  - pandemic

@@ -16,6 +16,52 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.21] - 2022-01-07
+### Bugfixes
+- [#10634](https://github.com/rasahq/rasa/issues/10634): Add `RASA_ENVIRONMENT` header in Kafka only if the environmental variable is set.
+
+### Miscellaneous internal changes
+- [#10643](https://github.com/rasahq/rasa/issues/10643)
+
+
+## [2.8.20] - 2022-01-05
+### Improvements
+- [#10621](https://github.com/rasahq/rasa/issues/10621): Make `rasa data validate` check for duplicated intents, forms, responses 
+  and slots when using domains split between multiple files.
+
+### Bugfixes
+- [#10623](https://github.com/rasahq/rasa/issues/10623): Add an option to specify `--domain` for `rasa test nlu` CLI command.
+
+
+## [2.8.19] - 2021-12-28
+### Bugfixes
+- a small bugfix to domain merging.
+
+
+## [2.8.18] - 2021-12-27
+### Bugfixes
+- [#10137](https://github.com/rasahq/rasa/issues/10137): Fixes Domain loading when domain config uses multiple yml files.
+
+  Previously not all configured attributes were necessarily known
+  when merging Domains, and in the case of ``entities`
+  were not being properly assigned to ``intents``.
+
+
+## [2.8.17] - 2021-12-21
+### Bugfixes
+- [#10741](https://github.com/rasahq/rasa/issues/10741): Fix load method of LexicalSyntacticFeaturizer to make the class inheritable.
+- [#7645](https://github.com/rasahq/rasa/issues/7645): Do not print warning when subintent actions have response.
+
+
+## [2.8.16] - 2021-12-09
+### Improvements
+- [#10413](https://github.com/rasahq/rasa/issues/10413): The value of the `RASA_ENVIRONMENT` environmental variable is sent as a header in messages logged by `KafkaEventBroker`.
+  This value was previously only made available by `PikaEventConsumer`.
+
+### Bugfixes
+- [#10458](https://github.com/rasahq/rasa/issues/10458): Make `action_metadata` json serializable and make it available on the tracker. This is a backport of a fix in 3.0.0.
+
+
 ## [2.8.15] - 2021-11-25
 ### Bugfixes
 - [#10381](https://github.com/rasahq/rasa/issues/10381): Validate regular
