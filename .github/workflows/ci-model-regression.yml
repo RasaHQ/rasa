@@ -39,7 +39,7 @@ jobs:
         repository: ${{ secrets.DATASET_REPOSITORY }}
         token: ${{ secrets.ML_TEST_SA_PAT }}
         path: 'dataset'
-        ref: "albert"
+        ref: "main"
 
     - name: Download gomplate
       run: |-
