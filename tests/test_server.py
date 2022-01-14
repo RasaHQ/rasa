@@ -63,7 +63,12 @@ from rasa.shared.core.events import (
     SessionStarted,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import (
+    INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    PREDICTED_CONFIDENCE_KEY,
+)
 from rasa.model_training import TrainingResult
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import AsyncMock, with_model_id, with_model_ids
@@ -173,7 +178,7 @@ async def test_status(rasa_app: SanicASGITestClient, trained_rasa_model: Text):
     _, response = await rasa_app.get("/status")
     model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
     assert model_file == Path(trained_rasa_model).name
 
 
@@ -183,7 +188,7 @@ async def test_status_nlu_only(
     _, response = await rasa_app_nlu.get("/status")
     model_file = response.json["model_file"]
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
     assert "model_file" in response.json
     assert model_file == Path(trained_nlu_model).name
 
@@ -784,6 +789,44 @@ async def test_evaluate_stories_end_to_end(
         "confidence",
         "policy",
     }
+
+
+async def test_add_message(rasa_app: SanicASGITestClient,):
+
+    conversation_id = "test_add_message_test_id"
+
+    _, response = await rasa_app.get(f"/conversations/{conversation_id}/tracker")
+    previous_num_events = len(response.json["events"])
+
+    unique_text = f"test_add_message_text_{time.time()}"
+    unique_slot_value = f"test_add_message_entity_{time.time()}"
+    data = {
+        "text": unique_text,
+        "sender": "user",  # must be "user"
+        "parse_data": {
+            "text": unique_text,  # this is what is used for "latest_message"
+            "intent": {PREDICTED_CONFIDENCE_KEY: 0.57, INTENT_NAME_KEY: "greet"},
+            "entities": [
+                {
+                    ENTITY_ATTRIBUTE_TYPE: "name",
+                    ENTITY_ATTRIBUTE_VALUE: unique_slot_value,
+                }
+            ],
+        },
+    }
+    _, response = await rasa_app.post(
+        f"/conversations/{conversation_id}/messages",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        json=data,
+    )
+    assert response.json["latest_message"]["text"] == unique_text
+
+    _, response = await rasa_app.get(f"/conversations/{conversation_id}/tracker")
+    updated_events = response.json["events"]
+    assert len(updated_events) == previous_num_events + 2
+    assert updated_events[-2]["text"] == unique_text
+    assert updated_events[-1]["event"] == "slot"
+    assert updated_events[-1]["value"] == unique_slot_value
 
 
 async def test_evaluate_intent(rasa_app: SanicASGITestClient, nlu_data_path: Text):
@@ -1509,9 +1552,9 @@ async def test_load_model(rasa_app: SanicASGITestClient, trained_core_model: Tex
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
 
-    old_fingerprint = response.json["fingerprint"]
+    old_model_id = response.json["model_id"]
 
     data = {"model_file": trained_core_model}
     _, response = await rasa_app.put("/model", json=data)
@@ -1521,9 +1564,9 @@ async def test_load_model(rasa_app: SanicASGITestClient, trained_core_model: Tex
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
 
-    assert old_fingerprint != response.json["fingerprint"]
+    assert old_model_id != response.json["model_id"]
 
 
 async def test_load_model_from_model_server(
@@ -1532,9 +1575,9 @@ async def test_load_model_from_model_server(
     _, response = await rasa_app.get("/status")
 
     assert response.status == HTTPStatus.OK
-    assert "fingerprint" in response.json
+    assert "model_id" in response.json
 
-    old_fingerprint = response.json["fingerprint"]
+    old_model_id = response.json["model_id"]
 
     endpoint = EndpointConfig("https://example.com/model/trained_core_model")
     with open(trained_core_model, "rb") as f:
@@ -1559,9 +1602,9 @@ async def test_load_model_from_model_server(
             _, response = await rasa_app.get("/status")
 
             assert response.status == HTTPStatus.OK
-            assert "fingerprint" in response.json
+            assert "model_id" in response.json
 
-            assert old_fingerprint != response.json["fingerprint"]
+            assert old_model_id != response.json["model_id"]
 
 
 async def test_load_model_invalid_request_body(
