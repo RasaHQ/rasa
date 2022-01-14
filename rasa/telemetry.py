@@ -781,6 +781,7 @@ def track_model_training(
             "num_synonyms": len(nlu_data.entity_synonyms),
             "num_regexes": len(nlu_data.regex_features),
             "is_finetuning": is_finetuning,
+            "recipe": config.get("recipe"),
         },
     )
     start = datetime.now()

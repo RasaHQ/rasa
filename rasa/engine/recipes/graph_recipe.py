@@ -1,6 +1,7 @@
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.shared.data import TrainingType
+from rasa.shared.utils.common import mark_as_experimental_feature
 
 from typing import Dict, Text, Any
 
@@ -18,3 +19,4 @@ class GraphV1Recipe(Recipe):
         is_finetuning: bool = False,
     ) -> GraphModelConfiguration:
         """Converts the default config to graphs (see interface for full docstring)."""
+        mark_as_experimental_feature("graph recipe")
