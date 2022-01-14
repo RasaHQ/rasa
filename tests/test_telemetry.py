@@ -409,7 +409,7 @@ def _create_exception_event_in_file(filename: Text) -> Dict[Text, Any]:
                                 ],
                                 "context_line": "    sys.exit(load_entry_point('rasa', 'console_scripts', 'rasa')())",
                                 "post_context": [],
-                            },
+                            }
                         ]
                     },
                 }

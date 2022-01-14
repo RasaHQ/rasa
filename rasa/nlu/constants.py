@@ -17,10 +17,7 @@ ENTITY_ATTRIBUTE_CONFIDENCE_ROLE = (
 
 EXTRACTOR = "extractor"
 
-PRETRAINED_EXTRACTORS = {
-    "DucklingEntityExtractor",
-    "SpacyEntityExtractor",
-}
+PRETRAINED_EXTRACTORS = {"DucklingEntityExtractor", "SpacyEntityExtractor"}
 
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 

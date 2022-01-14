@@ -418,9 +418,9 @@ class DynamoTrackerStore(TrackerStore):
         except self.client.exceptions.ResourceNotFoundException:
             table = dynamo.create_table(
                 TableName=self.table_name,
-                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"},],
+                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"}],
                 AttributeDefinitions=[
-                    {"AttributeName": "sender_id", "AttributeType": "S"},
+                    {"AttributeName": "sender_id", "AttributeType": "S"}
                 ],
                 ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             )
@@ -443,9 +443,7 @@ class DynamoTrackerStore(TrackerStore):
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
         """Serializes the tracker, returns object with decimal types."""
         d = tracker.as_dialogue().as_dict()
-        d.update(
-            {"sender_id": tracker.sender_id,}
-        )
+        d.update({"sender_id": tracker.sender_id})
         # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
         return core_utils.replace_floats_with_decimals(d)
 
@@ -890,7 +888,7 @@ class SQLTrackerStore(TrackerStore):
 
         if not self.engine.dialect.name == "postgresql":
             rasa.shared.utils.io.raise_warning(
-                "The parameter 'login_db' can only be used with a postgres database.",
+                "The parameter 'login_db' can only be used with a postgres database."
             )
             return
 

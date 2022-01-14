@@ -59,7 +59,7 @@ def test_graph_trainer_returns_model_metadata(
                 uses=PersistableTestComponent,
                 fn="train",
                 constructor_name="create",
-                config={"test_value": test_value,},
+                config={"test_value": test_value},
                 is_target=True,
             ),
             "load": SchemaNode(
@@ -81,7 +81,7 @@ def test_graph_trainer_returns_model_metadata(
                 config={},
                 is_target=True,
                 resource=Resource("train"),
-            ),
+            )
         }
     )
 
@@ -246,21 +246,13 @@ def test_graph_trainer_always_reads_input(
     # The first train should call all the components and cache their outputs.
     mocks = spy_on_all_components(train_schema)
     train_with_schema(train_schema, temp_cache)
-    assert node_call_counts(mocks) == {
-        "read_file": 1,
-        "subtract": 1,
-        "assert_node": 1,
-    }
+    assert node_call_counts(mocks) == {"read_file": 1, "subtract": 1, "assert_node": 1}
 
     # Nothing has changed so this time so no components will run
     # (just input nodes during fingerprint run).
     mocks = spy_on_all_components(train_schema)
     train_with_schema(train_schema, temp_cache)
-    assert node_call_counts(mocks) == {
-        "read_file": 1,
-        "subtract": 0,
-        "assert_node": 0,
-    }
+    assert node_call_counts(mocks) == {"read_file": 1, "subtract": 0, "assert_node": 0}
 
     # When we update the input file, all the nodes will run again and the assert_node
     # will fail.
@@ -302,19 +294,13 @@ def test_graph_trainer_with_non_cacheable_components(
     # The first train should call all the components.
     mocks = spy_on_all_components(train_schema)
     train_with_schema(train_schema, temp_cache)
-    assert node_call_counts(mocks) == {
-        "input": 1,
-        "subtract": 1,
-    }
+    assert node_call_counts(mocks) == {"input": 1, "subtract": 1}
 
     # Nothing has changed but none of the components can cache so all will have to
     # run again.
     mocks = spy_on_all_components(train_schema)
     train_with_schema(train_schema, temp_cache)
-    assert node_call_counts(mocks) == {
-        "input": 1,
-        "subtract": 1,
-    }
+    assert node_call_counts(mocks) == {"input": 1, "subtract": 1}
 
 
 def node_call_counts(mocks: Dict[Text, Mock]) -> Dict[Text, int]:
@@ -345,9 +331,7 @@ def train_with_schema(
             cache = local_cache_creator(path)
 
         graph_trainer = GraphTrainer(
-            model_storage=model_storage,
-            cache=cache,
-            graph_runner_class=DaskGraphRunner,
+            model_storage=model_storage, cache=cache, graph_runner_class=DaskGraphRunner
         )
 
         output_filename = path / "model.tar.gz"
@@ -495,7 +479,7 @@ def test_graph_trainer_train_logging_with_cached_components(
 
 
 def test_resources_fingerprints_are_unique_when_cached(
-    temp_cache: LocalTrainingCache, train_with_schema: Callable,
+    temp_cache: LocalTrainingCache, train_with_schema: Callable
 ):
     train_schema = GraphSchema(
         {
@@ -542,7 +526,7 @@ def test_resources_fingerprints_are_unique_when_cached(
 
 
 def test_resources_fingerprints_remain_after_being_cached(
-    temp_cache: LocalTrainingCache, train_with_schema: Callable,
+    temp_cache: LocalTrainingCache, train_with_schema: Callable
 ):
     train_schema = GraphSchema(
         {
@@ -613,7 +597,7 @@ def test_exception_handling_for_on_before_hook(
     default_execution_context: ExecutionContext,
 ):
     schema_node = SchemaNode(
-        needs={}, uses=ProvideX, fn="provide", constructor_name="create", config={},
+        needs={}, uses=ProvideX, fn="provide", constructor_name="create", config={}
     )
 
     class MyHook(GraphNodeHook):

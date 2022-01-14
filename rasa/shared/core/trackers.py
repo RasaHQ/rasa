@@ -579,7 +579,7 @@ class DialogueStateTracker:
                 break
 
             if isinstance(
-                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization),
+                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization)
             ):
                 del done_events[-1 - offset]
             else:
@@ -640,7 +640,7 @@ class DialogueStateTracker:
         return Dialogue(self.sender_id, list(self.events))
 
     def update(self, event: Event, domain: Optional[Domain] = None) -> None:
-        """Modify the state of the tracker according to an ``Event``. """
+        """Modify the state of the tracker according to an ``Event``."""
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
 

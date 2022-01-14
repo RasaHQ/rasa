@@ -23,10 +23,7 @@ FEATURE_TYPE_SEQUENCE = "sequence"
 VALID_FEATURE_TYPES = [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]
 
 EXTRACTOR = "extractor"
-PRETRAINED_EXTRACTORS = {
-    "DucklingEntityExtractor",
-    "SpacyEntityExtractor",
-}
+PRETRAINED_EXTRACTORS = {"DucklingEntityExtractor", "SpacyEntityExtractor"}
 TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
 ENTITIES = "entities"

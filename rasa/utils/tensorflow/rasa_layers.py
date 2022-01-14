@@ -253,7 +253,7 @@ class ConcatenateSparseDenseFeatures(RasaCustomLayer):
             )
 
     def _prepare_layers_for_sparse_tensors(
-        self, attribute: Text, feature_type: Text, config: Dict[Text, Any],
+        self, attribute: Text, feature_type: Text, config: Dict[Text, Any]
     ) -> None:
         """Sets up sparse tensor pre-processing before combining with dense ones."""
         # For optionally applying dropout to sparse tensors

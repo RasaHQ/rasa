@@ -295,7 +295,7 @@ class Validator:
 
         # Create a list of `StoryConflict` objects
         conflicts = rasa.core.training.story_conflict.find_story_conflicts(
-            trackers, self.domain, max_history,
+            trackers, self.domain, max_history
         )
 
         if not conflicts:

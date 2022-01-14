@@ -40,7 +40,7 @@ def _probabilities_with_action_unlikely_intent_for(
     _original = DefaultPolicyPredictionEnsemble.combine_predictions_from_kwargs
 
     def combine_predictions_from_kwargs(
-        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any
     ) -> PolicyPrediction:
         latest_event = tracker.events[-1]
         if (
@@ -126,9 +126,7 @@ async def test_testing_warns_if_action_unknown(
 
 
 async def test_testing_with_utilizing_retrieval_intents(
-    response_selector_agent: Agent,
-    response_selector_test_stories: Path,
-    tmp_path: Path,
+    response_selector_agent: Agent, response_selector_test_stories: Path, tmp_path: Path
 ):
     result = await rasa.core.test.test(
         stories=response_selector_test_stories,
@@ -522,7 +520,7 @@ async def test_action_unlikely_intent_warning_and_story_error(
     agent = await _train_rule_based_agent(train_file_name, True)
 
     result = await rasa.core.test.test(
-        str(test_file_name), agent, out_directory=str(tmp_path),
+        str(test_file_name), agent, out_directory=str(tmp_path)
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 0
