@@ -10,9 +10,14 @@ def test_shell_help(run: Callable[..., RunResult]):
         # This is required because `argparse` behaves differently on
         # Python 3.9 and above. The difference is the changed formatting of help
         # output for CLI arguments with `nargs="*"
-        cors_lines = """[--cors [CORS ...]] [--enable-api]"""
+        version_dependent = (
+            """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN] [--cors [CORS ...]]
+                  [--enable-api] [--response-timeout RESPONSE_TIMEOUT]"""
+        )
     else:
-        cors_lines = """[--cors [CORS [CORS ...]]]"""
+        version_dependent = """[-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
+                  [--cors [CORS [CORS ...]]] [--enable-api]
+                  [--response-timeout RESPONSE_TIMEOUT]"""
 
     help_text = (
         """usage: rasa shell [-h] [-v] [-vv] [--quiet]
@@ -21,11 +26,7 @@ def test_shell_help(run: Callable[..., RunResult]):
                   [--syslog-address SYSLOG_ADDRESS]
                   [--syslog-port SYSLOG_PORT]
                   [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
-                  [-i INTERFACE] [-p PORT] [-t AUTH_TOKEN]
-                  """
-        + cors_lines
-        + """
-                  [--response-timeout RESPONSE_TIMEOUT]
+                  """+version_dependent+"""
                   [--remote-storage REMOTE_STORAGE]
                   [--ssl-certificate SSL_CERTIFICATE]
                   [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
