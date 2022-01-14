@@ -1076,11 +1076,7 @@ class ActionExtractSlots(Action):
             return [], executed_custom_actions
 
         slot_events = await self._run_custom_action(
-            custom_action,
-            output_channel,
-            nlg,
-            tracker,
-            domain,
+            custom_action, output_channel, nlg, tracker, domain
         )
 
         executed_custom_actions.add(custom_action)
@@ -1240,10 +1236,7 @@ def extract_slot_value_from_predefined_mapping(
     """Extracts slot value if slot has an applicable predefined mapping."""
     should_fill_entity_slot = (
         mapping_type == SlotMappingType.FROM_ENTITY
-        and SlotMapping.entity_is_desired(
-            mapping,
-            tracker,
-        )
+        and SlotMapping.entity_is_desired(mapping, tracker)
     )
 
     should_fill_intent_slot = mapping_type == SlotMappingType.FROM_INTENT

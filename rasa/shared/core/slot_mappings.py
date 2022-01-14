@@ -74,9 +74,7 @@ class SlotMapping:
 
     @staticmethod
     def _get_active_loop_ignored_intents(
-        mapping: Dict[Text, Any],
-        domain: "Domain",
-        active_loop_name: Text,
+        mapping: Dict[Text, Any], domain: "Domain", active_loop_name: Text
     ) -> List[Text]:
         from rasa.shared.core.constants import ACTIVE_LOOP
 
@@ -101,9 +99,7 @@ class SlotMapping:
 
     @staticmethod
     def intent_is_desired(
-        mapping: Dict[Text, Any],
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: "Domain"
     ) -> bool:
         """Checks whether user intent matches slot mapping intent specifications."""
         mapping_intents = SlotMapping.to_list(mapping.get(INTENT, []))
@@ -137,8 +133,7 @@ class SlotMapping:
 
     @staticmethod
     def entity_is_desired(
-        mapping: Dict[Text, Any],
-        tracker: "DialogueStateTracker",
+        mapping: Dict[Text, Any], tracker: "DialogueStateTracker"
     ) -> bool:
         """Checks whether slot should be filled by an entity in the input or not.
 

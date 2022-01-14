@@ -85,9 +85,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         return tracker
 
     def past_states_for_hashing(
-        self,
-        domain: Domain,
-        omit_unset_slots: bool = False,
+        self, domain: Domain, omit_unset_slots: bool = False
     ) -> Deque[FrozenState]:
         """Generates and caches the past states of this tracker based on the history.
 

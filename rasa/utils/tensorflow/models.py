@@ -3,15 +3,7 @@ import numpy as np
 import logging
 import random
 from collections import defaultdict
-from typing import (
-    List,
-    Text,
-    Dict,
-    Tuple,
-    Union,
-    Optional,
-    Any,
-)
+from typing import List, Text, Dict, Tuple, Union, Optional, Any
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
@@ -303,11 +295,8 @@ class RasaModel(TmpKerasModel):
             Model outputs corresponding to the inputs fed.
         """
         outputs = {}
-        (data_generator, _,) = rasa.utils.train_utils.create_data_generators(
-            model_data=model_data,
-            batch_sizes=batch_size,
-            epochs=1,
-            shuffle=False,
+        (data_generator, _) = rasa.utils.train_utils.create_data_generators(
+            model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False
         )
         data_iterator = iter(data_generator)
         while True:
@@ -557,10 +546,7 @@ class TransformerRasaModel(RasaModel):
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
         label_data: RasaModelData,
     ) -> None:
-        super().__init__(
-            name=name,
-            random_seed=config[RANDOM_SEED],
-        )
+        super().__init__(name=name, random_seed=config[RANDOM_SEED])
 
         self.config = config
         self.data_signature = data_signature
@@ -748,9 +734,7 @@ class TransformerRasaModel(RasaModel):
 
     def _prepare_embed_layers(self, name: Text, prefix: Text = "embed") -> None:
         self._tf_layers[f"{prefix}.{name}"] = layers.Embed(
-            self.config[EMBEDDING_DIMENSION],
-            self.config[REGULARIZATION_CONSTANT],
-            name,
+            self.config[EMBEDDING_DIMENSION], self.config[REGULARIZATION_CONSTANT], name
         )
 
     def _prepare_ffnn_layer(
@@ -769,10 +753,7 @@ class TransformerRasaModel(RasaModel):
         )
 
     def _prepare_dot_product_loss(
-        self,
-        name: Text,
-        scale_loss: bool,
-        prefix: Text = "loss",
+        self, name: Text, scale_loss: bool, prefix: Text = "loss"
     ) -> None:
         self._tf_layers[f"{prefix}.{name}"] = self.dot_product_loss_layer(
             self.config[NUM_NEG],
@@ -847,9 +828,7 @@ class TransformerRasaModel(RasaModel):
         return tf.zeros([batch_dim], dtype=tf.int32)
 
     def _get_sentence_feature_lengths(
-        self,
-        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
-        key: Text,
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text
     ) -> tf.Tensor:
         """Fetches the sequence lengths of sentence-level features per input example.
 

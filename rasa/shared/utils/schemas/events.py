@@ -18,10 +18,7 @@ ENTITIES_SCHEMA = {
 
 INTENT = {
     "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "confidence": {"type": "number"},
-    },
+    "properties": {"name": {"type": "string"}, "confidence": {"type": "number"}},
 }
 
 RESPONSE_SCHEMA = {
@@ -79,14 +76,14 @@ USER_UTTERED = {
                                         "response": RESPONSE_SCHEMA,
                                         "ranking": RANKING_SCHEMA,
                                     },
-                                },
-                            },
+                                }
+                            }
                         },
                     ],
                 },
             },
         },
-    },
+    }
 }
 
 ACTION_EXECUTED = {
@@ -101,11 +98,7 @@ ACTION_EXECUTED = {
 }
 
 SLOT_SET = {
-    "properties": {
-        "event": {"const": "slot"},
-        "name": {"type": "string"},
-        "value": {},
-    },
+    "properties": {"event": {"const": "slot"}, "name": {"type": "string"}, "value": {}},
     "required": ["name", "value"],
 }
 

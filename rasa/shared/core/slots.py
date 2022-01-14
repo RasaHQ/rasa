@@ -182,11 +182,7 @@ class FloatSlot(Slot):
             UserWarning, if initial_value is outside the min-max range.
         """
         super().__init__(
-            name,
-            mappings,
-            initial_value,
-            value_reset_delay,
-            influence_conversation,
+            name, mappings, initial_value, value_reset_delay, influence_conversation
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -313,11 +309,7 @@ class CategoricalSlot(Slot):
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
-            name,
-            mappings,
-            initial_value,
-            value_reset_delay,
-            influence_conversation,
+            name, mappings, initial_value, value_reset_delay, influence_conversation
         )
         if values and None in values:
             rasa.shared.utils.io.raise_warning(
@@ -429,11 +421,7 @@ class AnySlot(Slot):
             )
 
         super().__init__(
-            name,
-            mappings,
-            initial_value,
-            value_reset_delay,
-            influence_conversation,
+            name, mappings, initial_value, value_reset_delay, influence_conversation
         )
 
     def __eq__(self, other: Any) -> bool:

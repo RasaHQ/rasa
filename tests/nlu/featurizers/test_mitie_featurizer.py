@@ -43,10 +43,7 @@ def create(
 ) -> Callable[[Dict[Text, Any]], MitieFeaturizer]:
     def inner(config: Dict[Text, Any]):
         return MitieFeaturizer.create(
-            config={
-                **MitieFeaturizer.get_default_config(),
-                **config,
-            },
+            config={**MitieFeaturizer.get_default_config(), **config},
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=resource,

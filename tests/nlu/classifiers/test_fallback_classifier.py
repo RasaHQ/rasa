@@ -185,8 +185,7 @@ def test_not_predict_fallback_intent(
 
 
 def test_defaults(
-    default_model_storage: ModelStorage,
-    default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     classifier = create_fallback_classifier(
         {}, default_model_storage, default_execution_context

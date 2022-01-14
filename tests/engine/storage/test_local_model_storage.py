@@ -83,10 +83,7 @@ def test_read_from_rasa2_resource(tmp_path_factory: TempPathFactory):
         storage.metadata_from_archive(model_archive_path=model_zips / resource_name)
 
 
-def test_create_model_package(
-    tmp_path_factory: TempPathFactory,
-    domain: Domain,
-):
+def test_create_model_package(tmp_path_factory: TempPathFactory, domain: Domain):
     train_model_storage = LocalModelStorage(
         tmp_path_factory.mktemp("train model storage")
     )
@@ -119,7 +116,7 @@ def test_create_model_package(
                 fn="run",
                 constructor_name="load",
                 config={"some_config": 123455, "some more config": [{"nested": "hi"}]},
-            ),
+            )
         }
     )
 
@@ -147,10 +144,9 @@ def test_create_model_package(
 
     just_packaged_metadata = LocalModelStorage.metadata_from_archive(archive_path)
 
-    (
-        load_model_storage,
-        packaged_metadata,
-    ) = LocalModelStorage.from_model_archive(load_model_storage_dir, archive_path)
+    (load_model_storage, packaged_metadata) = LocalModelStorage.from_model_archive(
+        load_model_storage_dir, archive_path
+    )
 
     assert just_packaged_metadata.trained_at == packaged_metadata.trained_at
 
@@ -168,9 +164,7 @@ def test_create_model_package(
 
 
 def test_read_unsupported_model(
-    monkeypatch: MonkeyPatch,
-    tmp_path_factory: TempPathFactory,
-    domain: Domain,
+    monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory, domain: Domain
 ):
     train_model_storage = LocalModelStorage(
         tmp_path_factory.mktemp("train model storage")

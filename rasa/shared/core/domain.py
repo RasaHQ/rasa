@@ -31,11 +31,7 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
 )
 import rasa.shared.core.constants
-from rasa.shared.core.constants import (
-    SlotMappingType,
-    MAPPING_TYPE,
-    MAPPING_CONDITIONS,
-)
+from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE, MAPPING_CONDITIONS
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -233,8 +229,7 @@ class Domain:
             session_expiration_time_min = DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 
         carry_over_slots = session_config.get(
-            CARRY_OVER_SLOTS_KEY,
-            DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         )
 
         return SessionConfig(session_expiration_time_min, carry_over_slots)
@@ -242,7 +237,6 @@ class Domain:
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
-
         domain = Domain.empty()
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
@@ -1013,8 +1007,7 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker",
-        omit_unset_slots: bool = False,
+        tracker: "DialogueStateTracker", omit_unset_slots: bool = False
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
         """Sets all set slots with the featurization of the stored value.
 
@@ -1058,16 +1051,14 @@ class Domain:
         return tracker.latest_action
 
     @staticmethod
-    def _get_active_loop_sub_state(
-        tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Text]:
+    def _get_active_loop_sub_state(tracker: "DialogueStateTracker") -> Dict[Text, Text]:
         """Turn tracker's active loop into a state name.
+
         Args:
             tracker: dialog state tracker containing the dialog so far
         Returns:
             a dictionary mapping "name" to active loop name if present
         """
-
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         active_loop: Optional[Text] = tracker.active_loop.get(
@@ -1087,9 +1078,7 @@ class Domain:
         }
 
     def get_active_state(
-        self,
-        tracker: "DialogueStateTracker",
-        omit_unset_slots: bool = False,
+        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False
     ) -> State:
         """Given a dialogue tracker, makes a representation of current dialogue state.
 
@@ -1116,8 +1105,7 @@ class Domain:
 
     @staticmethod
     def _remove_rule_only_features(
-        state: State,
-        rule_only_data: Optional[Dict[Text, Any]],
+        state: State, rule_only_data: Optional[Dict[Text, Any]]
     ) -> None:
         if not rule_only_data:
             return

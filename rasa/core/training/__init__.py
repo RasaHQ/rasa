@@ -8,9 +8,7 @@ if TYPE_CHECKING:
 
 
 def extract_story_graph(
-    resource_name: Text,
-    domain: "Domain",
-    exclusion_percentage: Optional[int] = None,
+    resource_name: Text, domain: "Domain", exclusion_percentage: Optional[int] = None
 ) -> "StoryGraph":
     """Loads training stories / rules from file or directory.
 
@@ -27,9 +25,7 @@ def extract_story_graph(
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = core_loading.load_data_from_resource(
-        resource_name,
-        domain,
-        exclusion_percentage=exclusion_percentage,
+        resource_name, domain, exclusion_percentage=exclusion_percentage
     )
     return StoryGraph(story_steps)
 

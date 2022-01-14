@@ -39,18 +39,8 @@ from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturiz
             np.array([[0.0, 0.0, 0.0, 0.0]]),
         ),
         # "max" - special cases to be aware of
-        (
-            "max",
-            np.array([[-1.0], [0.0]]),
-            False,
-            np.array([[0.0]]),
-        ),
-        (
-            "max",
-            np.array([[-1.0], [0.0]]),
-            True,
-            np.array([[-1.0]]),
-        ),
+        ("max", np.array([[-1.0], [0.0]]), False, np.array([[0.0]])),
+        ("max", np.array([[-1.0], [0.0]]), True, np.array([[-1.0]])),
     ],
 )
 def test_calculate_cls_vector(pooling, features, only_non_zero_vectors, expected):

@@ -1,15 +1,7 @@
 import tempfile
 import time
 from pathlib import Path
-from typing import (
-    Text,
-    NamedTuple,
-    Optional,
-    List,
-    Union,
-    Dict,
-    Any,
-)
+from typing import Text, NamedTuple, Optional, List, Union, Dict, Any
 
 import randomname
 
@@ -164,10 +156,7 @@ def train(
         )
         training_type = TrainingType.CORE
 
-    with telemetry.track_model_training(
-        file_importer,
-        model_type="rasa",
-    ):
+    with telemetry.track_model_training(file_importer, model_type="rasa"):
         return _train_graph(
             file_importer,
             training_type=training_type,
@@ -233,8 +222,7 @@ def _train_graph(
         full_model_path = Path(output_path, model_name)
 
         with telemetry.track_model_training(
-            file_importer,
-            model_type=training_type.model_type,
+            file_importer, model_type=training_type.model_type
         ):
             trainer.train(
                 model_configuration,

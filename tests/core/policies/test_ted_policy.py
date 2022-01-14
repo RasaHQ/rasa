@@ -104,9 +104,7 @@ def test_diagnostics(
     precomputations = None
     policy.train([GREET_RULE], domain, precomputations)
     prediction = policy.predict_action_probabilities(
-        GREET_RULE,
-        domain,
-        precomputations,
+        GREET_RULE, domain, precomputations
     )
 
     assert prediction.diagnostic_data
@@ -228,10 +226,7 @@ class TestTEDPolicy(PolicyTestCollection):
             "Only values either equal to -1 or greater"
             " than 0 are allowed for this parameter."
         )
-        with pytest.raises(
-            InvalidConfigException,
-            match=match_string,
-        ):
+        with pytest.raises(InvalidConfigException, match=match_string):
             train_core(
                 domain="data/test_domains/default.yml",
                 stories="data/test_yaml_stories/stories_defaultdomain.yml",
@@ -292,9 +287,7 @@ class TestTEDPolicy(PolicyTestCollection):
     ):
         precomputations = None
         prediction = trained_policy.predict_action_probabilities(
-            tracker,
-            default_domain,
-            precomputations,
+            tracker, default_domain, precomputations
         )
 
         # first check the output is what we expect
@@ -336,10 +329,7 @@ class TestTEDPolicy(PolicyTestCollection):
         assert assembled_label_data.num_examples == default_domain.num_actions
         assert list(
             assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"].keys()
-        ) == [
-            MASK,
-            SENTENCE,
-        ]
+        ) == [MASK, SENTENCE]
         assert list(assembled_label_data_signature[LABEL].keys()) == [IDS]
         assert (
             assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"][SENTENCE][0].units
@@ -354,9 +344,7 @@ class TestTEDPolicy(PolicyTestCollection):
         )
         precomputations = None
         training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
-            training_trackers,
-            default_domain,
-            precomputations,
+            training_trackers, default_domain, precomputations
         )
 
         _, all_labels = trained_policy._create_label_data(
@@ -509,22 +497,14 @@ class TestTEDPolicy(PolicyTestCollection):
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(
-                        entities=[
-                            {"entity": "name", "value": "Peter"},
-                        ]
-                    ),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                     ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("utter_greet"),
                 ],
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(
-                        entities=[
-                            {"entity": "name", "value": "Peter"},
-                        ]
-                    ),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                     ActionExecuted("utter_greet"),
                 ],
             ),
@@ -566,14 +546,10 @@ class TestTEDPolicy(PolicyTestCollection):
             "test 2", evts=tracker_events_without_action
         )
         prediction_with_action = trained_policy.predict_action_probabilities(
-            tracker_with_action,
-            default_domain,
-            precomputations,
+            tracker_with_action, default_domain, precomputations
         )
         prediction_without_action = trained_policy.predict_action_probabilities(
-            tracker_without_action,
-            default_domain,
-            precomputations,
+            tracker_without_action, default_domain, precomputations
         )
 
         # If the weights didn't change then both trackers
@@ -647,9 +623,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         default_domain: Domain,
     ):
         policy_prediction = trained_policy.predict_action_probabilities(
-            tracker,
-            default_domain,
-            precomputations=None,
+            tracker, default_domain, precomputations=None
         )
         assert sum(policy_prediction.probabilities) != pytest.approx(1)
 
@@ -658,9 +632,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker,
-            default_domain,
-            precomputations=None,
+            tracker, default_domain, precomputations=None
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
@@ -704,9 +676,7 @@ class TestTEDPolicyNormalization(TestTEDPolicy):
     ):
         precomputations = None
         predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker,
-            default_domain,
-            precomputations,
+            tracker, default_domain, precomputations
         ).probabilities
         assert all([confidence >= 0 for confidence in predicted_probabilities])
         assert sum([confidence > 0 for confidence in predicted_probabilities]) == 4
@@ -718,11 +688,7 @@ class TestTEDPolicyLowRankingLength(TestTEDPolicy):
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            RANKING_LENGTH: 3,
-            **config_override,
-        }
+        return {**TEDPolicy.get_default_config(), RANKING_LENGTH: 3, **config_override}
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 3
@@ -733,11 +699,7 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicy):
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            RANKING_LENGTH: 11,
-            **config_override,
-        }
+        return {**TEDPolicy.get_default_config(), RANKING_LENGTH: 11, **config_override}
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 11
@@ -748,10 +710,7 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            **config_override,
-        }
+        return {**TEDPolicy.get_default_config(), **config_override}
 
     def create_policy(
         self,

@@ -33,11 +33,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.core.policies.policy import (
-    PolicyPrediction,
-    Policy,
-    SupportedData,
-)
+from rasa.core.policies.policy import PolicyPrediction, Policy, SupportedData
 from rasa.core.constants import (
     DIALOGUE,
     POLICY_MAX_HISTORY,
@@ -360,11 +356,7 @@ class TEDPolicy(Policy):
     ) -> None:
         """Declares instance variables with default values."""
         super().__init__(
-            config,
-            model_storage,
-            resource,
-            execution_context,
-            featurizer=featurizer,
+            config, model_storage, resource, execution_context, featurizer=featurizer
         )
 
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
@@ -706,9 +698,7 @@ class TEDPolicy(Policy):
         )
 
         model_data, label_ids = self._prepare_for_training(
-            training_trackers,
-            domain,
-            precomputations,
+            training_trackers, domain, precomputations
         )
 
         if model_data.is_empty():
@@ -944,16 +934,13 @@ class TEDPolicy(Policy):
             model_path / f"{model_filename}.meta.pkl", self.config
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.data_example.pkl",
-            self.data_example,
+            model_path / f"{model_filename}.data_example.pkl", self.data_example
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.fake_features.pkl",
-            self.fake_features,
+            model_path / f"{model_filename}.fake_features.pkl", self.fake_features
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.label_data.pkl",
-            dict(self._label_data.data),
+            model_path / f"{model_filename}.label_data.pkl", dict(self._label_data.data)
         )
         entity_tag_specs = (
             [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
@@ -961,8 +948,7 @@ class TEDPolicy(Policy):
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_path / f"{model_filename}.entity_tag_specs.json",
-            entity_tag_specs,
+            model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs
         )
 
     @classmethod
@@ -1029,23 +1015,14 @@ class TEDPolicy(Policy):
         try:
             with model_storage.read_from(resource) as model_path:
                 return cls._load(
-                    model_path,
-                    config,
-                    model_storage,
-                    resource,
-                    execution_context,
+                    model_path, config, model_storage, resource, execution_context
                 )
         except ValueError:
             logger.debug(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-            return cls(
-                config,
-                model_storage,
-                resource,
-                execution_context,
-            )
+            return cls(config, model_storage, resource, execution_context)
 
     @classmethod
     def _load(
@@ -1651,8 +1628,7 @@ class TED(TransformerRasaModel):
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = tf.expand_dims(
                 self._last_token(
-                    attribute_features,
-                    combined_sentence_sequence_feature_lengths,
+                    attribute_features, combined_sentence_sequence_feature_lengths
                 ),
                 axis=1,
             )

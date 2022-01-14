@@ -57,11 +57,7 @@ class MemoryLeakTest(abc.ABC):
         raise NotImplementedError
 
     @pytest.mark.timeout(720, func_only=True)
-    def test_for_memory_leak(
-        self,
-        name_for_dumped_files: Text,
-        tmp_path: Path,
-    ) -> None:
+    def test_for_memory_leak(self, name_for_dumped_files: Text, tmp_path: Path) -> None:
         # Run as separate process to avoid other things affecting the memory usage.
         # Unfortunately `memory-profiler` doesn't work properly with
         # `multiprocessing.Process` as it can't handle the process exit
@@ -85,10 +81,7 @@ class MemoryLeakTest(abc.ABC):
             time.sleep(0.01)
 
         results = memory_profiler.memory_usage(
-            process,
-            interval=PROFILING_INTERVAL,
-            include_children=True,
-            timestamps=True,
+            process, interval=PROFILING_INTERVAL, include_children=True, timestamps=True
         )
 
         # `memory-profiler` sometimes adds `None` values at the end which we don't need

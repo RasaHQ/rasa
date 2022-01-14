@@ -112,7 +112,7 @@ def test_migrate_domain_format_with_required_slots(
                     "type": "from_text",
                     "intent": "inform",
                     "conditions": [
-                        {"active_loop": "booking_form", "requested_slot": "email"},
+                        {"active_loop": "booking_form", "requested_slot": "email"}
                     ],
                 }
             ],
@@ -215,7 +215,7 @@ def test_migrate_domain_form_without_required_slots(
                     "type": "from_text",
                     "intent": "inform",
                     "conditions": [
-                        {"active_loop": "booking_form", "requested_slot": "email"},
+                        {"active_loop": "booking_form", "requested_slot": "email"}
                     ],
                 }
             ],
@@ -286,11 +286,11 @@ def test_migrate_domain_with_diff_slot_types(
                         {
                             "active_loop": "reservation_form",
                             "requested_slot": "outdoor_seating",
-                        },
+                        }
                     ],
                 }
             ],
-        },
+        }
     }
     assert migrated_slots == expected_slots
 
@@ -583,7 +583,7 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
                 "type": "from_text",
                 "intent": "greet",
                 "conditions": [
-                    {"active_loop": "form_one", "requested_slot": "location"},
+                    {"active_loop": "form_one", "requested_slot": "location"}
                 ],
             },
             {
@@ -642,9 +642,7 @@ def test_migrate_domain_dir_with_out_path_as_file(tmp_path: Path):
     assert domain
 
 
-def test_migrate_domain_multiple_files_with_duplicate_slots(
-    tmp_path: Path,
-):
+def test_migrate_domain_multiple_files_with_duplicate_slots(tmp_path: Path):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
 
@@ -835,9 +833,7 @@ def test_migrate_domain_raises_for_non_domain_files(tmp_path: Path):
         rasa.core.migrate.migrate_domain_format(domain_dir, domain_dir)
 
 
-def test_migration_cleanup(
-    tmp_path: Path,
-):
+def test_migration_cleanup(tmp_path: Path):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
     migrated_domain_dir = tmp_path / "domain2"

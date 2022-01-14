@@ -102,7 +102,7 @@ async def test_agent_train(default_agent: Agent):
                     }
                 ],
             },
-        ),
+        )
     ],
 )
 async def test_agent_parse_message(
@@ -237,10 +237,7 @@ async def test_agent_handle_message_full_model(default_agent: Agent):
             ActionExecuted(action_name="action_session_start"),
             SessionStarted(),
             ActionExecuted(action_name="action_listen"),
-            UserUttered(
-                text="hello",
-                intent={"name": "greet"},
-            ),
+            UserUttered(text="hello", intent={"name": "greet"}),
             DefinePrevUserUtteredFeaturization(False),
             ActionExecuted(action_name="utter_greet"),
             BotUttered(
@@ -276,10 +273,7 @@ async def test_agent_handle_message_only_nlu(trained_nlu_model: Text):
             ActionExecuted(action_name="action_session_start"),
             SessionStarted(),
             ActionExecuted(action_name="action_listen"),
-            UserUttered(
-                text="hello",
-                intent={"name": "greet"},
-            ),
+            UserUttered(text="hello", intent={"name": "greet"}),
         ],
         model_id,
     )
@@ -300,10 +294,7 @@ async def test_agent_handle_message_only_core(trained_core_model: Text):
             ActionExecuted(action_name="action_session_start"),
             SessionStarted(),
             ActionExecuted(action_name="action_listen"),
-            UserUttered(
-                text="/greet",
-                intent={"name": "greet"},
-            ),
+            UserUttered(text="/greet", intent={"name": "greet"}),
             DefinePrevUserUtteredFeaturization(False),
             ActionExecuted(action_name="utter_greet"),
             BotUttered(

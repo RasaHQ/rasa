@@ -1213,7 +1213,7 @@ def test_featurized_entities_ordered_consistently():
                     "type": "float",
                     "mappings": [{"type": "from_intent", "value": 5}],
                 }
-            },
+            }
         },
         {
             KEY_SLOTS: {
@@ -1302,27 +1302,20 @@ def test_form_invalid_required_slots_raises():
             KEY_SLOTS: {
                 "my_slot": {
                     "type": "text",
-                    "mappings": [
-                        {"type": "from_entity", "intent": "greet"},
-                    ],
+                    "mappings": [{"type": "from_entity", "intent": "greet"}],
                 }
+            }
+        },
+        {
+            KEY_SLOTS: {
+                "my_slot": {"type": "text", "mappings": [{"type": "from_intent"}]}
             }
         },
         {
             KEY_SLOTS: {
                 "my_slot": {
                     "type": "text",
-                    "mappings": [{"type": "from_intent"}],
-                }
-            }
-        },
-        {
-            KEY_SLOTS: {
-                "my_slot": {
-                    "type": "text",
-                    "mappings": [
-                        {"type": "from_intent", "value": None},
-                    ],
+                    "mappings": [{"type": "from_intent", "value": None}],
                 }
             }
         },
@@ -1338,9 +1331,7 @@ def test_form_invalid_required_slots_raises():
             KEY_SLOTS: {
                 "my_slot": {
                     "type": "text",
-                    "mappings": [
-                        {"type": "from_trigger_intent", "value": None},
-                    ],
+                    "mappings": [{"type": "from_trigger_intent", "value": None}],
                 }
             }
         },
@@ -1575,7 +1566,7 @@ def test_ignored_intents_slot_mappings_invalid_domain():
                     }
                 ],
             }
-        },
+        }
     }
     with pytest.raises(InvalidDomain):
         Domain.from_dict(domain_as_dict)

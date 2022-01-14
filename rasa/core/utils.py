@@ -3,15 +3,7 @@ import logging
 import os
 from decimal import Decimal
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Optional,
-    Set,
-    Text,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, Optional, Set, Text, Tuple, Union
 
 import numpy as np
 
@@ -54,8 +46,7 @@ def configure_file_logging(
         )
         socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
         syslog_handler = logging.handlers.SysLogHandler(
-            address=(syslog_address, syslog_port),
-            socktype=socktype,
+            address=(syslog_address, syslog_port), socktype=socktype
         )
         syslog_handler.setLevel(logger_obj.level)
         syslog_handler.setFormatter(formatter)

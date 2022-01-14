@@ -13,9 +13,7 @@ def training_data_from_paths(paths: Iterable[Text], language: Text) -> TrainingD
 
 
 def story_graph_from_paths(
-    files: List[Text],
-    domain: Domain,
-    exclusion_percentage: Optional[int] = None,
+    files: List[Text], domain: Domain, exclusion_percentage: Optional[int] = None
 ) -> StoryGraph:
     """Returns the `StoryGraph` from paths."""
     from rasa.shared.core.training_data import loading

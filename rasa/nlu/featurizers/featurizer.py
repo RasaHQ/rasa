@@ -59,12 +59,7 @@ class Featurizer(Generic[FeatureType], ABC):
             (FEATURE_TYPE_SENTENCE, sentence),
         ]:
             if features is not None:
-                wrapped_feature = Features(
-                    features,
-                    type,
-                    attribute,
-                    self._identifier,
-                )
+                wrapped_feature = Features(features, type, attribute, self._identifier)
                 message.add_features(wrapped_feature)
 
     @staticmethod

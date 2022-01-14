@@ -256,9 +256,7 @@ def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) ->
 
 
 def _replace_edge_labels_with_nodes(
-    graph: "networkx.MultiDiGraph",
-    next_id: int,
-    nlu_training_data: "TrainingData",
+    graph: "networkx.MultiDiGraph", next_id: int, nlu_training_data: "TrainingData"
 ) -> None:
     """Replaces edge labels with nodes.
 

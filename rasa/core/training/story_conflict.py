@@ -170,10 +170,7 @@ def find_story_conflicts(
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = _build_conflicts_from_states(
-        trackers,
-        domain,
-        max_history,
-        conflicting_state_action_mapping,
+        trackers, domain, max_history, conflicting_state_action_mapping
     )
 
     return conflicts
@@ -269,8 +266,7 @@ def _build_conflicts_from_states(
                 conflicts[hashed_state] = StoryConflict(element.sliced_states)
 
             conflicts[hashed_state].add_conflicting_action(
-                action=str(element.event),
-                story_name=element.tracker.sender_id,
+                action=str(element.event), story_name=element.tracker.sender_id
             )
 
     # Return list of conflicts that arise from unpredictable actions

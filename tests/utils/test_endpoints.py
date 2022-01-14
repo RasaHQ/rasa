@@ -99,18 +99,12 @@ async def test_endpoint_config_with_cafile(tmp_path: Path):
 
     with aioresponses() as mocked:
         endpoint = endpoint_utils.EndpointConfig(
-            "https://example.com/",
-            cafile=str(cafile),
+            "https://example.com/", cafile=str(cafile)
         )
 
-        mocked.post(
-            "https://example.com/",
-            status=200,
-        )
+        mocked.post("https://example.com/", status=200)
 
-        await endpoint.request(
-            "post",
-        )
+        await endpoint.request("post")
 
         request = latest_request(mocked, "post", "https://example.com/")[-1]
 
@@ -122,15 +116,10 @@ async def test_endpoint_config_with_cafile(tmp_path: Path):
 async def test_endpoint_config_with_non_existent_cafile(tmp_path: Path):
     cafile = "data/test_endpoints/no_file.pem"
 
-    endpoint = endpoint_utils.EndpointConfig(
-        "https://example.com/",
-        cafile=str(cafile),
-    )
+    endpoint = endpoint_utils.EndpointConfig("https://example.com/", cafile=str(cafile))
 
     with pytest.raises(FileNotFoundException):
-        await endpoint.request(
-            "post",
-        )
+        await endpoint.request("post")
 
 
 def test_endpoint_config_default_token_name():
@@ -167,9 +156,7 @@ async def test_request_non_json_response():
 
 @pytest.mark.parametrize(
     "filename, endpoint_type",
-    [
-        ("data/test_endpoints/example_endpoints.yml", "tracker_store"),
-    ],
+    [("data/test_endpoints/example_endpoints.yml", "tracker_store")],
 )
 def test_read_endpoint_config(filename: Text, endpoint_type: Text):
     conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)

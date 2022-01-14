@@ -22,8 +22,7 @@ def training_data(nlu_as_json_path: Text):
 
 @pytest.fixture()
 def default_keyword_intent_classifier(
-    default_model_storage: ModelStorage,
-    default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     return KeywordIntentClassifier.create(
         KeywordIntentClassifier.get_default_config(),
@@ -43,18 +42,12 @@ def test_persist_and_load(
     default_execution_context: ExecutionContext,
 ):
     classifier = KeywordIntentClassifier.create(
-        config,
-        default_model_storage,
-        Resource("keyword"),
-        default_execution_context,
+        config, default_model_storage, Resource("keyword"), default_execution_context
     )
     classifier.train(training_data)
 
     loaded_classifier = KeywordIntentClassifier.load(
-        config,
-        default_model_storage,
-        Resource("keyword"),
-        default_execution_context,
+        config, default_model_storage, Resource("keyword"), default_execution_context
     )
 
     predicted = copy.copy(training_data)
@@ -92,9 +85,7 @@ def test_classification(
         assert m.get("intent").get("name", "NOT_CLASSIFIED") == intent
 
 
-def test_valid_data(
-    default_keyword_intent_classifier: KeywordIntentClassifier,
-):
+def test_valid_data(default_keyword_intent_classifier: KeywordIntentClassifier):
     json_data = {
         "rasa_nlu_data": {
             "common_examples": [
@@ -115,9 +106,7 @@ def test_valid_data(
 
 
 @pytest.mark.filterwarnings("ignore:Keyword.* of keywords:UserWarning")
-def test_identical_data(
-    default_keyword_intent_classifier: KeywordIntentClassifier,
-):
+def test_identical_data(default_keyword_intent_classifier: KeywordIntentClassifier):
     json_data = {
         "rasa_nlu_data": {
             "common_examples": [
@@ -139,9 +128,7 @@ def test_identical_data(
 
 
 @pytest.mark.filterwarnings("ignore:Keyword.* of keywords:UserWarning")
-def test_ambiguous_data(
-    default_keyword_intent_classifier: KeywordIntentClassifier,
-):
+def test_ambiguous_data(default_keyword_intent_classifier: KeywordIntentClassifier):
     json_data = {
         "rasa_nlu_data": {
             "common_examples": [

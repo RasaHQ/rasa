@@ -4,15 +4,11 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training import fingerprinting
 from rasa.engine.training.components import PrecomputedValueProvider
 from rasa.engine.training.hooks import TrainingHook
-from tests.engine.graph_components_test_classes import (
-    CacheableComponent,
-    CacheableText,
-)
+from tests.engine.graph_components_test_classes import CacheableComponent, CacheableText
 
 
 def test_training_hook_saves_to_cache(
-    default_model_storage: ModelStorage,
-    temp_cache: TrainingCache,
+    default_model_storage: ModelStorage, temp_cache: TrainingCache
 ):
     # We need an execution context so the hook can determine the class of the graph
     # component
@@ -72,8 +68,7 @@ def test_training_hook_saves_to_cache(
 
 
 def test_training_hook_does_not_cache_cached_component(
-    default_model_storage: ModelStorage,
-    temp_cache: TrainingCache,
+    default_model_storage: ModelStorage, temp_cache: TrainingCache
 ):
     # We need an execution context so the hook can determine the class of the graph
     # component

@@ -223,9 +223,7 @@ def test_compute_default_label_features():
     ],
 )
 def test_check_labels_features_exist(
-    messages: List[Message],
-    expected: bool,
-    create_diet: Callable[..., DIETClassifier],
+    messages: List[Message], expected: bool, create_diet: Callable[..., DIETClassifier]
 ):
     attribute = TEXT
     classifier = create_diet({})
@@ -244,7 +242,7 @@ def test_check_labels_features_exist(
                         ENTITIES: [
                             {"start": 0, "end": 4, "value": "test", "entity": "test"}
                         ],
-                    },
+                    }
                 ),
                 Message(
                     data={
@@ -253,19 +251,15 @@ def test_check_labels_features_exist(
                         ENTITIES: [
                             {"start": 0, "end": 4, "value": "test", "entity": "test"}
                         ],
-                    },
+                    }
                 ),
             ],
             True,
         ),
         (
             [
-                Message(
-                    data={TEXT: "test a", INTENT: "intent a"},
-                ),
-                Message(
-                    data={TEXT: "test b", INTENT: "intent b"},
-                ),
+                Message(data={TEXT: "test a", INTENT: "intent a"}),
+                Message(data={TEXT: "test b", INTENT: "intent b"}),
             ],
             False,
         ),
@@ -347,11 +341,7 @@ async def test_train_persist_load_with_only_intent_classification(
     create_diet: Callable[..., DIETClassifier],
 ):
     create_train_load_and_process_diet(
-        {
-            ENTITY_RECOGNITION: False,
-            INTENT_CLASSIFICATION: True,
-            EPOCHS: 1,
-        },
+        {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1}
     )
     create_diet({MASKED_LM: True, EPOCHS: 1}, load=True, finetune=True)
 
@@ -460,16 +450,16 @@ async def test_set_random_seed(
     """test if train result is the same for two runs of tf embedding"""
 
     parsed_message1 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
     )
 
     parsed_message2 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
     )
 
     # Different random seed
     parsed_message3 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1},
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1}
     )
 
     assert (
@@ -529,7 +519,7 @@ async def test_train_model_checkpointing(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
     create_train_load_and_process_diet(
-        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True},
+        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True}
     )
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
@@ -719,9 +709,7 @@ async def test_adjusting_layers_incremental_training(
     ]
     classifier = create_diet({EPOCHS: 1})
     processed_message = train_load_and_process_diet(
-        classifier,
-        pipeline=pipeline,
-        training_data=iter1_data_path,
+        classifier, pipeline=pipeline, training_data=iter1_data_path
     )
 
     old_data_signature = classifier.model.data_signature
@@ -751,9 +739,7 @@ async def test_adjusting_layers_incremental_training(
     finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
     assert finetune_classifier.finetune_mode
     processed_message_finetuned = train_load_and_process_diet(
-        finetune_classifier,
-        pipeline=pipeline,
-        training_data=iter2_data_path,
+        finetune_classifier, pipeline=pipeline, training_data=iter2_data_path
     )
 
     new_sparse_feature_sizes = processed_message_finetuned.get_sparse_feature_sizes(
@@ -869,11 +855,7 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
 
     classifier = create_diet({EPOCHS: 1})
     assert not classifier.finetune_mode
-    train_load_and_process_diet(
-        classifier,
-        pipeline=pipeline,
-        training_data=iter1_path,
-    )
+    train_load_and_process_diet(classifier, pipeline=pipeline, training_data=iter1_path)
 
     finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
     assert finetune_classifier.finetune_mode
@@ -881,14 +863,10 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     if should_raise_exception:
         with pytest.raises(Exception) as exec_info:
             train_load_and_process_diet(
-                finetune_classifier,
-                pipeline=pipeline,
-                training_data=iter2_path,
+                finetune_classifier, pipeline=pipeline, training_data=iter2_path
             )
         assert "Sparse feature sizes have decreased" in str(exec_info.value)
     else:
         train_load_and_process_diet(
-            finetune_classifier,
-            pipeline=pipeline,
-            training_data=iter2_path,
+            finetune_classifier, pipeline=pipeline, training_data=iter2_path
         )

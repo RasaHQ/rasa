@@ -323,8 +323,7 @@ def create_data_generators(
     validation_data_generator = None
     if eval_num_examples > 0:
         model_data, evaluation_model_data = model_data.split(
-            eval_num_examples,
-            random_seed,
+            eval_num_examples, random_seed
         )
         validation_data_generator = RasaBatchDataGenerator(
             evaluation_model_data,

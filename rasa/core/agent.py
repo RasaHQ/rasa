@@ -5,15 +5,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Text,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
 
 import aiohttp
@@ -30,10 +22,7 @@ from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import (
-    FailSafeTrackerStore,
-    InMemoryTrackerStore,
-)
+from rasa.core.tracker_store import FailSafeTrackerStore, InMemoryTrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.exceptions import ModelNotFound
 from rasa.nlu.utils import is_url
@@ -357,9 +346,7 @@ class Agent:
         return agent
 
     def load_model(
-        self,
-        model_path: Union[Text, Path],
-        fingerprint: Optional[Text] = None,
+        self, model_path: Union[Text, Path], fingerprint: Optional[Text] = None
     ) -> None:
         """Loads the agent's model and processor given a new model path."""
         self.processor = MessageProcessor(
@@ -421,8 +408,7 @@ class Agent:
         return await self.processor.parse_message(message)
 
     async def handle_message(
-        self,
-        message: UserMessage,
+        self, message: UserMessage
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
         if not self.is_ready():
@@ -449,10 +435,7 @@ class Agent:
         return self.processor.predict_next_with_tracker(tracker, verbosity)
 
     @agent_must_be_ready
-    async def log_message(
-        self,
-        message: UserMessage,
-    ) -> DialogueStateTracker:
+    async def log_message(self, message: UserMessage) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
         return await self.processor.log_message(message)
 

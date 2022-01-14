@@ -10,12 +10,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 
 
 @pytest.mark.parametrize(
-    "config",
-    [
-        {},
-        {"exclusion_percentage": None},
-        {"exclusion_percentage": 25},
-    ],
+    "config", [{}, {"exclusion_percentage": None}, {"exclusion_percentage": 25}]
 )
 def test_story_graph_provider_provide(
     default_model_storage: ModelStorage,

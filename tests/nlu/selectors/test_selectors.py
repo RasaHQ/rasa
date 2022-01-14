@@ -150,12 +150,7 @@ def train_persist_load_with_different_settings(
     "config_params",
     [
         {EPOCHS: 1},
-        {
-            EPOCHS: 1,
-            MASKED_LM: True,
-            TRANSFORMER_SIZE: 256,
-            NUM_TRANSFORMER_LAYERS: 1,
-        },
+        {EPOCHS: 1, MASKED_LM: True, TRANSFORMER_SIZE: 256, NUM_TRANSFORMER_LAYERS: 1},
     ],
 )
 def test_train_selector(
@@ -249,7 +244,7 @@ def test_ground_truth_for_training(
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     response_selector = create_response_selector(
-        {"use_text_as_label": use_text_as_label},
+        {"use_text_as_label": use_text_as_label}
     )
     response_selector.preprocess_train_data(response_selector_training_data)
 
@@ -274,9 +269,7 @@ def test_resolve_intent_response_key_from_label(
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
 
-    response_selector = create_response_selector(
-        {"use_text_as_label": train_on_text},
-    )
+    response_selector = create_response_selector({"use_text_as_label": train_on_text})
     response_selector.preprocess_train_data(response_selector_training_data)
 
     label_intent_response_key = response_selector._resolve_intent_response_key(
@@ -354,17 +347,9 @@ def test_train_persist_load(
     ]
     config_params = {EPOCHS: 1}
 
-    train_persist_load_with_different_settings(
-        pipeline,
-        config_params,
-        False,
-    )
+    train_persist_load_with_different_settings(pipeline, config_params, False)
 
-    train_persist_load_with_different_settings(
-        pipeline,
-        config_params,
-        True,
-    )
+    train_persist_load_with_different_settings(pipeline, config_params, True)
 
 
 async def test_process_gives_diagnostic_data(
@@ -417,8 +402,7 @@ async def test_process_gives_diagnostic_data(
 
 
 @pytest.mark.parametrize(
-    "classifier_params",
-    [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
+    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})]
 )
 async def test_margin_loss_is_not_normalized(
     classifier_params: Dict[Text, int],
@@ -611,9 +595,7 @@ def test_sets_integer_transformer_size_when_needed(
         )
 
 
-def test_transformer_size_gets_corrected(
-    train_persist_load_with_different_settings,
-):
+def test_transformer_size_gets_corrected(train_persist_load_with_different_settings):
     """Tests that the default value of `transformer_size` which is `None` is
     corrected if transformer layers are enabled in `ResponseSelector`.
     """
@@ -624,9 +606,7 @@ def test_transformer_size_gets_corrected(
     config_params = {EPOCHS: 1, NUM_TRANSFORMER_LAYERS: 1}
 
     selector = train_persist_load_with_different_settings(
-        pipeline,
-        config_params,
-        False,
+        pipeline, config_params, False
     )
     assert selector.component_config[TRANSFORMER_SIZE] == DEFAULT_TRANSFORMER_SIZE
 

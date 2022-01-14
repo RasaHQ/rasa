@@ -114,8 +114,7 @@ def test_rank_and_mask(
     ],
 )
 def test_init_split_entities_config(
-    split_entities_config: Any,
-    expected_initialized_config: Dict[(str, bool)],
+    split_entities_config: Any, expected_initialized_config: Dict[(str, bool)]
 ):
     assert (
         train_utils.init_split_entities(
@@ -242,10 +241,7 @@ def test_update_confidence_type(
         ({}, False),
     ],
 )
-def test_tolerance_setting(
-    component_config: Dict[Text, float],
-    raises_exception: bool,
-):
+def test_tolerance_setting(component_config: Dict[Text, float], raises_exception: bool):
     if raises_exception:
         with pytest.raises(InvalidConfigException):
             train_utils._check_tolerance_setting(component_config)

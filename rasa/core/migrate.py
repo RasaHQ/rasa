@@ -5,10 +5,7 @@ from typing import List, Dict, Text, Any, Tuple, Optional, Union
 
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
-from rasa.shared.constants import (
-    REQUIRED_SLOTS_KEY,
-    IGNORED_INTENTS,
-)
+from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
 from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     REQUESTED_SLOT,
@@ -16,12 +13,7 @@ from rasa.shared.core.constants import (
     MAPPING_TYPE,
     SLOT_MAPPINGS,
 )
-from rasa.shared.core.domain import (
-    KEY_ENTITIES,
-    KEY_SLOTS,
-    KEY_FORMS,
-    Domain,
-)
+from rasa.shared.core.domain import KEY_ENTITIES, KEY_SLOTS, KEY_FORMS, Domain
 from rasa.shared.exceptions import RasaException
 
 
@@ -114,9 +106,7 @@ def _migrate_form_slots(
 
 
 def _migrate_auto_fill(
-    slot_name: Text,
-    properties: Dict[Text, Any],
-    entities: List[Text],
+    slot_name: Text, properties: Dict[Text, Any], entities: List[Text]
 ) -> Dict[Text, Any]:
     if slot_name in entities and properties.get("auto_fill", True) is True:
         from_entity_mapping = {
@@ -181,10 +171,7 @@ def _assemble_new_domain(
 
 
 def _write_final_domain(
-    domain_file: Path,
-    new_forms: Dict,
-    new_slots: Dict,
-    out_file: Path,
+    domain_file: Path, new_forms: Dict, new_slots: Dict, out_file: Path
 ) -> None:
     if domain_file.is_dir():
         for file in domain_file.iterdir():

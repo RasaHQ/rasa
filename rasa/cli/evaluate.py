@@ -211,9 +211,4 @@ def _create_tracker_loader(
     """
     endpoints = AvailableEndpoints.read_endpoints(endpoint_config)
     tracker_store = TrackerStore.create(endpoints.tracker_store, domain=domain)
-    return MarkerTrackerLoader(
-        tracker_store,
-        strategy,
-        count,
-        seed,
-    )
+    return MarkerTrackerLoader(tracker_store, strategy, count, seed)

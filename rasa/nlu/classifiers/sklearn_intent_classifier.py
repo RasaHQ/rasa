@@ -285,13 +285,7 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
                     encoder = LabelEncoder()
                     encoder.classes_ = classes
 
-                    return cls(
-                        config,
-                        model_storage,
-                        resource,
-                        classifier,
-                        encoder,
-                    )
+                    return cls(config, model_storage, resource, classifier, encoder)
         except ValueError:
             logger.debug(
                 f"Failed to load '{cls.__name__}' from model storage. Resource "

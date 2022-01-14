@@ -30,10 +30,7 @@ def test_slot_mapping_intent_is_desired(domain: Domain):
     tracker = DialogueStateTracker("sender_id_test", slots=domain.slots)
     event1 = UserUttered(
         text="I'd like to book a restaurant for 2 people.",
-        intent={
-            "name": "request_restaurant",
-            "confidence": 0.9604260921478271,
-        },
+        intent={"name": "request_restaurant", "confidence": 0.9604260921478271},
         entities=[{"entity": "number", "value": 2}],
     )
     tracker.update(event1, domain)

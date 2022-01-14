@@ -579,8 +579,7 @@ class DialogueStateTracker:
                 break
 
             if isinstance(
-                e,
-                (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization),
+                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization)
             ):
                 del done_events[-1 - offset]
             else:

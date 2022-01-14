@@ -371,10 +371,7 @@ def test_features_present(
         (Message({TEXT: "text"}), True),
     ],
 )
-def test_is_core_or_domain_message(
-    message: Message,
-    result: bool,
-):
+def test_is_core_or_domain_message(message: Message, result: bool):
     assert result == message.is_core_or_domain_message()
 
 
@@ -396,12 +393,7 @@ def test_message_fingerprint_includes_data_and_features(
     assert fp1 != fp2
 
     message.add_features(
-        Features(
-            scipy.sparse.csr_matrix([1, 1, 0]),
-            FEATURE_TYPE_SEQUENCE,
-            TEXT,
-            "c2",
-        )
+        Features(scipy.sparse.csr_matrix([1, 1, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c2")
     )
 
     fp3 = message.fingerprint()

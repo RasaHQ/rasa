@@ -82,10 +82,7 @@ def test_train_temp_files(
     # a new model because nothing has been changed. It also shouldn't create
     # any temp files.
     rasa.train(
-        domain_path,
-        stack_config_path,
-        [stories_path, nlu_data_path],
-        output=output,
+        domain_path, stack_config_path, [stories_path, nlu_data_path], output=output
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
@@ -104,10 +101,7 @@ def test_train_core_temp_files(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path / "training")
 
     rasa.model_training.train_core(
-        domain_path,
-        stack_config_path,
-        stories_path,
-        output=str(tmp_path / "models"),
+        domain_path, stack_config_path, stories_path, output=str(tmp_path / "models")
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
@@ -250,9 +244,7 @@ def test_train_nlu_autoconfig(
     monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, Mock())
     # do training
     rasa.model_training.train_nlu(
-        stack_config_path,
-        nlu_data_path,
-        output="test_train_nlu_temp_files_models",
+        stack_config_path, nlu_data_path, output="test_train_nlu_temp_files_models"
     )
 
     mocked_get_configuration.assert_called_once()
@@ -488,10 +480,7 @@ class TestE2e:
         e2e_stories_path: Text,
     ):
         rasa.model_training.train_core(
-            domain_path,
-            stack_config_path,
-            e2e_stories_path,
-            output=str(tmp_path),
+            domain_path, stack_config_path, e2e_stories_path, output=str(tmp_path)
         )
 
         assert not list(tmp_path.glob("*"))
@@ -612,9 +601,7 @@ def test_model_finetuning_core_with_default_epochs(
 
 
 def test_model_finetuning_core_new_domain_label(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-    trained_moodbot_path: Text,
+    tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text
 ):
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -636,8 +623,7 @@ def test_model_finetuning_core_new_domain_label(
 
 
 def test_model_finetuning_new_domain_label_stops_all_training(
-    tmp_path: Path,
-    trained_moodbot_path: Text,
+    tmp_path: Path, trained_moodbot_path: Text
 ):
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -703,10 +689,7 @@ def test_model_finetuning_nlu(
     assert metadata.training_type == autoconfig.TrainingType.NLU
 
 
-def test_model_finetuning_nlu_new_label(
-    tmp_path: Path,
-    trained_nlu_moodbot_path: Text,
-):
+def test_model_finetuning_nlu_new_label(tmp_path: Path, trained_nlu_moodbot_path: Text):
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -726,8 +709,7 @@ def test_model_finetuning_nlu_new_label(
 
 
 def test_model_finetuning_nlu_new_entity(
-    tmp_path: Path,
-    trained_nlu_moodbot_path: Text,
+    tmp_path: Path, trained_nlu_moodbot_path: Text
 ):
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -774,8 +756,7 @@ def test_model_finetuning_nlu_new_label_already_in_domain(
 
 
 def test_model_finetuning_nlu_new_label_to_domain_only(
-    tmp_path: Path,
-    trained_nlu_moodbot_path: Text,
+    tmp_path: Path, trained_nlu_moodbot_path: Text
 ):
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
@@ -972,10 +953,7 @@ def test_models_not_retrained_if_only_new_action(
 
 
 def test_invalid_graph_schema(
-    tmp_path: Path,
-    domain_path: Text,
-    stories_path: Text,
-    nlu_data_path: Text,
+    tmp_path: Path, domain_path: Text, stories_path: Text, nlu_data_path: Text
 ):
     config = textwrap.dedent(
         """
@@ -1035,12 +1013,7 @@ def test_fingerprint_changes_if_module_changes(
     )
 
     # Train to initialize cache
-    rasa.train(
-        domain_path,
-        str(new_config_path),
-        [stories_path],
-        output=str(tmp_path),
-    )
+    rasa.train(domain_path, str(new_config_path), [stories_path], output=str(tmp_path))
 
     # Make sure that the caching works as expected the code didn't change
     result = rasa.train(

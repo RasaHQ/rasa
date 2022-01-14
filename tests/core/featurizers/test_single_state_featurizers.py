@@ -227,10 +227,7 @@ def dummy_features(
     if is_sparse:
         matrix = scipy.sparse.coo_matrix(matrix)
     return Features(
-        features=matrix,
-        attribute=attribute,
-        feature_type=type,
-        origin="whatever",
+        features=matrix, attribute=attribute, feature_type=type, origin="whatever"
     )
 
 
@@ -313,15 +310,8 @@ def test_encode_state__with_lookup__looksup_or_creates_features(action_name: Tex
     action_text = "throw a ball"
     intent = "inform"
     state = {
-        USER: {
-            TEXT: text,
-            INTENT: intent,
-            ENTITIES: entity_name_list,
-        },
-        PREVIOUS_ACTION: {
-            ACTION_NAME: action_name,
-            ACTION_TEXT: action_text,
-        },
+        USER: {TEXT: text, INTENT: intent, ENTITIES: entity_name_list},
+        PREVIOUS_ACTION: {ACTION_NAME: action_name, ACTION_TEXT: action_text},
         ACTIVE_LOOP: {"name": "active_loop_4"},
         SLOTS: {"slot_1": (1.0,)},
     }
@@ -383,10 +373,7 @@ def test_encode_state__with_lookup__looksup_or_creates_features(action_name: Tex
         precomputations.add(Message(data={ACTION_NAME: action_name}))
 
     # encode the state
-    encoded = f.encode_state(
-        state,
-        precomputations=precomputations,
-    )
+    encoded = f.encode_state(state, precomputations=precomputations)
 
     # check all the features are encoded and *_text features are encoded by a
     # dense featurizer
@@ -471,8 +458,7 @@ def test_encode_entities__with_entity_roles_and_groups():
 
     # encode!
     encoded = f.encode_entities(
-        entity_data={TEXT: text, ENTITIES: entities},
-        precomputations=precomputations,
+        entity_data={TEXT: text, ENTITIES: entities}, precomputations=precomputations
     )
 
     # check
@@ -532,10 +518,7 @@ def test_encode_entities__with_bilou_entity_roles_and_groups():
 
     # encode!
     encoded = f.encode_entities(
-        {
-            TEXT: text,
-            ENTITIES: entities,
-        },
+        {TEXT: text, ENTITIES: entities},
         precomputations=precomputations,
         bilou_tagging=True,
     )
@@ -558,7 +541,7 @@ def test_encode_entities__with_bilou_entity_roles_and_groups():
             ENTITY_ATTRIBUTE_VALUE: "Saint Petersburg",
             ENTITY_ATTRIBUTE_START: 15,
             ENTITY_ATTRIBUTE_END: 31,
-        },
+        }
     ]
     message = Message({TEXT: text, TOKENS_NAMES[TEXT]: tokens, ENTITIES: entities})
 
@@ -568,10 +551,7 @@ def test_encode_entities__with_bilou_entity_roles_and_groups():
 
     # encode!
     encoded = f.encode_entities(
-        {
-            TEXT: text,
-            ENTITIES: entities,
-        },
+        {TEXT: text, ENTITIES: entities},
         precomputations=precomputations,
         bilou_tagging=True,
     )

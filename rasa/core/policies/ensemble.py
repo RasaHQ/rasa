@@ -100,9 +100,7 @@ class PolicyPredictionEnsemble(ABC):
             value for value in kwargs.values() if isinstance(value, PolicyPrediction)
         ]
         return self.combine_predictions(
-            predictions=predictions,
-            tracker=tracker,
-            domain=domain,
+            predictions=predictions, tracker=tracker, domain=domain
         )
 
     @abstractmethod

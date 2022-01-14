@@ -11,10 +11,7 @@ from _pytest.logging import LogCaptureFixture
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    NUMBER_OF_SUB_TOKENS,
-)
+from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -36,10 +33,7 @@ def create_language_model_featurizer(
 ) -> Callable[[Dict[Text, Any]], LanguageModelFeaturizer]:
     def inner(config: Dict[Text, Any]) -> LanguageModelFeaturizer:
         return LanguageModelFeaturizer.create(
-            config={
-                **LanguageModelFeaturizer.get_default_config(),
-                **config,
-            },
+            config={**LanguageModelFeaturizer.get_default_config(), **config},
             model_storage=default_model_storage,
             resource=resource_language_model_featurizer,
             execution_context=default_execution_context,
@@ -630,11 +624,7 @@ def test_sequence_length_overflow_train(
     ],
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        LanguageModelFeaturizer,
-        "_load_model_instance",
-        lambda _: None,
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
     component = create_language_model_featurizer({"model_name": model_name})
     message = Message.build(text=" ".join(["hi"] * input_sequence_length))
     if should_overflow:
@@ -666,11 +656,7 @@ def test_long_sequences_extra_padding(
     ],
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        LanguageModelFeaturizer,
-        "_load_model_instance",
-        lambda _: None,
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
     component = create_language_model_featurizer({"model_name": model_name})
     modified_sequence_embeddings = component._add_extra_padding(
         sequence_embeddings, actual_sequence_lengths
@@ -707,11 +693,7 @@ def test_input_padding(
     ],
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        LanguageModelFeaturizer,
-        "_load_model_instance",
-        lambda _: None,
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
     component = create_language_model_featurizer({"model_name": "bert"})
     component.pad_token_id = 0
     padded_input = component._add_padding_to_batch(token_ids, max_sequence_length_model)
@@ -767,11 +749,7 @@ def test_attention_mask(
     ],
     monkeypatch: MonkeyPatch,
 ):
-    monkeypatch.setattr(
-        LanguageModelFeaturizer,
-        "_load_model_instance",
-        lambda _: None,
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
     component = create_language_model_featurizer({"model_name": "bert"})
 
     attention_mask = component._compute_attention_mask(
@@ -803,10 +781,7 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     ],
 ):
 
-    config = {
-        "model_name": "bert",
-        "model_weights": "bert-base-chinese",
-    }
+    config = {"model_name": "bert", "model_weights": "bert-base-chinese"}
 
     lm_featurizer = create_language_model_featurizer(config)
 

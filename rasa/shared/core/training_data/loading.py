@@ -15,10 +15,7 @@ from rasa.shared.data import YAML_FILE_EXTENSIONS
 logger = logging.getLogger(__name__)
 
 
-def _get_reader(
-    filename: Text,
-    domain: Domain,
-) -> StoryReader:
+def _get_reader(filename: Text, domain: Domain) -> StoryReader:
     if rasa.shared.data.is_likely_yaml_file(filename):
         return YAMLStoryReader(domain, filename)
     else:
@@ -27,10 +24,7 @@ def _get_reader(
         return _guess_reader(filename, domain)
 
 
-def _guess_reader(
-    filename: Text,
-    domain: Domain,
-) -> StoryReader:
+def _guess_reader(filename: Text, domain: Domain) -> StoryReader:
     if YAMLStoryReader.is_stories_file(filename):
         return YAMLStoryReader(domain, filename)
 
@@ -42,9 +36,7 @@ def _guess_reader(
 
 
 def load_data_from_resource(
-    resource: Union[Text],
-    domain: Domain,
-    exclusion_percentage: Optional[int] = None,
+    resource: Union[Text], domain: Domain, exclusion_percentage: Optional[int] = None
 ) -> List["StoryStep"]:
     """Loads core training data from the specified folder.
 
@@ -61,16 +53,12 @@ def load_data_from_resource(
         raise ValueError(f"Resource '{resource}' does not exist.")
 
     return load_data_from_files(
-        rasa.shared.utils.io.list_files(resource),
-        domain,
-        exclusion_percentage,
+        rasa.shared.utils.io.list_files(resource), domain, exclusion_percentage
     )
 
 
 def load_data_from_files(
-    story_files: List[Text],
-    domain: Domain,
-    exclusion_percentage: Optional[int] = None,
+    story_files: List[Text], domain: Domain, exclusion_percentage: Optional[int] = None
 ) -> List["StoryStep"]:
     """Loads core training data from the specified files.
 
