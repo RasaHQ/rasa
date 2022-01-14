@@ -41,6 +41,13 @@ MODEL_WEIGHTS_DEFAULT = {
 }
 CLS_TOKEN = "[CLS]"
 
+# The following are the prefix characters added to sub-tokens by the currently
+# used WordPiece, SentencePiece and Byte Pair tokenizers. See
+# https://huggingface.co/course/chapter6 for a description of each.
+# In case a new tokenizer uses different characters to split sub-tokens, this
+# list has to be adapted.
+TOKENIZER_PREFIX_CHARS = r"##|▁|Ġ"
+
 
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_FEATURIZER, is_trainable=False
@@ -203,8 +210,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         """Cleans up special chars added by tokenizers of language models.
 
         Many language models add a special char in front/back of (some) words. We clean
-        up those chars as they are not
-        needed once the features are already computed.
+        up those chars as they are not needed once the features are already computed.
 
         Args:
             split_token_ids: List of token ids received as output from the language
@@ -215,7 +221,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         Returns: Cleaned up token ids and token strings.
         """
         token_ids_string = [
-            (id_, re.sub(r"##|▁|Ġ", "", token))
+            (id_, re.sub(TOKENIZER_PREFIX_CHARS, "", token))
             for id_, token in zip(split_token_ids, token_strings)
         ]
         token_ids_string = [(id_, token) for id_, token in token_ids_string if token]
