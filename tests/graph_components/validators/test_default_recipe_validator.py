@@ -60,6 +60,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.validation import YamlValidationException
 import rasa.utils.common
 
 
@@ -1044,3 +1045,17 @@ def test_no_warnings_with_default_project(tmp_path: Path):
             for warn in records.list
         ]
     )
+
+
+def test_importer_with_invalid_model_config(tmp_path: Path):
+    invalid = {"version": "2.0", "policies": ["name"]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(invalid, config_file)
+
+    with pytest.raises(YamlValidationException):
+        importer = TrainingDataImporter.load_from_config(str(config_file))
+        DefaultV1Recipe.auto_configure(
+            importer.get_config_file_for_auto_config(),
+            importer.get_config(),
+            TrainingType.END_TO_END,
+        )

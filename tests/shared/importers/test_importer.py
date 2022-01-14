@@ -368,15 +368,6 @@ def test_nlu_data_domain_sync_responses(project: Text):
     assert "utter_rasa" in domain.responses.keys()
 
 
-def test_importer_with_invalid_model_config(tmp_path: Path):
-    invalid = {"version": "2.0", "policies": ["name"]}
-    config_file = tmp_path / "config.yml"
-    rasa.shared.utils.io.write_yaml(invalid, config_file)
-
-    with pytest.raises(YamlValidationException):
-        TrainingDataImporter.load_from_config(str(config_file))
-
-
 def test_importer_with_unicode_files():
     importer = TrainingDataImporter.load_from_dict(
         training_data_paths=["./data/test_nlu_no_responses/nlu_with_unicode.yml"]

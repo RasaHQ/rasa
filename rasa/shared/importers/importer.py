@@ -55,6 +55,11 @@ class TrainingDataImporter:
         """
         raise NotImplementedError()
 
+    @rasa.shared.utils.common.cached_method
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        """Returns config file path for auto-config only if there is a single one."""
+        return self.config_file
+
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves the NLU training data that should be used for training.
 
@@ -275,7 +280,7 @@ class CombinedDataImporter(TrainingDataImporter):
         """Returns config file path for auto-config only if there is a single one."""
         if len(self._importers) != 1:
             return None
-        return self._importers[0].config_file
+        return self._importers[0].get_config_file_for_auto_config()
 
 
 class ResponsesSyncImporter(TrainingDataImporter):
