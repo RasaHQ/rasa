@@ -1766,7 +1766,7 @@ def test_app_when_app_has_no_input_channels():
             ],
             None,
             True,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1789,7 +1789,7 @@ stories:
             ],
             None,
             True,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID, story 1
   steps:
@@ -1819,7 +1819,7 @@ stories:
             ],
             None,
             False,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1843,7 +1843,7 @@ stories:
             ],
             None,
             None,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1866,7 +1866,7 @@ stories:
             ],
             4,
             True,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
@@ -1888,7 +1888,7 @@ stories:
             ],
             None,
             True,
-            """version: "2.0"
+            """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
