@@ -173,10 +173,11 @@ def export_trackers(args: argparse.Namespace) -> None:
     Args:
         args: Command-line arguments to process.
     """
-    # we can replace it with asyncio.run(..) but it doesn't work in Python 3.9
-    # see https://github.com/virtool/virtool-workflow/issues/55#issuecomment-733164513
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(_export_trackers(args))
+    asyncio.run(_export_trackers(args))
+    ## we can replace it with asyncio.run(..) but it doesn't work in Python 3.9
+    ## see https://github.com/virtool/virtool-workflow/issues/55#issuecomment-733164513
+    #loop = asyncio.get_event_loop()
+    #loop.run_until_complete(_export_trackers(args))
 
 
 async def _export_trackers(args: argparse.Namespace) -> None:
