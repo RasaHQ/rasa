@@ -571,7 +571,7 @@ async def test_train_with_yaml(
     rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory,
 ):
     training_data = """
-version: "2.0"
+version: "3.0"
 
 stories:
 - story: My story
@@ -1876,7 +1876,7 @@ stories:
   - action: utter_greet""",
         ),
         # empty conversation
-        ([], None, True, 'version: "2.0"'),
+        ([], None, True, 'version: "3.0"'),
         # Conversation with slot
         (
             [
@@ -1992,7 +1992,7 @@ async def test_get_story_does_not_update_conversation_session(
     # expected story is returned
     assert (
         response.content.decode().strip()
-        == """version: "2.0"
+        == """version: "3.0"
 stories:
 - story: some-conversation-ID
   steps:
