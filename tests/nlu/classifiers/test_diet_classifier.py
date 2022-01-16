@@ -422,6 +422,18 @@ async def test_softmax_normalization(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
+async def test_process_empty_input(
+    create_train_load_and_process_diet: Callable[..., Message],
+):
+    message = create_train_load_and_process_diet(
+        diet_config={EPOCHS: 1}, message_text="", expect_intent=False
+    )
+    assert message.get(TEXT) == ""
+    assert not message.get(INTENT)["name"]
+    assert message.get(INTENT)["confidence"] == 0.0
+    assert not message.get(ENTITIES)
+
+
 async def test_margin_loss_is_not_normalized(
     create_train_load_and_process_diet: Callable[..., Message]
 ):
