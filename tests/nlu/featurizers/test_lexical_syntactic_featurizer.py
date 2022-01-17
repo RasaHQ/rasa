@@ -142,6 +142,62 @@ def test_feature_computation(
         assert np.all(feature.features.todense()[0] == expected_features)
 
 
+@pytest.mark.parametrize(
+    "sentence, expected_features",
+    [
+        (
+            "goodbye Goodbye GOODBYE gOoDbyE",
+            [
+                [1.0, 1.0,], # check if all 
+                [1.0, 1.0,], # spellings of
+                [1.0, 1.0,], # goodbye are
+                [1.0, 1.0,], # featurized the same.
+            ],
+        ),
+        (
+            "a A",
+            [
+                [1.0, 1.0,], # is A
+                [1.0, 1.0,], # equal to a?
+            ],
+        ),
+    ],
+)
+def test_text_featurizer_case_insensitive(
+    create_lexical_syntactic_featurizer: Callable[
+        [Dict[Text, Any]], LexicalSyntacticFeaturizer
+    ], 
+    sentence, 
+    expected_features):
+
+    featurizer = create_lexical_syntactic_featurizer(
+        {"alias": "lsf", "features": [[], ["prefix2", "suffix2"], [],], "prefix_suffix_case_sensitive": False }
+    )
+
+    # build the message
+    tokens = [
+        Token(text=match[0], start=match.start())
+        for match in re.finditer(r"\w+", sentence)
+    ]
+    message = Message(data={TOKENS_NAMES[TEXT]: tokens})
+
+    featurizer.train(TrainingData([message]))
+
+    featurizer.process([message])
+
+    seq_vec, sen_vec = message.get_sparse_features(TEXT, [])
+    if seq_vec:
+        seq_vec = seq_vec.features
+    if sen_vec:
+        sen_vec = sen_vec.features
+
+    assert sen_vec is None
+    assert np.all(seq_vec.toarray() == expected_features)
+    
+    # check pairwise equality of features
+    for i in range(seq_vec.shape[0]-1):
+        assert np.all(seq_vec.toarray()[i] == seq_vec.toarray()[i+1]) 
+
 def test_features_for_messages_with_missing_part_of_speech_tags(
     create_lexical_syntactic_featurizer: Callable[
         [Dict[Text, Any]], LexicalSyntacticFeaturizer
@@ -324,3 +380,4 @@ def test_warn_if_part_of_speech_features_cannot_be_computed(
     assert len(message.features) == 1
     feature = message.features[0]
     assert np.all(feature.features.todense() == expected_features)
+

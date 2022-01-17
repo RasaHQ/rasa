@@ -88,3 +88,4 @@ rasa/keys
 /results/
 # Local Netlify folder
 .netlify
+.venv
