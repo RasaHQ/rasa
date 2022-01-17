@@ -675,9 +675,25 @@ jobs:
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
-    if: always() && (needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success')
+    if: ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) && always()
+    outputs:
+      success_status: ${{ steps.set-success-status.outputs.success_status }}
 
     steps:
+      - name: Set success status
+        id: set-success-status
+        run: |-
+          succeeded=${{ needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success' }}
+          if [[ $succeeded == "false" ]]; then
+            success_status="Failed"
+          elif [[ $succeeded == "true" ]]; then
+            success_status="Succeeded"
+          else
+            success_status="Unknown"
+          fi
+          echo $success_status
+          echo "::set-output name=success_status::$success_status"
+
       - name: Checkout git repository 🕝
         uses: actions/checkout@v2
 
@@ -709,6 +725,23 @@ jobs:
         with:
           name: report.json
           path: ./report.json
+
+  set_job_success_status:
+    name: Set job success status
+    runs-on: ubuntu-latest
+    needs:
+      - combine_reports
+    if: always() && needs.combine_reports.result == 'success'
+    steps:
+      - name: Set return code
+        run: |
+          success_status=${{ needs.combine_reports.outputs.success_status }}
+          echo "Status: $success_status"
+          if [[ $success_status == "Succeeded" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
 
   add_comment_results:
     name: Add a comment with the results
@@ -766,6 +799,7 @@ jobs:
           header: ${{ github.run_id }}
           append: true
           message: |-
+            Status of the run: ${{ needs.combine_reports.outputs.success_status }}
 
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
