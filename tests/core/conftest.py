@@ -77,7 +77,7 @@ async def default_processor(default_agent: Agent) -> MessageProcessor:
 
 
 @pytest.fixture
-def tracker_with_six_scheduled_reminders(
+async def tracker_with_six_scheduled_reminders(
     default_processor: MessageProcessor,
 ) -> DialogueStateTracker:
     reminders = [
@@ -106,13 +106,13 @@ def tracker_with_six_scheduled_reminders(
         ),
     ]
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
     for reminder in reminders:
         tracker.update(UserUttered("test"))
         tracker.update(ActionExecuted("action_reminder_reminder"))
         tracker.update(reminder)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     return tracker
 
