@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 from typing import Callable, Optional, Text, List, Tuple
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -207,15 +207,15 @@ def prepare_namespace_and_mocked_tracker_store_with_events(
         all_conversation_ids[2]: [events[5]],
     }
 
-    def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
+    async def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
         return DialogueStateTracker.from_events(
             conversation_id, events_for_conversation_id[conversation_id]
         )
 
     # mock tracker store
     tracker_store = Mock()
-    tracker_store.keys.return_value = all_conversation_ids
-    tracker_store.retrieve_full_tracker.side_effect = _get_tracker
+    tracker_store.keys = AsyncMock(return_value=all_conversation_ids)
+    tracker_store.retrieve_full_tracker = _get_tracker
 
     monkeypatch.setattr(export, "_get_tracker_store", lambda _: tracker_store)
 
