@@ -1,3 +1,7 @@
+[build]
+  command = "docusaurus build --out-dir build/docs/rasa"
+  publish = "build"
+
 ## CONTENT 301 REDIRECTIONS
 
 [[redirects]]
