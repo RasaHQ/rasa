@@ -20,7 +20,7 @@ from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.engine.url import URL
 from typing import Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 
 import rasa.core.tracker_store
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
@@ -929,7 +929,3 @@ def test_sql_tracker_store_with_token_serialisation(
     tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
     prepare_token_serialisation(tracker_store, response_selector_agent, "sql")
 
-
-class AsyncMock(Mock):
-    async def __call__(self, *args, **kwargs):
-        return super(AsyncMock, self).__call__(*args, **kwargs)
