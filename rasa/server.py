@@ -166,10 +166,10 @@ def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
 
     def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
-        def decorated(request: Request, *args: Any, **kwargs: Any) -> "SanicResponse":
+        async def decorated(request: Request, *args: Any, **kwargs: Any) -> "SanicResponse":
             conversation_id = kwargs["conversation_id"]
-            if request.app.agent.tracker_store.exists(conversation_id):
-                return f(request, *args, **kwargs)
+            if await request.app.agent.tracker_store.exists(conversation_id):
+                return await f(request, *args, **kwargs)
             else:
                 raise ErrorResponse(
                     HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found."
@@ -286,7 +286,7 @@ def event_verbosity_parameter(
         )
 
 
-def get_test_stories(
+async def get_test_stories(
     processor: "MessageProcessor",
     conversation_id: Text,
     until_time: Optional[float],
@@ -306,9 +306,9 @@ def get_test_stories(
         The stories for `conversation_id` in test format.
     """
     if fetch_all_sessions:
-        trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+        trackers = await processor.get_trackers_for_all_conversation_sessions(conversation_id)
     else:
-        trackers = [processor.get_tracker(conversation_id)]
+        trackers = [await processor.get_tracker(conversation_id)]
 
     if until_time is not None:
         trackers = [tracker.travel_back_in_time(until_time) for tracker in trackers]
@@ -745,7 +745,7 @@ def create_app(
                         events, tracker, output_channel
                     )
 
-                app.agent.tracker_store.save(tracker)
+                await app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -795,7 +795,7 @@ def create_app(
                 )
 
                 # will override an existing tracker with the same id!
-                app.agent.tracker_store.save(tracker)
+                await app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -818,7 +818,7 @@ def create_app(
         )
 
         try:
-            stories = get_test_stories(
+            stories = await get_test_stories(
                 app.agent.processor,
                 conversation_id,
                 until_time,
@@ -1011,7 +1011,7 @@ def create_app(
                 tracker = await app.agent.processor.run_action_extract_slots(
                     user_message.output_channel, tracker
                 )
-                app.agent.processor.save_tracker(tracker)
+                await app.agent.processor.save_tracker(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
