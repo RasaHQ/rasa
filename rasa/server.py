@@ -69,6 +69,7 @@ import rasa.nlu.test
 from rasa.nlu.test import CVEvaluationResult
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.common import asyncio_run_workaround
 
 if TYPE_CHECKING:
     from ssl import SSLContext  # noqa: F401
@@ -600,7 +601,7 @@ def run_in_thread(f: Callable[..., Coroutine]) -> Callable:
         # Use a sync wrapper for our `async` function as `run_in_executor` only supports
         # sync functions
         def run() -> HTTPResponse:
-            return asyncio.run(f(request, *args, **kwargs))
+            return asyncio_run_workaround(f(request, *args, **kwargs))
 
         with concurrent.futures.ThreadPoolExecutor() as pool:
             return await request.app.loop.run_in_executor(pool, run)

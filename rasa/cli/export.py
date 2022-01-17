@@ -2,7 +2,6 @@ import argparse
 import logging
 import typing
 from typing import List, Text, Optional
-import asyncio
 
 from rasa import telemetry
 from rasa.cli import SubParsersAction
@@ -14,6 +13,7 @@ from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORE
 from rasa.exceptions import PublishingError
 from rasa.shared.exceptions import RasaException
 from rasa.core.brokers.pika import PikaEventBroker
+from rasa.utils.common import asyncio_run_workaround
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -173,10 +173,7 @@ def export_trackers(args: argparse.Namespace) -> None:
     Args:
         args: Command-line arguments to process.
     """
-    # we can replace it with asyncio.run(..) but it doesn't work in Python 3.9
-    # see https://github.com/virtool/virtool-workflow/issues/55#issuecomment-733164513
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(_export_trackers(args))
+    asyncio_run_workaround(_export_trackers(args))
 
 
 async def _export_trackers(args: argparse.Namespace) -> None:

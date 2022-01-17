@@ -412,6 +412,56 @@ async def call_potential_coroutine(
     return coroutine_or_return_value
 
 
+def asyncio_run_workaround(main: Coroutine, *, debug: Optional[bool] = None):
+    """Execute the coroutine and return the result.
+
+    This function runs the passed coroutine, taking care of
+    managing the asyncio event loop and finalizing asynchronous
+    generators.
+
+    This function cannot be called when another asyncio event loop is
+    running in the same thread.
+
+    If debug is True, the event loop will be run in debug mode.
+
+    This function always creates a new event loop and closes it at the end.
+    It should be used as a main entry point for asyncio programs, and should
+    ideally only be called once.
+
+    Args:
+        main: coroutine to be run
+        debug: determines whether the event loop will be run in debug loop
+
+    Returns:
+        result of the coroutine run
+    """
+    # In python 3.9, asyncio.run(...) uses loop.shutdown_default_executor()
+    # which causes the following problem for us:
+    # https://github.com/virtool/virtool-workflow/issues/55#issuecomment-733164513
+    # Hence, here we switch back to the 3.8 implementation for now.
+    if asyncio.events._get_running_loop() is not None:
+        raise RuntimeError("asyncio.run() cannot be called from a running event loop")
+
+    if not asyncio.coroutines.iscoroutine(main):
+        raise ValueError("a coroutine was expected, got {!r}".format(main))
+
+    loop = asyncio.events.new_event_loop()
+    try:
+        asyncio.events.set_event_loop(loop)
+        if debug is not None:
+            loop.set_debug(debug)
+        return loop.run_until_complete(main)
+    finally:
+        try:
+            asyncio.runners._cancel_all_tasks(loop)
+            loop.run_until_complete(loop.shutdown_asyncgens())
+            # Note: Here, Python 3.9 version calls `loop.run_until_complete(
+            # loop.shutdown_default_executor())`.
+        finally:
+            asyncio.events.set_event_loop(None)
+            loop.close()
+
+
 def directory_size_in_mb(
     path: Path, filenames_to_exclude: Optional[List[Text]] = None
 ) -> float:

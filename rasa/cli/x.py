@@ -38,6 +38,7 @@ import rasa.shared.utils.io
 import rasa.utils.common
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
+from rasa.utils.common import asyncio_run_workaround
 
 logger = logging.getLogger(__name__)
 
@@ -444,7 +445,7 @@ def _get_credentials_and_endpoints_paths(
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
-        endpoints_config_path, credentials_path = asyncio.run(
+        endpoints_config_path, credentials_path = asyncio_run_workaround(
             _pull_runtime_config_from_server(config_endpoint)
         )
 

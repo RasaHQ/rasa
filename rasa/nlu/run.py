@@ -5,6 +5,7 @@ from typing import Text
 from rasa.core.agent import Agent
 from rasa.shared.utils.cli import print_info, print_success
 from rasa.shared.utils.io import json_to_string
+from rasa.utils.common import asyncio_run_workaround
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,6 @@ def run_cmdline(model_path: Text) -> None:
             print_info("Wrapping up command line chat...")
             break
 
-        result = asyncio.run(agent.parse_message(message))
+        result = asyncio_run_workaround(agent.parse_message(message))
 
         print(json_to_string(result))
