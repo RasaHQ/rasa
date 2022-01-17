@@ -65,7 +65,7 @@ class Exporter:
         Returns:
             The number of successfully published events.
         """
-        events = self._fetch_events_within_time_range()
+        events = await self._fetch_events_within_time_range()
 
         rasa.shared.utils.cli.print_info(
             f"Selected {len(events)} events for publishing. Ready to go 🚀"
@@ -120,7 +120,7 @@ class Exporter:
         else:
             self.event_broker.publish(event)
 
-    def _get_conversation_ids_in_tracker(self) -> Set[Text]:
+    async def _get_conversation_ids_in_tracker(self) -> Set[Text]:
         """Fetch conversation IDs in `self.tracker_store`.
 
         Returns:
@@ -131,7 +131,7 @@ class Exporter:
             `conversation_ids_in_tracker_store` is empty.
 
         """
-        conversation_ids_in_tracker_store = set(self.tracker_store.keys())
+        conversation_ids_in_tracker_store = set(await self.tracker_store.keys())
 
         if conversation_ids_in_tracker_store:
             return conversation_ids_in_tracker_store
@@ -163,7 +163,7 @@ class Exporter:
                 f"{', '.join(sorted(missing_ids_in_tracker_store))}"
             )
 
-    def _get_conversation_ids_to_process(self) -> Set[Text]:
+    async def _get_conversation_ids_to_process(self) -> Set[Text]:
         """Get conversation IDs that are good for processing.
 
         Finds the intersection of events that are contained in the tracker store with
@@ -175,7 +175,7 @@ class Exporter:
             tracker store are returned.
 
         """
-        conversation_ids_in_tracker_store = self._get_conversation_ids_in_tracker()
+        conversation_ids_in_tracker_store = await self._get_conversation_ids_in_tracker()
 
         if not self.requested_conversation_ids:
             return conversation_ids_in_tracker_store
@@ -194,14 +194,14 @@ class Exporter:
 
         return conversation_ids_to_process
 
-    def _fetch_events_within_time_range(self) -> List[Dict[Text, Any]]:
+    async def _fetch_events_within_time_range(self) -> List[Dict[Text, Any]]:
         """Fetch all events for `conversation_ids` within the supplied time range.
 
         Returns:
             Serialized events with added `sender_id` field.
 
         """
-        conversation_ids_to_process = self._get_conversation_ids_to_process()
+        conversation_ids_to_process = await self._get_conversation_ids_to_process()
 
         rasa.shared.utils.cli.print_info(
             f"Fetching events for {len(conversation_ids_to_process)} "
@@ -211,7 +211,7 @@ class Exporter:
         events = []
 
         for conversation_id in tqdm(conversation_ids_to_process, "conversation IDs"):
-            tracker = self.tracker_store.retrieve_full_tracker(conversation_id)
+            tracker = await self.tracker_store.retrieve_full_tracker(conversation_id)
             if not tracker:
                 logger.info(
                     f"Could not retrieve tracker for conversation ID "
