@@ -43,7 +43,7 @@ EXPECTED_WARNINGS = [
         "Converting sparse IndexedSlices.* to a dense Tensor of unknown "
         "shape. This may consume a large amount of memory.",
     ),
-    (UserWarning, "Slot auto-fill has been removed in 3.0 .*",),
+    (UserWarning, "Slot auto-fill has been removed in 3.0 .*"),
 ]
 
 
@@ -213,7 +213,7 @@ def update_sanic_log_level(
         )
         socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
         syslog_handler = logging.handlers.SysLogHandler(
-            address=(syslog_address, syslog_port), socktype=socktype,
+            address=(syslog_address, syslog_port), socktype=socktype
         )
         syslog_handler.setFormatter(formatter)
         logger.addHandler(syslog_handler)

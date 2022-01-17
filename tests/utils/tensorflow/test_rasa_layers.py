@@ -4,11 +4,7 @@ import numpy as np
 
 from typing import Text, Union, Any, Dict, List, Type
 
-from rasa.shared.nlu.constants import (
-    TEXT,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
-)
+from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.rasa_layers import (
     ConcatenateSparseDenseFeatures,
@@ -88,7 +84,7 @@ model_config_transformer = dict(
     },
 )
 
-model_config_transformer_mlm = dict(model_config_transformer, **{MASKED_LM: True},)
+model_config_transformer_mlm = dict(model_config_transformer, **{MASKED_LM: True})
 
 
 # Dummy feature signatures and features (full of 1s) for tests that don't check exact
@@ -195,7 +191,7 @@ attribute_features_basic = (
                 "attribute_signature": {
                     "sequence": [],
                     "sentence": [feature_signature_dense_1],
-                },
+                }
             },
             units_1,
         ),
@@ -207,7 +203,7 @@ attribute_features_basic = (
                 "attribute_signature": {
                     "sequence": [feature_signature_dense_1],
                     "sentence": [],
-                },
+                }
             },
             units_1,
         ),
@@ -326,7 +322,7 @@ def test_layer_gives_correct_output_units(
                     SENTENCE: [feature_signature_dense_1],
                 }
             },
-            ([feature_dense_seq_1], [feature_dense_sent_1], sequence_lengths,),
+            ([feature_dense_seq_1], [feature_dense_sent_1], sequence_lengths),
             [
                 [batch_size, max_seq_length + 1, units_1],
                 [batch_size, max_seq_length + 1, 1],
@@ -341,7 +337,7 @@ def test_layer_gives_correct_output_units(
                 "attribute_signature": {
                     "sequence": [],
                     "sentence": [feature_signature_dense_1],
-                },
+                }
             },
             ([], [feature_dense_sent_1], sequence_lengths_empty),
             [[batch_size, 1, units_1], [batch_size, 1, 1]],
@@ -355,7 +351,7 @@ def test_layer_gives_correct_output_units(
                 "attribute_signature": {
                     "sequence": [feature_signature_dense_1],
                     "sentence": [],
-                },
+                }
             },
             ([feature_dense_seq_1], [], sequence_lengths),
             [[batch_size, max_seq_length, units_1], [batch_size, max_seq_length, 1]],
@@ -385,8 +381,8 @@ def test_layer_gives_correct_output_units(
                 [batch_size, max_seq_length + 1, units_transformer],
                 [batch_size, max_seq_length + 1, units_hidden_layer],
                 [batch_size, max_seq_length + 1, 1],
-                [0,],
-                [0,],
+                [0],
+                [0],
                 [
                     batch_size,
                     num_transformer_layers,
@@ -406,9 +402,9 @@ def test_layer_gives_correct_output_units(
                 [batch_size, max_seq_length + 1, units_hidden_layer],
                 [batch_size, max_seq_length + 1, units_hidden_layer],
                 [batch_size, max_seq_length + 1, 1],
-                [0,],
-                [0,],
-                [0,],
+                [0],
+                [0],
+                [0],
             ],
             "same_as_train",
         ),
@@ -422,9 +418,9 @@ def test_layer_gives_correct_output_units(
                 [batch_size, max_seq_length + 1, units_concat],
                 [batch_size, max_seq_length + 1, units_concat],
                 [batch_size, max_seq_length + 1, 1],
-                [0,],
-                [0,],
-                [0,],
+                [0],
+                [0],
+                [0],
             ],
             "same_as_train",
         ),
@@ -439,7 +435,7 @@ def test_layer_gives_correct_output_units(
                     SENTENCE: [],
                 }
             },
-            ([feature_sparse_seq_1], [], sequence_lengths,),
+            ([feature_sparse_seq_1], [], sequence_lengths),
             [
                 [batch_size, max_seq_length, units_transformer],
                 [batch_size, max_seq_length, units_hidden_layer],
@@ -458,8 +454,8 @@ def test_layer_gives_correct_output_units(
                 [batch_size, max_seq_length, units_transformer],
                 [batch_size, max_seq_length, units_hidden_layer],
                 [batch_size, max_seq_length, 1],
-                [0,],
-                [0,],
+                [0],
+                [0],
                 [
                     batch_size,
                     num_transformer_layers,
@@ -479,7 +475,7 @@ def test_correct_output_shape(
     expected_output_shapes_train: List[List[int]],
     expected_output_shapes_test: Union[Text, List[List[int]]],
 ) -> None:
-    layer = layer_class(**layer_args, attribute=attribute_name, config=model_config,)
+    layer = layer_class(**layer_args, attribute=attribute_name, config=model_config)
 
     train_outputs = layer(layer_inputs, training=True)
     if not isinstance(train_outputs, tuple):
@@ -547,7 +543,7 @@ realistic_feature_signature_dense_1 = FeatureSignature(
     is_sparse=False, units=1, number_of_dimensions=3
 )
 realistic_feature_dense_seq_1 = tf.convert_to_tensor(
-    [[[10.0], [20.0], [30.0]], [[40.0], [50.0], [0.0]],], dtype=tf.float32
+    [[[10.0], [20.0], [30.0]], [[40.0], [50.0], [0.0]]], dtype=tf.float32
 )
 
 realistic_feature_signature_dense_2 = FeatureSignature(
@@ -562,7 +558,7 @@ realistic_feature_signature_dense_3 = FeatureSignature(
     is_sparse=False, units=3, number_of_dimensions=3
 )
 realistic_feature_dense_sent_3 = tf.convert_to_tensor(
-    [[[0.1, 0.2, 0.3]], [[0.4, 0.5, 0.6]]], dtype=tf.float32,
+    [[[0.1, 0.2, 0.3]], [[0.4, 0.5, 0.6]]], dtype=tf.float32
 )
 
 realistic_sequence_lengths = tf.convert_to_tensor([3, 2], dtype=tf.int32)
@@ -750,7 +746,7 @@ def test_feature_combining_correct_output(
                     realistic_feature_signature_dense_1,
                     realistic_feature_signature_dense_2,
                 ],
-                SENTENCE: [realistic_feature_signature_dense_3,],
+                SENTENCE: [realistic_feature_signature_dense_3],
             },
             (
                 [realistic_feature_dense_seq_1, realistic_feature_dense_seq_2],
@@ -798,8 +794,8 @@ def test_feature_combining_correct_output(
             (
                 np.array(
                     [
-                        [[10.0, 1.0, 2.0], [20.0, 3.0, 4.0], [30.0, 5.0, 6.0],],
-                        [[40.0, 1.5, 2.5], [50.0, 3.5, 4.5], [0.0, 0.0, 0.0],],
+                        [[10.0, 1.0, 2.0], [20.0, 3.0, 4.0], [30.0, 5.0, 6.0]],
+                        [[40.0, 1.5, 2.5], [50.0, 3.5, 4.5], [0.0, 0.0, 0.0]],
                     ],
                     dtype=np.float32,
                 ),
@@ -827,7 +823,7 @@ def test_sequence_layer_correct_output(
         mask_seq_sent_expected,
         token_ids_expected,
     ) = expected_outputs_train
-    (_, seq_sent_features, mask_seq_sent, token_ids, mlm_boolean_mask, _,) = layer(
+    (_, seq_sent_features, mask_seq_sent, token_ids, mlm_boolean_mask, _) = layer(
         inputs, training=True
     )
     assert (seq_sent_features.numpy() == seq_sent_features_expected).all()
@@ -842,7 +838,7 @@ def test_sequence_layer_correct_output(
         assert not mlm_boolean_mask.numpy()[0][realistic_sequence_lengths.numpy()][0]
 
     # Test-time check
-    (seq_sent_features_expected, mask_seq_sent_expected, _,) = expected_outputs_train
+    (seq_sent_features_expected, mask_seq_sent_expected, _) = expected_outputs_train
     (
         transformer_outputs,
         seq_sent_features,

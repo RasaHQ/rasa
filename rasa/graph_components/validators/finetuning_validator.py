@@ -83,7 +83,7 @@ class FinetuningValidator(GraphComponent):
         self._core = config["validate_core"]
         self._nlu = config["validate_nlu"]
 
-    def validate(self, importer: TrainingDataImporter,) -> TrainingDataImporter:
+    def validate(self, importer: TrainingDataImporter) -> TrainingDataImporter:
         """Validates whether we can finetune Core and NLU when finetuning is enabled.
 
         Args:
@@ -187,7 +187,7 @@ class FinetuningValidator(GraphComponent):
         self.persist()
 
     def _compare_or_memorize(
-        self, fingerprint_key: Text, new_fingerprint: Text, error_message: Text,
+        self, fingerprint_key: Text, new_fingerprint: Text, error_message: Text
     ) -> None:
         """Compares given fingerprint if we are finetuning, otherwise just saves it.
 
@@ -222,7 +222,7 @@ class FinetuningValidator(GraphComponent):
         pruned_domain = DomainForCoreTrainingProvider.create_pruned_version(domain)
         return pruned_domain.fingerprint()
 
-    def _get_fingerprint_of_schema_without_irrelevant_keys(self,) -> Text:
+    def _get_fingerprint_of_schema_without_irrelevant_keys(self) -> Text:
         """Returns a fingerprint of the given schema with certain items removed.
 
         These items include specifications that do not influence actual training
@@ -284,7 +284,7 @@ class FinetuningValidator(GraphComponent):
         try:
             with model_storage.read_from(resource) as path:
                 fingerprints = rasa.shared.utils.io.read_json_file(
-                    filename=path / cls.FILENAME,
+                    filename=path / cls.FILENAME
                 )
                 return cls(
                     config=config,

@@ -150,7 +150,7 @@ def train_persist_load_with_different_settings(
     "config_params",
     [
         {EPOCHS: 1},
-        {EPOCHS: 1, MASKED_LM: True, TRANSFORMER_SIZE: 256, NUM_TRANSFORMER_LAYERS: 1,},
+        {EPOCHS: 1, MASKED_LM: True, TRANSFORMER_SIZE: 256, NUM_TRANSFORMER_LAYERS: 1},
     ],
 )
 def test_train_selector(
@@ -244,7 +244,7 @@ def test_ground_truth_for_training(
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     response_selector = create_response_selector(
-        {"use_text_as_label": use_text_as_label},
+        {"use_text_as_label": use_text_as_label}
     )
     response_selector.preprocess_train_data(response_selector_training_data)
 
@@ -269,7 +269,7 @@ def test_resolve_intent_response_key_from_label(
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
 
-    response_selector = create_response_selector({"use_text_as_label": train_on_text},)
+    response_selector = create_response_selector({"use_text_as_label": train_on_text})
     response_selector.preprocess_train_data(response_selector_training_data)
 
     label_intent_response_key = response_selector._resolve_intent_response_key(
@@ -347,13 +347,9 @@ def test_train_persist_load(
     ]
     config_params = {EPOCHS: 1}
 
-    train_persist_load_with_different_settings(
-        pipeline, config_params, False,
-    )
+    train_persist_load_with_different_settings(pipeline, config_params, False)
 
-    train_persist_load_with_different_settings(
-        pipeline, config_params, True,
-    )
+    train_persist_load_with_different_settings(pipeline, config_params, True)
 
 
 async def test_process_gives_diagnostic_data(
@@ -406,7 +402,7 @@ async def test_process_gives_diagnostic_data(
 
 
 @pytest.mark.parametrize(
-    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
+    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})]
 )
 async def test_margin_loss_is_not_normalized(
     classifier_params: Dict[Text, int],
@@ -599,7 +595,7 @@ def test_sets_integer_transformer_size_when_needed(
         )
 
 
-def test_transformer_size_gets_corrected(train_persist_load_with_different_settings,):
+def test_transformer_size_gets_corrected(train_persist_load_with_different_settings):
     """Tests that the default value of `transformer_size` which is `None` is
     corrected if transformer layers are enabled in `ResponseSelector`.
     """
@@ -610,7 +606,7 @@ def test_transformer_size_gets_corrected(train_persist_load_with_different_setti
     config_params = {EPOCHS: 1, NUM_TRANSFORMER_LAYERS: 1}
 
     selector = train_persist_load_with_different_settings(
-        pipeline, config_params, False,
+        pipeline, config_params, False
     )
     assert selector.component_config[TRANSFORMER_SIZE] == DEFAULT_TRANSFORMER_SIZE
 
@@ -623,12 +619,12 @@ async def test_adjusting_layers_incremental_training(
     process_message: Callable[..., Message],
 ):
     """Tests adjusting sparse layers of `ResponseSelector` to increased sparse
-       feature sizes during incremental training.
+    feature sizes during incremental training.
 
-       Testing is done by checking the layer sizes.
-       Checking if they were replaced correctly is also important
-       and is done in `test_replace_dense_for_sparse_layers`
-       in `test_rasa_layers.py`.
+    Testing is done by checking the layer sizes.
+    Checking if they were replaced correctly is also important
+    and is done in `test_replace_dense_for_sparse_layers`
+    in `test_rasa_layers.py`.
     """
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"

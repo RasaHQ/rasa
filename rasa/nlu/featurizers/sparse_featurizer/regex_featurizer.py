@@ -15,11 +15,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
-from rasa.shared.nlu.constants import (
-    TEXT,
-    RESPONSE,
-    ACTION_TEXT,
-)
+from rasa.shared.nlu.constants import TEXT, RESPONSE, ACTION_TEXT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 
@@ -116,7 +112,7 @@ class RegexFeaturizer(SparseFeaturizer, GraphComponent):
             else:
                 self.known_patterns.append(extra_pattern)
 
-    def train(self, training_data: TrainingData,) -> Resource:
+    def train(self, training_data: TrainingData) -> Resource:
         """Trains the component with all patterns extracted from training data."""
         patterns_from_data = pattern_utils.extract_patterns(
             training_data,

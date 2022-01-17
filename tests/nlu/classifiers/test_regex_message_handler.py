@@ -11,12 +11,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandler
 import pytest
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.shared.nlu.constants import (
-    FEATURE_TYPE_SENTENCE,
-    INTENT,
-    TEXT,
-    ENTITIES,
-)
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, INTENT, TEXT, ENTITIES
 
 
 @pytest.fixture

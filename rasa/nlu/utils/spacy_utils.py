@@ -71,7 +71,7 @@ class SpacyNLP(GraphComponent):
             # retrieve the same vector, if set to `False`. For some
             # applications and models it makes sense to differentiate
             # between these two words, therefore setting this to `True`.
-            "case_sensitive": False,
+            "case_sensitive": False
         }
 
     @staticmethod
