@@ -1,6 +1,8 @@
 import argparse
 import logging
-from typing import List, TYPE_CHECKING
+import os
+from pathlib import Path
+from typing import Union, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -22,6 +24,7 @@ import rasa.shared.utils.io
 
 if TYPE_CHECKING:
     from rasa.validator import Validator
+    from rasa.utils.converter import TrainingDataConverter
 
 logger = logging.getLogger(__name__)
 
@@ -227,12 +230,21 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
     import rasa.nlu.convert
+    from rasa.nlu.training_data.converters.watson_nlu_json_to_yaml_converter import (
+        WatsonTrainingDataConverter,
+    )
 
     if args.format == "json":
         rasa.nlu.convert.convert_training_data(
             args.data, args.out, args.format, args.language
         )
         telemetry.track_data_convert(args.format, "nlu")
+    elif args.format == "yaml":
+        is_watson = WatsonTrainingDataConverter().filter(Path(args.data))
+        if is_watson:
+            rasa.utils.common.run_in_loop(
+                _convert_to_yaml(args.out, args.data, WatsonTrainingDataConverter())
+            )
     else:
         rasa.shared.utils.cli.print_error_and_exit(
             "Could not recognize output format. Supported output formats: 'json' "
@@ -258,3 +270,63 @@ def _migrate_domain(args: argparse.Namespace) -> None:
     import rasa.core.migrate
 
     rasa.core.migrate.migrate_domain_format(args.domain, args.out)
+
+
+async def _convert_to_yaml(
+    out_path: Text, data_path: Union[list, Text], converter: "TrainingDataConverter"
+) -> None:
+
+    if isinstance(data_path, list):
+        data_path = data_path[0]
+
+    output = Path(out_path)
+    if not output.exists():
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The output path '{output}' doesn't exist. Please make sure to specify "
+            f"an existing directory and try again."
+        )
+
+    training_data = Path(data_path)
+    if not training_data.exists():
+        rasa.shared.utils.cli.print_error_and_exit(
+            f"The training data path {training_data} doesn't exist "
+            f"and will be skipped."
+        )
+
+    num_of_files_converted = 0
+
+    if training_data.is_file():
+        if await _convert_file_to_yaml(training_data, output, converter):
+            num_of_files_converted += 1
+    elif training_data.is_dir():
+        for root, _, files in os.walk(training_data, followlinks=True):
+            for f in sorted(files):
+                source_path = Path(os.path.join(root, f))
+                if await _convert_file_to_yaml(source_path, output, converter):
+                    num_of_files_converted += 1
+
+    if num_of_files_converted:
+        rasa.shared.utils.cli.print_info(
+            f"Converted {num_of_files_converted} file(s), saved in '{output}'."
+        )
+    else:
+        rasa.shared.utils.cli.print_warning(
+            f"Didn't convert any files under '{training_data}' path. "
+            "Did you specify the correct file/directory?"
+        )
+
+
+async def _convert_file_to_yaml(
+    source_file: Path, target_dir: Path, converter: "TrainingDataConverter"
+) -> bool:
+
+    if not rasa.shared.data.is_valid_filetype(source_file):
+        return False
+
+    if converter.filter(source_file):
+        await converter.convert_and_write(source_file, target_dir)
+        return True
+
+    rasa.shared.utils.cli.print_warning(f"Skipped file: '{source_file}'.")
+
+    return False

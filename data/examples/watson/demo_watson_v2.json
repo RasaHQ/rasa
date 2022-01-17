@@ -1,0 +1,810 @@
+{
+	"metadata": {
+		"api_version": {
+			"major_version": "v2",
+			"minor_version": "2018-11-08"
+		}
+	},
+	"intents": [
+		{
+			"intent": "General_Goodbye",
+			"examples": [
+				{
+					"text": "Bye"
+				},
+				{
+					"text": "Bye bye!"
+				},
+				{
+					"text": "Catch you later."
+				},
+				{
+					"text": "Farewell"
+				},
+				{
+					"text": "Goodbye."
+				},
+				{
+					"text": "Have a good day."
+				},
+				{
+					"text": "Have a good evening."
+				},
+				{
+					"text": "Have a good night."
+				},
+				{
+					"text": "Have a good one."
+				},
+				{
+					"text": "Have a nice day."
+				},
+				{
+					"text": "I'll be going."
+				},
+				{
+					"text": "I'm done."
+				},
+				{
+					"text": "I'm done here."
+				},
+				{
+					"text": "I'm going now."
+				},
+				{
+					"text": "I'm leaving."
+				},
+				{
+					"text": "I'm out."
+				},
+				{
+					"text": "Later!"
+				},
+				{
+					"text": "Peace."
+				},
+				{
+					"text": "Peace out."
+				},
+				{
+					"text": "See ya."
+				},
+				{
+					"text": "See you."
+				},
+				{
+					"text": "See you later."
+				},
+				{
+					"text": "See you next time."
+				},
+				{
+					"text": "So long."
+				},
+				{
+					"text": "Take care."
+				},
+				{
+					"text": "Talk to you later."
+				},
+				{
+					"text": "Time to go."
+				}
+			]
+		},
+		{
+			"intent": "General_Greeting",
+			"examples": [
+				{
+					"text": "G'day"
+				},
+				{
+					"text": "Gday"
+				},
+				{
+					"text": "Get started"
+				},
+				{
+					"text": "Go"
+				},
+				{
+					"text": "Good afternoon."
+				},
+				{
+					"text": "Goodafternoon"
+				},
+				{
+					"text": "Good evening."
+				},
+				{
+					"text": "Good morning."
+				},
+				{
+					"text": "Goodmorning"
+				},
+				{
+					"text": "Good to see you."
+				},
+				{
+					"text": "Hello"
+				},
+				{
+					"text": "Hey"
+				},
+				{
+					"text": "Hi"
+				},
+				{
+					"text": "Hiya"
+				},
+				{
+					"text": "Howdy!"
+				},
+				{
+					"text": "Nice to see you."
+				},
+				{
+					"text": "Start"
+				},
+				{
+					"text": "Whazzup"
+				},
+				{
+					"text": "Yo."
+				}
+			]
+		},
+		{
+			"intent": "General_LookingAround",
+			"examples": [
+				{
+					"text": "I'm just looking around."
+				},
+				{
+					"text": "I'm only looking around."
+				},
+				{
+					"text": "Just browsing."
+				},
+				{
+					"text": "Just looking."
+				},
+				{
+					"text": "Just looking around."
+				}
+			]
+		},
+		{
+			"intent": "General_Negative_Feedback",
+			"examples": [
+				{
+					"text": "Bad"
+				},
+				{
+					"text": "Bad."
+				},
+				{
+					"text": "Bad recommendation."
+				},
+				{
+					"text": "Dissapointing."
+				},
+				{
+					"text": "F*ck you"
+				},
+				{
+					"text": "Fuck you"
+				},
+				{
+					"text": "Go fuck yourself."
+				},
+				{
+					"text": "I don't like it."
+				},
+				{
+					"text": "I'm dissapointed."
+				},
+				{
+					"text": "It sucks."
+				},
+				{
+					"text": "Not good."
+				},
+				{
+					"text": "Not good at all."
+				},
+				{
+					"text": "Stupid bot."
+				},
+				{
+					"text": "That sucked."
+				},
+				{
+					"text": "That was bad."
+				},
+				{
+					"text": "Very bad."
+				},
+				{
+					"text": "You are not smart at all."
+				},
+				{
+					"text": "You are stupid."
+				},
+				{
+					"text": "You're stupid."
+				}
+			]
+		},
+		{
+			"intent": "General_NoPreference",
+			"examples": [
+				{
+					"text": "A regular one."
+				},
+				{
+					"text": "A regular one is fine."
+				},
+				{
+					"text": "Average"
+				},
+				{
+					"text": "Doesn't matter."
+				},
+				{
+					"text": "Don't care."
+				},
+				{
+					"text": "Everything is allright."
+				},
+				{
+					"text": "I don't care"
+				},
+				{
+					"text": "I dont' care."
+				},
+				{
+					"text": "I have no preference"
+				},
+				{
+					"text": "Just a regular one."
+				},
+				{
+					"text": "No opinion."
+				},
+				{
+					"text": "No preference."
+				},
+				{
+					"text": "Whatever."
+				}
+			]
+		},
+		{
+			"intent": "General_Nothing",
+			"examples": [
+				{
+					"text": "Just that."
+				},
+				{
+					"text": "None."
+				},
+				{
+					"text": "None of them."
+				},
+				{
+					"text": "Nothing"
+				},
+				{
+					"text": "Nothing at all."
+				},
+				{
+					"text": "Nothing more."
+				},
+				{
+					"text": "Nothing really."
+				},
+				{
+					"text": "That's all"
+				},
+				{
+					"text": "That's it."
+				}
+			]
+		},
+		{
+			"intent": "General_NotSharing",
+			"examples": [
+				{
+					"text": "I don't want to."
+				},
+				{
+					"text": "I don't want to give you that information."
+				},
+				{
+					"text": "I don't want to share that info."
+				},
+				{
+					"text": "I don't want to tell you."
+				},
+				{
+					"text": "I  don't want to tell you that."
+				},
+				{
+					"text": "I'm not going to tell you."
+				},
+				{
+					"text": "I prefer not sharing that."
+				},
+				{
+					"text": "I won't tell you."
+				},
+				{
+					"text": "That's none of your business."
+				}
+			]
+		},
+		{
+			"intent": "General_Positive_Feedback",
+			"examples": [
+				{
+					"text": "Amazing"
+				},
+				{
+					"text": "Beautiful"
+				},
+				{
+					"text": "Brilliant"
+				},
+				{
+					"text": "Cool!"
+				},
+				{
+					"text": "Excellent"
+				},
+				{
+					"text": "Fantastic"
+				},
+				{
+					"text": "Good"
+				},
+				{
+					"text": "Good."
+				},
+				{
+					"text": "Good work"
+				},
+				{
+					"text": "Great!"
+				},
+				{
+					"text": "Great work."
+				},
+				{
+					"text": "I like it!"
+				},
+				{
+					"text": "I like it."
+				},
+				{
+					"text": "I like them."
+				},
+				{
+					"text": "I like this one."
+				},
+				{
+					"text": "I'm convinced."
+				},
+				{
+					"text": "I'm liking this one."
+				},
+				{
+					"text": "Incredible"
+				},
+				{
+					"text": "Interesting."
+				},
+				{
+					"text": "It's really good!"
+				},
+				{
+					"text": "Nice"
+				},
+				{
+					"text": "Nice."
+				},
+				{
+					"text": "Not bad."
+				},
+				{
+					"text": "Not bad at all."
+				},
+				{
+					"text": "Oh yes, much better."
+				},
+				{
+					"text": "ok, thanks"
+				},
+				{
+					"text": "Perfect"
+				},
+				{
+					"text": "Pretty good."
+				},
+				{
+					"text": "Really nice."
+				},
+				{
+					"text": "Sounds good."
+				},
+				{
+					"text": "Sounds good to me."
+				},
+				{
+					"text": "Superb"
+				},
+				{
+					"text": "That would be great."
+				},
+				{
+					"text": "They look good."
+				},
+				{
+					"text": "They seem good."
+				},
+				{
+					"text": "Thumbs up."
+				},
+				{
+					"text": "Very cool."
+				},
+				{
+					"text": "Very good."
+				},
+				{
+					"text": "Very nice."
+				},
+				{
+					"text": "Well done!"
+				},
+				{
+					"text": "Well done."
+				},
+				{
+					"text": "Wow!"
+				},
+				{
+					"text": "yes it is a sweet voice"
+				},
+				{
+					"text": "You convinced me."
+				}
+			]
+		},
+		{
+			"intent": "General_Quit",
+			"examples": [
+				{
+					"text": "I don't want to continue."
+				},
+				{
+					"text": "I want to quit"
+				},
+				{
+					"text": "Quit."
+				},
+				{
+					"text": "Stop"
+				},
+				{
+					"text": "Stop it"
+				}
+			]
+		},
+		{
+			"intent": "General_Thanking",
+			"examples": [
+				{
+					"text": "Appreciate it."
+				},
+				{
+					"text": "I can't thank you enough."
+				},
+				{
+					"text": "I owe you."
+				},
+				{
+					"text": "I owe you one."
+				},
+				{
+					"text": "Okay thanks!"
+				},
+				{
+					"text": "Ok, thanks."
+				},
+				{
+					"text": "Ok, thank you!"
+				},
+				{
+					"text": "Ok thnks"
+				},
+				{
+					"text": "Ok thnx"
+				},
+				{
+					"text": "Thanks"
+				},
+				{
+					"text": "Thanks a lot."
+				},
+				{
+					"text": "Thank u"
+				},
+				{
+					"text": "Thank you."
+				},
+				{
+					"text": "Thank you very much."
+				},
+				{
+					"text": "Thnx"
+				},
+				{
+					"text": "Thx"
+				},
+				{
+					"text": "will do, thanks a lot"
+				}
+			]
+		},
+		{
+			"intent": "General_WhatCanYouDo",
+			"examples": [
+				{
+					"text": "Can I ask you a question?"
+				},
+				{
+					"text": "How can you help?"
+				},
+				{
+					"text": "How can you help me?"
+				},
+				{
+					"text": "How will you help me?"
+				},
+				{
+					"text": "I have a question."
+				},
+				{
+					"text": "I want to ask you a question."
+				},
+				{
+					"text": "What can you answer?"
+				},
+				{
+					"text": "What can you do?"
+				},
+				{
+					"text": "What can you do for me?"
+				}
+			]
+		},
+		{
+			"intent": "Interaction_LaptopSelection",
+			"examples": [
+				{
+					"text": "Customer selected laptop himself"
+				}
+			]
+		},
+		{
+			"intent": "Specific_AddToBasket",
+			"examples": [
+				{
+					"text": "Add the laptop to my shopping cart."
+				},
+				{
+					"text": "Add to basket."
+				},
+				{
+					"text": "Add to shoppingcart."
+				},
+				{
+					"text": "I want to buy it."
+				},
+				{
+					"text": "You can add it."
+				},
+				{
+					"text": "You can add it to my shopping cart."
+				}
+			]
+		},
+		{
+			"intent": "Specific_BestLaptop",
+			"examples": [
+				{
+					"text": "@bestLaptopAnnotation"
+				},
+				{
+					"text": "Give me the best @brands"
+				},
+				{
+					"text": "Give me the best @brands laptop"
+				},
+				{
+					"text": "Give me the best laptop you have."
+				},
+				{
+					"text": "I'm looking for the best laptop that you have"
+				},
+				{
+					"text": "I need the best laptop you have"
+				},
+				{
+					"text": "I want the best @brands"
+				},
+				{
+					"text": "I want the best laptop"
+				},
+				{
+					"text": "I want the best laptop from @brands"
+				},
+				{
+					"text": "I want the best laptop that you can give me"
+				},
+				{
+					"text": "I want the best machine you have"
+				},
+				{
+					"text": "Show me the best @brands"
+				},
+				{
+					"text": "Show me the best @brands laptop."
+				},
+				{
+					"text": "the best @brands"
+				},
+				{
+					"text": "the best laptop"
+				},
+				{
+					"text": "What is the best @brands that you have?"
+				},
+				{
+					"text": "What is the best laptop that you have?"
+				}
+			],
+			"description": "I want the best laptop"
+		},
+		{
+			"intent": "TEST",
+			"examples": [
+				{
+					"text": "schniebel schniebel"
+				}
+			]
+		}
+	],
+	"entities": [
+		{
+			"entity": "bestLaptopAnnotation",
+			"values": [
+				{
+					"type": "synonyms",
+					"value": "best laptop",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "best one",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "perfect one",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "the best",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "the best one",
+					"synonyms": []
+				}
+			],
+			"description": "",
+			"fuzzy_match": false
+		},
+		{
+			"entity": "brands",
+			"values": [
+				{
+					"type": "synonyms",
+					"value": "Acer",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "Apple",
+					"synonyms": [
+						"Mac"
+					]
+				},
+				{
+					"type": "synonyms",
+					"value": "Asus",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "Dell",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "HP",
+					"synonyms": [
+						"Hewlett-Packard"
+					]
+				},
+				{
+					"type": "synonyms",
+					"value": "Infinity",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "Lenovo",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "Microsoft Surface",
+					"synonyms": [
+						"Surface"
+					]
+				},
+				{
+					"type": "synonyms",
+					"value": "MSI",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "Ollee",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "Predator",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "Pryon",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "Razer",
+					"synonyms": []
+				},
+				{
+					"type": "synonyms",
+					"value": "ROG",
+					"synonyms": []
+				}
+			],
+			"description": "List of the different brands that can be found in the database.",
+			"fuzzy_match": false
+		}
+	],
+	"learning_opt_out": false,
+	"name": "demo",
+	"language": "en",
+	"description": ""
+}
