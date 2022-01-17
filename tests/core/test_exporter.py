@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 from typing import Optional, Text, List
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 
 import pytest
 
@@ -27,20 +27,20 @@ from tests.conftest import MockExporter, random_user_uttered_event
     "requested_ids,available_ids,expected",
     [(["1"], ["1"], ["1"]), (["1", "2"], ["2"], ["2"]), (None, ["2"], ["2"])],
 )
-def test_get_conversation_ids_to_process(
+async def test_get_conversation_ids_to_process(
     requested_ids: Optional[List[Text]],
     available_ids: Optional[List[Text]],
     expected: Optional[List[Text]],
 ):
     # create and mock tracker store containing `available_ids` as keys
     tracker_store = Mock()
-    tracker_store.keys.return_value = available_ids
+    tracker_store.keys = AsyncMock(return_value=available_ids)
 
     exporter = MockExporter(tracker_store)
     exporter.requested_conversation_ids = requested_ids
 
     # noinspection PyProtectedMember
-    assert exporter._get_conversation_ids_to_process() == set(expected)
+    assert await exporter._get_conversation_ids_to_process() == set(expected)
 
 
 @pytest.mark.parametrize(
@@ -55,22 +55,22 @@ def test_get_conversation_ids_to_process(
         ),  # no overlap between requested IDs and those available
     ],
 )
-def test_get_conversation_ids_to_process_error(
+async def test_get_conversation_ids_to_process_error(
     requested_ids: Optional[List[Text]], available_ids: List[Text], exception: Exception
 ):
     # create and mock tracker store containing `available_ids` as keys
     tracker_store = Mock()
-    tracker_store.keys.return_value = available_ids
+    tracker_store.keys = AsyncMock(return_value=available_ids)
 
     exporter = MockExporter(tracker_store)
     exporter.requested_conversation_ids = requested_ids
 
     with pytest.raises(exception):
         # noinspection PyProtectedMember
-        exporter._get_conversation_ids_to_process()
+        await exporter._get_conversation_ids_to_process()
 
 
-def test_fetch_events_within_time_range():
+async def test_fetch_events_within_time_range():
     conversation_ids = ["some-id", "another-id"]
 
     # prepare events from different senders and different timestamps
@@ -85,15 +85,15 @@ def test_fetch_events_within_time_range():
         )
 
     # create mock tracker store
-    tracker_store = Mock()
+    tracker_store = AsyncMock()
     tracker_store.retrieve_full_tracker.side_effect = _get_tracker
-    tracker_store.keys.return_value = conversation_ids
+    tracker_store.keys = AsyncMock(return_value=conversation_ids)
 
     exporter = MockExporter(tracker_store)
     exporter.requested_conversation_ids = conversation_ids
 
     # noinspection PyProtectedMember
-    fetched_events = exporter._fetch_events_within_time_range()
+    fetched_events = await exporter._fetch_events_within_time_range()
 
     # events should come back for all requested conversation IDs
     assert all(
@@ -105,37 +105,39 @@ def test_fetch_events_within_time_range():
     assert fetched_events == list(sorted(fetched_events, key=lambda e: e["timestamp"]))
 
 
-def test_fetch_events_within_time_range_tracker_does_not_err():
+async def test_fetch_events_within_time_range_tracker_does_not_err():
     # create mock tracker store that returns `None` on `retrieve_full_tracker()`
     tracker_store = Mock()
-    tracker_store.retrieve_full_tracker.return_value = None
-    tracker_store.keys.return_value = [uuid.uuid4()]
+
+    tracker_store.keys = AsyncMock(return_value=[uuid.uuid4()])
+    tracker_store.retrieve_full_tracker = AsyncMock(return_value=None)
 
     exporter = MockExporter(tracker_store)
 
     # no events means `NoEventsInTimeRangeError`
     with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
-        exporter._fetch_events_within_time_range()
+        await exporter._fetch_events_within_time_range()
 
 
-def test_fetch_events_within_time_range_tracker_contains_no_events():
+async def test_fetch_events_within_time_range_tracker_contains_no_events():
     # create mock tracker store that returns `None` on `retrieve_full_tracker()`
     tracker_store = Mock()
-    tracker_store.retrieve_full_tracker.return_value = DialogueStateTracker.from_events(
-        "a great ID", []
-    )
-    tracker_store.keys.return_value = ["a great ID"]
+
+    tracker_store.keys = AsyncMock(return_value=["a great ID"])
+    tracker_store.retrieve_full_tracker = AsyncMock(return_value=DialogueStateTracker.from_events(
+            "a great ID", []
+        ))
 
     exporter = MockExporter(tracker_store)
 
     # no events means `NoEventsInTimeRangeError`
     with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
-        exporter._fetch_events_within_time_range()
+        await exporter._fetch_events_within_time_range()
 
 
-def test_fetch_events_within_time_range_with_session_events(tmp_path: Path):
+async def test_fetch_events_within_time_range_with_session_events(tmp_path: Path):
     conversation_id = "test_fetch_events_within_time_range_with_sessions"
 
     tracker_store = SQLTrackerStore(
@@ -151,12 +153,12 @@ def test_fetch_events_within_time_range_with_session_events(tmp_path: Path):
         random_user_uttered_event(4),
     ]
     tracker = DialogueStateTracker.from_events(conversation_id, evts=events)
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     exporter = MockExporter(tracker_store=tracker_store)
 
     # noinspection PyProtectedMember
-    fetched_events = exporter._fetch_events_within_time_range()
+    fetched_events = await exporter._fetch_events_within_time_range()
 
     assert len(fetched_events) == len(events)
 
@@ -275,7 +277,7 @@ async def test_publishing_error():
     user_event["sender_id"] = uuid.uuid4().hex
 
     # noinspection PyProtectedMember
-    exporter._fetch_events_within_time_range = Mock(return_value=[user_event])
+    exporter._fetch_events_within_time_range = AsyncMock(return_value=[user_event])
 
     # run the export function
     with pytest.raises(PublishingError):
@@ -286,7 +288,7 @@ async def test_closing_broker():
     exporter = MockExporter(event_broker=SQLEventBroker())
 
     # noinspection PyProtectedMember
-    exporter._fetch_events_within_time_range = Mock(return_value=[])
+    exporter._fetch_events_within_time_range = AsyncMock(return_value=[])
 
     # run the export function
     with pytest.warns(None) as warnings:
