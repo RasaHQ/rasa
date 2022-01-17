@@ -17,6 +17,8 @@ concurrency:
 env:
   GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
+  DD_PROFILING_ENABLED: false
+  TF_FORCE_GPU_ALLOW_GROWTH: true
 
 jobs:
   read_test_configuration:
@@ -25,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix_length: ${{ steps.set-matrix.outputs.matrix_length }}
       configuration_id: ${{ steps.fc_config.outputs.comment-id }}
 
     steps:
@@ -79,7 +82,10 @@ jobs:
       if: steps.fc_config.outputs.comment-id != ''
       id: set-matrix
       run: |-
-          echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)"
+          matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
+          matrix_length=$(echo $matrix | jq '.[] | length')
+          echo "::set-output name=matrix_length::$matrix_length"
+          echo "::set-output name=matrix::$matrix"
 
     - name: Update the comment with the configuration
       uses: peter-evans/create-or-update-comment@v1
@@ -160,6 +166,15 @@ jobs:
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
 
+          num_max_replicas=3
+          matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
+          if [[ $matrix_length -gt $num_max_replicas ]]; then
+            NUM_REPLICAS=$num_max_replicas
+          else
+            NUM_REPLICAS=$matrix_length
+          fi
+          echo NUM_REPLICAS=$NUM_REPLICAS >> $GITHUB_ENV
+
       - name: Render deployment template
         run: |-
           export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
@@ -167,7 +182,7 @@ jobs:
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
@@ -184,18 +199,18 @@ jobs:
 
   model_regression_test_gpu:
     name: Model Regression Tests - GPU
-    continue-on-error: true
     needs:
-    - deploy_runner_gpu
-    - read_test_configuration
+      - deploy_runner_gpu
+      - read_test_configuration
     env:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       ACCELERATOR_TYPE: "GPU"
-    runs-on: [self-hosted, gpu]
+    runs-on: [self-hosted, gpu, "${{ github.run_id }}"]
     strategy:
-      max-parallel: 1
+      # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+      fail-fast: false
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
@@ -298,9 +313,12 @@ jobs:
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
-          GIT_SHA: "${{ github.sha }}"
+          GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
+          TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |
+          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
@@ -335,9 +353,9 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
-      - name: Install datadog-api-client
+      - name: Install datadog dependencies
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U datadog-api-client
+        run: poetry run pip install -U datadog-api-client ddtrace
 
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -361,34 +379,25 @@ jobs:
           fi
 
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
-            poetry run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
+            poetry run ddtrace-run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            poetry run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
+            poetry run ddtrace-run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
           elif [[ "${{ matrix.type }}" == "core" ]]; then
-            poetry run rasa train core --quiet -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
+            poetry run ddtrace-run rasa train core --quiet -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            poetry run rasa test core -s ${DATASET_DIR}/${DATASET}/${TEST_DIR} --out ${{ github.workspace }}/results/${{ matrix.dataset }}/${CONFIG}
+            poetry run ddtrace-run rasa test core -s ${DATASET_DIR}/${DATASET}/${TEST_DIR} --out ${{ github.workspace }}/results/${{ matrix.dataset }}/${CONFIG}
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
-
-      # Download the results of the previous runs
-      # The report file is extended with new results every next job run
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        continue-on-error: true
-        with:
-          name: report.json
 
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -405,6 +414,8 @@ jobs:
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
+          GITHUB_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu
@@ -412,32 +423,31 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
-          poetry run python .github/scripts/mr_generate_summary.py
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         uses: actions/upload-artifact@v2
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          name: report.json
-          path: ./report.json
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          path: report.json
 
       - name: Stop Datadog Agent
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        if: always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
           sudo service datadog-agent stop
 
   model_regression_test_cpu:
     name: Model Regression Tests - CPU
-    continue-on-error: true
     needs:
-    - read_test_configuration
+      - read_test_configuration
     env:
       ACCELERATOR_TYPE: "CPU"
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1
+      max-parallel: 3
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+      fail-fast: false
     if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
@@ -540,9 +550,12 @@ jobs:
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
-          GIT_SHA: "${{ github.sha }}"
+          GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
+          TYPE: "${{ matrix.type }}"
+          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
         run: |
+          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
@@ -577,9 +590,9 @@ jobs:
           make install
           poetry run python -m spacy download de_core_news_md
 
-      - name: Install datadog-api-client
+      - name: Install datadog dependencies
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        run: poetry run pip install -U datadog-api-client
+        run: poetry run pip install -U datadog-api-client ddtrace
 
       - name: Run test
         id: run_test
@@ -598,34 +611,25 @@ jobs:
           fi
 
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
-            poetry run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
+            poetry run ddtrace-run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            poetry run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
+            poetry run ddtrace-run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
           elif [[ "${{ matrix.type }}" == "core" ]]; then
-            poetry run rasa train core --quiet -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
+            poetry run ddtrace-run rasa train core --quiet -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            poetry run rasa test core -s ${DATASET_DIR}/${DATASET}/${TEST_DIR} --out ${{ github.workspace }}/results/${{ matrix.dataset }}/${CONFIG}
+            poetry run ddtrace-run rasa test core -s ${DATASET_DIR}/${DATASET}/${TEST_DIR} --out ${{ github.workspace }}/results/${{ matrix.dataset }}/${CONFIG}
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
-
-      # Download the results of the previous runs
-      # The report file is extended with new results every next job run
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
-        continue-on-error: true
-        with:
-          name: report.json
 
       - name: Generate a JSON file with a report / Publish results to Segment
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -642,6 +646,8 @@ jobs:
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
+          GITHUB_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
           DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.eu
@@ -649,102 +655,100 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
-          poetry run python .github/scripts/mr_generate_summary.py
           cat $SUMMARY_FILE
 
       - name: Upload an artifact with the report
         uses: actions/upload-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          name: report.json
-          path: ./report.json
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          path: report.json
 
       - name: Stop Datadog Agent
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        if: always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
           sudo service datadog-agent stop
 
-  add_comment_results_gpu:
-    name: Add a comment with the results
-    runs-on: ubuntu-latest
-    needs:
-      - model_regression_test_gpu
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Download report from last on-schedule regression test
-        run: |
-          # Get ID of last on-schedule workflow
-          SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
-            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
-
-          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
-
-          DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
-            | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
-
-          # Download the artifact
-          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
-
-          # Unzip and change name
-          unzip report.json.zip && mv report.json report_main.json
-
-      - name: Download the report
-        uses: actions/download-artifact@v2
-        with:
-          name: report.json
-
-      - name: Download gomplate
-        run: |-
-          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
-          sudo chmod +x /usr/local/bin/gomplate
-
-      - name: Render a comment to add
-        id: get_results
-        run: |
-          OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
-          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
-          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
-          echo "::set-output name=result::$OUTPUT"
-
-      - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v2.1.1
-        if: always()
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          header: ${{ github.run_id }}
-          append: true
-          message: |-
-
-            Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            ${{ steps.get_results.outputs.result }}
-
-      - name: Remove 'status:model-regression-tests' label
-        continue-on-error: true
-        uses: buildsville/add-remove-label@v1
-        with:
-          token: ${{secrets.GITHUB_TOKEN}}
-          label: 'status:model-regression-tests'
-          type: remove
-
-      - name: Remove 'runner:gpu' label
-        continue-on-error: true
-        uses: buildsville/add-remove-label@v1
-        with:
-          token: ${{secrets.GITHUB_TOKEN}}
-          label: 'runner:gpu'
-          type: remove
-
-  add_comment_results_cpu:
-    name: Add a comment with the results
+  combine_reports:
+    name: Combine reports
     runs-on: ubuntu-latest
     needs:
       - model_regression_test_cpu
+      - model_regression_test_gpu
+    if: ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) && always()
+    outputs:
+      success_status: ${{ steps.set-success-status.outputs.success_status }}
+
+    steps:
+      - name: Set success status
+        id: set-success-status
+        run: |-
+          succeeded=${{ needs.model_regression_test_cpu.result == 'success' || needs.model_regression_test_gpu.result == 'success' }}
+          if [[ $succeeded == "false" ]]; then
+            success_status="Failed"
+          elif [[ $succeeded == "true" ]]; then
+            success_status="Succeeded"
+          else
+            success_status="Unknown"
+          fi
+          echo $success_status
+          echo "::set-output name=success_status::$success_status"
+
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.7 🐍
+        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+        with:
+          python-version: 3.7
+
+      - name: Get reports
+        uses: actions/download-artifact@v2
+        with:
+          path: reports/
+
+      - name: Display structure of downloaded files
+        continue-on-error: true
+        run: ls -R
+        working-directory: reports/
+
+      - name: Merge all reports
+        env:
+          SUMMARY_FILE: "./report.json"
+          REPORTS_DIR: "reports/"
+        run: |
+          python .github/scripts/mr_generate_summary.py
+          cat $SUMMARY_FILE
+
+      - name: Upload an artifact with the overall report
+        uses: actions/upload-artifact@v2
+        with:
+          name: report.json
+          path: ./report.json
+
+  set_job_success_status:
+    name: Set job success status
+    runs-on: ubuntu-latest
+    needs:
+      - combine_reports
+    if: always() && needs.combine_reports.result == 'success'
+    steps:
+      - name: Set return code
+        run: |
+          success_status=${{ needs.combine_reports.outputs.success_status }}
+          echo "Status: $success_status"
+          if [[ $success_status == "Succeeded" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
+
+  add_comment_results:
+    name: Add a comment with the results
+    runs-on: ubuntu-latest
+    needs:
+      - combine_reports
+    if: always() && needs.combine_reports.result == 'success'
 
     steps:
       - name: Checkout
@@ -755,7 +759,7 @@ jobs:
           # Get ID of last on-schedule workflow
           SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
-            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
+            | jq -r  '.workflows[] | select(.name == "CI - Model Regression on schedule") | select(.path | test("schedule")) | .id')
 
           ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
@@ -788,13 +792,14 @@ jobs:
           echo "::set-output name=result::$OUTPUT"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v2.1.1
+        uses: marocchino/sticky-pull-request-comment@v2.2.0
         if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: ${{ github.run_id }}
           append: true
           message: |-
+            Status of the run: ${{ needs.combine_reports.outputs.success_status }}
 
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
@@ -819,14 +824,14 @@ jobs:
   remove_runner_gpu:
     name: Delete Github Runner - GPU
     needs:
-    - deploy_runner_gpu
-    - model_regression_test_gpu
+      - deploy_runner_gpu
+      - model_regression_test_gpu
     runs-on: ubuntu-latest
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps:
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@daadedc81d5f9d3c06d2c92f49202a3cc2b919ba
+      - uses: google-github-actions/setup-gcloud@a45a0825993ace67ae6e11cf3011b3e7d6795f82
         with:
           version: "${{ env.GCLOUD_VERSION }}"
           service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}

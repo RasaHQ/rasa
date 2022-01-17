@@ -552,12 +552,8 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   Include a [Tokenizer](./components.mdx#tokenizers) component before this component.
 
   You should specify what language model to load via the parameter `model_name`. See the below table for the
-  available language models.
-  Additionally, you can also specify the architecture variation of the chosen language model by specifying the
-  parameter `model_weights`.
-  The full list of supported architectures can be found in the
-  [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
-  If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+  currently supported language models. The weights to be loaded can be specified by the additional parameter
+  `model_weights`. If left empty, it uses the default model weights listed in the table.
 
   ```
   +----------------+--------------+-------------------------+
@@ -578,7 +574,25 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   +----------------+--------------+-------------------------+
   ```
 
-  The following configuration loads the language model BERT:
+  Apart from the default pretrained model weights, further models can be used from
+  [HuggingFace models](https://huggingface.co/models) provided the following conditions are met (the mentioned
+  files can be found in the "Files and versions" section of the model website):
+
+  * The model architecture is one of the supported language models (check that the `model_type` in `config.json` is
+    listed in the table's column `model_name`)
+  * The model has pretrained Tensorflow weights (check that the file `tf_model.h5` exists)
+  * The model uses the default tokenizer (`config.json` should not contain a custom `tokenizer_class` setting)
+
+  :::note
+  The `LaBSE` weights that are loaded as default for the `bert` architecture provide a multi-lingual model trained on
+  112 languages (see our [tutorial](https://www.youtube.com/watch?v=7tAWk_Coj-s) and the original
+  [paper](https://arxiv.org/pdf/2007.01852.pdf)). We strongly encourage using this as a baseline and testing your bot
+  end-to-end before trying to optimize this component with other weights/architectures.
+  :::
+
+
+  The following configuration loads the language model BERT with `rasa/LaBSE` weights, which can be found
+  [here](https://huggingface.co/rasa/LaBSE/tree/main):
 
   ```yaml-rasa
   pipeline:
@@ -1232,7 +1246,8 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
   minimize similarities with negative samples.
 
-  If you want to learn more about the model, check out the
+  DIET does not provide pre-trained word embeddings or pre-trained language models but it is able to use these features if
+  they are added to the pipeline. If you want to learn more about the model, check out the
   [Algorithm Whiteboard](https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb) series on YouTube,
   where we explain the model architecture in detail.
 
@@ -1831,9 +1846,9 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         "title",
         "digit",
         "pattern",
+        "text_dense_features"
       ],
       ["low", "title", "upper"],
-      ["text_dense_features"]
     ]
     # The maximum number of iterations for optimization algorithms.
     "max_iterations": 50
