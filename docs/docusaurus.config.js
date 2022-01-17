@@ -39,8 +39,8 @@ module.exports = configure({
     id: 'pre_release_notice', // Any value that will identify this message.
     content:
       'These docs are for version 3.x of Rasa Open Source. <a href="https://rasa.com/docs/rasa/2.x/">Docs for the 2.x series can be found here.</a>',
-    backgroundColor: '#6200F5', // Defaults to `#fff`.
-    textColor: '#fff', // Defaults to `#000`.
+    backgroundColor: 'var(--tabula-color-brand-7)', // Defaults to `#fff`.
+    textColor: 'var(--tabula-color-brand-1)', // Defaults to `#000`.
   },
   // @ts-ignore
   package: require('./package.json'),
