@@ -3,11 +3,15 @@ name: MR Test Reusable workflow
 on:
   workflow_call:
     inputs:
-      username:
+      dataset_branch:
         required: true
         type: string
     secrets:
       DD_API_KEY:
+        required: true
+      ML_TEST_SA_PAT:
+        required: true
+      DATASET_REPOSITORY:
         required: true
 
 jobs:
@@ -18,15 +22,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Print
-        run: |-
-          set -x
-          echo ${{ inputs.username }}
-          echo ${{ secrets.DD_API_KEY }}
       - name: Checkout dataset
         uses: actions/checkout@v2
         with:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
-          ref: ${{ matrix.dataset_branch }}
+          ref: ${{ input.dataset_branch }}

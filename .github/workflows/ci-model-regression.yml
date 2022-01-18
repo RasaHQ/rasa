@@ -442,10 +442,16 @@ jobs:
     needs:
       - read_test_configuration
     uses: RasaHQ/rasa/.github/workflows/ci-model-regression-test-helper.yml@regr-test-dry
+    strategy:
+      max-parallel: 3
+      matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
+      fail-fast: false
     with:
-      username: mona
+      dataset_branch: matrix.dataset_branch
     secrets:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ML_TEST_SA_PAT: ${{ secrets.ML_TEST_SA_PAT }}
+      DATASET_REPOSITORY: ${{ secrets.DATASET_REPOSITORY }}
 
   model_regression_test_cpu:
     name: Model Regression Tests - CPU
