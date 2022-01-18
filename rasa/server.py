@@ -353,7 +353,7 @@ async def update_conversation_with_events(
         The tracker for `conversation_id` with the updated events.
     """
     if rasa.shared.core.events.do_events_begin_with_session_start(events):
-        tracker = processor.get_tracker(conversation_id)
+        tracker = await processor.get_tracker(conversation_id)
     else:
         tracker = await processor.fetch_tracker_with_initial_session(conversation_id)
 
