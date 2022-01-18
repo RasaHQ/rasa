@@ -1,30 +1,83 @@
 name: MR Test composite action
 description: 'Run MR test'
 inputs:
-  dataset_branch:
+  DATASET_NAME:
+    description: 'DATASET_NAME'
     required: true
-    DD_API_KEY:
-      required: true
-    ML_TEST_SA_PAT:
-      required: true
-    DATASET_REPOSITORY:
-      required: true
+  CONFIG_NAME:
+    description: 'CONFIG_NAME'
+    required: true
 outputs:
-  random-number:
-    description: "Random number"
-    value: ${{ steps.random-number-generator.outputs.random-id }}
+  is_dataset_exists:
+    description: 'is_dataset_exists'
+    value: ${{ steps.set_dataset_config_vars.outputs.is_dataset_exists }}
+  is_config_exists:
+    description: 'is_config_exists'
+    value: ${{ steps.set_dataset_config_vars.outputs.is_config_exists }}
+  is_external:
+    description: 'is_external'
+    value: ${{ steps.set_dataset_config_vars.outputs.is_external }}
+
 runs:
   using: "composite"
   steps:
-    - run: echo Hello ${{ inputs.dataset_branch }}, ${{ inputs.DD_API_KEY }}.
+    - name: Set DATASET and CONFIG variables
       shell: bash
-    - id: random-number-generator
-      run: echo "::set-output name=random-id::$(echo $RANDOM)"
-      shell: bash
-    - name: Checkout dataset
-      uses: actions/checkout@v2
-      with:
-        repository: ${{ secrets.DATASET_REPOSITORY }}
-        token: ${{ secrets.ML_TEST_SA_PAT }}
-        path: 'dataset'
-        ref: ${{ input.dataset_branch }}
+      id: set_dataset_config_vars
+      env:
+          DATASET_NAME: "${{ inputs.DATASET_NAME }}"
+          CONFIG_NAME: "${{ inputs.CONFIG_NAME }}"
+      run: |
+        set -x
+        # determine extra environment variables
+        # - CONFIG
+        # - DATASET
+        # - IS_EXTERNAL
+        # - EXTERNAL_DATASET_REPOSITORY_BRANCH
+        # - TRAIN_DIR
+        # - TEST_DIR
+        # - DOMAIN_FILE
+        source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
+
+        # Not all configurations are available for all datasets.
+        # The job will fail and the workflow continues, if the configuration file doesn't exist
+        # for a given dataset
+
+        echo "::set-output name=is_dataset_exists::true"
+        echo "::set-output name=is_config_exists::true"
+        echo "::set-output name=is_external::${IS_EXTERNAL}"
+
+        if [[ "${IS_EXTERNAL}" == "true" ]]; then
+          echo "DATASET_DIR=dataset_external" >> $GITHUB_ENV
+        else
+          echo "DATASET_DIR=dataset" >> $GITHUB_ENV
+          test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
+            && echo "::set-output name=is_config_exists::false" && exit 0)
+        fi
+
+        # Skip job if a given type is not available for a given dataset
+        if [[ -z "${DOMAIN_FILE}" && "${{ matrix.type }}" == "core" ]]; then
+          echo "::warning::The ${{ matrix.dataset }} dataset doesn't include core type. Skipping the job." \
+            && echo "::set-output name=is_config_exists::false" && exit 0
+        fi
+
+        test -f dataset/configs/$CONFIG || (echo "::warning::The ${{ matrix.config }} configuration file doesn't exist. Skipping the job." \
+            && echo "::set-output name=is_dataset_exists::false" && exit 0)
+
+        echo "DATASET=${DATASET}" >> $GITHUB_ENV
+        echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
+        echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
+        echo "EXTERNAL_DATASET_REPOSITORY_BRANCH=${EXTERNAL_DATASET_REPOSITORY_BRANCH}" >> $GITHUB_ENV
+        echo "IS_EXTERNAL=${IS_EXTERNAL}" >> $GITHUB_ENV
+
+        if [[ -z "${TRAIN_DIR}" ]]; then
+          echo "TRAIN_DIR=train" >> $GITHUB_ENV
+        else
+          echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
+        fi
+
+        if [[ -z "${TEST_DIR}" ]]; then
+          echo "TEST_DIR=test" >> $GITHUB_ENV
+        else
+          echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
+        fi
