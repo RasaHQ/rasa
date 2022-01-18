@@ -85,7 +85,10 @@ def test_process_empty_input(
         training_data, spacy_model
     )
     training_data, loaded_pipeline = train_and_preprocess(
-        pipeline=[{"component": SpacyTokenizer}, {"component": SpacyFeaturizer},],
+        pipeline=[
+            {"component": SpacyTokenizer},
+            {"component": SpacyFeaturizer},
+        ],
         training_data=training_data,
     )
     default_sklearn_intent_classifier.train(training_data)
