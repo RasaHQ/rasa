@@ -1,15 +1,12 @@
 import os
-import argparse
-
-# access configs passed in as command line arguments
-cmdline_parser = argparse.ArgumentParser()
-cmdline_parser.add_argument('--request-timeout')
-# use parse_known_args() instead of parse_args() to silently skip
-# the other commandline parameters
-cmdline_args, _ = cmdline_parser.parse_known_args()
+import sys
 
 try:
-    DEFAULT_REQUEST_TIMEOUT = int(cmdline_args.request_timeout)
+    # sys.argv is a list so if we find "--request-timeout"
+    # the next item on the list is the passed value
+    arg_index = sys.argv.index('--request-timeout')
+    request_timeout = sys.argv[arg_index + 1]
+    DEFAULT_REQUEST_TIMEOUT = int(request_timeout)
 except (ValueError, TypeError):
     DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
