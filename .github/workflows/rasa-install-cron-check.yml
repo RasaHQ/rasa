@@ -1,0 +1,37 @@
+# This is a installation test that we run daily. We attempt to install Rasa
+# on Ubuntu, Mac and Windows and try to run `rasa init`. The goal here is to
+# catch installation issues in an automated way.
+
+name: Cron Test
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-18.04, macos-latest, windows-2019, windows-2022]
+        python-version: [3.7, 3.8]
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Try to install Rasa.
+      run: |
+        python -m pip install rasa
+    - name: Try to install Rasa[full].
+      run: |
+        python -m pip install rasa[full]
+    - name: Try to run Rasa.
+      run: |
+        python -m rasa init --no-prompt
