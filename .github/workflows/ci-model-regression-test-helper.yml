@@ -1,0 +1,34 @@
+name: MR Test composite action
+description: 'Run MR test'
+inputs:
+  dataset_branch:
+    required: true
+    DD_API_KEY:
+      required: true
+    ML_TEST_SA_PAT:
+      required: true
+    DATASET_REPOSITORY:
+      required: true
+outputs:
+  random-number:
+    description: "Random number"
+    value: ${{ steps.random-number-generator.outputs.random-id }}
+runs:
+  using: "composite"
+  steps:
+    - run: echo Hello ${{ inputs.dataset_branch }}, ${{ inputs.DD_API_KEY }}.
+      shell: bash
+    - id: random-number-generator
+      run: echo "::set-output name=random-id::$(echo $RANDOM)"
+      shell: bash
+    - run: ${{ github.action_path }}/goodbye.sh
+      shell: bash
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Checkout dataset
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ secrets.DATASET_REPOSITORY }}
+        token: ${{ secrets.ML_TEST_SA_PAT }}
+        path: 'dataset'
+        ref: ${{ input.dataset_branch }}
