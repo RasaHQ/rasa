@@ -229,7 +229,7 @@ jobs:
         id: set_dataset_config_vars
         uses: ./.github/actions/mr_tests
         with:
-          dataset-name: "${{ matrix.dataset }}"
+          DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
 
       - name: Checkout dataset - external
@@ -414,7 +414,7 @@ jobs:
         id: set_dataset_config_vars
         uses: ./.github/actions/mr_tests
         with:
-          dataset-name: "${{ matrix.dataset }}"
+          DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
 
       - name: Checkout dataset - external
