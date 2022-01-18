@@ -105,9 +105,7 @@ def _migrate_form_slots(
 
             required_slots.append(slot_name)
 
-        new_forms[form_name] = {
-            REQUIRED_SLOTS_KEY: required_slots,
-        }
+        new_forms[form_name] = {REQUIRED_SLOTS_KEY: required_slots}
 
         if ignored_intents:
             new_forms[form_name][IGNORED_INTENTS] = ignored_intents
@@ -265,7 +263,7 @@ def _migrate_domain_files(
 
 
 def migrate_domain_format(
-    domain_path: Union[Text, Path], out_path: Optional[Union[Text, Path]],
+    domain_path: Union[Text, Path], out_path: Optional[Union[Text, Path]]
 ) -> None:
     """Converts 2.0 domain to 3.0 format."""
     domain_path = Path(domain_path)

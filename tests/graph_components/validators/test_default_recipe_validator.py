@@ -13,12 +13,7 @@ import re
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
-from rasa.engine.graph import (
-    GraphComponent,
-    ExecutionContext,
-    GraphSchema,
-    SchemaNode,
-)
+from rasa.engine.graph import GraphComponent, ExecutionContext, GraphSchema, SchemaNode
 
 from rasa.graph_components.validators.default_recipe_validator import (
     POLICY_CLASSSES,
@@ -933,9 +928,7 @@ def test_core_raise_if_policy_has_no_priority():
             resource: Resource,
             execution_context: ExecutionContext,
         ) -> None:
-            super().__init__(
-                config, model_storage, resource, execution_context,
-            )
+            super().__init__(config, model_storage, resource, execution_context)
 
     nodes = {"policy": SchemaNode("", PolicyWithoutPriority, "", "", {})}
     graph_schema = GraphSchema(nodes)

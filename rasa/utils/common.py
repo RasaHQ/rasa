@@ -144,7 +144,7 @@ def _filter_warnings(log_level: Optional[int], warn_only_once: bool = True) -> N
 def configure_library_logging() -> None:
     """Configures log levels of used libraries such as kafka, matplotlib, pika."""
     library_log_level = os.environ.get(
-        ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES,
+        ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
     )
     update_tensorflow_log_level()
     update_asyncio_log_level()

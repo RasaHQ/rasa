@@ -198,7 +198,7 @@ def test_nlu_config_doesnt_get_overridden(
     config = rasa.shared.utils.io.read_yaml_file(
         "data/test_config/config_pretrained_embeddings_mitie_diet.yml"
     )
-    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
         config, cli_parameters, training_type=TrainingType.BOTH, is_finetuning=True
     )

@@ -680,13 +680,7 @@ def test_load_domain_from_directory_tree():
         "utter_skill_2",
         "utter_subskill",
     ]
-    expected_entities = [
-        "ball",
-        "chess",
-        "monopoly",
-        "cluedo",
-        "pandemic",
-    ]
+    expected_entities = ["ball", "chess", "monopoly", "cluedo", "pandemic"]
     expected_responses = {
         "utter_greet": [{"text": "Hey! How are you?"}],
         "utter_cheer_up": [

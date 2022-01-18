@@ -859,7 +859,7 @@ def test_migrate_domain_raises_for_missing_slots_and_forms(tmp_path: Path):
         migrate.migrate_domain_format(domain_dir, None)
 
 
-def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path,):
+def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
     prepare_domain_path(
@@ -872,8 +872,7 @@ def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path,):
     )
 
     with pytest.raises(
-        RasaException,
-        match="Some of the given files (.*) have already been migrated.*",
+        RasaException, match="Some of the given files (.*) have already been migrated.*"
     ):
         migrate.migrate_domain_format(domain_dir, None)
 
@@ -1062,7 +1061,7 @@ def test_migrate_domain_raises_when_backup_location_exists(
             pass
 
     with pytest.raises(
-        RasaException, match="The domain could not be migrated since .* exists.*",
+        RasaException, match="The domain could not be migrated since .* exists.*"
     ):
         migrate.migrate_domain_format(domain_path, None)
 
