@@ -185,15 +185,12 @@ async def test_get_previous_event():
     assert _get_previous_event(
         {PREVIOUS_ACTION: {"action_text": "this is a test"}, USER: {"intent": "greet"}}
     ) == ("bot utterance", "this is a test")
-    assert (
-        _get_previous_event(
-            {
-                PREVIOUS_ACTION: {"action_name": ACTION_LISTEN_NAME},
-                USER: {"intent": "greet"},
-            }
-        )
-        == ("intent", "greet")
-    )
+    assert _get_previous_event(
+        {
+            PREVIOUS_ACTION: {"action_name": ACTION_LISTEN_NAME},
+            USER: {"intent": "greet"},
+        }
+    ) == ("intent", "greet")
 
 
 async def test_has_no_prior_events():
