@@ -6,12 +6,7 @@ from typing import Any, Dict, List, Optional, Text
 import dask
 
 from rasa.engine.exceptions import GraphRunError
-from rasa.engine.graph import (
-    ExecutionContext,
-    GraphNode,
-    GraphNodeHook,
-    GraphSchema,
-)
+from rasa.engine.graph import ExecutionContext, GraphNode, GraphNodeHook, GraphSchema
 from rasa.engine.runner.interface import GraphRunner
 from rasa.engine.storage.storage import ModelStorage
 
@@ -109,7 +104,7 @@ class DaskGraphRunner(GraphRunner):
             raise GraphRunError("Error running runner.") from e
 
     @staticmethod
-    def _add_inputs_to_graph(inputs: Optional[Dict[Text, Any]], graph: Any,) -> None:
+    def _add_inputs_to_graph(inputs: Optional[Dict[Text, Any]], graph: Any) -> None:
         for input_name, input_value in inputs.items():
             if isinstance(input_value, str) and input_value in graph.keys():
                 raise GraphRunError(

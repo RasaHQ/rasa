@@ -139,10 +139,10 @@ def test_process_results_per_session(seed: int):
                     stats.session_results[marker][stat_name][idx], stat_value
                 )
     for idx in range(num_sessions):
-        assert stats.session_identifier[idx] == (sender_ids[idx], session_indices[idx],)
+        assert stats.session_identifier[idx] == (sender_ids[idx], session_indices[idx])
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234])
 def test_process_results_overall(seed: int):
     rng = np.random.default_rng(seed=seed)
     (
@@ -176,7 +176,7 @@ def test_process_results_overall(seed: int):
         assert stats.num_preceding_user_turns_collected[marker] == concatenated_numbers
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234])
 def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
     rng = np.random.default_rng(seed=seed)
     (
@@ -253,7 +253,7 @@ def test_overall_statistics_to_csv(tmp_path: Path, seed: int):
             row_idx += 1
 
 
-@pytest.mark.parametrize("seed", [2345, 5654, 2345234,])
+@pytest.mark.parametrize("seed", [2345, 5654, 2345234])
 def test_per_session_statistics_to_csv(tmp_path: Path, seed: int):
 
     rng = np.random.default_rng(seed=seed)

@@ -13,10 +13,13 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.io
 from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.graph_components.providers.domain_for_core_training_provider import (
+    DomainForCoreTrainingProvider,
+)
 
-FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY = "config-without-epochs"
-FINGERPRINT_CORE = "domain-without-responses"
-FINGERPRINT_NLU = "nlu-labels"
+FINGERPRINT_CONFIG = "fingerprint-config"
+FINGERPRINT_CORE = "fingerprint-core"
+FINGERPRINT_NLU = "fingerprint-nlu"
 FINGERPRINT_VERSION = "rasa-version"
 
 logger = logging.getLogger(__name__)
@@ -34,8 +37,8 @@ class FinetuningValidator(GraphComponent):
 
     Finetuning is possible if, compared to the initial training phase, it holds that
     1. the configuration (except for "epoch" keys) does not change
-    2. the domain (except for "responses") does not change - or we're not finetuning
-       the core part
+    2. the domain (except for e.g. "responses") does not change - or we're not
+       finetuning the core part
     3. the intents, entities, entity groups, entity roles, and action names that
        appeared in the original NLU training data, appear in the NLU training data
        used for finetuning, and no new such items (i.e. intents, entities, entity
@@ -80,7 +83,7 @@ class FinetuningValidator(GraphComponent):
         self._core = config["validate_core"]
         self._nlu = config["validate_nlu"]
 
-    def validate(self, importer: TrainingDataImporter,) -> TrainingDataImporter:
+    def validate(self, importer: TrainingDataImporter) -> TrainingDataImporter:
         """Validates whether we can finetune Core and NLU when finetuning is enabled.
 
         Args:
@@ -136,7 +139,7 @@ class FinetuningValidator(GraphComponent):
 
         fingerprint_config = self._get_fingerprint_of_schema_without_irrelevant_keys()
         self._compare_or_memorize(
-            fingerprint_key=FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY,
+            fingerprint_key=FINGERPRINT_CONFIG,
             new_fingerprint=fingerprint_config,
             error_message=(
                 "Cannot finetune because more than just the 'epoch' keys have been "
@@ -150,17 +153,17 @@ class FinetuningValidator(GraphComponent):
             # NOTE: If there's a consistency check between domain and core training data
             # that ensures domain and core training data are consistent, then we can
             # drop this check.
-            fingerprint_core = self._get_fingerprint_of_domain_without_responses(
+            fingerprint_core = self._get_fingerprint_of_domain_pruned_for_core(
                 domain=importer.get_domain()
             )
             self._compare_or_memorize(
                 fingerprint_key=FINGERPRINT_CORE,
                 new_fingerprint=fingerprint_core,
                 error_message=(
-                    "Cannot finetune because more than just the responses have been "
-                    "changed in the domain."
-                    "Please revert all settings in your domain file (except the "
-                    "'responses')."
+                    "Cannot finetune because keys that affect the training of core "
+                    "components have changed."
+                    "Please revert all settings in your domain file that affect the "
+                    "training of core components."
                 ),
             )
 
@@ -184,7 +187,7 @@ class FinetuningValidator(GraphComponent):
         self.persist()
 
     def _compare_or_memorize(
-        self, fingerprint_key: Text, new_fingerprint: Text, error_message: Text,
+        self, fingerprint_key: Text, new_fingerprint: Text, error_message: Text
     ) -> None:
         """Compares given fingerprint if we are finetuning, otherwise just saves it.
 
@@ -208,19 +211,18 @@ class FinetuningValidator(GraphComponent):
             self._fingerprints[fingerprint_key] = new_fingerprint
 
     @staticmethod
-    def _get_fingerprint_of_domain_without_responses(domain: Domain) -> Text:
-        """Returns a fingerprint of a version of the given domain without responses.
+    def _get_fingerprint_of_domain_pruned_for_core(domain: Domain) -> Text:
+        """Returns a fingerprint of a pruned version of the domain relevant for core.
 
         Args:
             domain: a domain
         Returns:
             fingerprint
         """
-        domain = copy.copy(domain)
-        domain.responses = {}
-        return domain.fingerprint()
+        pruned_domain = DomainForCoreTrainingProvider.create_pruned_version(domain)
+        return pruned_domain.fingerprint()
 
-    def _get_fingerprint_of_schema_without_irrelevant_keys(self,) -> Text:
+    def _get_fingerprint_of_schema_without_irrelevant_keys(self) -> Text:
         """Returns a fingerprint of the given schema with certain items removed.
 
         These items include specifications that do not influence actual training
@@ -283,7 +285,7 @@ class FinetuningValidator(GraphComponent):
         try:
             with model_storage.read_from(resource) as path:
                 fingerprints = rasa.shared.utils.io.read_json_file(
-                    filename=path / cls.FILENAME,
+                    filename=path / cls.FILENAME
                 )
                 return cls(
                     config=config,
