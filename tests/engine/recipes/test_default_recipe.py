@@ -284,13 +284,10 @@ def test_num_threads_interpolation():
     expected_predict_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
     for node_name, node in expected_train_schema.nodes.items():
-        if (
-            issubclass(
-                node.uses,
-                (SklearnIntentClassifier, MitieEntityExtractor, MitieIntentClassifier),
-            )
-            and node_name.startswith("train_")
-        ):
+        if issubclass(
+            node.uses,
+            (SklearnIntentClassifier, MitieEntityExtractor, MitieIntentClassifier),
+        ) and node_name.startswith("train_"):
             node.config["num_threads"] = 20
 
     config = rasa.shared.utils.io.read_yaml_file(

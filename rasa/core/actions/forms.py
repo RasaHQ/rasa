@@ -631,25 +631,22 @@ class FormAction(LoopAction):
         # We explicitly check only the last occurrences for each possible termination
         # event instead of doing `return event in events_so_far` to make it possible
         # to override termination events which were returned earlier.
-        return (
-            next(
-                (
-                    event
-                    for event in reversed(events_so_far)
-                    if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
-                ),
-                None,
-            )
-            == SlotSet(REQUESTED_SLOT, None)
-            or next(
-                (
-                    event
-                    for event in reversed(events_so_far)
-                    if isinstance(event, ActiveLoop)
-                ),
-                None,
-            )
-            == ActiveLoop(None)
+        return next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
+            ),
+            None,
+        ) == SlotSet(REQUESTED_SLOT, None) or next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, ActiveLoop)
+            ),
+            None,
+        ) == ActiveLoop(
+            None
         )
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:
