@@ -79,8 +79,7 @@ if TYPE_CHECKING:
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
     ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()],
-        SanicResponse,  # noqa: F821
+        [Arg(Request, "request"), VarArg(), KwArg()], SanicResponse  # noqa: F821
     ]
 
 
