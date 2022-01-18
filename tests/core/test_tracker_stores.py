@@ -243,9 +243,7 @@ def test_raise_connection_exception_redis_tracker_store_creation(
         TrackerStore.create(store, domain)
 
 
-def test_mongo_tracker_store_raise_exception(
-    domain: Domain, monkeypatch: MonkeyPatch,
-):
+def test_mongo_tracker_store_raise_exception(domain: Domain, monkeypatch: MonkeyPatch):
     monkeypatch.setattr(
         rasa.core.tracker_store,
         "MongoTrackerStore",
@@ -610,7 +608,7 @@ def test_sql_additional_events_with_session_start(domain: Domain):
     [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
 def test_tracker_store_retrieve_with_session_started_events(
-    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain: Domain,
+    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain: Domain
 ):
     tracker_store = tracker_store_type(domain, **tracker_store_kwargs)
     events = [
@@ -639,7 +637,7 @@ def test_tracker_store_retrieve_with_session_started_events(
     [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
 def test_tracker_store_retrieve_without_session_started_events(
-    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain,
+    tracker_store_type: Type[TrackerStore], tracker_store_kwargs: Dict, domain
 ):
     tracker_store = tracker_store_type(domain, **tracker_store_kwargs)
 
@@ -888,7 +886,7 @@ def test_login_db_with_no_postgresql(tmp_path: Path):
             "type": "mongod",
             "url": "mongodb://0.0.0.0:42/?serverSelectionTimeoutMS=5000",
         },
-        {"type": "dynamo",},
+        {"type": "dynamo"},
     ],
 )
 def test_tracker_store_connection_error(config: Dict, domain: Domain):
@@ -899,7 +897,7 @@ def test_tracker_store_connection_error(config: Dict, domain: Domain):
 
 
 async def prepare_token_serialisation(
-    tracker_store: TrackerStore, response_selector_agent: Agent, sender_id: Text,
+    tracker_store: TrackerStore, response_selector_agent: Agent, sender_id: Text
 ):
     text = "Good morning"
     tokenizer = WhitespaceTokenizer(WhitespaceTokenizer.get_default_config())

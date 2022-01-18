@@ -5,18 +5,15 @@ from typing import List, Dict, Text, Any, Tuple, Optional, Union
 
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
-from rasa.shared.constants import (
-    REQUIRED_SLOTS_KEY,
-    IGNORED_INTENTS,
+from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
+from rasa.shared.core.constants import (
+    ACTIVE_LOOP,
+    REQUESTED_SLOT,
+    SlotMappingType,
+    MAPPING_TYPE,
+    SLOT_MAPPINGS,
 )
-from rasa.shared.core.constants import ACTIVE_LOOP, REQUESTED_SLOT
-from rasa.shared.core.domain import (
-    KEY_ENTITIES,
-    KEY_SLOTS,
-    KEY_FORMS,
-    Domain,
-)
-from rasa.shared.core.slot_mappings import SlotMapping
+from rasa.shared.core.domain import KEY_ENTITIES, KEY_SLOTS, KEY_FORMS, Domain
 from rasa.shared.exceptions import RasaException
 
 ORIGINAL_DOMAIN = "original_domain"  # not a default, fixed
@@ -38,9 +35,9 @@ def _create_back_up(
 def _get_updated_mapping_condition(
     condition: Dict[Text, Text], mapping: Dict[Text, Any], slot_name: Text
 ) -> Dict[Text, Text]:
-    if mapping.get("type") not in [
-        str(SlotMapping.FROM_ENTITY),
-        str(SlotMapping.FROM_TRIGGER_INTENT),
+    if mapping.get(MAPPING_TYPE) not in [
+        str(SlotMappingType.FROM_ENTITY),
+        str(SlotMappingType.FROM_TRIGGER_INTENT),
     ]:
         return {**condition, REQUESTED_SLOT: slot_name}
     return condition
@@ -108,9 +105,7 @@ def _migrate_form_slots(
 
             required_slots.append(slot_name)
 
-        new_forms[form_name] = {
-            REQUIRED_SLOTS_KEY: required_slots,
-        }
+        new_forms[form_name] = {REQUIRED_SLOTS_KEY: required_slots}
 
         if ignored_intents:
             new_forms[form_name][IGNORED_INTENTS] = ignored_intents
@@ -119,17 +114,17 @@ def _migrate_form_slots(
 
 
 def _migrate_auto_fill(
-    slot_name: Text, properties: Dict[Text, Any], entities: List[Text],
+    slot_name: Text, properties: Dict[Text, Any], entities: List[Text]
 ) -> Dict[Text, Any]:
     if slot_name in entities and properties.get("auto_fill", True) is True:
         from_entity_mapping = {
-            "type": str(SlotMapping.FROM_ENTITY),
+            "type": str(SlotMappingType.FROM_ENTITY),
             "entity": slot_name,
         }
-        mappings = properties.get("mappings", [])
+        mappings = properties.get(SLOT_MAPPINGS, [])
         if from_entity_mapping not in mappings:
             mappings.append(from_entity_mapping)
-            properties.update({"mappings": mappings})
+            properties.update({SLOT_MAPPINGS: mappings})
 
     if "auto_fill" in properties:
         del properties["auto_fill"]
@@ -184,7 +179,7 @@ def _assemble_new_domain(
 
 
 def _write_final_domain(
-    domain_file: Path, new_forms: Dict, new_slots: Dict, out_file: Path,
+    domain_file: Path, new_forms: Dict, new_slots: Dict, out_file: Path
 ) -> None:
     if domain_file.is_dir():
         for file in domain_file.iterdir():
@@ -268,7 +263,7 @@ def _migrate_domain_files(
 
 
 def migrate_domain_format(
-    domain_path: Union[Text, Path], out_path: Optional[Union[Text, Path]],
+    domain_path: Union[Text, Path], out_path: Optional[Union[Text, Path]]
 ) -> None:
     """Converts 2.0 domain to 3.0 format."""
     domain_path = Path(domain_path)

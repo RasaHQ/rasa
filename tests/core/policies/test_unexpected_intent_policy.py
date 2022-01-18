@@ -88,7 +88,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     ):
         precomputations = None
         prediction_metadata = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker, default_domain, precomputations
         ).action_metadata
         assert (
             prediction_metadata is None
@@ -171,7 +171,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain, stories_path, augmentation_factor=0
         )
         training_model_data, _ = trained_policy._prepare_for_training(
-            training_trackers, default_domain, precomputations=None,
+            training_trackers, default_domain, precomputations=None
         )
 
         data_for_prediction = trained_policy._prepare_data_for_prediction(
@@ -184,7 +184,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         label_ids = np.array([[0, 1], [1, -1], [2, -1]])
         outputs = {
             "similarities": np.array(
-                [[[1.2, 0.3, 0.2]], [[0.5, 0.2, 1.6]], [[0.01, 0.1, 1.7]],]
+                [[[1.2, 0.3, 0.2]], [[0.5, 0.2, 1.6]], [[0.01, 0.1, 1.7]]]
             )
         }
         label_id_similarities = UnexpecTEDIntentPolicy._collect_label_id_grouped_scores(
@@ -313,7 +313,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain, stories_path, augmentation_factor=0
         )
         training_model_data, label_ids = trained_policy._prepare_for_training(
-            training_trackers, default_domain, precomputations=None,
+            training_trackers, default_domain, precomputations=None
         )
 
         trained_policy.compute_label_quantiles_post_training(
@@ -543,7 +543,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
 
         tracker.update_with_events(
-            [UserUttered(text="hello", intent={"name": query_intent})], default_domain,
+            [UserUttered(text="hello", intent={"name": query_intent})], default_domain
         )
 
         # Preset the model predictions to the similarity values
@@ -699,7 +699,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
 
         with caplog.at_level(logging.DEBUG):
             prediction = loaded_policy.predict_action_probabilities(
-                tracker, default_domain, precomputations=None,
+                tracker, default_domain, precomputations=None
             )
 
         assert "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
@@ -730,7 +730,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                     ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("utter_greet"),
                     UserUttered(text="sad", intent={"name": "thank_you"}),
@@ -738,7 +738,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                     ActionExecuted("utter_greet"),
                     UserUttered(text="sad", intent={"name": "thank_you"}),
                 ],
@@ -964,7 +964,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
             ),
             # Filter because of no action name
@@ -1004,7 +1004,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
             ),
             # Filter because of no intent
@@ -1042,7 +1042,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
             ),
             # No filter needed
@@ -1058,7 +1058,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
                 [
                     [
@@ -1071,7 +1071,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted("utter_goodbye"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
             ),
             # Filter to return empty list of trackers
@@ -1087,7 +1087,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                         ),
                         ActionExecuted(action_text="Great!"),
                         ActionExecuted(ACTION_LISTEN_NAME),
-                    ],
+                    ]
                 ],
                 [],
             ),
@@ -1155,7 +1155,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                     UserUttered(text="happy to make it work"),
                     ActionExecuted(action_text="Great!"),
                     ActionExecuted(ACTION_LISTEN_NAME),
-                ],
+                ]
             ],
             True,
         ),
@@ -1169,7 +1169,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                     UserUttered(text="happy to make it work"),
                     ActionExecuted("utter_goodbye"),
                     ActionExecuted(ACTION_LISTEN_NAME),
-                ],
+                ]
             ],
             True,
         ),
@@ -1185,7 +1185,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
                     ),
                     ActionExecuted(action_text="Great!"),
                     ActionExecuted(ACTION_LISTEN_NAME),
-                ],
+                ]
             ],
             True,
         ),
