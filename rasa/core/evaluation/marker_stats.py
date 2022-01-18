@@ -188,13 +188,7 @@ class MarkerStatistics:
 
     @staticmethod
     def _header() -> List[Text]:
-        return [
-            "sender_id",
-            "session_idx",
-            "marker",
-            "statistic",
-            "value",
-        ]
+        return ["sender_id", "session_idx", "marker", "statistic", "value"]
 
     def _write_overview(self, table_writer: WriteRow) -> None:
         special_sender_idx = self.ALL_SENDERS

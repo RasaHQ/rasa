@@ -423,7 +423,7 @@ def run_in_production(args: argparse.Namespace) -> None:
     _rasa_service(args, endpoints, None, credentials_path)
 
 
-def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
+def _get_config_path(args: argparse.Namespace) -> Optional[Text]:
     config_path = rasa.cli.utils.get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH
     )
@@ -431,7 +431,7 @@ def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
     return config_path
 
 
-def _get_domain_path(args: argparse.Namespace,) -> Optional[Text]:
+def _get_domain_path(args: argparse.Namespace) -> Optional[Text]:
     domain_path = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH
     )

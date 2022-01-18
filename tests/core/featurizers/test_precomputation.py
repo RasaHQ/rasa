@@ -363,7 +363,7 @@ def test_container_derive_messages_from_domain_and_add():
 
 @pytest.fixture
 def input_converter(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     return CoreFeaturizationInputConverter.create(
         CoreFeaturizationInputConverter.get_default_config(),
@@ -471,7 +471,7 @@ def test_converter_for_inference(input_converter: CoreFeaturizationInputConverte
 
 @pytest.fixture
 def collector(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
     return CoreFeaturizationCollector.create(
         CoreFeaturizationCollector.get_default_config(),

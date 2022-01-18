@@ -46,16 +46,16 @@ class RasaFileImporter(TrainingDataImporter):
         """Retrieves model config (see parent class for full docstring)."""
         return self.config
 
-    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return utils.story_graph_from_paths(
-            self._story_files, self.get_domain(), exclusion_percentage,
+            self._story_files, self.get_domain(), exclusion_percentage
         )
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
         return utils.story_graph_from_paths(
-            self._conversation_test_files, self.get_domain(),
+            self._conversation_test_files, self.get_domain()
         )
 
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:

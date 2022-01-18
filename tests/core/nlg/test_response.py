@@ -390,7 +390,7 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
                     mappings=[{}],
                     initial_value="B",
                     influence_conversation=False,
-                ),
+                )
             ],
             "app",
             "condition example B no channel",
@@ -402,7 +402,7 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
                     mappings=[{}],
                     initial_value="C",
                     influence_conversation=False,
-                ),
+                )
             ],
             "",
             "default",
@@ -414,7 +414,7 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
                     mappings=[{}],
                     initial_value="D",
                     influence_conversation=False,
-                ),
+                )
             ],
             "app",
             "default",
