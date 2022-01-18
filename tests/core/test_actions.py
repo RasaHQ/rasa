@@ -372,7 +372,7 @@ async def test_remote_action_utterances_with_none_values(
         UserUttered(
             text="hello",
             parse_data={
-                "intent": {"name": "greet", "confidence": 0.9604260921478271,},
+                "intent": {"name": "greet", "confidence": 0.9604260921478271},
                 "entities": [
                     {"entity": "city", "value": "London"},
                     {"entity": "count", "value": 1},
@@ -381,14 +381,14 @@ async def test_remote_action_utterances_with_none_values(
                 "message_id": "3f4c04602a4947098c574b107d3ccc50",
                 "metadata": {},
                 "intent_ranking": [
-                    {"name": "greet", "confidence": 0.9604260921478271,},
-                    {"name": "goodbye", "confidence": 0.01835782080888748,},
-                    {"name": "deny", "confidence": 0.011255578137934208,},
-                    {"name": "bot_challenge", "confidence": 0.004019865766167641,},
-                    {"name": "affirm", "confidence": 0.002524246694520116,},
-                    {"name": "mood_great", "confidence": 0.002214624546468258,},
-                    {"name": "chitchat", "confidence": 0.0009614597074687481,},
-                    {"name": "mood_unhappy", "confidence": 0.00024030178610701114,},
+                    {"name": "greet", "confidence": 0.9604260921478271},
+                    {"name": "goodbye", "confidence": 0.01835782080888748},
+                    {"name": "deny", "confidence": 0.011255578137934208},
+                    {"name": "bot_challenge", "confidence": 0.004019865766167641},
+                    {"name": "affirm", "confidence": 0.002524246694520116},
+                    {"name": "mood_great", "confidence": 0.002214624546468258},
+                    {"name": "chitchat", "confidence": 0.0009614597074687481},
+                    {"name": "mood_unhappy", "confidence": 0.00024030178610701114},
                 ],
                 "response_selector": {
                     "all_retrieval_intents": [],
@@ -465,10 +465,7 @@ async def test_remote_action_invalid_entities_payload(
 
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
-    response = {
-        "events": [event],
-        "responses": [],
-    }
+    response = {"events": [event], "responses": []}
     with aioresponses() as mocked:
         mocked.post("https://example.com/webhooks/actions", payload=response)
 
@@ -785,8 +782,7 @@ async def test_action_restart(
 
     assert events == [
         BotUttered(
-            "congrats, you've restarted me!",
-            metadata={"utter_action": "utter_restart"},
+            "congrats, you've restarted me!", metadata={"utter_action": "utter_restart"}
         ),
         Restarted(),
     ]
@@ -1139,14 +1135,14 @@ async def test_run_end_to_end_utterance_action():
             ["Bob", "Mary"],
             UserUttered(
                 intent={"name": "inform"},
-                entities=[{"entity": "name", "value": "John"},],
+                entities=[{"entity": "name", "value": "John"}],
             ),
             ["John"],
         ),
     ],
 )
 async def test_action_extract_slots_predefined_mappings(
-    user: Event, slot_name: Text, slot_value: Any, new_user: Event, updated_value: Any,
+    user: Event, slot_name: Text, slot_value: Any, new_user: Event, updated_value: Any
 ):
     domain = Domain.from_yaml(
         textwrap.dedent(
@@ -1342,7 +1338,7 @@ async def test_action_extract_slots_when_mapping_applies(
             ["mushrooms", "kebab"],
         ),
         # Only one entity was extracted for `ListSlot`
-        ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
+        ([{"entity": "topping", "value": "kebab"}], ["kebab"]),
     ],
 )
 async def test_action_extract_slots_with_list_slot(
@@ -1381,7 +1377,7 @@ async def test_action_extract_slots_with_list_slot(
             ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, slot_name),
             UserUttered(
-                "bla", intent={"name": "greet", "confidence": 1.0}, entities=entities,
+                "bla", intent={"name": "greet", "confidence": 1.0}, entities=entities
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1484,7 +1480,7 @@ async def test_action_extract_slots_with_matched_mapping_condition():
             ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "name"),
             UserUttered(
-                "Emily", intent={"name": "inform", "confidence": 1.0}, entities=[],
+                "Emily", intent={"name": "inform", "confidence": 1.0}, entities=[]
             ),
         ],
     )
@@ -1699,7 +1695,7 @@ async def test_action_extract_slots_from_entity(
     domain = Domain.from_dict(
         {
             "entities": ["some_entity"],
-            "slots": {"some_slot": {"type": "any", "mappings": [mapping],}},
+            "slots": {"some_slot": {"type": "any", "mappings": [mapping]}},
             "forms": {form_name: {REQUIRED_SLOTS_KEY: ["some_slot"]}},
         }
     )
@@ -1739,7 +1735,7 @@ async def test_action_extract_slots_from_entity(
             ["mushrooms", "kebab"],
         ),
         # Only one entity was extracted for `ListSlot`
-        ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
+        ([{"entity": "topping", "value": "kebab"}], ["kebab"]),
     ],
 )
 async def test_extract_other_list_slot_from_entity(
@@ -1840,7 +1836,7 @@ async def test_trigger_slot_mapping_applies(
             },
             "forms": {
                 form_name: {
-                    REQUIRED_SLOTS_KEY: [entity_name, slot_filled_by_trigger_mapping,]
+                    REQUIRED_SLOTS_KEY: [entity_name, slot_filled_by_trigger_mapping]
                 }
             },
         }
@@ -1903,7 +1899,7 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
             },
             "forms": {
                 form_name: {
-                    REQUIRED_SLOTS_KEY: [entity_name, slot_filled_by_trigger_mapping,]
+                    REQUIRED_SLOTS_KEY: [entity_name, slot_filled_by_trigger_mapping]
                 }
             },
         }
@@ -1960,7 +1956,7 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
             [{"event": "slot", "name": "custom_slot", "value": True}],
             [SlotSet("custom_slot", True)],
         ),
-        (UserUttered("bla"), [], [],),
+        (UserUttered("bla"), [], []),
     ],
 )
 async def test_action_extract_slots_execute_validation_action(
@@ -2063,7 +2059,7 @@ async def test_action_extract_slots_custom_action_and_predefined_slot_validation
     )
     domain = Domain.from_yaml(domain_yaml)
     event = UserUttered(
-        intent={"name": "inform"}, entities=[{"entity": "city", "value": "london"}],
+        intent={"name": "inform"}, entities=[{"entity": "city", "value": "london"}]
     )
     tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=[event])
 
@@ -2233,7 +2229,7 @@ async def test_action_extract_slots_disallowed_events(caplog: LogCaptureFixture)
     ],
 )
 async def test_action_extract_slots_warns_custom_action_exceptions(
-    caplog: LogCaptureFixture, exception: Exception,
+    caplog: LogCaptureFixture, exception: Exception
 ):
     domain_yaml = textwrap.dedent(
         """
@@ -2258,9 +2254,7 @@ async def test_action_extract_slots_warns_custom_action_exceptions(
     action_server_url = "http:/my-action-server:5055/webhook"
 
     with aioresponses() as mocked:
-        mocked.post(
-            action_server_url, exception=exception,
-        )
+        mocked.post(action_server_url, exception=exception)
 
         action_server = EndpointConfig(action_server_url)
         action_extract_slots = ActionExtractSlots(action_server)
@@ -2561,7 +2555,7 @@ async def test_action_extract_slots_does_not_raise_disallowed_warning_for_slot_e
             action_server_url,
             payload={
                 "events": [
-                    {"event": "slot", "name": "custom_slot_a", "value": "test_A"},
+                    {"event": "slot", "name": "custom_slot_a", "value": "test_A"}
                 ]
             },
         )
@@ -2570,7 +2564,7 @@ async def test_action_extract_slots_does_not_raise_disallowed_warning_for_slot_e
             action_server_url,
             payload={
                 "events": [
-                    {"event": "slot", "name": "custom_slot_b", "value": "test_B"},
+                    {"event": "slot", "name": "custom_slot_b", "value": "test_B"}
                 ]
             },
         )

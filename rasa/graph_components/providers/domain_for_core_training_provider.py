@@ -7,12 +7,7 @@ from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import REQUIRED_SLOTS_KEY
-from rasa.shared.core.domain import (
-    KEY_RESPONSES,
-    Domain,
-    SESSION_CONFIG_KEY,
-    KEY_FORMS,
-)
+from rasa.shared.core.domain import KEY_RESPONSES, Domain, SESSION_CONFIG_KEY, KEY_FORMS
 
 
 class DomainForCoreTrainingProvider(GraphComponent):

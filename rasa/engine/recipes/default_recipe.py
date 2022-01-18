@@ -50,7 +50,7 @@ import rasa.shared.utils.common
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_PREDICT_KWARGS = dict(constructor_name="load", eager=True, is_target=False,)
+DEFAULT_PREDICT_KWARGS = dict(constructor_name="load", eager=True, is_target=False)
 
 
 class DefaultV1RecipeRegisterException(RasaException):
@@ -329,7 +329,7 @@ class DefaultV1Recipe(Recipe):
         cli_parameters: Dict[Text, Any],
     ) -> Text:
         config_from_cli = self._extra_config_from_cli(cli_parameters, component, config)
-        model_provider_needs = self._get_model_provider_needs(train_nodes, component,)
+        model_provider_needs = self._get_model_provider_needs(train_nodes, component)
 
         train_node_name = f"train_{component_name}"
         train_nodes[train_node_name] = SchemaNode(
@@ -394,7 +394,7 @@ class DefaultV1Recipe(Recipe):
             resource_needs = {"resource": from_resource}
 
         model_provider_needs = self._get_model_provider_needs(
-            train_nodes, component_class,
+            train_nodes, component_class
         )
 
         node_name = f"run_{component_name}"
@@ -412,7 +412,7 @@ class DefaultV1Recipe(Recipe):
         return node_name
 
     def _get_model_provider_needs(
-        self, nodes: Dict[Text, SchemaNode], component_class: Type[GraphComponent],
+        self, nodes: Dict[Text, SchemaNode], component_class: Type[GraphComponent]
     ) -> Dict[Text, Text]:
         model_provider_needs = {}
         component = self._from_registry(component_class.__name__)
@@ -517,7 +517,7 @@ class DefaultV1Recipe(Recipe):
             self._add_end_to_end_features_for_training(preprocessors, train_nodes)
 
     def _add_end_to_end_features_for_training(
-        self, preprocessors: List[Text], train_nodes: Dict[Text, SchemaNode],
+        self, preprocessors: List[Text], train_nodes: Dict[Text, SchemaNode]
     ) -> None:
         train_nodes["story_to_nlu_training_data_converter"] = SchemaNode(
             needs={
@@ -542,7 +542,7 @@ class DefaultV1Recipe(Recipe):
 
         node_with_e2e_features = "end_to_end_features_provider"
         train_nodes[node_with_e2e_features] = SchemaNode(
-            needs={"messages": last_node_name,},
+            needs={"messages": last_node_name},
             uses=CoreFeaturizationCollector,
             constructor_name="create",
             fn="collect",
@@ -591,7 +591,7 @@ class DefaultV1Recipe(Recipe):
 
         if self._use_core:
             self._add_core_predict_nodes(
-                predict_config, predict_nodes, train_nodes, preprocessors,
+                predict_config, predict_nodes, train_nodes, preprocessors
             )
 
         return predict_nodes
@@ -693,7 +693,7 @@ class DefaultV1Recipe(Recipe):
     ) -> Text:
         node_name = f"run_{component_name}"
 
-        model_provider_needs = self._get_model_provider_needs(predict_nodes, node.uses,)
+        model_provider_needs = self._get_model_provider_needs(predict_nodes, node.uses)
 
         predict_nodes[node_name] = dataclasses.replace(
             node,
@@ -785,7 +785,7 @@ class DefaultV1Recipe(Recipe):
         )
 
     def _add_end_to_end_features_for_inference(
-        self, predict_nodes: Dict[Text, SchemaNode], preprocessors: List[Text],
+        self, predict_nodes: Dict[Text, SchemaNode], preprocessors: List[Text]
     ) -> Text:
         predict_nodes["tracker_to_message_converter"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
@@ -808,7 +808,7 @@ class DefaultV1Recipe(Recipe):
         node_with_e2e_features = "end_to_end_features_provider"
         predict_nodes[node_with_e2e_features] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
-            needs={"messages": last_node_name,},
+            needs={"messages": last_node_name},
             uses=CoreFeaturizationCollector,
             fn="collect",
             config={},
