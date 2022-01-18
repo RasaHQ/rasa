@@ -452,7 +452,7 @@ jobs:
 
     steps:
       - id: foo
-        uses: ./.github/scripts/mr_tests/ci-model-regression-test-helper@regr-test-dry2
+        uses: ./.github/actions/mr_tests
         with:
           dataset_branch: ${{ matrix.dataset_branch }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
