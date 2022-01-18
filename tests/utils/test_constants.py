@@ -1,4 +1,3 @@
-import os
 import sys
 import importlib
 import pytest
@@ -9,7 +8,7 @@ import rasa.utils.endpoints as endpoint_utils
 
 @pytest.fixture
 def custom_request_timeout_module():
-    # set --request-timeout cmdline arg and 
+    # set --request-timeout cmdline arg and
     # reload modules to reflect changes
     sys.argv.extend(['--request-timeout', '40'])
     importlib.reload(constants)
@@ -22,9 +21,11 @@ def custom_request_timeout_module():
     importlib.reload(constants)
     importlib.reload(endpoint_utils)
 
+
 @pytest.fixture
 def default_request_timeout_module():
     yield endpoint_utils
+
 
 async def test_custom_timeout(custom_request_timeout_module):
     """
@@ -38,10 +39,11 @@ async def test_custom_timeout(custom_request_timeout_module):
     async with conf.session() as client_session:
         assert client_session.timeout.total == 40
 
+
 async def test_default_timeout(default_request_timeout_module):
     """
         Verify the DEFAULT_REQUEST_TIMEOUT is the default
-        value when not overridden
+        value when not overridden 
     """
     conf = default_request_timeout_module.read_endpoint_config(
         "data/test_endpoints/example_endpoints.yml", "tracker_store"
