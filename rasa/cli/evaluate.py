@@ -80,7 +80,7 @@ def add_subparser(
     marker_parser.set_defaults(func=_run_markers_cli)
 
 
-def _run_markers_cli(args: argparse.Namespace) -> None:
+async def _run_markers_cli(args: argparse.Namespace) -> None:
     """Run markers algorithm using parameters from CLI.
 
     Args:
@@ -91,7 +91,7 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
 
     stats_file_prefix = args.stats_file_prefix if args.stats else None
 
-    _run_markers(
+    await _run_markers(
         seed,
         count,
         args.endpoints,
@@ -103,7 +103,7 @@ def _run_markers_cli(args: argparse.Namespace) -> None:
     )
 
 
-def _run_markers(
+async def _run_markers(
     seed: Optional[int],
     count: Optional[int],
     endpoint_config: Path,
@@ -176,7 +176,7 @@ def _run_markers(
         return path.parent / (path.name + suffix) if path else None
 
     try:
-        markers.evaluate_trackers(
+        await markers.evaluate_trackers(
             trackers=tracker_loader.load(),
             output_file=output_filename,
             session_stats_file=_append_suffix(stats_file_prefix, STATS_SESSION_SUFFIX),

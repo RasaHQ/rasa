@@ -12,7 +12,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    Any,
+    Any, AsyncIterator,
 )
 
 from pathlib import Path
@@ -584,9 +584,9 @@ class Marker(ABC):
 
         return marker
 
-    def evaluate_trackers(
+    async def evaluate_trackers(
         self,
-        trackers: Iterator[Optional[DialogueStateTracker]],
+        trackers: AsyncIterator[Optional[DialogueStateTracker]],
         output_file: Path,
         session_stats_file: Optional[Path] = None,
         overall_stats_file: Optional[Path] = None,
@@ -616,7 +616,7 @@ class Marker(ABC):
 
         # Apply marker to each session stored in each tracker and save the results.
         processed_trackers: Dict[Text, List[SessionEvaluation]] = {}
-        for tracker in trackers:
+        async for tracker in trackers:
             if tracker:
                 tracker_result = self.evaluate_events(tracker.events)
                 processed_trackers[tracker.sender_id] = tracker_result

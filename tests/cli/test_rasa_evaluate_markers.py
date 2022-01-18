@@ -107,7 +107,7 @@ def test_evaluate_markers_all_help(run: Callable[..., RunResult]):
         assert line in printed_help
 
 
-def test_markers_cli_results_save_correctly(
+async def test_markers_cli_results_save_correctly(
     marker_sqlite_tracker: Tuple[SQLTrackerStore, Text], tmp_path: Path
 ):
     _, db_path = marker_sqlite_tracker
@@ -124,7 +124,7 @@ def test_markers_cli_results_save_correctly(
     results_path = tmp_path / "results.csv"
     stats_file_prefix = tmp_path / "statistics"
 
-    rasa.cli.evaluate._run_markers(
+    await rasa.cli.evaluate._run_markers(
         seed=None,
         count=10,
         endpoint_config=endpoints_path,

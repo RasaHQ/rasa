@@ -1,7 +1,7 @@
 import random
 from rasa.shared.exceptions import RasaException
 from rasa.shared.core.trackers import DialogueStateTracker
-from typing import Any, Iterable, Iterator, List, Text, Optional
+from typing import Any, Iterable, Iterator, List, Text, Optional, Coroutine, AsyncIterator
 from rasa.core.tracker_store import TrackerStore
 import rasa.shared.utils.io
 
@@ -87,9 +87,9 @@ class MarkerTrackerLoader:
                     f"Parameter 'seed' is ignored by strategy '{strategy}'."
                 )
 
-    def load(self) -> Iterator[Optional[DialogueStateTracker]]:
+    async def load(self) -> AsyncIterator[Optional[DialogueStateTracker]]:
         """Loads trackers according to strategy."""
-        stored_keys = list(self.tracker_store.keys())
+        stored_keys = list(await self.tracker_store.keys())
         if self.count is not None and self.count > len(stored_keys):
             # Warn here as user may have overestimated size of data set
             rasa.shared.utils.io.raise_warning(
@@ -100,4 +100,4 @@ class MarkerTrackerLoader:
 
         keys = self.strategy(stored_keys, self.count)
         for sender in keys:
-            yield self.tracker_store.retrieve_full_tracker(sender)
+            yield await self.tracker_store.retrieve_full_tracker(sender)
