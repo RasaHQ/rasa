@@ -14,19 +14,19 @@ from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore, SQLTrack
 
 
 @pytest.fixture
-def marker_trackerstore() -> TrackerStore:
+async def marker_trackerstore() -> TrackerStore:
     """Sets up a TrackerStore with 5 trackers in it."""
     domain = Domain.empty()
     store = InMemoryTrackerStore(domain)
     for i in range(5):
         tracker = DialogueStateTracker(str(i), None)
         tracker.update_with_events([UserUttered(str(j)) for j in range(10)], domain)
-        store.save(tracker)
+        await store.save(tracker)
 
     return store
 
 
-def test_load_sessions(tmp_path):
+async def test_load_sessions(tmp_path):
     """Tests loading a tracker with multiple sessions."""
     domain = Domain.empty()
     store = SQLTrackerStore(domain, db=os.path.join(tmp_path, "temp.db"))
@@ -41,18 +41,18 @@ def test_load_sessions(tmp_path):
         ],
         domain,
     )
-    store.save(tracker)
+    await store.save(tracker)
 
     loader = MarkerTrackerLoader(store, STRATEGY_ALL)
-    result = list(loader.load())
+    result = [tracker async for tracker in loader.load()]
     assert len(result) == 1  # contains only one tracker
     assert len(result[0].events) == len(tracker.events)
 
 
-def test_load_sample(marker_trackerstore: TrackerStore):
+async def test_load_sample(marker_trackerstore: TrackerStore):
     """Tests loading trackers using 'sample' strategy."""
     loader = MarkerTrackerLoader(marker_trackerstore, STRATEGY_SAMPLE_N, 3)
-    result = list(loader.load())
+    result = [tracker async for tracker in loader.load()]
 
     assert len(result) == 3
 
@@ -63,10 +63,10 @@ def test_load_sample(marker_trackerstore: TrackerStore):
         senders.add(item.sender_id)
 
 
-def test_load_sample_with_seed(marker_trackerstore: TrackerStore):
+async def test_load_sample_with_seed(marker_trackerstore: TrackerStore):
     """Tests loading trackers using 'sample' strategy with seed set."""
     loader = MarkerTrackerLoader(marker_trackerstore, STRATEGY_SAMPLE_N, 3, seed=3)
-    result = list(loader.load())
+    result = [tracker async for tracker in loader.load()]
     expected_ids = ["1", "4", "3"]
 
     assert len(result) == 3
@@ -76,23 +76,23 @@ def test_load_sample_with_seed(marker_trackerstore: TrackerStore):
         assert marker_trackerstore.exists(item.sender_id)
 
 
-def test_load_first_n(marker_trackerstore: TrackerStore):
+async def test_load_first_n(marker_trackerstore: TrackerStore):
     """Tests loading trackers using 'first_n' strategy."""
     loader = MarkerTrackerLoader(marker_trackerstore, STRATEGY_FIRST_N, 3)
-    result = list(loader.load())
+    result = [tracker async for tracker in loader.load()]
 
     assert len(result) == 3
 
     for item in result:
-        assert marker_trackerstore.exists(item.sender_id)
+        assert await marker_trackerstore.exists(item.sender_id)
 
 
-def test_load_all(marker_trackerstore: TrackerStore):
+async def test_load_all(marker_trackerstore: TrackerStore):
     """Tests loading trackers using 'all' strategy."""
     loader = MarkerTrackerLoader(marker_trackerstore, STRATEGY_ALL)
-    result = list(loader.load())
+    result = [tracker async for tracker in loader.load()]
 
-    assert len(result) == len(list(marker_trackerstore.keys()))
+    assert len(result) == len(list(await marker_trackerstore.keys()))
 
     for item in result:
         assert marker_trackerstore.exists(item.sender_id)
@@ -134,9 +134,9 @@ def test_warn_count_all_unnecessary(marker_trackerstore: TrackerStore):
         MarkerTrackerLoader(marker_trackerstore, STRATEGY_ALL, 3)
 
 
-def test_warn_count_exceeds_store(marker_trackerstore: TrackerStore):
+async def test_warn_count_exceeds_store(marker_trackerstore: TrackerStore):
     """Tests a warning is thrown when 'count' is larger than the number of trackers."""
     loader = MarkerTrackerLoader(marker_trackerstore, STRATEGY_SAMPLE_N, 6)
     with pytest.warns(UserWarning):
         # Need to force the generator to evaluate to produce the warning
-        list(loader.load())
+        [tracker async for tracker in loader.load()]
