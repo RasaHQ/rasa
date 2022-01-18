@@ -439,7 +439,9 @@ jobs:
 
   model_regression_test_cpu_new:
     name: Model Regression Tests - CPU new
-    uses: ./.github/workflows/ci-model-regression-test-helper.yml
+    needs:
+      - read_test_configuration
+    uses: RasaHQ/rasa/.github/workflows/ci-model-regression-test-helper.yml@regr-test-dry
     with:
       username: mona
     secrets:
