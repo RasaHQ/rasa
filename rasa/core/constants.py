@@ -1,3 +1,17 @@
+import argparse
+
+# access configs passed in as command line arguments
+cmdline_parser = argparse.ArgumentParser()
+cmdline_parser.add_argument('--request-timeout')
+# use parse_known_args instead of parse_args to silently skip
+# the other commandline parameters
+cmdline_args, _ = cmdline_parser.parse_known_args()
+
+try:
+    DEFAULT_REQUEST_TIMEOUT = int(cmdline_args.request_timeout)
+except (ValueError, TypeError):
+    DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+
 DEFAULT_SERVER_PORT = 5005
 
 DEFAULT_SERVER_INTERFACE = "0.0.0.0"
@@ -15,8 +29,6 @@ DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD = 0.1
 DEFAULT_CORE_FALLBACK_THRESHOLD = 0.3
 
 DEFAULT_MAX_HISTORY = None  # Core policy history is unbounded by default.
-
-DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
 DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 

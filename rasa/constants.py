@@ -1,6 +1,18 @@
 import os
+import argparse
 
-DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+# access configs passed in as command line arguments
+cmdline_parser = argparse.ArgumentParser()
+cmdline_parser.add_argument('--request-timeout')
+# use parse_known_args() instead of parse_args() to silently skip
+# the other commandline parameters
+cmdline_args, _ = cmdline_parser.parse_known_args()
+
+try:
+    DEFAULT_REQUEST_TIMEOUT = int(cmdline_args.request_timeout)
+except (ValueError, TypeError):
+    DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+
 DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
 TEST_DATA_FILE = "test.yml"
