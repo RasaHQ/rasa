@@ -1,5 +1,5 @@
-name: MR Test composite action
-description: 'Run MR test'
+name: MR Test - Set DATASET and CONFIG variables
+description: 'MR Test - Set DATASET and CONFIG variables'
 inputs:
   DATASET_NAME:
     description: 'DATASET_NAME'
@@ -28,7 +28,6 @@ runs:
           DATASET_NAME: "${{ inputs.DATASET_NAME }}"
           CONFIG_NAME: "${{ inputs.CONFIG_NAME }}"
       run: |
-        set -x
         # determine extra environment variables
         # - CONFIG
         # - DATASET
