@@ -127,8 +127,8 @@ def test_tracker_duplicate(moodbot_domain: Domain):
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-def test_tracker_store_storage_and_retrieval(store: TrackerStore):
-    tracker = store.get_or_create_tracker("some-id")
+async def test_tracker_store_storage_and_retrieval(store: TrackerStore):
+    tracker = await store.get_or_create_tracker("some-id")
     # the retrieved tracker should be empty
     assert tracker.sender_id == "some-id"
 
@@ -139,28 +139,28 @@ def test_tracker_store_storage_and_retrieval(store: TrackerStore):
     intent = {"name": "greet", "confidence": 1.0}
     tracker.update(UserUttered("/greet", intent, []))
     assert tracker.latest_message.intent.get("name") == "greet"
-    store.save(tracker)
+    await store.save(tracker)
 
     # retrieving the same tracker should result in the same tracker
-    retrieved_tracker = store.get_or_create_tracker("some-id")
+    retrieved_tracker = await store.get_or_create_tracker("some-id")
     assert retrieved_tracker.sender_id == "some-id"
     assert len(retrieved_tracker.events) == 2
     assert retrieved_tracker.latest_message.intent.get("name") == "greet"
 
     # getting another tracker should result in an empty tracker again
-    other_tracker = store.get_or_create_tracker("some-other-id")
+    other_tracker = await store.get_or_create_tracker("some-other-id")
     assert other_tracker.sender_id == "some-other-id"
     assert len(other_tracker.events) == 1
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
 @pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, TEST_DOMAINS_FOR_DIALOGUES))
-def test_tracker_store(store, pair):
+async def test_tracker_store(store, pair):
     dialogue, domainpath = pair
     domain = Domain.load(domainpath)
     tracker = tracker_from_dialogue(dialogue, domain)
-    store.save(tracker)
-    restored = store.retrieve(tracker.sender_id)
+    await store.save(tracker)
+    restored = await store.retrieve(tracker.sender_id)
     assert restored == tracker
 
 
@@ -190,7 +190,7 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent: Age
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
         await default_agent.handle_text("/greet", sender_id=sender_id)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)
@@ -208,7 +208,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
         await default_agent.handle_text("/greet", sender_id=sender_id)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = [
         "action_session_start",
@@ -234,7 +234,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent: Agent):
 
     await default_agent.handle_text("/greet", sender_id=sender_id)
 
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # important is, that the 'bot' comes after the second 'action' and not
     # before
