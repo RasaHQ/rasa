@@ -41,6 +41,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     INTENT_RESPONSE_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
 from rasa.shared.nlu.training_data.loading import load_data
@@ -48,7 +49,13 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
+from rasa.nlu.constants import (
+    DEFAULT_TRANSFORMER_SIZE,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_RESPONSES_KEY,
+)
 
 
 @pytest.fixture()
@@ -635,12 +642,16 @@ async def test_process_empty_input(
     message = process_message(loaded_pipeline, message)
 
     classified_message = response_selector.process([message])[0]
-    output = classified_message.get("response_selector").get("default").get("response")
+    output = (
+        classified_message.get(RESPONSE_SELECTOR_PROPERTY_NAME)
+        .get(RESPONSE_SELECTOR_DEFAULT_INTENT)
+        .get(RESPONSE_SELECTOR_PREDICTION_KEY)
+    )
 
     assert classified_message.get(TEXT) == ""
-    assert not output.get("responses")
-    assert output.get("confidence") == 0.0
-    assert not output.get("intent_response_key")
+    assert not output.get(RESPONSE_SELECTOR_RESPONSES_KEY)
+    assert output.get(PREDICTED_CONFIDENCE_KEY) == 0.0
+    assert not output.get(INTENT_RESPONSE_KEY)
 
 
 @pytest.mark.timeout(120)

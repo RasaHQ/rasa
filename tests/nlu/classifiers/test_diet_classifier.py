@@ -18,6 +18,8 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    PREDICTED_CONFIDENCE_KEY,
+    INTENT_NAME_KEY,
 )
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
@@ -429,8 +431,8 @@ async def test_process_empty_input(
         diet_config={EPOCHS: 1}, message_text="", expect_intent=False
     )
     assert message.get(TEXT) == ""
-    assert not message.get(INTENT)["name"]
-    assert message.get(INTENT)["confidence"] == 0.0
+    assert not message.get(INTENT)[INTENT_NAME_KEY]
+    assert message.get(INTENT)[PREDICTED_CONFIDENCE_KEY] == 0.0
     assert not message.get(ENTITIES)
 
 
