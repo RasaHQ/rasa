@@ -357,7 +357,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: poetry run pip install -U datadog-api-client ddtrace
 
-      - name: Validate that GPUs are working
+      - name: Validate that GPUs are working [SPECIAL]
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
           poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
@@ -437,6 +437,14 @@ jobs:
         run: |
           sudo service datadog-agent stop
 
+  model_regression_test_cpu_new:
+    name: Model Regression Tests - CPU new
+    uses: ./.github/workflows/ci-model-regression-test-helper.yml
+    with:
+      username: mona
+    secrets:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
   model_regression_test_cpu:
     name: Model Regression Tests - CPU
     needs:
@@ -467,7 +475,7 @@ jobs:
           sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
-      - name: Set DATASET and CONFIG variables
+      - name: Set env variables
         id: set_dataset_config_vars
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
@@ -490,6 +498,11 @@ jobs:
           echo "::set-output name=is_dataset_exists::true"
           echo "::set-output name=is_config_exists::true"
           echo "::set-output name=is_external::${IS_EXTERNAL}"
+
+          # Warn about job if dataset is Hermit and config is BERT + DIET(seq) + ResponseSelector(t2t) or Sparse + BERT + DIET(seq) + ResponseSelector(t2t)
+          if [[ "${{ matrix.dataset }}" == "Hermit" && "${{ matrix.config }}" =~ "BERT + DIET(seq) + ResponseSelector(t2t)" ]]; then
+            echo "::warning::This ${{ matrix.dataset }} dataset / ${{ matrix.config }} config is currently being skipped on scheduled tests due to OOM associated with the upgrade to TF 2.6. You may see OOM here."
+          fi
 
           if [[ "${IS_EXTERNAL}" == "true" ]]; then
             echo "DATASET_DIR=dataset_external" >> $GITHUB_ENV
