@@ -125,12 +125,25 @@ jobs:
         poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
       uses: actions/cache@v2
       with:
-        path: ~/.cache/pypoetry/virtualenvs
+        path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
+      run: rm -r .venv
+
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')) && needs.changes.outputs.backend == 'true'
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      if: needs.changes.outputs.backend == 'true'
+      run: poetry config virtualenvs.in-project true
 
     - name: Install Dependencies 📦
       if: needs.changes.outputs.backend == 'true'
@@ -308,7 +321,7 @@ jobs:
     - name: Install ddtrace
       if: needs.changes.outputs.backend == 'true'
       run: poetry run pip install -U ddtrace
-      
+
     - name: Test Code 🔍 (monothread)
       # This is a temporary workaround for OOM on Windows caused by increased memory
       # consumption associated with the upgrade of our tensorflow dependency
@@ -321,7 +334,7 @@ jobs:
         PYTHONIOENCODING: "utf-8"
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
-        DD_ARGS: --ddtrace
+        DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
         poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
@@ -333,7 +346,7 @@ jobs:
         PYTHONIOENCODING: "utf-8"
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
-        DD_ARGS: --ddtrace
+        DD_ARGS: --ddtrace --ddtrace-patch-all
       run: |
         make ${{ matrix.test }}
         mv .coverage ${{ github.workspace }}/${{ matrix.test }}-coverage

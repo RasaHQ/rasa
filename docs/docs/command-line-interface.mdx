@@ -28,6 +28,33 @@ abstract: The command line interface (CLI) gives you easy-to-remember commands f
 |`rasa x`                |Launches Rasa X in local mode.                                                                                                            |
 |`rasa -h`               |Shows all available commands.                                                                                                             |
 
+## Log Level
+
+Rasa produces log messages at several different levels (eg. warning, info, error and so on). You can control which level of logs you would like to see with `--verbose` (same as `-v`) or `--debug` (same as `-vv`) as optional command line arguments. See each command below for more explanation on what these arguments mean.
+
+In addition to CLI arguments, several environment variables allow you to control log output in a more granular way. With these environment variables, you can configure log levels for messages created by external libraries such as matplotlib, pika, and kafka. Currently, following environment variables are supported:
+
+1. LOG_LEVEL_LIBRARIES: This is the general environment variable to configure log level for all libraries.
+2. LOG_LEVEL_MATPLOTLIB: This is the specialized environment variable to configure log level only for Matplotlib.
+3. LOG_LEVEL_RABBITMQ: This is the specialized environment variable to configure log level only for AMQP libraries, at the moment it handles log levels from `aio_pika` and `aiormq`.
+4. LOG_LEVEL_KAFKA: This is the specialized environment variable to configure log level only for kafka.
+
+General configuration (`LOG_LEVEL_LIBRARIES`) has less priority than library level specific configuration (`LOG_LEVEL_MATPLOTLIB`, `LOG_LEVEL_RABBITMQ` etc); and CLI parameter sets the lowest level log messages which will be handled. This means variables can be used together with a predictable result. As an example:
+
+```bash
+LOG_LEVEL_LIBRARIES=ERROR LOG_LEVEL_MATPLOTLIB=WARNING LOG_LEVEL_KAFKA=DEBUG rasa shell --debug
+```
+
+Above command run will result seeing `DEBUG` level messages by default (due to `--debug`), `WARNING` level for Matplotlib,`DEBUG` level for kafka and `ERROR` level for other libraries not configured.
+
+Note that CLI config sets the lowest level log messages to be handled, hence following command will set log level to INFO (due to `--verbose`) and no debug messages will be seen (library level configuration will not have an effect):
+
+```bash
+LOG_LEVEL_LIBRARIES=DEBUG LOG_LEVEL_MATPLOTLIB=DEBUG rasa shell --verbose
+```
+
+As an aside, CLI log level sets the level at the root logger (which has the important handler - coloredlogs handler); this means even if an environment variable sets a library logger to a lower level, root logger will reject messages from that library. By default CLI log level is set to `INFO` if not given.
+
 ## rasa init
 
 This command sets up a complete assistant for you with some example training data:
@@ -233,7 +260,7 @@ you need to add the `--ssl-password` as well.
 rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key --ssl-password mypassword
 ```
 
-Rasa by default listens on each available network interface. You can limit this to a specific 
+Rasa by default listens on each available network interface. You can limit this to a specific
 network interface using the `-i` command line option.
 
 ```bash
@@ -398,7 +425,7 @@ rasa data migrate --help
 
 ## rasa data validate
 
-You can check your domain, NLU data, or story data for mistakes and inconsistencies. 
+You can check your domain, NLU data, or story data for mistakes and inconsistencies.
 To validate your data, run this command:
 
 ```bash
@@ -407,12 +434,12 @@ rasa data validate
 
 The validator searches for errors in the data, e.g. two intents that have some
 identical training examples.
-The validator also checks if you have any stories where different assistant actions follow from the same 
+The validator also checks if you have any stories where different assistant actions follow from the same
 dialogue history. Conflicts between stories will prevent a model from learning the correct
-pattern for a dialogue. 
+pattern for a dialogue.
 
-If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the 
-smallest of those values in the validator command using the `--max-history <max_history>` flag. 
+If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the
+smallest of those values in the validator command using the `--max-history <max_history>` flag.
 
 You can also validate only the story structure by running this command:
 
@@ -421,12 +448,12 @@ rasa data validate stories
 ```
 
 :::note
-Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories. 
+Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories.
 However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
 
 Also, if you use end-to-end stories, then this might not capture all conflicts. Specifically, if two user inputs
 result in different tokens yet exactly the same featurization, then conflicting actions after these inputs
-may exist but will not be reported by the tool. 
+may exist but will not be reported by the tool.
 :::
 
 To interrupt validation even for minor issues such as unused intents or responses, use the `--fail-on-warnings` flag.
@@ -435,7 +462,7 @@ To interrupt validation even for minor issues such as unused intents or response
 The `rasa data validate stories` command assumes that all your story names are unique!
 :::
 
-You can use `rasa data validate` with additional arguments, e.g. to specify the location of your data and 
+You can use `rasa data validate` with additional arguments, e.g. to specify the location of your data and
 domain files:
 
 ```text [rasa data validate --help]

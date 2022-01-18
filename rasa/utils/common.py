@@ -23,7 +23,13 @@ from typing import (
 from socket import SOCK_DGRAM, SOCK_STREAM
 import numpy as np
 import rasa.utils.io
-from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
+from rasa.constants import (
+    DEFAULT_LOG_LEVEL_LIBRARIES,
+    ENV_LOG_LEVEL_LIBRARIES,
+    ENV_LOG_LEVEL_MATPLOTLIB,
+    ENV_LOG_LEVEL_RABBITMQ,
+    ENV_LOG_LEVEL_KAFKA,
+)
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
 import rasa.shared.utils.io
 
@@ -90,7 +96,7 @@ def configure_logging_and_warnings(
     """Sets log levels of various loggers and sets up filters for warnings and logs.
 
     Args:
-        log_level: The lo level to be used for the 'Rasa' logger. Pass `None` to use
+        log_level: The log level to be used for the 'Rasa' logger. Pass `None` to use
             either the environment variable 'LOG_LEVEL' if it is specified, or the
             default log level otherwise.
         warn_only_once: determines whether user warnings should be filtered by the
@@ -98,19 +104,17 @@ def configure_logging_and_warnings(
         filter_repeated_logs: determines whether `RepeatedLogFilter`s are added to
             the handlers of the root logger
     """
-    if not log_level:
+    if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
         log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+        # Change log level from str to int (note that log_level in function parameter
+        # int already, coming from CLI argparse parameter).
         log_level = logging.getLevelName(log_level)
 
     logging.getLogger("rasa").setLevel(log_level)
-
-    update_tensorflow_log_level()
-    update_asyncio_log_level()
-    update_matplotlib_log_level()
-    update_apscheduler_log_level()
-    update_socketio_log_level()
-
+    # Assign log level to env variable in str format (not int). Why do we assign?
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
+
+    configure_library_logging()
 
     if filter_repeated_logs:
         for handler in logging.getLogger().handlers:
@@ -137,6 +141,20 @@ def _filter_warnings(log_level: Optional[int], warn_only_once: bool = True) -> N
             )
 
 
+def configure_library_logging() -> None:
+    """Configures log levels of used libraries such as kafka, matplotlib, pika."""
+    library_log_level = os.environ.get(
+        ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES,
+    )
+    update_tensorflow_log_level()
+    update_asyncio_log_level()
+    update_apscheduler_log_level()
+    update_socketio_log_level()
+    update_matplotlib_log_level(library_log_level)
+    update_kafka_log_level(library_log_level)
+    update_rabbitmq_log_level(library_log_level)
+
+
 def update_apscheduler_log_level() -> None:
     """Configures the log level of `apscheduler.*` loggers."""
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
@@ -154,6 +172,7 @@ def update_apscheduler_log_level() -> None:
 
 
 def update_socketio_log_level() -> None:
+    """Set the log level of socketio."""
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
     socketio_loggers = ["websockets.protocol", "engineio.server", "socketio.server"]
@@ -230,16 +249,32 @@ def update_asyncio_log_level() -> None:
     logging.getLogger("asyncio").setLevel(log_level)
 
 
-def update_matplotlib_log_level() -> None:
-    """Set the log level of matplotlib to the log level.
+def update_matplotlib_log_level(library_log_level: Text) -> None:
+    """Set the log level of matplotlib.
 
-    Uses the log level specified in the environment variable 'LOG_LEVEL_LIBRARIES'.
+    Uses the library specific log level or the general libraries log level.
     """
-    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
-    logging.getLogger("matplotlib.backends.backend_pdf").setLevel(log_level)
-    logging.getLogger("matplotlib.colorbar").setLevel(log_level)
-    logging.getLogger("matplotlib.font_manager").setLevel(log_level)
-    logging.getLogger("matplotlib.ticker").setLevel(log_level)
+    log_level = os.environ.get(ENV_LOG_LEVEL_MATPLOTLIB, library_log_level)
+    logging.getLogger("matplotlib").setLevel(log_level)
+
+
+def update_kafka_log_level(library_log_level: Text) -> None:
+    """Set the log level of kafka.
+
+    Uses the library specific log level or the general libraries log level.
+    """
+    log_level = os.environ.get(ENV_LOG_LEVEL_KAFKA, library_log_level)
+    logging.getLogger("kafka").setLevel(log_level)
+
+
+def update_rabbitmq_log_level(library_log_level: Text) -> None:
+    """Set the log level of pika.
+
+    Uses the library specific log level or the general libraries log level.
+    """
+    log_level = os.environ.get(ENV_LOG_LEVEL_RABBITMQ, library_log_level)
+    logging.getLogger("aio_pika").setLevel(log_level)
+    logging.getLogger("aiormq").setLevel(log_level)
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
@@ -302,8 +337,8 @@ def update_existing_keys(
     """Iterate through all the updates and update a value in the original dictionary.
 
     If the updates contain a key that is not present in the original dict, it will
-    be ignored."""
-
+    be ignored.
+    """
     updated = original.copy()
     for k, v in updates.items():
         if k in updated:

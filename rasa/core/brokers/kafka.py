@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from asyncio import AbstractEventLoop
@@ -8,6 +9,7 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.exceptions import RasaException
+import rasa.shared.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,6 @@ class KafkaEventBroker(EventBroker):
         ssl_keyfile: Optional[Text] = None,
         ssl_check_hostname: bool = False,
         security_protocol: Text = "SASL_PLAINTEXT",
-        loglevel: Union[int, Text] = logging.ERROR,
         **kwargs: Any,
     ) -> None:
         """Kafka event broker.
@@ -67,7 +68,6 @@ class KafkaEventBroker(EventBroker):
                 should verify that the certificate matches the brokers hostname.
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
-            loglevel: Logging level of the kafka logger.
         """
         import kafka
 
@@ -84,8 +84,6 @@ class KafkaEventBroker(EventBroker):
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
-
-        logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
     async def from_endpoint_config(
@@ -194,10 +192,26 @@ class KafkaEventBroker(EventBroker):
         else:
             partition_key = None
 
+        headers = []
+        if self.rasa_environment:
+            headers = [
+                (
+                    "RASA_ENVIRONMENT",
+                    bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
+                )
+            ]
+
         logger.debug(
-            f"Calling kafka send({self.topic}, value={event}, key={partition_key!s})"
+            f"Calling kafka send({self.topic}, value={event},"
+            f" key={partition_key!s}, headers={headers})"
         )
-        self.producer.send(self.topic, value=event, key=partition_key)
+
+        self.producer.send(self.topic, value=event, key=partition_key, headers=headers)
 
     def _close(self) -> None:
         self.producer.close()
+
+    @rasa.shared.utils.common.lazy_property
+    def rasa_environment(self) -> Optional[Text]:
+        """Get value of the `RASA_ENVIRONMENT` environment variable."""
+        return os.environ.get("RASA_ENVIRONMENT", "RASA_ENVIRONMENT_NOT_SET")
