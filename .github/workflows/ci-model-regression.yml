@@ -451,24 +451,15 @@ jobs:
     if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
-      - id: foo
+      - name: Checkout
+        uses: actions/checkout@v2
+      - id: run-mr-tests
         uses: ./.github/actions/mr_tests
         with:
           dataset_branch: ${{ matrix.dataset_branch }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           ML_TEST_SA_PAT: ${{ secrets.ML_TEST_SA_PAT }}
           DATASET_REPOSITORY: ${{ secrets.DATASET_REPOSITORY }}
-
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Checkout dataset
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ secrets.DATASET_REPOSITORY }}
-          token: ${{ secrets.ML_TEST_SA_PAT }}
-          path: 'dataset'
-          ref: ${{ matrix.dataset_branch }}
 
       - name: Download gomplate
         run: |-
