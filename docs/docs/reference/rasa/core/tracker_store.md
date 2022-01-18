@@ -309,6 +309,16 @@ Saves the current conversation state.
 
 Serializes the tracker, returns object with decimal types.
 
+#### retrieve
+
+```python
+ | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Retrieve dialogues for a sender_id in reverse-chronological order.
+
+Based on the session_date sort key.
+
 #### keys
 
 ```python

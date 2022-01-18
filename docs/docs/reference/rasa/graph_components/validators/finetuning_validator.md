@@ -19,8 +19,8 @@ initialized via load whether we can finetune.
 
 Finetuning is possible if, compared to the initial training phase, it holds that
 1. the configuration (except for &quot;epoch&quot; keys) does not change
-2. the domain (except for &quot;responses&quot;) does not change - or we&#x27;re not finetuning
-   the core part
+2. the domain (except for e.g. &quot;responses&quot;) does not change - or we&#x27;re not
+   finetuning the core part
 3. the intents, entities, entity groups, entity roles, and action names that
    appeared in the original NLU training data, appear in the NLU training data
    used for finetuning, and no new such items (i.e. intents, entities, entity

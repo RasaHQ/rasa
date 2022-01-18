@@ -184,7 +184,7 @@ async def run_nlu_test_async(
 
     data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path], domain_path=domain_path,
+        training_data_paths=[data_path], domain_path=domain_path
     )
     nlu_data = test_data_importer.get_nlu_data()
 
@@ -206,7 +206,7 @@ async def run_nlu_test_async(
         for file in config:
             try:
                 validation_utils.validate_yaml_schema(
-                    rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE,
+                    rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE
                 )
                 config_files.append(file)
             except YamlException:

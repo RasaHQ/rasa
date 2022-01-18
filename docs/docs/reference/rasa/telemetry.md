@@ -146,8 +146,9 @@ Print a telemetry events payload to the commandline.
 with_default_context_fields(context: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
 ```
 
-Return a new context dictionary that contains the default field values merged
-with the provided ones. The default fields contain only the OS information for now.
+Return a new context dictionary with default and provided field values merged.
+
+The default fields contain only the OS information for now.
 
 **Arguments**:
 

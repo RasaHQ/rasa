@@ -27,7 +27,7 @@ from rasa.engine.storage.resource import Resource
 
 @pytest.fixture
 def create_or_load_convert_featurizer(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizer]:
     def inner(
         config: Dict[Text, Any], load: bool = False
@@ -54,7 +54,7 @@ def test_convert_featurizer_process(
 ):
 
     monkeypatch.setattr(
-        ConveRTFeaturizer, "_validate_model_url", lambda _: RESTRICTED_ACCESS_URL,
+        ConveRTFeaturizer, "_validate_model_url", lambda _: RESTRICTED_ACCESS_URL
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -94,9 +94,7 @@ def test_convert_featurizer_train(
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
 
-    monkeypatch.setattr(
-        ConveRTFeaturizer, "_validate_model_url", lambda _: None,
-    )
+    monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
         "model_url": RESTRICTED_ACCESS_URL,
@@ -165,9 +163,7 @@ def test_convert_featurizer_tokens_to_text(
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
 
-    monkeypatch.setattr(
-        ConveRTFeaturizer, "_validate_model_url", lambda _: None,
-    )
+    monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
         "model_url": RESTRICTED_ACCESS_URL,
@@ -208,9 +204,7 @@ def test_convert_featurizer_token_edge_cases(
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
 
-    monkeypatch.setattr(
-        ConveRTFeaturizer, "_validate_model_url", lambda _: None,
-    )
+    monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
         "model_url": RESTRICTED_ACCESS_URL,
@@ -239,9 +233,7 @@ def test_convert_featurizer_number_of_sub_tokens(
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
 
-    monkeypatch.setattr(
-        ConveRTFeaturizer, "_validate_model_url", lambda _: None,
-    )
+    monkeypatch.setattr(ConveRTFeaturizer, "_validate_model_url", lambda _: None)
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
         "model_url": RESTRICTED_ACCESS_URL,
@@ -319,7 +311,7 @@ def test_raise_wrong_model_file(
 
 @pytest.mark.skip_on_windows
 def test_raise_invalid_path(
-    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer],
+    create_or_load_convert_featurizer: Callable[[Dict[Text, Any]], ConveRTFeaturizer]
 ):
 
     component_config = {FEATURIZER_CLASS_ALIAS: "alias", "model_url": "saved_model.pb"}

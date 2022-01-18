@@ -26,7 +26,7 @@ Normalization can be applied by setting `normalize=True`.
 
 ```python
 @_needs_matplotlib_backend
-plot_paired_histogram(histogram_data: List[List[float]], title: Text, output_file: Optional[Text] = None, num_bins: int = 25, colors: Tuple[Text, Text] = ("#009292", "#920000",), axes_label: Tuple[Text, Text] = ("Correct", "Wrong"), frame_label: Tuple[Text, Text] = ("Number of Samples", "Confidence"), density: bool = False, x_pad_fraction: float = 0.05, y_pad_fraction: float = 0.10) -> None
+plot_paired_histogram(histogram_data: List[List[float]], title: Text, output_file: Optional[Text] = None, num_bins: int = 25, colors: Tuple[Text, Text] = ("#009292", "#920000"), axes_label: Tuple[Text, Text] = ("Correct", "Wrong"), frame_label: Tuple[Text, Text] = ("Number of Samples", "Confidence"), density: bool = False, x_pad_fraction: float = 0.05, y_pad_fraction: float = 0.10) -> None
 ```
 
 Plots a side-by-side comparative histogram of the confidence distribution.

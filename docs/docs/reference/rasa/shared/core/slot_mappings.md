@@ -5,18 +5,10 @@ title: rasa.shared.core.slot_mappings
 ## SlotMapping Objects
 
 ```python
-class SlotMapping(Enum)
+class SlotMapping()
 ```
 
-Defines the available slot mappings.
-
-#### \_\_str\_\_
-
-```python
- | __str__() -> Text
-```
-
-Returns a string representation of the object.
+Defines functionality for the available slot mappings.
 
 #### validate
 
@@ -78,13 +70,15 @@ Checks whether slot should be filled by an entity in the input or not.
 
 ```python
  | @staticmethod
- | check_mapping_validity(slot_name: Text, mapping: Dict[Text, Any], domain: "Domain") -> bool
+ | check_mapping_validity(slot_name: Text, mapping_type: SlotMappingType, mapping: Dict[Text, Any], domain: "Domain") -> bool
 ```
 
 Checks the mapping for validity.
 
 **Arguments**:
 
+- `slot_name` - The name of the slot to be validated.
+- `mapping_type` - The type of the slot mapping.
 - `mapping` - Slot mapping.
 - `domain` - The domain to check against.
   

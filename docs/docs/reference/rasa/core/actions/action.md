@@ -640,7 +640,7 @@ Runs action. Please see parent class for the full docstring.
 #### extract\_slot\_value\_from\_predefined\_mapping
 
 ```python
-extract_slot_value_from_predefined_mapping(mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> List[Any]
+extract_slot_value_from_predefined_mapping(mapping_type: SlotMappingType, mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> List[Any]
 ```
 
 Extracts slot value if slot has an applicable predefined mapping.
