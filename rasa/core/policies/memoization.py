@@ -21,11 +21,7 @@ from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 from rasa.shared.exceptions import FileIOException
-from rasa.core.policies.policy import (
-    PolicyPrediction,
-    Policy,
-    SupportedData,
-)
+from rasa.core.policies.policy import PolicyPrediction, Policy, SupportedData
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
@@ -91,9 +87,7 @@ class MemoizationPolicy(Policy):
         lookup: Optional[Dict] = None,
     ) -> None:
         """Initialize the policy."""
-        super().__init__(
-            config, model_storage, resource, execution_context, featurizer,
-        )
+        super().__init__(config, model_storage, resource, execution_context, featurizer)
         self.lookup = lookup or {}
 
     def _create_lookup_from_states(
@@ -472,7 +466,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
 
 def _get_max_applied_events_for_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
+    tracker: DialogueStateTracker, max_history: Optional[int]
 ) -> Optional[int]:
     """Computes the number of events in the tracker that correspond to max_history.
 
@@ -503,7 +497,7 @@ def _get_max_applied_events_for_max_history(
 
 
 def _trim_tracker_by_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
+    tracker: DialogueStateTracker, max_history: Optional[int]
 ) -> DialogueStateTracker:
     """Removes events from the tracker until it has `max_history` actions.
 

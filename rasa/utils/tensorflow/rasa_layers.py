@@ -28,6 +28,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
 
 
 class RasaCustomLayer(tf.keras.layers.Layer):
@@ -252,7 +253,7 @@ class ConcatenateSparseDenseFeatures(RasaCustomLayer):
             )
 
     def _prepare_layers_for_sparse_tensors(
-        self, attribute: Text, feature_type: Text, config: Dict[Text, Any],
+        self, attribute: Text, feature_type: Text, config: Dict[Text, Any]
     ) -> None:
         """Sets up sparse tensor pre-processing before combining with dense ones."""
         # For optionally applying dropout to sparse tensors
@@ -798,6 +799,9 @@ class RasaSequenceLayer(RasaCustomLayer):
 
         The config can contain these directly (same for all attributes) or specified
         separately for each attribute.
+        If a transformer is used (e.i. if `number_of_transformer_layers` is positive),
+        the default `transformer_size` which is `None` breaks things. Thus,
+        we need to set a reasonable default value so that the model works fine.
         """
         transformer_layers = config[NUM_TRANSFORMER_LAYERS]
         if isinstance(transformer_layers, dict):
@@ -805,6 +809,8 @@ class RasaSequenceLayer(RasaCustomLayer):
         transformer_units = config[TRANSFORMER_SIZE]
         if isinstance(transformer_units, dict):
             transformer_units = transformer_units[attribute]
+        if transformer_layers > 0 and (not transformer_units or transformer_units < 1):
+            transformer_units = DEFAULT_TRANSFORMER_SIZE
 
         return transformer_layers, transformer_units
 

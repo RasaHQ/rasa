@@ -49,7 +49,7 @@ EXPECTED_WARNINGS = [
         "Converting sparse IndexedSlices.* to a dense Tensor of unknown "
         "shape. This may consume a large amount of memory.",
     ),
-    (UserWarning, "Slot auto-fill has been removed in 3.0 .*",),
+    (UserWarning, "Slot auto-fill has been removed in 3.0 .*"),
 ]
 
 
@@ -144,7 +144,7 @@ def _filter_warnings(log_level: Optional[int], warn_only_once: bool = True) -> N
 def configure_library_logging() -> None:
     """Configures log levels of used libraries such as kafka, matplotlib, pika."""
     library_log_level = os.environ.get(
-        ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES,
+        ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
     )
     update_tensorflow_log_level()
     update_asyncio_log_level()
@@ -232,7 +232,7 @@ def update_sanic_log_level(
         )
         socktype = SOCK_STREAM if syslog_protocol == TCP_PROTOCOL else SOCK_DGRAM
         syslog_handler = logging.handlers.SysLogHandler(
-            address=(syslog_address, syslog_port), socktype=socktype,
+            address=(syslog_address, syslog_port), socktype=socktype
         )
         syslog_handler.setFormatter(formatter)
         logger.addHandler(syslog_handler)

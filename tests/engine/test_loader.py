@@ -41,7 +41,7 @@ def test_loader_loads_graph_runner(
                 uses=PersistableTestComponent,
                 fn="train",
                 constructor_name="create",
-                config={"test_value": test_value,},
+                config={"test_value": test_value},
                 is_target=True,
             ),
             "load": SchemaNode(
@@ -63,14 +63,14 @@ def test_loader_loads_graph_runner(
                 config={},
                 is_target=True,
                 resource=Resource("train"),
-            ),
+            )
         }
     )
 
     output_filename = tmp_path / "model.tar.gz"
 
     importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[], domain_path=str(domain_path),
+        training_data_paths=[], domain_path=str(domain_path)
     )
 
     trained_at = datetime.utcnow()
