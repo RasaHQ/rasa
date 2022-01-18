@@ -623,7 +623,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
             "training story", evts=events, domain=domain, slots=domain.slots
         )
         test_story = TrackerWithCachedStates.from_events(
-            "training story", events[:-2], domain=domain, slots=domain.slots,
+            "training story",
+            events[:-2],
+            domain=domain,
+            slots=domain.slots,
         )
         policy.train([training_story], domain)
         prediction = policy.predict_action_probabilities(test_story, domain)
@@ -918,7 +921,8 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         )
 
         prediction2 = policy.predict_action_probabilities(
-            test_story2_no_match_expected, domain,
+            test_story2_no_match_expected,
+            domain,
         )
         assert all([prob == 0.0 for prob in prediction2.probabilities])
 
