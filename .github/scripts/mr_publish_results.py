@@ -5,7 +5,7 @@ import copy
 import datetime
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import analytics
 from datadog_api_client.v1 import ApiClient, Configuration
@@ -18,17 +18,7 @@ DD_ENV = "rasa-regression-tests"
 DD_SERVICE = "rasa"
 METRIC_RUNTIME_PREFIX = "rasa.perf.benchmark."
 METRIC_ML_PREFIX = "rasa.perf.ml."
-IS_EXTERNAL = os.environ["IS_EXTERNAL"]
-DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 CONFIG_REPOSITORY = "training-data"
-CONFIG_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
-
-SUMMARY_FILE = os.environ["SUMMARY_FILE"]
-CONFIG = os.environ["CONFIG"]
-DATASET = os.environ["DATASET_NAME"]
-TYPE = os.environ["TYPE"]
-
-analytics.write_key = os.environ["SEGMENT_TOKEN"]
 
 task_mapping = {
     "intent_report.json": "intent_classification",
@@ -143,10 +133,10 @@ def prepare_tags() -> List[str]:
         "github_sha": os.environ["GITHUB_SHA"],
         "pr_id": os.environ["PR_ID"],
         "pr_url": os.environ["PR_URL"],
-        "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
-        "external_dataset_repository": IS_EXTERNAL,
+        "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
+        "external_dataset_repository": os.environ["IS_EXTERNAL"],
         "config_repository": CONFIG_REPOSITORY,
-        "config_repository_branch": CONFIG_REPOSITORY_BRANCH,
+        "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
         "workflow": os.environ["GITHUB_WORKFLOW"],
         "github_run_id": os.environ["GITHUB_RUN_ID"],
         "github_event": os.environ["GITHUB_EVENT_NAME"],
@@ -156,7 +146,7 @@ def prepare_tags() -> List[str]:
     return tags_list
 
 
-def send_to_datadog(results: List[Dict[str, Any]]):
+def send_to_datadog(results: List[Dict[str, Any]]) -> None:
     """Sends metrics to datadog."""
     # Prepare
     tags_list = prepare_tags()
@@ -196,9 +186,11 @@ def send_to_datadog(results: List[Dict[str, Any]]):
             print(response)
 
 
-def send_to_segment(context: Dict[str, Any]):
-    global IS_EXTERNAL
-    global DATASET_REPOSITORY_BRANCH
+def _send_to_segment(context: Dict[str, Any]) -> None:
+    (
+        is_external,
+        dataset_repository_branch,
+    ) = _get_is_external_and_dataset_repository_branch()
 
     jobID = os.environ["GITHUB_RUN_ID"]
 
@@ -206,21 +198,15 @@ def send_to_segment(context: Dict[str, Any]):
         jobID, {"name": "model-regression-tests", "created_at": datetime.datetime.now()}
     )
 
-    if str(IS_EXTERNAL).lower() in ("yes", "true", "t", "1"):
-        IS_EXTERNAL = True
-        DATASET_REPOSITORY_BRANCH = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
-    else:
-        IS_EXTERNAL = False
-
     analytics.track(
         jobID,
         "results",
         {
             "dataset": os.environ["DATASET_NAME"],
-            "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
-            "external_dataset_repository": IS_EXTERNAL,
+            "dataset_repository_branch": dataset_repository_branch,
+            "external_dataset_repository": is_external,
             "config_repository": CONFIG_REPOSITORY,
-            "config_repository_branch": CONFIG_REPOSITORY_BRANCH,
+            "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
             "dataset_commit": os.environ["DATASET_COMMIT"],
             "workflow": os.environ["GITHUB_WORKFLOW"],
             "config": os.environ["CONFIG"],
@@ -236,6 +222,17 @@ def send_to_segment(context: Dict[str, Any]):
             **context,
         },
     )
+
+
+def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, str]:
+    is_external = os.environ["IS_EXTERNAL"]
+    dataset_repository_branch = os.environ["DATASET_REPOSITORY_BRANCH"]
+    if is_external.lower() in ("yes", "true", "t", "1"):
+        is_external_flag = True
+        dataset_repository_branch = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
+    else:
+        is_external_flag = False
+    return is_external_flag, dataset_repository_branch
 
 
 def read_results(file: str) -> Dict[str, Any]:
@@ -254,10 +251,10 @@ def read_results(file: str) -> Dict[str, Any]:
     return result
 
 
-def push_results(file_name: str, file: str):
+def _push_results(file_name: str, file: str) -> None:
     result = get_result(file_name, file)
     result["task"] = task_mapping_segment[file_name]
-    send_to_segment(result)
+    _send_to_segment(result)
 
 
 def get_result(file_name: str, file: str) -> Dict[str, Any]:
@@ -267,7 +264,7 @@ def get_result(file_name: str, file: str) -> Dict[str, Any]:
     return result
 
 
-def send_all_to_datadog():
+def send_all_to_datadog() -> None:
     results = []
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
@@ -278,48 +275,49 @@ def send_all_to_datadog():
 
 
 def generate_json(file: str, task: str, data: dict) -> dict:
-    global IS_EXTERNAL
-    global DATASET_REPOSITORY_BRANCH
+    (
+        is_external,
+        dataset_repository_branch,
+    ) = _get_is_external_and_dataset_repository_branch()
+    config = os.environ["CONFIG"]
+    dataset = os.environ["DATASET"]
 
-    if not DATASET in data:
-        data = {DATASET: {CONFIG: {}}, **data}
-    elif not CONFIG in data[DATASET]:
-        data[DATASET] = {CONFIG: {}, **data[DATASET]}
+    if dataset not in data:
+        data = {dataset: {config: {}}, **data}
+    elif config not in data[dataset]:
+        data[dataset] = {config: {}, **data[dataset]}
 
-    if str(IS_EXTERNAL).lower() in ("yes", "true", "t", "1"):
-        IS_EXTERNAL = True
-        DATASET_REPOSITORY_BRANCH = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
-    else:
-        IS_EXTERNAL = False
-
-    data[DATASET][CONFIG] = {
-        "external_dataset_repository": IS_EXTERNAL,
-        "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
+    data[dataset][config] = {
+        "external_dataset_repository": is_external,
+        "dataset_repository_branch": dataset_repository_branch,
         "config_repository": CONFIG_REPOSITORY,
-        "config_repository_branch": CONFIG_REPOSITORY_BRANCH,
+        "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
         "dataset_commit": os.environ["DATASET_COMMIT"],
         "accelerator_type": os.environ["ACCELERATOR_TYPE"],
         "test_run_time": os.environ["TEST_RUN_TIME"],
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
         "total_run_time": os.environ["TOTAL_RUN_TIME"],
-        "type": TYPE,
-        **data[DATASET][CONFIG],
+        "type": os.environ["TYPE"],
+        **data[dataset][config],
     }
 
-    data[DATASET][CONFIG][task] = {**read_results(file)}
+    data[dataset][config][task] = {**read_results(file)}
 
     return data
 
 
-def send_all_results_to_segment():
+def send_all_results_to_segment() -> None:
+    analytics.write_key = os.environ["SEGMENT_TOKEN"]
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
-            if any(f.endswith(valid_name) for valid_name in task_mapping_segment.keys()):
-                push_results(f, os.path.join(dirpath, f))
+            if any(
+                f.endswith(valid_name) for valid_name in task_mapping_segment.keys()
+            ):
+                _push_results(f, os.path.join(dirpath, f))
     analytics.flush()
 
 
-def create_report_file():
+def create_report_file() -> None:
     data = {}
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
@@ -328,7 +326,7 @@ def create_report_file():
 
             data = generate_json(os.path.join(dirpath, f), task_mapping[f], data)
 
-    with open(SUMMARY_FILE, "w") as f:
+    with open(os.environ["SUMMARY_FILE"], "w") as f:
         json.dump(data, f, sort_keys=True, indent=2)
 
 
