@@ -76,10 +76,11 @@ def test_predictions_added(classifier, featurizer):
 
     # Check that the messages have been processed correctly
     for msg in training_data.training_examples:
-        name, conf = msg.get("intent")["name"], msg.get("intent")["confidence"]
-        assert name in ["greet", "goodbye"]
+        _, conf = msg.get("intent")["name"], msg.get("intent")["confidence"]
+        # Confidence should be between 0 and 1.
         assert 0 < conf
         assert conf < 1
         ranking = msg.get("intent_ranking")
         assert {i["name"] for i in ranking} == {"greet", "goodbye"}
+        # Confirm the sum of confidences is 1.0
         assert np.isclose(np.sum([i["confidence"] for i in ranking]), 1.0)
