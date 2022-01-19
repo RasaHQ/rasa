@@ -104,9 +104,15 @@ class TrainingDataWriter:
             # same token group)
             aggregated_entities = []
             last_start = None
+            last_end = None
             for entity in sorted_entities:
-                if last_start is None or last_start != entity["start"]:
+                if (
+                    last_start is None
+                    or last_end is None
+                    or last_start != entity["start"]
+                ):
                     last_start = entity["start"]
+                    last_end = entity["end"]
                     aggregated_entities.append(entity)
                 else:
                     agg = aggregated_entities[-1]
@@ -134,9 +140,7 @@ class TrainingDataWriter:
         text: Text, entity: Dict[Text, Any], short_allowed: bool = True
     ) -> Text:
         """Generates text for the entity attributes."""
-        entity_text = text[
-            entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
-        ]
+        entity_text = text
         entity_type = entity.get(ENTITY_ATTRIBUTE_TYPE)
         entity_value = entity.get(ENTITY_ATTRIBUTE_VALUE)
         entity_role = entity.get(ENTITY_ATTRIBUTE_ROLE)
