@@ -314,11 +314,6 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
                 - location
                 """
     )
-    args = {
-        "domain": str(domain),
-        "data": None,
-        "max_history": None,
-        "config": None,
-    }
+    args = {"domain": str(domain), "data": None, "max_history": None, "config": None}
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
