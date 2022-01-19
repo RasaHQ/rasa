@@ -23,10 +23,7 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
 )
-from rasa.shared.nlu.constants import (
-    TEXT,
-    ACTION_TEXT,
-)
+from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
 from rasa.exceptions import RasaException
 import rasa.nlu.utils
 import rasa.utils.train_utils as train_utils
@@ -337,7 +334,7 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
             "sequence_encoding"
         ].numpy()
 
-    def process_training_data(self, training_data: TrainingData,) -> TrainingData:
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
         """Featurize all message attributes in the training data with the ConveRT model.
 
         Args:

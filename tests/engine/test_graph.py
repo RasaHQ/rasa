@@ -31,7 +31,7 @@ def test_serialize_graph_schema(tmp_path: Path):
                 is_target=True,
                 resource=Resource("test resource"),
             ),
-        },
+        }
     )
 
     serialized = graph_schema.as_dict()
@@ -55,7 +55,7 @@ def test_invalid_module_error_when_deserializing_schemas(tmp_path: Path):
                 fn="train",
                 constructor_name="create",
                 config={"some_config": 123455, "some more config": [{"nested": "hi"}]},
-            ),
+            )
         }
     )
 

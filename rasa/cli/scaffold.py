@@ -208,7 +208,7 @@ def run(args: argparse.Namespace) -> None:
         path = (
             questionary.text(
                 "Please enter a path where the project will be "
-                "created [default: current directory]",
+                "created [default: current directory]"
             )
             .skip_if(args.no_prompt, default="")
             .ask()
