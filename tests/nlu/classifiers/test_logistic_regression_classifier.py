@@ -10,7 +10,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
-from rasa.nlu.classifiers import LogisticRegressionClassifier
+from rasa.nlu.classifiers.logistic_regression_classifier import LogisticRegressionClassifier
 
 
 @pytest.fixture
