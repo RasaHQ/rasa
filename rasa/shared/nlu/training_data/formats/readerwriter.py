@@ -174,9 +174,7 @@ class TrainingDataWriter:
         text: Text, entity: Union[Dict[Text, Any], List[Dict[Text, Any]]]
     ) -> Text:
         """Generates text for an entity object."""
-        listtype = isinstance(entity, list)
-
-        if listtype:
+        if isinstance(entity, list):
             entity_text = text[
                 entity[0][ENTITY_ATTRIBUTE_START] : entity[0][ENTITY_ATTRIBUTE_END]
             ]
