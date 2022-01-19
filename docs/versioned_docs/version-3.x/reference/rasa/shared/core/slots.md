@@ -182,7 +182,7 @@ A slot storing a truth value.
 bool_from_any(x: Any) -> bool
 ```
 
-Converts bool/float/int/str to bool or raises error
+Converts bool/float/int/str to bool or raises error.
 
 ## ListSlot Objects
 

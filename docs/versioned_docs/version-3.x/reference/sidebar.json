@@ -209,8 +209,8 @@
         },
         {
           "items": [
+            "reference/rasa/graph_components/providers/domain_for_core_training_provider",
             "reference/rasa/graph_components/providers/domain_provider",
-            "reference/rasa/graph_components/providers/domain_without_response_provider",
             "reference/rasa/graph_components/providers/nlu_training_data_provider",
             "reference/rasa/graph_components/providers/rule_only_provider",
             "reference/rasa/graph_components/providers/story_graph_provider",
@@ -373,6 +373,7 @@
               "label": "rasa.shared.core.training_data",
               "type": "category"
             },
+            "reference/rasa/shared/core/constants",
             "reference/rasa/shared/core/conversation",
             "reference/rasa/shared/core/domain",
             "reference/rasa/shared/core/events",
