@@ -122,7 +122,7 @@ class TrainingDataWriter:
                         agg = aggregated_entities.pop()
                         aggregated_entities.append([agg, entity])
 
-            for entity in sorted_entities:
+            for entity in aggregated_entities:
                 if isinstance(entity, dict):
                     entity0 = entity
                 else:
