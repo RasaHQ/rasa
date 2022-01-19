@@ -248,7 +248,7 @@ class TrackerStore:
         return json.dumps(dialogue.as_dict())
 
     def deserialise_tracker(
-            self, sender_id: Text, serialised_tracker: Union[Text, bytes]
+        self, sender_id: Text, serialised_tracker: Union[Text, bytes]
     ) -> Optional[DialogueStateTracker]:
         """Deserializes the tracker and returns it."""
         tracker = self.init_tracker(sender_id)
@@ -775,18 +775,18 @@ class SQLTrackerStore(TrackerStore):
         data = sa.Column(sa.Text)
 
     def __init__(
-            self,
-            domain: Optional[Domain] = None,
-            dialect: Text = "sqlite",
-            host: Optional[Text] = None,
-            port: Optional[int] = None,
-            db: Text = "rasa.db",
-            username: Text = None,
-            password: Text = None,
-            event_broker: Optional[EventBroker] = None,
-            login_db: Optional[Text] = None,
-            query: Optional[Dict] = None,
-            **kwargs: Dict[Text, Any],
+        self,
+        domain: Optional[Domain] = None,
+        dialect: Text = "sqlite",
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
+        db: Text = "rasa.db",
+        username: Text = None,
+        password: Text = None,
+        event_broker: Optional[EventBroker] = None,
+        login_db: Optional[Text] = None,
+        query: Optional[Dict] = None,
+        **kwargs: Dict[Text, Any],
     ) -> None:
         import sqlalchemy.exc
 
@@ -811,8 +811,8 @@ class SQLTrackerStore(TrackerStore):
                 try:
                     self.Base.metadata.create_all(self.engine)
                 except (
-                        sqlalchemy.exc.OperationalError,
-                        sqlalchemy.exc.ProgrammingError,
+                    sqlalchemy.exc.OperationalError,
+                    sqlalchemy.exc.ProgrammingError,
                 ) as e:
                     # Several Rasa services started in parallel may attempt to
                     # create tables at the same time. That is okay so long as
@@ -822,8 +822,8 @@ class SQLTrackerStore(TrackerStore):
                 self.sessionmaker = sa.orm.session.sessionmaker(bind=self.engine)
                 break
             except (
-                    sqlalchemy.exc.OperationalError,
-                    sqlalchemy.exc.IntegrityError,
+                sqlalchemy.exc.OperationalError,
+                sqlalchemy.exc.IntegrityError,
             ) as error:
 
                 logger.warning(error)
@@ -835,14 +835,14 @@ class SQLTrackerStore(TrackerStore):
 
     @staticmethod
     def get_db_url(
-            dialect: Text = "sqlite",
-            host: Optional[Text] = None,
-            port: Optional[int] = None,
-            db: Text = "rasa.db",
-            username: Text = None,
-            password: Text = None,
-            login_db: Optional[Text] = None,
-            query: Optional[Dict] = None,
+        dialect: Text = "sqlite",
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
+        db: Text = "rasa.db",
+        username: Text = None,
+        password: Text = None,
+        login_db: Optional[Text] = None,
+        query: Optional[Dict] = None,
     ) -> Union[Text, "URL"]:
         """Build an SQLAlchemy `URL` object representing the parameters needed
         to connect to an SQL database.
@@ -919,7 +919,7 @@ class SQLTrackerStore(TrackerStore):
 
         matching_rows = (
             conn.execution_options(isolation_level="AUTOCOMMIT")
-                .execute(
+            .execute(
                 sa.text(
                     "SELECT 1 FROM pg_catalog.pg_database "
                     "WHERE datname = :database_name"
@@ -932,8 +932,8 @@ class SQLTrackerStore(TrackerStore):
             try:
                 conn.execute(f"CREATE DATABASE {database_name}")
             except (
-                    sqlalchemy.exc.ProgrammingError,
-                    sqlalchemy.exc.IntegrityError,
+                sqlalchemy.exc.ProgrammingError,
+                sqlalchemy.exc.IntegrityError,
             ) as e:
                 logger.error(f"Could not create database '{database_name}': {e}")
 
@@ -967,7 +967,7 @@ class SQLTrackerStore(TrackerStore):
         return await self._retrieve(sender_id, fetch_events_from_all_sessions=False)
 
     async def retrieve_full_tracker(
-            self, conversation_id: Text
+        self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
         """Fetching all tracker events across conversation sessions."""
         return await self._retrieve(conversation_id, fetch_events_from_all_sessions=True)
@@ -1070,7 +1070,7 @@ class SQLTrackerStore(TrackerStore):
         logger.debug(f"Tracker with sender_id '{tracker.sender_id}' stored to database")
 
     def _additional_events(
-            self, session: "Session", tracker: DialogueStateTracker
+        self, session: "Session", tracker: DialogueStateTracker
     ) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
         number_of_events_since_last_session = self._event_query(
@@ -1361,7 +1361,7 @@ class AwaitableTrackerStore(TrackerStore):
         return await result if isawaitable(result) else result
 
     async def retrieve_full_tracker(
-            self, conversation_id: Text
+        self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
         result = self._tracker_store.retrieve_full_tracker(conversation_id)
         return await result if isawaitable(result) else result
