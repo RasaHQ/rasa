@@ -43,7 +43,7 @@ async def test_custom_timeout(custom_request_timeout_module):
 async def test_default_timeout(default_request_timeout_module):
     """
         Verify the DEFAULT_REQUEST_TIMEOUT is the default
-        value when not overridden 
+        value when not overridden
     """
     conf = default_request_timeout_module.read_endpoint_config(
         "data/test_endpoints/example_endpoints.yml", "tracker_store"
