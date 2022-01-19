@@ -19,7 +19,7 @@ from rasa.shared.nlu.constants import (
 
 import rasa.shared.utils.io
 import typing
-from typing import Text, Dict, Any, Union
+from typing import List, Text, Dict, Any, Union
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -100,18 +100,40 @@ class TrainingDataWriter:
                 entities_with_start_and_end, key=operator.itemgetter("start")
             )
 
+            # aggregate entities with same start and end (multiple entities from
+            # same token group)
+            aggregated_entities = []
+            last_start = None
             for entity in sorted_entities:
-                md += text[pos : entity["start"]]
+                if last_start is None or last_start != entity["start"]:
+                    last_start = entity["start"]
+                    aggregated_entities.append(entity)
+                else:
+                    agg = aggregated_entities[-1]
+                    if isinstance(agg, list):
+                        agg.append(entity)
+                    else:
+                        agg = aggregated_entities.pop()
+                        aggregated_entities.append([agg, entity])
+
+            for entity in sorted_entities:
+                if isinstance(entity, dict):
+                    entity0 = entity
+                else:
+                    entity0 = entity[0]
+                md += text[pos : entity0["start"]]
                 md += TrainingDataWriter.generate_entity(text, entity)
-                pos = entity["end"]
+                pos = entity0["end"]
 
         md += text[pos:]
 
         return md
 
     @staticmethod
-    def generate_entity(text: Text, entity: Dict[Text, Any]) -> Text:
-        """Generates text for an entity object."""
+    def generate_entity_attributes(
+        text: Text, entity: Dict[Text, Any], short_allowed: bool = True
+    ) -> Text:
+        """Generates text for the entity attributes"""
 
         entity_text = text[
             entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
@@ -125,11 +147,14 @@ class TrainingDataWriter:
             entity_value = None
 
         use_short_syntax = (
-            entity_value is None and entity_role is None and entity_group is None
+            short_allowed
+            and entity_value is None
+            and entity_role is None
+            and entity_group is None
         )
 
         if use_short_syntax:
-            return f"[{entity_text}]({entity_type})"
+            return f"({entity_type})"
         else:
             entity_dict = OrderedDict(
                 [
@@ -143,7 +168,39 @@ class TrainingDataWriter:
                 [(k, v) for k, v in entity_dict.items() if v is not None]
             )
 
-            return f"[{entity_text}]{json.dumps(entity_dict)}"
+            return f"{json.dumps(entity_dict)}"
+
+    @staticmethod
+    def generate_entity(
+        text: Text, entity: Union[Dict[Text, Any], List[Dict[Text, Any]]]
+    ) -> Text:
+        """Generates text for an entity object."""
+
+        listtype = isinstance(entity, list)
+
+        if listtype:
+            entity_text = text[
+                entity[0][ENTITY_ATTRIBUTE_START] : entity[0][ENTITY_ATTRIBUTE_END]
+            ]
+            return (
+                f"[{entity_text}]["
+                + ",".join(
+                    [
+                        TrainingDataWriter.generate_entity_attributes(
+                            text=entity_text, entity=e, short_allowed=False
+                        )
+                        for e in entity
+                    ]
+                )
+                + "]"
+            )
+        else:
+            entity_text = text[
+                entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
+            ]
+            return f"[{entity_text}]" + TrainingDataWriter.generate_entity_attributes(
+                text=entity_text, entity=entity, short_allowed=True
+            )
 
 
 class JsonTrainingDataReader(TrainingDataReader):
