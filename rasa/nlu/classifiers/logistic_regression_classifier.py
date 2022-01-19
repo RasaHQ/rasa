@@ -39,7 +39,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
-        return {"class_weight": "balanced", "max_iter": 100, "solver": "lbfgs", "tol": 1e-4}
+        return {"class_weight": "balanced", "max_iter": 100, "solver": "lbfgs", "tol": 1e-4, "random_state": 42}
 
     def __init__(
         self,
@@ -55,6 +55,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             max_iter=config["max_iter"],
             class_weight=config["class_weight"],
             tol=config["tol"],
+            random_state=config["random_state"]
         )
 
         # We need to use these later when saving the trained component.
