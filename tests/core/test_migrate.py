@@ -114,7 +114,7 @@ def test_migrate_domain_format_with_required_slots(
                     "type": "from_text",
                     "intent": "inform",
                     "conditions": [
-                        {"active_loop": "booking_form", "requested_slot": "email"},
+                        {"active_loop": "booking_form", "requested_slot": "email"}
                     ],
                 }
             ],
@@ -216,7 +216,7 @@ def test_migrate_domain_form_without_required_slots(
                     "type": "from_text",
                     "intent": "inform",
                     "conditions": [
-                        {"active_loop": "booking_form", "requested_slot": "email"},
+                        {"active_loop": "booking_form", "requested_slot": "email"}
                     ],
                 }
             ],
@@ -287,11 +287,11 @@ def test_migrate_domain_with_diff_slot_types(
                         {
                             "active_loop": "reservation_form",
                             "requested_slot": "outdoor_seating",
-                        },
+                        }
                     ],
                 }
             ],
-        },
+        }
     }
     assert migrated_slots == expected_slots
 
@@ -585,7 +585,7 @@ def test_migrate_domain_format_duplicated_slots_in_forms(
                 "type": "from_text",
                 "intent": "greet",
                 "conditions": [
-                    {"active_loop": "form_one", "requested_slot": "location"},
+                    {"active_loop": "form_one", "requested_slot": "location"}
                 ],
             },
             {
@@ -642,7 +642,7 @@ def test_migrate_domain_dir_with_out_path_None(tmp_path: Path):
     assert domain
 
 
-def test_migrate_domain_multiple_files_with_duplicate_slots(tmp_path: Path,):
+def test_migrate_domain_multiple_files_with_duplicate_slots(tmp_path: Path):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
 
@@ -859,7 +859,7 @@ def test_migrate_domain_raises_for_missing_slots_and_forms(tmp_path: Path):
         migrate.migrate_domain_format(domain_dir, None)
 
 
-def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path,):
+def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path):
     domain_dir = tmp_path / "domain"
     domain_dir.mkdir()
     prepare_domain_path(
@@ -872,8 +872,7 @@ def test_migrate_domain_raises_when_migrated_files_are_found(tmp_path: Path,):
     )
 
     with pytest.raises(
-        RasaException,
-        match="Some of the given files (.*) have already been migrated.*",
+        RasaException, match="Some of the given files (.*) have already been migrated.*"
     ):
         migrate.migrate_domain_format(domain_dir, None)
 
@@ -1062,7 +1061,7 @@ def test_migrate_domain_raises_when_backup_location_exists(
             pass
 
     with pytest.raises(
-        RasaException, match="The domain could not be migrated since .* exists.*",
+        RasaException, match="The domain could not be migrated since .* exists.*"
     ):
         migrate.migrate_domain_format(domain_path, None)
 

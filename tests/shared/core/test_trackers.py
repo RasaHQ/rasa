@@ -70,11 +70,7 @@ from tests.dialogues import (
     TEST_MOODBOT_DIALOGUE,
     TEST_DOMAINS_FOR_DIALOGUES,
 )
-from tests.core.utilities import (
-    tracker_from_dialogue,
-    user_uttered,
-    get_tracker,
-)
+from tests.core.utilities import tracker_from_dialogue, user_uttered, get_tracker
 
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
