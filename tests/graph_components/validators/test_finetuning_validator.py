@@ -70,7 +70,7 @@ def get_finetuning_validator(
 
 @pytest.fixture
 def get_validation_method(
-    get_finetuning_validator: Callable[[bool, bool], FinetuningValidator],
+    get_finetuning_validator: Callable[[bool, bool], FinetuningValidator]
 ) -> Callable[[bool, bool, bool, bool, GraphSchema], ValidationMethodType]:
     def inner(
         finetuning: bool,
@@ -209,7 +209,7 @@ def _get_example_schema(num_epochs: int = 5, other_parameter: int = 10) -> Graph
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_after_changing_epochs_in_config(
-    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool
 ):
     # training
     schema1 = _get_example_schema(num_epochs=5)
@@ -232,7 +232,7 @@ def test_validate_after_changing_epochs_in_config(
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_after_changing_constructor(
-    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool
 ):
     # training
     schema1 = _get_example_schema(num_epochs=5)
@@ -253,7 +253,7 @@ def test_validate_after_changing_constructor(
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_after_removing_node_from_schema(
-    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool
 ):
     # training
     schema1 = _get_example_schema(num_epochs=5)
@@ -268,7 +268,7 @@ def test_validate_after_removing_node_from_schema(
 
     # finetuning raises - doesn't matter if it's nlu/core/both
     loaded_validate = get_validation_method(
-        finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema2,
+        finetuning=True, load=True, nlu=nlu, core=core, graph_schema=schema2
     )
     with pytest.raises(InvalidConfigException):
         loaded_validate(importer=EmptyDataImporter())
@@ -276,7 +276,7 @@ def test_validate_after_removing_node_from_schema(
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_after_adding_node_to_schema(
-    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool
 ):
     # training
     schema1 = _get_example_schema()
@@ -344,7 +344,7 @@ def test_validate_after_replacing_something_in_schema(
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_after_adding_adding_default_parameter(
-    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool
 ):
     # create a schema and rely on rasa to fill in defaults later
     schema1 = _get_example_schema()
@@ -399,10 +399,7 @@ def test_validate_after_removing_or_adding_intent_or_action_name(
     core: bool,
     key: Text,
 ):
-    messages = [
-        Message(data={key: "item-1"}),
-        Message(data={key: "item-2"}),
-    ]
+    messages = [Message(data={key: "item-1"}), Message(data={key: "item-2"})]
     message_with_new_item = Message(data={key: "item-3"})
 
     # training
@@ -513,7 +510,7 @@ def test_validate_with_other_version(
 
 @pytest.mark.parametrize("nlu, core", [(True, False), (False, True), (True, True)])
 def test_validate_with_finetuning_fails_without_training(
-    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool,
+    get_validation_method: Callable[..., ValidationMethodType], nlu: bool, core: bool
 ):
     validate = get_validation_method(finetuning=True, load=False, nlu=nlu, core=core)
     with pytest.raises(InvalidConfigException):
@@ -523,7 +520,7 @@ def test_validate_with_finetuning_fails_without_training(
 def test_loading_without_persisting(
     get_finetuning_validator: Callable[
         [bool, bool, Dict[Text, bool]], FinetuningValidator
-    ],
+    ]
 ):
     with pytest.raises(ValueError):
         get_finetuning_validator(finetuning=False, load=True, config={})

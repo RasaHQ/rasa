@@ -101,9 +101,7 @@ def _validate(
         )
         _validate_constructor(node, create_fn_params)
 
-        _validate_needs(
-            node, schema, create_fn_params, run_fn_params,
-        )
+        _validate_needs(node, schema, create_fn_params, run_fn_params)
 
     _validate_required_components(schema)
 
@@ -125,7 +123,7 @@ def _validate_prediction_targets(
 
 
 def _validate_target(
-    target_name: Text, target_type: Text, expected_type: Type, schema: GraphSchema,
+    target_name: Text, target_type: Text, expected_type: Type, schema: GraphSchema
 ) -> None:
     if target_name not in schema.nodes:
         raise GraphSchemaValidationException(
@@ -195,7 +193,7 @@ def _validate_interface_usage(node: SchemaNode) -> None:
         )
 
 
-def _validate_supported_languages(language: Optional[Text], node: SchemaNode,) -> None:
+def _validate_supported_languages(language: Optional[Text], node: SchemaNode) -> None:
     supported_languages = node.uses.supported_languages()
     not_supported_languages = node.uses.not_supported_languages()
 
@@ -378,7 +376,7 @@ def _validate_types_of_reserved_keywords(
 
 
 def _validate_constructor(
-    node: SchemaNode, create_fn_params: Dict[Text, ParameterInfo],
+    node: SchemaNode, create_fn_params: Dict[Text, ParameterInfo]
 ) -> None:
     _validate_types_of_reserved_keywords(create_fn_params, node, node.constructor_name)
 
@@ -497,11 +495,11 @@ def _validate_parent_return_type(
         )
 
 
-def _validate_required_components(schema: GraphSchema,) -> None:
+def _validate_required_components(schema: GraphSchema) -> None:
     unmet_requirements: Dict[Type, Set[Text]] = dict()
     for target_name in schema.target_names:
         unmet_requirements_for_target, _ = _recursively_check_required_components(
-            node_name=target_name, schema=schema,
+            node_name=target_name, schema=schema
         )
         for component_type, node_names in unmet_requirements_for_target.items():
             unmet_requirements.setdefault(component_type, set()).update(node_names)
@@ -529,7 +527,7 @@ def _validate_required_components(schema: GraphSchema,) -> None:
 
 
 def _recursively_check_required_components(
-    node_name: Text, schema: GraphSchema,
+    node_name: Text, schema: GraphSchema
 ) -> Tuple[Dict[Type, Set[Text]], Set[Type]]:
     """Collects unmet requirements and types used in the subtree rooted at `node_name`.
 

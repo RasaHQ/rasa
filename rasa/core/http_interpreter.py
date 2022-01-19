@@ -22,7 +22,7 @@ class RasaNLUHttpInterpreter:
         else:
             self.endpoint_config = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    async def parse(self, message: UserMessage,) -> Dict[Text, Any]:
+    async def parse(self, message: UserMessage) -> Dict[Text, Any]:
         """Parse a text message.
 
         Return a default value if the parsing of the text failed.

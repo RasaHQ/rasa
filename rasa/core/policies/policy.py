@@ -39,12 +39,7 @@ from rasa.core.constants import (
     POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
 )
-from rasa.shared.core.constants import (
-    USER,
-    SLOTS,
-    PREVIOUS_ACTION,
-    ACTIVE_LOOP,
-)
+from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
 import rasa.shared.utils.common
 
 
@@ -422,7 +417,7 @@ class Policy(GraphComponent):
             )
 
         return cls(
-            config, model_storage, resource, execution_context, featurizer=featurizer,
+            config, model_storage, resource, execution_context, featurizer=featurizer
         )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
