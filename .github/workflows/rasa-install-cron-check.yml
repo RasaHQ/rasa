@@ -2,7 +2,7 @@
 # on Ubuntu, Mac and Windows and try to run `rasa init`. The goal here is to
 # catch installation issues in an automated way.
 
-name: Cron Test
+name: Cron Test to Check Pip Installation
 
 on:
   schedule:
