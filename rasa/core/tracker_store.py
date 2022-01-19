@@ -219,9 +219,9 @@ class TrackerStore:
         """
         return await self.retrieve(conversation_id)
 
-    def stream_events(self, tracker: DialogueStateTracker) -> None:
+    async def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker"""
-        offset = self.number_of_existing_events(tracker.sender_id)
+        offset = await self.number_of_existing_events(tracker.sender_id)
         events = tracker.events
         for event in list(itertools.islice(events, offset, len(events))):
             body = {"sender_id": tracker.sender_id}
@@ -280,7 +280,7 @@ class InMemoryTrackerStore(TrackerStore):
     async def save(self, tracker: DialogueStateTracker) -> None:
         """Updates and saves the current conversation state"""
         if self.event_broker:
-            self.stream_events(tracker)
+            await self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
@@ -345,7 +345,7 @@ class RedisTrackerStore(TrackerStore):
     ) -> None:
         """Saves the current conversation state."""
         if self.event_broker:
-            self.stream_events(tracker)
+            await self.stream_events(tracker)
 
         if not timeout and self.record_exp:
             timeout = self.record_exp
@@ -436,7 +436,7 @@ class DynamoTrackerStore(TrackerStore):
     async def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
         if self.event_broker:
-            self.stream_events(tracker)
+            await self.stream_events(tracker)
         serialized = self.serialise_tracker(tracker)
 
         self.db.put_item(Item=serialized)
@@ -544,7 +544,7 @@ class MongoTrackerStore(TrackerStore):
     async def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
         if self.event_broker:
-            self.stream_events(tracker)
+            await self.stream_events(tracker)
 
         additional_events = self._additional_events(tracker)
 
@@ -1038,7 +1038,7 @@ class SQLTrackerStore(TrackerStore):
         """Update database with events from the current conversation."""
 
         if self.event_broker:
-            self.stream_events(tracker)
+            await self.stream_events(tracker)
 
         with self.session_scope() as session:
             # only store recent events
