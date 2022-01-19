@@ -14,10 +14,7 @@ from rasa.core.policies.policy import Policy
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-from rasa.model_training import (
-    CODE_NEEDS_TO_BE_RETRAINED,
-    CODE_FORCED_TRAINING,
-)
+from rasa.model_training import CODE_NEEDS_TO_BE_RETRAINED, CODE_FORCED_TRAINING
 
 # noinspection PyProtectedMember
 from rasa.cli.train import _get_valid_config
@@ -69,9 +66,7 @@ def test_train(run_in_simple_project: Callable[..., RunResult], tmp_path: Path):
 def test_train_finetune(
     run_in_simple_project: Callable[..., RunResult], capsys: CaptureFixture
 ):
-    run_in_simple_project(
-        "train", "--finetune",
-    )
+    run_in_simple_project("train", "--finetune")
 
     output = capsys.readouterr().out
     assert "No model for finetuning found" in output

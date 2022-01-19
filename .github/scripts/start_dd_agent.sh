@@ -30,9 +30,9 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "- github_run_id:${GITHUB_RUN_ID:-none}"
     echo "- github_event:${GITHUB_EVENT_NAME:-none}"
     echo ""
-    echo "process_config:"
-    echo "    enabled: false"
     echo "apm_config:"
+    echo "    enabled: true"
+    echo "process_config:"
     echo "    enabled: false"
     echo "use_dogstatsd: true"
 } >> $DATADOG_YAML_PATH
@@ -50,11 +50,22 @@ fi
 # Apply changes
 sudo service datadog-agent stop
 
+# Restart agent (such that GPU/NVML metrics are collected)
+# Adusted code from /etc/init/datadog-agent.conf
 INSTALL_DIR="/opt/datadog-agent"
 AGENTPATH="$INSTALL_DIR/bin/agent/agent"
 PIDFILE="$INSTALL_DIR/run/agent.pid"
-AGENT_ARGS="run -p $PIDFILE"
 AGENT_USER="dd-agent"
 LD_LIBRARY_PATH="/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH run -p $PIDFILE"
 
-sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pidfile $PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $AGENTPATH $AGENT_ARGS"
+# Adusted code from /etc/init/datadog-agent-process.conf
+TRACE_AGENTPATH="$INSTALL_DIR/embedded/bin/trace-agent"
+TRACE_PIDFILE="$INSTALL_DIR/run/trace-agent.pid"
+sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pidfile $TRACE_PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $TRACE_AGENTPATH --config $DATADOG_YAML_PATH --pid $TRACE_PIDFILE"
+
+# Adusted code from /etc/init/datadog-agent-trace.conf
+PROCESS_AGENTPATH="$INSTALL_DIR/embedded/bin/process-agent"
+PROCESS_PIDFILE="$INSTALL_DIR/run/process-agent.pid"
+SYSTEM_PROBE_YAML="/etc/datadog-agent/system-probe.yaml"
+sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pidfile $PROCESS_PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $PROCESS_AGENTPATH --config=$DATADOG_YAML_PATH --sysprobe-config=$SYSTEM_PROBE_YAML --pid=$PROCESS_PIDFILE"
