@@ -95,12 +95,10 @@ class TrackerStore:
         obj: Union["TrackerStore", EndpointConfig, None],
         domain: Optional[Domain] = None,
         event_broker: Optional[EventBroker] = None,
-    ) -> "AwaitableTrackerStore":
+    ) -> "TrackerStore":
         """Factory to create a tracker store."""
-        if isinstance(obj, AwaitableTrackerStore):
-            return obj
         if isinstance(obj, TrackerStore):
-            return AwaitableTrackerStore(obj)
+            return obj
 
         from botocore.exceptions import BotoCoreError
         import pymongo.errors
