@@ -53,6 +53,19 @@ class Recipe(abc.ABC):
             f"'{DefaultV1Recipe.name}'."
         )
 
+    @staticmethod
+    def auto_configure(
+        config_file_path: Optional[Text],
+        config: Dict,
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
+    ) -> Dict[Text, Any]:
+        """Adds missing options with defaults and dumps the configuration.
+
+        Override in child classes if this functionality is needed, each recipe
+        will have different auto configuration values.
+        """
+        return config
+
     @abc.abstractmethod
     def graph_config_for_recipe(
         self,
