@@ -10,12 +10,12 @@ import rasa.utils.endpoints as endpoint_utils
 def custom_request_timeout_module():
     # set --request-timeout cmdline arg and
     # reload modules to reflect changes
-    sys.argv.extend(['--request-timeout', '40'])
+    sys.argv.extend(["--request-timeout", "40"])
     importlib.reload(constants)
     yield importlib.reload(endpoint_utils)
 
     # Undo cmdline args change and reset affected modules
-    arg_index = sys.argv.index('--request-timeout')
+    arg_index = sys.argv.index("--request-timeout")
     del sys.argv[arg_index]
     del sys.argv[arg_index]
     importlib.reload(constants)

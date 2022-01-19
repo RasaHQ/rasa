@@ -3,7 +3,7 @@ import sys
 try:
     # sys.argv is a list so if we find "--request-timeout"
     # the next item on the list is the passed value
-    arg_index = sys.argv.index('--request-timeout')
+    arg_index = sys.argv.index("--request-timeout")
     request_timeout = sys.argv[arg_index + 1]
     DEFAULT_REQUEST_TIMEOUT = int(request_timeout)
 except (ValueError, TypeError):
