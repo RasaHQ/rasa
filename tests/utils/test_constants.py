@@ -2,7 +2,7 @@ import sys
 import importlib
 import pytest
 
-import rasa.constants as constants
+import rasa.core.constants as constants
 import rasa.utils.endpoints as endpoint_utils
 
 
