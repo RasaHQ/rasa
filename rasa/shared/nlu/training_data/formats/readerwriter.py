@@ -133,8 +133,7 @@ class TrainingDataWriter:
     def generate_entity_attributes(
         text: Text, entity: Dict[Text, Any], short_allowed: bool = True
     ) -> Text:
-        """Generates text for the entity attributes"""
-
+        """Generates text for the entity attributes."""
         entity_text = text[
             entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
         ]
@@ -175,7 +174,6 @@ class TrainingDataWriter:
         text: Text, entity: Union[Dict[Text, Any], List[Dict[Text, Any]]]
     ) -> Text:
         """Generates text for an entity object."""
-
         listtype = isinstance(entity, list)
 
         if listtype:
@@ -204,6 +202,13 @@ class TrainingDataWriter:
 
 
 class JsonTrainingDataReader(TrainingDataReader):
+    """Add a docstring here.
+
+    Lint complains:
+    rasa/shared/nlu/training_data/formats/readerwriter.py:206:1:
+    D101 Missing docstring in public class
+    """
+
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Transforms string into json object and passes it on."""
         js = json.loads(s)
