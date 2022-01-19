@@ -2273,11 +2273,11 @@ version = "3.0.4"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
-python-versions = ">=3.7,<3.10"
+python-versions = ">=3.7,<3.9"
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
-prompt-toolkit = ">=2.0,<3.0"
+prompt-toolkit = "^2.0"
 requests = ">=2.23,<3.0"
 sanic = ">=21.6.0,<22.0.0"
 Sanic-Cors = ">=1.0.0,<2.0.0"
