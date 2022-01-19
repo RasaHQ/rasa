@@ -32,3 +32,12 @@ jobs:
     - name: Try to run Rasa.
       run: |
         python -m rasa init --no-prompt
+    - name: Notify slack on failure
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
+      with:
+        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+        status: FAILED
+        color: danger
