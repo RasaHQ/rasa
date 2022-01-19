@@ -446,7 +446,7 @@ class DynamoTrackerStore(TrackerStore):
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
         """Serializes the tracker, returns object with decimal types."""
         d = tracker.as_dialogue().as_dict()
-         d.update({"sender_id": tracker.sender_id})
+        d.update({"sender_id": tracker.sender_id})
         # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
         return core_utils.replace_floats_with_decimals(d)
 
@@ -747,8 +747,8 @@ def ensure_schema_exists(session: "Session") -> None:
     if is_postgresql_url(engine.url):
         query = sa.exists(
             sa.select([(sa.text("schema_name"))])
-                .select_from(sa.text("information_schema.schemata"))
-                .where(sa.text(f"schema_name = '{schema_name}'"))
+            .select_from(sa.text("information_schema.schemata"))
+            .where(sa.text(f"schema_name = '{schema_name}'"))
         )
         if not session.query(query).scalar():
             raise ValueError(schema_name)
@@ -925,8 +925,7 @@ class SQLTrackerStore(TrackerStore):
                     "WHERE datname = :database_name"
                 ),
                 database_name=database_name,
-            )
-                .rowcount
+            ).rowcount
         )
 
         if not matching_rows:
@@ -1016,12 +1015,10 @@ class SQLTrackerStore(TrackerStore):
         """
         # Subquery to find the timestamp of the latest `SessionStarted` event
         session_start_sub_query = (
-            session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start"))
-                .filter(
+            session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start")).filter(
                 self.SQLEvent.sender_id == sender_id,
                 self.SQLEvent.type_name == SessionStarted.type_name,
-            )
-                .subquery()
+            ).subquery()
         )
 
         event_query = session.query(self.SQLEvent).filter(
