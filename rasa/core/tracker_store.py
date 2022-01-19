@@ -999,7 +999,7 @@ class SQLTrackerStore(TrackerStore):
                 return None
 
     def _event_query(
-            self, session: "Session", sender_id: Text, fetch_events_from_all_sessions: bool
+        self, session: "Session", sender_id: Text, fetch_events_from_all_sessions: bool
     ) -> "Query":
         """Provide the query to retrieve the conversation events for a specific sender.
 
@@ -1087,10 +1087,10 @@ class FailSafeTrackerStore(TrackerStore):
     case of errors."""
 
     def __init__(
-            self,
-            tracker_store: TrackerStore,
-            on_tracker_store_error: Optional[Callable[[Exception], None]] = None,
-            fallback_tracker_store: Optional[TrackerStore] = None,
+        self,
+        tracker_store: TrackerStore,
+        on_tracker_store_error: Optional[Callable[[Exception], None]] = None,
+        fallback_tracker_store: Optional[TrackerStore] = None,
     ) -> None:
         """Create a `FailSafeTrackerStore`.
 
@@ -1160,9 +1160,9 @@ class FailSafeTrackerStore(TrackerStore):
 
 
 def _create_from_endpoint_config(
-        endpoint_config: Optional[EndpointConfig] = None,
-        domain: Optional[Domain] = None,
-        event_broker: Optional[EventBroker] = None,
+    endpoint_config: Optional[EndpointConfig] = None,
+    domain: Optional[Domain] = None,
+    event_broker: Optional[EventBroker] = None,
 ) -> "TrackerStore":
     """Given an endpoint configuration, create a proper tracker store object."""
 
@@ -1207,7 +1207,7 @@ def _create_from_endpoint_config(
 
 
 def _load_from_module_name_in_endpoint_config(
-        domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None
+    domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None
 ) -> "TrackerStore":
     """Initializes a custom tracker.
 
