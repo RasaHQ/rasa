@@ -7,6 +7,7 @@ from rasa.core.actions import action
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import OutputChannel
 from rasa.shared.core.domain import Domain, KEY_SLOTS
+from rasa.shared.core.constants import SlotMappingType, SLOT_MAPPINGS, MAPPING_TYPE
 
 from rasa.core.actions.action import ActionExecutionRejection, RemoteAction
 from rasa.shared.core.constants import (
@@ -88,7 +89,7 @@ class FormAction(LoopAction):
         )
 
         return {
-            "type": str(SlotMapping.FROM_ENTITY),
+            "type": str(SlotMappingType.FROM_ENTITY),
             "entity": entity,
             "intent": intent,
             "not_intent": not_intent,
@@ -150,8 +151,8 @@ class FormAction(LoopAction):
         duplicate_entity_slot_mappings = set()
         domain_slots = domain.as_dict().get(KEY_SLOTS)
         for slot in domain.required_slots_for_form(self.name()):
-            for slot_mapping in domain_slots.get(slot).get("mappings"):
-                if slot_mapping.get("type") == str(SlotMapping.FROM_ENTITY):
+            for slot_mapping in domain_slots.get(slot).get(SLOT_MAPPINGS):
+                if slot_mapping.get(MAPPING_TYPE) == str(SlotMappingType.FROM_ENTITY):
                     mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
                     if mapping_as_string in unique_entity_slot_mappings:
                         unique_entity_slot_mappings.remove(mapping_as_string)
@@ -343,7 +344,7 @@ class FormAction(LoopAction):
         return slot_values
 
     def _add_dynamic_slots_requested_by_dynamic_forms(
-        self, tracker: "DialogueStateTracker", domain: Domain,
+        self, tracker: "DialogueStateTracker", domain: Domain
     ) -> Set[Text]:
         required_slots = set(self.required_slots(domain))
         requested_slot = self.get_slot_to_fill(tracker)
@@ -354,7 +355,7 @@ class FormAction(LoopAction):
         return required_slots
 
     def _get_slot_extractions(
-        self, tracker: "DialogueStateTracker", domain: Domain,
+        self, tracker: "DialogueStateTracker", domain: Domain
     ) -> Dict[Text, Any]:
         events_since_last_user_uttered = FormAction._get_events_since_last_user_uttered(
             tracker
@@ -630,22 +631,25 @@ class FormAction(LoopAction):
         # We explicitly check only the last occurrences for each possible termination
         # event instead of doing `return event in events_so_far` to make it possible
         # to override termination events which were returned earlier.
-        return next(
-            (
-                event
-                for event in reversed(events_so_far)
-                if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
-            ),
-            None,
-        ) == SlotSet(REQUESTED_SLOT, None) or next(
-            (
-                event
-                for event in reversed(events_so_far)
-                if isinstance(event, ActiveLoop)
-            ),
-            None,
-        ) == ActiveLoop(
-            None
+        return (
+            next(
+                (
+                    event
+                    for event in reversed(events_so_far)
+                    if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
+                ),
+                None,
+            )
+            == SlotSet(REQUESTED_SLOT, None)
+            or next(
+                (
+                    event
+                    for event in reversed(events_so_far)
+                    if isinstance(event, ActiveLoop)
+                ),
+                None,
+            )
+            == ActiveLoop(None)
         )
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:

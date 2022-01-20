@@ -203,7 +203,7 @@ async def trained_default_agent_model(
     config_path = project_path / "config.yml"
     rasa.shared.utils.io.write_text_file(config, config_path)
     model_path = await trained_async(
-        domain_path, str(config_path), [stories_path, nlu_data_path],
+        domain_path, str(config_path), [stories_path, nlu_data_path]
     )
 
     return model_path
@@ -379,7 +379,7 @@ async def trained_core_model(
     stories_path: Text,
 ) -> Text:
     trained_core_model_path = await trained_async(
-        domain=domain_path, config=stack_config_path, training_files=[stories_path],
+        domain=domain_path, config=stack_config_path, training_files=[stories_path]
     )
 
     return trained_core_model_path
@@ -393,7 +393,7 @@ async def trained_nlu_model(
     stack_config_path: Text,
 ) -> Text:
     trained_nlu_model_path = await trained_async(
-        domain=domain_path, config=stack_config_path, training_files=[nlu_data_path],
+        domain=domain_path, config=stack_config_path, training_files=[nlu_data_path]
     )
 
     return trained_nlu_model_path
@@ -589,7 +589,7 @@ async def e2e_bot(
 
 
 @pytest.fixture(scope="module")
-async def response_selector_agent(trained_response_selector_bot: Path,) -> Agent:
+async def response_selector_agent(trained_response_selector_bot: Path) -> Agent:
     return await load_agent(str(trained_response_selector_bot))
 
 
@@ -752,3 +752,8 @@ def with_model_id(event: Event, model_id: Text) -> Event:
     new_event = copy.deepcopy(event)
     new_event.metadata[METADATA_MODEL_ID] = model_id
     return new_event
+
+
+@pytest.fixture(autouse=True)
+def sanic_test_mode(monkeypatch: MonkeyPatch):
+    monkeypatch.setattr(Sanic, "test_mode", True)

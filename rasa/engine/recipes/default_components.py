@@ -30,10 +30,7 @@ from rasa.nlu.utils.spacy_utils import SpacyNLP
 
 
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.memoization import (
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy,
-)
+from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 

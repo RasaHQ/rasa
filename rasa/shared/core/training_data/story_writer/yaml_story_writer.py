@@ -1,13 +1,6 @@
 from collections import OrderedDict
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    Text,
-    Union,
-    Optional,
-)
+from typing import Any, Dict, List, Text, Union, Optional
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
@@ -56,7 +49,7 @@ from rasa.shared.core.training_data.structures import (
 
 
 class YAMLStoryWriter(StoryWriter):
-    """Writes Core training data into a file in a YAML format. """
+    """Writes Core training data into a file in a YAML format."""
 
     def dumps(
         self,
@@ -73,6 +66,7 @@ class YAMLStoryWriter(StoryWriter):
                            the existing story file.
             is_test_story: Identifies if the stories should be exported in test stories
                            format.
+
         Returns:
             String with story steps in the YAML format.
         """
@@ -229,7 +223,7 @@ class YAMLStoryWriter(StoryWriter):
                                         [(entity["entity"], entity["value"])]
                                     )
                                     entity_map.yaml_add_eol_comment(
-                                        commented_entity, entity["entity"],
+                                        commented_entity, entity["entity"]
                                     )
                                     entities.append(entity_map)
                                 else:

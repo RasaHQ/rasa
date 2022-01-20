@@ -311,7 +311,7 @@ def test_event_has_proper_implementation(
 )
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
     generator = _create_data_generator(
-        test_file, response_selector_agent, use_conversation_test_files=True,
+        test_file, response_selector_agent, use_conversation_test_files=True
     )
     test_stories = generator.generate_story_trackers()
 
@@ -451,7 +451,7 @@ stories:
                     "with_warnings": 0,
                 },
             },
-        ],
+        ]
     ],
 )
 async def test_story_report(
@@ -475,9 +475,7 @@ async def test_story_report(
     assert actual_results == expected_results
 
 
-async def test_story_report_with_empty_stories(
-    tmpdir: Path, core_agent: Agent,
-) -> None:
+async def test_story_report_with_empty_stories(tmpdir: Path, core_agent: Agent) -> None:
     stories_path = tmpdir / "stories.yml"
     stories_path.write_text("", "utf8")
     out_directory = tmpdir / "results"
@@ -494,12 +492,12 @@ async def test_story_report_with_empty_stories(
 @pytest.mark.parametrize(
     "skip_field,skip_value",
     [
-        [None, None,],
-        ["precision", None,],
-        ["f1", None,],
-        ["in_training_data_fraction", None,],
-        ["report", None,],
-        ["include_report", False,],
+        [None, None],
+        ["precision", None],
+        ["f1", None],
+        ["in_training_data_fraction", None],
+        ["report", None],
+        ["include_report", False],
     ],
 )
 async def test_log_evaluation_table(caplog, skip_field, skip_value):
@@ -618,7 +616,7 @@ async def test_wrong_predictions_with_intent_and_entities(
 
 
 async def test_failed_entity_extraction_comment(
-    tmpdir: Path, restaurantbot_agent: Agent,
+    tmpdir: Path, restaurantbot_agent: Agent
 ):
     test_file = "data/test_yaml_stories/test_failed_entity_extraction_comment.yml"
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
