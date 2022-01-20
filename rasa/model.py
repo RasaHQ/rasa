@@ -4,11 +4,7 @@ import logging
 import os
 from pathlib import Path
 from subprocess import check_output, DEVNULL, CalledProcessError
-from typing import (
-    Text,
-    Optional,
-    Union,
-)
+from typing import Text, Optional, Union
 
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 

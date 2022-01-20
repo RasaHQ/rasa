@@ -59,7 +59,7 @@ def test_does_model_improve(
 
 @pytest.fixture(scope="module")
 def trained_ted(
-    tmp_path_factory: TempPathFactory, moodbot_domain_path: Path,
+    tmp_path_factory: TempPathFactory, moodbot_domain_path: Path
 ) -> TEDPolicy:
     training_files = "data/test_moodbot/data/stories.yml"
     domain = Domain.load(moodbot_domain_path)

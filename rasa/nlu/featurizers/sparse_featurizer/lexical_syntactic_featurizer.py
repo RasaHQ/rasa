@@ -4,27 +4,13 @@ from collections import OrderedDict
 
 import scipy.sparse
 import numpy as np
-from typing import (
-    Any,
-    Dict,
-    Text,
-    List,
-    Tuple,
-    Callable,
-    Set,
-    Optional,
-    Type,
-    Union,
-)
+from typing import Any, Dict, Text, List, Tuple, Callable, Set, Optional, Type, Union
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.spacy_tokenizer import (
-    POS_TAG_KEY,
-    SpacyTokenizer,
-)
+from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY, SpacyTokenizer
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.nlu.constants import TOKENS_NAMES
@@ -102,7 +88,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer, GraphComponent):
 
     @classmethod
     def _extract_raw_features_from_token(
-        cls, feature_name: Text, token: Token, token_position: int, num_tokens: int,
+        cls, feature_name: Text, token: Token, token_position: int, num_tokens: int
     ) -> Text:
         """Extracts a raw feature from the token at the given position.
 

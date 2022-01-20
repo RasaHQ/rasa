@@ -140,7 +140,7 @@ class KafkaEventBroker(EventBroker):
 
         if self.security_protocol == "PLAINTEXT":
             authentication_params = dict(
-                security_protocol=self.security_protocol, ssl_check_hostname=False,
+                security_protocol=self.security_protocol, ssl_check_hostname=False
             )
         elif self.security_protocol == "SASL_PLAINTEXT":
             authentication_params = dict(

@@ -305,9 +305,9 @@ class StoryStep:
 
 
 class RuleStep(StoryStep):
-    """A Special type of StoryStep representing a Rule. """
+    """A Special type of StoryStep representing a Rule."""
 
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         block_name: Optional[Text] = None,
         start_checkpoints: Optional[List[Checkpoint]] = None,
@@ -351,8 +351,7 @@ class RuleStep(StoryStep):
         )
 
     def get_rules_condition(self) -> List[Event]:
-        """Returns a list of events forming a condition of the Rule. """
-
+        """Returns a list of events forming a condition of the Rule."""
         return [
             event
             for event_id, event in enumerate(self.events)
@@ -360,8 +359,7 @@ class RuleStep(StoryStep):
         ]
 
     def get_rules_events(self) -> List[Event]:
-        """Returns a list of events forming the Rule, that are not conditions. """
-
+        """Returns a list of events forming the Rule, that are not conditions."""
         return [
             event
             for event_id, event in enumerate(self.events)

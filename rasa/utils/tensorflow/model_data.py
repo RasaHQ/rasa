@@ -4,17 +4,7 @@ import numpy as np
 import scipy.sparse
 
 from sklearn.model_selection import train_test_split
-from typing import (
-    Optional,
-    Dict,
-    Text,
-    List,
-    Tuple,
-    Any,
-    Union,
-    NamedTuple,
-    ItemsView,
-)
+from typing import Optional, Dict, Text, List, Tuple, Any, Union, NamedTuple, ItemsView
 from collections import defaultdict, OrderedDict
 
 logger = logging.getLogger(__name__)

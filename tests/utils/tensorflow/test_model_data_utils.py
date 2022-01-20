@@ -184,13 +184,7 @@ def test_extract_features():
 @pytest.mark.parametrize(
     "text, intent, entities, attributes, real_sparse_feature_sizes",
     [
-        (
-            "Hello!",
-            "greet",
-            None,
-            [TEXT],
-            {"text": {"sequence": [1], "sentence": [1]}},
-        ),
+        ("Hello!", "greet", None, [TEXT], {"text": {"sequence": [1], "sentence": [1]}}),
         (
             "Hello!",
             "greet",
@@ -258,7 +252,7 @@ def test_convert_training_examples(
         )
     ]
     output, sparse_feature_sizes = model_data_utils.featurize_training_examples(
-        [message], attributes=attributes, entity_tag_specs=entity_tag_spec,
+        [message], attributes=attributes, entity_tag_specs=entity_tag_spec
     )
 
     assert len(output) == 1
