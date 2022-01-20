@@ -216,11 +216,10 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         def _remove_prefixes(token: str) -> str:
             """Remove the tokenizer-specific prefix.
 
-            BERT tokenizers are treated
-            separately since their prefix signifies a sub-token and the builtin
-            `convert_tokens_to_string` only works for a list of tokens, while we
-            apply it to an individual token. For other tokenizers the prefixes signify
-            whitespace or end-of-words.
+            BERT tokenizers are treated separately since their prefix signifies a
+            sub-token and the builtin `convert_tokens_to_string` only works for a
+            list of tokens, while we apply it to an individual token. For other
+            tokenizers the prefixes signify whitespace or end-of-words.
             """
             if issubclass(
                 type(self.tokenizer), transformers.tokenization_bert.BertTokenizer
