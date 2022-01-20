@@ -1,11 +1,14 @@
 const path = require('path');
 
-
 // FIXME: this package is copied from
 // https://github.com/facebook/docusaurus/tree/afe9ff91a4247316f0081c9b080655d575298416/packages/docusaurus-theme-live-codeblock/src
-module.exports = function() {
+module.exports = function (context) {
+  const {
+    siteConfig: { url: siteUrl, baseUrl },
+  } = context;
+
   return {
-    name: 'theme-live-codeblock',
+    name: 'theme-custom',
 
     getThemePath() {
       return path.resolve(__dirname, './theme');
@@ -25,6 +28,20 @@ module.exports = function() {
             buble: '@philpl/buble',
           },
         },
+      };
+    },
+
+    injectHtmlTags() {
+      return {
+        headTags: [
+          {
+            tagName: 'meta',
+            attributes: {
+              property: 'og:image',
+              content: `${siteUrl}${baseUrl}img/og-image.png`,
+            },
+          },
+        ],
       };
     },
   };

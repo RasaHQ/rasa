@@ -79,8 +79,7 @@ if TYPE_CHECKING:
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
     ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
-        SanicResponse,
+        [Arg(Request, "request"), VarArg(), KwArg()], SanicResponse  # noqa: F821
     ]
 
 
@@ -839,6 +838,12 @@ def create_app(
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
     async def execute_action(request: Request, conversation_id: Text) -> HTTPResponse:
+        rasa.shared.utils.io.raise_warning(
+            'The "POST /conversations/<conversation_id>/execute"'
+            " endpoint is deprecated. Inserting actions to the tracker externally"
+            " should be avoided. Actions should be predicted by the policies only.",
+            category=FutureWarning,
+        )
         request_params = request.json
 
         action_to_execute = request_params.get("name", None)
