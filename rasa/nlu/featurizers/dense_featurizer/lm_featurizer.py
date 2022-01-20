@@ -5,6 +5,7 @@ import re
 
 from typing import Any, Text, List, Dict, Tuple, Type
 
+import transformers.tokenization_bert
 from transformers import AutoConfig, AutoTokenizer, TFAutoModel
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
@@ -40,13 +41,6 @@ MODEL_WEIGHTS_DEFAULT = {
     "roberta": "roberta-base",
 }
 CLS_TOKEN = "[CLS]"
-
-# The following are the prefix characters added to sub-tokens by the currently
-# used WordPiece, SentencePiece and Byte Pair tokenizers. See
-# https://huggingface.co/course/chapter6 for a description of each.
-# In case a new tokenizer uses different characters to split sub-tokens, this
-# list has to be adapted.
-TOKENIZER_PREFIX_CHARS = r"##|▁|Ġ"
 
 
 @DefaultV1Recipe.register(
@@ -203,9 +197,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         ]
         return augmented_tokens
 
-    @staticmethod
     def _lm_specific_token_cleanup(
-        split_token_ids: List[int], token_strings: List[Text]
+        self, split_token_ids: List[int], token_strings: List[Text]
     ) -> Tuple[List[int], List[Text]]:
         """Cleans up special chars added by tokenizers of language models.
 
@@ -220,8 +213,19 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         Returns: Cleaned up token ids and token strings.
         """
+
+        def _remove_prefixes(token):
+            if issubclass(
+                type(self.tokenizer), transformers.tokenization_bert.BertTokenizer
+            ) or issubclass(
+                type(self.tokenizer), transformers.tokenization_bert.BertTokenizerFast
+            ):
+                return token.replace("##", "")
+            else:
+                return self.tokenizer.convert_tokens_to_string([token])
+
         token_ids_string = [
-            (id_, re.sub(TOKENIZER_PREFIX_CHARS, "", token))
+            (id_, _remove_prefixes(token))
             for id_, token in zip(split_token_ids, token_strings)
         ]
         token_ids_string = [(id_, token) for id_, token in token_ids_string if token]
