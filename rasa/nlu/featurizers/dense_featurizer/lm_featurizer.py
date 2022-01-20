@@ -1,7 +1,6 @@
 from __future__ import annotations
 import numpy as np
 import logging
-import re
 
 from typing import Any, Text, List, Dict, Tuple, Type
 
@@ -214,7 +213,15 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         Returns: Cleaned up token ids and token strings.
         """
 
-        def _remove_prefixes(token):
+        def _remove_prefixes(token: str) -> str:
+            """Remove the tokenizer-specific prefix.
+
+            BERT tokenizers are treated
+            separately since their prefix signifies a sub-token and the builtin
+            `convert_tokens_to_string` only works for a list of tokens, while we
+            apply it to an individual token. For other tokenizers the prefixes signify
+            whitespace or end-of-words.
+            """
             if issubclass(
                 type(self.tokenizer), transformers.tokenization_bert.BertTokenizer
             ) or issubclass(
