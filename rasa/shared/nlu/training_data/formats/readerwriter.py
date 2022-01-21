@@ -123,10 +123,7 @@ class TrainingDataWriter:
                         aggregated_entities.append([agg, entity])
 
             for entity in aggregated_entities:
-                if isinstance(entity, dict):
-                    entity0 = entity
-                else:
-                    entity0 = entity[0]
+                entity0 = entity[0] if isinstance(entity, list) else entity
                 md += text[pos : entity0["start"]]
                 md += TrainingDataWriter.generate_entity(text, entity)
                 pos = entity0["end"]
