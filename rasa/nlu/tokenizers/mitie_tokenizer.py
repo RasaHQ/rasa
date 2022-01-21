@@ -53,13 +53,12 @@ class MitieTokenizer(Tokenizer):
 
         encoded_sentence = text.encode(DEFAULT_ENCODING)
         tokenized = mitie.tokenize_with_offsets(encoded_sentence)
-        if not tokenized:
-            tokenized = [(b"", 0)]
-
         tokens = [
             self._token_from_offset(token, offset, encoded_sentence)
             for token, offset in tokenized
         ]
+        if not tokens:
+            tokens = [Token("", 0)]
 
         return self._apply_token_pattern(tokens)
 
