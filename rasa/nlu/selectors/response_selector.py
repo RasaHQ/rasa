@@ -526,7 +526,7 @@ class ResponseSelector(DIETClassifier):
             the associated intent_response_key and its similarity to the input.
         """
         for message in messages:
-            out = self._predict(message) if message.get(TEXT) else None
+            out = self._predict(message)
             top_label, label_ranking = self._predict_label(out)
 
             # Get the exact intent_response_key and the associated

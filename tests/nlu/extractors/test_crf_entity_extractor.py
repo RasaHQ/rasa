@@ -170,16 +170,6 @@ async def test_train_persist_with_different_configurations(
     assert detected_entities[0]["value"] == "italian"
 
 
-def test_process_empty_input(
-    crf_entity_extractor: Callable[[Dict[Text, Any]], CRFEntityExtractor],
-):
-    crf_extractor = crf_entity_extractor({})
-    message = Message(data={TEXT: ""})
-    processed_message = crf_extractor.process([message])[0]
-    assert processed_message.get(TEXT) == ""
-    assert processed_message.get(ENTITIES) == []
-
-
 def test_crf_use_dense_features(
     crf_entity_extractor: Callable[[Dict[Text, Any]], CRFEntityExtractor],
     spacy_nlp: Any,

@@ -190,9 +190,9 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
     def process(self, messages: List[Message]) -> List[Message]:
         """Return the most likely intent and its probability for a message."""
         for message in messages:
-            if not self.clf or not message.get(TEXT):
-                # component is either not trained, didn't receive
-                # enough training data or received an empty string
+            if not self.clf:
+                # component is either not trained or didn't
+                # receive enough training data
                 intent = None
                 intent_ranking = []
             else:

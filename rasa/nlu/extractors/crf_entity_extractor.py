@@ -278,7 +278,7 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Extract entities from the given message using the trained model(s)."""
-        if self.entity_taggers is None or not message.get(TEXT):
+        if self.entity_taggers is None:
             return []
 
         tokens = message.get(TOKENS_NAMES[TEXT])
