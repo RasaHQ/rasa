@@ -42,10 +42,7 @@ class RasaFileImporter(TrainingDataImporter):
         self.config_file = config_file
 
     def get_config(self) -> Dict:
-        """Retrieves config in dict format (see parent class for full docstring).
-
-        It also auto-configures it, ie. missing defaults are added.
-        """
+        """Retrieves model config (see parent class for full docstring)."""
         if not self.config_file or not os.path.exists(self.config_file):
             logger.debug("No configuration file was provided to the RasaFileImporter.")
             return {}

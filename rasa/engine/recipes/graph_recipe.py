@@ -8,7 +8,7 @@ from rasa.shared.utils.io import raise_warning
 from rasa.engine.graph import GraphSchema
 from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandler
 
-from typing import Dict, Text, Any, Optional
+from typing import Dict, Text, Any
 
 
 logger = logging.getLogger(__name__)
