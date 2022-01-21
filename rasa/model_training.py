@@ -200,10 +200,15 @@ def _train_graph(
     config = file_importer.get_config()
     recipe = Recipe.recipe_for_name(config.get("recipe"))
     config = recipe.auto_configure(
-        file_importer.get_config_file_for_auto_config(), config, training_type,
+        file_importer.get_config_file_for_auto_config(),
+        config,
+        training_type,
     )
     model_configuration = recipe.graph_config_for_recipe(
-        config, kwargs, training_type=training_type, is_finetuning=is_finetuning,
+        config,
+        kwargs,
+        training_type=training_type,
+        is_finetuning=is_finetuning,
     )
     rasa.engine.validation.validate(model_configuration)
 

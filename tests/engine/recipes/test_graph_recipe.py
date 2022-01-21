@@ -97,7 +97,7 @@ def test_language_returning():
     )
 
     recipe = Recipe.recipe_for_name(GraphV1Recipe.name)
-    model_config = recipe.graph_config_for_recipe(config, {},)
+    model_config = recipe.graph_config_for_recipe(config, {})
 
     assert model_config.language == "xy"
 

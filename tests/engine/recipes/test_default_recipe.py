@@ -635,7 +635,10 @@ def test_dump_config(
     ],
 )
 def test_get_configuration_for_different_training_types(
-    tmp_path: Path, input_file: Text, expected_file: Text, training_type: TrainingType,
+    tmp_path: Path,
+    input_file: Text,
+    expected_file: Text,
+    training_type: TrainingType,
 ):
     config_file = str(tmp_path / "config.yml")
     shutil.copyfile(str(CONFIG_FOLDER / input_file), config_file)
