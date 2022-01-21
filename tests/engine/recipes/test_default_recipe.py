@@ -148,7 +148,7 @@ def test_generate_graphs(
 
     config = rasa.shared.utils.io.read_yaml_file(config_path)
 
-    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
         config, {}, training_type=training_type, is_finetuning=is_finetuning
     )
@@ -210,7 +210,7 @@ def test_nlu_config_doesnt_get_overridden(
     config = rasa.shared.utils.io.read_yaml_file(
         "data/test_config/config_pretrained_embeddings_mitie_diet.yml"
     )
-    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name,)
+    recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
         config, cli_parameters, training_type=TrainingType.BOTH, is_finetuning=True
     )
@@ -232,7 +232,7 @@ def test_language_returning():
     )
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
-    model_config = recipe.graph_config_for_recipe(config, {},)
+    model_config = recipe.graph_config_for_recipe(config, {})
 
     assert model_config.language == "xy"
 
@@ -252,7 +252,7 @@ def test_tracker_generator_parameter_interpolation():
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
-        config, {"augmentation_factor": augmentation, "debug_plots": debug_plots},
+        config, {"augmentation_factor": augmentation, "debug_plots": debug_plots}
     )
 
     node = model_config.train_schema.nodes["training_tracker_provider"]
@@ -275,7 +275,7 @@ def test_nlu_training_data_persistence():
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
-        config, {"persist_nlu_training_data": True},
+        config, {"persist_nlu_training_data": True}
     )
 
     node = model_config.train_schema.nodes["nlu_training_data_provider"]
@@ -296,10 +296,13 @@ def test_num_threads_interpolation():
     expected_predict_schema = GraphSchema.from_dict(expected_schema_as_dict)
 
     for node_name, node in expected_train_schema.nodes.items():
-        if issubclass(
-            node.uses,
-            (SklearnIntentClassifier, MitieEntityExtractor, MitieIntentClassifier,),
-        ) and node_name.startswith("train_"):
+        if (
+            issubclass(
+                node.uses,
+                (SklearnIntentClassifier, MitieEntityExtractor, MitieIntentClassifier),
+            )
+            and node_name.startswith("train_")
+        ):
             node.config["num_threads"] = 20
 
     config = rasa.shared.utils.io.read_yaml_file(
@@ -446,21 +449,21 @@ def test_retrieve_via_invalid_module_path():
     with pytest.raises(ImportError):
         path = "rasa.core.policies.ted_policy.TEDPolicy1000"
         DefaultV1Recipe().graph_config_for_recipe(
-            {"policies": [{"name": path}]}, {}, TrainingType.CORE,
+            {"policies": [{"name": path}]}, {}, TrainingType.CORE
         )
 
 
 def test_train_nlu_without_nlu_pipeline():
     with pytest.raises(InvalidConfigException):
         DefaultV1Recipe().graph_config_for_recipe(
-            {"pipeline": []}, {}, TrainingType.NLU,
+            {"pipeline": []}, {}, TrainingType.NLU
         )
 
 
 def test_train_core_without_nlu_pipeline():
     with pytest.raises(InvalidConfigException):
         DefaultV1Recipe().graph_config_for_recipe(
-            {"policies": []}, {}, TrainingType.CORE,
+            {"policies": []}, {}, TrainingType.CORE
         )
 
 

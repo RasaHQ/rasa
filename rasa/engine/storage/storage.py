@@ -139,7 +139,7 @@ class ModelMetadata:
     language: Optional[Text]
     training_type: TrainingType = TrainingType.BOTH
 
-    def __post_init__(self,) -> None:
+    def __post_init__(self) -> None:
         """Raises an exception when the meta data indicates an unsupported version.
 
         Raises:

@@ -40,7 +40,7 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
                 fn="run",
                 constructor_name="load",
                 config={"some_config": 123455, "some more config": [{"nested": "hi"}]},
-            ),
+            )
         }
     )
 

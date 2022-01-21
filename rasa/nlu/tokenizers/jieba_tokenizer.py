@@ -44,7 +44,7 @@ class JiebaTokenizer(Tokenizer):
         }
 
     def __init__(
-        self, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource,
+        self, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource
     ) -> None:
         """Initialize the tokenizer."""
         super().__init__(config)

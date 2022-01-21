@@ -1,0 +1,120 @@
+{
+	"search_transactions": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 1,
+		"confused_with": {}
+	},
+	"greet": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 2,
+		"confused_with": {}
+	},
+	"out_of_scope": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 1,
+		"confused_with": {}
+	},
+	"thankyou": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 1,
+		"confused_with": {}
+	},
+	"help": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 2,
+		"confused_with": {}
+	},
+	"inform": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 1,
+		"confused_with": {}
+	},
+	"goodbye": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 1,
+		"confused_with": {}
+	},
+	"affirm": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 3,
+		"confused_with": {}
+	},
+	"pay_cc": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 2,
+		"confused_with": {}
+	},
+	"check_balance": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 5,
+		"confused_with": {}
+	},
+	"deny": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 1,
+		"confused_with": {}
+	},
+	"ask_transfer_charge": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 1,
+		"confused_with": {}
+	},
+	"transfer_money": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 3,
+		"confused_with": {}
+	},
+	"check_recipients": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 2,
+		"confused_with": {}
+	},
+	"check_earnings": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 2,
+		"confused_with": {}
+	},
+	"accuracy": 1.0,
+	"macro avg": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 28
+	},
+	"weighted avg": {
+		"precision": 1.0,
+		"recall": 1.0,
+		"f1-score": 1.0,
+		"support": 28
+	}
+}
