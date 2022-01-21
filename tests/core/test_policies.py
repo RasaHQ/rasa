@@ -623,7 +623,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             "training story", evts=events, domain=domain, slots=domain.slots
         )
         test_story = TrackerWithCachedStates.from_events(
-            "training story", events[:-1], domain=domain, slots=domain.slots
+            "training story", events[:-2], domain=domain, slots=domain.slots
         )
         policy.train([training_story], domain)
         prediction = policy.predict_action_probabilities(test_story, domain)
