@@ -32,8 +32,8 @@ jobs:
   changes:
     name: Check for file changes
     runs-on: ubuntu-latest
-    # don't run this for main branches of forks; only on pull request (not needed elsewhere)
-    if: github.repository == 'RasaHQ/rasa' && github.event_name == 'pull_request'
+    # don't run this for pull requests of forks
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'RasaHQ/rasa'
     outputs:
       # Both of the outputs below are strings but only one exists at any given time
       backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
@@ -222,8 +222,8 @@ jobs:
     name: Preview Docs
     runs-on: ubuntu-latest
     needs: [ changes ]
-    # don't run this for main branches of forks; only run on pull requests
-    if: github.repository == 'RasaHQ/rasa' && github.event_name == 'pull_request'
+    # don't run this for pull requests from forks
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'RasaHQ/rasa'
 
     steps:
     - name: Checkout git repository 🕝
