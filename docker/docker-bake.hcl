@@ -21,7 +21,7 @@ variable "BASE_BUILDER_IMAGE_HASH" {
 # keep this in sync with the version in pyproject.toml
 # the variable is set automatically for builds in CI
 variable "POETRY_VERSION" {
-  default = "1.1.8"
+  default = "1.1.11"
 }
 
 group "base-images" {
