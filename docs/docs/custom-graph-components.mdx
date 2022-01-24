@@ -228,7 +228,7 @@ Your graph component's train method must return the value of `resource` so that 
 the training results between trainings.
 The `self._model_storage.write_to(self._resource)` context manager provides a path to
 a directory where you can persist any data required by your
-graph component. 
+graph component.
 
 ```python
 from __future__ import annotations
@@ -336,8 +336,8 @@ Currently, Rasa Open Source only supports the `default.v1` recipe.
 Register your graph component with this recipe by using the `DefaultV1Recipe.register`
 decorator:
 
-:::code language="python" source="docs/sources/data/test_classes/registered_component.py"
- highlight="5-9":::
+```python (docs/sources/data/test_classes/registered_component.py)
+```
 
 Rasa Open Source uses the information provided in the `register` decorator and the
 position of your graph component within the configuration file to schedule the execution
