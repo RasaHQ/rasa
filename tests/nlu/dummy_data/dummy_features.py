@@ -293,7 +293,7 @@ class DummyFeatures:
     ) -> None:
         """Compares concatenated features."""
 
-        for feature_type in [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SENTENCE]:
+        for feature_type in [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE]:
 
             feature_array_list = actual.get(feature_type, None)
 
