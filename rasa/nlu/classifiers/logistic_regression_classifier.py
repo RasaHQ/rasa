@@ -97,7 +97,6 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
 
     def _create_training_matrix(self, training_data: TrainingData):
         """This method creates a scikit-learn compatible (X, y) training pairs."""
-        X = []
         y = []
 
         examples = [
@@ -107,19 +106,9 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         ]
 
         for e in examples:
-            # First element is sequence features, second is sentence features
-            # for intent classification we're only interested in sentence features
-            sparse_feats = e.get_sparse_features(attribute=TEXT)[1]
-            dense_feats = e.get_dense_features(attribute=TEXT)[1]
-            together = hstack(
-                [
-                    csr_matrix(sparse_feats.features if sparse_feats else []),
-                    csr_matrix(dense_feats.features if dense_feats else []),
-                ]
-            )
-            X.append(together)
             y.append(e.get(INTENT))
-        return vstack(X), y
+        
+        return self._create_X(examples), y
 
     def train(self, training_data: TrainingData) -> Resource:
         """Train the intent classifier on a data set."""
