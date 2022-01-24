@@ -20,7 +20,6 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
             ["hey", "ńöñàśçií", "how", "'re", "you", "?"],
             [(0, 3), (4, 12), (13, 16), (16, 19), (20, 23), (23, 24)],
         ),
-        ("", [""], [(0, 0)]),
     ],
 )
 def test_spacy(text, expected_tokens, expected_indices, spacy_nlp):

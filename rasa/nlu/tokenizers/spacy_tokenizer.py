@@ -48,7 +48,7 @@ class SpacyTokenizer(Tokenizer):
         """Tokenizes the text of the provided attribute of the incoming message."""
         doc = self._get_doc(message, attribute)
         if not doc:
-            return [Token("", 0)]
+            return []
 
         tokens = [
             Token(

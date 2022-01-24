@@ -706,6 +706,12 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 example for example in training_data if label_attribute in example.data
             ]
 
+        training_data = [
+            example
+            for example in training_data
+            if example.features_present(attribute=TEXT)
+        ]
+
         if not training_data:
             # no training data are present to train
             return RasaModelData()
@@ -929,6 +935,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
+        if model_data.is_empty():
+            return None
         return self.model.run_inference(model_data)
 
     def _predict_label(
