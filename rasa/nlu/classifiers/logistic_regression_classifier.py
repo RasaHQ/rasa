@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Text, Dict, List, Type
 
-from joblib import dump, load
+import joblib
 from scipy.sparse import hstack, vstack, csr_matrix
 from sklearn.linear_model import LogisticRegression
 
@@ -160,7 +160,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     def persist(self) -> None:
         """Persist this model into the passed directory."""
         with self._model_storage.write_to(self._resource) as model_dir:
-            dump(self.clf, model_dir / f"{self.name}.joblib")
+            joblib.dump(self.clf, model_dir / f"{self.name}.joblib")
 
     @classmethod
     def load(
@@ -172,7 +172,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     ) -> GraphComponent:
         """Loads trained component (see parent class for full docstring)."""
         with model_storage.read_from(resource) as model_dir:
-            classifier = load(model_dir / f"{resource.name}.joblib")
+            classifier = joblib.load(model_dir / f"{resource.name}.joblib")
             component = cls(
                 config, execution_context.node_name, model_storage, resource
             )
