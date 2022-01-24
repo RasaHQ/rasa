@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Text, Dict, List, Type
+from typing import Any, Text, Dict, List, Type, Tuple
 
 import joblib
 from scipy.sparse import hstack, vstack, csr_matrix
@@ -95,7 +95,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             X.append(together)
         return vstack(X)
 
-    def _create_training_matrix(self, training_data: TrainingData):
+    def _create_training_matrix(self, training_data: TrainingData) -> Tuple[csr_matrix, List[str]]:
         """This method creates a scikit-learn compatible (X, y) training pairs."""
         y = []
 
