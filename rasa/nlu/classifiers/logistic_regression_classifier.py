@@ -65,13 +65,13 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             # Added these parameters to ensure sklearn changes won't affect us.
             # Should a sklearn update the defaults, we won't be affected.
             dual=False,
-            fit_intercept=True, 
-            intercept_scaling=1, 
-            multi_class='auto', 
-            verbose=0, 
-            warm_start=False, 
+            fit_intercept=True,
+            intercept_scaling=1,
+            multi_class="auto",
+            verbose=0,
+            warm_start=False,
             n_jobs=None,
-            l1_ratio=None
+            l1_ratio=None,
         )
 
         # We need to use these later when saving the trained component.
