@@ -2,6 +2,7 @@ import logging
 
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.graph import GraphModelConfiguration
+from rasa.shared.constants import DOCS_URL_GRAPH_RECIPE
 from rasa.shared.data import TrainingType
 from rasa.shared.utils.common import mark_as_experimental_feature
 from rasa.shared.utils.io import raise_warning
@@ -33,7 +34,7 @@ class GraphV1Recipe(Recipe):
                 "Unlike the Default Recipe, Graph Recipe does not utilize CLI "
                 "parameters or finetuning and these configurations will be ignored. "
                 "Add configuration to the recipe itself if you want them to be used.",
-                docs="PLACEHOLDER_FOR_DOCS",
+                docs=DOCS_URL_GRAPH_RECIPE,
             )
         # TODO: Add core_target and nlu_target to graph configuration options so we
         # don't force graph node names to be `run_RegexMessageHandler` and
