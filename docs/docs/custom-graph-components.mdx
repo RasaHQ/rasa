@@ -328,12 +328,12 @@ class MyComponent(GraphComponent):
 
 
 ## Registering Graph Components with the Model Configuration
-To make your graph component available to Rasa Open Source you have to register your
+To make your graph component available to Rasa Open Source you may have to register your
 graph component with a recipe. Rasa Open Source uses recipes to translate the content
 of your model configuration to executable
 [graphs](custom-graph-components.mdx#graph-components).
-Currently, Rasa Open Source only supports the `default.v1` recipe.
-Register your graph component with this recipe by using the `DefaultV1Recipe.register`
+Currently, Rasa Open Source supports the `default.v1` and the experimental `graph.v1` recipes.
+For `default.v1` recipe, you need to register your graph component by using the `DefaultV1Recipe.register`
 decorator:
 
 ```python (docs/sources/data/test_classes/registered_component.py)
