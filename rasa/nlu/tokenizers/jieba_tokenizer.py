@@ -100,8 +100,8 @@ class JiebaTokenizer(Tokenizer):
 
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
-        if not tokens:
-            tokens = [Token("", 0)]
+        # if not tokens:
+        #     tokens = [Token("", 0)]
 
         return self._apply_token_pattern(tokens)
 
