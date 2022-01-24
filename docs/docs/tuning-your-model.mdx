@@ -435,35 +435,36 @@ underlying tensorflow ops `tf.sparse.sparse_dense_matmul`,
 and `tf.math.unsorted_segment` ops. For more information see [here](https://github.com/tensorflow/community/blob/master/rfcs/20210119-determinism.md)
 
 For the above reasons, the models are also not guaranteed to yield the exact same
-performance when trained on a GPU across multiple runs. This even applies to situations where training is run
-multiple times on the same training data with the same config
-and random seeds set appropriately while being evaluated on a standard held-out test set.
-Internal experiments have shown the following fluctuation in model's performance when trained and evaluated on a held-out
-test set of a variety of datasets (experiments were run 5 times on each dataset):
+performance when trained on GPU across multiple runs. This even applies to situations where training is run
+multiple times on the same training data, with the same config
+and random seeds set appropriately, while evaluating on a standard held-out test set.
+Internal experiments have shown the following fluctuation in model performance when trained and evaluated on a held-out
+test set on a variety of datasets (experiments were run 5 times on each dataset):
 
 ```
 +-----------------------+------------+------------------+------------------+-------------------+
 | Task,                 | Number of  | Average standard | Minimum standard | Maximum standard  |
-| Metric                | datasets   | deviation        | deviation        | deviation         |
+| Metric (Range)        | datasets   | deviation        | deviation        | deviation         |
 +-----------------------+------------+------------------+------------------+-------------------+
 | Intent Classification | 11         | 0.0042           | 2.4e-5           | 0.0176            |
-| Macro F1              |            |                  |                  |                   |
+| Macro F1 (0-1)        |            |                  |                  |                   |
 +-----------------------+------------+------------------+------------------+-------------------+
 | Entity Recognition    | 7          | 0.0019           | 0.0007           | 0.0044            |
-| Macro F1              |            |                  |                  |                   |
+| Macro F1 (0-1)        |            |                  |                  |                   |
 +-----------------------+------------+------------------+------------------+-------------------+
 | Response Selection    | 2          | 0.0098           | 0.0003           | 0.0231            |
-| Macro F1              |            |                  |                  |                   |
+| Macro F1 (0-1)        |            |                  |                  |                   |
 +-----------------------+------------+------------------+------------------+-------------------+
 | Action Selection      | 5          | 0.0025           | 0.0010           | 0.0053            |
-| Macro F1              |            |                  |                  |                   |
+| Macro F1 (0-1)        |            |                  |                  |                   |
 +-----------------------+------------+------------------+------------------+-------------------+
 | Conversation Success  | 5          | 0.0077           | 0.0052           | 0.0103            |
-| Accuracy              |            |                  |                  |                   |
+| Accuracy (0-1)        |            |                  |                  |                   |
 +-----------------------+------------+------------------+------------------+-------------------+
 ```
 
-You can expect similar fluctuations in the model's performance when you evaluate them on your dataset.
+The above experiments were run on an Nvidia Tesla P4 GPU. You can expect similar fluctuations in
+the model performance when you evaluate on your dataset.
 Across different pipeline configurations tested, the fluctuation is more pronounced
 when you use sparse featurizers in your pipeline. You can see which featurizers are sparse [here](./components.mdx#featurizers),
 by checking the "Type" of a featurizer.
