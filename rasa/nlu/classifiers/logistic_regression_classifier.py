@@ -107,7 +107,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
 
         for e in examples:
             y.append(e.get(INTENT))
-        
+
         return self._create_X(examples), y
 
     def train(self, training_data: TrainingData) -> Resource:
