@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Optional, List, Dict, Text, Type
 import tensorflow as tf
@@ -489,9 +490,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
-        predicted_similarity,
-        threshold_value,
-        is_unlikely,
+        predicted_similarity: float,
+        threshold_value: float,
+        is_unlikely: bool,
         monkeypatch: MonkeyPatch,
         tmp_path: Path,
     ):
@@ -538,6 +539,8 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             # of the metadata is tested separately and
             # not as part of this test.
             assert prediction.action_metadata is not None
+            # Assert metadata is serializable
+            assert json.dumps(prediction.action_metadata)
 
     @pytest.mark.parametrize(
         "tracker_events, should_skip",
@@ -595,15 +598,15 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         should_skip: bool,
         tmp_path: Path,
     ):
-        caplog.set_level(logging.DEBUG)
         loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
         interpreter = RegexInterpreter()
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
 
-        prediction = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
-        )
+        with caplog.at_level(logging.DEBUG):
+            prediction = loaded_policy.predict_action_probabilities(
+                tracker, default_domain, interpreter
+            )
 
         assert (
             "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
@@ -613,6 +616,55 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             assert prediction.probabilities == loaded_policy._default_predictions(
                 default_domain
             )
+
+    @pytest.mark.parametrize(
+        "tracker_events",
+        [
+            [
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+            ],
+            [
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+                EntitiesAdded([{"name": "dummy"}]),
+            ],
+            [
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+                SlotSet("name"),
+            ],
+            [
+                ActiveLoop("loop"),
+                ActionExecuted("action_listen"),
+                UserUttered("hi", intent={"name": "inexistent_intent"}),
+                ActionExecutionRejected("loop"),
+            ],
+        ],
+    )
+    def test_skip_predictions_if_new_intent(
+        self,
+        trained_policy: UnexpecTEDIntentPolicy,
+        default_domain: Domain,
+        caplog: LogCaptureFixture,
+        tracker_events: List[Event],
+        tmp_path: Path,
+    ):
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+        interpreter = RegexInterpreter()
+        tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
+        tracker.update_with_events(tracker_events, default_domain)
+
+        with caplog.at_level(logging.DEBUG):
+            prediction = loaded_policy.predict_action_probabilities(
+                tracker, default_domain, interpreter
+            )
+
+        assert "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
+
+        assert prediction.probabilities == loaded_policy._default_predictions(
+            default_domain
+        )
 
     @pytest.mark.parametrize(
         "tracker_events_with_action, tracker_events_without_action",

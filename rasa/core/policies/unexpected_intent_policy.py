@@ -488,11 +488,11 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         def _compile_metadata_for_label(
             label_name: Text, similarity_score: float, threshold: Optional[float],
         ) -> "RankingCandidateMetadata":
-            severity = threshold - similarity_score if threshold else None
+            severity = float(threshold - similarity_score) if threshold else None
             return {
                 NAME: label_name,
-                SCORE_KEY: similarity_score,
-                THRESHOLD_KEY: threshold,
+                SCORE_KEY: float(similarity_score),
+                THRESHOLD_KEY: float(threshold) if threshold else None,
                 SEVERITY_KEY: severity,
             }
 
@@ -547,13 +547,14 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         # Prediction through the policy is skipped if:
         # 1. If the tracker does not contain any event of type `UserUttered`
-        #    till now.
+        #    till now or the intent of such event is not in domain.
         # 2. There is at least one event of type `ActionExecuted`
         #    after the last `UserUttered` event.
-        if self._should_skip_prediction(tracker):
+        if self._should_skip_prediction(tracker, domain):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
-                f"as either there is no event of type `UserUttered` or "
+                f"as either there is no event of type `UserUttered`, "
+                f"event's intent is new and not in domain or "
                 f"there is an event of type `ActionExecuted` after "
                 f"the last `UserUttered`."
             )
@@ -590,14 +591,17 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         )
 
     @staticmethod
-    def _should_skip_prediction(tracker: DialogueStateTracker) -> bool:
+    def _should_skip_prediction(tracker: DialogueStateTracker, domain: Domain,) -> bool:
         """Checks if the policy should skip making a prediction.
 
         A prediction can be skipped if:
             1. There is no event of type `UserUttered` in the tracker.
-            2. There is an event of type `ActionExecuted` after the last
+            2. If the `UserUttered` event's intent is new and not in domain
+                (a new intent can be created from rasa interactive and not placed in
+                domain yet)
+            3. There is an event of type `ActionExecuted` after the last
                 `UserUttered` event. This is to prevent the dialogue manager
-                 from getting stuck in a prediction loop.
+                from getting stuck in a prediction loop.
                 For example, if the last `ActionExecuted` event
                 contained `action_unlikely_intent` predicted by
                 `UnexpecTEDIntentPolicy` and
@@ -615,6 +619,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             if isinstance(event, ActionExecuted):
                 return True
             elif isinstance(event, UserUttered):
+                if event.intent_name not in domain.intents:
+                    return True
                 return False
         # No event of type `ActionExecuted` and `UserUttered` means
         # that there is nothing for `UnexpecTEDIntentPolicy` to predict on.

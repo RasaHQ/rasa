@@ -2,7 +2,7 @@ import abc
 import logging
 import os
 import shutil
-import tarfile
+from tarsafe import TarSafe
 from typing import Optional, Text, Tuple, TYPE_CHECKING
 
 import rasa.shared.utils.common
@@ -103,7 +103,7 @@ class Persistor(abc.ABC):
     @staticmethod
     def _decompress(compressed_path: Text, target_path: Text) -> None:
 
-        with tarfile.open(compressed_path, "r:gz") as tar:
+        with TarSafe.open(compressed_path, "r:gz") as tar:
             tar.extractall(target_path)  # target dir will be created if it not exists
 
 

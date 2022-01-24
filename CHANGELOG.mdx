@@ -16,6 +16,151 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.22] - 2022-01-19
+### Bugfixes
+- [#10606](https://github.com/rasahq/rasa/issues/10606): Fix `max_history` truncation in `AugmentedMemoizationPolicy` to preserve the most recent `UserUttered` event.
+  Previously, `AugmentedMemoizationPolicy` failed to predict next action after long sequences of actions (longer than `max_history`) because the policy did not have access to the most recent user message.
+
+
+## [2.8.21] - 2022-01-07
+### Bugfixes
+- [#10634](https://github.com/rasahq/rasa/issues/10634): Add `RASA_ENVIRONMENT` header in Kafka only if the environmental variable is set.
+
+### Miscellaneous internal changes
+- [#10643](https://github.com/rasahq/rasa/issues/10643)
+
+
+## [2.8.20] - 2022-01-05
+### Improvements
+- [#10621](https://github.com/rasahq/rasa/issues/10621): Make `rasa data validate` check for duplicated intents, forms, responses 
+  and slots when using domains split between multiple files.
+
+### Bugfixes
+- [#10623](https://github.com/rasahq/rasa/issues/10623): Add an option to specify `--domain` for `rasa test nlu` CLI command.
+
+
+## [2.8.19] - 2021-12-28
+### Bugfixes
+- a small bugfix to domain merging.
+
+
+## [2.8.18] - 2021-12-27
+### Bugfixes
+- [#10137](https://github.com/rasahq/rasa/issues/10137): Fixes Domain loading when domain config uses multiple yml files.
+
+  Previously not all configured attributes were necessarily known
+  when merging Domains, and in the case of ``entities`
+  were not being properly assigned to ``intents``.
+
+
+## [2.8.17] - 2021-12-21
+### Bugfixes
+- [#10741](https://github.com/rasahq/rasa/issues/10741): Fix load method of LexicalSyntacticFeaturizer to make the class inheritable.
+- [#7645](https://github.com/rasahq/rasa/issues/7645): Do not print warning when subintent actions have response.
+
+
+## [2.8.16] - 2021-12-09
+### Improvements
+- [#10413](https://github.com/rasahq/rasa/issues/10413): The value of the `RASA_ENVIRONMENT` environmental variable is sent as a header in messages logged by `KafkaEventBroker`.
+  This value was previously only made available by `PikaEventConsumer`.
+
+### Bugfixes
+- [#10458](https://github.com/rasahq/rasa/issues/10458): Make `action_metadata` json serializable and make it available on the tracker. This is a backport of a fix in 3.0.0.
+
+
+## [2.8.15] - 2021-11-25
+### Bugfixes
+- [#10381](https://github.com/rasahq/rasa/issues/10381): Validate regular
+  expressions in nlu training data configuration.
+
+## [2.8.14] - 2021-11-18
+### Bugfixes
+- [#10241](https://github.com/rasahq/rasa/issues/10241): Bump TensorFlow version to 2.6.2.
+- [#10257](https://github.com/rasahq/rasa/issues/10257): Downgrade google-auth to <2.
+
+
+## [2.8.13] - 2021-11-11
+### Bugfixes
+- [#9949](https://github.com/rasahq/rasa/issues/9949): Fixed new intent creation in `rasa interactive` command. Previously, this failed with 500
+  from the server due to `UnexpecTEDIntentPolicy` trying to predict with the new intent not in
+  domain.
+- [#9982](https://github.com/rasahq/rasa/issues/9982): Install mitie library when preparing test runs. This step was missing before
+  and tests were thus failing as we have many tests which rely on mitie library.
+  Previously, `make install-full` was required.
+
+### Miscellaneous internal changes
+- [#10146](https://github.com/rasahq/rasa/issues/10146), [#9989](https://github.com/rasahq/rasa/issues/9989)
+
+
+## [2.8.12] - 2021-10-21
+### Bugfixes
+- [#9771](https://github.com/rasahq/rasa/issues/9771): Fixed a bug where `rasa test --fail-on-prediction-errors` would raise a 
+  `WrongPredictionException` for entities which were actually predicted correctly.
+
+  This happened in two ways:
+  1. if for a user message some entities were extracted multiple times (by multiple entity
+  extractors) but listed only once in the test story,
+  2. if the order in which entities from a message were extracted didn't match the order
+  in which they were listed in the test story.
+
+### Improved Documentation
+- [#9691](https://github.com/rasahq/rasa/issues/9691): Improve the documentation for training `TEDPolicy` with data augmentation.
+
+
+## [2.8.11] - 2021-10-20
+### Bugfixes
+- [#9858](https://github.com/rasahq/rasa/issues/9858): Updates dependency on `sanic-jwt` (1.5.0 -> ">=1.6.0, <1.7.0")
+
+  This removes the need to pin the version of `pyjwt` as the newer version of `sanic-jwt`
+  manages this properly.
+
+
+## [2.8.10] - 2021-10-14
+### Bugfixes
+- [#5657](https://github.com/rasahq/rasa/issues/5657): Add List handling in the `send_custom_json` method on `channels/facebook.py`.
+  Bellow are some examples that could cause en error before.
+
+  Example 1: when the whole json is a List
+  ```
+  [
+      {
+          "blocks": {
+              "type": "progression_bar",
+              "text": {"text": "progression 1", "level": "1"},
+          }
+      },
+      {"sender": {"id": "example_id"}},
+  ]
+  ```
+
+  Example 2: instead of being a Dict, *blocks* is a List when there are 2 *type*
+  keys under it
+  ```
+  {
+      "blocks": [
+          {"type": "title", "text": {"text": "Conversation progress"}},
+          {
+              "type": "progression_bar",
+              "text": {"text": "Look how far we are...", "level": "1"},
+          },
+      ]
+  }
+  ```
+- [#7676](https://github.com/rasahq/rasa/issues/7676): Fixed bug when using wit.ai training data to train.
+  Training failed with an error similarly to this:
+
+  ```bash
+    File "./venv/lib/python3.8/site-packages/rasa/nlu/classifiers/diet_classifier.py", line 803, in train
+      self.check_correct_entity_annotations(training_data)
+    File "./venv/lib/python3.8/site-packages/rasa/nlu/extractors/extractor.py", line 418, in check_correct_entity_annotations
+      entities_repr = [
+    File "./venv/lib/python3.8/site-packages/rasa/nlu/extractors/extractor.py", line 422, in <listcomp>
+      entity[ENTITY_ATTRIBUTE_VALUE],
+  KeyError: 'value'
+  ```
+- [#9851](https://github.com/rasahq/rasa/issues/9851): Fix CVE-2021-41127
+
+
 ## [2.8.9] - 2021-10-08
 ### Improvements
 - [#7619](https://github.com/rasahq/rasa/issues/7619): Bump TensorFlow version to 2.6.

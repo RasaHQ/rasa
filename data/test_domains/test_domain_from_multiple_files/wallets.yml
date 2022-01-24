@@ -1,0 +1,22 @@
+version: "2.0"
+
+intents:
+- open_wallet
+- exchange_wallet
+
+slots:
+  greenOrGrey:
+    type: text
+    influence_conversation: false
+  activate_simulation:
+    type: text
+    influence_conversation: false
+  activate_double_simulation:
+    type: text
+    influence_conversation: false
+
+
+actions:
+- utter_open_wallet_options
+- utter_greengrey_wallet
+- action_prevent_20
