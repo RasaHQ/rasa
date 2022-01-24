@@ -13,6 +13,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
 )
 
+
 @pytest.mark.parametrize(
     "type,is_sparse,",
     itertools.product([FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE], [True, False]),
