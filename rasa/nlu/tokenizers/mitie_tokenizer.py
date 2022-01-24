@@ -57,8 +57,6 @@ class MitieTokenizer(Tokenizer):
             self._token_from_offset(token, offset, encoded_sentence)
             for token, offset in tokenized
         ]
-        # if not tokens:
-        #     tokens = [Token("", 0)]
 
         return self._apply_token_pattern(tokens)
 
