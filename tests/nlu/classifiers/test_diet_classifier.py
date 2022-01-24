@@ -952,6 +952,7 @@ class TextIntentAndEntitiesTestRuns:
 
     @staticmethod
     def run(
+        create_diet: Callable[..., DIETClassifier],
         component_config: Dict[Text, Any],
         input_contains_features_for_intent: bool,
         attributes_without_sentence_features: Set[Text],
@@ -1012,11 +1013,13 @@ class TextIntentAndEntitiesTestRuns:
 
 
 @pytest.mark.parametrize("config", TextIntentAndEntitiesTestRuns.CONFIGURATIONS)
-def test_create_data_label_mapping(config: Dict[Text, Any]):
+def test_create_data_label_mapping(
+    create_diet: Callable[..., DIETClassifier], config: Dict[Text, Any]
+):
     # 1. Note that this mapping is needed by predict, so we test this separately.
     # 2. Observe that the current version *always* computes this mapping, even if
     #    intent classification is switched off.
-    test_run = TextIntentAndEntitiesTestRuns.run(**config)
+    test_run = TextIntentAndEntitiesTestRuns.run(create_diet, **config)
     _, _, expected_result = test_run.sub_results["label_data"]
     # Note: we strip spaces here
     expected = {
@@ -1027,8 +1030,10 @@ def test_create_data_label_mapping(config: Dict[Text, Any]):
 
 
 @pytest.mark.parametrize("config", TextIntentAndEntitiesTestRuns.CONFIGURATIONS)
-def test_create_data_subkey_text(config: Dict[Text, Any]):
-    test_run = TextIntentAndEntitiesTestRuns.run(**config)
+def test_create_data_subkey_text(
+    create_diet: Callable[..., DIETClassifier], config: Dict[Text, Any]
+):
+    test_run = TextIntentAndEntitiesTestRuns.run(create_diet, **config)
 
     for key in test_run.sub_results:
 
@@ -1108,8 +1113,10 @@ def test_create_data_subkey_text(config: Dict[Text, Any]):
         if config["component_config"].get(INTENT_CLASSIFICATION)
     ],
 )
-def test_create_data_subkey_label(config: Dict[Text, Any]):
-    test_run = TextIntentAndEntitiesTestRuns.run(**config)
+def test_create_data_subkey_label(
+    create_diet: Callable[..., DIETClassifier], config: Dict[Text, Any]
+):
+    test_run = TextIntentAndEntitiesTestRuns.run(create_diet, **config)
     input_contains_features_for_intent = config["input_contains_features_for_intent"]
 
     for key in test_run.sub_results:
@@ -1187,8 +1194,10 @@ def test_create_data_subkey_label(config: Dict[Text, Any]):
         if config["component_config"].get(ENTITY_RECOGNITION)
     ],
 )
-def test_create_data_subkey_entities(config: Dict[Text, Any]):
-    test_run = TextIntentAndEntitiesTestRuns.run(**config)
+def test_create_data_subkey_entities(
+    create_diet: Callable[..., DIETClassifier], config: Dict[Text, Any]
+):
+    test_run = TextIntentAndEntitiesTestRuns.run(create_diet, **config)
     component_config = config["component_config"]
 
     for key in test_run.sub_results:
