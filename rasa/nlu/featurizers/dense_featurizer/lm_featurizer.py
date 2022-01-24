@@ -4,7 +4,6 @@ import logging
 
 from typing import Any, Text, List, Dict, Tuple, Type
 
-import transformers.tokenization_bert
 from transformers import AutoConfig, AutoTokenizer, TFAutoModel
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
