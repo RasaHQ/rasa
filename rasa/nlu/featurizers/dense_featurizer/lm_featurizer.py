@@ -209,26 +209,15 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         Returns: Cleaned up token ids and token strings.
         """
-
-        def _remove_prefixes(token: str) -> str:
-            """Remove the tokenizer-specific prefix.
-
-            BERT tokenizers are treated separately since their prefix signifies a
-            sub-token and the builtin `convert_tokens_to_string` only works for a
-            list of tokens, while we apply it to an individual token. For other
-            tokenizers the prefixes signify whitespace or end-of-words.
-            """
-            if issubclass(
-                type(self.tokenizer), transformers.tokenization_bert.BertTokenizer
-            ) or issubclass(
-                type(self.tokenizer), transformers.tokenization_bert.BertTokenizerFast
-            ):
-                return token.replace("##", "")
-            else:
-                return self.tokenizer.convert_tokens_to_string([token])
-
+        # NOTE: We're using `PretrainedTokenizer.convert_tokens_to_string` to remove
+        # delimiter pre- and suffixes, such as `##` (BERT), `Ġ` (GPT2), or `▁` (XLNET).
+        # This function expects a list of tokens and builds a string by
+        # concatenating and removing the delimiters. The additional empty string here
+        # is necessary since for BERT style tokenizers, the `##` signifies a sub-token
+        # and the filtering only takes effect if there is a starting sub-token before.
+        # For the other tokenizers, the delimiters signify whitespace.
         token_ids_string = [
-            (id_, _remove_prefixes(token))
+            (id_, self.tokenizer.convert_tokens_to_string(["", token]))
             for id_, token in zip(split_token_ids, token_strings)
         ]
         token_ids_string = [(id_, token) for id_, token in token_ids_string if token]
