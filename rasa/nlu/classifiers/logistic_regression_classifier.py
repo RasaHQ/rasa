@@ -181,13 +181,20 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         execution_context: ExecutionContext,
     ) -> GraphComponent:
         """Loads trained component (see parent class for full docstring)."""
-        with model_storage.read_from(resource) as model_dir:
-            classifier = joblib.load(model_dir / f"{resource.name}.joblib")
-            component = cls(
-                config, execution_context.node_name, model_storage, resource
+        try:
+            with model_storage.read_from(resource) as model_dir:
+                classifier = joblib.load(model_dir / f"{resource.name}.joblib")
+                component = cls(
+                    config, execution_context.node_name, model_storage, resource
+                )
+                component.clf = classifier
+                return component
+        except ValueError:
+            logger.debug(
+                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"'{resource.name}' doesn't exist."
             )
-            component.clf = classifier
-            return component
+            return cls(config, model_storage, resource, execution_context)
 
     def process_training_data(self, training_data: TrainingData) -> TrainingData:
         """Process the training data."""
