@@ -28,7 +28,9 @@ from tests.nlu.dummy_data.dummy_features import (
 class DummyData(ABC):
     """A dummy dataset."""
 
-    def create_messages(self,) -> List[Message]:
+    def create_messages(
+        self,
+    ) -> List[Message]:
         """Creates some messages."""
         pass
 
@@ -36,7 +38,10 @@ class DummyData(ABC):
 class DummyFeaturizer(ABC):
     """A dummy featurizer."""
 
-    def featurize_messages(self, messages: List[Message],) -> None:
+    def featurize_messages(
+        self,
+        messages: List[Message],
+    ) -> None:
         pass
 
 
@@ -84,7 +89,9 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
             )
             for idx in [1, 2, 3, 4]
         ]
-        self._rand_featurizer = DummyFeatures(featurizer_descriptions=self.featurizers,)
+        self._rand_featurizer = DummyFeatures(
+            featurizer_descriptions=self.featurizers,
+        )
         self._num_messages = len(self.create_messages())
 
     @staticmethod
@@ -94,7 +101,9 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
             for match in re.finditer(r"\w+", text)
         ]
 
-    def create_messages(self,) -> List[Message]:
+    def create_messages(
+        self,
+    ) -> List[Message]:
         """Generates some test messages."""
 
         # prepare an example with entities
@@ -118,7 +127,11 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
         # create messages
         messages = [
             # 0: only text
-            Message(data={TEXT: "just a text",}),
+            Message(
+                data={
+                    TEXT: "just a text",
+                }
+            ),
             # 1: "intent2" (with some added spaces in the intent name)
             Message(
                 data={
@@ -129,7 +142,11 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
             ),
             # 2: "intent1 with more tokens"
             Message(
-                data={TEXT: "word", INTENT: "intent1 with more tokens",}, ENTITIES=[],
+                data={
+                    TEXT: "word",
+                    INTENT: "intent1 with more tokens",
+                },
+                ENTITIES=[],
             ),
             # 3: "intent1 with more tokens" + entities
             Message(
@@ -154,12 +171,15 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
             for attribute in [TEXT, INTENT]:
                 if attribute in message.data.keys():
                     message.set(
-                        TOKENS_NAMES[attribute], self.tokenize(message.get(attribute)),
+                        TOKENS_NAMES[attribute],
+                        self.tokenize(message.get(attribute)),
                     )
 
         return messages
 
-    def intent_classifier_usage(self,) -> Dict[Text, IntentAndEntitiesEncodings]:
+    def intent_classifier_usage(
+        self,
+    ) -> Dict[Text, IntentAndEntitiesEncodings]:
         """Describes how an intent classifier should use this dataset."""
 
         training = IntentAndEntitiesEncodings(
@@ -175,7 +195,15 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
             entities_bilou_tags=[
                 None,
                 None,
-                ["O", "B-city", "I-city", "L-city", "O", "O", "U-what",],
+                [
+                    "O",
+                    "B-city",
+                    "I-city",
+                    "L-city",
+                    "O",
+                    "O",
+                    "U-what",
+                ],
             ],
         )
 
@@ -207,9 +235,14 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
             "prediction": prediction,
         }
 
-    def featurize_messages(self, messages: List[Message],) -> None:
+    def featurize_messages(
+        self,
+        messages: List[Message],
+    ) -> None:
         """Featurizes the given messages."""
-        self._rand_featurizer.apply_featurization(messages,)
+        self._rand_featurizer.apply_featurization(
+            messages,
+        )
 
     def create_and_concatenate_features(
         self,
@@ -247,7 +280,9 @@ class TextIntentAndEntitiesDummy(DummyData, DummyFeaturizer):
         )
         collected = {
             attribute: self._rand_featurizer.create_concatenated_features(
-                messages, attribute=attribute, used_featurizers=used_featurizers,
+                messages,
+                attribute=attribute,
+                used_featurizers=used_featurizers,
             )
             for attribute in attributes
         }

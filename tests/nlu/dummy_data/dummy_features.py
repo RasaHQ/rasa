@@ -123,7 +123,12 @@ class DummyFeatures:
         shape = (seq_len, feature_dim)
         # create a unique seed value and initialise an rng
         seed = DummyFeatures.generate_pseudo_random_value(
-            [attribute, tokens, origin, feature_type,]
+            [
+                attribute,
+                tokens,
+                origin,
+                feature_type,
+            ]
         )
         rng = np.random.default_rng(seed)
         # fill a sparse/dense matrix using the rng
@@ -203,7 +208,10 @@ class DummyFeatures:
             featurizations.setdefault(attribute, dict())[feature_type] = feature
         return featurizations
 
-    def apply_featurization(self, messages: List[Message],) -> None:
+    def apply_featurization(
+        self,
+        messages: List[Message],
+    ) -> None:
         """Imitates the application of a featurization pipeline to a list of messages.
 
         Note that the order in which the featurizers are applied is fixed.
@@ -220,7 +228,10 @@ class DummyFeatures:
                 )
 
     def create_concatenated_features(
-        self, messages: List[Message], attribute: Text, used_featurizers: List[Text],
+        self,
+        messages: List[Message],
+        attribute: Text,
+        used_featurizers: List[Text],
     ) -> List[ConcatenatedFeaturizations]:
         """Imitates the concatenations of features of the same kind.
 

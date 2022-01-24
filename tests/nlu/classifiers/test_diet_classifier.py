@@ -965,7 +965,8 @@ class TextIntentAndEntitiesTestRuns:
         original_messages = dummy_data.create_messages()
         dummy_data.featurize_messages(original_messages)
         concatenated_features = dummy_data.create_and_concatenate_features(
-            messages=original_messages, used_featurizers=component_config[FEATURIZERS],
+            messages=original_messages,
+            used_featurizers=component_config[FEATURIZERS],
         )
         expected_results = dummy_data.intent_classifier_usage()
 
@@ -981,7 +982,8 @@ class TextIntentAndEntitiesTestRuns:
         # Imitate creation of model data during inference time
         messages_for_prediction = copy.deepcopy(original_messages)
         model_data_for_prediction = model._create_model_data(
-            messages_for_prediction, training=False,
+            messages_for_prediction,
+            training=False,
         )
 
         return TextIntentAndEntitiesTestRuns.TestRunData(
