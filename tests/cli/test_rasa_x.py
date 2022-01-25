@@ -90,7 +90,7 @@ def test_overwrite_model_server_url():
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
     assert (
         endpoints.model.url
-        == "http://localhost/projects/default/models/tags/production"
+        == "http://localhost/models/tags/production"
     )
 
 
@@ -99,7 +99,7 @@ def test_overwrite_model_server_url_with_no_model_endpoint():
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
     assert (
         endpoints.model.url
-        == "http://localhost/projects/default/models/tags/production"
+        == "http://localhost/models/tags/production"
     )
 
 
@@ -126,7 +126,7 @@ def test_default_model_server_url():
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
     assert (
         endpoints.model.url
-        == "http://localhost/projects/default/models/tags/production"
+        == "http://localhost/models/tags/production"
     )
 
 

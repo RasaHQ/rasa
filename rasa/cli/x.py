@@ -133,7 +133,7 @@ def _get_model_endpoint(
 ) -> EndpointConfig:
     # If you change that, please run a test with Rasa X and speak to the bot
     default_rasax_model_server_url = (
-        f"{rasa_x_url}/projects/default/models/tags/production"
+        f"{rasa_x_url}/models/tags/production"
     )
 
     model_endpoint = model_endpoint or EndpointConfig()
