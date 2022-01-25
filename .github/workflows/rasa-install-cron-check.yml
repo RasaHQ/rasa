@@ -5,6 +5,9 @@
 name: Cron Test to Check Pip Installation
 
 on:
+  push:
+    branches:
+    - main
   schedule:
     - cron: "0 0 * * *"
 
@@ -31,6 +34,7 @@ jobs:
         python -m pip install rasa[full]
     - name: Try to run Rasa.
       run: |
+        mkdir rasa-demo
         python -m rasa init --init-dir rasa-demo --no-prompt
     - name: Notify slack on failure
       if: failure()
