@@ -7,11 +7,6 @@ name: Cron Test to Check Pip Installation
 on:
   schedule:
     - cron: "0 0 * * *"
-  pull_request:
-    branches:
-    - main
-    tags:
-    - '*'
 
 jobs:
   build:
