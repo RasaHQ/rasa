@@ -1,6 +1,7 @@
 # The docs: https://www.notion.so/rasa/The-CI-for-model-regression-tests-aa579d5524a544af992f97d132bcc2de
 name: CI - Model Regression
 
+
 on:
   push:
     branches:
