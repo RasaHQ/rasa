@@ -5,11 +5,12 @@
 name: Cron Test to Check Pip Installation
 
 on:
+  schedule:
+    - cron: "0 0 * * *"
   pull_request:
     branches:
     - main
-  schedule:
-    - cron: "0 0 * * *"
+
 
 jobs:
   build:
