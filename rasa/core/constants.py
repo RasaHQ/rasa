@@ -1,14 +1,3 @@
-import sys
-
-try:
-    # sys.argv is a list so if we find "--request-timeout"
-    # the next item on the list is the passed value
-    arg_index = sys.argv.index("--request-timeout")
-    request_timeout = sys.argv[arg_index + 1]
-    DEFAULT_REQUEST_TIMEOUT = int(request_timeout)
-except (ValueError, TypeError):
-    DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
-
 DEFAULT_SERVER_PORT = 5005
 
 DEFAULT_SERVER_INTERFACE = "0.0.0.0"
@@ -28,6 +17,10 @@ DEFAULT_CORE_FALLBACK_THRESHOLD = 0.3
 DEFAULT_MAX_HISTORY = None  # Core policy history is unbounded by default.
 
 DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
+
+DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+
+DEFAULT_STREAM_READING_TIMEOUT = 10  # in seconds
 
 DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
