@@ -388,8 +388,8 @@ class ValidateRestaurantForm(FormValidationAction):
         return additional_slots + domain_slots
 ```
 
-If conversely, you'd prefer to remove a slot from the form's `required_slots` defined in the domain file in certain conditions,
-we recommend to copy the `domain_slots` over to a new variable and applying changes to that new variable instead of modifying directly
+If conversely, you want to remove a slot from the form's `required_slots` defined in the domain file under certain conditions,
+you can copy the `domain_slots` over to a new variable and apply changes to that new variable instead of directly modifying
 `domain_slots`. For example:
 
 ```python
