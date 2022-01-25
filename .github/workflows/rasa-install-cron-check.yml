@@ -31,7 +31,11 @@ jobs:
         python -m pip install rasa[full]
     - name: Try to run Rasa.
       run: |
-        python -m rasa init --no-prompt
+        python -m rasa --version
+        # Must create a folder first
+        mkdir rasa-demo
+        # Next we try to init. 
+        python -m rasa init --init-dir rasa-demo --no-prompt
     - name: Notify slack on failure
       if: failure()
       env:
