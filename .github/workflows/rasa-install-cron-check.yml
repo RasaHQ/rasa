@@ -31,6 +31,7 @@ jobs:
         python -m pip install rasa[full]
     - name: Try to run Rasa.
       run: |
+        python -m rasa --version
         # Must create a folder first
         mkdir rasa-demo
         # Next we try to init. 
