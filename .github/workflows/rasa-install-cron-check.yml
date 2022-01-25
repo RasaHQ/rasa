@@ -5,7 +5,7 @@
 name: Cron Test to Check Pip Installation
 
 on:
-  push:
+  pull_request:
     branches:
     - main
   schedule:
