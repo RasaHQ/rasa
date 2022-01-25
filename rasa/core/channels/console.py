@@ -146,7 +146,7 @@ async def _send_message_receive_stream(
                     yield json.loads(line.decode(DEFAULT_ENCODING))
 
 
-def _get_stream_reading_timeout(request_timeout: Optional[int]) -> ClientTimeout:
+def _get_stream_reading_timeout(request_timeout: Optional[int] = None) -> ClientTimeout:
     """Define the ClientTimeout with fallbacks.
 
     First use the `request_timeout` function parameter if available, this comes from the
