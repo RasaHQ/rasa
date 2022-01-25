@@ -93,6 +93,7 @@ def configure_app(
     syslog_address: Optional[Text] = None,
     syslog_port: Optional[int] = None,
     syslog_protocol: Optional[Text] = None,
+    request_timeout: Optional[int] = None,
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(
@@ -134,6 +135,7 @@ def configure_app(
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
                 sender_id=conversation_id,
+                request_timeout=request_timeout,
             )
 
             logger.info("Killing Sanic server now.")
@@ -168,6 +170,7 @@ def serve_application(
     syslog_address: Optional[Text] = None,
     syslog_port: Optional[int] = None,
     syslog_protocol: Optional[Text] = None,
+    request_timeout: Optional[int] = None,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
@@ -191,6 +194,7 @@ def serve_application(
         syslog_address=syslog_address,
         syslog_port=syslog_port,
         syslog_protocol=syslog_protocol,
+        request_timeout=request_timeout,
     )
 
     ssl_context = server.create_ssl_context(
