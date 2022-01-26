@@ -2,9 +2,12 @@ import logging
 from typing import List, Optional, Text, Tuple, Callable, Union, Any
 import tensorflow as tf
 import tensorflow_addons as tfa
+
+# TODO: The following is not (yet) available via tf.keras
+from keras.utils.control_flow_util import smart_cond
+import tensorflow.keras.backend as K
+
 import rasa.utils.tensorflow.crf
-from tensorflow.python.layers.utils import smart_cond
-from tensorflow.keras import backend as K
 from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     MARGIN,
@@ -25,7 +28,6 @@ from rasa.shared.nlu.constants import (
     ACTION_NAME,
     ACTION_TEXT,
 )
-
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 import rasa.utils.tensorflow.layers_utils as layers_utils
 

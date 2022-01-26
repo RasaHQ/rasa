@@ -13,16 +13,24 @@ from typing import (
 import numpy as np
 
 import tensorflow as tf
+
+# Note: the below is the same as `from keras.engine.training import Model`
+from tensorflow.keras import Model
+
+# Note: the following import is from the temporary/non-public tf.python module but
+# should stay since it's used in the current reference implementation (see link below)
 from tensorflow.python.eager import context
 
+# Note: the following imports are  from keras directly since those are the imports
+# used by the reference implementation:
+# https://github.com/keras-team/keras/blob/v2.7.0/keras/engine/training.py#L30
 from keras.engine import base_layer, training_utils, data_adapter
-from keras.models import Model
 from keras import callbacks as callbacks_module
 from keras.callbacks import Callback, History
 from keras.utils import traceback_utils, tf_utils, version_utils
 
 
-def _disallow_inside_tf_function(method_name):
+def _disallow_inside_tf_function(method_name: str) -> None:
     if tf.inside_function():
         error_msg = (
             "Detected a call to `Model.{method_name}` inside a `tf.function`. "
@@ -39,12 +47,12 @@ class TmpKerasModel(Model):
     """Temporary solution. Keras model that uses a custom data adapter inside fit."""
 
     # TODO
-    #  we don't need this anymore once
+    #  we don't need this anymore once the fix from
     #  https://github.com/tensorflow/tensorflow/pull/45338
-    #  is merged and released
+    #  has been ported over to keras and merged there
 
     # This code is adapted from
-    # https://github.com/tensorflow/tensorflow/blob/r2.7/tensorflow/python/keras/engine/training.py#L882
+    # https://github.com/keras-team/keras/blob/v2.7.0/keras/engine/training.py#L65
 
     @traceback_utils.filter_traceback
     def fit(
@@ -453,9 +461,9 @@ class CustomDataHandler(data_adapter.DataHandler):
     def enumerate_epochs(self) -> Generator[Tuple[int, Iterator], None, None]:
         """Yields `(epoch, tf.data.Iterator)`."""
         # TODO
-        #  we don't need this anymore once
+        #  we don't need this anymore once the fix from
         #  https://github.com/tensorflow/tensorflow/pull/45338
-        #  is merged and released
+        #  has been ported over to keras and merged there
 
         # This code is adapted from
         # https://github.com/keras-team/keras/blob/r2.7/keras/engine/data_adapter.py#L1192
