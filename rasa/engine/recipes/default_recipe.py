@@ -850,7 +850,7 @@ class DefaultV1Recipe(Recipe):
 
         Note that this needs to be called explicitly; ie. we cannot
         auto-configure automatically from importers because importers are not
-        allowed to access stuff outside shared package.
+        allowed to access code outside of `rasa.shared`.
 
         Args:
             config_file_path: The path to the configuration file.
