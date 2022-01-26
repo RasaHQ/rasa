@@ -11,7 +11,7 @@ help:
 	@echo "    install"
 	@echo "        Install rasa."
 	@echo "    install-full"
-	@echo "        Install rasa with all extras (transformers, tensorflow_text, spacy, jieba)."
+	@echo "        Install rasa with all extras (transformers, tensorflow_text, spacy, jieba, openvino)."
 	@echo "    formatter"
 	@echo "        Apply black formatting to code."
 	@echo "    lint"
@@ -70,7 +70,10 @@ install:
 install-mitie:
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
 
-install-full: install install-mitie
+install-openvino:
+	poetry run python -m pip install --no-deps defusedxml openvino-dev==2021.4.2
+
+install-full: install install-mitie install-openvino
 	poetry install -E full
 
 install-docs:
@@ -131,7 +134,7 @@ prepare-transformers:
 	i=0;\
 	while read -r URL; do read -r CACHE_FILE; if { [ $(CI) ]  &&  [ $$i -gt 4 ]; } || ! [ $(CI) ]; then wget $$URL -O $$CACHE_DIR/$$CACHE_FILE; fi; i=$$((i + 1)); done < "data/test/hf_transformers_models.txt"
 
-prepare-tests-files: prepare-spacy prepare-mitie install-mitie prepare-transformers
+prepare-tests-files: prepare-spacy prepare-mitie install-mitie prepare-transformers install-openvino
 
 prepare-wget-macos:
 	brew install wget || true

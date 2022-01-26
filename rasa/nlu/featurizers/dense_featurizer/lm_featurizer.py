@@ -24,6 +24,11 @@ from rasa.nlu.constants import (
 from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
 from rasa.utils import train_utils
 
+try:
+    from optimum.intel.openvino import OVAutoModel
+except ImportError:
+    pass
+
 logger = logging.getLogger(__name__)
 
 MAX_SEQUENCE_LENGTHS = {
@@ -124,6 +129,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
 
         self.model_weights = self._config["model_weights"]
         self.cache_dir = self._config["cache_dir"]
+        self.use_openvino = self._config.get("use_openvino", False)
 
         if not self.model_weights:
             logger.info(
@@ -150,9 +156,15 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
-        self.model = model_class_dict[self.model_name].from_pretrained(  # type: ignore[no-untyped-call] # noqa: E501
-            self.model_weights, cache_dir=self.cache_dir
-        )
+        if self.use_openvino and self.model_name != "xlnet":
+            self.model = OVAutoModel.from_pretrained(  # type: ignore[no-untyped-call] # noqa: E501
+                self.model_weights, cache_dir=self.cache_dir, from_tf=True
+            )
+            self.model.max_length = self._config.get("openvino_max_length", 0)
+        else:
+            self.model = model_class_dict[self.model_name].from_pretrained(  # type: ignore[no-untyped-call] # noqa: E501
+                self.model_weights, cache_dir=self.cache_dir
+            )
 
         # Use a universal pad token since all transformer architectures do not have a
         # consistent token. Instead of pad_token_id we use unk_token_id because
@@ -472,7 +484,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         # sequence hidden states is always the first output from all models
         sequence_hidden_states = model_outputs[0]
 
-        sequence_hidden_states = sequence_hidden_states.numpy()
+        if not isinstance(sequence_hidden_states, np.ndarray):
+            sequence_hidden_states = sequence_hidden_states.numpy()
         return sequence_hidden_states
 
     def _validate_sequence_lengths(

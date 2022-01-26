@@ -303,6 +303,17 @@ anywhere. If you want to use MITIE, you need to
 tell it where to find this file (in this example it was saved in the
 `data` folder of the project directory).
 
+### Dependencies for OpenVINO
+
+First, run
+
+```bash
+pip3 install --no-deps defusedxml openvino-dev
+pip3 install rasa[openvino]
+```
+
+This will install packages for language models conversion into OpenVINO IR format and the runtime.
+
 ## Upgrading Versions
 
 To upgrade your installed version of Rasa Open Source to the latest version from PyPI:

@@ -169,7 +169,8 @@ types-redis = "^4.1.16"
 spacy = [ "spacy",]
 jieba = [ "jieba",]
 transformers = [ "transformers", "sentencepiece"]
-full = [ "spacy", "transformers", "sentencepiece", "jieba",]
+openvino = [ "optimum-openvino",]
+full = [ "spacy", "transformers", "sentencepiece", "jieba", "optimum-openvino",]
 gh-release-notes = [ "github3.py",]
 
 [tool.poetry.scripts]
@@ -203,6 +204,10 @@ optional = true
 version = "~0.1.96"
 optional = true
 extras = [ "sentencepiece",]
+
+[tool.poetry.dependencies.optimum-openvino]
+version = "0.0.2"
+optional = true
 
 [tool.poetry.dependencies.jieba]
 version = ">=0.39, <0.43"
