@@ -113,6 +113,12 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         help="Maximum time a response can take to process (sec).",
     )
     server_arguments.add_argument(
+        "--request-timeout",
+        default=constants.DEFAULT_REQUEST_TIMEOUT,
+        type=int,
+        help="Maximum time a request can take to process (sec).",
+    )
+    server_arguments.add_argument(
         "--remote-storage",
         help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
     )
