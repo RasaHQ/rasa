@@ -12,10 +12,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DEFAULT_SENDER_ID
-from rasa.shared.core.constants import (
-    ACTION_LISTEN_NAME,
-    ACTION_UNLIKELY_INTENT_NAME,
-)
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -35,17 +32,10 @@ from rasa.core.featurizers.single_state_featurizer import (
     SingleStateFeaturizer,
     IntentTokenizerSingleStateFeaturizer,
 )
-from rasa.core.policies.policy import (
-    SupportedData,
-    InvalidPolicyConfig,
-    Policy,
-)
+from rasa.core.policies.policy import SupportedData, InvalidPolicyConfig, Policy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.memoization import (
-    AugmentedMemoizationPolicy,
-    MemoizationPolicy,
-)
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -80,7 +70,7 @@ class PolicyTestCollection:
     max_history = 3  # this is the amount of history we test on
 
     @pytest.fixture(scope="class")
-    def resource(self,) -> Resource:
+    def resource(self) -> Resource:
         return Resource(uuid.uuid4().hex)
 
     @pytest.fixture(scope="class")
@@ -210,7 +200,7 @@ class PolicyTestCollection:
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain,
+            tracker, default_domain
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
@@ -228,12 +218,12 @@ class PolicyTestCollection:
     ):
         resource = Resource(uuid.uuid4().hex)
         empty_policy = self.create_policy(
-            None, default_model_storage, resource, execution_context,
+            None, default_model_storage, resource, execution_context
         )
 
         empty_policy.train([], default_domain)
         loaded = empty_policy.__class__.load(
-            self._config(), default_model_storage, resource, execution_context,
+            self._config(), default_model_storage, resource, execution_context
         )
 
         assert loaded is not None
@@ -241,7 +231,7 @@ class PolicyTestCollection:
     @staticmethod
     def _get_next_action(policy: Policy, events: List[Event], domain: Domain) -> Text:
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(tracker, domain,).probabilities
+        scores = policy.predict_action_probabilities(tracker, domain).probabilities
         index = scores.index(max(scores))
         return domain.action_names_or_texts[index]
 
@@ -458,9 +448,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             default_domain, stories_path, augmentation_factor=20
         )
 
-        loaded_policy.train(
-            original_train_data + [new_story], default_domain,
-        )
+        loaded_policy.train(original_train_data + [new_story], default_domain)
 
         # Get the hash of the tracker state of new story
         new_story_states, _ = loaded_policy.featurizer.training_states_and_labels(
@@ -517,10 +505,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
             "test 2", evts=tracker_events_without_action, slots=default_domain.slots
         )
         prediction_with_action = trained_policy.predict_action_probabilities(
-            tracker_with_action, default_domain,
+            tracker_with_action, default_domain
         )
         prediction_without_action = trained_policy.predict_action_probabilities(
-            tracker_without_action, default_domain,
+            tracker_without_action, default_domain
         )
 
         # Memoization shouldn't be affected with the
@@ -582,6 +570,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
+            config={POLICY_MAX_HISTORY: max_history},
         )
 
         GREET_INTENT_NAME = "greet"
@@ -614,6 +603,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             """
         )
         events = [
+            ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(UTTER_GREET_ACTION),
             SlotSet("slot_1", True),
@@ -622,16 +612,18 @@ class TestMemoizationPolicy(PolicyTestCollection):
             SlotSet("slot_3", True),
             ActionExecuted(UTTER_GREET_ACTION),
             ActionExecuted(UTTER_GREET_ACTION),
+            ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(UTTER_GREET_ACTION),
             SlotSet("slot_4", True),
             ActionExecuted(UTTER_BYE_ACTION),
+            ActionExecuted(ACTION_LISTEN_NAME),
         ]
         training_story = TrackerWithCachedStates.from_events(
-            "training story", evts=events, domain=domain, slots=domain.slots,
+            "training story", evts=events, domain=domain, slots=domain.slots
         )
         test_story = TrackerWithCachedStates.from_events(
-            "training story", events[:-1], domain=domain, slots=domain.slots,
+            "training story", events[:-2], domain=domain, slots=domain.slots
         )
         policy.train([training_story], domain)
         prediction = policy.predict_action_probabilities(test_story, domain)
@@ -663,6 +655,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
+            config={POLICY_MAX_HISTORY: max_history},
         )
 
         GREET_INTENT_NAME = "greet"
@@ -694,11 +687,12 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         training_story = TrackerWithCachedStates.from_events(
             "training story",
             [
-                ActionExecuted(UTTER_GREET_ACTION),
+                ActionExecuted(ACTION_LISTEN_NAME),
                 UserUttered(intent={"name": GREET_INTENT_NAME}),
                 ActionExecuted(UTTER_GREET_ACTION),
                 SlotSet("slot_3", True),
                 ActionExecuted(UTTER_BYE_ACTION),
+                ActionExecuted(ACTION_LISTEN_NAME),
             ],
             domain=domain,
             slots=domain.slots,
@@ -706,15 +700,18 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         test_story = TrackerWithCachedStates.from_events(
             "test story",
             [
+                ActionExecuted(ACTION_LISTEN_NAME),
                 UserUttered(intent={"name": GREET_INTENT_NAME}),
                 ActionExecuted(UTTER_GREET_ACTION),
                 SlotSet("slot_1", False),
                 ActionExecuted(UTTER_GREET_ACTION),
                 ActionExecuted(UTTER_GREET_ACTION),
+                ActionExecuted(ACTION_LISTEN_NAME),
                 UserUttered(intent={"name": GREET_INTENT_NAME}),
                 ActionExecuted(UTTER_GREET_ACTION),
                 SlotSet("slot_2", True),
                 ActionExecuted(UTTER_GREET_ACTION),
+                ActionExecuted(ACTION_LISTEN_NAME),
                 UserUttered(intent={"name": GREET_INTENT_NAME}),
                 ActionExecuted(UTTER_GREET_ACTION),
                 SlotSet("slot_3", True),
@@ -730,6 +727,273 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
                 prediction.probabilities.index(max(prediction.probabilities))
             ]
             == UTTER_BYE_ACTION
+        )
+
+    @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
+    def test_augmented_prediction_across_max_history_actions(
+        self,
+        max_history: Optional[int],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
+        """Tests that the last user utterance is preserved in action states
+        even when the utterance occurs prior to `max_history` actions in the
+        past.
+        """
+        policy = self.create_policy(
+            featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history),
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+            config={POLICY_MAX_HISTORY: max_history},
+        )
+
+        GREET_INTENT_NAME = "greet"
+        UTTER_GREET_ACTION = "utter_greet"
+        UTTER_ACTION_1 = "utter_1"
+        UTTER_ACTION_2 = "utter_2"
+        UTTER_ACTION_3 = "utter_3"
+        UTTER_ACTION_4 = "utter_4"
+        UTTER_ACTION_5 = "utter_5"
+        UTTER_BYE_ACTION = "utter_goodbye"
+        domain = Domain.from_yaml(
+            f"""
+                intents:
+                - {GREET_INTENT_NAME}
+                actions:
+                - {UTTER_GREET_ACTION}
+                - {UTTER_ACTION_1}
+                - {UTTER_ACTION_2}
+                - {UTTER_ACTION_3}
+                - {UTTER_ACTION_4}
+                - {UTTER_ACTION_5}
+                - {UTTER_BYE_ACTION}
+                """
+        )
+        training_story = TrackerWithCachedStates.from_events(
+            "training story",
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_ACTION_1),
+                ActionExecuted(UTTER_ACTION_2),
+                ActionExecuted(UTTER_ACTION_3),
+                ActionExecuted(UTTER_ACTION_4),
+                ActionExecuted(UTTER_ACTION_5),
+                ActionExecuted(UTTER_BYE_ACTION),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            domain=domain,
+            slots=domain.slots,
+        )
+        test_story = TrackerWithCachedStates.from_events(
+            "test story",
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_ACTION_1),
+                ActionExecuted(UTTER_ACTION_2),
+                ActionExecuted(UTTER_ACTION_3),
+                ActionExecuted(UTTER_ACTION_4),
+                ActionExecuted(UTTER_ACTION_5),
+                # ActionExecuted(UTTER_BYE_ACTION),
+            ],
+            domain=domain,
+            slots=domain.slots,
+        )
+        policy.train([training_story], domain)
+        prediction = policy.predict_action_probabilities(test_story, domain)
+        assert (
+            domain.action_names_or_texts[
+                prediction.probabilities.index(max(prediction.probabilities))
+            ]
+            == UTTER_BYE_ACTION
+        )
+
+    @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
+    def test_aug_pred_sensitive_to_intent_across_max_history_actions(
+        self,
+        max_history: Optional[int],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
+        """Tests that only the most recent user utterance propagates to state
+        creation of following actions.
+        """
+        policy = self.create_policy(
+            featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history),
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+            config={POLICY_MAX_HISTORY: max_history},
+        )
+
+        GREET_INTENT_NAME = "greet"
+        GOODBYE_INTENT_NAME = "goodbye"
+        UTTER_GREET_ACTION = "utter_greet"
+        UTTER_ACTION_1 = "utter_1"
+        UTTER_ACTION_2 = "utter_2"
+        UTTER_ACTION_3 = "utter_3"
+        UTTER_ACTION_4 = "utter_4"
+        UTTER_ACTION_5 = "utter_5"
+        UTTER_BYE_ACTION = "utter_goodbye"
+        domain = Domain.from_yaml(
+            f"""
+                intents:
+                - {GREET_INTENT_NAME}
+                - {GOODBYE_INTENT_NAME}
+                actions:
+                - {UTTER_GREET_ACTION}
+                - {UTTER_ACTION_1}
+                - {UTTER_ACTION_2}
+                - {UTTER_ACTION_3}
+                - {UTTER_ACTION_4}
+                - {UTTER_ACTION_5}
+                - {UTTER_BYE_ACTION}
+                """
+        )
+        training_story = TrackerWithCachedStates.from_events(
+            "training story",
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_ACTION_1),
+                ActionExecuted(UTTER_ACTION_2),
+                ActionExecuted(UTTER_ACTION_3),
+                ActionExecuted(UTTER_ACTION_4),
+                ActionExecuted(UTTER_ACTION_5),
+                ActionExecuted(UTTER_BYE_ACTION),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            domain=domain,
+            slots=domain.slots,
+        )
+        test_story1 = TrackerWithCachedStates.from_events(
+            "test story",
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GOODBYE_INTENT_NAME}),
+                ActionExecuted(UTTER_BYE_ACTION),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_ACTION_1),
+                ActionExecuted(UTTER_ACTION_2),
+                ActionExecuted(UTTER_ACTION_3),
+                ActionExecuted(UTTER_ACTION_4),
+                ActionExecuted(UTTER_ACTION_5),
+                # ActionExecuted(UTTER_BYE_ACTION),
+            ],
+            domain=domain,
+            slots=domain.slots,
+        )
+
+        policy.train([training_story], domain)
+        prediction1 = policy.predict_action_probabilities(test_story1, domain)
+        assert (
+            domain.action_names_or_texts[
+                prediction1.probabilities.index(max(prediction1.probabilities))
+            ]
+            == UTTER_BYE_ACTION
+        )
+
+        test_story2_no_match_expected = TrackerWithCachedStates.from_events(
+            "test story",
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_BYE_ACTION),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GOODBYE_INTENT_NAME}),
+                ActionExecuted(UTTER_ACTION_1),
+                ActionExecuted(UTTER_ACTION_2),
+                ActionExecuted(UTTER_ACTION_3),
+                ActionExecuted(UTTER_ACTION_4),
+                ActionExecuted(UTTER_ACTION_5),
+                # No prediction should be made here.
+            ],
+            domain=domain,
+            slots=domain.slots,
+        )
+
+        prediction2 = policy.predict_action_probabilities(
+            test_story2_no_match_expected,
+            domain,
+        )
+        assert all([prob == 0.0 for prob in prediction2.probabilities])
+
+    @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
+    def test_aug_pred_without_intent(
+        self,
+        max_history: Optional[int],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
+        """Tests memoization works for a memoized state sequence that does
+        not have a user utterance.
+        """
+        policy = self.create_policy(
+            featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history),
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+            config={POLICY_MAX_HISTORY: max_history},
+        )
+
+        GREET_INTENT_NAME = "greet"
+        GOODBYE_INTENT_NAME = "goodbye"
+        UTTER_GREET_ACTION = "utter_greet"
+        UTTER_ACTION_1 = "utter_1"
+        UTTER_ACTION_2 = "utter_2"
+        UTTER_ACTION_3 = "utter_3"
+        UTTER_ACTION_4 = "utter_4"
+        domain = Domain.from_yaml(
+            f"""
+            intents:
+            - {GREET_INTENT_NAME}
+            - {GOODBYE_INTENT_NAME}
+            actions:
+            - {UTTER_GREET_ACTION}
+            - {UTTER_ACTION_1}
+            - {UTTER_ACTION_2}
+            - {UTTER_ACTION_3}
+            - {UTTER_ACTION_4}
+            """
+        )
+        training_story = TrackerWithCachedStates.from_events(
+            "training story",
+            [
+                ActionExecuted(UTTER_ACTION_3),
+                ActionExecuted(UTTER_ACTION_4),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            domain=domain,
+            slots=domain.slots,
+        )
+
+        policy.train([training_story], domain)
+
+        test_story = TrackerWithCachedStates.from_events(
+            "test story",
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_ACTION_1),
+                ActionExecuted(UTTER_ACTION_2),
+                ActionExecuted(UTTER_ACTION_3),
+                # ActionExecuted(UTTER_ACTION_4),
+            ],
+            domain=domain,
+            slots=domain.slots,
+        )
+        prediction = policy.predict_action_probabilities(test_story, domain)
+        assert (
+            domain.action_names_or_texts[
+                prediction.probabilities.index(max(prediction.probabilities))
+            ]
+            == UTTER_ACTION_4
         )
 
 

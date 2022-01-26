@@ -1,14 +1,5 @@
 import copy
-from typing import (
-    List,
-    Dict,
-    Union,
-    Optional,
-    Any,
-    Generator,
-    Tuple,
-    Iterator,
-)
+from typing import List, Dict, Union, Optional, Any, Generator, Tuple, Iterator
 
 import numpy as np
 

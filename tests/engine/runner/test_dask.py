@@ -3,11 +3,7 @@ from typing import Optional
 
 import pytest
 
-from rasa.engine.graph import (
-    ExecutionContext,
-    GraphSchema,
-    SchemaNode,
-)
+from rasa.engine.graph import ExecutionContext, GraphSchema, SchemaNode
 from rasa.engine.exceptions import GraphRunError
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.storage import ModelStorage
@@ -104,7 +100,7 @@ def test_default_config(
                 constructor_name="create",
                 config={"x": x} if x else {},
                 is_target=True,
-            ),
+            )
         }
     )
 
@@ -138,7 +134,7 @@ def test_no_inputs(default_model_storage: ModelStorage):
                 constructor_name="create",
                 config={},
                 is_target=True,
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(
@@ -159,7 +155,7 @@ def test_no_target(default_model_storage: ModelStorage):
                 fn="provide",
                 constructor_name="create",
                 config={},
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(
@@ -213,7 +209,7 @@ def test_non_eager_can_use_inputs_for_constructor(default_model_storage: ModelSt
                 config={},
                 eager=False,
                 is_target=True,
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(
@@ -235,7 +231,7 @@ def test_can_use_alternate_constructor(default_model_storage: ModelStorage):
                 constructor_name="create_with_2",
                 config={},
                 is_target=True,
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(
@@ -257,7 +253,7 @@ def test_execution_context(default_model_storage: ModelStorage):
                 constructor_name="create",
                 config={},
                 is_target=True,
-            ),
+            )
         }
     )
     context = ExecutionContext(graph_schema=graph_schema, model_id="some_id")
@@ -282,7 +278,7 @@ def test_input_value_is_node_name(default_model_storage: ModelStorage):
                 constructor_name="create",
                 config={},
                 is_target=True,
-            ),
+            )
         }
     )
     runner = DaskGraphRunner(

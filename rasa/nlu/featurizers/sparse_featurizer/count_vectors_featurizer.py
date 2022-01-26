@@ -23,12 +23,7 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
-    INTENT_RESPONSE_KEY,
-    ACTION_NAME,
-)
+from rasa.shared.nlu.constants import TEXT, INTENT, INTENT_RESPONSE_KEY, ACTION_NAME
 
 BUFFER_SLOTS_PREFIX = "buf_"
 
@@ -605,7 +600,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
             return [], []
 
     def train(
-        self, training_data: TrainingData, model: Optional[SpacyModel] = None,
+        self, training_data: TrainingData, model: Optional[SpacyModel] = None
     ) -> Resource:
         """Trains the featurizer.
 

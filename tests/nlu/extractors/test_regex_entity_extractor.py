@@ -116,7 +116,7 @@ def create_or_load_extractor(
         (
             {"use_word_boundaries": False},
             "北京和上海都是大城市。",
-            [{"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],}],
+            [{"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"]}],
             [
                 {
                     ENTITY_ATTRIBUTE_TYPE: "city",
@@ -139,7 +139,7 @@ def create_or_load_extractor(
             {"use_word_boundaries": False},
             "小明正要去北京拜访老李。",
             [
-                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
+                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"]},
                 {"name": "person", "elements": ["小明", "小红", "小王", "小李"]},
             ],
             [
@@ -164,7 +164,7 @@ def create_or_load_extractor(
             {"use_word_boundaries": False},
             "Rasa 真好用。",
             [
-                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
+                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"]},
                 {"name": "person", "elements": ["小明", "小红", "小王", "小李"]},
             ],
             [],
@@ -264,7 +264,7 @@ def test_train_and_process(
 
 
 def test_train_process_and_load_with_empty_model(
-    create_or_load_extractor: Callable[..., RegexEntityExtractor],
+    create_or_load_extractor: Callable[..., RegexEntityExtractor]
 ):
     extractor = create_or_load_extractor({})
     with pytest.warns(UserWarning):
@@ -276,7 +276,7 @@ def test_train_process_and_load_with_empty_model(
 
 
 def test_process_does_not_overwrite_any_entities(
-    create_or_load_extractor: Callable[..., RegexEntityExtractor],
+    create_or_load_extractor: Callable[..., RegexEntityExtractor]
 ):
 
     pre_existing_entity = {

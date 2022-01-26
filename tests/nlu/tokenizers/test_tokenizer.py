@@ -20,7 +20,7 @@ def create_whitespace_tokenizer(
     config: Optional[Dict[Text, Any]] = None
 ) -> WhitespaceTokenizer:
     return WhitespaceTokenizer(
-        {**WhitespaceTokenizer.get_default_config(), **(config if config else {}),}
+        {**WhitespaceTokenizer.get_default_config(), **(config if config else {})}
     )
 
 

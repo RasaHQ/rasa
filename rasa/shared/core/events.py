@@ -82,7 +82,7 @@ if TYPE_CHECKING:
     )
 
     IntentPrediction = TypedDict(
-        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float,},
+        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float}
     )
     NLUPredictionData = TypedDict(
         "NLUPredictionData",
@@ -553,7 +553,7 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_sub_state(self,) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+    def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         """Turns a UserUttered event into features.
 
         The substate contains information about entities, intent and text of the
@@ -1525,11 +1525,7 @@ class ActionExecuted(Event):
 
     def __members__(self) -> Tuple[Optional[Text], Optional[Text], Text]:
         meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
-        return (
-            self.action_name,
-            self.action_text,
-            jsonpickle.encode(meta_no_nones),
-        )
+        return (self.action_name, self.action_text, jsonpickle.encode(meta_no_nones))
 
     def __repr__(self) -> Text:
         """Returns event as string for debugging."""
