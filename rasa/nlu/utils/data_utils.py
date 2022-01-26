@@ -4,7 +4,7 @@ from rasa.shared.nlu.training_data.message import Message
 
 def remove_unfeaturized_messages(
     messages: List[Message], attribute: Text, featurizers: Optional[List[Text]]
-):
+) -> List[Message]:
     """Removes messages that don't have required features.
 
     Some NLU components require messages to have specific features to
