@@ -155,7 +155,7 @@ def train_load_and_process_diet(
 
         assert classified_message2.fingerprint() == classified_message.fingerprint()
 
-        return {"classifier": loaded_diet, "processed_message": classified_message}
+        return loaded_diet, classified_message
 
     return inner
 
@@ -407,10 +407,10 @@ async def test_softmax_normalization(
     classifier_params[EPOCHS] = 1
     classifier_params[EVAL_NUM_EPOCHS] = 1
 
-    out_dict = create_train_load_and_process_diet(
+    _, parsed_message = create_train_load_and_process_diet(
         classifier_params, training_data=data_path
     )
-    parse_data = out_dict["processed_message"].data
+    parse_data = parsed_message.data
     intent_ranking = parse_data.get("intent_ranking")
     # check that the output was correctly truncated after normalization
     assert len(intent_ranking) == output_length
@@ -429,11 +429,11 @@ async def test_margin_loss_is_not_normalized(
     create_train_load_and_process_diet: Callable[..., Message]
 ):
 
-    out_dict = create_train_load_and_process_diet(
+    _, parsed_message = create_train_load_and_process_diet(
         {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, EVAL_NUM_EPOCHS: 1},
         training_data="data/test/many_intents.yml",
     )
-    parse_data = out_dict["processed_message"].data
+    parse_data = parsed_message.data
     intent_ranking = parse_data.get("intent_ranking")
 
     # check that the output was correctly truncated
@@ -452,18 +452,18 @@ async def test_set_random_seed(
 ):
     """test if train result is the same for two runs of tf embedding"""
 
-    parsed_message1 = create_train_load_and_process_diet(
+    _, parsed_message1 = create_train_load_and_process_diet(
         {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
-    )["processed_message"]
+    )
 
-    parsed_message2 = create_train_load_and_process_diet(
+    _, parsed_message2 = create_train_load_and_process_diet(
         {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
-    )["processed_message"]
+    )
 
     # Different random seed
-    parsed_message3 = create_train_load_and_process_diet(
+    _, parsed_message3 = create_train_load_and_process_diet(
         {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1}
-    )["processed_message"]
+    )
 
     assert (
         parsed_message1.data["intent"]["confidence"]
@@ -545,8 +545,7 @@ async def test_train_model_checkpointing(
 async def test_process_unfeaturized_input(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    out_dict = create_train_load_and_process_diet(diet_config={EPOCHS: 1})
-    classifier = out_dict["classifier"]
+    classifier, _ = create_train_load_and_process_diet(diet_config={EPOCHS: 1})
     message_text = "message text"
     unfeaturized_message = Message(data={TEXT: message_text})
     classified_message = classifier.process([unfeaturized_message])[0]
@@ -649,9 +648,7 @@ async def test_process_gives_diagnostic_data(
 ):
     default_execution_context.should_add_diagnostic_data = should_add_diagnostic_data
     default_execution_context.node_name = "DIETClassifier_node_name"
-    processed_message = create_train_load_and_process_diet({EPOCHS: 1})[
-        "processed_message"
-    ]
+    _, processed_message = create_train_load_and_process_diet({EPOCHS: 1})
 
     if should_add_diagnostic_data:
         # Tests if processing a message returns attention weights as numpy array.
