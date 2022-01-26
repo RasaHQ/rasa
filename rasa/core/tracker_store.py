@@ -751,6 +751,21 @@ def ensure_schema_exists(session: "Session") -> None:
             raise ValueError(schema_name)
 
 
+def validate_port(port: Any) -> Optional[int]:
+    """Ensure that port can be converted to integer.
+
+    Raises:
+        RasaException if port cannot be cast to integer.
+    """
+    if port and not isinstance(port, int):
+        try:
+            port = int(port)
+        except ValueError as e:
+            raise RasaException(f"The port '{port}' cannot be cast to integer.") from e
+
+    return port
+
+
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
 
@@ -786,6 +801,8 @@ class SQLTrackerStore(TrackerStore):
         **kwargs: Dict[Text, Any],
     ) -> None:
         import sqlalchemy.exc
+
+        port = validate_port(port)
 
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
