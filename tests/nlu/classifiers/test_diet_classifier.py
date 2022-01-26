@@ -272,16 +272,20 @@ def test_model_data_signature_with_entities(
     messages: List[Message],
     entity_expected: bool,
     create_diet: Callable[..., DIETClassifier],
-    whitespace_tokenizer: WhitespaceTokenizer,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
 ):
     classifier = create_diet({"BILOU_flag": False})
     training_data = TrainingData(messages)
 
-    # create tokens for entity parsing inside DIET
-    whitespace_tokenizer.process_training_data(training_data)
-
+    # create tokens and features for entity parsing inside DIET
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, training_data)
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()
+
     assert entity_exists == entity_expected
 
 
@@ -725,7 +729,7 @@ async def test_adjusting_layers_incremental_training(
         },
     ]
     classifier = create_diet({EPOCHS: 1})
-    processed_message = train_load_and_process_diet(
+    _, processed_message = train_load_and_process_diet(
         classifier, pipeline=pipeline, training_data=iter1_data_path
     )
 
@@ -755,7 +759,7 @@ async def test_adjusting_layers_incremental_training(
 
     finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
     assert finetune_classifier.finetune_mode
-    processed_message_finetuned = train_load_and_process_diet(
+    _, processed_message_finetuned = train_load_and_process_diet(
         finetune_classifier, pipeline=pipeline, training_data=iter2_data_path
     )
 
