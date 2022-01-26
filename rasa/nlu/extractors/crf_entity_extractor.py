@@ -33,7 +33,8 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.utils.tensorflow.constants import BILOU_FLAG
+from rasa.utils.tensorflow.constants import BILOU_FLAG, FEATURIZERS
+from rasa.nlu.utils.data_utils import remove_unfeaturized_messages
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +243,11 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
 
         # filter out pre-trained entity examples
         entity_examples = self.filter_trainable_entities(training_data.nlu_examples)
-
+        entity_examples = remove_unfeaturized_messages(
+            messages=entity_examples,
+            attribute=TEXT,
+            featurizers=self.component_config.get(FEATURIZERS),
+        )
         dataset = [self._convert_to_crf_tokens(example) for example in entity_examples]
 
         self._train_model(dataset)
@@ -278,7 +283,11 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Extract entities from the given message using the trained model(s)."""
-        if self.entity_taggers is None:
+        if self.entity_taggers is None or not remove_unfeaturized_messages(
+            messages=[message],
+            attribute=TEXT,
+            featurizers=self.component_config.get(FEATURIZERS),
+        ):
             return []
 
         tokens = message.get(TOKENS_NAMES[TEXT])

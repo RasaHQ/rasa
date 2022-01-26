@@ -236,3 +236,15 @@ def test_most_likely_entity(
 
     assert actual_label == expected_label
     assert actual_confidence == expected_confidence
+
+
+def test_process_unfeaturized_input(
+    crf_entity_extractor: Callable[[Dict[Text, Any]], CRFEntityExtractor],
+):
+    crf_extractor = crf_entity_extractor({})
+    message_text = "message text"
+    message = Message(data={TEXT: message_text})
+    processed_message = crf_extractor.process([message])[0]
+
+    assert processed_message.get(TEXT) == message_text
+    assert processed_message.get(ENTITIES) == []

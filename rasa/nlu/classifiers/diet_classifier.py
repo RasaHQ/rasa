@@ -104,6 +104,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
 )
+from rasa.nlu.utils.data_utils import remove_unfeaturized_messages
 
 logger = logging.getLogger(__name__)
 
@@ -706,11 +707,11 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 example for example in training_data if label_attribute in example.data
             ]
 
-        training_data = [
-            example
-            for example in training_data
-            if example.features_present(attribute=TEXT)
-        ]
+        training_data = remove_unfeaturized_messages(
+            messages=training_data,
+            attribute=TEXT,
+            featurizers=self.component_config.get(FEATURIZERS),
+        )
 
         if not training_data:
             # no training data are present to train
