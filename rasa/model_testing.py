@@ -362,6 +362,25 @@ def get_evaluation_metrics(
     f1 = metrics.f1_score(targets, predictions, labels=labels, average="weighted")
     accuracy = metrics.accuracy_score(targets, predictions)
 
+    # TODO Refactor: overwrite/make own classification report
+    if "accuracy" in report and "micro avg" not in report:
+        # micro avg corresponds to accuracy in this case
+        # and is the same for all metrics
+        acc = report["accuracy"]
+        support = report["macro avg"]["support"]
+        report["micro avg"] = {
+            "precision": acc,
+            "recall": acc,
+            "F1": acc,
+            "support": support,
+        }
+    elif "accuracy" not in report and "micro avg" in report:
+        # Due to provided labels, micro avg can have recall != precision
+        # The accuracy therefore has to be inferred separately
+        report["accuracy"] = accuracy
+    else:
+        raise Exception("This cannot happen according to classification_report's docs")
+
     return report, precision, f1, accuracy
 
 
