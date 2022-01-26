@@ -200,7 +200,8 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
                 featurizers=self.component_config.get(FEATURIZERS),
             ):
                 # component is either not trained or didn't
-                # receive enough training data
+                # receive enough training data or the input doesn't
+                # have required features.
                 intent = None
                 intent_ranking = []
             else:
