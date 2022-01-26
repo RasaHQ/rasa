@@ -316,12 +316,14 @@ class TmpKerasModel(Model):
         if (
             self.distribute_strategy._should_use_with_coordinator
         ):  # pylint: disable=protected-access
-            self._cluster_coordinator = tf.distribute.experimental.coordinator.ClusterCoordinator(
-                self.distribute_strategy
-            )
+            self._cluster_coordinator = \
+                tf.distribute.experimental.coordinator.ClusterCoordinator(
+                    self.distribute_strategy
+                )
 
-        with self.distribute_strategy.scope(), training_utils.RespectCompiledTrainableState(
-            self
+        with (
+            self.distribute_strategy.scope(),
+            training_utils.RespectCompiledTrainableState(self),
         ):
             # Creates a `tf.data.Dataset` and handles batch and epoch iteration.
             # Adaption: Use our own custom data handler to handle increasing batch size
@@ -362,7 +364,7 @@ class TmpKerasModel(Model):
             # Handle fault-tolerance for multi-worker.
             # TODO(omalleyt): Fix the ordering issues that mean this has to
             # happen after `callbacks.on_train_begin`.
-            data_handler._initial_epoch = self._maybe_load_initial_epoch_from_ckpt(  # pylint: disable=protected-access
+            data_handler._initial_epoch = self._maybe_load_initial_epoch_from_ckpt(  # pylint: disable=protected-access # noqa: E501
                 initial_epoch
             )
             logs = None
