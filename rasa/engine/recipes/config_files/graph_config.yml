@@ -230,9 +230,7 @@ train_schema:
       uses: rasa.graph_components.providers.training_tracker_provider.TrainingTrackerProvider
       constructor_name: create
       fn: provide
-      config:
-        debug_plots: false
-        augmentation_factor: 50
+      config: {}
       eager: false
       is_target: false
       is_input: false

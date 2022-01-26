@@ -843,7 +843,7 @@ class DefaultV1Recipe(Recipe):
         config: Dict,
         training_type: Optional[TrainingType] = TrainingType.BOTH,
     ) -> Dict[Text, Any]:
-        """Determine configuration from a configuration file.
+        """Determine configuration from auto-filled configuration file.
 
         Keys that are provided and have a value in the file are kept. Keys that are not
         provided are configured automatically.

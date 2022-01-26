@@ -29,13 +29,13 @@ There are some differences between the default recipe and the new graph recipe. 
 
 :::tip Starting from scratch?
 
-If you don't know which recipe to choose, use the default recipe to bootstrap your project fast. If later you find that you need more powerful finetuning options, you can always change your recipe to be a graph recipe.
+If you don't know which recipe to choose, use the default recipe to bootstrap your project fast. If later you find that you need more powerful fine-tuning options, you can always change your recipe to be a graph recipe.
 
 :::
 
 ## Graph Configuration File Structure
 
-Graph recipes share `recipe` and `language` keys with the same meaning. Similarities end there as graph recipes do not have `pipeline` or `policies` keys but they do have `train_schema` and `predict_schema` keys for determining the graph nodes during train and predict runs respectively. 
+Graph recipes share `recipe` and `language` keys with the same meaning. Similarities end there as graph recipes do not have `pipeline` or `policies` keys but they do have `train_schema` and `predict_schema` keys for determining the graph nodes during train and predict runs respectively.
 
 Here's an example graph recipe:
 
@@ -53,7 +53,7 @@ In a similar fashion, note that the default resource needed by the first graph n
 
 As you can see in the example above, graph recipes are very much explicit and you can configure each graph node as you would like. Here is an explanation of what some of the keys mean:
 
-- `needs`: You can define here what data your graph node requires and from which parent node. Key is the data name, whereas the value would refer to the node name. 
+- `needs`: You can define here what data your graph node requires and from which parent node. Key is the data name, whereas the value would refer to the node name.
 ```yaml-rasa
 needs:
     messages: nlu_message_converter
@@ -82,7 +82,7 @@ constructor_name: load
 fn: combine_predictions_from_kwargs
 ```
 
-- `config`: You can provide any configuration parameters for your components using this key. 
+- `config`: You can provide any configuration parameters for your components using this key.
 
 ```yaml-rasa
 config:
