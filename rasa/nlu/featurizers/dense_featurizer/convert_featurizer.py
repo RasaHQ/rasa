@@ -4,7 +4,7 @@ import os
 from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple, Type
 
 import tensorflow as tf
-from tensorflow.compat.v1.wrap_function import WrappedFunction
+from tensorflow.python.eager.wrap_function import WrappedFunction
 from tqdm import tqdm
 import numpy as np
 
