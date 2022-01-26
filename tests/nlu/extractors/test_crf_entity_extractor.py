@@ -128,6 +128,7 @@ async def test_train_persist_with_different_configurations(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     spacy_tokenizer: SpacyTokenizer,
+    spacy_featurizer: SpacyFeaturizer,
     spacy_nlp_component: SpacyNLP,
     spacy_model: SpacyModel,
 ):
@@ -141,13 +142,13 @@ async def test_train_persist_with_different_configurations(
         training_data, spacy_model
     )
     training_data = spacy_tokenizer.process_training_data(training_data)
-
+    training_data = spacy_featurizer.process_training_data(training_data)
     crf_extractor.train(training_data)
 
     message = Message(data={TEXT: "I am looking for an italian restaurant"})
     messages = spacy_nlp_component.process([message], spacy_model)
-    message = spacy_tokenizer.process(messages)[0]
-
+    messages = spacy_tokenizer.process(messages)
+    message = spacy_featurizer.process(messages)[0]
     message2 = copy.deepcopy(message)
 
     processed_message = crf_extractor.process([message])[0]
