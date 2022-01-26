@@ -129,7 +129,7 @@ async def _send_message_receive_stream(
     auth_token: Text,
     sender_id: Text,
     message: Text,
-    request_timeout: Optional[int],
+    request_timeout: Optional[int] = None,
 ) -> Generator[Dict[Text, Any], None, None]:
     payload = {"sender": sender_id, "message": message}
 
