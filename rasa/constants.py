@@ -1,8 +1,5 @@
 import os
 
-DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
-DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
-
 TEST_DATA_FILE = "test.yml"
 TRAIN_DATA_FILE = "train.yml"
 NLG_DATA_FILE = "responses.yml"
