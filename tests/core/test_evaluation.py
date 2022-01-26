@@ -426,6 +426,7 @@ stories:
                     "f1-score": 0.0,
                     "support": 1,
                 },
+                "accuracy": 0.75,
                 "micro avg": {
                     "precision": 1.0,
                     "recall": 0.75,
