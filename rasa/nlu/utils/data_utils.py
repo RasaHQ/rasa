@@ -7,7 +7,7 @@ def remove_unfeaturized_messages(
 ):
     """Removes messages that don't have required features.
 
-    Some NLU components require that messages have specific features to
+    Some NLU components require messages to have specific features to
     make training and prediction possible. If we don't filter out messages
     which don't have needed features, it will lead to errors.
 
