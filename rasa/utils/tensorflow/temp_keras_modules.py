@@ -321,10 +321,8 @@ class TmpKerasModel(Model):
                     self.distribute_strategy
                 )
 
-        with (
-            self.distribute_strategy.scope(),
-            training_utils.RespectCompiledTrainableState(self),
-        ):
+        with self.distribute_strategy.scope(), \
+            training_utils.RespectCompiledTrainableState(self):
             # Creates a `tf.data.Dataset` and handles batch and epoch iteration.
             # Adaption: Use our own custom data handler to handle increasing batch size
             data_handler = CustomDataHandler(
