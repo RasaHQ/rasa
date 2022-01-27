@@ -73,6 +73,7 @@ class TmpKerasModel(Model):
         use_multiprocessing: bool = False,
     ) -> History:
         """Trains the model for a fixed number of epochs (iterations on a dataset).
+
         Args:
             x: Input data. It could be:
               - A Numpy array (or array-like), or a list of arrays
@@ -265,11 +266,13 @@ class TmpKerasModel(Model):
           and sample_weight or passed through as a single element to `x`. As a
           result the data processing code will simply raise a ValueError if it
           encounters a namedtuple. (Along with instructions to remedy the issue.)
+
         Returns:
             A `History` object. Its `History.history` attribute is
             a record of training loss values and metrics values
             at successive epochs, as well as validation loss values
             and validation metrics values (if applicable).
+
         Raises:
             RuntimeError: 1. If the model was never compiled or,
             2. If `model.fit` is  wrapped in `tf.function`.
@@ -322,7 +325,7 @@ class TmpKerasModel(Model):
                 )
             )
 
-        with self.distribute_strategy.scope(), training_utils.RespectCompiledTrainableState(
+        with self.distribute_strategy.scope(), training_utils.RespectCompiledTrainableState(  # noqa: E501
             self
         ):
             # Creates a `tf.data.Dataset` and handles batch and epoch iteration.
