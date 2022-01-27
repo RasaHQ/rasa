@@ -117,10 +117,7 @@ async def test_core_models(
     from rasa.core.test import compare_models
 
     await compare_models(
-        models,
-        stories,
-        output,
-        use_conversation_test_files=use_conversation_test_files,
+        models, stories, output, use_conversation_test_files=use_conversation_test_files
     )
 
 
@@ -177,11 +174,7 @@ async def test_core(
     )
 
     await core_test(
-        stories,
-        _agent,
-        e2e=use_conversation_test_files,
-        out_directory=output,
-        **kwargs,
+        stories, _agent, e2e=use_conversation_test_files, out_directory=output, **kwargs
     )
 
 

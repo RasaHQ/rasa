@@ -13,7 +13,7 @@ from rasa.shared.nlu.training_data.message import Message
 
 @pytest.fixture()
 def create_duckling(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ) -> Callable[[Dict[Text, Any]], DucklingEntityExtractor]:
     def inner(config: Dict[Text, Any]) -> DucklingEntityExtractor:
         return DucklingEntityExtractor.create(

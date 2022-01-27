@@ -267,7 +267,7 @@ class TestListSlot(SlotTestCollection):
 
     @pytest.mark.parametrize("value", ["cat", ["cat"]])
     def test_apply_single_item_to_slot(
-        self, value: Any, mappings: List[Dict[Text, Any]],
+        self, value: Any, mappings: List[Dict[Text, Any]]
     ):
         slot = self.create_slot(mappings=mappings, influence_conversation=False)
         tracker = DialogueStateTracker.from_events("sender", evts=[], slots=[slot])
@@ -374,9 +374,7 @@ class TestAnySlot(SlotTestCollection):
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
-    def test_exception_if_featurized(
-        self, mappings: List[Dict[Text, Any]],
-    ):
+    def test_exception_if_featurized(self, mappings: List[Dict[Text, Any]]):
         with pytest.raises(InvalidSlotConfigError):
             AnySlot("⛔️", mappings=mappings, influence_conversation=True)
 
