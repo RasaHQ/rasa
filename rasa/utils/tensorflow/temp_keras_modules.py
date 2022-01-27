@@ -316,13 +316,15 @@ class TmpKerasModel(Model):
         if (
             self.distribute_strategy._should_use_with_coordinator
         ):  # pylint: disable=protected-access
-            self._cluster_coordinator = \
+            self._cluster_coordinator = (
                 tf.distribute.experimental.coordinator.ClusterCoordinator(
                     self.distribute_strategy
                 )
+            )
 
-        with self.distribute_strategy.scope(), \
-            training_utils.RespectCompiledTrainableState(self):
+        with self.distribute_strategy.scope(), training_utils.RespectCompiledTrainableState(
+            self
+        ):
             # Creates a `tf.data.Dataset` and handles batch and epoch iteration.
             # Adaption: Use our own custom data handler to handle increasing batch size
             data_handler = CustomDataHandler(
