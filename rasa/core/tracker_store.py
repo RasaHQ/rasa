@@ -757,7 +757,7 @@ def validate_port(port: Any) -> Optional[int]:
     Raises:
         RasaException if port cannot be cast to integer.
     """
-    if port and not isinstance(port, int):
+    if port is not None and not isinstance(port, int):
         try:
             port = int(port)
         except ValueError as e:
