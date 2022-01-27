@@ -1001,6 +1001,7 @@ cached-property = {version = "*", markers = "python_version < \"3.8\""}
 numpy = [
     {version = ">=1.14.5", markers = "python_version == \"3.7\""},
     {version = ">=1.17.5", markers = "python_version == \"3.8\""},
+    {version = ">=1.19.3", markers = "python_version >= \"3.9\""},
 ]
 
 [[package]]
@@ -2205,14 +2206,15 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.0.3"
+version = "3.0.4"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
-python-versions = ">=3.7,<3.9"
+python-versions = ">=3.7,<3.10"
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
+prompt-toolkit = ">=2.0,<3.0"
 requests = ">=2.23,<3.0"
 sanic = ">=21.6.0,<22.0.0"
 Sanic-Cors = ">=1.0.0,<2.0.0"
@@ -3360,8 +3362,8 @@ transformers = ["transformers"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = ">=3.7,<3.9"
-content-hash = "954f73b0ebc9c14618235fb647d997a05fd234ae402a78af23cd7deeea4a4217"
+python-versions = ">=3.7,<3.10"
+content-hash = "af95dedef7f3263a89b274ad818ced7efe7d4bdce92c0412bbda5f92fad734ad"
 
 [metadata.files]
 absl-py = [
@@ -5039,8 +5041,8 @@ randomname = [
     {file = "randomname-0.1.5.tar.gz", hash = "sha256:e10d14ea10895ee5bc417bdcc6d955e0b586f3bc67094ab87afcf8dcac23ab92"},
 ]
 rasa-sdk = [
-    {file = "rasa-sdk-3.0.3.tar.gz", hash = "sha256:1dfb7f54a33f81800854e3823032a1cfef57e9e9da2f07bc9273aa9c678a26cb"},
-    {file = "rasa_sdk-3.0.3-py3-none-any.whl", hash = "sha256:ef6145f33752ce9d263d1f0663122b5ef1221c64f9afaf7a9a42572ab0523120"},
+    {file = "rasa-sdk-3.0.4.tar.gz", hash = "sha256:36c5d7928e4f98b4966a11973a8b5798ecfa628619fcec01dcc8b56680bb9fa5"},
+    {file = "rasa_sdk-3.0.4-py3-none-any.whl", hash = "sha256:0f0ff23ac7650d4ec98b6b26694babdfa7286da4c85d481ebd5aa44710e2f39a"},
 ]
 redis = [
     {file = "redis-3.5.3-py2.py3-none-any.whl", hash = "sha256:432b788c4530cfe16d8d943a09d40ca6c16149727e4afe8c2c9d5580c59d9f24"},
