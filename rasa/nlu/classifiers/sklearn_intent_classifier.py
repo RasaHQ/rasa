@@ -20,7 +20,6 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.tensorflow.constants import FEATURIZERS
-from rasa.nlu.utils.data_utils import remove_unfeaturized_messages
 
 logger = logging.getLogger(__name__)
 
@@ -126,11 +125,13 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
             return self._resource
 
         y = self.transform_labels_str2num(labels)
-        training_examples = remove_unfeaturized_messages(
-            messages=training_data.intent_examples,
-            attribute=TEXT,
-            featurizers=self.component_config.get(FEATURIZERS),
-        )
+        training_examples = [
+            message
+            for message in training_data.intent_examples
+            if message.features_present(
+                attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
+            )
+        ]
         X = np.stack(
             [self._get_sentence_features(example) for example in training_examples]
         )
@@ -194,10 +195,8 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
     def process(self, messages: List[Message]) -> List[Message]:
         """Return the most likely intent and its probability for a message."""
         for message in messages:
-            if not self.clf or not remove_unfeaturized_messages(
-                messages=[message],
-                attribute=TEXT,
-                featurizers=self.component_config.get(FEATURIZERS),
+            if not self.clf or not message.features_present(
+                attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
             ):
                 # component is either not trained or didn't
                 # receive enough training data or the input doesn't
