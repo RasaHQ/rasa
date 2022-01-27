@@ -130,6 +130,8 @@ CacheControl = "^0.12.9"
 randomname = "^0.1.5"
 keras = "<2.7.0"
 sanic-routing = "^0.7.2"
+prompt_toolkit ="2.0.10"
+
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
