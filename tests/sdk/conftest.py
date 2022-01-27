@@ -1,10 +1,22 @@
 import pytest
 import shutil
 from _pytest.tmpdir import TempdirFactory
+import subprocess
+from typing import Text
 
 from rasa.cli import scaffold
 from rasa.core.agent import Agent
 from rasa.core.processor import MessageProcessor
+
+
+@pytest.fixture(scope="session")
+def run_sdk_for_rasa_project(formbot_project: Text):
+    args = [shutil.which("rasa"), "run", "actions"]
+    process = subprocess.Popen(args, stderr=subprocess.PIPE, cwd=formbot_project)
+    try:
+        yield process
+    finally:
+        process.terminate()
 
 
 @pytest.fixture(scope="session")

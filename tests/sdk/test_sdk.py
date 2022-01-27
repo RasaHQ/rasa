@@ -1,4 +1,4 @@
-import contextlib
+import pytest
 import subprocess
 import shutil
 import uuid
@@ -9,16 +9,6 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 
 server_states = ["Action endpoint is up and running on", "Failed to register package"]
-
-
-@contextlib.contextmanager
-def run_sdk_for_rasa_project(project_dir: Text):
-    args = [shutil.which("rasa"), "run", "actions"]
-    process = subprocess.Popen(args, stderr=subprocess.PIPE, cwd=project_dir)
-    try:
-        yield process
-    finally:
-        process.terminate()
 
 
 def start_sdk_server(process):
@@ -47,9 +37,10 @@ def test_action_server_start_in_empty_dir():
 
 
 async def test_action_server_use_formbot(
-    formbot_project: Text, default_processor: MessageProcessor
+    formbot_project: Text, default_processor: MessageProcessor,
+    run_sdk_for_rasa_project
 ):
-    with run_sdk_for_rasa_project(formbot_project) as process:
+    with run_sdk_for_rasa_project as process:
         read_lines = start_sdk_server(process)
         assert check_condition(read_lines, "Action endpoint is up and running")
         assert check_condition(read_lines, "Registered function for 'validate_restaurant_form'")
