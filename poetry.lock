@@ -1001,7 +1001,6 @@ cached-property = {version = "*", markers = "python_version < \"3.8\""}
 numpy = [
     {version = ">=1.14.5", markers = "python_version == \"3.7\""},
     {version = ">=1.17.5", markers = "python_version == \"3.8\""},
-    {version = ">=1.19.3", markers = "python_version >= \"3.9\""},
 ]
 
 [[package]]
@@ -3362,8 +3361,8 @@ transformers = ["transformers"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = ">=3.7,<3.10"
-content-hash = "af95dedef7f3263a89b274ad818ced7efe7d4bdce92c0412bbda5f92fad734ad"
+python-versions = ">=3.7,<3.9"
+content-hash = "807dded0e144c5776510ce4ed0d9d1ac58050f21e66b27e975fab0b08464097c"
 
 [metadata.files]
 absl-py = [
