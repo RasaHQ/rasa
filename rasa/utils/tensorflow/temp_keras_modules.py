@@ -444,7 +444,7 @@ class TmpKerasModel(Model):
                 if self.stop_training:
                     break
 
-            # If eval data_hanlder exists, delete it after all epochs are done.
+            # If eval_data_handler exists, delete it after all epochs are done.
             if getattr(self, "_eval_data_handler", None) is not None:
                 del self._eval_data_handler
             callbacks.on_train_end(logs=training_logs)
