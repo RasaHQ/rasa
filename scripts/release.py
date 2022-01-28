@@ -175,7 +175,6 @@ def get_rasa_sdk_version() -> Text:
 
     dependencies_filename = "pyproject.toml"
     toml_data = toml.load(project_root() / dependencies_filename)
-    breakpoint()
     try:
         sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
         return sdk_version[1:].strip()
