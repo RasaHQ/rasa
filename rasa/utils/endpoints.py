@@ -10,7 +10,7 @@ from typing import Any, Optional, Text, Dict
 from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 
 
 logger = logging.getLogger(__name__)

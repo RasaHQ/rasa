@@ -44,7 +44,8 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
+from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
