@@ -991,7 +991,7 @@ class DefaultV1Recipe(Recipe):
         auto_configured_keys = transform_collection_to_sentence(auto_configured_keys)
         rasa.shared.utils.cli.print_info(
             f"The configuration for {auto_configured_keys} was chosen automatically. "
-            "It was written into the config file at '{config_file_path}'."
+            f"It was written into the config file at '{config_file_path}'."
         )
 
     @staticmethod
