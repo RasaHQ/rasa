@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "3.0.5"
+version = "3.0.6"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -130,7 +130,6 @@ CacheControl = "^0.12.9"
 randomname = "^0.1.5"
 keras = "<2.7.0"
 sanic-routing = "^0.7.2"
-
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
