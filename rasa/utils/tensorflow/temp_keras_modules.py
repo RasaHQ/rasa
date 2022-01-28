@@ -43,7 +43,7 @@ class TmpKerasModel(Model):
     #  has been ported over to keras and merged there
 
     # This code is adapted from
-    # https://github.com/keras-team/keras/blob/v2.7.0/keras/engine/training.py#L65
+    # https://github.com/keras-team/keras/blob/v2.7.0/keras/engine/training.py#L902
 
     @traceback_utils.filter_traceback
     def fit(
