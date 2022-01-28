@@ -36,10 +36,17 @@ class GraphV1Recipe(Recipe):
                 "Add configuration to the recipe itself if you want them to be used.",
                 docs=DOCS_URL_GRAPH_RECIPE,
             )
-        # TODO: Add core_target and nlu_target to graph configuration options so we
-        # don't force graph node names to be `run_RegexMessageHandler` and
-        # `select_prediction`. These are used in validation and during execution.
-        core_target = None if training_type == TrainingType.NLU else "select_prediction"
+        # Note that default recipe has `nlu_target` and `core_target` as
+        # fixed values of `run_RegexMessageHandler` and `select_prediction`
+        # respectively. For graph recipe, target values are customizable. These
+        # can be used in validation (default recipe does this validation check)
+        # and during execution (all recipes use targets during execution).
+        if training_type == TrainingType.NLU:
+            core_target = None
+        else:
+            core_target = config.get("core_target", "select_prediction")
+        # there's always an NLU target because core (prediction) always needs NLU.
+        nlu_target = config.get("nlu_target", f"run_{RegexMessageHandler.__name__}")
 
         return GraphModelConfiguration(
             train_schema=GraphSchema.from_dict(config.get("train_schema")),
@@ -47,6 +54,5 @@ class GraphV1Recipe(Recipe):
             training_type=training_type,
             language=config.get("language"),
             core_target=core_target,
-            # there's always an NLU target because core (prediction) always needs NLU.
-            nlu_target=f"run_{RegexMessageHandler.__name__}",
+            nlu_target=nlu_target,
         )

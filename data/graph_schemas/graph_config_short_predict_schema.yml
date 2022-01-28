@@ -10,7 +10,7 @@ nodes:
     is_target: false
     is_input: false
     resource: null
-  run_RegexMessageHandler:
+  custom_nlu_target:
     needs:
       messages: nlu_message_converter
       domain: domain_provider
@@ -58,7 +58,7 @@ nodes:
     is_input: false
     resource:
       name: train_RulePolicy1
-  select_prediction:
+  custom_core_target:
     needs:
       policy0: run_MemoizationPolicy0
       domain: domain_provider

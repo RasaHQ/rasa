@@ -4,6 +4,10 @@ recipe: graph.v1
 
 language: en
 
+core_target: custom_core_target
+
+nlu_target: custom_nlu_target
+
 train_schema:
   nodes:
     # We skip schema_validator node (we only have this for DefaultV1Recipe
@@ -48,7 +52,7 @@ predict_schema:
       is_target: false
       is_input: false
       resource: null
-    run_RegexMessageHandler:
+    custom_nlu_target:
       needs:
         messages: nlu_message_converter
         domain: domain_provider
@@ -96,7 +100,7 @@ predict_schema:
       is_input: false
       resource:
         name: train_RulePolicy1
-    select_prediction:
+    custom_core_target:
       needs:
         policy0: run_MemoizationPolicy0
         domain: domain_provider
