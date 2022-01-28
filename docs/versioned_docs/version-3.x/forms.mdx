@@ -350,7 +350,7 @@ By default Rasa Open Source will ask for the next empty slot from the slots
 listed for your form in the domain file. If you use
 [custom slot mappings](forms.mdx#custom-slot-mappings) and the `FormValidationAction`,
 it will ask for the first empty slot returned by the `required_slots` method. If all
-slots in `required_slots` are filled the form will be be deactivated.
+slots in `required_slots` are filled the form will be deactivated.
 
 If needed, you can update the required slots of your form dynamically.
 This is, for example, useful when you need further details based on how
@@ -386,6 +386,35 @@ class ValidateRestaurantForm(FormValidationAction):
             additional_slots.append("shade_or_sun")
 
         return additional_slots + domain_slots
+```
+
+If conversely, you want to remove a slot from the form's `required_slots` defined in the domain file under certain conditions,
+you should copy the `domain_slots` over to a new variable and apply changes to that new variable instead of directly modifying
+`domain_slots`. Directly modifying `domain_slots` can cause unexpected behaviour. For example:
+
+```python
+from typing import Text, List, Optional
+
+from rasa_sdk.forms import FormValidationAction
+
+class ValidateBookingForm(FormValidationAction):
+    def name(self) -> Text:
+        return "validate_booking_form"
+
+    async def required_slots(
+        self,
+        domain_slots: List[Text],
+        dispatcher: "CollectingDispatcher",
+        tracker: "Tracker",
+        domain: "DomainDict",
+    ) -> List[Text]:
+        updated_slots = domain_slots.copy()
+        if tracker.slots.get("existing_customer") is True:
+            # If the user is an existing customer,
+            # do not request the `email_address` slot
+            updated_slots.remove("email_address")
+
+        return updated_slots
 ```
 
 ### The requested_slot slot

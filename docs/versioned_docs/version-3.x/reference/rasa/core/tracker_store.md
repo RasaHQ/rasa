@@ -430,6 +430,18 @@ Ensure that the requested PostgreSQL schema exists in the database.
 
   `ValueError` if the requested schema does not exist.
 
+#### validate\_port
+
+```python
+validate_port(port: Any) -> Optional[int]
+```
+
+Ensure that port can be converted to integer.
+
+**Raises**:
+
+  RasaException if port cannot be cast to integer.
+
 ## SQLTrackerStore Objects
 
 ```python
