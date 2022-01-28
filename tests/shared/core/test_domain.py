@@ -722,11 +722,11 @@ def test_domain_from_multiple_files():
     ]
 
     expected_entities = [
+        "pistachio_robot",
         "caramel_robot",
+        "rum_and_raisin_robot",
         "chocolate_robot",
         "other_robot",
-        "pistachio_robot",
-        "rum_and_raisin_robot",
         "strawberry_robot",
         "vanilla_robot",
     ]
