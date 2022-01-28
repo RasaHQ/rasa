@@ -80,6 +80,16 @@ def test_generate_graphs(
     assert model_config.train_schema == expected_train_schema
     assert model_config.predict_schema == expected_predict_schema
 
+    if training_type == TrainingType.NLU:
+        core_target = None
+    else:
+        core_target = config.get("core_target", "select_prediction")
+
+    assert model_config.core_target == core_target
+    assert model_config.nlu_target == config.get(
+        "nlu_target", "run_RegexMessageHandler"
+    )
+
     rasa.engine.validation.validate(model_config)
 
 

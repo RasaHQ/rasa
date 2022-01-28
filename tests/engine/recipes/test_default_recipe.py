@@ -2,10 +2,8 @@ from typing import Text, Dict, Any, Set
 import shutil
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
 from pathlib import Path
-from unittest.mock import Mock
 
 import rasa.shared.utils.io
 from rasa.shared.constants import CONFIG_AUTOCONFIGURABLE_KEYS
@@ -479,26 +477,17 @@ def test_train_core_without_nlu_pipeline():
     ],
 )
 def test_get_configuration(
-    config_path: Path, expected_keys_to_configure: Set[Text], monkeypatch: MonkeyPatch
+    config_path: Path, expected_keys_to_configure: Set[Text], tmp_path: Path
 ):
-    def complete_config(_, keys_to_configure: Set[Text]) -> Set[Text]:
-        return keys_to_configure
+    new_config_file = tmp_path / "new_config.yml"
+    shutil.copyfile(config_path, new_config_file)
 
-    monkeypatch.setattr(DefaultV1Recipe, "_dump_config", Mock())
-    # This means get_configuration below will only return keys to configure,
-    # ie. missing keys
-    monkeypatch.setattr(DefaultV1Recipe, "complete_config", complete_config)
+    config = rasa.shared.utils.io.read_model_configuration(new_config_file)
+    _config, _missing_keys, configured_keys = DefaultV1Recipe.auto_configure(
+        new_config_file, config
+    )
 
-    # We read config file first to find which recipe to use.
-    config = rasa.shared.utils.io.read_model_configuration(config_path)
-    keys_to_configure = DefaultV1Recipe.auto_configure(str(config_path), config)
-
-    if not expected_keys_to_configure:
-        # auto_configure short circuits if no keys are missing and doesn't run patched
-        # function above. In that case whole document is returned with all keys intact.
-        expected_keys_to_configure = {"language", "pipeline", "policies", "recipe"}
-
-    assert sorted(keys_to_configure) == sorted(expected_keys_to_configure)
+    assert sorted(configured_keys) == sorted(expected_keys_to_configure)
 
 
 @pytest.mark.parametrize(

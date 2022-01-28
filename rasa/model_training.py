@@ -199,7 +199,7 @@ def _train_graph(
 
     config = file_importer.get_config()
     recipe = Recipe.recipe_for_name(config.get("recipe"))
-    config = recipe.auto_configure(
+    config, _missing_keys, _configured_keys = recipe.auto_configure(
         file_importer.get_config_file_for_auto_config(),
         config,
         training_type,

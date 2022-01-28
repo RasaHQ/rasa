@@ -64,7 +64,7 @@ class Recipe(abc.ABC):
         Override in child classes if this functionality is needed, each recipe
         will have different auto configuration values.
         """
-        return config
+        return config, set(), set()
 
     @abc.abstractmethod
     def graph_config_for_recipe(

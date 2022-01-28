@@ -869,7 +869,7 @@ class DefaultV1Recipe(Recipe):
                 config, config_file_path, missing_keys, keys_to_configure, training_type
             )
 
-        return config
+        return config, missing_keys, keys_to_configure
 
     @staticmethod
     def _get_unspecified_autoconfigurable_keys(
