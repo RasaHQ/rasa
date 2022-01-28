@@ -55,7 +55,7 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
     offset = 0
 
     for match in re.finditer(ENTITY_REGEX, example):
-        logger.debug(f"{match}")
+        logger.debug(f"Entity annotation regex match: {match}")
         if match.groupdict()[GROUP_ENTITY_DICT] or match.groupdict()[GROUP_ENTITY_TYPE]:
             entity_attributes = extract_entity_attributes(match)
 
