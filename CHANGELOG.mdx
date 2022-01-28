@@ -16,6 +16,21 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.0.6] - 2022-01-28
+### Deprecations and Removals
+- [#10590](https://github.com/rasahq/rasa/issues/10590): Removed CompositionView.
+
+### Bugfixes
+- [#10504](https://github.com/rasahq/rasa/issues/10504): Fixes a bug which was caused by `DIETClassifier` (`ResponseSelector`, `SklearnIntentClassifier` and `CRFEntityExtractor` have the same issue) trying to process message which didn't have required features. Implements removing unfeaturized messages for the above-mentioned components before training and prediction.
+- [#10540](https://github.com/rasahq/rasa/issues/10540): Enable slots with `from_entity` mapping that are not part of a form's required slots to be set during active loop.
+- [#10673](https://github.com/rasahq/rasa/issues/10673): Catch `ValueError` for any port values that cannot be cast to integer and re-raise as `RasaException` during the initialisation of `SQLTrackerStore`.
+- [#10728](https://github.com/rasahq/rasa/issues/10728): Use `tf.function` for model prediction to improve inference speed.
+- [#10761](https://github.com/rasahq/rasa/issues/10761): Tie prompt-toolkit to ^2.0 to fix `rasa-shell`.
+
+### Improved Documentation
+- [#10536](https://github.com/rasahq/rasa/issues/10536): Update dynamic form behaviour docs section with an example on how to override `required_slots` in case of removal of a form required slot.
+
+
 ## [3.0.5] - 2022-01-19
 ### Bugfixes
 - [#10519](https://github.com/rasahq/rasa/issues/10519): Corrects `transformer_size` parameter value (`None` by default) with a default size during loading in case `ResponseSelector` contains transformer layers.
