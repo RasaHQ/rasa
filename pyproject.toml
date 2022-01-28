@@ -90,7 +90,7 @@ colorhash = "~1.0.2"
 jsonschema = "~3.2"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2022.0"
-rasa-sdk = ">=3.0.3"
+rasa-sdk = ">=3.0.4"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = "^21.6.0"
@@ -130,6 +130,7 @@ CacheControl = "^0.12.9"
 randomname = "^0.1.5"
 keras = "<2.7.0"
 sanic-routing = "^0.7.2"
+
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
