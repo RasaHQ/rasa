@@ -18,7 +18,7 @@ ENTITIES_SCHEMA = {
 
 INTENT = {
     "type": "object",
-    "properties": {"name": {"type": "string"}, "confidence": {"type": "number"},},
+    "properties": {"name": {"type": "string"}, "confidence": {"type": "number"}},
 }
 
 RESPONSE_SCHEMA = {
@@ -76,14 +76,14 @@ USER_UTTERED = {
                                         "response": RESPONSE_SCHEMA,
                                         "ranking": RANKING_SCHEMA,
                                     },
-                                },
-                            },
+                                }
+                            }
                         },
                     ],
                 },
             },
         },
-    },
+    }
 }
 
 ACTION_EXECUTED = {
@@ -98,11 +98,7 @@ ACTION_EXECUTED = {
 }
 
 SLOT_SET = {
-    "properties": {
-        "event": {"const": "slot"},
-        "name": {"type": "string"},
-        "value": {},
-    },
+    "properties": {"event": {"const": "slot"}, "name": {"type": "string"}, "value": {}},
     "required": ["name", "value"],
 }
 
@@ -133,40 +129,39 @@ BOT_UTTERED = {"properties": {"event": {"const": "bot"}}}
 SESSION_STARTED = {"properties": {"event": {"const": "session_started"}}}
 AGENT_UTTERED = {"properties": {"event": {"const": "agent"}}}
 
-EVENTS_SCHEMA = {
-    "type": "array",
-    "items": {
-        "type": "object",
-        "properties": {
-            "event": {"type": "string"},
-            "timestamp": {"type": ["number", "null"]},
-            "metadata": {"type": ["object", "null"]},
-        },
-        "required": ["event"],
-        "oneOf": [
-            USER_UTTERED,
-            ACTION_EXECUTED,
-            SLOT_SET,
-            ENTITIES_ADDED,
-            USER_UTTERED_FEATURIZATION,
-            REMINDER_CANCELLED,
-            REMINDER_SCHEDULED,
-            ACTION_EXECUTION_REJECTED,
-            FORM_VALIDATION,
-            LOOP_INTERRUPTED,
-            FORM,
-            ACTIVE_LOOP,
-            ALL_SLOTS_RESET,
-            CONVERSATION_RESUMED,
-            CONVERSATION_PAUSED,
-            FOLLOWUP_ACTION,
-            STORY_EXPORTED,
-            RESTARTED,
-            ACTION_REVERTED,
-            USER_UTTERANCE_REVERTED,
-            BOT_UTTERED,
-            SESSION_STARTED,
-            AGENT_UTTERED,
-        ],
+EVENT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "event": {"type": "string"},
+        "timestamp": {"type": ["number", "null"]},
+        "metadata": {"type": ["object", "null"]},
     },
+    "required": ["event"],
+    "oneOf": [
+        USER_UTTERED,
+        ACTION_EXECUTED,
+        SLOT_SET,
+        ENTITIES_ADDED,
+        USER_UTTERED_FEATURIZATION,
+        REMINDER_CANCELLED,
+        REMINDER_SCHEDULED,
+        ACTION_EXECUTION_REJECTED,
+        FORM_VALIDATION,
+        LOOP_INTERRUPTED,
+        FORM,
+        ACTIVE_LOOP,
+        ALL_SLOTS_RESET,
+        CONVERSATION_RESUMED,
+        CONVERSATION_PAUSED,
+        FOLLOWUP_ACTION,
+        STORY_EXPORTED,
+        RESTARTED,
+        ACTION_REVERTED,
+        USER_UTTERANCE_REVERTED,
+        BOT_UTTERED,
+        SESSION_STARTED,
+        AGENT_UTTERED,
+    ],
 }
+
+EVENTS_SCHEMA = {"type": "array", "items": EVENT_SCHEMA}

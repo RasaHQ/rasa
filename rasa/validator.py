@@ -24,7 +24,7 @@ from rasa.shared.core.domain import (
     Domain,
 )
 from rasa.shared.core.generator import TrainingDataGenerator
-from rasa.shared.core.slot_mappings import SlotMapping
+from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -232,6 +232,10 @@ class Validator:
                     # We've seen this loop before, don't alert on it twice
                     continue
 
+                if not event.name:
+                    # To support setting `active_loop` to `null`
+                    continue
+
                 if event.name not in self.domain.form_names:
                     rasa.shared.utils.io.raise_warning(
                         f"The form '{event.name}' is used in the "
@@ -301,7 +305,7 @@ class Validator:
 
         # Create a list of `StoryConflict` objects
         conflicts = rasa.core.training.story_conflict.find_story_conflicts(
-            trackers, self.domain, max_history,
+            trackers, self.domain, max_history
         )
 
         if not conflicts:
@@ -413,7 +417,7 @@ class Validator:
                         everything_is_alright = False
 
                 if (
-                    mapping.get("type") == str(SlotMapping.FROM_TRIGGER_INTENT)
+                    mapping[MAPPING_TYPE] == str(SlotMappingType.FROM_TRIGGER_INTENT)
                     and slot.name not in all_required_slots
                 ):
                     rasa.shared.utils.io.raise_warning(

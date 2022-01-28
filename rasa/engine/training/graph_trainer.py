@@ -7,10 +7,7 @@ from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphSchema, GraphModelConfiguration
 from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.runner.interface import GraphRunner
-from rasa.engine.storage.storage import (
-    ModelStorage,
-    ModelMetadata,
-)
+from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.training.components import (
     PrecomputedValueProvider,
     FingerprintComponent,
@@ -108,7 +105,7 @@ class GraphTrainer:
         graph_runner.run(inputs={PLACEHOLDER_IMPORTER: importer})
 
         return self._model_storage.create_model_package(
-            output_filename, model_configuration, domain,
+            output_filename, model_configuration, domain
         )
 
     def fingerprint(

@@ -646,8 +646,9 @@ class YAMLStoryReader(StoryReader):
             rasa.shared.utils.io.raise_warning(
                 f"Failed to parse arguments in line '{match.string}'. "
                 f"Failed to interpret some parts. "
-                f"Continuing without {match.group('rest')}. ",
-                docs=DOCS_URL_STORIES,
+                f"Make sure your regex string is in the following format:"
+                f"\<intent_name>@<confidence-value><dictionary of entities> "  # noqa:  W505, W605, E501
+                f"Continuing without {match.group('rest')}. "
             )
 
         # Add the results to the message.
@@ -656,7 +657,7 @@ class YAMLStoryReader(StoryReader):
             PREDICTED_CONFIDENCE_KEY: confidence,
         }
         intent_ranking = [
-            {INTENT_NAME_KEY: intent_name, PREDICTED_CONFIDENCE_KEY: confidence,}
+            {INTENT_NAME_KEY: intent_name, PREDICTED_CONFIDENCE_KEY: confidence}
         ]
         message_data = {}
         message_data[TEXT] = user_text

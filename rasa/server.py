@@ -44,7 +44,8 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
+from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
@@ -79,7 +80,7 @@ if TYPE_CHECKING:
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
     ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()], SanicResponse,  # noqa: F821
+        [Arg(Request, "request"), VarArg(), KwArg()], SanicResponse  # noqa: F821
     ]
 
 
@@ -1468,13 +1469,9 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
 
 def _extract_core_additional_arguments(request: Request) -> Dict[Text, Any]:
     return {
-        "augmentation_factor": rasa.utils.endpoints.int_arg(
-            request, "augmentation", 50
-        ),
+        "augmentation_factor": rasa.utils.endpoints.int_arg(request, "augmentation", 50)
     }
 
 
 def _extract_nlu_additional_arguments(request: Request) -> Dict[Text, Any]:
-    return {
-        "num_threads": rasa.utils.endpoints.int_arg(request, "num_threads", 1),
-    }
+    return {"num_threads": rasa.utils.endpoints.int_arg(request, "num_threads", 1)}

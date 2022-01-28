@@ -35,7 +35,6 @@ class KafkaEventBroker(EventBroker):
         ssl_keyfile: Optional[Text] = None,
         ssl_check_hostname: bool = False,
         security_protocol: Text = "SASL_PLAINTEXT",
-        loglevel: Union[int, Text] = logging.ERROR,
         **kwargs: Any,
     ) -> None:
         """Kafka event broker.
@@ -69,7 +68,6 @@ class KafkaEventBroker(EventBroker):
                 should verify that the certificate matches the brokers hostname.
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
-            loglevel: Logging level of the kafka logger.
         """
         import kafka
 
@@ -86,8 +84,6 @@ class KafkaEventBroker(EventBroker):
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
-
-        logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
     async def from_endpoint_config(
@@ -144,7 +140,7 @@ class KafkaEventBroker(EventBroker):
 
         if self.security_protocol == "PLAINTEXT":
             authentication_params = dict(
-                security_protocol=self.security_protocol, ssl_check_hostname=False,
+                security_protocol=self.security_protocol, ssl_check_hostname=False
             )
         elif self.security_protocol == "SASL_PLAINTEXT":
             authentication_params = dict(
@@ -196,12 +192,14 @@ class KafkaEventBroker(EventBroker):
         else:
             partition_key = None
 
-        headers = [
-            (
-                "RASA_ENVIRONMENT",
-                bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
-            )
-        ]
+        headers = []
+        if self.rasa_environment:
+            headers = [
+                (
+                    "RASA_ENVIRONMENT",
+                    bytes(self.rasa_environment, encoding=DEFAULT_ENCODING),
+                )
+            ]
 
         logger.debug(
             f"Calling kafka send({self.topic}, value={event},"
@@ -216,4 +214,4 @@ class KafkaEventBroker(EventBroker):
     @rasa.shared.utils.common.lazy_property
     def rasa_environment(self) -> Optional[Text]:
         """Get value of the `RASA_ENVIRONMENT` environment variable."""
-        return os.environ.get("RASA_ENVIRONMENT")
+        return os.environ.get("RASA_ENVIRONMENT", "RASA_ENVIRONMENT_NOT_SET")

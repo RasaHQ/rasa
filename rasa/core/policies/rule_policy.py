@@ -15,11 +15,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_RULES
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
-from rasa.shared.core.events import (
-    LoopInterrupted,
-    UserUttered,
-    ActionExecuted,
-)
+from rasa.shared.core.events import LoopInterrupted, UserUttered, ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
@@ -156,7 +152,7 @@ class RulePolicy(MemoizationPolicy):
         config[POLICY_MAX_HISTORY] = None
 
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer, lookup,
+            config, model_storage, resource, execution_context, featurizer, lookup
         )
 
         self._fallback_action_name = config["core_fallback_action_name"]
@@ -1236,9 +1232,7 @@ class RulePolicy(MemoizationPolicy):
             )
 
     def _metadata(self) -> Dict[Text, Any]:
-        return {
-            "lookup": self.lookup,
-        }
+        return {"lookup": self.lookup}
 
     @classmethod
     def _metadata_filename(cls) -> Text:

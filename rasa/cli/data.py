@@ -8,10 +8,7 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
 import rasa.cli.utils
-from rasa.shared.constants import (
-    DEFAULT_DATA_PATH,
-    DEFAULT_CONFIG_PATH,
-)
+from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_CONFIG_PATH
 import rasa.shared.data
 from rasa.shared.importers.rasa import RasaFileImporter
 import rasa.shared.nlu.training_data.loading
@@ -167,7 +164,7 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
     )
 
     file_importer = RasaFileImporter(
-        domain_path=args.domain, training_data_paths=args.data, config_file=config,
+        domain_path=args.domain, training_data_paths=args.data, config_file=config
     )
 
     validator = Validator.from_importer(file_importer)

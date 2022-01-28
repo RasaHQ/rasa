@@ -31,16 +31,16 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
 )
 import rasa.shared.core.constants
-from rasa.shared.core.slot_mappings import SlotMapping
+from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE, MAPPING_CONDITIONS
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
+import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
-from rasa.shared.core.constants import MAPPING_CONDITIONS
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
@@ -187,9 +187,7 @@ class Domain:
             raise e
 
     @classmethod
-    def from_dict(
-        cls, data: Dict, duplicates: Optional[Dict[Text, List[Text]]] = None
-    ) -> "Domain":
+    def from_dict(cls, data: Dict) -> "Domain":
         """Deserializes and creates domain.
 
         Args:
@@ -213,15 +211,16 @@ class Domain:
 
         forms = data.get(KEY_FORMS, {})
         _validate_forms(forms)
+        duplicates = data.get("duplicates", None)
 
         return cls(
-            intents,
-            data.get(KEY_ENTITIES, {}),
-            slots,
-            responses,
-            data.get(KEY_ACTIONS, []),
-            data.get(KEY_FORMS, {}),
-            data.get(KEY_E2E_ACTIONS, []),
+            intents=intents,
+            entities=data.get(KEY_ENTITIES, {}),
+            slots=slots,
+            responses=responses,
+            action_names=data.get(KEY_ACTIONS, []),
+            forms=data.get(KEY_FORMS, {}),
+            action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             duplicates=duplicates,
             **additional_arguments,
@@ -235,7 +234,7 @@ class Domain:
             session_expiration_time_min = DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 
         carry_over_slots = session_config.get(
-            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         )
 
         return SessionConfig(session_expiration_time_min, carry_over_slots)
@@ -243,15 +242,19 @@ class Domain:
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
-
-        domain = Domain.empty()
+        domain_dict = {}
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
                 if Domain.is_domain_file(full_path):
-                    other = Domain.from_file(full_path)
-                    domain = other.merge(domain)
-
+                    _ = Domain.from_file(full_path)  # does the validation here only
+                    other_dict = rasa.shared.utils.io.read_yaml(
+                        rasa.shared.utils.io.read_file(full_path)
+                    )
+                    domain_dict = Domain.merge_domain_dicts(
+                        cls, domain_dict, other_dict
+                    )
+        domain = Domain.from_dict(domain_dict)
         return domain
 
     def merge(self, domain: Optional["Domain"], override: bool = False) -> "Domain":
@@ -259,8 +262,8 @@ class Domain:
 
         List attributes like ``intents`` and ``actions`` will be deduped
         and merged. Single attributes will be taken from `self` unless
-        override is `True`, in which case they are taken from `domain`."""
-
+        override is `True`, in which case they are taken from `domain`.
+        """
         if not domain or domain.is_empty():
             return self
 
@@ -270,29 +273,6 @@ class Domain:
         domain_dict = domain.as_dict()
         combined = self.as_dict()
 
-        def merge_dicts(
-            tempDict1: Dict[Text, Any],
-            tempDict2: Dict[Text, Any],
-            override_existing_values: bool = False,
-        ) -> Dict[Text, Any]:
-
-            if override_existing_values:
-                merge_dicts, b = tempDict1.copy(), tempDict2.copy()
-
-            else:
-                merge_dicts, b = tempDict2.copy(), tempDict1.copy()
-
-            merge_dicts.update(b)
-            return merge_dicts
-
-        def merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
-            return sorted(list(set(list1 + list2)))
-
-        def extract_duplicates(
-            dict1: Dict[Text, Any], dict2: Dict[Text, Any],
-        ) -> List[Text]:
-            return [value for value in dict1.keys() if value in dict2.keys()]
-
         if override:
             config = domain_dict["config"]
             for key, val in config.items():
@@ -301,27 +281,164 @@ class Domain:
         if override or self.session_config == SessionConfig.default():
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
-        duplicates: Dict[Text, List[Text]] = {}
-
-        # this code merges lists of dicts of intents
-        dict1 = {list(i.keys())[0]: i for i in combined[KEY_INTENTS]}
-        dict2 = {list(i.keys())[0]: i for i in domain_dict[KEY_INTENTS]}
-        duplicates[KEY_INTENTS] = extract_duplicates(dict1, dict2)
-        combined[KEY_INTENTS] = list(merge_dicts(dict1, dict2, override).values())
-
+        if combined[KEY_INTENTS] or domain_dict[KEY_INTENTS]:
+            combined[KEY_INTENTS] = self.merge_lists_of_dicts(
+                combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
+            )
         # remove existing forms from new actions
         for form in combined[KEY_FORMS]:
             if form in domain_dict[KEY_ACTIONS]:
                 domain_dict[KEY_ACTIONS].remove(form)
 
         for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
-            combined[key] = merge_lists(combined[key], domain_dict[key])
+            combined[key] = self.merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
-            duplicates[key] = extract_duplicates(combined[key], domain_dict[key])
-            combined[key] = merge_dicts(combined[key], domain_dict[key], override)
+            combined[key] = self.merge_dicts(combined[key], domain_dict[key], override)
 
-        return self.__class__.from_dict(combined, duplicates)
+        return self.__class__.from_dict(combined)
+
+    def merge_domain_dicts(
+        self, domain1: Dict, domain2: Dict, override: bool = False
+    ) -> Dict[Text, Any]:
+        """Merges this domain dict with another one, combining their attributes.
+
+        This is used when multiple domain yml files are configured in a single
+        directory. Unlike the merge method above, which merges Domain objects by
+        creating each object then merging it with the previous, this method merges
+        domain dicts, and ensures all attributes (like ``intents``, ``entities``, and
+        ``actions``) are known to the Domain when the object is created.
+
+        List attributes like ``intents`` and ``actions`` are deduped
+        and merged. Single attributes are taken from `domain1` unless
+        override is `True`, in which case they are taken from `domain2`.
+        """
+        if not domain2:
+            return domain1
+
+        if not domain1:
+            return domain2
+
+        domain_dict = domain2
+        combined = domain1
+
+        if override:
+            config = domain_dict["config"]
+            for key, val in config.items():
+                combined["config"][key] = val
+
+        if override or domain2.get("session_config"):
+            combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
+
+        duplicates: Dict[Text, List[Text]] = {}
+
+        if combined.get(KEY_INTENTS) or domain_dict.get(KEY_INTENTS):
+            duplicates[KEY_INTENTS] = self.extract_duplicates(
+                combined.get(KEY_INTENTS, []), domain_dict.get(KEY_INTENTS, [])
+            )
+            combined[KEY_INTENTS] = combined.get(KEY_INTENTS, [])
+            domain_dict[KEY_INTENTS] = domain_dict.get(KEY_INTENTS, [])
+            combined[KEY_INTENTS] = self.merge_lists_of_dicts(
+                combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
+            )
+
+        # remove existing forms from new actions
+        for form in combined.get(KEY_FORMS, []):
+            if form in domain_dict.get(KEY_ACTIONS, []):
+                domain_dict[KEY_ACTIONS].remove(form)
+
+        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
+            duplicates[key] = self.extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
+            combined[key] = self.merge_lists(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
+
+        for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            duplicates[key] = self.extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
+            combined[key] = self.merge_dicts(
+                combined.get(key, {}), domain_dict.get(key, {}), override
+            )
+
+        if duplicates:
+            duplicates = self.clean_duplicates(duplicates)
+            combined.update({"duplicates": duplicates})
+        return combined
+
+    @staticmethod
+    def extract_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]:
+        """Extracts duplicates from two lists."""
+        if list1:
+            dict1 = {
+                (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
+                for i in list1
+            }
+        else:
+            dict1 = {}
+
+        if list2:
+            dict2 = {
+                (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
+                for i in list2
+            }
+        else:
+            dict2 = {}
+
+        set1 = set(dict1.keys())
+        set2 = set(dict2.keys())
+        dupes = set1.intersection(set2)
+        return sorted(list(dupes))
+
+    @staticmethod
+    def clean_duplicates(dupes: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Removes keys for empty values."""
+        duplicates = dupes.copy()
+        for k in dupes:
+            if not dupes[k]:
+                duplicates.pop(k)
+
+        return duplicates
+
+    @staticmethod
+    def merge_dicts(
+        tempDict1: Dict[Text, Any],
+        tempDict2: Dict[Text, Any],
+        override_existing_values: bool = False,
+    ) -> Dict[Text, Any]:
+        """Merges two dicts."""
+        if override_existing_values:
+            merged_dicts, b = tempDict1.copy(), tempDict2.copy()
+
+        else:
+            merged_dicts, b = tempDict2.copy(), tempDict1.copy()
+        merged_dicts.update(b)
+        return merged_dicts
+
+    @staticmethod
+    def merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
+        """Merges two lists."""
+        return sorted(list(set(list1 + list2)))
+
+    @staticmethod
+    def merge_lists_of_dicts(
+        dict_list1: List[Dict],
+        dict_list2: List[Dict],
+        override_existing_values: bool = False,
+    ) -> List[Dict]:
+        """Merges two dict lists."""
+        dict1 = {
+            (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
+            for i in dict_list1
+        }
+        dict2 = {
+            (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
+            for i in dict_list2
+        }
+        merged_dicts = Domain.merge_dicts(dict1, dict2, override_existing_values)
+        return list(merged_dicts.values())
 
     @staticmethod
     def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
@@ -1020,7 +1137,7 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        tracker: "DialogueStateTracker", omit_unset_slots: bool = False
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
         """Sets all set slots with the featurization of the stored value.
 
@@ -1064,16 +1181,14 @@ class Domain:
         return tracker.latest_action
 
     @staticmethod
-    def _get_active_loop_sub_state(
-        tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Text]:
+    def _get_active_loop_sub_state(tracker: "DialogueStateTracker") -> Dict[Text, Text]:
         """Turn tracker's active loop into a state name.
+
         Args:
             tracker: dialog state tracker containing the dialog so far
         Returns:
             a dictionary mapping "name" to active loop name if present
         """
-
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         active_loop: Optional[Text] = tracker.active_loop.get(
@@ -1093,7 +1208,7 @@ class Domain:
         }
 
     def get_active_state(
-        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False
     ) -> State:
         """Given a dialogue tracker, makes a representation of current dialogue state.
 
@@ -1120,7 +1235,7 @@ class Domain:
 
     @staticmethod
     def _remove_rule_only_features(
-        state: State, rule_only_data: Optional[Dict[Text, Any]],
+        state: State, rule_only_data: Optional[Dict[Text, Any]]
     ) -> None:
         if not rule_only_data:
             return
@@ -1234,8 +1349,8 @@ class Domain:
                 matching_entities = []
 
                 for mapping in slot.mappings:
-                    if mapping.get("type") != str(
-                        SlotMapping.FROM_ENTITY
+                    if mapping[MAPPING_TYPE] != str(
+                        SlotMappingType.FROM_ENTITY
                     ) or mapping.get(MAPPING_CONDITIONS):
                         continue
 
@@ -1362,9 +1477,10 @@ class Domain:
             The intent properties as they are used in domain files.
         """
         intent_properties = copy.deepcopy(self.intent_properties)
+        sorted_intent_properties = sorted(intent_properties.items())
         intents_for_file = []
 
-        for intent_name, intent_props in intent_properties.items():
+        for intent_name, intent_props in sorted_intent_properties:
             if (
                 intent_name in rasa.shared.core.constants.DEFAULT_INTENTS
                 and intent_name not in self.overridden_default_intents
@@ -1383,9 +1499,13 @@ class Domain:
             if len(use_entities) == len(self.entities):
                 intent_props[USE_ENTITIES_KEY] = True
             elif len(use_entities) <= len(self.entities) / 2:
-                intent_props[USE_ENTITIES_KEY] = list(use_entities)
+                entities = list(use_entities)
+                entities.sort()
+                intent_props[USE_ENTITIES_KEY] = entities
             else:
-                intent_props[IGNORE_ENTITIES_KEY] = list(ignore_entities)
+                entities = list(ignore_entities)
+                entities.sort()
+                intent_props[IGNORE_ENTITIES_KEY] = entities
             intent_props.pop(USED_ENTITIES_KEY)
             intents_for_file.append({intent_name: intent_props})
 
@@ -1805,10 +1925,10 @@ class Domain:
         for slot in self.slots:
             total_mappings += len(slot.mappings)
             for mapping in slot.mappings:
-                if mapping.get("type") == str(SlotMapping.CUSTOM):
+                if mapping[MAPPING_TYPE] == str(SlotMappingType.CUSTOM):
                     custom_mappings += 1
 
-                if "conditions" in mapping:
+                if MAPPING_CONDITIONS in mapping:
                     conditional_mappings += 1
 
         return (total_mappings, custom_mappings, conditional_mappings)

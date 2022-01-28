@@ -134,9 +134,7 @@ def _get_model_endpoint(
     model_endpoint: Optional[EndpointConfig], rasa_x_token: Text, rasa_x_url: Text
 ) -> EndpointConfig:
     # If you change that, please run a test with Rasa X and speak to the bot
-    default_rasax_model_server_url = (
-        f"{rasa_x_url}/projects/default/models/tags/production"
-    )
+    default_rasax_model_server_url = f"{rasa_x_url}/models/tags/production"
 
     model_endpoint = model_endpoint or EndpointConfig()
 
@@ -423,7 +421,7 @@ def run_in_production(args: argparse.Namespace) -> None:
     _rasa_service(args, endpoints, None, credentials_path)
 
 
-def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
+def _get_config_path(args: argparse.Namespace) -> Optional[Text]:
     config_path = rasa.cli.utils.get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH
     )
@@ -431,7 +429,7 @@ def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
     return config_path
 
 
-def _get_domain_path(args: argparse.Namespace,) -> Optional[Text]:
+def _get_domain_path(args: argparse.Namespace) -> Optional[Text]:
     domain_path = rasa.cli.utils.get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH
     )
