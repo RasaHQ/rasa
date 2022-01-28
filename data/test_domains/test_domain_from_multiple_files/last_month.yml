@@ -28,5 +28,9 @@ entities:
 forms:
   robot_form:
     required_slots:
-        - propose_simulation
-        - display_cure_method
+        propose_simulation:
+          - type: from_entity
+            entity: propose_simulation
+        display_cure_method:
+          - type: from_entity
+            entity: display_cure_method
