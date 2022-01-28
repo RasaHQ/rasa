@@ -1097,6 +1097,8 @@ def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
 
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
+    # ToDo: Neither DIET nor TED support overlap, so if they
+    # appear, this should return `False`, too
     return CRFEntityExtractor.name not in extractors
 
 

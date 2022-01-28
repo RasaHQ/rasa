@@ -19,6 +19,7 @@ from rasa.shared.nlu.constants import (
 
 import rasa.shared.utils.io
 import typing
+from collections import defaultdict
 from typing import List, Text, Dict, Any, Union
 
 if typing.TYPE_CHECKING:
@@ -41,6 +42,23 @@ class TrainingDataReader(abc.ABC):
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a string."""
         raise NotImplementedError
+
+
+
+def _raise_on_same_start_and_different_end_positions(
+    aggregated_entities: Dict[int, List[Dict[Text, Any]]],
+) -> None:
+    for entity_list in aggregated_entities.values():
+        end = entity_list[0]["end"]
+        for entity in entity_list[1:]:
+            # By construction, start positions of all entities in `entity_list` are
+            # identical
+            if entity["end"] != end:
+                raise ValueError(
+                    f"Entities '{entity}' and "
+                    f"'{aggregated_entities[entity['start']][-1]}' have identical "
+                    f"start but different end positions"
+                )
 
 
 class TrainingDataWriter:
@@ -79,7 +97,15 @@ class TrainingDataWriter:
 
     @staticmethod
     def generate_message(message: Dict[Text, Any]) -> Text:
-        """Generates text for a message object."""
+        """Generates text for a message object.
+
+        Args:
+            message: A message
+
+        Returns:
+            The text of the message, annotated with the entity data that is contained
+            in the message
+        """
 
         md = ""
         text = message.get("text", "")
@@ -96,37 +122,22 @@ class TrainingDataWriter:
             entities_with_start_and_end = [
                 e for e in entities if "start" in e and "end" in e
             ]
-            sorted_entities = sorted(
-                entities_with_start_and_end, key=operator.itemgetter("start")
-            )
 
-            # aggregate entities with same start and end (multiple entities from
-            # same token group)
-            aggregated_entities = []
-            last_start = None
-            last_end = None
-            for entity in sorted_entities:
-                if (
-                    last_start is None
-                    or last_end is None
-                    or last_start != entity["start"]
-                ):
-                    last_start = entity["start"]
-                    last_end = entity["end"]
-                    aggregated_entities.append(entity)
-                else:
-                    agg = aggregated_entities[-1]
-                    if isinstance(agg, list):
-                        agg.append(entity)
-                    else:
-                        agg = aggregated_entities.pop()
-                        aggregated_entities.append([agg, entity])
+            # Multiple entities can share the same position span. To account for that,
+            # group all entities by their start positions
+            aggregated_entities: Dict[int, List[Dict[Text, Any]]] = defaultdict(list)
+            for entity in entities_with_start_and_end:
+                aggregated_entities[entity["start"]].append(entity)
 
-            for entity in aggregated_entities:
-                entity0 = entity[0] if isinstance(entity, list) else entity
-                md += text[pos : entity0["start"]]
-                md += TrainingDataWriter.generate_entity(text, entity)
-                pos = entity0["end"]
+            _raise_on_same_start_and_different_end_positions(aggregated_entities)
+
+            for start, entities in sorted(aggregated_entities.items()):
+                md += text[pos : start]
+                md += TrainingDataWriter.generate_entity(
+                    text,
+                    entities[0] if len(entities) == 1 else entities,
+                )
+                pos = entity["end"]
 
         md += text[pos:]
 
@@ -174,14 +185,22 @@ class TrainingDataWriter:
     def generate_entity(
         text: Text, entity: Union[Dict[Text, Any], List[Dict[Text, Any]]]
     ) -> Text:
-        """Generates text for an entity object."""
+        """Generates text for one or multiple entity objects.
+
+        Args:
+            text: The un-annotated text
+            entity: One or multiple entity annotations for one part of this text
+
+        Returns:
+            Annotated part of the text
+        """
         if isinstance(entity, list):
             entity_text = text[
                 entity[0][ENTITY_ATTRIBUTE_START] : entity[0][ENTITY_ATTRIBUTE_END]
             ]
             return (
                 f"[{entity_text}]["
-                + ",".join(
+                + ", ".join(
                     [
                         TrainingDataWriter.generate_entity_attributes(
                             text=entity_text, entity=e, short_allowed=False

@@ -104,6 +104,28 @@ from rasa.shared.nlu.constants import TEXT
             ],
             "I want to fly from Berlin to LA",
         ),
+        (
+            'I want to fly from [Berlin](city) to [LA][{"entity": "city", "role": '
+            '"from", "value": "Los Angeles"}, {"entity": "location", "value": '
+            '"Los Angeles"}]',
+            [
+                {"start": 19, "end": 25, "value": "Berlin", "entity": "city"},
+                {
+                    "start": 29,
+                    "end": 31,
+                    "value": "Los Angeles",
+                    "entity": "city",
+                    "role": "from",
+                },
+                {
+                    "start": 29,
+                    "end": 31,
+                    "value": "Los Angeles",
+                    "entity": "location",
+                },
+            ],
+            "I want to fly from Berlin to LA",
+        ),
     ],
 )
 def test_markdown_entity_regex(

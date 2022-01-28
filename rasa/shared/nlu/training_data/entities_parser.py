@@ -42,10 +42,10 @@ class EntityAttributes(NamedTuple):
 
 
 def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
-    """Extracts entities from an intent example.
+    """Extracts entities from an annotated utterance.
 
     Args:
-        example: Intent example.
+        example: Annotated utterance.
 
     Returns:
         Extracted entities.
@@ -57,6 +57,7 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
     for match in re.finditer(ENTITY_REGEX, example):
         logger.debug(f"Entity annotation regex match: {match}")
         if match.groupdict()[GROUP_ENTITY_DICT] or match.groupdict()[GROUP_ENTITY_TYPE]:
+            # Text is annotated with a single entity
             entity_attributes = extract_entity_attributes(match)
 
             start_index = match.start() - offset
@@ -73,8 +74,8 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
             )
             entities.append(entity)
         else:
+            # Text is annotated with multiple entities for the same text
             entity_text = match.groupdict()[GROUP_ENTITY_TEXT]
-            # iterate over the list
 
             start_index = match.start() - offset
             end_index = start_index + len(entity_text)
