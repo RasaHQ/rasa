@@ -1016,7 +1016,7 @@ def test_no_warnings_with_default_project(tmp_path: Path):
         training_data_paths=[str(tmp_path / "data")],
     )
 
-    config = DefaultV1Recipe.auto_configure(
+    config, _missing_keys, _configured_keys = DefaultV1Recipe.auto_configure(
         importer.get_config_file_for_auto_config(),
         importer.get_config(),
         TrainingType.END_TO_END,
