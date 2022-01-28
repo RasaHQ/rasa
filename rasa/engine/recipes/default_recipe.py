@@ -842,7 +842,7 @@ class DefaultV1Recipe(Recipe):
         config_file_path: Optional[Text],
         config: Dict,
         training_type: Optional[TrainingType] = TrainingType.BOTH,
-    ) -> Dict[Text, Any]:
+    ) -> Tuple[Dict[Text, Any], Set[str], Set[str]]:
         """Determine configuration from auto-filled configuration file.
 
         Keys that are provided and have a value in the file are kept. Keys that are not

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Text, Dict, Any, Optional
+from typing import Text, Dict, Any, Optional, Tuple, Set
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphModelConfiguration
@@ -58,7 +58,7 @@ class Recipe(abc.ABC):
         config_file_path: Optional[Text],
         config: Dict,
         training_type: Optional[TrainingType] = TrainingType.BOTH,
-    ) -> Dict[Text, Any]:
+    ) -> Tuple[Dict[Text, Any], Set[str], Set[str]]:
         """Adds missing options with defaults and dumps the configuration.
 
         Override in child classes if this functionality is needed, each recipe
