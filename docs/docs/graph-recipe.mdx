@@ -41,7 +41,7 @@ If you don't know which recipe to choose, use the default recipe to bootstrap yo
 
 ## Graph Configuration File Structure
 
-Graph recipes share `recipe` and `language` keys with the same meaning. Similarities end there as graph recipes do not have `pipeline` or `policies` keys but they do have `train_schema` and `predict_schema` keys for determining the graph nodes during train and predict runs respectively.
+Graph recipes share `recipe` and `language` keys with the same meaning. Similarities end there as graph recipes do not have `pipeline` or `policies` keys but they do have `train_schema` and `predict_schema` keys for determining the graph nodes during train and predict runs respectively. In addition to this, target nodes for NLU and core can be specified explicitly with graph recipes, these can be declared with `nlu_target` and `core_target`. If targets are omitted, node names used by default recipe will take over, and these are `run_RegexMessageHandler` and `select_prediction` for nlu and core respectively.
 
 Here's an example graph recipe:
 
@@ -49,9 +49,9 @@ Here's an example graph recipe:
 ```
 
 :::note graph targets
-For NLU, default target name of `run_RegexMessageHandler` will be used, while for core (dialogue management) the target will be called `select_prediction`. Make sure you have graph nodes with relevant names in your schema definitions.
+For NLU, default target name of `run_RegexMessageHandler` will be used, while for core (dialogue management) the target will be called `select_prediction` if omitted. Make sure you have graph nodes with relevant names in your schema definitions.
 
-In a similar fashion, note that the default resource needed by the first graph node is fixed to be `__importer__` (representing configuration, training data etc.) for training task and it is `__message__` for prediction task. Make sure your first nodes make use of these dependencies.
+In a similar fashion, note that the default resource needed by the first graph node is fixed to be `__importer__` (representing configuration, training data etc.) for training task and it is `__message__` (representing the message received) for prediction task. Make sure your first nodes make use of these dependencies.
 
 :::
 
