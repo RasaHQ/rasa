@@ -168,8 +168,8 @@ datadog = "^0.43.0"
 [tool.poetry.extras]
 spacy = [ "spacy",]
 jieba = [ "jieba",]
-transformers = [ "transformers", "sentencepiece"]
-full = [ "spacy", "transformers", "sentencepiece", "jieba",]
+transformers = [ "transformers",]
+full = [ "spacy", "transformers", "jieba",]
 gh-release-notes = [ "github3.py",]
 
 [tool.poetry.scripts]
@@ -198,10 +198,7 @@ optional = true
 [tool.poetry.dependencies.transformers]
 version = "~4.13.0"
 optional = true
-
-[tool.poetry.dependencies.sentencepiece]
-version = "~0.1.96"
-optional = true
+extras = [ "sentencepiece",]
 
 [tool.poetry.dependencies.jieba]
 version = ">=0.39, <0.43"
