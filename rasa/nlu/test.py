@@ -1096,7 +1096,7 @@ def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bo
         Names of the entitiy extractors
 
     Returns:
-        `True` if and only if CRFEntityExtractor is in `extractors`
+        `True` if and only if CRFEntityExtractor or DIETClassifier is in `extractors`
     """
     if extractors is None:
         return False
@@ -1104,7 +1104,7 @@ def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bo
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
     from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 
-    if extractors.intersection({CRFEntityExtractor.name, DIETClassifier.name,}):
+    if extractors.intersection({CRFEntityExtractor.name, DIETClassifier.name}):
         return True
     return False
 
