@@ -152,7 +152,16 @@ class TrainingDataWriter:
     def generate_entity_attributes(
         text: Text, entity: Dict[Text, Any], short_allowed: bool = True
     ) -> Text:
-        """Generates text for the entity attributes."""
+        """Generates text for the entity attributes.
+
+        Args:
+            text: The text that is annotated with the entity
+            entity: Entity data
+            short_allowed: If `True`, allow shorthand annotation with parenthesis
+
+        Returns:
+            The annotation text that should follow the given text
+        """
         entity_text = text
         entity_type = entity.get(ENTITY_ATTRIBUTE_TYPE)
         entity_value = entity.get(ENTITY_ATTRIBUTE_VALUE)
