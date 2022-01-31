@@ -117,12 +117,7 @@ from rasa.shared.nlu.constants import TEXT
                     "entity": "city",
                     "role": "from",
                 },
-                {
-                    "start": 29,
-                    "end": 31,
-                    "value": "Los Angeles",
-                    "entity": "location",
-                },
+                {"start": 29, "end": 31, "value": "Los Angeles", "entity": "location",},
             ],
             "I want to fly from Berlin to LA",
         ),

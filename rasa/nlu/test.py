@@ -1080,9 +1080,8 @@ def determine_entity_for_token(
     """
     if entities is None or len(entities) == 0:
         return None
-    if (
-        do_any_extractors_not_support_overlap(extractors) and
-        do_entities_overlap(entities)
+    if do_any_extractors_not_support_overlap(extractors) and do_entities_overlap(
+        entities
     ):
         raise ValueError("The possible entities should not overlap.")
 
@@ -1105,10 +1104,7 @@ def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bo
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
     from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 
-    if extractors.intersection({
-        CRFEntityExtractor.name,
-        DIETClassifier.name,
-    }):
+    if extractors.intersection({CRFEntityExtractor.name, DIETClassifier.name,}):
         return True
     return False
 

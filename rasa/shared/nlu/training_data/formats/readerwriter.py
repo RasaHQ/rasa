@@ -1,7 +1,6 @@
 import abc
 import json
 from collections import OrderedDict
-import operator
 from pathlib import Path
 
 import rasa.shared.nlu.training_data.util
@@ -42,7 +41,6 @@ class TrainingDataReader(abc.ABC):
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Reads TrainingData from a string."""
         raise NotImplementedError
-
 
 
 def _raise_on_same_start_and_different_end_positions(
@@ -111,7 +109,6 @@ class TrainingDataWriter:
             The text of the message, annotated with the entity data that is contained
             in the message
         """
-
         md = ""
         text = message.get("text", "")
 
@@ -137,10 +134,9 @@ class TrainingDataWriter:
             _raise_on_same_start_and_different_end_positions(aggregated_entities)
 
             for start, entities in sorted(aggregated_entities.items()):
-                md += text[pos : start]
+                md += text[pos:start]
                 md += TrainingDataWriter.generate_entity(
-                    text,
-                    entities[0] if len(entities) == 1 else entities,
+                    text, entities[0] if len(entities) == 1 else entities,
                 )
                 pos = entity["end"]
 
@@ -234,7 +230,6 @@ class TrainingDataWriter:
 
 
 class JsonTrainingDataReader(TrainingDataReader):
-
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Transforms string into json object and passes it on."""
         js = json.loads(s)

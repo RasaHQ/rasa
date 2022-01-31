@@ -50,7 +50,6 @@ def find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]:
     Returns:
         Extracted entities.
     """
-
     entities = []
     offset = 0
 
