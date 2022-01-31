@@ -297,7 +297,7 @@ def test_test_core_with_entities_and_no_user_utterance(
      utter_greet:
       - text: "Hey There!"
     """
-    with open('domain.yml', 'w') as domain:
+    with open("domain.yml", "w") as domain:
         domain.write(domain_with_entity_yaml)
 
     nlu_yaml = """
@@ -309,7 +309,7 @@ def test_test_core_with_entities_and_no_user_utterance(
       - hey
       - hi [rasa](name)
     """
-    with open('data/nlu.yml', 'w') as nlu:
+    with open("data/nlu.yml", "w") as nlu:
         nlu.write(nlu_yaml)
 
     simple_test_story_yaml = """
