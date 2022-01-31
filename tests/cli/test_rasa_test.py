@@ -277,3 +277,59 @@ def test_test_core_help(run: Callable[..., RunResult]):
     printed_help = set(output.outlines)
     for line in lines:
         assert line in printed_help
+
+
+def test_test_core_with_entities_and_no_user_utterance(
+    run_in_simple_project_with_model: Callable[..., RunResult]
+):
+    write_yaml(
+        {"pipeline": "KeywordIntentClassifier", "policies": [{"name": "TEDPolicy"}],},
+        "config.yml",
+    )
+
+    domain_with_entity_yaml = """
+    version: "2.0"
+    intents:
+    - greet
+    entities:
+    - name
+    responses:
+     utter_greet:
+      - text: "Hey There!"
+    """
+    with open('domain.yml', 'w') as domain:
+        domain.write(domain_with_entity_yaml)
+
+    nlu_yaml = """
+    version: "2.0"
+    nlu:
+    - intent: greet
+      examples: |
+      - hi [sara](name)
+      - hey
+      - hi [rasa](name)
+    """
+    with open('data/nlu.yml', 'w') as nlu:
+        nlu.write(nlu_yaml)
+
+    simple_test_story_yaml = """
+stories:
+- story: happy path
+  steps:
+  - intent: greet
+    entities:
+    - name
+  - action: utter_greet
+"""
+
+    with open("data/stories.yml", "w") as stories:
+        stories.write(simple_test_story_yaml)
+
+    with open("tests/test_story_no_utterance_with_entity.yaml", "w") as f:
+        f.write(simple_test_story_yaml)
+
+    run_in_simple_project_with_model("test", "core", "--fail-on-prediction-errors")
+    assert os.path.exists("results")
+
+    with open("results/failed_test_stories.yml", "r") as failed:
+        assert "# None of the test stories failed - all good!" == failed.read()
