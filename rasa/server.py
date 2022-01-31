@@ -1286,7 +1286,9 @@ def create_app(
         try:
             data = emulator.normalise_request_json(request.json)
             try:
-                parsed_data = await app.agent.parse_message(data.get("text"))
+                parsed_data = await app.agent.parse_message(
+                    data.get("text"), data.get("metadata")
+                )
             except Exception as e:
                 logger.debug(traceback.format_exc())
                 raise ErrorResponse(

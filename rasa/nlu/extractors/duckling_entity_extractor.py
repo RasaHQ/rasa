@@ -12,7 +12,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.shared.nlu.constants import ENTITIES, TEXT
+from rasa.shared.nlu.constants import ENTITIES, TEXT, METADATA, METADATA_TIME_ZONE
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
@@ -108,17 +108,21 @@ class DucklingEntityExtractor(GraphComponent, EntityExtractorMixin):
 
         return self.component_config.get("url")
 
-    def _payload(self, text: Text, reference_time: int) -> Dict[Text, Any]:
+    def _payload(
+        self, text: Text, time_zone: Text, reference_time: int
+    ) -> Dict[Text, Any]:
         dimensions = self.component_config["dimensions"]
         return {
             "text": text,
             "locale": self.component_config["locale"],
-            "tz": self.component_config.get("timezone"),
+            "tz": time_zone if time_zone else self.component_config.get("timezone"),
             "dims": json.dumps(dimensions),
             "reftime": reference_time,
         }
 
-    def _duckling_parse(self, text: Text, reference_time: int) -> List[Dict[Text, Any]]:
+    def _duckling_parse(
+        self, text: Text, time_zone: Text, reference_time: int
+    ) -> List[Dict[Text, Any]]:
         """Sends the request to the duckling server and parses the result.
 
         Args:
@@ -130,7 +134,7 @@ class DucklingEntityExtractor(GraphComponent, EntityExtractorMixin):
         """
         parse_url = endpoints_utils.concat_url(self._url(), "/parse")
         try:
-            payload = self._payload(text, reference_time)
+            payload = self._payload(text, time_zone, reference_time)
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
@@ -194,7 +198,11 @@ class DucklingEntityExtractor(GraphComponent, EntityExtractorMixin):
 
         for message in messages:
             reference_time = self._reference_time_from_message(message)
-            matches = self._duckling_parse(message.get(TEXT), reference_time)
+            matches = self._duckling_parse(
+                message.get(TEXT),
+                message.get(METADATA).get(METADATA_TIME_ZONE),
+                reference_time,
+            )
             all_extracted = convert_duckling_format_to_rasa(matches)
             dimensions = self.component_config["dimensions"]
             extracted = self.filter_irrelevant_entities(all_extracted, dimensions)

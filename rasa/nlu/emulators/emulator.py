@@ -29,6 +29,12 @@ class Emulator:
                 _data["model"] = data["model"]
 
         _data["time"] = data["time"] if "time" in data else None
+        _metadata = {}
+        for k, v in data.items():
+            if k not in ("text", "model", "time"):
+                _metadata[k] = v
+        if _metadata:
+            _data["metadata"] = _metadata
         return _data
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
