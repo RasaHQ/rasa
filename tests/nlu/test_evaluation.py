@@ -205,12 +205,10 @@ def test_determine_token_labels_throws_error():
 
 
 def test_determine_token_labels_no_extractors():
-    """
-    If no extractor is given, entities might overlap.
-    """
-    assert "direction" == determine_token_labels(
-        CH_correct_segmentation[0], [CH_correct_entity, CH_wrong_entity], None
-    )
+    with pytest.raises(ValueError):
+        determine_token_labels(
+            CH_correct_segmentation[0], [CH_correct_entity, CH_wrong_entity], None
+        )
 
 
 def test_determine_token_labels_no_extractors_no_overlap():

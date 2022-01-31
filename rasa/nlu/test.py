@@ -1080,26 +1080,37 @@ def determine_entity_for_token(
     """
     if entities is None or len(entities) == 0:
         return None
-    if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
+    if (
+        do_any_extractors_not_support_overlap(extractors) and
+        do_entities_overlap(entities)
+    ):
         raise ValueError("The possible entities should not overlap.")
 
     candidates = find_intersecting_entities(token, entities)
     return pick_best_entity_fit(token, candidates)
 
 
-def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
-    """Checks if extractors support overlapping entities.
+def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bool:
+    """Checks if any extractor does not support overlapping entities.
 
-    If no extractor is given, assume support for overlapping entities.
+    Args:
+        Names of the entitiy extractors
+
+    Returns:
+        `True` if and only if CRFEntityExtractor is in `extractors`
     """
     if extractors is None:
-        return True
+        return False
 
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+    from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 
-    # ToDo: Neither DIET nor TED support overlap, so if they
-    # appear, this should return `False`, too
-    return CRFEntityExtractor.name not in extractors
+    if extractors.intersection({
+        CRFEntityExtractor.name,
+        DIETClassifier.name,
+    }):
+        return True
+    return False
 
 
 def align_entity_predictions(
