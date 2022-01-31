@@ -6,7 +6,6 @@ from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from typing import Text, List, Dict, Any
 
 
-@pytest.mark.timeout(0)
 @pytest.mark.parametrize(
     "message_text, expected_text, entities",
     [
@@ -61,7 +60,6 @@ def test_generate_message(
     assert message_text == expected_text
 
 
-@pytest.mark.timeout(0)
 @pytest.mark.parametrize(
     "message_text, entities",
     [
