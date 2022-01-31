@@ -353,7 +353,7 @@ stories:
 - story: A basic test story with mutliple entities for a single token
   steps:
     - user: |
-        in [Paris][{"entity": "location"}, {"entity": "city"}]
+        I like [ice cream][{\"entity\": \"food\"}, {\"entity\": \"desert\"}]
       intent: inform
     # ...
 ```

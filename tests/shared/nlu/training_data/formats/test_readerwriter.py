@@ -43,6 +43,21 @@ from typing import Text, List, Dict, Any
                 {"entity": "desert", "value": "chocolate", "start": 7, "end": 16},
             ],
         ),
+        (
+            "I like ice cream",
+            "I like [ice cream]"
+            "[{\"entity\": \"food\", \"role\": \"liked\"}, {\"entity\": \"desert\"}]",
+            [
+                {
+                    "entity": "food",
+                    "value": "ice cream",
+                    "start": 7,
+                    "end": 16,
+                    "role": "liked"
+                },
+                {"entity": "desert", "value": "ice cream", "start": 7, "end": 16},
+            ],
+        ),
     ]
 )
 def test_generate_message(
