@@ -234,12 +234,6 @@ class TrainingDataWriter:
 
 
 class JsonTrainingDataReader(TrainingDataReader):
-    """Add a docstring here.
-
-    Lint complains:
-    rasa/shared/nlu/training_data/formats/readerwriter.py:206:1:
-    D101 Missing docstring in public class
-    """
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Transforms string into json object and passes it on."""
