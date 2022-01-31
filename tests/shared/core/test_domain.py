@@ -859,6 +859,10 @@ def test_load_domain_with_entity_roles_groups():
     assert "origin" in domain.roles["GPE"]
     assert "destination" in domain.roles["GPE"]
 
+def test_load_domain_with_custom_slot():
+    domain = Domain.load("data/test_domains/custom_slot_domain.yml")
+
+    assert domain.slots is not None
 
 def test_is_empty():
     assert Domain.empty().is_empty()
