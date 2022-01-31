@@ -48,6 +48,11 @@ class TrainingDataReader(abc.ABC):
 def _raise_on_same_start_and_different_end_positions(
     aggregated_entities: Dict[int, List[Dict[Text, Any]]],
 ) -> None:
+    """Raises a ValueError iff two entities have overlapping but not identical spans.
+
+    Args:
+        aggregated_entities: Entities for each start position
+    """
     for entity_list in aggregated_entities.values():
         end = entity_list[0]["end"]
         for entity in entity_list[1:]:
