@@ -1,4 +1,6 @@
-# The docs: https://www.notion.so/rasa/The-CI-for-model-regression-tests-aa579d5524a544af992f97d132bcc2de
+# The docs:
+# - https://www.notion.so/rasa/The-CI-for-model-regression-tests-aa579d5524a544af992f97d132bcc2de
+# - https://www.notion.so/rasa/Datadog-Usage-Documentation-422099c9a3a24f5a99d92d904537dd0b
 name: CI - Model Regression
 
 on:
