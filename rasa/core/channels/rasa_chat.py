@@ -3,7 +3,7 @@ from typing import Text, Optional, Dict, Any
 
 import aiohttp
 import logging
-from sanic.exceptions import abort
+from sanic.exceptions import SanicException
 import jwt
 import jwt.exceptions
 
@@ -97,7 +97,7 @@ class RasaChatInput(RestInput):
             jwt_payload = await self._decode_bearer_token(req.args.get("token"))
 
         if not jwt_payload:
-            abort(401)
+            raise SanicException(status_code=401)
 
         if CONVERSATION_ID_KEY in req.json:
             if self._has_user_permission_to_send_messages_to_conversation(
@@ -111,7 +111,7 @@ class RasaChatInput(RestInput):
                         jwt_payload[JWT_USERNAME_KEY], req.json[CONVERSATION_ID_KEY]
                     )
                 )
-                abort(401)
+                SanicException(status_code=401)
 
         return jwt_payload[JWT_USERNAME_KEY]
 
