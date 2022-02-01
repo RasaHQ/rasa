@@ -312,7 +312,8 @@ def test_test_core_with_entities_and_no_user_utterance(
     with open("data/nlu.yml", "w") as nlu:
         nlu.write(nlu_yaml)
 
-    simple_test_story_yaml = """
+    simple_story_yaml = """
+version: "2.0"
 stories:
 - story: happy path
   steps:
@@ -323,12 +324,11 @@ stories:
 """
 
     with open("data/stories.yml", "w") as stories:
-        stories.write(simple_test_story_yaml)
+        stories.write(simple_story_yaml)
 
-    with open("tests/test_story_no_utterance_with_entity.yaml", "w") as f:
-        f.write(simple_test_story_yaml)
-
-    run_in_simple_project_with_model("test", "core", "--fail-on-prediction-errors")
+    run_in_simple_project_with_model(
+        "test", "core", "-s", "data/", "--fail-on-prediction-errors"
+    )
     assert os.path.exists("results")
 
     with open("results/failed_test_stories.yml", "r") as failed:
