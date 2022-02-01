@@ -5,7 +5,7 @@ title: rasa.utils.tensorflow.data_generator
 ## RasaDataGenerator Objects
 
 ```python
-class RasaDataGenerator(tf.keras.utils.Sequence)
+class RasaDataGenerator(Sequence)
 ```
 
 Abstract data generator.
