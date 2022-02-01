@@ -1142,6 +1142,9 @@ class ActionExtractSlots(Action):
 
         form = FormAction(form_name, self._action_endpoint)
 
+        if slot_name not in form.required_slots(domain):
+            return False
+
         if form.entity_mapping_is_unique(mapping, domain):
             return False
 

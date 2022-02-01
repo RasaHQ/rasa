@@ -160,7 +160,7 @@ def ask_version() -> Text:
                 str(current_version.next_release_candidate("major")),
             ]
         version = questionary.select(
-            f"Which {version} do you want to release?", choices=choices,
+            f"Which {version} do you want to release?", choices=choices
         ).ask()
 
     if version:
@@ -175,7 +175,6 @@ def get_rasa_sdk_version() -> Text:
 
     dependencies_filename = "pyproject.toml"
     toml_data = toml.load(project_root() / dependencies_filename)
-
     try:
         sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
         return sdk_version[1:].strip()
