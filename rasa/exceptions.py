@@ -67,3 +67,10 @@ class PublishingError(RasaException):
 
 class ActionLimitReached(RasaException):
     """Raised when predicted action limit is reached."""
+
+
+class ClassificationReportException:
+    """Raised when classification_report doesn't correctly set accuracy and/or micro avg.
+
+    sklearn.metrics.classification_report should provide either accuracy or micro avg.
+    """

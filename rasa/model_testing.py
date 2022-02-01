@@ -11,7 +11,7 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.common
 from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
-from rasa.exceptions import ModelNotFound
+from rasa.exceptions import ClassificationReportException, ModelNotFound
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 import rasa.shared.nlu.training_data.loading
 from rasa.shared.importers.autoconfig import TrainingType
@@ -401,7 +401,9 @@ def make_classification_report_complete(report: dict, accuracy: float) -> dict:
         # The accuracy therefore has to be inferred separately
         report["accuracy"] = accuracy
     else:
-        raise Exception("This cannot happen according to classification_report's docs")
+        raise ClassificationReportException(
+            "This cannot happen according to classification_report's docs"
+        )
     return report
 
 
