@@ -16,6 +16,16 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.23] - 2022-02-01
+### Bugfixes
+- [#10728](https://github.com/rasahq/rasa/issues/10728): Use `tf.function` for model prediction to improve inference speed.
+- [#10743](https://github.com/rasahq/rasa/issues/10743): Fix `rasa test core` error from running test story that contains an entity but no user utterance text.
+- [#10768](https://github.com/rasahq/rasa/issues/10768): Merge domain entities as lists of dicts, not lists of lists to support entity roles and groups across multiple domains.
+
+### Miscellaneous internal changes
+- [#10740](https://github.com/rasahq/rasa/issues/10740)
+
+
 ## [2.8.22] - 2022-01-19
 ### Bugfixes
 - [#10606](https://github.com/rasahq/rasa/issues/10606): Fix `max_history` truncation in `AugmentedMemoizationPolicy` to preserve the most recent `UserUttered` event.
