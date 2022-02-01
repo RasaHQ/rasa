@@ -183,24 +183,12 @@ jobs:
           export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
           gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
-      # # Setup gcloud CLI
-      # - uses: google-github-actions/setup-gcloud@e0f83f24f541c30f1e9fe3c966963a10b8e647f5
-      #   with:
-      #     version: "${{ env.GCLOUD_VERSION }}"
-      #     service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-      #     service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
-
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v0.5.0'
+      # Setup gcloud CLI
+      - uses: google-github-actions/setup-gcloud@e0f83f24f541c30f1e9fe3c966963a10b8e647f5
         with:
-          workload_identity_provider: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-          service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v0.4.0'
-
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
+          version: "${{ env.GCLOUD_VERSION }}"
+          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
+          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
 
       # Get the GKE credentials so we can deploy to the cluster
       - run: |-
@@ -845,23 +833,11 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      # - uses: google-github-actions/setup-gcloud@e0f83f24f541c30f1e9fe3c966963a10b8e647f5
-      #   with:
-      #     version: "${{ env.GCLOUD_VERSION }}"
-      #     service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-      #     service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
-
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v0.5.0'
+      - uses: google-github-actions/setup-gcloud@e0f83f24f541c30f1e9fe3c966963a10b8e647f5
         with:
-          workload_identity_provider: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
-          service_account: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v0.4.0'
-
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
+          version: "${{ env.GCLOUD_VERSION }}"
+          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
+          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
 
       # Get the GKE credentials so we can deploy to the cluster
       - run: |-
