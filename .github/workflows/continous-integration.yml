@@ -108,7 +108,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3  # v2.2.2
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -242,7 +242,7 @@ jobs:
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3  # v2.2.2
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -374,7 +374,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3  # v2.2.2
         with:
           python-version: 3.7
 
@@ -470,7 +470,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3  # v2.2.2
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -805,7 +805,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3  # v2.2.2
       with:
         python-version: 3.7
 
