@@ -36,14 +36,6 @@ jobs:
     - name: Checkout main
       uses: actions/checkout@v2
 
-    - name: Checkout dataset
-      uses: actions/checkout@v2
-      with:
-        repository: ${{ secrets.DATASET_REPOSITORY }}
-        token: ${{ secrets.ML_TEST_SA_PAT }}
-        path: 'dataset'
-        ref: ${{ matrix.dataset_branch }}
-
     - name: Download gomplate
       run: |-
         sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
@@ -88,6 +80,14 @@ jobs:
           matrix_length=$(echo $matrix | jq '.[] | length')
           echo "::set-output name=matrix_length::$matrix_length"
           echo "::set-output name=matrix::$matrix"
+        
+    - name: Checkout dataset
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ secrets.DATASET_REPOSITORY }}
+        token: ${{ secrets.ML_TEST_SA_PAT }}
+        path: 'dataset'
+        ref: ${{ matrix.dataset_branch }}
 
     - name: Update the comment with the configuration
       uses: peter-evans/create-or-update-comment@v1
