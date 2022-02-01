@@ -19,6 +19,7 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.utils.tensorflow.constants import FEATURIZERS
 
 logger = logging.getLogger(__name__)
 
@@ -124,11 +125,15 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
             return self._resource
 
         y = self.transform_labels_str2num(labels)
+        training_examples = [
+            message
+            for message in training_data.intent_examples
+            if message.features_present(
+                attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
+            )
+        ]
         X = np.stack(
-            [
-                self._get_sentence_features(example)
-                for example in training_data.intent_examples
-            ]
+            [self._get_sentence_features(example) for example in training_examples]
         )
         # reduce dimensionality
         X = np.reshape(X, (len(X), -1))
@@ -190,9 +195,12 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
     def process(self, messages: List[Message]) -> List[Message]:
         """Return the most likely intent and its probability for a message."""
         for message in messages:
-            if not self.clf:
+            if not self.clf or not message.features_present(
+                attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
+            ):
                 # component is either not trained or didn't
-                # receive enough training data
+                # receive enough training data or the input doesn't
+                # have required features.
                 intent = None
                 intent_ranking = []
             else:
