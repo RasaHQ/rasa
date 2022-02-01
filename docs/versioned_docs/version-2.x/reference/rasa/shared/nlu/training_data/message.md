@@ -8,6 +8,18 @@ title: rasa.shared.nlu.training_data.message
 class Message()
 ```
 
+#### add\_features
+
+```python
+ | add_features(features: Optional["Features"]) -> None
+```
+
+Adds the given features to the message.
+
+**Arguments**:
+
+- `features` - the features to be added
+
 #### add\_diagnostic\_data
 
 ```python
