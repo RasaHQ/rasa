@@ -393,7 +393,7 @@ def make_classification_report_complete(report: dict, accuracy: float) -> dict:
         report["micro avg"] = {
             "precision": acc,
             "recall": acc,
-            "F1": acc,
+            "f1-score": acc,
             "support": support,
         }
     elif "accuracy" not in report and "micro avg" in report:

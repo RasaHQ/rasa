@@ -129,6 +129,189 @@ def test_get_evaluation_metrics(
 
 
 @pytest.mark.parametrize(
+    "report_in,accuracy,report_out",
+    [
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+            },
+            0.8,
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+        ),
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+            0.8,
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 0.8,
+                    "recall": 0.8,
+                    "f1-score": 0.8,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+        ),
+    ],
+)
+def test_make_classification_report_complete(report_in, accuracy, report_out):
+    from rasa.model_testing import make_classification_report_complete
+
+    report_out_actual = make_classification_report_complete(report_in, accuracy)
+    assert report_out == report_out_actual
+
+
+@pytest.mark.parametrize(
+    "report_in",
+    [
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+        ),
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+            },
+        ),
+    ],
+)
+def test_make_classification_report_complete_raises_clf_report_exception(report_in):
+    from rasa.model_testing import make_classification_report_complete
+    from rasa.exceptions import ClassificationReportException
+
+    with pytest.raises(ClassificationReportException):
+        make_classification_report_complete(report_in, accuracy=0.8)
+
+
+@pytest.mark.parametrize(
     "targets,exclude_label,expected",
     [
         (
