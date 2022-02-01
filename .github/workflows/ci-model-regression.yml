@@ -141,7 +141,9 @@ jobs:
     needs: read_test_configuration
     runs-on: ubuntu-latest
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
-
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -842,7 +844,9 @@ jobs:
       - model_regression_test_gpu
     runs-on: ubuntu-latest
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
-
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       # Setup gcloud CLI
       # - uses: google-github-actions/setup-gcloud@e0f83f24f541c30f1e9fe3c966963a10b8e647f5
