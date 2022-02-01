@@ -31,16 +31,16 @@ from rasa.shared.constants import (
     IGNORED_INTENTS,
 )
 import rasa.shared.core.constants
-from rasa.shared.core.slot_mappings import SlotMapping
+from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE, MAPPING_CONDITIONS
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
+import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.constants import RESPONSE_CONDITION
-from rasa.shared.core.constants import MAPPING_CONDITIONS
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
@@ -214,13 +214,13 @@ class Domain:
         duplicates = data.get("duplicates", None)
 
         return cls(
-            intents,
-            data.get(KEY_ENTITIES, {}),
-            slots,
-            responses,
-            data.get(KEY_ACTIONS, []),
-            data.get(KEY_FORMS, {}),
-            data.get(KEY_E2E_ACTIONS, []),
+            intents=intents,
+            entities=data.get(KEY_ENTITIES, {}),
+            slots=slots,
+            responses=responses,
+            action_names=data.get(KEY_ACTIONS, []),
+            forms=data.get(KEY_FORMS, {}),
+            action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             duplicates=duplicates,
             **additional_arguments,
@@ -234,7 +234,7 @@ class Domain:
             session_expiration_time_min = DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 
         carry_over_slots = session_config.get(
-            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         )
 
         return SessionConfig(session_expiration_time_min, carry_over_slots)
@@ -281,16 +281,17 @@ class Domain:
         if override or self.session_config == SessionConfig.default():
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
-        if combined[KEY_INTENTS] or domain_dict[KEY_INTENTS]:
-            combined[KEY_INTENTS] = self.merge_lists_of_dicts(
-                combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
-            )
+        for key in [KEY_INTENTS, KEY_ENTITIES]:
+            if combined[key] or domain_dict[key]:
+                combined[key] = self.merge_lists_of_dicts(
+                    combined[key], domain_dict[key], override
+                )
         # remove existing forms from new actions
         for form in combined[KEY_FORMS]:
             if form in domain_dict[KEY_ACTIONS]:
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
+        for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
             combined[key] = self.merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
@@ -332,22 +333,23 @@ class Domain:
 
         duplicates: Dict[Text, List[Text]] = {}
 
-        if combined.get(KEY_INTENTS) or domain_dict.get(KEY_INTENTS):
-            duplicates[KEY_INTENTS] = self.extract_duplicates(
-                combined.get(KEY_INTENTS, []), domain_dict.get(KEY_INTENTS, [])
-            )
-            combined[KEY_INTENTS] = combined.get(KEY_INTENTS, [])
-            domain_dict[KEY_INTENTS] = domain_dict.get(KEY_INTENTS, [])
-            combined[KEY_INTENTS] = self.merge_lists_of_dicts(
-                combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
-            )
+        for key in [KEY_INTENTS, KEY_ENTITIES]:
+            if combined.get(key) or domain_dict.get(key):
+                duplicates[key] = self.extract_duplicates(
+                    combined.get(key, []), domain_dict.get(key, [])
+                )
+                combined[key] = combined.get(key, [])
+                domain_dict[key] = domain_dict.get(key, [])
+                combined[key] = self.merge_lists_of_dicts(
+                    combined[key], domain_dict[key], override
+                )
 
         # remove existing forms from new actions
         for form in combined.get(KEY_FORMS, []):
             if form in domain_dict.get(KEY_ACTIONS, []):
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
+        for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
             duplicates[key] = self.extract_duplicates(
                 combined.get(key, []), domain_dict.get(key, [])
             )
@@ -1137,7 +1139,7 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        tracker: "DialogueStateTracker", omit_unset_slots: bool = False
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
         """Sets all set slots with the featurization of the stored value.
 
@@ -1181,16 +1183,14 @@ class Domain:
         return tracker.latest_action
 
     @staticmethod
-    def _get_active_loop_sub_state(
-        tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Text]:
+    def _get_active_loop_sub_state(tracker: "DialogueStateTracker") -> Dict[Text, Text]:
         """Turn tracker's active loop into a state name.
+
         Args:
             tracker: dialog state tracker containing the dialog so far
         Returns:
             a dictionary mapping "name" to active loop name if present
         """
-
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
         active_loop: Optional[Text] = tracker.active_loop.get(
@@ -1210,7 +1210,7 @@ class Domain:
         }
 
     def get_active_state(
-        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False
     ) -> State:
         """Given a dialogue tracker, makes a representation of current dialogue state.
 
@@ -1237,7 +1237,7 @@ class Domain:
 
     @staticmethod
     def _remove_rule_only_features(
-        state: State, rule_only_data: Optional[Dict[Text, Any]],
+        state: State, rule_only_data: Optional[Dict[Text, Any]]
     ) -> None:
         if not rule_only_data:
             return
@@ -1351,8 +1351,8 @@ class Domain:
                 matching_entities = []
 
                 for mapping in slot.mappings:
-                    if mapping.get("type") != str(
-                        SlotMapping.FROM_ENTITY
+                    if mapping[MAPPING_TYPE] != str(
+                        SlotMappingType.FROM_ENTITY
                     ) or mapping.get(MAPPING_CONDITIONS):
                         continue
 
@@ -1927,10 +1927,10 @@ class Domain:
         for slot in self.slots:
             total_mappings += len(slot.mappings)
             for mapping in slot.mappings:
-                if mapping.get("type") == str(SlotMapping.CUSTOM):
+                if mapping[MAPPING_TYPE] == str(SlotMappingType.CUSTOM):
                     custom_mappings += 1
 
-                if "conditions" in mapping:
+                if MAPPING_CONDITIONS in mapping:
                     conditional_mappings += 1
 
         return (total_mappings, custom_mappings, conditional_mappings)

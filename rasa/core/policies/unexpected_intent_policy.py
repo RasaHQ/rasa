@@ -106,11 +106,7 @@ from rasa.utils.tensorflow.constants import (
     NAME,
 )
 from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.model_data import (
-    RasaModelData,
-    FeatureArray,
-    Data,
-)
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
 
 import rasa.utils.io as io_utils
 from rasa.core.exceptions import RasaCoreException
@@ -175,9 +171,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             # the dialogue transformer encoder.
             ENCODING_DIMENSION: 50,
             # Number of units in transformer encoders
-            TRANSFORMER_SIZE: {TEXT: 128, DIALOGUE: 128,},
+            TRANSFORMER_SIZE: {TEXT: 128, DIALOGUE: 128},
             # Number of layers in transformer encoders
-            NUM_TRANSFORMER_LAYERS: {TEXT: 1, DIALOGUE: 1,},
+            NUM_TRANSFORMER_LAYERS: {TEXT: 1, DIALOGUE: 1},
             # Number of attention heads in transformer
             NUM_HEADS: 4,
             # If 'True' use key relative embeddings in attention
@@ -373,7 +369,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
         label_data.add_lengths(
-            f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE,
+            f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE
         )
         label_ids = np.arange(len(domain.intents))
         label_data.add_features(
@@ -523,7 +519,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         query_intent_index = domain.intents.index(query_intent)
 
         def _compile_metadata_for_label(
-            label_name: Text, similarity_score: float, threshold: Optional[float],
+            label_name: Text, similarity_score: float, threshold: Optional[float]
         ) -> "RankingCandidateMetadata":
             severity = float(threshold - similarity_score) if threshold else None
             return {
@@ -630,7 +626,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         )
 
     @staticmethod
-    def _should_skip_prediction(tracker: DialogueStateTracker, domain: Domain,) -> bool:
+    def _should_skip_prediction(tracker: DialogueStateTracker, domain: Domain) -> bool:
         """Checks if the policy should skip making a prediction.
 
         A prediction can be skipped if:
@@ -755,7 +751,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     @staticmethod
     def _collect_label_id_grouped_scores(
-        output_scores: Dict[Text, np.ndarray], label_ids: np.ndarray,
+        output_scores: Dict[Text, np.ndarray], label_ids: np.ndarray
     ) -> Dict[int, Dict[Text, List[float]]]:
         """Collects similarities predicted for each label id.
 
@@ -925,7 +921,7 @@ class IntentTED(TED):
     """
 
     def _prepare_dot_product_loss(
-        self, name: Text, scale_loss: bool, prefix: Text = "loss",
+        self, name: Text, scale_loss: bool, prefix: Text = "loss"
     ) -> None:
         self._tf_layers[f"{prefix}.{name}"] = self.dot_product_loss_layer(
             self.config[NUM_NEG],

@@ -236,7 +236,7 @@ def test_restore_cached_output_with_invalid_module(
     )
 
     monkeypatch.setattr(
-        rasa.shared.utils.common, "class_from_module_path", cached_module,
+        rasa.shared.utils.common, "class_from_module_path", cached_module
     )
 
     assert (

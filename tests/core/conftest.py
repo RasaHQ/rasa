@@ -35,7 +35,7 @@ class CustomSlot(Slot):
 class MockedMongoTrackerStore(MongoTrackerStore):
     """In-memory mocked version of `MongoTrackerStore`."""
 
-    def __init__(self, _domain: Domain,) -> None:
+    def __init__(self, _domain: Domain) -> None:
         from mongomock import MongoClient
 
         self.db = MongoClient().rasa

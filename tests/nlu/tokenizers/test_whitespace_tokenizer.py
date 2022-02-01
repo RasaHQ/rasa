@@ -9,9 +9,9 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
-def create_whitespace_tokenizer(config: Optional[Dict] = None,) -> WhitespaceTokenizer:
+def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceTokenizer:
     config = config if config else {}
-    return WhitespaceTokenizer({**WhitespaceTokenizer.get_default_config(), **config},)
+    return WhitespaceTokenizer({**WhitespaceTokenizer.get_default_config(), **config})
 
 
 @pytest.mark.parametrize(
@@ -76,6 +76,7 @@ def create_whitespace_tokenizer(config: Optional[Dict] = None,) -> WhitespaceTok
         (":)", [":)"], [(0, 2)]),
         ("Hi :-)", ["Hi"], [(0, 2)]),
         ("👍", ["👍"], [(0, 1)]),
+        ("", [""], [(0, 0)]),
     ],
 )
 def test_whitespace(text, expected_tokens, expected_indices):

@@ -31,7 +31,7 @@ from rasa.utils.tensorflow.model_data import (
     FeatureSignature,
     FeatureArray,
 )
-from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.constants import TOKENS_NAMES, DEFAULT_TRANSFORMER_SIZE
 from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     TEXT,
@@ -154,7 +154,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # Whether to share the hidden layer weights between user message and labels.
             SHARE_HIDDEN_LAYERS: False,
             # Number of units in transformer
-            TRANSFORMER_SIZE: 256,
+            TRANSFORMER_SIZE: DEFAULT_TRANSFORMER_SIZE,
             # Number of transformer layers
             NUM_TRANSFORMER_LAYERS: 2,
             # Number of attention heads in transformer
@@ -706,6 +706,14 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 example for example in training_data if label_attribute in example.data
             ]
 
+        training_data = [
+            message
+            for message in training_data
+            if message.features_present(
+                attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
+            )
+        ]
+
         if not training_data:
             # no training data are present to train
             return RasaModelData()
@@ -929,6 +937,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
+        if model_data.is_empty():
+            return None
         return self.model.run_inference(model_data)
 
     def _predict_label(
@@ -968,7 +978,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         ranking = [(idx, casted_message_sim[idx]) for idx in ranked_label_indices]
         label_ranking = [
-            {"name": self.index_label_id_mapping[label_idx], "confidence": score,}
+            {"name": self.index_label_id_mapping[label_idx], "confidence": score}
             for label_idx, score in ranking
         ]
 
@@ -1726,7 +1736,7 @@ class DIET(TransformerRasaModel):
             tf_batch_data, TEXT
         )
         sentence_feature_lengths = self._get_sentence_feature_lengths(
-            tf_batch_data, TEXT,
+            tf_batch_data, TEXT
         )
 
         text_transformed, _, _, _, _, attention_weights = self._tf_layers[

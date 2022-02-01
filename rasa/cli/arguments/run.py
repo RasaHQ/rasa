@@ -56,7 +56,7 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         help="Store logs in specified file.",
     )
     parser.add_argument(
-        "--use-syslog", action="store_true", help="Add syslog as a log handler",
+        "--use-syslog", action="store_true", help="Add syslog as a log handler"
     )
     parser.add_argument(
         "--syslog-address",
@@ -111,6 +111,12 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         default=constants.DEFAULT_RESPONSE_TIMEOUT,
         type=int,
         help="Maximum time a response can take to process (sec).",
+    )
+    server_arguments.add_argument(
+        "--request-timeout",
+        default=constants.DEFAULT_REQUEST_TIMEOUT,
+        type=int,
+        help="Maximum time a request can take to process (sec).",
     )
     server_arguments.add_argument(
         "--remote-storage",

@@ -18,6 +18,8 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    PREDICTED_CONFIDENCE_KEY,
+    INTENT_NAME_KEY,
 )
 from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
@@ -152,7 +154,8 @@ def train_load_and_process_diet(
         classified_message2 = loaded_diet.process([message2])[0]
 
         assert classified_message2.fingerprint() == classified_message.fingerprint()
-        return classified_message
+
+        return loaded_diet, classified_message
 
     return inner
 
@@ -223,7 +226,7 @@ def test_compute_default_label_features():
     ],
 )
 def test_check_labels_features_exist(
-    messages: List[Message], expected: bool, create_diet: Callable[..., DIETClassifier],
+    messages: List[Message], expected: bool, create_diet: Callable[..., DIETClassifier]
 ):
     attribute = TEXT
     classifier = create_diet({})
@@ -242,7 +245,7 @@ def test_check_labels_features_exist(
                         ENTITIES: [
                             {"start": 0, "end": 4, "value": "test", "entity": "test"}
                         ],
-                    },
+                    }
                 ),
                 Message(
                     data={
@@ -251,15 +254,15 @@ def test_check_labels_features_exist(
                         ENTITIES: [
                             {"start": 0, "end": 4, "value": "test", "entity": "test"}
                         ],
-                    },
+                    }
                 ),
             ],
             True,
         ),
         (
             [
-                Message(data={TEXT: "test a", INTENT: "intent a"},),
-                Message(data={TEXT: "test b", INTENT: "intent b"},),
+                Message(data={TEXT: "test a", INTENT: "intent a"}),
+                Message(data={TEXT: "test b", INTENT: "intent b"}),
             ],
             False,
         ),
@@ -269,16 +272,20 @@ def test_model_data_signature_with_entities(
     messages: List[Message],
     entity_expected: bool,
     create_diet: Callable[..., DIETClassifier],
-    whitespace_tokenizer: WhitespaceTokenizer,
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
 ):
     classifier = create_diet({"BILOU_flag": False})
     training_data = TrainingData(messages)
 
-    # create tokens for entity parsing inside DIET
-    whitespace_tokenizer.process_training_data(training_data)
-
+    # create tokens and features for entity parsing inside DIET
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    training_data, loaded_pipeline = train_and_preprocess(pipeline, training_data)
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()
+
     assert entity_exists == entity_expected
 
 
@@ -341,7 +348,7 @@ async def test_train_persist_load_with_only_intent_classification(
     create_diet: Callable[..., DIETClassifier],
 ):
     create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1,},
+        {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1}
     )
     create_diet({MASKED_LM: True, EPOCHS: 1}, load=True, finetune=True)
 
@@ -404,7 +411,7 @@ async def test_softmax_normalization(
     classifier_params[EPOCHS] = 1
     classifier_params[EVAL_NUM_EPOCHS] = 1
 
-    parsed_message = create_train_load_and_process_diet(
+    _, parsed_message = create_train_load_and_process_diet(
         classifier_params, training_data=data_path
     )
     parse_data = parsed_message.data
@@ -426,7 +433,7 @@ async def test_margin_loss_is_not_normalized(
     create_train_load_and_process_diet: Callable[..., Message]
 ):
 
-    parsed_message = create_train_load_and_process_diet(
+    _, parsed_message = create_train_load_and_process_diet(
         {LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1, EVAL_NUM_EPOCHS: 1},
         training_data="data/test/many_intents.yml",
     )
@@ -449,17 +456,17 @@ async def test_set_random_seed(
 ):
     """test if train result is the same for two runs of tf embedding"""
 
-    parsed_message1 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+    _, parsed_message1 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
     )
 
-    parsed_message2 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1},
+    _, parsed_message2 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 1, EPOCHS: 1}
     )
 
     # Different random seed
-    parsed_message3 = create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1},
+    _, parsed_message3 = create_train_load_and_process_diet(
+        {ENTITY_RECOGNITION: False, RANDOM_SEED: 2, EPOCHS: 1}
     )
 
     assert (
@@ -519,7 +526,7 @@ async def test_train_model_checkpointing(
     create_train_load_and_process_diet: Callable[..., Message],
 ):
     create_train_load_and_process_diet(
-        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True},
+        {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True}
     )
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
@@ -537,6 +544,20 @@ async def test_train_model_checkpointing(
         """
         all_files = list(model_dir.rglob("*.*"))
         assert len(all_files) > 4
+
+
+async def test_process_unfeaturized_input(
+    create_train_load_and_process_diet: Callable[..., Message],
+):
+    classifier, _ = create_train_load_and_process_diet(diet_config={EPOCHS: 1})
+    message_text = "message text"
+    unfeaturized_message = Message(data={TEXT: message_text})
+    classified_message = classifier.process([unfeaturized_message])[0]
+
+    assert classified_message.get(TEXT) == message_text
+    assert not classified_message.get(INTENT)[INTENT_NAME_KEY]
+    assert classified_message.get(INTENT)[PREDICTED_CONFIDENCE_KEY] == 0.0
+    assert not classified_message.get(ENTITIES)
 
 
 async def test_train_model_not_checkpointing(
@@ -631,7 +652,7 @@ async def test_process_gives_diagnostic_data(
 ):
     default_execution_context.should_add_diagnostic_data = should_add_diagnostic_data
     default_execution_context.node_name = "DIETClassifier_node_name"
-    processed_message = create_train_load_and_process_diet({EPOCHS: 1})
+    _, processed_message = create_train_load_and_process_diet({EPOCHS: 1})
 
     if should_add_diagnostic_data:
         # Tests if processing a message returns attention weights as numpy array.
@@ -686,12 +707,12 @@ async def test_adjusting_layers_incremental_training(
     train_load_and_process_diet: Callable[..., Message],
 ):
     """Tests adjusting sparse layers of `DIETClassifier` to increased sparse
-       feature sizes during incremental training.
+    feature sizes during incremental training.
 
-       Testing is done by checking the layer sizes.
-       Checking if they were replaced correctly is also important
-       and is done in `test_replace_dense_for_sparse_layers`
-       in `test_rasa_layers.py`.
+    Testing is done by checking the layer sizes.
+    Checking if they were replaced correctly is also important
+    and is done in `test_replace_dense_for_sparse_layers`
+    in `test_rasa_layers.py`.
     """
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"
@@ -708,8 +729,8 @@ async def test_adjusting_layers_incremental_training(
         },
     ]
     classifier = create_diet({EPOCHS: 1})
-    processed_message = train_load_and_process_diet(
-        classifier, pipeline=pipeline, training_data=iter1_data_path,
+    _, processed_message = train_load_and_process_diet(
+        classifier, pipeline=pipeline, training_data=iter1_data_path
     )
 
     old_data_signature = classifier.model.data_signature
@@ -738,8 +759,8 @@ async def test_adjusting_layers_incremental_training(
 
     finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
     assert finetune_classifier.finetune_mode
-    processed_message_finetuned = train_load_and_process_diet(
-        finetune_classifier, pipeline=pipeline, training_data=iter2_data_path,
+    _, processed_message_finetuned = train_load_and_process_diet(
+        finetune_classifier, pipeline=pipeline, training_data=iter2_data_path
     )
 
     new_sparse_feature_sizes = processed_message_finetuned.get_sparse_feature_sizes(
@@ -855,9 +876,7 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
 
     classifier = create_diet({EPOCHS: 1})
     assert not classifier.finetune_mode
-    train_load_and_process_diet(
-        classifier, pipeline=pipeline, training_data=iter1_path,
-    )
+    train_load_and_process_diet(classifier, pipeline=pipeline, training_data=iter1_path)
 
     finetune_classifier = create_diet({EPOCHS: 1}, load=True, finetune=True)
     assert finetune_classifier.finetune_mode
@@ -865,10 +884,10 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     if should_raise_exception:
         with pytest.raises(Exception) as exec_info:
             train_load_and_process_diet(
-                finetune_classifier, pipeline=pipeline, training_data=iter2_path,
+                finetune_classifier, pipeline=pipeline, training_data=iter2_path
             )
         assert "Sparse feature sizes have decreased" in str(exec_info.value)
     else:
         train_load_and_process_diet(
-            finetune_classifier, pipeline=pipeline, training_data=iter2_path,
+            finetune_classifier, pipeline=pipeline, training_data=iter2_path
         )

@@ -3,11 +3,7 @@ import uuid
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
 import rasa.core.channels.channel
-from rasa.core.channels.channel import (
-    InputChannel,
-    OutputChannel,
-    UserMessage,
-)
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 import rasa.shared.utils.io
 from sanic import Blueprint, response, Sanic
 from sanic.request import Request
@@ -197,7 +193,7 @@ class SocketIOInput(InputChannel):
                 jwt_payload = None
                 if auth and auth.get("token"):
                     jwt_payload = rasa.core.channels.channel.decode_bearer_token(
-                        auth.get("token"), self.jwt_key, self.jwt_algorithm,
+                        auth.get("token"), self.jwt_key, self.jwt_algorithm
                     )
 
                 if jwt_payload:

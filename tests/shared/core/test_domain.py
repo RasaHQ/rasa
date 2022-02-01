@@ -680,13 +680,7 @@ def test_load_domain_from_directory_tree():
         "utter_skill_2",
         "utter_subskill",
     ]
-    expected_entities = [
-        "ball",
-        "chess",
-        "monopoly",
-        "cluedo",
-        "pandemic",
-    ]
+    expected_entities = ["ball", "chess", "monopoly", "cluedo", "pandemic"]
     expected_responses = {
         "utter_greet": [{"text": "Hey! How are you?"}],
         "utter_cheer_up": [
@@ -838,7 +832,7 @@ def test_domain_from_multiple_files():
         domain_slots.append(slot.name)
 
     assert expected_intents == domain.intents
-    assert expected_entities == domain.entities
+    assert expected_entities == sorted(domain.entities)
     assert expected_actions == domain.user_actions
     assert expected_responses == domain.responses
     assert expected_forms == domain.forms
@@ -1381,7 +1375,7 @@ def test_featurized_entities_ordered_consistently():
                     "type": "float",
                     "mappings": [{"type": "from_intent", "value": 5}],
                 }
-            },
+            }
         },
         {
             KEY_SLOTS: {
@@ -1470,20 +1464,20 @@ def test_form_invalid_required_slots_raises():
             KEY_SLOTS: {
                 "my_slot": {
                     "type": "text",
-                    "mappings": [{"type": "from_entity", "intent": "greet"},],
+                    "mappings": [{"type": "from_entity", "intent": "greet"}],
                 }
             }
         },
         {
             KEY_SLOTS: {
-                "my_slot": {"type": "text", "mappings": [{"type": "from_intent"}],}
+                "my_slot": {"type": "text", "mappings": [{"type": "from_intent"}]}
             }
         },
         {
             KEY_SLOTS: {
                 "my_slot": {
                     "type": "text",
-                    "mappings": [{"type": "from_intent", "value": None},],
+                    "mappings": [{"type": "from_intent", "value": None}],
                 }
             }
         },
@@ -1499,7 +1493,7 @@ def test_form_invalid_required_slots_raises():
             KEY_SLOTS: {
                 "my_slot": {
                     "type": "text",
-                    "mappings": [{"type": "from_trigger_intent", "value": None},],
+                    "mappings": [{"type": "from_trigger_intent", "value": None}],
                 }
             }
         },
@@ -1734,7 +1728,7 @@ def test_ignored_intents_slot_mappings_invalid_domain():
                     }
                 ],
             }
-        },
+        }
     }
     with pytest.raises(InvalidDomain):
         Domain.from_dict(domain_as_dict)

@@ -41,6 +41,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     INTENT_RESPONSE_KEY,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
 from rasa.shared.nlu.training_data.loading import load_data
@@ -48,6 +49,13 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.constants import (
+    DEFAULT_TRANSFORMER_SIZE,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_RESPONSES_KEY,
+)
 
 
 @pytest.fixture()
@@ -140,6 +148,8 @@ def train_persist_load_with_different_settings(
 
         assert classified_message2.fingerprint() == classified_message.fingerprint()
 
+        return loaded_selector
+
     return inner
 
 
@@ -147,7 +157,7 @@ def train_persist_load_with_different_settings(
     "config_params",
     [
         {EPOCHS: 1},
-        {EPOCHS: 1, MASKED_LM: True, TRANSFORMER_SIZE: 256, NUM_TRANSFORMER_LAYERS: 1,},
+        {EPOCHS: 1, MASKED_LM: True, TRANSFORMER_SIZE: 256, NUM_TRANSFORMER_LAYERS: 1},
     ],
 )
 def test_train_selector(
@@ -241,7 +251,7 @@ def test_ground_truth_for_training(
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     response_selector = create_response_selector(
-        {"use_text_as_label": use_text_as_label},
+        {"use_text_as_label": use_text_as_label}
     )
     response_selector.preprocess_train_data(response_selector_training_data)
 
@@ -266,7 +276,7 @@ def test_resolve_intent_response_key_from_label(
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
 
-    response_selector = create_response_selector({"use_text_as_label": train_on_text},)
+    response_selector = create_response_selector({"use_text_as_label": train_on_text})
     response_selector.preprocess_train_data(response_selector_training_data)
 
     label_intent_response_key = response_selector._resolve_intent_response_key(
@@ -344,13 +354,9 @@ def test_train_persist_load(
     ]
     config_params = {EPOCHS: 1}
 
-    train_persist_load_with_different_settings(
-        pipeline, config_params, False,
-    )
+    train_persist_load_with_different_settings(pipeline, config_params, False)
 
-    train_persist_load_with_different_settings(
-        pipeline, config_params, True,
-    )
+    train_persist_load_with_different_settings(pipeline, config_params, True)
 
 
 async def test_process_gives_diagnostic_data(
@@ -403,7 +409,7 @@ async def test_process_gives_diagnostic_data(
 
 
 @pytest.mark.parametrize(
-    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
+    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})]
 )
 async def test_margin_loss_is_not_normalized(
     classifier_params: Dict[Text, int],
@@ -576,7 +582,6 @@ def test_sets_integer_transformer_size_when_needed(
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
 ):
     """ResponseSelector ensures sensible transformer size when transformer enabled."""
-    default_transformer_size = 256
     with pytest.warns(UserWarning) as records:
         selector = create_response_selector(config)
 
@@ -587,7 +592,7 @@ def test_sets_integer_transformer_size_when_needed(
         # check that the specific warning was raised
         assert any(warning_str in record.message.args[0] for record in records)
         # check that transformer size got set to the new default
-        assert selector.component_config[TRANSFORMER_SIZE] == default_transformer_size
+        assert selector.component_config[TRANSFORMER_SIZE] == DEFAULT_TRANSFORMER_SIZE
     else:
         # check that the specific warning was not raised
         assert not any(warning_str in record.message.args[0] for record in records)
@@ -595,6 +600,52 @@ def test_sets_integer_transformer_size_when_needed(
         assert selector.component_config[TRANSFORMER_SIZE] == config.get(
             TRANSFORMER_SIZE, None  # None is the default transformer size
         )
+
+
+def test_transformer_size_gets_corrected(train_persist_load_with_different_settings):
+    """Tests that the default value of `transformer_size` which is `None` is
+    corrected if transformer layers are enabled in `ResponseSelector`.
+    """
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    config_params = {EPOCHS: 1, NUM_TRANSFORMER_LAYERS: 1}
+
+    selector = train_persist_load_with_different_settings(
+        pipeline, config_params, False
+    )
+    assert selector.component_config[TRANSFORMER_SIZE] == DEFAULT_TRANSFORMER_SIZE
+
+
+async def test_process_unfeaturized_input(
+    create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+    process_message: Callable[..., Message],
+):
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, "data/test_selectors"
+    )
+    response_selector = create_response_selector({EPOCHS: 1})
+    response_selector.train(training_data=training_data)
+
+    message_text = "message text"
+    unfeaturized_message = Message(data={TEXT: message_text})
+    classified_message = response_selector.process([unfeaturized_message])[0]
+    output = (
+        classified_message.get(RESPONSE_SELECTOR_PROPERTY_NAME)
+        .get(RESPONSE_SELECTOR_DEFAULT_INTENT)
+        .get(RESPONSE_SELECTOR_PREDICTION_KEY)
+    )
+
+    assert classified_message.get(TEXT) == message_text
+    assert not output.get(RESPONSE_SELECTOR_RESPONSES_KEY)
+    assert output.get(PREDICTED_CONFIDENCE_KEY) == 0.0
+    assert not output.get(INTENT_RESPONSE_KEY)
 
 
 @pytest.mark.timeout(120)
@@ -605,12 +656,12 @@ async def test_adjusting_layers_incremental_training(
     process_message: Callable[..., Message],
 ):
     """Tests adjusting sparse layers of `ResponseSelector` to increased sparse
-       feature sizes during incremental training.
+    feature sizes during incremental training.
 
-       Testing is done by checking the layer sizes.
-       Checking if they were replaced correctly is also important
-       and is done in `test_replace_dense_for_sparse_layers`
-       in `test_rasa_layers.py`.
+    Testing is done by checking the layer sizes.
+    Checking if they were replaced correctly is also important
+    and is done in `test_replace_dense_for_sparse_layers`
+    in `test_rasa_layers.py`.
     """
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"
