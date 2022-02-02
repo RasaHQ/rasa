@@ -12,6 +12,22 @@ import TabItem from '@theme/TabItem';
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+
+## Rasa 3.0 to 3.1
+
+### Machine Learning Components
+
+#### TensorFlow Upgrade
+
+Due to the TensorFlow upgrade, we can't guarantee the exact same output and hence
+model performance if your configuration uses `LanguageModelFeaturizer`.
+This applies to the case where the model is re-trained with the new rasa open source
+version without changing the configuration, random seeds, and data as well as to the
+case where a model trained with a previous version of rasa open source is loaded with
+this new version for inference.
+
+Please check whether your trained model still performs as expected and retrain if needed.
+
 ## Rasa 2.x to 3.0
 
 ### Markdown Data

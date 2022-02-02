@@ -1,4 +1,6 @@
-# The docs: https://www.notion.so/rasa/The-CI-for-model-regression-tests-aa579d5524a544af992f97d132bcc2de
+# The docs:
+# - https://www.notion.so/rasa/The-CI-for-model-regression-tests-aa579d5524a544af992f97d132bcc2de
+# - https://www.notion.so/rasa/Datadog-Usage-Documentation-422099c9a3a24f5a99d92d904537dd0b
 name: CI - Model Regression
 
 on:
@@ -322,7 +324,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.8
@@ -559,7 +561,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.8
@@ -698,7 +700,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
         with:
           python-version: 3.7
 
@@ -827,7 +829,7 @@ jobs:
       - deploy_runner_gpu
       - model_regression_test_gpu
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: "needs.deploy_runner_gpu.result != 'skipped' && contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
 
     steps:
       # Setup gcloud CLI
