@@ -1,12 +1,12 @@
-/docs/docs/prototype-an-assistant.mdx @RasaHQ/enable-squad
+/docs/docs/prototype-an-assistant.mdx @RasaHQ/atom-squad
 /.github/workflows/ @RasaHQ/infrastructure-squad
-/rasa/ @RasaHQ/enable-squad
+/rasa/ @RasaHQ/atom-squad
 /rasa/core/featurizers/ @RasaHQ/research
 /rasa/core/policies/ @RasaHQ/research
-/rasa/core/policies/ensemble.py @RasaHQ/enable-squad
-/rasa/core/policies/policy.py @RasaHQ/enable-squad
-/rasa/core/policies/registry.py @RasaHQ/enable-squad
-/rasa/core/policies/__init__.py @RasaHQ/enable-squad
+/rasa/core/policies/ensemble.py @RasaHQ/atom-squad
+/rasa/core/policies/policy.py @RasaHQ/atom-squad
+/rasa/core/policies/registry.py @RasaHQ/atom-squad
+/rasa/core/policies/__init__.py @RasaHQ/atom-squad
 /rasa/nlu/classifiers/ @RasaHQ/research
 /rasa/nlu/extractors/crf_entity_extractor.py @RasaHQ/research
 /rasa/nlu/extractors/extractor.py @RasaHQ/research
@@ -17,7 +17,7 @@
 /rasa/nlu/test.py @RasaHQ/research
 /rasa/shared/nlu/training_data/features.py @RasaHQ/research
 /rasa/shared/nlu/training_data/message.py @RasaHQ/research
-/rasa/shared/nlu/training_data/util.py @RasaHQ/enable-squad @RasaHQ/research
+/rasa/shared/nlu/training_data/util.py @RasaHQ/atom-squad @RasaHQ/research
 /rasa/utils/plotting.py @RasaHQ/research
 /rasa/utils/train_utils.py @RasaHQ/research
 /rasa/utils/tensorflow/ @RasaHQ/research
