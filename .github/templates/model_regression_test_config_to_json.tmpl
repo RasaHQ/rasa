@@ -16,6 +16,11 @@ core
 {{- if has $config "dataset_branch" -}}
 {{- $dataset_branch = $config.dataset_branch -}}
 {{- end -}}
+{{- $num_repetitions := 1 -}}
+{{- /* if a branch name for dataset repository is not defined use the main branch */ -}}
+{{- if has $config "num_repetitions" -}}
+{{- $num_repetitions = $config.num_repetitions -}}
+{{- end -}}
 {"include":[
 {{- $inc := coll.Slice -}}
 {{- $dataset := coll.Slice -}}
@@ -40,6 +45,7 @@ core
 {{- end -}}
 {{- range $index_dataset, $value_dataset := $dataset -}}
 {{- range $index_config, $value_config := $pair.config -}}
+{{ range (strings.Repeat $num_repetitions "x " | strings.Trim " " | strings.Split " ") }}
 {{- /* use all available configurations if value is equal to all */ -}}
 {{- if eq $value_config "all" -}}
 {{- range $config_type := (coll.Keys (datasource "mapping").configurations) -}}
@@ -60,6 +66,7 @@ core
 {{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $value_config "type" "nlu" | toJSON) $inc) -}}
 {{- else if has (datasource "mapping").configurations.core $value_config -}}
 {{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $value_config "type" "core" | toJSON) $inc) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
