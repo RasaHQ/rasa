@@ -4,3 +4,4 @@
 {{- if has $config "dataset_branch" -}}
 {{- $dataset_branch = $config.dataset_branch -}}
 {{- end -}}
+export DATASET_BRANCH="{{ $dataset_branch }}"
