@@ -88,6 +88,8 @@ def test_predictions_added(training_data, tmpdir, featurizer):
         # Confirm the sum of confidences is 1.0
         assert np.isclose(np.sum([i["confidence"] for i in ranking]), 1.0)
 
+    classifier.persist(model_dir=tmpdir)
+
     loaded_classifier = LogisticRegressionClassifier.load(
         {}, node_storage, node_resource, context
     )
