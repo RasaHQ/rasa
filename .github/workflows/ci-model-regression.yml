@@ -233,7 +233,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
-          ref: ${{ meta_matrix.dataset_branch }}
+          ref: ${{ needs.read_test_configuration.outputs.dataset_branch }}
 
       - name: Set env variables
         id: set_dataset_config_vars
@@ -326,7 +326,7 @@ jobs:
           GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
-          DATASET_REPOSITORY_BRANCH: ${{ meta_matrix.dataset_branch }}
+          DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
@@ -420,7 +420,7 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
-          DATASET_REPOSITORY_BRANCH: ${{ meta_matrix.dataset_branch }}
+          DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
