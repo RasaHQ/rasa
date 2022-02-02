@@ -52,6 +52,21 @@ jobs:
 
     - run: echo ${{ steps.fc_config.outputs.comment-id }}
 
+    - name: Read dataset branch from a PR comment
+      if: steps.fc_config.outputs.comment-id != ''
+      id: set-dataset-branch
+      run: |-
+        source <(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_meta_config_to_json.tmpl)
+        echo "::set-output name=dataset_branch::${DATASET_BRANCH}"
+
+    - name: Checkout dataset
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ secrets.DATASET_REPOSITORY }}
+        token: ${{ secrets.ML_TEST_SA_PAT }}
+        path: 'dataset'
+        ref: ${{ steps.set-dataset-branch.outputs.dataset_branch }}
+
     - name: Render help description from template
       id: get_help_description
       run: |
@@ -72,21 +87,6 @@ jobs:
     - if: steps.fc_config.outputs.comment-id == ''
       run: echo "::error::Cannot find a comment with the configuration"
       name: Log a warning message if a configuration cannot be found
-
-    - name: Read dataset branch from a PR comment
-      if: steps.fc_config.outputs.comment-id != ''
-      id: set-dataset-branch
-      run: |-
-          source <(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_meta_config_to_json.tmpl)
-          echo "::set-output name=dataset_branch::${DATASET_BRANCH}"
-
-    - name: Checkout dataset
-      uses: actions/checkout@v2
-      with:
-        repository: ${{ secrets.DATASET_REPOSITORY }}
-        token: ${{ secrets.ML_TEST_SA_PAT }}
-        path: 'dataset'
-        ref: ${{ steps.set-dataset-branch.outputs.dataset_branch }}
 
     - name: Read configuration from a PR comment
       if: steps.fc_config.outputs.comment-id != ''
