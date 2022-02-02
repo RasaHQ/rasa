@@ -1,3 +1,4 @@
+import copy
 import pytest
 import pathlib
 import numpy as np
@@ -13,20 +14,6 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
 from rasa.nlu.classifiers.logistic_regression_classifier import (
     LogisticRegressionClassifier,
 )
-
-
-@pytest.fixture
-def classifier(tmpdir):
-    """Generate a classifier for tests."""
-    node_storage = LocalModelStorage(pathlib.Path(tmpdir))
-    node_resource = Resource("sparse_feat")
-    context = ExecutionContext(node_storage, node_resource)
-    return LogisticRegressionClassifier(
-        config=LogisticRegressionClassifier.get_default_config(),
-        name=context.node_name,
-        resource=node_resource,
-        model_storage=node_storage,
-    )
 
 
 @pytest.fixture
@@ -52,10 +39,10 @@ tokeniser = WhitespaceTokenizer(
 )
 
 
-def test_predictions_added(classifier, featurizer):
-    """Checks if the sizes are appropriate."""
+@pytest.fixture()
+def training_data():
     # Create training data.
-    training_data = TrainingData(
+    return TrainingData(
         [
             Message({"text": "hello", "intent": "greet"}),
             Message({"text": "hi there", "intent": "greet"}),
@@ -63,6 +50,20 @@ def test_predictions_added(classifier, featurizer):
             Message({"text": "bye", "intent": "goodbye"}),
         ]
     )
+
+def test_predictions_added(training_data, tmpdir, featurizer):
+    """Checks if the sizes are appropriate."""
+    # Set up classifier
+    node_storage = LocalModelStorage(pathlib.Path(tmpdir))
+    node_resource = Resource("classifier")
+    context = ExecutionContext(node_storage, node_resource)
+    classifier =  LogisticRegressionClassifier(
+        config=LogisticRegressionClassifier.get_default_config(),
+        name=context.node_name,
+        resource=node_resource,
+        model_storage=node_storage,
+    )
+
     # First we add tokens.
     tokeniser.process(training_data.training_examples)
 
@@ -80,9 +81,19 @@ def test_predictions_added(classifier, featurizer):
     for msg in training_data.training_examples:
         _, conf = msg.get("intent")["name"], msg.get("intent")["confidence"]
         # Confidence should be between 0 and 1.
-        assert 0 < conf
-        assert conf < 1
+        assert 0 < conf < 1
         ranking = msg.get("intent_ranking")
         assert {i["name"] for i in ranking} == {"greet", "goodbye"}
         # Confirm the sum of confidences is 1.0
         assert np.isclose(np.sum([i["confidence"] for i in ranking]), 1.0)
+    
+    loaded_classifier = LogisticRegressionClassifier.load(
+        {}, node_storage, node_resource, context
+    )
+    
+    predicted = copy.copy(training_data)
+    actual = copy.copy(training_data)
+    loaded_messages = loaded_classifier.process(predicted.training_examples)
+    trained_messages = classifier.process(actual.training_examples)
+    for m1, m2 in zip(loaded_messages, trained_messages):
+        assert m1.get("intent") == m2.get("intent")
