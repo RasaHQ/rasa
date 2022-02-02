@@ -77,8 +77,9 @@ jobs:
       if: steps.fc_config.outputs.comment-id != ''
       id: set-dataset-branch
       run: |-
-          meta_matrix=$(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_meta_config_to_json.tmpl)
-          echo "::set-output name=dataset_branch::${{ meta_matrix.dataset_branch }}"
+          meta_config=$(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_meta_config_to_json.tmpl)
+          json_config=${{fromJson(meta_config)}}
+          echo "::set-output name=dataset_branch::${{ json_config.dataset_branch }}"
 
     - name: Checkout dataset
       uses: actions/checkout@v2
