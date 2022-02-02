@@ -435,7 +435,7 @@ jobs:
           path: report.json
 
       - name: Stop Datadog Agent
-        if: always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        if: ${{ always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' }}
         run: |
           sudo service datadog-agent stop
 
@@ -667,7 +667,7 @@ jobs:
           path: report.json
 
       - name: Stop Datadog Agent
-        if: always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        if: ${{ always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' }}
         run: |
           sudo service datadog-agent stop
 
@@ -795,7 +795,7 @@ jobs:
 
       - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v2.2.0
-        if: always()
+        if: ${{ always() }}
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: ${{ github.run_id }}
