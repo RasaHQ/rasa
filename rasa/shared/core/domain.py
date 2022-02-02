@@ -281,16 +281,17 @@ class Domain:
         if override or self.session_config == SessionConfig.default():
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
-        if combined[KEY_INTENTS] or domain_dict[KEY_INTENTS]:
-            combined[KEY_INTENTS] = self.merge_lists_of_dicts(
-                combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
-            )
+        for key in [KEY_INTENTS, KEY_ENTITIES]:
+            if combined[key] or domain_dict[key]:
+                combined[key] = self.merge_lists_of_dicts(
+                    combined[key], domain_dict[key], override
+                )
         # remove existing forms from new actions
         for form in combined[KEY_FORMS]:
             if form in domain_dict[KEY_ACTIONS]:
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
+        for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
             combined[key] = self.merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
@@ -332,22 +333,23 @@ class Domain:
 
         duplicates: Dict[Text, List[Text]] = {}
 
-        if combined.get(KEY_INTENTS) or domain_dict.get(KEY_INTENTS):
-            duplicates[KEY_INTENTS] = self.extract_duplicates(
-                combined.get(KEY_INTENTS, []), domain_dict.get(KEY_INTENTS, [])
-            )
-            combined[KEY_INTENTS] = combined.get(KEY_INTENTS, [])
-            domain_dict[KEY_INTENTS] = domain_dict.get(KEY_INTENTS, [])
-            combined[KEY_INTENTS] = self.merge_lists_of_dicts(
-                combined[KEY_INTENTS], domain_dict[KEY_INTENTS], override
-            )
+        for key in [KEY_INTENTS, KEY_ENTITIES]:
+            if combined.get(key) or domain_dict.get(key):
+                duplicates[key] = self.extract_duplicates(
+                    combined.get(key, []), domain_dict.get(key, [])
+                )
+                combined[key] = combined.get(key, [])
+                domain_dict[key] = domain_dict.get(key, [])
+                combined[key] = self.merge_lists_of_dicts(
+                    combined[key], domain_dict[key], override
+                )
 
         # remove existing forms from new actions
         for form in combined.get(KEY_FORMS, []):
             if form in domain_dict.get(KEY_ACTIONS, []):
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        for key in [KEY_ENTITIES, KEY_ACTIONS, KEY_E2E_ACTIONS]:
+        for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
             duplicates[key] = self.extract_duplicates(
                 combined.get(key, []), domain_dict.get(key, [])
             )

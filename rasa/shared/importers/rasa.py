@@ -1,12 +1,12 @@
 import logging
+import os
 from typing import Dict, List, Optional, Text, Union
 
 import rasa.shared.data
+
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers import utils
-from rasa.shared.importers import autoconfig
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -25,7 +25,6 @@ class RasaFileImporter(TrainingDataImporter):
         config_file: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
-        training_type: Optional[TrainingType] = TrainingType.BOTH,
     ):
 
         self._domain_path = domain_path
@@ -40,11 +39,16 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths, YAMLStoryReader.is_test_stories_file
         )
 
-        self.config = autoconfig.get_configuration(config_file, training_type)
+        self.config_file = config_file
 
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
-        return self.config
+        if not self.config_file or not os.path.exists(self.config_file):
+            logger.debug("No configuration file was provided to the RasaFileImporter.")
+            return {}
+
+        config = rasa.shared.utils.io.read_model_configuration(self.config_file)
+        return config
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
