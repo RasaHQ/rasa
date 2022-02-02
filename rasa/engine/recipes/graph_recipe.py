@@ -22,7 +22,7 @@ class GraphV1Recipe(Recipe):
 
     def get_targets(
         self, config: Dict, training_type: TrainingType
-    ) -> Tuple[Text, Text]:
+    ) -> Tuple[Text, Any]:
         """Return NLU and core targets from config dictionary.
 
         Note that default recipe has `nlu_target` and `core_target` as
