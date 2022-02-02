@@ -44,17 +44,17 @@ core
 {{- end -}}
 {{- else if eq $value_config "all-core" -}}
 {{- range $config_name, $config_file := (datasource "mapping").configurations.core -}}
-{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" "core" | toJSON) $inc) -}}
+{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $config_name "type" "core" | toJSON) $inc) -}}
 {{- end -}}
 {{- else if eq $value_config "all-nlu" -}}
 {{- range $config_name, $config_file := (datasource "mapping").configurations.nlu -}}
-{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" "nlu" | toJSON) $inc) -}}
+{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $config_name "type" "nlu" | toJSON) $inc) -}}
 {{- end -}}
 {{- else -}}
 {{- if has (datasource "mapping").configurations.nlu $value_config -}}
-{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $value_config "type" "nlu" | toJSON) $inc) -}}
+{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $value_config "type" "nlu" | toJSON) $inc) -}}
 {{- else if has (datasource "mapping").configurations.core $value_config -}}
-{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $value_config "type" "core" | toJSON) $inc) -}}
+{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $value_config "type" "core" | toJSON) $inc) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
