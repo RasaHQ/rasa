@@ -5,7 +5,7 @@ pipeline:
   - name: WhitespaceTokenizer
   - name: CountVectorsFeaturizer
   - name: DIETClassifier
-    epochs: 10
+    epochs: 9
     random_seed: 2021
 
 policies:
