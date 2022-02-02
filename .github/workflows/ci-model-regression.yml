@@ -599,13 +599,7 @@ jobs:
       - name: Validate that GPUs are not working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
-          set -x  # debug
-          poetry run python .github/scripts/validate_gpus.py
-          retVal=$?
-          if [ $retVal -eq 0 ]; then
-              echo "Error: There are GPUs, but this test should run on CPUs only"
-              exit 1
-          fi
+          poetry run python .github/scripts/validate_cpu.py
 
       - name: Run test
         id: run_test
