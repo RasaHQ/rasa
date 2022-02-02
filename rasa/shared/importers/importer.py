@@ -279,6 +279,10 @@ class CombinedDataImporter(TrainingDataImporter):
     def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
         if len(self._importers) != 1:
+            rasa.shared.utils.io.raise_warning(
+                "Auto-config for multiple importers is not supported; "
+                "using config as is."
+            )
             return None
         return self._importers[0].get_config_file_for_auto_config()
 
