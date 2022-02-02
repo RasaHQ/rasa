@@ -76,6 +76,7 @@ jobs:
       if: steps.fc_config.outputs.comment-id != ''
       run: |-
           meta_matrix=$(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_meta_config_to_json.tmpl)
+          echo "::set-output name=meta_matrix::$meta_matrix"
 
     - name: Checkout dataset
       uses: actions/checkout@v2
