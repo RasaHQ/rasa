@@ -38,6 +38,18 @@ Returns `Recipe` based on an optional recipe identifier.
   A recipe which can be used to convert a given config to train and predict
   graph schemas.
 
+#### auto\_configure
+
+```python
+ | @staticmethod
+ | auto_configure(config_file_path: Optional[Text], config: Dict, training_type: Optional[TrainingType] = TrainingType.BOTH) -> Tuple[Dict[Text, Any], Set[str], Set[str]]
+```
+
+Adds missing options with defaults and dumps the configuration.
+
+Override in child classes if this functionality is needed, each recipe
+will have different auto configuration values.
+
 #### graph\_config\_for\_recipe
 
 ```python

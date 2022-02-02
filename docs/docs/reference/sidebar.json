@@ -158,6 +158,7 @@
         {
           "items": [
             "reference/rasa/engine/recipes/default_recipe",
+            "reference/rasa/engine/recipes/graph_recipe",
             "reference/rasa/engine/recipes/recipe"
           ],
           "label": "rasa.engine.recipes",
@@ -388,7 +389,6 @@
         },
         {
           "items": [
-            "reference/rasa/shared/importers/autoconfig",
             "reference/rasa/shared/importers/importer",
             "reference/rasa/shared/importers/multi_project",
             "reference/rasa/shared/importers/rasa",

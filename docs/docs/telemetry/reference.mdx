@@ -21,7 +21,9 @@ Event properties:
 - `training_id` *(string)*: Generated unique identifier for this training.
 - `type` *(string)*: Type of model trained, either 'nlu', 'core' or 'rasa'.
 - `pipeline` *(undefined)*: List of the pipeline configurations used for training.
-- `policies` *(array)*: List of the policy configurations used for training.
+- `policies` *(undefined)*: List of the policy configurations used for training.
+- `train_schema` *(undefined)*: Training graph schema for graph recipe
+- `predict_schema` *(undefined)*: Predict graph schema for graph recipe
 - `num_intent_examples` *(integer)*: Number of NLU examples.
 - `num_entity_examples` *(integer)*: Number of entity examples.
 - `num_actions` *(integer)*: Number of actions defined in the domain.
@@ -39,6 +41,7 @@ Event properties:
 - `num_synonyms` *(integer)*: Total number of entity synonyms defined.
 - `num_regexes` *(integer)*: Total number of regexes defined.
 - `is_finetuning` *(boolean)*: True if a model is trained by finetuning an existing model.
+- `recipe` *(string)*: Recipe used in training the model, either 'default.v1' or 'graph.v1'.
 
 
 

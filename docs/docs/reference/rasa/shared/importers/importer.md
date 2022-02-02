@@ -63,6 +63,15 @@ Retrieves the configuration that should be used for the training.
 
   The configuration as dictionary.
 
+#### get\_config\_file\_for\_auto\_config
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | get_config_file_for_auto_config() -> Optional[Text]
+```
+
+Returns config file path for auto-config only if there is a single one.
+
 #### get\_nlu\_data
 
 ```python
@@ -84,7 +93,7 @@ Retrieves the NLU training data that should be used for training.
 
 ```python
  | @staticmethod
- | load_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None, training_type: Optional[TrainingType] = TrainingType.BOTH) -> "TrainingDataImporter"
+ | load_from_config(config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a configuration file.
@@ -115,7 +124,7 @@ Instance loaded from configuration file will only read NLU training data.
 
 ```python
  | @staticmethod
- | load_from_dict(config: Optional[Dict] = None, config_path: Optional[Text] = None, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None, training_type: Optional[TrainingType] = TrainingType.BOTH) -> "TrainingDataImporter"
+ | load_from_dict(config: Optional[Dict] = None, config_path: Optional[Text] = None, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a dictionary.
@@ -192,6 +201,15 @@ Retrieves model config (see parent class for full docstring).
 
 Retrieves NLU training data (see parent class for full docstring).
 
+#### get\_config\_file\_for\_auto\_config
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | get_config_file_for_auto_config() -> Optional[Text]
+```
+
+Returns config file path for auto-config only if there is a single one.
+
 ## CombinedDataImporter Objects
 
 ```python
@@ -248,6 +266,15 @@ Retrieves conversation test stories (see parent class for full docstring).
 
 Retrieves NLU training data (see parent class for full docstring).
 
+#### get\_config\_file\_for\_auto\_config
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | get_config_file_for_auto_config() -> Optional[Text]
+```
+
+Returns config file path for auto-config only if there is a single one.
+
 ## ResponsesSyncImporter Objects
 
 ```python
@@ -275,6 +302,15 @@ Initializes the ResponsesSyncImporter.
 ```
 
 Retrieves model config (see parent class for full docstring).
+
+#### get\_config\_file\_for\_auto\_config
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | get_config_file_for_auto_config() -> Optional[Text]
+```
+
+Returns config file path for auto-config only if there is a single one.
 
 #### get\_domain
 
@@ -363,6 +399,15 @@ Retrieves conversation test stories (see parent class for full docstring).
 ```
 
 Retrieves model config (see parent class for full docstring).
+
+#### get\_config\_file\_for\_auto\_config
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | get_config_file_for_auto_config() -> Optional[Text]
+```
+
+Returns config file path for auto-config only if there is a single one.
 
 #### get\_nlu\_data
 

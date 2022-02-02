@@ -61,6 +61,7 @@ telemetry_write_key() -> Optional[Text]
 ```
 
 Read the Segment write key from the segment key text file.
+
 The segment key text file should by present only in wheel/sdist packaged
 versions of Rasa Open Source. This avoids running telemetry locally when
 developing on Rasa or when running CI builds.
@@ -166,6 +167,7 @@ get_telemetry_id() -> Optional[Text]
 ```
 
 Return the unique telemetry identifier for this Rasa Open Source install.
+
 The identifier can be any string, but it should be a UUID.
 
 **Returns**:
