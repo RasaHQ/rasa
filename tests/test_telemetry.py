@@ -53,7 +53,7 @@ async def test_events_schema(
     training_data = TrainingDataImporter.load_from_config(config_path)
 
     with telemetry.track_model_training(training_data, "rasa"):
-        await asyncio.sleep(1)
+        pass
 
     telemetry.track_telemetry_disabled()
 
@@ -89,10 +89,17 @@ async def test_events_schema(
 
     telemetry.track_markers_parsed_count(1, 1, 1)
 
+    # Also track train started for a graph config
+    training_data = TrainingDataImporter.load_from_config(
+        "data/test_config/graph_config.yml"
+    )
+    with telemetry.track_model_training(training_data, "rasa"):
+        pass
+
     pending = asyncio.all_tasks() - initial
     await asyncio.gather(*pending)
 
-    assert mock.call_count == 19
+    assert mock.call_count == 21
 
     for args, _ in mock.call_args_list:
         event = args[0]
