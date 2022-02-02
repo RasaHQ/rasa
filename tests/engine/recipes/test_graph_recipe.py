@@ -98,6 +98,8 @@ def test_language_returning():
         """
     language: "xy"
     recipe: graph.v1
+    core_target: doesnt_validate_or_run
+    nlu_target: doesnt_validate_or_run
 
     train_schema:
       nodes: {}
@@ -117,6 +119,8 @@ def test_retrieve_via_invalid_module_path():
         path = "rasa.core.policies.ted_policy.TEDPolicy1000"
         GraphV1Recipe().graph_config_for_recipe(
             {
+                "core_target": "doesnt_validate_or_run",
+                "nlu_target": "doesnt_validate_or_run",
                 "train_schema": {"nodes": {"some_graph_node": {"uses": path}}},
                 "predict_schema": {},
             },
@@ -130,7 +134,12 @@ def test_cli_parameter_warns():
         UserWarning, match="Graph Recipe does not utilize CLI parameters"
     ):
         GraphV1Recipe().graph_config_for_recipe(
-            {"train_schema": {"nodes": {}}, "predict_schema": {"nodes": {}}},
+            {
+                "core_target": "doesnt_validate_or_run",
+                "nlu_target": "doesnt_validate_or_run",
+                "train_schema": {"nodes": {}},
+                "predict_schema": {"nodes": {}},
+            },
             cli_parameters={"num_threads": 1, "epochs": 5},
             training_type=TrainingType.BOTH,
         )
@@ -141,7 +150,12 @@ def test_is_finetuning_warns():
         UserWarning, match="Graph Recipe does not utilize CLI parameters"
     ):
         GraphV1Recipe().graph_config_for_recipe(
-            {"train_schema": {"nodes": {}}, "predict_schema": {"nodes": {}}},
+            {
+                "core_target": "doesnt_validate_or_run",
+                "nlu_target": "doesnt_validate_or_run",
+                "train_schema": {"nodes": {}},
+                "predict_schema": {"nodes": {}},
+            },
             cli_parameters={},
             training_type=TrainingType.BOTH,
             is_finetuning=True,

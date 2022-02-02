@@ -4,6 +4,10 @@ recipe: graph.v1
 
 language: en
 
+nlu_target: run_RegexMessageHandler
+
+core_target: select_prediction
+
 train_schema:
   nodes:
     schema_validator:
