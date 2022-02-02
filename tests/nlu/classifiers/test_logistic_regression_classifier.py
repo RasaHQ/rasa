@@ -51,13 +51,14 @@ def training_data():
         ]
     )
 
+
 def test_predictions_added(training_data, tmpdir, featurizer):
     """Checks if the sizes are appropriate."""
     # Set up classifier
     node_storage = LocalModelStorage(pathlib.Path(tmpdir))
     node_resource = Resource("classifier")
     context = ExecutionContext(node_storage, node_resource)
-    classifier =  LogisticRegressionClassifier(
+    classifier = LogisticRegressionClassifier(
         config=LogisticRegressionClassifier.get_default_config(),
         name=context.node_name,
         resource=node_resource,
@@ -86,11 +87,11 @@ def test_predictions_added(training_data, tmpdir, featurizer):
         assert {i["name"] for i in ranking} == {"greet", "goodbye"}
         # Confirm the sum of confidences is 1.0
         assert np.isclose(np.sum([i["confidence"] for i in ranking]), 1.0)
-    
+
     loaded_classifier = LogisticRegressionClassifier.load(
         {}, node_storage, node_resource, context
     )
-    
+
     predicted = copy.copy(training_data)
     actual = copy.copy(training_data)
     loaded_messages = loaded_classifier.process(predicted.training_examples)
