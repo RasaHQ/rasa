@@ -677,7 +677,7 @@ jobs:
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
-    if: ${{ ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) && always() }}
+    if: ${{ always() && ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) }}
     outputs:
       success_status: ${{ steps.set-success-status.outputs.success_status }}
 
@@ -829,7 +829,7 @@ jobs:
       - deploy_runner_gpu
       - model_regression_test_gpu
     runs-on: ubuntu-latest
-    if: ${{ needs.deploy_runner_gpu.result != 'skipped' && contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') }}
+    if: ${{ always() && needs.deploy_runner_gpu.result != 'skipped' && contains(github.event.pull_request.labels.*.name, 'runner:gpu') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') }}
 
     steps:
       # Setup gcloud CLI
