@@ -95,7 +95,7 @@ def nlu_data_path() -> Text:
 
 @pytest.fixture(scope="session")
 def config_path() -> Text:
-    return "rasa/shared/importers/default_config.yml"
+    return "rasa/engine/recipes/config_files/default_config.yml"
 
 
 @pytest.fixture(scope="session")

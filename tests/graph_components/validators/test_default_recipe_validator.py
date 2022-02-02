@@ -41,7 +41,7 @@ from rasa.core.policies.policy import Policy
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ENTITY_ATTRIBUTE_GROUP,
@@ -55,6 +55,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.validation import YamlValidationException
 import rasa.utils.common
 
 
@@ -459,7 +460,7 @@ def test_nlu_raise_if_more_than_one_tokenizer(nodes: Dict[Text, SchemaNode]):
 
 def test_nlu_do_not_raise_if_two_tokenizers_with_end_to_end():
     config = rasa.shared.utils.io.read_yaml_file(
-        "rasa/shared/importers/default_config.yml"
+        "rasa/engine/recipes/config_files/default_config.yml"
     )
     graph_config = DefaultV1Recipe().graph_config_for_recipe(
         config, cli_parameters={}, training_type=TrainingType.END_TO_END
@@ -1015,8 +1016,13 @@ def test_no_warnings_with_default_project(tmp_path: Path):
         training_data_paths=[str(tmp_path / "data")],
     )
 
+    config, _missing_keys, _configured_keys = DefaultV1Recipe.auto_configure(
+        importer.get_config_file_for_auto_config(),
+        importer.get_config(),
+        TrainingType.END_TO_END,
+    )
     graph_config = DefaultV1Recipe().graph_config_for_recipe(
-        importer.get_config(), cli_parameters={}, training_type=TrainingType.END_TO_END
+        config, cli_parameters={}, training_type=TrainingType.END_TO_END
     )
     validator = DefaultV1RecipeValidator(graph_config.train_schema)
 
@@ -1030,3 +1036,17 @@ def test_no_warnings_with_default_project(tmp_path: Path):
             for warn in records.list
         ]
     )
+
+
+def test_importer_with_invalid_model_config(tmp_path: Path):
+    invalid = {"version": "2.0", "policies": ["name"]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(invalid, config_file)
+
+    with pytest.raises(YamlValidationException):
+        importer = TrainingDataImporter.load_from_config(str(config_file))
+        DefaultV1Recipe.auto_configure(
+            importer.get_config_file_for_auto_config(),
+            importer.get_config(),
+            TrainingType.END_TO_END,
+        )

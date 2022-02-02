@@ -30,17 +30,32 @@
         },
         "pipeline": {
           "oneOf": [
+            {"type": "null"},
             {"type": "string"},
             {"type": "array", "items": {"type": "object"}}
           ],
           "description": "List of the pipeline configurations used for training."
         },
         "policies": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          },
+          "oneOf": [
+            {"type": "null"},
+            {"type": "array", "items": {"type": "object"}}
+          ],
           "description": "List of the policy configurations used for training."
+        },
+        "train_schema": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object"}
+          ],
+          "description": "Training graph schema for graph recipe"
+        },
+        "predict_schema": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object"}
+          ],
+          "description": "Predict graph schema for graph recipe"
         },
         "num_intent_examples": {
           "type": "integer",
@@ -109,6 +124,10 @@
         "is_finetuning": {
           "type": "boolean",
           "description": "True if a model is trained by finetuning an existing model."
+        },
+        "recipe": {
+          "type": "string",
+          "description": "Recipe used in training the model, either 'default.v1' or 'graph.v1'."
         }
       },
       "additionalProperties": false,
@@ -118,6 +137,8 @@
         "type",
         "pipeline",
         "policies",
+        "train_schema",
+        "predict_schema",
         "num_intent_examples",
         "num_entity_examples",
         "num_actions",
