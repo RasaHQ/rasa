@@ -36,14 +36,6 @@ jobs:
     - name: Checkout main
       uses: actions/checkout@v2
 
-    - name: Checkout dataset
-      uses: actions/checkout@v2
-      with:
-        repository: ${{ secrets.DATASET_REPOSITORY }}
-        token: ${{ secrets.ML_TEST_SA_PAT }}
-        path: 'dataset'
-        ref: ${{ matrix.dataset_branch }}
-
     - name: Download gomplate
       run: |-
         sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
@@ -79,6 +71,19 @@ jobs:
     - if: steps.fc_config.outputs.comment-id == ''
       run: echo "::error::Cannot find a comment with the configuration"
       name: Log a warning message if a configuration cannot be found
+
+    - name: Read dataset branch from a PR comment
+      if: steps.fc_config.outputs.comment-id != ''
+      run: |-
+          meta_matrix=$(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_meta_config_to_json.tmpl)
+
+    - name: Checkout dataset
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ secrets.DATASET_REPOSITORY }}
+        token: ${{ secrets.ML_TEST_SA_PAT }}
+        path: 'dataset'
+        ref: ${{ meta_matrix.dataset_branch }}
 
     - name: Read configuration from a PR comment
       if: steps.fc_config.outputs.comment-id != ''
