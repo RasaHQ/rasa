@@ -39,7 +39,7 @@ core
 {{- if eq $value_config "all" -}}
 {{- range $config_type := (coll.Keys (datasource "mapping").configurations) -}}
 {{- range $config_name, $config_file := (index (datasource "mapping").configurations $config_type ) -}}
-{{ $inc = (coll.Append (dict "dataset_branch" $dataset_branch "dataset" $value_dataset "config" $config_name "type" $config_type | toJSON) $inc) -}}
+{{ $inc = (coll.Append (dict "dataset" $value_dataset "config" $config_name "type" $config_type | toJSON) $inc) -}}
 {{- end -}}
 {{- end -}}
 {{- else if eq $value_config "all-core" -}}
