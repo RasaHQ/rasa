@@ -13,10 +13,10 @@ import rasa.engine.validation
 
 
 CONFIG_FOLDER = Path("data/test_config")
+# The graph config is equivalent to the default config in graph schema format.
+GRAPH_CONFIG = CONFIG_FOLDER / "graph_config.yml"
 # Short config has a single node for each of train and predict; should be fast to test.
 SHORT_CONFIG = CONFIG_FOLDER / "graph_config_short.yml"
-# The graph config is equivalent to the default config in graph schema format.
-GRAPH_CONFIG = Path("rasa/engine/recipes/config_files/graph_config.yml")
 
 
 def test_recipe_for_name():
