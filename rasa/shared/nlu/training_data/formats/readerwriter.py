@@ -138,7 +138,7 @@ class TrainingDataWriter:
                 md += TrainingDataWriter.generate_entity(
                     text, entities[0] if len(entities) == 1 else entities,
                 )
-                pos = entity["end"]
+                pos = entities[0]["end"]
 
         md += text[pos:]
 

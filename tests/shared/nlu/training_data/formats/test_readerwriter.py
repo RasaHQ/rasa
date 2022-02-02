@@ -47,6 +47,45 @@ from typing import Text, List, Dict, Any
                 {"entity": "desert", "value": "ice cream", "start": 7, "end": 16},
             ],
         ),
+        (
+            "I like ice cream with chocolate sprinkes",
+            "I like [ice cream]"
+            '[{"entity": "food", "role": "liked"}, {"entity": "desert"}] '
+            "with chocolate sprinkes",
+            [
+                {
+                    "entity": "food",
+                    "value": "ice cream",
+                    "start": 7,
+                    "end": 16,
+                    "role": "liked",
+                },
+                {"entity": "desert", "value": "ice cream", "start": 7, "end": 16},
+            ],
+        ),
+        (
+            "I like ice cream with chocolate sprinkes",
+            "I like [ice cream]"
+            '[{"entity": "food", "role": "liked"}, {"entity": "desert"}] '
+            "with [chocolate sprinkes]"
+            "(food)",
+            [
+                {
+                    "entity": "food",
+                    "value": "ice cream",
+                    "start": 7,
+                    "end": 16,
+                    "role": "liked",
+                },
+                {"entity": "desert", "value": "ice cream", "start": 7, "end": 16},
+                {
+                    "entity": "food",
+                    "value": "chocolate sprinkes",
+                    "start": 22,
+                    "end": 40,
+                },
+            ],
+        ),
     ],
 )
 def test_generate_message(
