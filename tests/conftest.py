@@ -192,6 +192,7 @@ async def trained_default_agent_model(
         f"""
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     pipeline:
+    - name: WhitespaceTokenizer
     - name: KeywordIntentClassifier
     - name: RegexEntityExtractor
     policies:
