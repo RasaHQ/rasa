@@ -31,6 +31,7 @@ from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -333,12 +334,20 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     """
 
     @staticmethod
-    def _back_to_the_future(
+    def _strip_leading_events_until_action_executed(
         tracker: DialogueStateTracker, again: bool = False
     ) -> Optional[DialogueStateTracker]:
-        """Send Marty to the past to get
-        the new featurization for the future"""
+        """Truncates the tracker to begin at the next `ActionExecuted` event.
 
+        Args:
+            tracker: The tracker to truncate.
+            again: When true, truncate tracker at the second action.
+                Otherwise truncate to the first action.
+
+        Returns:
+            The truncated tracker if there were actions present.
+            If none are found, returns `None`.
+        """
         idx_of_first_action = None
         idx_of_second_action = None
 
@@ -346,7 +355,6 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         # we need to find second executed action
         for e_i, event in enumerate(applied_events):
-            # find second ActionExecuted
             if isinstance(event, ActionExecuted):
                 if idx_of_first_action is None:
                     idx_of_first_action = e_i
@@ -364,23 +372,25 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         if not events:
             return None
 
-        mcfly_tracker = tracker.init_copy()
+        truncated_tracker = tracker.init_copy()
         for e in events:
-            mcfly_tracker.update(e)
+            truncated_tracker.update(e)
 
-        return mcfly_tracker
+        return truncated_tracker
 
-    def _recall_using_delorean(
+    def _recall_using_truncation(
         self,
         old_states: List[State],
         tracker: DialogueStateTracker,
         domain: Domain,
         rule_only_data: Optional[Dict[Text, Any]],
     ) -> Optional[Text]:
-        """Applies to the future idea to change the past and get the new future.
+        """Attempts to match memorized states to progressively shorter trackers.
 
-        Recursively go to the past to correctly forget slots,
-        and then back to the future to recall.
+        This method iteratively removes the oldest events up to the next action
+        executed and checks if the truncated event sequence matches some memorized
+        states, until a match has been found or until the even sequence has been
+        exhausted.
 
         Args:
             old_states: List of states.
@@ -395,13 +405,15 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         logger.debug("Launch DeLorean...")
 
         # Truncate the tracker based on `max_history`
-        mcfly_tracker = _trim_tracker_by_max_history(
+        truncated_tracker = _trim_tracker_by_max_history(
             tracker, self.config[POLICY_MAX_HISTORY]
         )
-        mcfly_tracker = self._back_to_the_future(mcfly_tracker)
-        while mcfly_tracker is not None:
+        truncated_tracker = self._strip_leading_events_until_action_executed(
+            truncated_tracker
+        )
+        while truncated_tracker is not None:
             states = self._prediction_states(
-                mcfly_tracker, domain, rule_only_data=rule_only_data
+                truncated_tracker, domain, rule_only_data=rule_only_data
             )
 
             if old_states != states:
@@ -413,7 +425,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 old_states = states
 
             # go back again
-            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True)
+            truncated_tracker = self._strip_leading_events_until_action_executed(
+                truncated_tracker, again=True
+            )
 
         # No match found
         logger.debug(f"Current tracker state {old_states}")
@@ -444,7 +458,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(
+            return self._recall_using_truncation(
                 states, tracker, domain, rule_only_data=rule_only_data
             )
         else:
@@ -456,12 +470,16 @@ def _get_max_applied_events_for_max_history(
 ) -> Optional[int]:
     """Computes the number of events in the tracker that correspond to max_history.
 
+    To ensure that the last user utterance is correctly included in the prediction
+    states, return the index of the most recent `action_listen` event occuring
+    before the tracker would be truncated according to the value of `max_history`.
+
     Args:
         tracker: Some tracker holding the events
         max_history: The number of actions to count
 
     Returns:
-        The number of actions, as counted from the end of the event list, that should
+        The number of events, as counted from the end of the event list, that should
         be taken into accout according to the `max_history` setting. If all events
         should be taken into account, the return value is `None`.
     """
@@ -473,8 +491,8 @@ def _get_max_applied_events_for_max_history(
         num_events += 1
         if isinstance(event, ActionExecuted):
             num_actions += 1
-        if num_actions > max_history:
-            return num_events
+            if num_actions > max_history and event.action_name == ACTION_LISTEN_NAME:
+                return num_events
     return None
 
 

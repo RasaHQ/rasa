@@ -94,19 +94,13 @@ def test_overwrite_model_server_url():
     endpoint_config = EndpointConfig(url="http://testserver:5002/models/default@latest")
     endpoints = AvailableEndpoints(model=endpoint_config)
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
-    assert (
-        endpoints.model.url
-        == "http://localhost/projects/default/models/tags/production"
-    )
+    assert endpoints.model.url == "http://localhost/models/tags/production"
 
 
 def test_overwrite_model_server_url_with_no_model_endpoint():
     endpoints = AvailableEndpoints()
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
-    assert (
-        endpoints.model.url
-        == "http://localhost/projects/default/models/tags/production"
-    )
+    assert endpoints.model.url == "http://localhost/models/tags/production"
 
 
 def test_reuse_wait_time_between_pulls():
@@ -130,10 +124,7 @@ def test_default_model_server_url():
     endpoint_config = EndpointConfig()
     endpoints = AvailableEndpoints(model=endpoint_config)
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
-    assert (
-        endpoints.model.url
-        == "http://localhost/projects/default/models/tags/production"
-    )
+    assert endpoints.model.url == "http://localhost/models/tags/production"
 
 
 async def test_pull_runtime_config_from_server():
