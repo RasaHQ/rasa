@@ -431,7 +431,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
           path: report.json
 
       - name: Stop Datadog Agent
@@ -663,7 +663,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
           path: report.json
 
       - name: Stop Datadog Agent
