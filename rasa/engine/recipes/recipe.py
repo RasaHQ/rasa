@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import abc
-from typing import Text, Dict, Any, Optional
+from typing import Text, Dict, Any, Optional, Tuple, Set
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.shared.exceptions import RasaException
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 
 
 class InvalidRecipeException(RasaException):
@@ -29,6 +29,7 @@ class Recipe(abc.ABC):
             graph schemas.
         """
         from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+        from rasa.engine.recipes.graph_recipe import GraphV1Recipe
 
         if name is None:
             rasa.shared.utils.io.raise_deprecation_warning(
@@ -37,7 +38,10 @@ class Recipe(abc.ABC):
                 f"'{DefaultV1Recipe.name}'."
             )
             return DefaultV1Recipe()
-        recipes = {DefaultV1Recipe.name: DefaultV1Recipe}
+        recipes = {
+            DefaultV1Recipe.name: DefaultV1Recipe,
+            GraphV1Recipe.name: GraphV1Recipe,
+        }
 
         recipe_constructor = recipes.get(name)
         if recipe_constructor:
@@ -48,6 +52,19 @@ class Recipe(abc.ABC):
             f"Available recipes are: "
             f"'{DefaultV1Recipe.name}'."
         )
+
+    @staticmethod
+    def auto_configure(
+        config_file_path: Optional[Text],
+        config: Dict,
+        training_type: Optional[TrainingType] = TrainingType.BOTH,
+    ) -> Tuple[Dict[Text, Any], Set[str], Set[str]]:
+        """Adds missing options with defaults and dumps the configuration.
+
+        Override in child classes if this functionality is needed, each recipe
+        will have different auto configuration values.
+        """
+        return config, set(), set()
 
     @abc.abstractmethod
     def graph_config_for_recipe(
