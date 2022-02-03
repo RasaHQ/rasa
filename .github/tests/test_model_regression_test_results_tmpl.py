@@ -29,7 +29,7 @@ Configuration repository branch: `main`
 def test_comment_core():
     CMD = ("gomplate "
            f"-d data={TEST_DATA_DIR}/report_listformat_core.json "
-           f"-d results_main={TEST_DATA_DIR}/report-on-schedule-2022-01-10.json "
+           f"-d results_main={TEST_DATA_DIR}/report-on-schedule-2022-02-02.json "
            f"-f {TEMPLATE_FPATH}")
     output = subprocess.check_output(CMD.split(' '), cwd=REPO_DIR)
     output = output.decode("utf-8")
@@ -39,8 +39,8 @@ Configuration repository branch: `main`
 
 | Dialog Policy Configuration | Action Level Micro Avg. F1 | Conversation Level Accuracy | Run Time Train | Run Time Test |
 |---------------|-----------------|-----------------|-------------------|-------------------|
-| `Rules + Memo + TED` |1.0000 (`no data`)|1.0000 (`no data`)|`4m27s`| `31s`|
-| `Rules + Memo + TED` |1.0000 (`no data`)|1.0000 (`no data`)|`5m27s`| `41s`|
+| `Rules + Memo + TED` |1.0000 (0.00)|1.0000 (0.00)|`4m27s`| `31s`|
+| `Rules + Memo + TED` |1.0000 (0.00)|1.0000 (0.00)|`5m27s`| `41s`|
 
 """
     assert output == expected_output
