@@ -20,7 +20,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Try to install Rasa.

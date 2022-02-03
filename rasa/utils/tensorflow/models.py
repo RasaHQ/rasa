@@ -5,6 +5,8 @@ import random
 from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Any
 
+from keras.utils import tf_utils
+
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -41,7 +43,6 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
 )
-from keras.utils import tf_utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
 
