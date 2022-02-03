@@ -346,6 +346,27 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     assert "utter_chitchat" in domain.action_names_or_texts
 
 
+async def test_nlu_data_multifile_domain_sync_with_retrieval_intents(project: Text):
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = "data/test_domains/test_domain_from_multiple_files"
+    data_paths = [
+        "data/test/stories_default_retrieval_intents.yml",
+        "data/test_responses/default.yml",
+    ]
+    importer = TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, data_paths
+    )
+
+    domain = await importer.get_domain()
+    nlu_data = await importer.get_nlu_data()
+
+    assert domain.retrieval_intents == ["chitchat"]
+    assert domain.intent_properties["chitchat"].get("is_retrieval_intent")
+    assert domain.retrieval_intent_responses == nlu_data.responses
+    assert domain.responses != nlu_data.responses
+    assert "utter_chitchat" in domain.action_names_or_texts
+
+
 async def test_subintent_response_matches_with_action(project: Text):
     """Tests retrieval intent responses are matched correctly to actions."""
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
