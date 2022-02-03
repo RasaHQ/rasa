@@ -2,7 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 import textwrap
-from typing import Text
+from typing import List, Text
 
 import pytest
 from _pytest.capture import CaptureFixture
@@ -114,7 +114,11 @@ def test_get_sanitized_model_directory_when_passing_other_input(
     ],
 )
 def test_get_evaluation_metrics(
-    targets, predictions, expected_precision, expected_fscore, expected_accuracy
+    targets: List[Text],
+    predictions: List[Text],
+    expected_precision: float,
+    expected_fscore: float,
+    expected_accuracy: float,
 ):
     from rasa.model_testing import get_evaluation_metrics
 
@@ -240,7 +244,9 @@ def test_get_evaluation_metrics(
         ),
     ],
 )
-def test_make_classification_report_complete(report_in, accuracy, report_out):
+def test_make_classification_report_complete(
+    report_in: dict, accuracy: float, report_out: dict
+):
     from rasa.model_testing import make_classification_report_complete
 
     report_out_actual = make_classification_report_complete(report_in, accuracy)
@@ -333,7 +339,7 @@ def test_make_classification_report_complete_raises_clf_report_exception(
         ([], None, []),
     ],
 )
-def test_get_label_set(targets, exclude_label, expected):
+def test_get_label_set(targets: List[Text], exclude_label: Text, expected: List[Text]):
     from rasa.model_testing import get_unique_labels
 
     actual = get_unique_labels(targets, exclude_label)
@@ -518,7 +524,9 @@ def test_log_failed_stories(tmp_path: Path):
         ),
     ],
 )
-def test_evaluation_store_serialise(entity_predictions, entity_targets):
+def test_evaluation_store_serialise(
+    entity_predictions: List[dict], entity_targets: List[dict]
+):
     from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     store = EvaluationStore(
