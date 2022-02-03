@@ -6,9 +6,9 @@ REPO_DIR = pathlib.Path("").absolute()
 TEST_DATA_DIR = str(pathlib.Path(__file__).parent / 'test_data')
 
 
-def test_comment_text():
+def test_comment_nlu():
     CMD = ("gomplate "
-           f"-d data={TEST_DATA_DIR}/report_single_dictformat.json "
+           f"-d data={TEST_DATA_DIR}/report_single_dictformat_nlu.json "
            f"-d results_main={TEST_DATA_DIR}/report-on-schedule-2022-01-10.json "
            f"-f {TEMPLATE_FPATH}")
     output = subprocess.check_output(CMD.split(' '), cwd=REPO_DIR)
@@ -20,6 +20,25 @@ Configuration repository branch: `main`
 |---------------|-----------------|-----------------|-------------------|
 | `BERT + DIET(seq) + ResponseSelector(t2t)`<br> test: `1m29s`, train: `2m55s`, total: `4m24s`|1.0000 (`no data`)|0.8333 (`no data`)|`no data`|
 
+
+"""
+    assert output == expected_output
+
+
+def test_comment_core():
+    CMD = ("gomplate "
+           f"-d data={TEST_DATA_DIR}/report_single_dictformat_core.json "
+           f"-d results_main={TEST_DATA_DIR}/report-on-schedule-2022-01-10.json "
+           f"-f {TEMPLATE_FPATH}")
+    output = subprocess.check_output(CMD.split(' '), cwd=REPO_DIR)
+    output = output.decode("utf-8")
+    expected_output = """
+Dataset: `RasaHQ/retail-demo`, Dataset repository branch: `fix-model-regression-tests` (external repository), commit: `8226b51b4312aa4d3723098cf6d4028feea040b4`
+Configuration repository branch: `main`
+
+| Dialog Policy Configuration | Action Level Micro Avg. F1 | Conversation Level Accuracy | Run Time Train | Run Time Test |
+|---------------|-----------------|-----------------|-------------------|-------------------|
+| `Rules + Memo + TED` |1.0000 (`no data`)|1.0000 (`no data`)|`4m27s`| `31s`|
 
 """
     assert output == expected_output
