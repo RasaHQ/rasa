@@ -285,9 +285,11 @@ def generate_json(file: str, task: str, data: dict) -> dict:
     dataset = os.environ["DATASET"]
 
     if dataset not in data:
-        data = {dataset: {config: {}}, **data}
+        data = {dataset: {config: []}, **data}
     elif config not in data[dataset]:
-        data[dataset] = {config: {}, **data[dataset]}
+        data[dataset] = {config: [], **data[dataset]}
+
+    assert len(data[dataset][config]) <= 1
 
     data[dataset][config] = [
         {
@@ -302,12 +304,10 @@ def generate_json(file: str, task: str, data: dict) -> dict:
             "total_run_time": os.environ["TOTAL_RUN_TIME"],
             "type": os.environ["TYPE"],
             "index_repetition": os.environ["INDEX_REPETITION"],
-            **data[dataset][config],
+            **(data[dataset][config][0] if data[dataset][config] else {}),
+            task: read_results(file)
         }
     ]
-
-    data[dataset][config][task] = {**read_results(file)}
-
     return data
 
 
