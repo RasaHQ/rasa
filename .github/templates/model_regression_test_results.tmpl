@@ -71,8 +71,8 @@ The print_result_core template returns data depends on available fields.
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}`|
 {{- if has $config_data "intent_classification" -}}
 {{- $intent_class_main := dict -}}
-{{- if has $.dataset_main $config_name -}}
-{{- $intent_class_main = (index $.dataset_main $config_name).intent_classification -}}
+{{- if has $.results_for_dataset_main $config_name -}}
+{{- $intent_class_main = (index $.results_for_dataset_main $config_name).intent_classification -}}
 {{- end -}}
 {{- $intent_class := $config_data.intent_classification -}}
 {{ template "print_result_nlu" (dict "branch" $intent_class "main" $intent_class_main) }}|
@@ -81,8 +81,8 @@ The print_result_core template returns data depends on available fields.
 {{- end -}}
 {{- if has $config_data "entity_prediction" -}}
 {{- $entity_class_main := dict -}}
-{{- if has $.dataset_main $config_name -}}
-{{- $entity_class_main = (index $.dataset_main $config_name).entity_prediction -}}
+{{- if has $.results_for_dataset_main $config_name -}}
+{{- $entity_class_main = (index $.results_for_dataset_main $config_name).entity_prediction -}}
 {{- end -}}
 {{- $entity_class := $config_data.entity_prediction -}}
 {{ template "print_result_nlu" (dict "branch" $entity_class "main" $entity_class_main) }}|
@@ -91,8 +91,8 @@ The print_result_core template returns data depends on available fields.
 {{- end -}}
 {{- if has $config_data "response_selection" -}}
 {{- $response_class_main := dict -}}
-{{- if has $.dataset_main $config_name -}}
-{{- $response_class_main = (index $.dataset_main $config_name).response_selection -}}
+{{- if has $.results_for_dataset_main $config_name -}}
+{{- $response_class_main = (index $.results_for_dataset_main $config_name).response_selection -}}
 {{- end -}}
 {{- $response_class := $config_data.response_selection -}}
 {{ template "print_result_nlu" (dict "branch" $response_class "main" $response_class_main) }}|
@@ -115,8 +115,8 @@ The print_result_core template returns data depends on available fields.
 | `{{ $config_name }}` |
 {{- if has $config_data "story_prediction" -}}
 {{- $story_prediction_main := dict -}}
-{{- if has $.dataset_main $config_name -}}
-{{- $story_prediction_main = (index $.dataset_main $config_name).story_prediction -}}
+{{- if has $.results_for_dataset_main $config_name -}}
+{{- $story_prediction_main = (index $.results_for_dataset_main $config_name).story_prediction -}}
 {{- end -}}
 {{- $story_prediction := $config_data.story_prediction -}}
 {{ template "print_result_core_micro_avg" (dict "branch" $story_prediction "main" $story_prediction_main) }}|
@@ -125,8 +125,8 @@ The print_result_core template returns data depends on available fields.
 {{- end -}}
 {{- if has $config_data "story_prediction" -}}
 {{- $story_prediction_main := dict -}}
-{{- if has $.dataset_main $config_name -}}
-{{- $story_prediction_main = (index $.dataset_main $config_name).story_prediction -}}
+{{- if has $.results_for_dataset_main $config_name -}}
+{{- $story_prediction_main = (index $.results_for_dataset_main $config_name).story_prediction -}}
 {{- end -}}
 {{- $story_prediction := index $config_data.story_prediction -}}
 {{ template "print_result_core_conversation_accuracy" (dict "branch" $story_prediction "main" $story_prediction_main) }}|
@@ -141,13 +141,13 @@ The print_result_core template returns data depends on available fields.
 
 {{- $results_main := (datasource "results_main") -}}
 {{ range $dataset, $results_for_dataset := (datasource "data")}}
-{{ $dataset_main := (index $results_main $dataset) -}}
+{{ $results_for_dataset_main := (index $results_main $dataset) -}}
 {{- if (index $results_for_dataset (index (keys $results_for_dataset) 0)).external_dataset_repository -}}
 Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).dataset_repository_branch }}` (external repository), commit: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).dataset_commit }}`
 Configuration repository branch: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).config_repository_branch }}`
 {{ else -}}
 Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).dataset_repository_branch }}`, commit: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).dataset_commit }}`
 {{ end -}}
-{{ template "print_table_nlu" (dict "results_for_dataset" $results_for_dataset "dataset_main" $dataset_main) }}
-{{ template "print_table_core" (dict "results_for_dataset" $results_for_dataset "dataset_main" $dataset_main) }}
+{{ template "print_table_nlu" (dict "results_for_dataset" $results_for_dataset "results_for_dataset_main" $results_for_dataset_main) }}
+{{ template "print_table_core" (dict "results_for_dataset" $results_for_dataset "results_for_dataset_main" $results_for_dataset_main) }}
 {{- end }}
