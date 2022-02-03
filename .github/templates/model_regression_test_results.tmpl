@@ -61,12 +61,12 @@ The print_result_core template returns data depends on available fields.
 {{- end -}}
 
 {{ define "print_table_nlu" }}
-{{- $available_types := (index .config | jsonpath `@..type`) -}}
-{{- if isKind "string" $available_types }}{{- $available_types = (index .config | jsonpath `@..type` | slice) -}}{{- end -}}
+{{- $available_types := (index .results_for_dataset | jsonpath `@..type`) -}}
+{{- if isKind "string" $available_types }}{{- $available_types = (index .results_for_dataset | jsonpath `@..type` | slice) -}}{{- end -}}
 {{- if has $available_types "nlu" -}}
 | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
 |---------------|-----------------|-----------------|-------------------|
-{{ range $config_name, $config_data := .config -}}
+{{ range $config_name, $config_data := .results_for_dataset -}}
 {{- if eq $config_data.type "nlu" -}}
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}`|
 {{- if has $config_data "intent_classification" -}}
@@ -105,12 +105,12 @@ The print_result_core template returns data depends on available fields.
 {{- end -}}
 
 {{- define "print_table_core" -}}
-{{- $available_types := (index .config | jsonpath `@..type`) -}}
-{{- if isKind "string" $available_types }}{{- $available_types = (index .config | jsonpath `@..type` | slice) -}}{{- end -}}
+{{- $available_types := (index .results_for_dataset | jsonpath `@..type`) -}}
+{{- if isKind "string" $available_types }}{{- $available_types = (index .results_for_dataset | jsonpath `@..type` | slice) -}}{{- end -}}
 {{- if has $available_types "core" -}}
 | Dialog Policy Configuration | Action Level Micro Avg. F1 | Conversation Level Accuracy | Run Time Train | Run Time Test |
 |---------------|-----------------|-----------------|-------------------|-------------------|
-{{ range $config_name, $config_data := .config -}}
+{{ range $config_name, $config_data := .results_for_dataset -}}
 {{- if eq $config_data.type "core" -}}
 | `{{ $config_name }}` |
 {{- if has $config_data "story_prediction" -}}
@@ -140,14 +140,14 @@ The print_result_core template returns data depends on available fields.
 {{- end -}}
 
 {{- $results_main := (datasource "results_main") -}}
-{{ range $dataset, $config := (datasource "data")}}
+{{ range $dataset, $results_for_dataset := (datasource "data")}}
 {{ $dataset_main := (index $results_main $dataset) -}}
-{{- if (index $config (index (keys $config) 0)).external_dataset_repository -}}
-Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (keys $config) 0)).dataset_repository_branch }}` (external repository), commit: `{{ (index $config (index (keys $config) 0)).dataset_commit }}`
-Configuration repository branch: `{{ (index $config (index (keys $config) 0)).config_repository_branch }}`
+{{- if (index $results_for_dataset (index (keys $results_for_dataset) 0)).external_dataset_repository -}}
+Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).dataset_repository_branch }}` (external repository), commit: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).dataset_commit }}`
+Configuration repository branch: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).config_repository_branch }}`
 {{ else -}}
-Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (keys $config) 0)).dataset_repository_branch }}`, commit: `{{ (index $config (index (keys $config) 0)).dataset_commit }}`
+Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).dataset_repository_branch }}`, commit: `{{ (index $results_for_dataset (index (keys $results_for_dataset) 0)).dataset_commit }}`
 {{ end -}}
-{{ template "print_table_nlu" (dict "config" $config "dataset_main" $dataset_main) }}
-{{ template "print_table_core" (dict "config" $config "dataset_main" $dataset_main) }}
+{{ template "print_table_nlu" (dict "results_for_dataset" $results_for_dataset "dataset_main" $dataset_main) }}
+{{ template "print_table_core" (dict "results_for_dataset" $results_for_dataset "dataset_main" $dataset_main) }}
 {{- end }}
