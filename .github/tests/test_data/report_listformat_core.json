@@ -61,9 +61,9 @@
           "support": 67
         }
       },
-      "test_run_time": "31s",
-      "total_run_time": "4m57s",
-      "train_run_time": "4m27s",
+      "test_run_time": "41s",
+      "total_run_time": "5m57s",
+      "train_run_time": "5m27s",
       "type": "core"
     }]
   }
