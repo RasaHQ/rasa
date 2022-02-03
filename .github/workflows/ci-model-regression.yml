@@ -52,11 +52,15 @@ jobs:
 
     - run: echo ${{ steps.fc_config.outputs.comment-id }}
 
+    # This step has to happen before the other configuration details are read from
+    # the same PR comment, because we need to check out the correct branch to feed the
+    # dataset mapping and configs into the 'Read configuration from a PR comment' step
+    # which creates the experiments matrix
     - name: Read dataset branch from a PR comment
       if: steps.fc_config.outputs.comment-id != ''
       id: set-dataset-branch
       run: |-
-        source <(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_meta_config_to_json.tmpl)
+        source <(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_read_dataset_branch.tmpl)
         echo "::set-output name=dataset_branch::${DATASET_BRANCH}"
 
     - name: Checkout dataset
