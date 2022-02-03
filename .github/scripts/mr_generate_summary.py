@@ -1,26 +1,21 @@
 # Collect the results of the various model test runs which are done as part of
 # the model regression CI pipeline and dump them as a single file artifact.
 # This artifact will the then be published at the end of the tests.
-import copy
+from collections import defaultdict
 import json
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 
 def combine_result(
-    result1: Dict[str, dict], result2: Dict[str, dict]
-) -> Dict[str, dict]:
-    combined_dict = copy.deepcopy(result1)
-
-    for dataset, results_for_dataset in result2.items():
-        for config, res in results_for_dataset.items():
-
-            if dataset not in combined_dict:
-                combined_dict[dataset] = {}
-
-            assert config not in combined_dict[dataset]
-            combined_dict[dataset][config] = res
+    result1: Dict[str, dict], result2: Dict[str, Dict[str, Dict]]
+) -> Dict[str, Dict[str, List]]:
+    combined_dict = defaultdict(lambda: defaultdict(list))
+    for new_dict in [result1, result2]:
+        for dataset, results_for_dataset in new_dict.items():
+            for config, res in results_for_dataset.items():
+                combined_dict[dataset][config].append(res)
     return combined_dict
 
 
