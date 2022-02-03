@@ -154,6 +154,29 @@ def domain_path() -> Text:
 
 
 @pytest.fixture(scope="session")
+def simple_config_path(tmp_path_factory: TempPathFactory) -> Text:
+    project_path = tmp_path_factory.mktemp(uuid.uuid4().hex)
+
+    config = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        pipeline:
+        - name: WhitespaceTokenizer
+        - name: KeywordIntentClassifier
+        - name: RegexEntityExtractor
+        policies:
+        - name: AugmentedMemoizationPolicy
+          max_history: 3
+        - name: RulePolicy
+        """
+    )
+    config_path = project_path / "config.yml"
+    rasa.shared.utils.io.write_text_file(config, config_path)
+
+    return str(config_path)
+
+
+@pytest.fixture(scope="session")
 def story_file_trips_circuit_breaker_path() -> Text:
     return "data/test_evaluations/test_stories_trip_circuit_breaker.yml"
 
@@ -180,31 +203,14 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 @pytest.fixture(scope="session")
 async def trained_default_agent_model(
-    tmp_path_factory: TempPathFactory,
     stories_path: Text,
     domain_path: Text,
     nlu_data_path: Text,
     trained_async: Callable,
+    simple_config_path: Text,
 ) -> Text:
-    project_path = tmp_path_factory.mktemp(uuid.uuid4().hex)
-
-    config = textwrap.dedent(
-        f"""
-    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
-    pipeline:
-    - name: WhitespaceTokenizer
-    - name: KeywordIntentClassifier
-    - name: RegexEntityExtractor
-    policies:
-    - name: AugmentedMemoizationPolicy
-      max_history: 3
-    - name: RulePolicy
-    """
-    )
-    config_path = project_path / "config.yml"
-    rasa.shared.utils.io.write_text_file(config, config_path)
     model_path = await trained_async(
-        domain_path, str(config_path), [stories_path, nlu_data_path]
+        domain_path, simple_config_path, [stories_path, nlu_data_path]
     )
 
     return model_path
