@@ -10,7 +10,7 @@ import rasa.cli.train as train
 import rasa.cli.utils
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.cli
 import rasa.utils.common
