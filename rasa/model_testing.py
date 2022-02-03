@@ -11,7 +11,7 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.common
 from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
-from rasa.exceptions import ClassificationReportException, ModelNotFound
+from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 import rasa.shared.nlu.training_data.loading
 from rasa.shared.importers.autoconfig import TrainingType
@@ -19,6 +19,13 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.model
 
 logger = logging.getLogger(__name__)
+
+
+class ClassificationReportException(Exception):
+    """Raised when clf_report doesn't correctly set accuracy and/or micro avg.
+
+    sklearn.metrics.classification_report should provide either accuracy or micro avg.
+    """
 
 
 async def test_core_models_in_directory(

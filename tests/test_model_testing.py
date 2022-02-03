@@ -303,9 +303,13 @@ def test_make_classification_report_complete(report_in, accuracy, report_out):
         ),
     ],
 )
-def test_make_classification_report_complete_raises_clf_report_exception(report_in):
-    from rasa.model_testing import make_classification_report_complete
-    from rasa.exceptions import ClassificationReportException
+def test_make_classification_report_complete_raises_clf_report_exception(
+    report_in: dict,
+):
+    from rasa.model_testing import (
+        ClassificationReportException,
+        make_classification_report_complete,
+    )
 
     with pytest.raises(ClassificationReportException):
         make_classification_report_complete(report_in, accuracy=0.8)
