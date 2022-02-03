@@ -9,7 +9,7 @@ TEST_DATA_DIR = str(pathlib.Path(__file__).parent / 'test_data')
 def test_comment_nlu():
     CMD = ("gomplate "
            f"-d data={TEST_DATA_DIR}/report_single_dictformat_nlu.json "
-           f"-d results_main={TEST_DATA_DIR}/report-on-schedule-2022-01-10.json "
+           f"-d results_main={TEST_DATA_DIR}/report-on-schedule-2022-02-02.json "
            f"-f {TEMPLATE_FPATH}")
     output = subprocess.check_output(CMD.split(' '), cwd=REPO_DIR)
     output = output.decode("utf-8")
