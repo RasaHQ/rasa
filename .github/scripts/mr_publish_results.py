@@ -305,7 +305,7 @@ def generate_json(file: str, task: str, data: dict) -> dict:
             "type": os.environ["TYPE"],
             "index_repetition": os.environ["INDEX_REPETITION"],
             **(data[dataset][config][0] if data[dataset][config] else {}),
-            task: read_results(file)
+            task: read_results(file),
         }
     ]
     return data
