@@ -141,6 +141,7 @@ def prepare_tags() -> List[str]:
         "github_run_id": os.environ["GITHUB_RUN_ID"],
         "github_event": os.environ["GITHUB_EVENT_NAME"],
         "type": os.environ["TYPE"],
+        "index_repetition": os.environ["INDEX_REPETITION"],
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
     return tags_list
@@ -219,6 +220,7 @@ def _send_to_segment(context: Dict[str, Any]) -> None:
             "github_sha": os.environ["GITHUB_SHA"],
             "github_event": os.environ["GITHUB_EVENT_NAME"],
             "type": os.environ["TYPE"],
+            "index_repetition": os.environ["INDEX_REPETITION"],
             **context,
         },
     )
@@ -298,6 +300,7 @@ def generate_json(file: str, task: str, data: dict) -> dict:
         "train_run_time": os.environ["TRAIN_RUN_TIME"],
         "total_run_time": os.environ["TOTAL_RUN_TIME"],
         "type": os.environ["TYPE"],
+        "index_repetition": os.environ["INDEX_REPETITION"],
         **data[dataset][config],
     }
 
