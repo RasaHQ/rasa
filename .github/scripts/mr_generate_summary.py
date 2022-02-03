@@ -15,7 +15,8 @@ def combine_result(
     for new_dict in [result1, result2]:
         for dataset, results_for_dataset in new_dict.items():
             for config, res in results_for_dataset.items():
-                combined_dict[dataset][config].append(res)
+                for res_dict in res:
+                    combined_dict[dataset][config].append(res_dict)
     return combined_dict
 
 
