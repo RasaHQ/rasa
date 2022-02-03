@@ -289,20 +289,22 @@ def generate_json(file: str, task: str, data: dict) -> dict:
     elif config not in data[dataset]:
         data[dataset] = {config: {}, **data[dataset]}
 
-    data[dataset][config] = [{
-        "external_dataset_repository": is_external,
-        "dataset_repository_branch": dataset_repository_branch,
-        "config_repository": CONFIG_REPOSITORY,
-        "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
-        "dataset_commit": os.environ["DATASET_COMMIT"],
-        "accelerator_type": os.environ["ACCELERATOR_TYPE"],
-        "test_run_time": os.environ["TEST_RUN_TIME"],
-        "train_run_time": os.environ["TRAIN_RUN_TIME"],
-        "total_run_time": os.environ["TOTAL_RUN_TIME"],
-        "type": os.environ["TYPE"],
-        "index_repetition": os.environ["INDEX_REPETITION"],
-        **data[dataset][config],
-    }]
+    data[dataset][config] = [
+        {
+            "external_dataset_repository": is_external,
+            "dataset_repository_branch": dataset_repository_branch,
+            "config_repository": CONFIG_REPOSITORY,
+            "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
+            "dataset_commit": os.environ["DATASET_COMMIT"],
+            "accelerator_type": os.environ["ACCELERATOR_TYPE"],
+            "test_run_time": os.environ["TEST_RUN_TIME"],
+            "train_run_time": os.environ["TRAIN_RUN_TIME"],
+            "total_run_time": os.environ["TOTAL_RUN_TIME"],
+            "type": os.environ["TYPE"],
+            "index_repetition": os.environ["INDEX_REPETITION"],
+            **data[dataset][config],
+        }
+    ]
 
     data[dataset][config][task] = {**read_results(file)}
 

@@ -647,6 +647,7 @@ jobs:
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
+          INDEX_REPETITION: ${{ matrix.index_repetition }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
           GITHUB_SHA: "${{ github.sha }}"
