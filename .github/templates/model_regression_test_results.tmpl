@@ -66,7 +66,8 @@ The print_result_core template returns data depends on available fields.
 {{- if has $available_types "nlu" -}}
 | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
 |---------------|-----------------|-----------------|-------------------|
-{{ range $config_name, $config_data := .results_for_dataset -}}
+{{ range $config_name, $config_data_array := .results_for_dataset -}}
+{{ range $index_unused, $config_data := $config_data_array }}
 {{- if eq $config_data.type "nlu" -}}
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}`|
 {{- if has $config_data "intent_classification" -}}
@@ -101,6 +102,7 @@ The print_result_core template returns data depends on available fields.
 {{- end }}
 {{end}}
 {{- end}}
+{{- end}}
 {{- end -}}
 {{- end -}}
 
@@ -110,7 +112,8 @@ The print_result_core template returns data depends on available fields.
 {{- if has $available_types "core" -}}
 | Dialog Policy Configuration | Action Level Micro Avg. F1 | Conversation Level Accuracy | Run Time Train | Run Time Test |
 |---------------|-----------------|-----------------|-------------------|-------------------|
-{{ range $config_name, $config_data := .results_for_dataset -}}
+{{ range $config_name, $config_data_array := .results_for_dataset -}}
+{{ range $index_unused, $config_data := $config_data_array }}
 {{- if eq $config_data.type "core" -}}
 | `{{ $config_name }}` |
 {{- if has $config_data "story_prediction" -}}
@@ -136,13 +139,15 @@ The print_result_core template returns data depends on available fields.
 `{{ $config_data.train_run_time }}`| `{{ $config_data.test_run_time }}`|
 {{ end }}
 {{- end}}
+{{- end}}
 {{- end -}}
 {{- end -}}
 
 {{- $results_main := (datasource "results_main") -}}
 {{ range $dataset, $results_for_dataset := (datasource "data")}}
 {{ $results_for_dataset_main := (index $results_main $dataset) -}}
-{{ $one_content_dict := index $results_for_dataset (index (keys $results_for_dataset) 0) -}}
+{{ $content_dicts := index $results_for_dataset (index (keys $results_for_dataset) 0) -}}
+{{ $one_content_dict := index $content_dicts 0 -}}
 {{- if ($one_content_dict).external_dataset_repository -}}
 Dataset: `{{$dataset}}`, Dataset repository branch: `{{ ($one_content_dict).dataset_repository_branch }}` (external repository), commit: `{{ ($one_content_dict).dataset_commit }}`
 Configuration repository branch: `{{ ($one_content_dict).config_repository_branch }}`
