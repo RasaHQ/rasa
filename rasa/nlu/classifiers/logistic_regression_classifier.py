@@ -56,6 +56,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     ) -> None:
         """Construct a new classifier."""
         self.name = name
+        config = {**self.get_default_config(), **config}
         self.clf = LogisticRegression(
             solver=config["solver"],
             max_iter=config["max_iter"],
@@ -161,7 +162,9 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     def persist(self) -> None:
         """Persist this model into the passed directory."""
         with self._model_storage.write_to(self._resource) as model_dir:
-            joblib.dump(self.clf, model_dir / f"{self.name}.joblib")
+            path = model_dir / f"{self._resource.name}.joblib"
+            joblib.dump(self.clf, path)
+            logger.debug(f"Saved intent classifier to '{path}'.")
 
     @classmethod
     def load(
