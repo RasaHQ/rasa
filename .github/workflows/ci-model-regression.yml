@@ -25,7 +25,7 @@ env:
 jobs:
   read_test_configuration:
     name: Reads tests configuration
-    if: "github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: ${{ github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -140,7 +140,7 @@ jobs:
     name: Deploy Github Runner - GPU
     needs: read_test_configuration
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != '' }}
 
     steps:
       - name: Checkout
@@ -213,7 +213,7 @@ jobs:
       # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
       fail-fast: false
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != '' }}
 
     steps:
       - name: Checkout
@@ -435,7 +435,7 @@ jobs:
           path: report.json
 
       - name: Stop Datadog Agent
-        if: always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        if: ${{ always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' }}
         run: |
           sudo service datadog-agent stop
 
@@ -450,7 +450,7 @@ jobs:
       max-parallel: 3
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
       fail-fast: false
-    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != '' }}
 
     steps:
       - name: Checkout
@@ -667,7 +667,7 @@ jobs:
           path: report.json
 
       - name: Stop Datadog Agent
-        if: always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        if: ${{ always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' }}
         run: |
           sudo service datadog-agent stop
 
@@ -677,7 +677,7 @@ jobs:
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
-    if: ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) && always()
+    if: ${{ always() && ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) }}
     outputs:
       success_status: ${{ steps.set-success-status.outputs.success_status }}
 
@@ -733,7 +733,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - combine_reports
-    if: always() && needs.combine_reports.result == 'success'
+    if: ${{ always() && needs.combine_reports.result == 'success' }}
     steps:
       - name: Set return code
         run: |
@@ -750,7 +750,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - combine_reports
-    if: always() && needs.combine_reports.result == 'success'
+    if: ${{ always() && needs.combine_reports.result == 'success' }}
 
     steps:
       - name: Checkout
@@ -795,7 +795,7 @@ jobs:
 
       - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v2.2.0
-        if: always()
+        if: ${{ always() }}
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: ${{ github.run_id }}
@@ -829,7 +829,7 @@ jobs:
       - deploy_runner_gpu
       - model_regression_test_gpu
     runs-on: ubuntu-latest
-    if: "needs.deploy_runner_gpu.result != 'skipped' && contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: ${{ always() && needs.deploy_runner_gpu.result != 'skipped' && contains(github.event.pull_request.labels.*.name, 'runner:gpu') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') }}
 
     steps:
       # Setup gcloud CLI
