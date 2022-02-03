@@ -9,7 +9,7 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.model import get_latest_model
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.utils.cli import print_error
 from rasa.exceptions import ModelNotFound
 
