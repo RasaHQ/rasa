@@ -250,28 +250,28 @@ def test_custom_slot_type_with_custom_key():
 @pytest.mark.parametrize(
     "domain_invalid_type_for_slot_key",
     [
-    """slots:
+        """slots:
             limit:
                 type: text
                 influence_conversation: yes
                 mappings:
                 - type: from_entity
-                  entity: limit""",
-    """slots:
+                    entity: limit""",
+        """slots:
             limit:
                 type: text
                 values: notalist
                 mappings:
                 - type: from_entity
-                  entity: limit""",
-    """slots:
+                    entity: limit""",
+        """slots:
             limit:
                 type: text
                 min_value: notanumber
                 mappings:
                 - type: from_entity
                   entity: limit""",
-    """slots:
+        """slots:
             limit:
                 type: text
                 max_value: notanumber
@@ -280,7 +280,9 @@ def test_custom_slot_type_with_custom_key():
                   entity: limit""",
     ],
 )
-def test_domain_fails_on_invalid_type_for_known_slot_key(tmpdir, domain_invalid_type_for_slot_key):
+def test_domain_fails_on_invalid_type_for_known_slot_key(
+    tmpdir, domain_invalid_type_for_slot_key
+):
     domain_path = str(tmpdir / "domain.yml")
     rasa.shared.utils.io.write_text_file(domain_invalid_type_for_slot_key, domain_path)
     with pytest.raises(YamlValidationException):
