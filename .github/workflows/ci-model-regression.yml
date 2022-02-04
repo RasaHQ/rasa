@@ -25,24 +25,17 @@ env:
 jobs:
   read_test_configuration:
     name: Reads tests configuration
-    if: "github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: ${{ github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix_length: ${{ steps.set-matrix.outputs.matrix_length }}
       configuration_id: ${{ steps.fc_config.outputs.comment-id }}
+      dataset_branch: ${{ steps.set-dataset-branch.outputs.dataset_branch }}
 
     steps:
     - name: Checkout main
       uses: actions/checkout@v2
-
-    - name: Checkout dataset
-      uses: actions/checkout@v2
-      with:
-        repository: ${{ secrets.DATASET_REPOSITORY }}
-        token: ${{ secrets.ML_TEST_SA_PAT }}
-        path: 'dataset'
-        ref: "main"
 
     - name: Download gomplate
       run: |-
@@ -58,6 +51,25 @@ jobs:
         body-includes: "^/modeltest"
 
     - run: echo ${{ steps.fc_config.outputs.comment-id }}
+
+    # This step has to happen before the other configuration details are read from
+    # the same PR comment, because we need to check out the correct branch to feed the
+    # dataset mapping and configs into the 'Read configuration from a PR comment' step
+    # which creates the experiments matrix
+    - name: Read dataset branch from a PR comment
+      if: steps.fc_config.outputs.comment-id != ''
+      id: set-dataset-branch
+      run: |-
+        source <(gomplate -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_read_dataset_branch.tmpl)
+        echo "::set-output name=dataset_branch::${DATASET_BRANCH}"
+
+    - name: Checkout dataset
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ secrets.DATASET_REPOSITORY }}
+        token: ${{ secrets.ML_TEST_SA_PAT }}
+        path: 'dataset'
+        ref: ${{ steps.set-dataset-branch.outputs.dataset_branch }}
 
     - name: Render help description from template
       id: get_help_description
@@ -140,7 +152,7 @@ jobs:
     name: Deploy Github Runner - GPU
     needs: read_test_configuration
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != '' }}
 
     steps:
       - name: Checkout
@@ -213,7 +225,7 @@ jobs:
       # max-parallel: By default, GitHub will maximize the number of jobs run in parallel depending on the available runners on GitHub-hosted virtual machines.
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
       fail-fast: false
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != '' }}
 
     steps:
       - name: Checkout
@@ -225,7 +237,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
-          ref: ${{ matrix.dataset_branch }}
+          ref: ${{ needs.read_test_configuration.outputs.dataset_branch }}
 
       - name: Set env variables
         id: set_dataset_config_vars
@@ -318,7 +330,7 @@ jobs:
           GITHUB_SHA: "${{ github.sha }}"
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
-          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
@@ -412,7 +424,7 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
-          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
@@ -435,7 +447,7 @@ jobs:
           path: report.json
 
       - name: Stop Datadog Agent
-        if: always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        if: ${{ always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' }}
         run: |
           sudo service datadog-agent stop
 
@@ -450,7 +462,7 @@ jobs:
       max-parallel: 3
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
       fail-fast: false
-    if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != '' }}
 
     steps:
       - name: Checkout
@@ -462,7 +474,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
-          ref: ${{ matrix.dataset_branch }}
+          ref: ${{ needs.read_test_configuration.outputs.dataset_branch }}
 
       - name: Download gomplate
         run: |-
@@ -644,7 +656,7 @@ jobs:
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
-          DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
           TYPE: ${{ matrix.type }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.head_ref }}
@@ -667,7 +679,7 @@ jobs:
           path: report.json
 
       - name: Stop Datadog Agent
-        if: always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        if: ${{ always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' }}
         run: |
           sudo service datadog-agent stop
 
@@ -677,7 +689,7 @@ jobs:
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
-    if: ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) && always()
+    if: ${{ always() && ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) }}
     outputs:
       success_status: ${{ steps.set-success-status.outputs.success_status }}
 
@@ -733,7 +745,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - combine_reports
-    if: always() && needs.combine_reports.result == 'success'
+    if: ${{ always() && needs.combine_reports.result == 'success' }}
     steps:
       - name: Set return code
         run: |
@@ -750,7 +762,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - combine_reports
-    if: always() && needs.combine_reports.result == 'success'
+    if: ${{ always() && needs.combine_reports.result == 'success' }}
 
     steps:
       - name: Checkout
@@ -795,7 +807,7 @@ jobs:
 
       - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v2.2.0
-        if: always()
+        if: ${{ always() }}
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: ${{ github.run_id }}
@@ -829,7 +841,7 @@ jobs:
       - deploy_runner_gpu
       - model_regression_test_gpu
     runs-on: ubuntu-latest
-    if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && always() && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
+    if: ${{ always() && needs.deploy_runner_gpu.result != 'skipped' && contains(github.event.pull_request.labels.*.name, 'runner:gpu') && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') }}
 
     steps:
       # Setup gcloud CLI

@@ -669,7 +669,7 @@ def test_intent_evaluation_report(tmp_path: Path):
         "confidence": 0.98765,
     }
 
-    assert len(report.keys()) == 4
+    assert len(report.keys()) == 5
     assert report["greet"] == greet_results
     assert result["predictions"][0] == prediction
 
@@ -729,7 +729,7 @@ def test_intent_evaluation_report_large(tmp_path: Path):
 
     c_confused_with = {"D": 1, "E": 1}
 
-    assert len(report.keys()) == 8
+    assert len(report.keys()) == 9
     assert report["A"] == a_results
     assert report["E"] == e_results
     assert report["C"]["confused_with"] == c_confused_with
@@ -780,7 +780,7 @@ def test_response_evaluation_report(tmp_path: Path):
         "confidence": 0.98765,
     }
 
-    assert len(report.keys()) == 5
+    assert len(report.keys()) == 6
     assert report["chitchat/ask_name"] == name_query_results
     assert result["predictions"][1] == prediction
 
@@ -840,7 +840,7 @@ def test_entity_evaluation_report(tmp_path: Path):
     report_a = json.loads(rasa.shared.utils.io.read_file(report_filename_a))
     report_b = json.loads(rasa.shared.utils.io.read_file(report_filename_b))
 
-    assert len(report_a) == 6
+    assert len(report_a) == 7
     assert report_a["datetime"]["support"] == 1.0
     assert report_b["macro avg"]["recall"] == 0.0
     assert report_a["macro avg"]["recall"] == 0.5
