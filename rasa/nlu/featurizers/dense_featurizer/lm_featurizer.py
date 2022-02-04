@@ -79,6 +79,9 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             # an optional path to a specific directory to download
             # and cache the pre-trained model weights.
             "cache_dir": None,
+            # allows to skip model loading for unit tests
+            # (e.g. if only tokenization is tested)
+            "load_model": True,
         }
 
     @classmethod
@@ -143,9 +146,11 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
-        self.model = TFAutoModel.from_pretrained(
-            self.model_weights, cache_dir=self.cache_dir
-        )
+
+        if self._config["load_model"]:
+            self.model = TFAutoModel.from_pretrained(
+                self.model_weights, cache_dir=self.cache_dir
+            )
 
         # Use a universal pad token since all transformer architectures do not have a
         # consistent token. Instead of pad_token_id we use unk_token_id because

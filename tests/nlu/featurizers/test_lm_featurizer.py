@@ -818,3 +818,37 @@ def test_lm_featurizer_no_default_weights_raises(
             _ = create_language_model_featurizer(config)
     else:
         _ = create_language_model_featurizer(config)
+
+
+@pytest.mark.parametrize(
+    "model_weights, word",
+    [
+        ("rasa/LaBSE", "incomprehensibilities"),
+        ("openai-gpt", "incomprehensibilities"),
+        ("gpt2", "incomprehensibilities"),
+        ("xlnet-base-cased", "incomprehensibilities"),
+        ("xlm-mlm-enfr-1024", "incomprehensibilities"),
+        ("distilbert-base-uncased", "incomprehensibilities"),
+        ("roberta-base", "incomprehensibilities"),
+        ("albert-base-v2", "incomprehensibilities"),
+        ("xlm-roberta-base", "incomprehensibilities"),
+        ("camembert-base", "incomprehensibilities"),
+    ],
+)
+def test_tokenizer_prefixes_cleanup(
+    model_weights: Text,
+    word: Text,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
+):
+    config = {"model_weights": model_weights, "load_model": False}
+    featurizer = create_language_model_featurizer(config)
+
+    split_token_ids, split_token_strings = featurizer._lm_tokenize(word)
+    token_ids, token_strings = featurizer._lm_specific_token_cleanup(
+        split_token_ids, split_token_strings
+    )
+
+    # need `strip` here since `<\w>` is replaced by " " also at the end of the word
+    assert "".join(token_strings).strip() == word
