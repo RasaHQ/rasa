@@ -5,8 +5,6 @@ import logging
 from typing import Any, Text, List, Dict, Tuple, Type
 import tensorflow as tf
 
-from transformers import AutoConfig, AutoTokenizer, TFAutoModel
-
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -114,6 +112,12 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         This includes the model name, model weights, cache directory and the
         maximum sequence length the model can handle.
         """
+        # Note: these imports are only done locally, since otherwise `sys.modules`
+        # contains all HuggingFace classes, including the ones depending on `torch`,
+        # which leads to issues in unit tests, particularly with `freezegun` making use
+        # of the module cache and throwing a ModuleNotFound error for `torch`.
+        from transformers import AutoConfig
+
         self.model_name = self._config["model_name"]
         self.model_weights = self._config["model_weights"]
 
@@ -141,6 +145,12 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         Model loading should be skipped in unit tests.
         See unit tests for examples.
         """
+        # Note: these imports are only done locally, since otherwise `sys.modules`
+        # contains all HuggingFace classes, including the ones depending on `torch`,
+        # which leads to issues in unit tests, particularly with `freezegun` making use
+        # of the module cache and throwing a ModuleNotFound error for `torch`.
+        from transformers import AutoTokenizer, TFAutoModel
+
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
 
         self.tokenizer = AutoTokenizer.from_pretrained(
