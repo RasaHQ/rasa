@@ -1041,7 +1041,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
             rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
-            if self.component_config[CHECKPOINT_MODEL]:
+            if self.component_config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
                 self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
                 # For testing purposes only
                 rasa.utils.io.pickle_dump(

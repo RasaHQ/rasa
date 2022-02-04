@@ -913,7 +913,7 @@ class TEDPolicy(Policy):
 
             self.featurizer.persist(model_path)
 
-            if self.config[CHECKPOINT_MODEL]:
+            if self.config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
                 self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
                 # For testing purposes only
                 rasa.utils.io.pickle_dump(
