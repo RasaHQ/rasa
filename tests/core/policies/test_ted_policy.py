@@ -67,20 +67,6 @@ actions:
 """
 
 
-def get_checkpoint_dir_path(train_path: Path, ted_pos: Optional[int] = 0) -> Path:
-    """
-    Produce the path of the checkpoint directory for TED.
-
-    This is very tightly coupled to the persist methods of PolicyEnsemble, Agent, and
-    TEDPolicy.
-    Args:
-        train_path: the path passed to model_training.train_core for training output.
-        ted_pos: the position of TED in the policies listed in the config.
-    """
-    policy_path = train_path / f"train_TEDPolicy{ted_pos}"
-    return policy_path / "checkpoints"
-
-
 def test_diagnostics(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
@@ -130,7 +116,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
         storage_dir = tmp_path_factory.mktemp("storage dir")
         LocalModelStorage.from_model_archive(storage_dir, tmp_path / "my_model.tar.gz")
-        model_dir = storage_dir / f"train_TEDPolicy0"
+        model_dir = storage_dir / "train_TEDPolicy0"
         all_files = list(model_dir.rglob("*.*"))
         assert any(["from_checkpoint" in str(filename) for filename in all_files])
 
@@ -147,7 +133,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
         storage_dir = tmp_path_factory.mktemp("storage dir")
         LocalModelStorage.from_model_archive(storage_dir, tmp_path / "my_model.tar.gz")
-        model_dir = storage_dir / f"train_TEDPolicy0"
+        model_dir = storage_dir / "train_TEDPolicy0"
         all_files = list(model_dir.rglob("*.*"))
         assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
@@ -173,7 +159,7 @@ class TestTEDPolicy(PolicyTestCollection):
 
         storage_dir = tmp_path_factory.mktemp("storage dir")
         LocalModelStorage.from_model_archive(storage_dir, tmp_path / "my_model.tar.gz")
-        model_dir = storage_dir / f"train_TEDPolicy0"
+        model_dir = storage_dir / "train_TEDPolicy0"
         all_files = list(model_dir.rglob("*.*"))
         assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 

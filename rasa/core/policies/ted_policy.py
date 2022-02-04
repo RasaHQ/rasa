@@ -2,7 +2,6 @@ from __future__ import annotations
 import logging
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-import shutil
 from pathlib import Path
 from collections import defaultdict
 
@@ -916,6 +915,7 @@ class TEDPolicy(Policy):
 
             if self.config[CHECKPOINT_MODEL]:
                 self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                # For testing purposes only
                 rasa.utils.io.pickle_dump(
                     model_path / f"{model_filename}.from_checkpoint.pkl", None
                 )
