@@ -137,6 +137,10 @@ def test_tracker_store_endpoint_config_loading(endpoints_path: Text):
             "db": 0,
             "password": "password",
             "timeout": 30000,
+            "use_ssl": True,
+            "ssl_keyfile": "keyfile.key",
+            "ssl_certfile": "certfile.crt",
+            "ssl_ca_certs": "my-bundle.ca-bundle",
         }
     )
 
@@ -152,6 +156,10 @@ def test_create_tracker_store_from_endpoint_config(
         db=0,
         password="password",
         record_exp=3000,
+        use_ssl=True,
+        ssl_keyfile="keyfile.key",
+        ssl_certfile="certfile.crt",
+        ssl_ca_certs="my-bundle.ca-bundle",
     )
 
     assert isinstance(tracker_store, type(TrackerStore.create(store, domain)))
