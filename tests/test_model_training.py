@@ -603,13 +603,18 @@ def test_model_finetuning_core_with_default_epochs(
 
 
 def test_model_finetuning_core_new_domain_label(
-    tmp_path: Path, monkeypatch: MonkeyPatch, trained_moodbot_path: Text
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    trained_default_agent_model: Text,
+    simple_config_path: Text,
 ):
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
     # Simulate addition to training data
-    old_domain = rasa.shared.utils.io.read_yaml_file("data/test_moodbot/domain.yml")
+    old_domain = rasa.shared.utils.io.read_yaml_file(
+        "data/test_domains/default_with_slots.yml"
+    )
     old_domain["intents"].append("a_new_one")
     new_domain_path = tmp_path / "new_domain.yml"
     rasa.shared.utils.io.write_yaml(old_domain, new_domain_path)
@@ -617,10 +622,10 @@ def test_model_finetuning_core_new_domain_label(
     with pytest.raises(InvalidConfigException):
         rasa.model_training.train_core(
             domain=str(new_domain_path),
-            config="data/test_moodbot/config.yml",
-            stories="data/test_moodbot/data/stories.yml",
+            config=simple_config_path,
+            stories="data/test_yaml_stories/stories_defaultdomain.yml",
             output=output,
-            model_to_finetune=trained_moodbot_path,
+            model_to_finetune=trained_default_agent_model,
         )
 
 

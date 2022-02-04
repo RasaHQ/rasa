@@ -915,10 +915,10 @@ async def prepare_token_serialisation(
 
 
 def test_inmemory_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_agent: Agent
+    domain: Domain, default_agent: Agent
 ):
     tracker_store = InMemoryTrackerStore(domain)
-    prepare_token_serialisation(tracker_store, response_selector_agent, "inmemory")
+    prepare_token_serialisation(tracker_store, default_agent, "inmemory")
 
 
 def test_mongo_tracker_store_with_token_serialisation(
