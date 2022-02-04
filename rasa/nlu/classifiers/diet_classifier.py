@@ -1043,10 +1043,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
             if self.component_config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
                 self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
-                # For testing purposes only
-                rasa.utils.io.pickle_dump(
-                    model_path / f"{file_name}.from_checkpoint.pkl", None
-                )
+                # Save an empty file to flag that this model has been
+                # produced using checkpointing
+                checkpoint_marker = model_path / f"{file_name}.from_checkpoint.pkl"
+                checkpoint_marker.touch()
 
             self.model.save(str(tf_model_file))
 
