@@ -35,7 +35,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
 )
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
@@ -925,3 +925,12 @@ def test_sql_tracker_store_with_token_serialisation(
 ):
     tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
     prepare_token_serialisation(tracker_store, response_selector_agent, "sql")
+
+
+def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
+    with pytest.raises(RasaException) as error:
+        TrackerStore.create(
+            EndpointConfig(port="$DB_PORT", type="sql"),
+            domain,
+        )
+    assert "port '$DB_PORT' cannot be cast to integer." in str(error.value)

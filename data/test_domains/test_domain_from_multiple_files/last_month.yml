@@ -15,8 +15,15 @@ actions:
 
 entities:
 - pistachio_robot
-- caramel_robot
-- rum_and_raisin_robot
+- caramel_robot:
+    roles:
+      - sauce
+      - chips
+- rum_and_raisin_robot:
+    groups:
+      - rum
+      - raisin
+
 
 forms:
   robot_form:

@@ -70,6 +70,7 @@ module.exports = {
             'custom-graph-components',
             'training-data-importers',
             'language-support',
+            'graph-recipe',
           ],
         },
         {

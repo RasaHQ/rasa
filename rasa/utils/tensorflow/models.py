@@ -5,6 +5,8 @@ import random
 from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Any
 
+from keras.utils import tf_utils
+
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -41,7 +43,6 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
 )
-from keras.utils import tf_utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
 
@@ -269,7 +270,7 @@ class RasaModel(TmpKerasModel):
 
         # Once we take advantage of TF's distributed training, this is where
         # scheduled functions will be forced to execute and return actual values.
-        outputs = tf_utils.sync_to_numpy_or_python_type(self.predict_step(batch_in))
+        outputs = tf_utils.sync_to_numpy_or_python_type(self._tf_predict_step(batch_in))
         if DIAGNOSTIC_DATA in outputs:
             outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
                 outputs[DIAGNOSTIC_DATA]
