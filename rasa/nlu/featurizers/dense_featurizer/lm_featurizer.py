@@ -148,7 +148,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         )
 
         if self._config["load_model"]:
-            self.model = TFAutoModel.from_pretrained(
+            self.model = TFAutoModel.from_pretrained(  # type: ignore
                 self.model_weights, cache_dir=self.cache_dir
             )
 
