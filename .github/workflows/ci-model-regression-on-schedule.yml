@@ -281,7 +281,7 @@ jobs:
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
-          poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
+          poetry run python .github/scripts/validate_gpus.py
 
       - name: Run test
         id: run_test
