@@ -65,6 +65,8 @@ def _raise_on_same_start_and_different_end_positions(
 
 
 class TrainingDataWriter:
+    """Base class for training data writiers."""
+
     def dump(self, filename: Text, training_data: "TrainingData") -> None:
         """Writes a TrainingData object in markdown format to a file."""
         s = self.dumps(training_data)
@@ -230,6 +232,8 @@ class TrainingDataWriter:
 
 
 class JsonTrainingDataReader(TrainingDataReader):
+    """Training data reader specific for JSON files."""
+
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Transforms string into json object and passes it on."""
         js = json.loads(s)
