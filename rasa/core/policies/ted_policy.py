@@ -915,7 +915,11 @@ class TEDPolicy(Policy):
             self.featurizer.persist(model_path)
 
             if self.config[CHECKPOINT_MODEL]:
-                shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+                self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                rasa.utils.io.pickle_dump(
+                    model_path / f"{model_filename}.from_checkpoint.pkl", None
+                )
+
             self.model.save(str(tf_model_file))
 
             self.persist_model_utilities(model_path)
