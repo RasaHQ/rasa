@@ -64,6 +64,7 @@ clean:
 	rm -rf docs/.docusaurus
 
 install:
+	python -m pip install poetry
 	poetry run python -m pip install -U pip
 	poetry install
 

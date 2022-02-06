@@ -119,7 +119,7 @@ Rasa uses Poetry for packaging and dependency management. If you want to build i
 you have to install Poetry first. This is how it can be done:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+python -m pip install poetry
 ```
 
 There are several other ways to install Poetry. Please, follow
