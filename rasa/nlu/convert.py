@@ -37,7 +37,7 @@ def convert_training_data(
     else:
         print_error(
             "Did not recognize output format. Supported output formats: 'json' and "
-            "'md'. Specify the desired output format with '--format'."
+            "'yaml'. Specify the desired output format with '--format'."
         )
         return
 
