@@ -355,7 +355,7 @@ jobs:
 
       # Collect diagnostic data for the configs which evaluate dialog policy performance
       - name: Prepare diagnostic data
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == "core"
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == 'core'
         run: |
           mkdir diagnostic_data/${{ matrix.dataset }}/${{ matrix.config }}
 
@@ -368,7 +368,7 @@ jobs:
           mv -t diagnostic_data/${{ matrix.dataset }}/${{ matrix.config }} results/failed_test_stories.yml results/story_confmat.png
 
       - name: Upload an artifact with diagnostic data
-        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == "core"
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == 'core'
         uses: actions/upload-artifact@v2
         with:
           name: diagnostic_data
