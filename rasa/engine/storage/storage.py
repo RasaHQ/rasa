@@ -13,7 +13,7 @@ from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.exceptions import UnsupportedModelVersionError
 from rasa.engine.storage.resource import Resource
 from rasa.shared.core.domain import Domain
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 
 if typing.TYPE_CHECKING:
     from rasa.engine.graph import GraphSchema, GraphModelConfiguration

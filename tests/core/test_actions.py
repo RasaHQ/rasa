@@ -2586,3 +2586,77 @@ async def test_action_extract_slots_does_not_raise_disallowed_warning_for_slot_e
             SlotSet("custom_slot_b", "test_B"),
             SlotSet("custom_slot_a", "test_A"),
         ]
+
+
+async def test_action_extract_slots_non_required_form_slot_with_from_entity_mapping():
+    domain_yaml = textwrap.dedent(
+        """
+        version: "3.0"
+
+        intents:
+        - form_start
+        - intent1
+        - intent2
+
+        entities:
+        - form1_info1
+        - form1_slot1
+        - form1_slot2
+
+        slots:
+          form1_info1:
+            type: text
+            mappings:
+            - type: from_entity
+              entity: form1_info1
+
+          form1_slot1:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_intent
+              value: Filled
+              intent: intent1
+              conditions:
+              - active_loop: form1
+                requested_slot: form1_slot1
+
+          form1_slot2:
+            type: text
+            influence_conversation: false
+            mappings:
+            - type: from_intent
+              value: Filled
+              intent: intent2
+              conditions:
+              - active_loop: form1
+                requested_slot: form1_slot2
+        forms:
+          form1:
+            required_slots:
+            - form1_slot1
+            - form1_slot2
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    initial_events = [
+        UserUttered("Start form."),
+        ActiveLoop("form1"),
+        SlotSet(REQUESTED_SLOT, "form1_slot1"),
+        UserUttered(
+            "Hi",
+            intent={"name": "intent1"},
+            entities=[{"entity": "form1_info1", "value": "info1"}],
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="test_id", evts=initial_events)
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+    )
+    assert events == [SlotSet("form1_info1", "info1"), SlotSet("form1_slot1", "Filled")]

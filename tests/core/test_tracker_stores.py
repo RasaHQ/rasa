@@ -35,7 +35,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
 )
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
@@ -137,6 +137,10 @@ def test_tracker_store_endpoint_config_loading(endpoints_path: Text):
             "db": 0,
             "password": "password",
             "timeout": 30000,
+            "use_ssl": True,
+            "ssl_keyfile": "keyfile.key",
+            "ssl_certfile": "certfile.crt",
+            "ssl_ca_certs": "my-bundle.ca-bundle",
         }
     )
 
@@ -152,6 +156,10 @@ def test_create_tracker_store_from_endpoint_config(
         db=0,
         password="password",
         record_exp=3000,
+        use_ssl=True,
+        ssl_keyfile="keyfile.key",
+        ssl_certfile="certfile.crt",
+        ssl_ca_certs="my-bundle.ca-bundle",
     )
 
     assert isinstance(tracker_store, type(TrackerStore.create(store, domain)))
@@ -907,10 +915,10 @@ async def prepare_token_serialisation(
 
 
 def test_inmemory_tracker_store_with_token_serialisation(
-    domain: Domain, response_selector_agent: Agent
+    domain: Domain, default_agent: Agent
 ):
     tracker_store = InMemoryTrackerStore(domain)
-    prepare_token_serialisation(tracker_store, response_selector_agent, "inmemory")
+    prepare_token_serialisation(tracker_store, default_agent, "inmemory")
 
 
 def test_mongo_tracker_store_with_token_serialisation(
@@ -925,3 +933,12 @@ def test_sql_tracker_store_with_token_serialisation(
 ):
     tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
     prepare_token_serialisation(tracker_store, response_selector_agent, "sql")
+
+
+def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
+    with pytest.raises(RasaException) as error:
+        TrackerStore.create(
+            EndpointConfig(port="$DB_PORT", type="sql"),
+            domain,
+        )
+    assert "port '$DB_PORT' cannot be cast to integer." in str(error.value)
