@@ -256,14 +256,14 @@ def test_custom_slot_type_with_custom_key():
                 influence_conversation: yes
                 mappings:
                 - type: from_entity
-                    entity: limit""",
+                  entity: limit""",
         """slots:
             limit:
                 type: text
                 values: notalist
                 mappings:
                 - type: from_entity
-                    entity: limit""",
+                  entity: limit""",
         """slots:
             limit:
                 type: text
