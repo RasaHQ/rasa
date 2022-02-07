@@ -315,7 +315,7 @@ def test_train_model_checkpointing(
     )
 
     config_params = {
-        EPOCHS: 5,
+        EPOCHS: 2,
         MODEL_CONFIDENCE: "softmax",
         CONSTRAIN_SIMILARITIES: True,
         CHECKPOINT_MODEL: True,
@@ -329,15 +329,8 @@ def test_train_model_checkpointing(
     resource = response_selector.train(training_data=training_data)
 
     with default_model_storage.read_from(resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
-        assert checkpoint_dir.is_dir()
-        checkpoint_files = list(checkpoint_dir.rglob("*.*"))
-        """
-        there should be min 2 `tf_model` files in the `checkpoints` directory:
-        - tf_model.data
-        - tf_model.index
-        """
-        assert len(checkpoint_files) >= 2
+        all_files = list(model_dir.rglob("*.*"))
+        assert any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
 @pytest.mark.skip_on_windows
