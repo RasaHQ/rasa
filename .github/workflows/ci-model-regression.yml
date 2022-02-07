@@ -96,7 +96,10 @@ jobs:
       if: steps.fc_config.outputs.comment-id != ''
       id: set-matrix
       run: |-
-          matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
+          matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl 2> /tmp/error.txt)
+          # If file is not empty, print error and fail the step
+          [ -s /tmp/error.txt ] && echo "::error::$(echo /tmp/error.txt)" && exit 1
+
           matrix_length=$(echo $matrix | jq '.[] | length')
           echo "::set-output name=matrix_length::$matrix_length"
           echo "::set-output name=matrix::$matrix"
