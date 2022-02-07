@@ -17,12 +17,12 @@ class SocketBlueprint(Blueprint):
     def __init__(
         self, sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any
     ) -> None:
-        self.sio = sio
-        self.socketio_path = socketio_path
         super().__init__(*args, **kwargs)
+        self.ctx.sio = sio
+        self.ctx.socketio_path = socketio_path
 
     def register(self, app: Sanic, options: Dict[Text, Any]) -> None:
-        self.sio.attach(app, self.socketio_path)
+        self.ctx.sio.attach(app, self.ctx.socketio_path)
         super().register(app, options)
 
 
