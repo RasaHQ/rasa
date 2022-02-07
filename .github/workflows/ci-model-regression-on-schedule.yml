@@ -357,15 +357,15 @@ jobs:
       - name: Prepare diagnostic data
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == 'core'
         run: |
-          mkdir diagnostic_data/${{ matrix.dataset }}/${{ matrix.config }}
+          mkdir "diagnostic_data/${{ matrix.dataset }}/${{ matrix.config }}"
 
           # Create files to preserve directory structure when uploading artifacts
           # See: https://github.com/actions/upload-artifact/issues/174
-          touch diagnostic_data/${{ matrix.dataset }}/.keep
-          touch diagnostic_data/${{ matrix.dataset }}/${{ matrix.config }}/.keep
+          touch "diagnostic_data/${{ matrix.dataset }}/.keep"
+          touch "diagnostic_data/${{ matrix.dataset }}/${{ matrix.config }}/.keep"
 
           # Move results to the desired destination
-          mv -t diagnostic_data/${{ matrix.dataset }}/${{ matrix.config }} results/failed_test_stories.yml results/story_confmat.png
+          mv -t "diagnostic_data/${{ matrix.dataset }}/${{ matrix.config }}" results/failed_test_stories.yml results/story_confmat.png
 
       - name: Upload an artifact with diagnostic data
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == 'core'
