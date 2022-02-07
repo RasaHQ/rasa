@@ -380,7 +380,7 @@ jobs:
           sudo service datadog-agent stop
 
       - name: Check duplicate issue
-        if: failure()
+        if: failure() && github.event_name == 'schedule'
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
         id: issue-exists
         with:
@@ -409,7 +409,7 @@ jobs:
 
       - name: Create GitHub Issue 📬
         id: create-issue
-        if: failure() && steps.issue-exists.outputs.result == 'false'
+        if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
@@ -425,7 +425,7 @@ jobs:
             return issue.data.number
 
       - name: Notify Slack of Failure 😱
-        if: failure()  && steps.issue-exists.outputs.result == 'false'
+        if: failure()  && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
         uses: 8398a7/action-slack@a74b761b4089b5d730d813fbedcd2ec5d394f3af  # v3
         with:
           status: custom
@@ -506,7 +506,7 @@ jobs:
   analyse_performance:
     name: Analyse Performance
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && github.event_name == 'schedule'
     needs:
       - model_regression_test_gpu
       - combine_reports
