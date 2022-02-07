@@ -611,7 +611,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: poetry run pip install -U datadog-api-client ddtrace
 
-      - name: CPU run: Validate that no GPUs are available
+      - name: CPU run - Validate that no GPUs are available
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
           poetry run python .github/scripts/validate_cpu.py
