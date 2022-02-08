@@ -30,7 +30,7 @@ def convert_training_data(
             "the '--data' argument.".format(data_file)
         )
         return
-        
+
     td = rasa.shared.nlu.training_data.loading.load_data(data_file, language)
     if output_format == "json":
         output = td.nlu_as_json(indent=2)

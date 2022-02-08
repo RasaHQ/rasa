@@ -68,6 +68,19 @@ def test_data_convert_nlu(run_in_simple_project: Callable[..., RunResult]):
 
     assert os.path.exists("out_nlu_data.json")
 
+    run_in_simple_project(
+        "data",
+        "convert",
+        "nlu",
+        "--data",
+        "out_nlu_data.json",
+        "--out",
+        "out_nlu_data.yml",
+        "-f",
+        "yaml",
+    )
+
+    assert os.path.exists("out_nlu_data.yml")
 
 def test_data_split_help(run: Callable[..., RunResult]):
     output = run("data", "split", "nlu", "--help")
