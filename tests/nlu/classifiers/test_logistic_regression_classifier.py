@@ -32,6 +32,7 @@ def featurizer_sparse(tmpdir):
         execution_context=context,
     )
 
+
 @pytest.fixture
 def featurizer_dense(tmpdir):
     """Generate a featurizer for tests."""
@@ -67,7 +68,9 @@ def training_data():
 
 
 @pytest.mark.parametrize("setting", [("sparse", "dense", "both")])
-def test_predictions_added(training_data, tmpdir, featurizer_sparse, featurizer_dense, setting):
+def test_predictions_added(
+    training_data, tmpdir, featurizer_sparse, featurizer_dense, setting
+):
     """Checks if the sizes are appropriate."""
     # Set up classifier
     node_storage = LocalModelStorage(pathlib.Path(tmpdir))
