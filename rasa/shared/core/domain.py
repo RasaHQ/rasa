@@ -8,7 +8,6 @@ from typing import (
     Any,
     Dict,
     List,
-    NamedTuple,
     NoReturn,
     Optional,
     Set,
@@ -29,6 +28,16 @@ from rasa.shared.constants import (
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
+    SESSION_EXPIRATION_TIME_KEY,
+    CARRY_OVER_SLOTS_KEY,
+    USE_ENTITIES_KEY,
+    IGNORE_ENTITIES_KEY,
+    USED_ENTITIES_KEY,
+    IS_RETRIEVAL_INTENT_KEY,
+    ENTITY_ROLES_KEY,
+    ENTITY_GROUPS_KEY,
+    KEY_RESPONSES_TEXT,
+    ALL_DOMAIN_KEYS,
 )
 import rasa.shared.core.constants
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE, MAPPING_CONDITIONS
@@ -36,11 +45,23 @@ from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxExcep
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
+import rasa.shared.utils.domain_loading
 import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.constants import RESPONSE_CONDITION
+from rasa.shared.utils.domain_loading import SessionConfig
+from rasa.shared.constants import (
+    RESPONSE_CONDITION,
+    SESSION_CONFIG_KEY,
+    KEY_INTENTS,
+    KEY_ENTITIES,
+    KEY_FORMS,
+    KEY_ACTIONS,
+    KEY_E2E_ACTIONS,
+    KEY_RESPONSES,
+    KEY_SLOTS,
+)
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
@@ -53,37 +74,6 @@ from rasa.shared.nlu.constants import (
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
-
-CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
-SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
-SESSION_CONFIG_KEY = "session_config"
-USED_ENTITIES_KEY = "used_entities"
-USE_ENTITIES_KEY = "use_entities"
-IGNORE_ENTITIES_KEY = "ignore_entities"
-IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
-ENTITY_ROLES_KEY = "roles"
-ENTITY_GROUPS_KEY = "groups"
-
-KEY_SLOTS = "slots"
-KEY_INTENTS = "intents"
-KEY_ENTITIES = "entities"
-KEY_RESPONSES = "responses"
-KEY_ACTIONS = "actions"
-KEY_FORMS = "forms"
-KEY_E2E_ACTIONS = "e2e_actions"
-KEY_RESPONSES_TEXT = "text"
-
-ALL_DOMAIN_KEYS = [
-    KEY_SLOTS,
-    KEY_FORMS,
-    KEY_ACTIONS,
-    KEY_ENTITIES,
-    KEY_INTENTS,
-    KEY_RESPONSES,
-    KEY_E2E_ACTIONS,
-]
-
-PREV_PREFIX = "prev_"
 
 # State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # representing the origin of a SubState;
@@ -103,33 +93,16 @@ class ActionNotFoundException(ValueError, RasaException):
     """Raised when an action name could not be found."""
 
 
-class SessionConfig(NamedTuple):
-    """The Session Configuration."""
-
-    session_expiration_time: float  # in minutes
-    carry_over_slots: bool
-
-    @staticmethod
-    def default() -> "SessionConfig":
-        """Returns the SessionConfig with the default values."""
-        return SessionConfig(
-            DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
-            DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
-        )
-
-    def are_sessions_enabled(self) -> bool:
-        """Returns a boolean value depending on the value of session_expiration_time."""
-        return self.session_expiration_time > 0
-
-
 class Domain:
     """The domain specifies the universe in which the bot's policy acts.
 
     A Domain subclass provides the actions the bot can take, the intents
-    and entities it can recognise."""
+    and entities it can recognise.
+    """
 
     @classmethod
     def empty(cls) -> "Domain":
+        """Returns empty Domain."""
         return cls([], [], [], {}, [], {})
 
     @classmethod
@@ -251,9 +224,8 @@ class Domain:
                     other_dict = rasa.shared.utils.io.read_yaml(
                         rasa.shared.utils.io.read_file(full_path)
                     )
-                    domain_dict = Domain.merge_domain_dicts(
-                        cls, domain_dict, other_dict
-                    )
+                    domain_dict = Domain.merge_domain_dicts(domain_dict, other_dict)
+
         domain = Domain.from_dict(domain_dict)
         return domain
 
@@ -273,34 +245,15 @@ class Domain:
         domain_dict = domain.as_dict()
         combined = self.as_dict()
 
-        if override:
-            config = domain_dict["config"]
-            for key, val in config.items():
-                combined["config"][key] = val
+        combined_final = rasa.shared.utils.domain_loading.combine_domain_dicts(
+            domain_dict, combined, override
+        )
 
-        if override or self.session_config == SessionConfig.default():
-            combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
+        return self.__class__.from_dict(combined_final)
 
-        for key in [KEY_INTENTS, KEY_ENTITIES]:
-            if combined[key] or domain_dict[key]:
-                combined[key] = self.merge_lists_of_dicts(
-                    combined[key], domain_dict[key], override
-                )
-        # remove existing forms from new actions
-        for form in combined[KEY_FORMS]:
-            if form in domain_dict[KEY_ACTIONS]:
-                domain_dict[KEY_ACTIONS].remove(form)
-
-        for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
-            combined[key] = self.merge_lists(combined[key], domain_dict[key])
-
-        for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
-            combined[key] = self.merge_dicts(combined[key], domain_dict[key], override)
-
-        return self.__class__.from_dict(combined)
-
+    @classmethod
     def merge_domain_dicts(
-        self, domain1: Dict, domain2: Dict, override: bool = False
+        cls, combined: Dict, domain_dict: Dict, override: bool = False
     ) -> Dict[Text, Any]:
         """Merges this domain dict with another one, combining their attributes.
 
@@ -314,133 +267,17 @@ class Domain:
         and merged. Single attributes are taken from `domain1` unless
         override is `True`, in which case they are taken from `domain2`.
         """
-        if not domain2:
-            return domain1
+        if not domain_dict:
+            return combined
 
-        if not domain1:
-            return domain2
+        if not combined:
+            return domain_dict
 
-        domain_dict = domain2
-        combined = domain1
+        combined_final = rasa.shared.utils.domain_loading.combine_domain_dicts(
+            domain_dict, combined, override, is_dir=True
+        )
 
-        if override:
-            config = domain_dict["config"]
-            for key, val in config.items():
-                combined["config"][key] = val
-
-        if override or domain2.get("session_config"):
-            combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
-
-        duplicates: Dict[Text, List[Text]] = {}
-
-        for key in [KEY_INTENTS, KEY_ENTITIES]:
-            if combined.get(key) or domain_dict.get(key):
-                duplicates[key] = self.extract_duplicates(
-                    combined.get(key, []), domain_dict.get(key, [])
-                )
-                combined[key] = combined.get(key, [])
-                domain_dict[key] = domain_dict.get(key, [])
-                combined[key] = self.merge_lists_of_dicts(
-                    combined[key], domain_dict[key], override
-                )
-
-        # remove existing forms from new actions
-        for form in combined.get(KEY_FORMS, []):
-            if form in domain_dict.get(KEY_ACTIONS, []):
-                domain_dict[KEY_ACTIONS].remove(form)
-
-        for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
-            duplicates[key] = self.extract_duplicates(
-                combined.get(key, []), domain_dict.get(key, [])
-            )
-            combined[key] = self.merge_lists(
-                combined.get(key, []), domain_dict.get(key, [])
-            )
-
-        for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
-            duplicates[key] = self.extract_duplicates(
-                combined.get(key, []), domain_dict.get(key, [])
-            )
-            combined[key] = self.merge_dicts(
-                combined.get(key, {}), domain_dict.get(key, {}), override
-            )
-
-        if duplicates:
-            duplicates = self.clean_duplicates(duplicates)
-            combined.update({"duplicates": duplicates})
-        return combined
-
-    @staticmethod
-    def extract_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]:
-        """Extracts duplicates from two lists."""
-        if list1:
-            dict1 = {
-                (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
-                for i in list1
-            }
-        else:
-            dict1 = {}
-
-        if list2:
-            dict2 = {
-                (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
-                for i in list2
-            }
-        else:
-            dict2 = {}
-
-        set1 = set(dict1.keys())
-        set2 = set(dict2.keys())
-        dupes = set1.intersection(set2)
-        return sorted(list(dupes))
-
-    @staticmethod
-    def clean_duplicates(dupes: Dict[Text, Any]) -> Dict[Text, Any]:
-        """Removes keys for empty values."""
-        duplicates = dupes.copy()
-        for k in dupes:
-            if not dupes[k]:
-                duplicates.pop(k)
-
-        return duplicates
-
-    @staticmethod
-    def merge_dicts(
-        tempDict1: Dict[Text, Any],
-        tempDict2: Dict[Text, Any],
-        override_existing_values: bool = False,
-    ) -> Dict[Text, Any]:
-        """Merges two dicts."""
-        if override_existing_values:
-            merged_dicts, b = tempDict1.copy(), tempDict2.copy()
-
-        else:
-            merged_dicts, b = tempDict2.copy(), tempDict1.copy()
-        merged_dicts.update(b)
-        return merged_dicts
-
-    @staticmethod
-    def merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
-        """Merges two lists."""
-        return sorted(list(set(list1 + list2)))
-
-    @staticmethod
-    def merge_lists_of_dicts(
-        dict_list1: List[Dict],
-        dict_list2: List[Dict],
-        override_existing_values: bool = False,
-    ) -> List[Dict]:
-        """Merges two dict lists."""
-        dict1 = {
-            (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
-            for i in dict_list1
-        }
-        dict2 = {
-            (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i
-            for i in dict_list2
-        }
-        merged_dicts = Domain.merge_dicts(dict1, dict2, override_existing_values)
-        return list(merged_dicts.values())
+        return combined_final
 
     @staticmethod
     def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
