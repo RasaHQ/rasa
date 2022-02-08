@@ -17,6 +17,6 @@ def test_read_dataset_branch(comment_body_file, expected_dataset_branch):
     cmd = ("gomplate "
            f"-d github={TEST_DATA_DIR}/{comment_body_file} "
            f"-f {TEMPLATE_FPATH}")
-    output = subprocess.check_output(CMD.split(' '), cwd=REPO_DIR)
+    output = subprocess.check_output(cmd.split(' '), cwd=REPO_DIR)
     output = output.decode("utf-8").strip()
     assert output == f"export DATASET_BRANCH=\"{expected_dataset_branch}\""
