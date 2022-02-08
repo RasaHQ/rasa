@@ -369,8 +369,8 @@ jobs:
           name: diagnostic_data
           path: |
             results/**/.keep
-            results/${DATASET}/${CONFIG}/failed_test_stories.yml
-            results/${DATASET}/${CONFIG}/story_confusion_matrix.png
+            results/${{ matrix.dataset }}/${{ matrix.config }}/failed_test_stories.yml
+            results/${{ matrix.dataset }}/${{ matrix.config }}/story_confusion_matrix.png
 
       - name: Stop Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
