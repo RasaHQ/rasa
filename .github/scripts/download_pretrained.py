@@ -12,7 +12,7 @@ from rasa.nlu.utils.hugging_face.registry import model_weights_defaults
 COMP_NAME = "LanguageModelFeaturizer"
 
 
-def get_model_stuff_from_config(
+def get_model_name_and_weights_from_config(
     config_path: str,
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config = rasa.shared.utils.io.read_config_file(config_path)
@@ -40,14 +40,7 @@ def get_model_stuff_from_config(
     return model_name, model_weights
 
 
-def download(dataset: str, config_path: str):
-    start = time.time()
-
-    model_name, model_weights = get_model_stuff_from_config(
-        config_path
-    )  # Example config: bert_diet_responset2t.yml
-    print(f"model_name: {model_name}, model_weights: {model_weights}")
-
+def instantiate_to_download(model_weights: Text):
     _ = AutoTokenizer.from_pretrained(model_weights)
     # don't use this tokenizer instance more, this was just to download pretrained weights
 
@@ -55,34 +48,39 @@ def download(dataset: str, config_path: str):
 
     _ = TFAutoModel.from_pretrained(model_weights)
 
+
+def download(config_path: str):
+    model_name, model_weights = get_model_name_and_weights_from_config(config_path)
+    print(f"model_name: {model_name}, model_weights: {model_weights}")
+
+    if not model_weights:
+        print("No {COMP_NAME} model_weights used for this config: Skipping download")
+        return
+
+    start = time.time()
+    instantiate_to_download(model_weights)
+
     seconds = time.time() - start
     print(f"Instatiating takes {seconds:.2f}seconds")
 
 
-def create_argument_parser():
-    """TODO"""
-
-    parser = argparse.ArgumentParser(description="TODO")
-    parser.add_argument(
-        "-d",
-        "--dataset",
-        type=str,
-        default=None,
-        help="TODO",
+def create_argument_parser() -> argparse.ArgumentParser:
+    """Downloads pretrained models, i.e., Huggingface weights"""
+    parser = argparse.ArgumentParser(
+        description="Downloads pretrained models, i.e., Huggingface weights, "
+        "e.g. path to bert_diet_responset2t.yml"
     )
     parser.add_argument(
         "-c",
         "--config",
         type=str,
-        default=None,
-        help="TODO",
+        required=True,
+        help="The path to the config yaml file.",
     )
-
     return parser
 
 
 if __name__ == "__main__":
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
-
-    download(cmdline_args.dataset, cmdline_args.config)
+    download(cmdline_args.config)
