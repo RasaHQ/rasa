@@ -17,7 +17,6 @@ core
 {{- $dataset_branch = $config.dataset_branch -}}
 {{- end -}}
 {{- $num_repetitions := 1 -}}
-{{- /* if a branch name for dataset repository is not defined use the main branch */ -}}
 {{- if has $config "num_repetitions" -}}
 {{- $num_repetitions = $config.num_repetitions -}}
 {{- end -}}
