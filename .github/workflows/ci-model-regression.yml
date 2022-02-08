@@ -793,7 +793,7 @@ jobs:
           set +e
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
           if [ $? -ne 0 ]; then
-              echo "New template failed. Try with legacy  template."
+              echo "New template failed. Try with legacy template."
               OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results_legacy.tmpl)"
           fi
           set -e
