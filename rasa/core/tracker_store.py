@@ -727,7 +727,7 @@ def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
 
 
 def ensure_schema_exists(session: "Session") -> None:
-    """Ensure that the requested PostgreSQL schema exists in the database.
+    """Ensure that the requested PostgreSQL schema exists in the data if isinstance(obj, TrackerStore):base.
 
     Args:
         session: Session used to inspect the database.
@@ -1267,84 +1267,7 @@ class AwaitableTrackerStore(TrackerStore):
         if isinstance(obj, TrackerStore):
             return AwaitableTrackerStore(obj)
         else:
-            return None
-
-    def on_tracker_store_error(self, error: Exception) -> None:
-        logger.error(
-            f"Error happened when trying to save conversation tracker to "
-            f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
-            f"the '{InMemoryTrackerStore.__name__}'. Please "
-            f"investigate the following error: {error}."
-        )
-
-    async def get_or_create_tracker(
-            self,
-            sender_id: Text,
-            max_event_history: Optional[int] = None,
-            append_action_listen: bool = True,
-    ) -> "DialogueStateTracker":
-        """Returns tracker or creates one if the retrieval returns None.
-        Args:
-            sender_id: Conversation ID associated with the requested tracker.
-            max_event_history: Value to update the tracker store's max event history to.
-            append_action_listen: Whether or not to append an initial `action_listen`.
-        """
-        self.max_event_history = max_event_history
-
-        tracker = await self.retrieve(sender_id)
-
-        if tracker is None:
-            tracker = await self.create_tracker(
-                sender_id, append_action_listen=append_action_listen
-            )
-
-        return tracker
-
-    async def create_tracker(
-            self, sender_id: Text, append_action_listen: bool = True
-    ) -> DialogueStateTracker:
-        """Creates a new tracker for `sender_id`.
-        The tracker begins with a `SessionStarted` event and is initially listening.
-        Args:
-            sender_id: Conversation ID associated with the tracker.
-            append_action_listen: Whether or not to append an initial `action_listen`.
-        Returns:
-            The newly created tracker for `sender_id`.
-        """
-        tracker = self.init_tracker(sender_id)
-
-        if append_action_listen:
-            tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
-
-        await self.save(tracker)
-
-        return tracker
-
-    async def exists(self, conversation_id: Text) -> bool:
-        """Checks if tracker exists for the specified ID.
-        This method may be overridden by the specific tracker store for
-        faster implementations.
-        Args:
-            conversation_id: Conversation ID to check if the tracker exists.
-        Returns:
-            `True` if the tracker exists, `False` otherwise.
-        """
-        return await self.retrieve(conversation_id) is not None
-
-    async def stream_events(self, tracker: DialogueStateTracker) -> None:
-        """Streams events to a message broker"""
-        offset = await self.number_of_existing_events(tracker.sender_id)
-        events = tracker.events
-        for event in list(itertools.islice(events, offset, len(events))):
-            body = {"sender_id": tracker.sender_id}
-            body.update(event.as_dict())
-            self.event_broker.publish(body)
-
-    async def number_of_existing_events(self, sender_id: Text) -> int:
-        """Return number of stored events for a given sender id."""
-        old_tracker = await self.retrieve(sender_id)
-
-        return len(old_tracker.events) if old_tracker else 0
+            raise ValueError(f"{type(obj).__name__} supplied but expected object of type {TrackerStore.__name__}.")
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         result = self._tracker_store.retrieve(sender_id)
