@@ -14,7 +14,7 @@ def combine_result(
     """Combines 2 result dicts to accumulated dict of the same format.
 
     Args:
-        result1: dict of key: dataset, and value: (dict of key: config value: list of results)
+        result1: dict of key: dataset, value: (dict of key: config, value: list of res)
                  Example: {
                               "Carbon Bot": {
                                   "Sparse + DIET(bow) + ResponseSelector(bow)": [{
@@ -27,7 +27,7 @@ def combine_result(
                                   }]
                               }
                           }
-        result2: dict of key: dataset, and value: (dict of key: config value: list of results)
+        result2: dict of key: dataset, value: (dict of key: config, value: list of res)
 
     Returns:
         dict of key: dataset, and value: (dict of key: config value: list of results)
