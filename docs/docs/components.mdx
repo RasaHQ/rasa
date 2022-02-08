@@ -1058,13 +1058,19 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
   Logistic regression intent classifier, using the [scikit-learn implementation](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
 
+
+
 * **Outputs**
 
   `intent` and `intent_ranking`
 
+
+
 * **Requires** 
 
   Either `sparse_features` or `dense_features` need to be present. 
+
+
 
 * **Output-Example** 
 
@@ -1088,6 +1094,7 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 }
 ```
 
+
 * **Description**
 
   This classifier uses scikit-learn's logistic regression implementation to perform intent classification.
@@ -1095,6 +1102,8 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   DIET should yield higher accuracy results, but this classifier should train faster and may be used as
   a lightweight benchmark. Our implementation uses the base settings from scikit-learn, with the exception
   of the `class_weight` parameter where we assume the `"balanced"` setting.
+
+
 
 * **Configuration**
 
@@ -1118,6 +1127,8 @@ There configuration parameters are briefly explained below.
 - `random_state`: Used to shuffle the data before training.
 
 More details on the parameters can be found on the [scikit-learn documentation page](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
+
+
 
 ### SklearnIntentClassifier
 
