@@ -14,7 +14,6 @@ from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
-from sanic.views import CompositionView
 from socket import SOCK_DGRAM, SOCK_STREAM
 import rasa.cli.utils as cli_utils
 
@@ -118,15 +117,7 @@ def list_routes(app: Sanic) -> Dict[Text, Text]:
         for arg in route._params:
             options[arg] = f"[{arg}]"
 
-        if not isinstance(route.handler, CompositionView):
-            handlers = [
-                (list(route.methods)[0], route.name.replace("rasa.server.", ""))
-            ]
-        else:
-            handlers = [
-                (method, find_route(v.__name__, endpoint) or v.__name__)
-                for method, v in route.handler.handlers.items()
-            ]
+        handlers = [(list(route.methods)[0], route.name.replace("rasa.server.", ""))]
 
         for method, name in handlers:
             full_endpoint = "/" + "/".join(endpoint)

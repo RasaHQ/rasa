@@ -129,211 +129,211 @@ word vectors in your pipeline.
   In addition to SpaCy's pretrained language models, you can also use this component to
   attach spaCy models that you've trained yourself.
 
-  ## Tokenizers
+## Tokenizers
 
-  Tokenizers split text into tokens.
-  If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-  modeling hierarchical intent structure, use the following flags with any tokenizer:
+Tokenizers split text into tokens.
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+modeling hierarchical intent structure, use the following flags with any tokenizer:
 
-  * `intent_tokenization_flag` indicates whether to tokenize intent labels or not. Set it to `True`, so that intent
-    labels are tokenized.
+* `intent_tokenization_flag` indicates whether to tokenize intent labels or not. Set it to `True`, so that intent
+  labels are tokenized.
 
-  * `intent_split_symbol` sets the delimiter string to split the intent labels, default is underscore
-    (`_`).
+* `intent_split_symbol` sets the delimiter string to split the intent labels, default is underscore
+  (`_`).
 
 
-  ### WhitespaceTokenizer
+### WhitespaceTokenizer
 
 
-  * **Short**
+* **Short**
 
-    Tokenizer using whitespaces as a separator
+  Tokenizer using whitespaces as a separator
 
 
 
-  * **Outputs**
+* **Outputs**
 
-    `tokens` for user messages, responses (if present), and intents (if specified)
+  `tokens` for user messages, responses (if present), and intents (if specified)
 
 
 
-  * **Requires**
+* **Requires**
 
-    Nothing
+  Nothing
 
 
 
-  * **Description**
+* **Description**
 
-    Creates a token for every whitespace separated character sequence.
+  Creates a token for every whitespace separated character sequence.
 
-    Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
-    splitting on whitespace if the character fulfills any of the following conditions:
-    - the character follows a whitespace: `" !word"` &#8594; `"word"`
-    - the character precedes a whitespace: `"word! "` &#8594; `"word"`
-    - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
-    - the character is at the end of the string: `"word!"` &#8594; `"word"`
+  Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
+  splitting on whitespace if the character fulfills any of the following conditions:
+  - the character follows a whitespace: `" !word"` &#8594; `"word"`
+  - the character precedes a whitespace: `"word! "` &#8594; `"word"`
+  - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
+  - the character is at the end of the string: `"word!"` &#8594; `"word"`
 
-    Note that:
-    - `"wo!rd"` &#8594; `"wo!rd"`
+  Note that:
+  - `"wo!rd"` &#8594; `"wo!rd"`
 
-    In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
-    substituted with whitespace before splitting on whitespace if the character is not
-    between numbers:
-    - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
-    - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
+  In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
+  substituted with whitespace before splitting on whitespace if the character is not
+  between numbers:
+  - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
+  - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
 
-    Note that:
-    - `"name@example.com"` &#8594; `"name@example.com"`
-    - `"10,000.1"` &#8594; `"10,000.1"`
-    - `"1 - 2"` &#8594; `"1"`,`"2"`
+  Note that:
+  - `"name@example.com"` &#8594; `"name@example.com"`
+  - `"10,000.1"` &#8594; `"10,000.1"`
+  - `"1 - 2"` &#8594; `"1"`,`"2"`
 
 
-  * **Configuration**
+* **Configuration**
 
-    ```yaml-rasa
-    pipeline:
-    - name: "WhitespaceTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-    ```
+  ```yaml-rasa
+  pipeline:
+  - name: "WhitespaceTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
 
 
-  ### JiebaTokenizer
+### JiebaTokenizer
 
 
-  * **Short**
+* **Short**
 
-    Tokenizer using Jieba for Chinese language
+  Tokenizer using Jieba for Chinese language
 
 
 
-  * **Outputs**
+* **Outputs**
 
-    `tokens` for user messages, responses (if present), and intents (if specified)
+  `tokens` for user messages, responses (if present), and intents (if specified)
 
 
 
-  * **Requires**
+* **Requires**
 
-    Nothing
+  Nothing
 
 
 
-  * **Description**
+* **Description**
 
-    Creates tokens using the Jieba tokenizer specifically for Chinese
-    language. It will only work for the Chinese language.
+  Creates tokens using the Jieba tokenizer specifically for Chinese
+  language. It will only work for the Chinese language.
 
-    :::note
-    To use `JiebaTokenizer` you need to install Jieba with `pip3 install jieba`.
+  :::note
+  To use `JiebaTokenizer` you need to install Jieba with `pip3 install jieba`.
 
-    :::
+  :::
 
 
 
-  * **Configuration**
+* **Configuration**
 
-    User's custom dictionary files can be auto loaded by specifying the files' directory path via `dictionary_path`.
-    If the `dictionary_path` is `None` (the default), then no custom dictionary will be used.
+  User's custom dictionary files can be auto loaded by specifying the files' directory path via `dictionary_path`.
+  If the `dictionary_path` is `None` (the default), then no custom dictionary will be used.
 
-    ```yaml-rasa
-    pipeline:
-    - name: "JiebaTokenizer"
-      dictionary_path: "path/to/custom/dictionary/dir"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-    ```
+  ```yaml-rasa
+  pipeline:
+  - name: "JiebaTokenizer"
+    dictionary_path: "path/to/custom/dictionary/dir"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
 
 
-  ### MitieTokenizer
+### MitieTokenizer
 
 
-  * **Short**
+* **Short**
 
-    Tokenizer using MITIE
+  Tokenizer using MITIE
 
 
 
-  * **Outputs**
+* **Outputs**
 
-    `tokens` for user messages, responses (if present), and intents (if specified)
+  `tokens` for user messages, responses (if present), and intents (if specified)
 
 
 
-  * **Requires**
+* **Requires**
 
-    [MitieNLP](./components.mdx#mitienlp)
+  [MitieNLP](./components.mdx#mitienlp)
 
 
 
-  * **Description**
+* **Description**
 
-    Creates tokens using the MITIE tokenizer.
+  Creates tokens using the MITIE tokenizer.
 
 
 
-  * **Configuration**
+* **Configuration**
 
-    ```yaml-rasa
-    pipeline:
-    - name: "MitieTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-    ```
+  ```yaml-rasa
+  pipeline:
+  - name: "MitieTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
 
 
-  ### SpacyTokenizer
+### SpacyTokenizer
 
 
-  * **Short**
+* **Short**
 
-    Tokenizer using spaCy
+  Tokenizer using spaCy
 
 
 
-  * **Outputs**
+* **Outputs**
 
-    `tokens` for user messages, responses (if present), and intents (if specified)
+  `tokens` for user messages, responses (if present), and intents (if specified)
 
 
 
-  * **Requires**
+* **Requires**
 
-    [SpacyNLP](./components.mdx#spacynlp)
+  [SpacyNLP](./components.mdx#spacynlp)
 
 
 
-  * **Description**
+* **Description**
 
-    Creates tokens using the spaCy tokenizer.
+  Creates tokens using the spaCy tokenizer.
 
 
 
-  * **Configuration**
+* **Configuration**
 
-    ```yaml-rasa
-    pipeline:
-    - name: "SpacyTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-    ```
+  ```yaml-rasa
+  pipeline:
+  - name: "SpacyTokenizer"
+    # Flag to check whether to split intents
+    "intent_tokenization_flag": False
+    # Symbol on which intent should be split
+    "intent_split_symbol": "_"
+    # Regular expression to detect tokens
+    "token_pattern": None
+  ```
 
 
 ## Featurizers
