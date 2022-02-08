@@ -65,7 +65,7 @@ def download(config_path: str):
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
-    """Downloads pretrained models, i.e., Huggingface weights"""
+    """Downloads pretrained models, i.e., Huggingface weights."""
     parser = argparse.ArgumentParser(
         description="Downloads pretrained models, i.e., Huggingface weights, "
         "e.g. path to bert_diet_responset2t.yml"
