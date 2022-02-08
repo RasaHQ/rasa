@@ -357,7 +357,7 @@ jobs:
       - name: find results data
         run: |
           find . -iname failed_test_stories.yml
-          find . -iname story_confmat.png
+          find . -iname story_confusion_matrix.png
 
       # Prepare diagnostic data for the configs which evaluate dialog policy performance
       - name: Prepare diagnostic data
@@ -365,15 +365,18 @@ jobs:
         run: |
           # Create dummy files to preserve directory structure when uploading artifacts
           # See: https://github.com/actions/upload-artifact/issues/174
-          touch "${{ github.workspace }}/results/${DATASET}/.keep"
-          touch "${{ github.workspace }}/results/${DATASET}/${CONFIG}/.keep"
+          touch "results/${{ matrix.dataset }}/.keep"
+          touch "results/${{ matrix.dataset }}/${{ matrix.config }}/.keep"
 
       - name: Upload an artifact with diagnostic data
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == 'core'
         uses: actions/upload-artifact@v2
         with:
           name: diagnostic_data
-          path: ${{ github.workspace }}/results/*
+          path: |
+            results/**/.keep
+            results/${DATASET}/${CONFIG}/failed_test_stories.yml
+            results/${DATASET}/${CONFIG}/story_confusion_matrix.png
 
       - name: Stop Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
