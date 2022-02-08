@@ -40,7 +40,6 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            "class_weight": "balanced",
             "max_iter": 100,
             "solver": "lbfgs",
             "tol": 1e-4,
@@ -60,7 +59,7 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         self.clf = LogisticRegression(
             solver=config["solver"],
             max_iter=config["max_iter"],
-            class_weight=config["class_weight"],
+            class_weight="balanced",
             tol=config["tol"],
             random_state=config["random_state"],
             # Added these parameters to ensure sklearn changes won't affect us.

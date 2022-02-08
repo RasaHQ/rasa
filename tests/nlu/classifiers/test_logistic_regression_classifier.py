@@ -11,13 +11,16 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import (
+    LanguageModelFeaturizer,
+)
 from rasa.nlu.classifiers.logistic_regression_classifier import (
     LogisticRegressionClassifier,
 )
 
 
 @pytest.fixture
-def featurizer(tmpdir):
+def featurizer_sparse(tmpdir):
     """Generate a featurizer for tests."""
     node_storage = LocalModelStorage(pathlib.Path(tmpdir))
     node_resource = Resource("sparse_feat")
@@ -26,6 +29,17 @@ def featurizer(tmpdir):
         config=CountVectorsFeaturizer.get_default_config(),
         resource=node_resource,
         model_storage=node_storage,
+        execution_context=context,
+    )
+
+@pytest.fixture
+def featurizer_dense(tmpdir):
+    """Generate a featurizer for tests."""
+    node_storage = LocalModelStorage(pathlib.Path(tmpdir))
+    node_resource = Resource("sparse_feat")
+    context = ExecutionContext(node_storage, node_resource)
+    return LanguageModelFeaturizer(
+        config=LanguageModelFeaturizer.get_default_config(),
         execution_context=context,
     )
 
@@ -52,7 +66,8 @@ def training_data():
     )
 
 
-def test_predictions_added(training_data, tmpdir, featurizer):
+@pytest.mark.parametrize("setting", [("sparse", "dense", "both")])
+def test_predictions_added(training_data, tmpdir, featurizer_sparse, featurizer_dense, setting):
     """Checks if the sizes are appropriate."""
     # Set up classifier
     node_storage = LocalModelStorage(pathlib.Path(tmpdir))
@@ -69,8 +84,13 @@ def test_predictions_added(training_data, tmpdir, featurizer):
     tokeniser.process(training_data.training_examples)
 
     # Next we add features.
-    featurizer.train(training_data)
-    featurizer.process(training_data.training_examples)
+    if setting in ["sparse", "both"]:
+        featurizer_sparse.train(training_data)
+        featurizer_sparse.process(training_data.training_examples)
+
+    if setting in ["dense", "both"]:
+        featurizer_dense.train(training_data)
+        featurizer_dense.process(training_data.training_examples)
 
     # Train the classifier.
     classifier.train(training_data)
