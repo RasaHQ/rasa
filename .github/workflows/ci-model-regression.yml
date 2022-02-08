@@ -98,8 +98,7 @@ jobs:
       run: |-
           matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
 
-          # Fail the step if matrix does not contain a valid key
-          if [ $(echo $matrix | jq 'has("include")') == 'false' ]; then
+          if [ $? -ne 0 ]; then
             echo "::error:: Error reading config from PR. Please double check your config."
             exit 1
           fi
