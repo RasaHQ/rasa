@@ -97,6 +97,12 @@ jobs:
       id: set-matrix
       run: |-
           matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
+
+          if [ $? -ne 0 ]; then
+            echo "::error::Cannot read config from PR. Please double check your config."
+            exit 1
+          fi
+
           matrix_length=$(echo $matrix | jq '.[] | length')
           echo "::set-output name=matrix_length::$matrix_length"
           echo "::set-output name=matrix::$matrix"
@@ -615,7 +621,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: poetry run pip install -U datadog-api-client ddtrace
 
-      - name: "CPU run: Validate that no GPUs are available"
+      - name: CPU run - Validate that no GPUs are available
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
           poetry run python .github/scripts/validate_cpu.py
