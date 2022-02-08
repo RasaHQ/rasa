@@ -1,0 +1,73 @@
+nodes:
+  nlu_message_converter:
+    needs:
+      messages: __message__
+    uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
+    constructor_name: load
+    fn: convert_user_message
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  custom_nlu_target:
+    needs:
+      messages: nlu_message_converter
+      domain: domain_provider
+    uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
+    constructor_name: load
+    fn: process
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
+  domain_provider:
+    needs: {}
+    uses: rasa.graph_components.providers.domain_provider.DomainProvider
+    constructor_name: load
+    fn: provide_inference
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: domain_provider
+  run_MemoizationPolicy0:
+    needs:
+      domain: domain_provider
+      tracker: __tracker__
+      rule_only_data: rule_only_data_provider
+    uses: rasa.core.policies.memoization.MemoizationPolicy
+    constructor_name: load
+    fn: predict_action_probabilities
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_MemoizationPolicy0
+  rule_only_data_provider:
+    needs: {}
+    uses: rasa.graph_components.providers.rule_only_provider.RuleOnlyDataProvider
+    constructor_name: load
+    fn: provide
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource:
+      name: train_RulePolicy1
+  custom_core_target:
+    needs:
+      policy0: run_MemoizationPolicy0
+      domain: domain_provider
+      tracker: __tracker__
+    uses: rasa.core.policies.ensemble.DefaultPolicyPredictionEnsemble
+    constructor_name: load
+    fn: combine_predictions_from_kwargs
+    config: {}
+    eager: true
+    is_target: false
+    is_input: false
+    resource: null
