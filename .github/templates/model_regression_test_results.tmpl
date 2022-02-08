@@ -67,7 +67,7 @@ The print_result_core template returns data depends on available fields.
 | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 |
 |---------------|-----------------|-----------------|-------------------|
 {{ range $config_name, $config_data_array := .results_for_dataset -}}
-{{ range $index_unused, $config_data := $config_data_array }}
+{{ range $config_data := $config_data_array }}
 {{- if eq $config_data.type "nlu" -}}
 | `{{ $config_name }}`<br> test: `{{ $config_data.test_run_time }}`, train: `{{ $config_data.train_run_time }}`, total: `{{ $config_data.total_run_time }}`|
 {{- if has $config_data "intent_classification" -}}
@@ -113,7 +113,7 @@ The print_result_core template returns data depends on available fields.
 | Dialog Policy Configuration | Action Level Micro Avg. F1 | Conversation Level Accuracy | Run Time Train | Run Time Test |
 |---------------|-----------------|-----------------|-------------------|-------------------|
 {{ range $config_name, $config_data_array := .results_for_dataset -}}
-{{ range $index_unused, $config_data := $config_data_array }}
+{{ range $config_data := $config_data_array }}
 {{- if eq $config_data.type "core" -}}
 | `{{ $config_name }}` |
 {{- if has $config_data "story_prediction" -}}
