@@ -356,8 +356,8 @@ jobs:
       # DEBUG: delete later
       - name: find results data
         run: |
-          locate -i failed_test_stories.yml
-          locate -i story_confmat.png
+          find . -iname failed_test_stories.yml
+          find . -iname story_confmat.png
 
       # Prepare diagnostic data for the configs which evaluate dialog policy performance
       - name: Prepare diagnostic data
