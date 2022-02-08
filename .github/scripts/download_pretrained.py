@@ -1,6 +1,6 @@
 import argparse
 import time
-from typing import Text, Tuple
+from typing import Optional, Text, Tuple
 import yaml
 
 from transformers import AutoTokenizer, TFAutoModel
@@ -11,10 +11,10 @@ from rasa.nlu.utils.hugging_face.registry import model_weights_defaults
 
 COMP_NAME = 'LanguageModelFeaturizer'
 
-def get_model_stuff_from_config(config_path: str) -> Tuple[Text, Text]:
+def get_model_stuff_from_config(config_path: str) -> Tuple[Optional[Text], Optional[Text]]:
     config = rasa.shared.utils.io.read_config_file(config_path)
     print(config)
-    steps = config["pipeline"]
+    steps = config.get("pipeline", [])
 
     # Look for LanguageModelFeaturizer
     steps = list(filter(lambda x: x['name'] == COMP_NAME, steps))
