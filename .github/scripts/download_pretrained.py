@@ -9,15 +9,18 @@ import rasa.shared.utils.io
 from rasa.nlu.utils.hugging_face.registry import model_weights_defaults
 
 
-COMP_NAME = 'LanguageModelFeaturizer'
+COMP_NAME = "LanguageModelFeaturizer"
 
-def get_model_stuff_from_config(config_path: str) -> Tuple[Optional[Text], Optional[Text]]:
+
+def get_model_stuff_from_config(
+    config_path: str,
+) -> Tuple[Optional[Text], Optional[Text]]:
     config = rasa.shared.utils.io.read_config_file(config_path)
     print(config)
     steps = config.get("pipeline", [])
 
     # Look for LanguageModelFeaturizer
-    steps = list(filter(lambda x: x['name'] == COMP_NAME, steps))
+    steps = list(filter(lambda x: x["name"] == COMP_NAME, steps))
 
     if len(steps) == 0:
         print(f"No {COMP_NAME} found")
@@ -28,11 +31,11 @@ def get_model_stuff_from_config(config_path: str) -> Tuple[Optional[Text], Optio
 
     lmfeat_step = steps[0]
 
-    if 'model_name' not in lmfeat_step:
+    if "model_name" not in lmfeat_step:
         return "bert", "rasa/LaBSE"
-    model_name = lmfeat_step['model_name']
+    model_name = lmfeat_step["model_name"]
 
-    model_weights = lmfeat_step.get('model_weights', model_weights_defaults[model_name])
+    model_weights = lmfeat_step.get("model_weights", model_weights_defaults[model_name])
 
     return model_name, model_weights
 
@@ -40,18 +43,20 @@ def get_model_stuff_from_config(config_path: str) -> Tuple[Optional[Text], Optio
 def download(dataset: str, config_path: str):
     start = time.time()
 
-    model_name, model_weights = get_model_stuff_from_config(config_path)  # Example config: bert_diet_responset2t.yml
-    print(f'model_name: {model_name}, model_weights: {model_weights}')
+    model_name, model_weights = get_model_stuff_from_config(
+        config_path
+    )  # Example config: bert_diet_responset2t.yml
+    print(f"model_name: {model_name}, model_weights: {model_weights}")
 
     _ = AutoTokenizer.from_pretrained(model_weights)
     # don't use this tokenizer instance more, this was just to download pretrained weights
 
-    print(f'Done with AutoTokenizer, now doing TFAutoModel')
+    print(f"Done with AutoTokenizer, now doing TFAutoModel")
 
     _ = TFAutoModel.from_pretrained(model_weights)
 
     seconds = time.time() - start
-    print(f'Instatiating takes {seconds:.2f}seconds')
+    print(f"Instatiating takes {seconds:.2f}seconds")
 
 
 def create_argument_parser():
@@ -75,9 +80,9 @@ def create_argument_parser():
 
     return parser
 
+
 if __name__ == "__main__":
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
     download(cmdline_args.dataset, cmdline_args.config)
-
