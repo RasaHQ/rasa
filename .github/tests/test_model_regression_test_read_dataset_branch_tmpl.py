@@ -8,13 +8,13 @@ TEST_DATA_DIR = str(pathlib.Path(__file__).parent / 'test_data')
 DEFAULT_DATASET_BRANCH = "main"
 
 
-@pytest.mark.parametrize(["comment_body_file", "expected_dataset_branch"],
+@pytest.mark.parametrize("comment_body_file,expected_dataset_branch",
                          [
                             ("comment_body.json", "test_dataset_branch"),
-                            ("comment_body_no_dataset_branch.json", "main")
+                            ("comment_body_no_dataset_branch.json", DEFAULT_DATASET_BRANCH)
                          ])
 def test_read_dataset_branch(comment_body_file, expected_dataset_branch):
-    CMD = ("gomplate "
+    cmd = ("gomplate "
            f"-d github={TEST_DATA_DIR}/{comment_body_file} "
            f"-f {TEMPLATE_FPATH}")
     output = subprocess.check_output(CMD.split(' '), cwd=REPO_DIR)
