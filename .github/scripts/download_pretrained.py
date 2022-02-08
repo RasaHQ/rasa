@@ -12,9 +12,6 @@ from rasa.nlu.utils.hugging_face.registry import model_weights_defaults
 COMP_NAME = 'LanguageModelFeaturizer'
 
 def get_model_stuff_from_config(config_path: str) -> Tuple[Text, Text]:
-    with open(config_path) as json_file:
-        data = yaml.safe_load(json_file)
-
     config = rasa.shared.utils.io.read_config_file(config_path)
     print(config)
     steps = config["pipeline"]
@@ -40,7 +37,7 @@ def get_model_stuff_from_config(config_path: str) -> Tuple[Text, Text]:
     return model_name, model_weights
 
 
-def download(dataset: str, config_path: str, type: str):
+def download(dataset: str, config_path: str):
     start = time.time()
 
     model_name, model_weights = get_model_stuff_from_config(config_path)  # Example config: bert_diet_responset2t.yml
@@ -75,13 +72,6 @@ def create_argument_parser():
         default=None,
         help="TODO",
     )
-    parser.add_argument(
-        "-t",
-        "--type",
-        type=str,
-        default=None,
-        help="TODO",
-    )
 
     return parser
 
@@ -89,5 +79,5 @@ if __name__ == "__main__":
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    download(cmdline_args.dataset, cmdline_args.config, cmdline_args.type)
+    download(cmdline_args.dataset, cmdline_args.config)
 

@@ -381,7 +381,7 @@ jobs:
         run: |-
           set -x
           # make prepare-transformers
-          poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG} --type ${TYPE} --dataset ${DATASET}
+          poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG} --dataset ${DATASET}
 
       - name: Run test
         id: run_test
@@ -626,7 +626,7 @@ jobs:
         run: |-
           set -x
           # make prepare-transformers
-          poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG} --type ${TYPE} --dataset ${DATASET}
+          poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG} --dataset ${DATASET}
 
       - name: Run test
         id: run_test
