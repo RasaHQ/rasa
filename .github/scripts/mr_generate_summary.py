@@ -11,6 +11,27 @@ from typing import Dict, List
 def combine_result(
     result1: Dict[str, dict], result2: Dict[str, Dict[str, Dict]]
 ) -> Dict[str, Dict[str, List]]:
+    """Combines 2 result dicts to accumulated dict of the same format.
+
+    Args:
+        result1: dict of key: dataset, and value: (dict of key: config value: list of results)
+                 Example: {
+                              "Carbon Bot": {
+                                  "Sparse + DIET(bow) + ResponseSelector(bow)": [{
+                                      "Entity Prediction": {
+                                          "macro avg": {
+                                              "f1-score": 0.88,
+                                          }
+                                      },
+                                      "test_run_time": "47s",
+                                  }]
+                              }
+                          }
+        result2: dict of key: dataset, and value: (dict of key: config value: list of results)
+
+    Returns:
+        dict of key: dataset, and value: (dict of key: config value: list of results)
+    """
     combined_dict = defaultdict(lambda: defaultdict(list))
     for new_dict in [result1, result2]:
         for dataset, results_for_dataset in new_dict.items():
