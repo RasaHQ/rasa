@@ -1,7 +1,6 @@
 import argparse
 import time
 from typing import Optional, Text, Tuple
-import yaml
 
 from transformers import AutoTokenizer, TFAutoModel
 
@@ -10,6 +9,7 @@ from rasa.nlu.utils.hugging_face.registry import model_weights_defaults
 
 
 COMP_NAME = "LanguageModelFeaturizer"
+DEFAULT_MODEL_NAME = "bert"
 
 
 def get_model_name_and_weights_from_config(
@@ -32,7 +32,7 @@ def get_model_name_and_weights_from_config(
     lmfeat_step = steps[0]
 
     if "model_name" not in lmfeat_step:
-        return "bert", "rasa/LaBSE"
+        return DEFAULT_MODEL_NAME, model_weights_defaults[DEFAULT_MODEL_NAME]
     model_name = lmfeat_step["model_name"]
 
     model_weights = lmfeat_step.get("model_weights", model_weights_defaults[model_name])
@@ -54,14 +54,14 @@ def download(config_path: str):
     print(f"model_name: {model_name}, model_weights: {model_weights}")
 
     if not model_weights:
-        print("No {COMP_NAME} model_weights used for this config: Skipping download")
+        print(f"No {COMP_NAME} model_weights used for this config: Skipping download")
         return
 
     start = time.time()
     instantiate_to_download(model_weights)
 
     seconds = time.time() - start
-    print(f"Instatiating takes {seconds:.2f}seconds")
+    print(f"Instantiating Auto classes takes {seconds:.2f}seconds")
 
 
 def create_argument_parser() -> argparse.ArgumentParser:

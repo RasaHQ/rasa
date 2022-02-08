@@ -380,7 +380,6 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
           set -x
-          # make prepare-transformers
           poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG}
 
       - name: Run test
@@ -625,7 +624,6 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
           set -x
-          # make prepare-transformers
           poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG}
 
       - name: Run test
