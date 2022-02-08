@@ -69,27 +69,27 @@ class ValidateRestaurantForm(FormValidationAction):
             # validation failed, set slot to None
             return {"num_people": None}
 
-    def validate_outdoor_seating(
-        self,
-        value: Text,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> Dict[Text, Any]:
-        """Validate outdoor_seating value."""
-
-        if isinstance(value, str):
-            if "out" in value:
-                # convert "out..." to True
-                return {"outdoor_seating": True}
-            elif "in" in value:
-                # convert "in..." to False
-                return {"outdoor_seating": False}
-            else:
-                dispatcher.utter_message(response="utter_wrong_outdoor_seating")
-                # validation failed, set slot to None
-                return {"outdoor_seating": None}
-
-        else:
-            # affirm/deny was picked up as True/False by the from_intent mapping
-            return {"outdoor_seating": value}
+    # def validate_outdoor_seating(
+    #     self,
+    #     value: Text,
+    #     dispatcher: CollectingDispatcher,
+    #     tracker: Tracker,
+    #     domain: Dict[Text, Any],
+    # ) -> Dict[Text, Any]:
+    #     """Validate outdoor_seating value."""
+    #
+    #     if isinstance(value, str):
+    #         if "out" in value:
+    #             # convert "out..." to True
+    #             return {"outdoor_seating": True}
+    #         elif "in" in value:
+    #             # convert "in..." to False
+    #             return {"outdoor_seating": False}
+    #         else:
+    #             dispatcher.utter_message(response="utter_wrong_outdoor_seating")
+    #             # validation failed, set slot to None
+    #             return {"outdoor_seating": None}
+    #
+    #     else:
+    #         # affirm/deny was picked up as True/False by the from_intent mapping
+    #         return {"outdoor_seating": value}

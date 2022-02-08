@@ -32,49 +32,49 @@ slots:
     - type: from_entity
       entity: number
       intent: [inform, request_restaurant]
-  outdoor_seating:
-    type: text
-    influence_conversation: false
-    mappings:
-    - type: from_entity
-      entity: seating
-    - type: from_intent
-      intent: affirm
-      value: true
-      conditions:
-      - active_loop: restaurant_form
-        requested_slot: outdoor_seating
-    - type: from_intent
-      intent: deny
-      value: false
-      conditions:
-      - active_loop: restaurant_form
-        requested_slot: outdoor_seating
-  preferences:
-    type: text
-    influence_conversation: false
-    mappings:
-    - type: from_intent
-      intent: deny
-      value: no additional preferences
-      conditions:
-      - active_loop: restaurant_form
-        requested_slot: preferences
-    - type: from_text
-      not_intent: deny
-      conditions:
-      - active_loop: restaurant_form
-        requested_slot: preferences
-  feedback:
-    type: text
-    influence_conversation: false
-    mappings:
-    - type: from_entity
-      entity: feedback
-    - type: from_text
-      conditions:
-      - active_loop: restaurant_form
-        requested_slot: feedback
+#  outdoor_seating:
+#    type: text
+#    influence_conversation: false
+#    mappings:
+#    - type: from_entity
+#      entity: seating
+#    - type: from_intent
+#      intent: affirm
+#      value: true
+#      conditions:
+#      - active_loop: restaurant_form
+#        requested_slot: outdoor_seating
+#    - type: from_intent
+#      intent: deny
+#      value: false
+#      conditions:
+#      - active_loop: restaurant_form
+#        requested_slot: outdoor_seating
+#  preferences:
+#    type: text
+#    influence_conversation: false
+#    mappings:
+#    - type: from_intent
+#      intent: deny
+#      value: no additional preferences
+#      conditions:
+#      - active_loop: restaurant_form
+#        requested_slot: preferences
+#    - type: from_text
+#      not_intent: deny
+#      conditions:
+#      - active_loop: restaurant_form
+#        requested_slot: preferences
+#  feedback:
+#    type: text
+#    influence_conversation: false
+#    mappings:
+#    - type: from_entity
+#      entity: feedback
+#    - type: from_text
+#      conditions:
+#      - active_loop: restaurant_form
+#        requested_slot: feedback
 
 responses:
   utter_ask_cuisine:
@@ -92,10 +92,7 @@ responses:
   utter_slots_values:
     - text: "I am going to run a restaurant search using the following parameters:\n
              - cuisine: {cuisine}\n
-             - num_people: {num_people}\n
-             - outdoor_seating: {outdoor_seating}\n
-             - preferences: {preferences}\n
-             - feedback: {feedback}"
+             - num_people: {num_people}\n"
   utter_noworries:
     - text: "You are welcome :)"
   utter_chitchat:
@@ -127,9 +124,9 @@ forms:
     required_slots:
       - cuisine
       - num_people
-      - outdoor_seating
-      - preferences
-      - feedback
+#      - outdoor_seating
+#      - preferences
+#      - feedback
 
 session_config:
   session_expiration_time: 60  # value in minutes
