@@ -40,12 +40,10 @@ def get_model_name_and_weights_from_config(
     return model_name, model_weights
 
 
-def instantiate_to_download(model_weights: Text):
+def instantiate_to_download(model_weights: Text) -> None:
+    """Instantiates Auto class instances, but only to download."""
     _ = AutoTokenizer.from_pretrained(model_weights)
-    # don't use this tokenizer instance more, this was just to download pretrained weights
-
-    print(f"Done with AutoTokenizer, now doing TFAutoModel")
-
+    print("Done with AutoTokenizer, now doing TFAutoModel")
     _ = TFAutoModel.from_pretrained(model_weights)
 
 
