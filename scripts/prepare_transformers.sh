@@ -26,7 +26,7 @@ if __name__ == "__main__":
             cache_file = fp.readline()
             if not url or not cache_file:
                 break
-            num_models_to_skip = 1  # 4
+            num_models_to_skip = 0  # 4
             if is_ci_enabled and i > num_models_to_skip:
                 print(url, CACHE_DIR / cache_file)
                 r = requests.get(url)

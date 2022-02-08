@@ -69,6 +69,3 @@ PROCESS_AGENTPATH="$INSTALL_DIR/embedded/bin/process-agent"
 PROCESS_PIDFILE="$INSTALL_DIR/run/process-agent.pid"
 SYSTEM_PROBE_YAML="/etc/datadog-agent/system-probe.yaml"
 sudo -E start-stop-daemon --start --background --quiet --chuid $AGENT_USER --pidfile $PROCESS_PIDFILE --user $AGENT_USER --startas /bin/bash -- -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH $PROCESS_AGENTPATH --config=$DATADOG_YAML_PATH --sysprobe-config=$SYSTEM_PROBE_YAML --pid=$PROCESS_PIDFILE"
-
-sleep 10
-sudo datadog-agent status
