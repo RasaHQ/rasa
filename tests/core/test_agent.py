@@ -39,8 +39,8 @@ from tests.conftest import with_model_ids
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
-    app = Sanic(__name__)
-    app.number_of_model_requests = 0
+    app = Sanic("test_agent")
+    app.ctx.number_of_model_requests = 0
 
     @app.route("/model", methods=["GET"])
     async def model(request: Request) -> ResponseStream:
@@ -156,7 +156,7 @@ async def test_agent_with_model_server_in_thread(
     assert agent.domain.as_dict() == domain.as_dict()
     assert agent.processor.graph_runner
 
-    assert model_server.app.number_of_model_requests == 1
+    assert model_server.app.ctx.number_of_model_requests == 1
     jobs.kill_scheduler()
 
 

@@ -261,7 +261,7 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
         app: The Sanic application.
         _: The current Sanic worker event loop.
     """
-    current_agent = getattr(app, "agent", None)
+    current_agent = getattr(app.ctx, "agent", None)
     if not current_agent:
         logger.debug("No agent found when shutting down server.")
         return

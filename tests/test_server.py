@@ -11,6 +11,7 @@ from multiprocessing.managers import DictProxy
 from pathlib import Path
 from typing import List, Text, Type, Generator, NoReturn, Dict, Optional
 from unittest.mock import Mock, ANY
+from argparse import Namespace
 
 from _pytest.tmpdir import TempPathFactory
 import pytest
@@ -1749,7 +1750,8 @@ def test_get_output_channel(
 ):
     request = MagicMock()
     app = MagicMock()
-    app.input_channels = input_channels
+    app.ctx = Namespace()
+    app.ctx.input_channels = input_channels
     request.app = app
     request.args = {"output_channel": output_channel_to_use}
 
@@ -1769,7 +1771,8 @@ def test_get_output_channel(
 def test_get_latest_output_channel(input_channels: List[Text], expected_channel: Type):
     request = MagicMock()
     app = MagicMock()
-    app.input_channels = input_channels
+    app.ctx = Namespace()
+    app.ctx.input_channels = input_channels
     request.app = app
     request.args = {"output_channel": "latest"}
 
@@ -1786,6 +1789,7 @@ def test_app_when_app_has_no_input_channels():
     request = MagicMock()
 
     class NoInputChannels:
+        ctx = Namespace()
         pass
 
     request.app = NoInputChannels()
