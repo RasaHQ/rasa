@@ -353,7 +353,13 @@ jobs:
           name: report-${{ matrix.dataset }}-${{ matrix.config }}
           path: report.json
 
-      # Collect diagnostic data for the configs which evaluate dialog policy performance
+      # DEBUG: delete later
+      - name: find results data
+        run: |
+          locate -i failed_test_stories.yml
+          locate -i story_confmat.png
+
+      # Prepare diagnostic data for the configs which evaluate dialog policy performance
       - name: Prepare diagnostic data
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == 'core'
         run: |
