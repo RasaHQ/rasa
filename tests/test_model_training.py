@@ -26,11 +26,13 @@ import rasa.core.train
 import rasa.nlu
 from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.data import TrainingType
+
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-import rasa.shared.importers.autoconfig as autoconfig
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import InvalidConfigException
@@ -210,8 +212,8 @@ def test_train_core_autoconfig(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
     # mock function that returns configuration
-    mocked_get_configuration = Mock(wraps=autoconfig.get_configuration)
-    monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
+    mocked_auto_configure = Mock(wraps=DefaultV1Recipe.auto_configure)
+    monkeypatch.setattr(DefaultV1Recipe, "auto_configure", mocked_auto_configure)
 
     # skip actual core training
     monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, Mock())
@@ -224,9 +226,9 @@ def test_train_core_autoconfig(
         output="test_train_core_temp_files_models",
     )
 
-    mocked_get_configuration.assert_called_once()
-    _, args, _ = mocked_get_configuration.mock_calls[0]
-    assert args[1] == autoconfig.TrainingType.CORE
+    mocked_auto_configure.assert_called_once()
+    _, args, _ = mocked_auto_configure.mock_calls[0]
+    assert args[2] == TrainingType.CORE
 
 
 def test_train_nlu_autoconfig(
@@ -238,8 +240,8 @@ def test_train_nlu_autoconfig(
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
 
     # mock function that returns configuration
-    mocked_get_configuration = Mock(wraps=autoconfig.get_configuration)
-    monkeypatch.setattr(autoconfig, "get_configuration", mocked_get_configuration)
+    mocked_auto_configuration = Mock(wraps=DefaultV1Recipe.auto_configure)
+    monkeypatch.setattr(DefaultV1Recipe, "auto_configure", mocked_auto_configuration)
 
     monkeypatch.setattr(GraphTrainer, GraphTrainer.train.__name__, Mock())
     # do training
@@ -247,9 +249,9 @@ def test_train_nlu_autoconfig(
         stack_config_path, nlu_data_path, output="test_train_nlu_temp_files_models"
     )
 
-    mocked_get_configuration.assert_called_once()
-    _, args, _ = mocked_get_configuration.mock_calls[0]
-    assert args[1] == autoconfig.TrainingType.NLU
+    mocked_auto_configuration.assert_called_once()
+    _, args, _ = mocked_auto_configuration.mock_calls[0]
+    assert args[2] == TrainingType.NLU
 
 
 def new_model_path_in_same_dir(old_model_path: Text) -> Text:
@@ -566,7 +568,7 @@ def test_model_finetuning_core(
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(result))
 
     assert metadata.train_schema.nodes["train_TEDPolicy0"].config[EPOCHS] == 2
-    assert metadata.training_type == autoconfig.TrainingType.CORE
+    assert metadata.training_type == TrainingType.CORE
 
 
 def test_model_finetuning_core_with_default_epochs(
@@ -686,7 +688,7 @@ def test_model_finetuning_nlu(
     _, metadata = LocalModelStorage.from_model_archive(storage_dir, Path(model_name))
 
     assert metadata.train_schema.nodes["train_DIETClassifier5"].config[EPOCHS] == 2
-    assert metadata.training_type == autoconfig.TrainingType.NLU
+    assert metadata.training_type == TrainingType.NLU
 
 
 def test_model_finetuning_nlu_new_label(tmp_path: Path, trained_nlu_moodbot_path: Text):
