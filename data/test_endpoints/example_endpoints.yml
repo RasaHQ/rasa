@@ -16,6 +16,10 @@ tracker_store:
   password: password
   key_prefix: conversation
   record_exp: 30000
+  use_ssl: True
+  ssl_keyfile: "keyfile.key"
+  ssl_certfile: "certfile.crt"
+  ssl_ca_certs: "my-bundle.ca-bundle"
 # example of mongoDB external tracker store config
 #tracker_store:
   #type: mongod
