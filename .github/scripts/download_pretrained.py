@@ -7,7 +7,6 @@ from transformers import AutoTokenizer, TFAutoModel
 import rasa.shared.utils.io
 from rasa.nlu.utils.hugging_face.registry import model_weights_defaults
 
-
 COMP_NAME = "LanguageModelFeaturizer"
 DEFAULT_MODEL_NAME = "bert"
 

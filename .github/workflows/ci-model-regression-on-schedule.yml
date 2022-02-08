@@ -283,6 +283,11 @@ jobs:
         run: |-
           poetry run python .github/scripts/validate_gpus.py
 
+      - name: Download pretrained models
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |-
+          poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG}
+
       - name: Run test
         id: run_test
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'

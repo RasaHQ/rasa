@@ -385,7 +385,6 @@ jobs:
       - name: Download pretrained models
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
-          set -x
           poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG}
 
       - name: Run test
@@ -395,7 +394,6 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
-          set -x
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -406,17 +404,17 @@ jobs:
           fi
 
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
-            poetry run ddtrace-run rasa train nlu -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
+            poetry run ddtrace-run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            poetry run ddtrace-run rasa test nlu -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
+            poetry run ddtrace-run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
           elif [[ "${{ matrix.type }}" == "core" ]]; then
-            poetry run ddtrace-run rasa train core -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
+            poetry run ddtrace-run rasa train core --quiet -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -629,7 +627,6 @@ jobs:
       - name: Download pretrained models
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
-          set -x
           poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG}
 
       - name: Run test
@@ -639,7 +636,6 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
-          set -x
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -650,17 +646,17 @@ jobs:
           fi
 
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
-            poetry run ddtrace-run rasa train nlu -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
+            poetry run ddtrace-run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            poetry run ddtrace-run rasa test nlu -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
+            poetry run ddtrace-run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
           elif [[ "${{ matrix.type }}" == "core" ]]; then
-            poetry run ddtrace-run rasa train core -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
+            poetry run ddtrace-run rasa train core --quiet -s ${DATASET_DIR}/$DATASET/$TRAIN_DIR -c dataset/configs/$CONFIG -d ${DATASET_DIR}/${DATASET}/${DOMAIN_FILE}
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');

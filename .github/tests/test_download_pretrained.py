@@ -7,7 +7,6 @@ from ruamel.yaml import YAML
 sys.path.append(".github/scripts")
 import download_pretrained  # noqa: E402
 
-
 CONFIG_FPATH = Path(__file__).parent / "test_data" / "bert_diet_response2t.yml"
 
 
@@ -81,7 +80,3 @@ def test_download_pretrained_lmf_doesnt_exists():
 
     assert name is None
     assert weights is None
-
-
-if __name__ == "__main__":
-    test_download_pretrained_lmf_doesnt_exists()
