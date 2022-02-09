@@ -1,11 +1,12 @@
-from typing import Text
+from typing import Text, Any, Optional, List, Dict
 
 import pytest
 from _pytest.logging import LogCaptureFixture
 
 from rasa.validator import Validator
+
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.core.domain import Domain
 from pathlib import Path
 
 
@@ -43,7 +44,6 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
         config_file="data/test_moodbot/config.yml",
         domain_path="data/test_moodbot/domain.yml",
         training_data_paths=[story_file_name, nlu_data_path],
-        training_type=TrainingType.NLU,
     )
 
     validator = Validator.from_importer(importer)
@@ -131,7 +131,6 @@ def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
         config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=[story_file_name],
-        training_type=TrainingType.NLU,
     )
     validator = Validator.from_importer(importer)
     assert not validator.verify_story_structure(ignore_warnings=False)
@@ -164,7 +163,6 @@ def test_verify_correct_e2e_story_structure(tmp_path: Path):
         config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=[story_file_name],
-        training_type=TrainingType.NLU,
     )
     validator = Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=False)
@@ -190,7 +188,6 @@ def test_verify_correct_e2e_story_structure_with_intents(tmp_path: Path):
         config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/default.yml",
         training_data_paths=[story_file_name],
-        training_type=TrainingType.NLU,
     )
     validator = Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=False)
@@ -363,6 +360,78 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
     )
 
 
+@pytest.mark.parametrize(
+    "duplicates,is_valid,warning_type,messages",
+    [
+        (None, True, None, []),
+        ({}, True, None, []),
+        ({"responses": []}, True, None, []),
+        (
+            {"responses": ["some_response"]},
+            False,
+            UserWarning,
+            [
+                "The following duplicated responses has been found across "
+                "multiple domain files: some_response"
+            ],
+        ),
+        (
+            {"slots": ["some_slot"]},
+            False,
+            UserWarning,
+            [
+                "The following duplicated slots has been found across "
+                "multiple domain files: some_slot"
+            ],
+        ),
+        (
+            {"forms": ["form1", "form2"]},
+            False,
+            UserWarning,
+            [
+                "The following duplicated forms has been found across "
+                "multiple domain files: form1, form2"
+            ],
+        ),
+        (
+            {"forms": ["form1", "form2"], "slots": []},
+            False,
+            UserWarning,
+            [
+                "The following duplicated forms has been found across "
+                "multiple domain files: form1, form2"
+            ],
+        ),
+        (
+            {"forms": ["form1", "form2"], "slots": ["slot1", "slot2", "slot3"]},
+            False,
+            UserWarning,
+            [
+                "The following duplicated forms has been found across "
+                "multiple domain files: form1, form2",
+                "The following duplicated slots has been found across "
+                "multiple domain files: slot1, slot2, slot3",
+            ],
+        ),
+    ],
+)
+def test_verify_domain_with_duplicates(
+    duplicates: Optional[Dict[Text, List[Text]]],
+    is_valid: bool,
+    warning_type: Any,
+    messages: List[Text],
+):
+    domain = Domain([], [], [], {}, [], {}, duplicates=duplicates)
+    validator = Validator(domain, None, None, None)
+
+    with pytest.warns(warning_type) as warning:
+        assert validator.verify_domain_duplicates() is is_valid
+
+    assert len(warning) == len(messages)
+    for i in range(len(messages)):
+        assert messages[i] in warning[i].message.args[0]
+
+
 def test_verify_form_slots_invalid_domain(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
@@ -404,7 +473,6 @@ def test_response_selector_responses_in_domain_no_errors():
         training_data_paths=[
             "data/test_yaml_stories/test_base_retrieval_intent_story.yml"
         ],
-        training_type=TrainingType.CORE,
     )
     validator = Validator.from_importer(importer)
     assert validator.verify_utterances_in_stories(ignore_warnings=True)

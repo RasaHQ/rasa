@@ -23,9 +23,9 @@ Each file should be named like `<ISSUE>.<TYPE>.md`, where
 
 So for example: `123.feature.md`, `456.bugfix.md`.
 
-If your PR fixes an issue, use that number here. If there is no issue,
-then after you submit the PR and get the PR number you can add a
-changelog using that instead.
+If your change fixes an issue, use the issue number here. If there is no issue,
+then after you submit the PR with your changes and get the PR number, you can add a
+changelog using that PR number instead.
 
 If you are not sure what issue type to use, don't hesitate to ask in your PR.
 

@@ -44,7 +44,8 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
+from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
@@ -848,6 +849,12 @@ def create_app(
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
     async def execute_action(request: Request, conversation_id: Text) -> HTTPResponse:
+        rasa.shared.utils.io.raise_warning(
+            'The "POST /conversations/<conversation_id>/execute"'
+            " endpoint is deprecated. Inserting actions to the tracker externally"
+            " should be avoided. Actions should be predicted by the policies only.",
+            category=FutureWarning,
+        )
         request_params = request.json
 
         action_to_execute = request_params.get("name", None)

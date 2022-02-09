@@ -50,7 +50,7 @@ jobs:
 
     - name: Set up Python 3.7 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
       with:
         python-version: 3.7
 
@@ -66,17 +66,26 @@ jobs:
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
-    - name: Set up virtual environment
-      if: needs.changes.outputs.backend == 'true'
-      run: poetry config virtualenvs.in-project true
-
     - name: Load Poetry Cached Libraries ⬇
+      id: cache-poetry
       if: needs.changes.outputs.backend == 'true'
       uses: actions/cache@v1
       with:
         path: .venv
         key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-3.7
+
+    - name: Clear Poetry cache
+      if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')
+      run: rm -r .venv
+
+    - name: Create virtual environment
+      if: (steps.cache-poetry.outputs.cache-hit != 'true' || contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-security-scans')) && needs.changes.outputs.backend == 'true'
+      run: python -m venv create .venv
+
+    - name: Set up virtual environment
+      if: needs.changes.outputs.backend == 'true'
+      run: poetry config virtualenvs.in-project true
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true'
