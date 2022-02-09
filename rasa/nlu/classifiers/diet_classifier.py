@@ -1032,8 +1032,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     def persist(self) -> None:
         """Persist this model into the passed directory."""
-        import shutil
-
         if self.model is None:
             return None
 
@@ -1043,8 +1041,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
             rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
-            if self.component_config[CHECKPOINT_MODEL]:
-                shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+            if self.component_config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
+                self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                # Save an empty file to flag that this model has been
+                # produced using checkpointing
+                checkpoint_marker = model_path / f"{file_name}.from_checkpoint.pkl"
+                checkpoint_marker.touch()
+
             self.model.save(str(tf_model_file))
 
             io_utils.pickle_dump(
