@@ -13,8 +13,9 @@ DEFAULT_MODEL_NAME = "bert"
 
 class CompMetadata(NamedTuple):
     """Holds information about component."""
-    model_name: Optional[Text] = None
-    model_weights: Text = 0
+    model_name: Text
+    model_weights: Text
+    cache_dir: Optional[Text] = None
 
 
 def get_model_name_and_weights_from_config(
@@ -29,22 +30,23 @@ def get_model_name_and_weights_from_config(
 
     name_weight_tuples = []
     for lmfeat_step in steps:
+        cache_dir = lmfeat_step.get("cache_dir", None)
         if "model_name" not in lmfeat_step:
             model_name = DEFAULT_MODEL_NAME
             model_weights = model_weights_defaults[DEFAULT_MODEL_NAME]
         else:
             model_name = lmfeat_step["model_name"]
             model_weights = lmfeat_step.get("model_weights", model_weights_defaults[model_name])
-        name_weight_tuples.append(CompMetadata(model_name, model_weights))
+        name_weight_tuples.append(CompMetadata(model_name, model_weights, cache_dir))
 
     return name_weight_tuples
 
 
-def instantiate_to_download(model_weights: Text) -> None:
+def instantiate_to_download(comp: CompMetadata) -> None:
     """Instantiates Auto class instances, but only to download."""
-    _ = AutoTokenizer.from_pretrained(model_weights)
+    _ = AutoTokenizer.from_pretrained(comp.model_weights, cache_dir=comp.cache_dir)
     print("Done with AutoTokenizer, now doing TFAutoModel")
-    _ = TFAutoModel.from_pretrained(model_weights)
+    _ = TFAutoModel.from_pretrained(comp.model_weights, cache_dir=comp.cache_dir)
 
 
 def download(config_path: str):
@@ -59,7 +61,7 @@ def download(config_path: str):
               f"model_weights: {name_weight_tuple.model_weights}")
         start = time.time()
 
-        instantiate_to_download(name_weight_tuple.model_weights)
+        instantiate_to_download(name_weight_tuple)
 
         duration_in_sec = time.time() - start
         print(f"Instantiating Auto classes takes {duration_in_sec:.2f}seconds")

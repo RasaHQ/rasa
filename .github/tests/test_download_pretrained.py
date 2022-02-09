@@ -26,6 +26,7 @@ def test_download_pretrained_lmf_exists_with_model_name():
     steps = config.get("pipeline", [])
     step = list(filter(lambda x: x["name"] == download_pretrained.COMP_NAME, steps))[0]
     step["model_name"] = "roberta"
+    step["cache_dir"] = "/this/dir"
 
     with tempfile.NamedTemporaryFile("w+") as fp:
         yaml.dump(config, fp)
@@ -35,6 +36,7 @@ def test_download_pretrained_lmf_exists_with_model_name():
         )
     assert name_weight_tuples[0].model_name == "roberta"
     assert name_weight_tuples[0].model_weights == "roberta-base"
+    assert name_weight_tuples[0].cache_dir == "/this/dir"
 
 
 def test_download_pretrained_lmf_exists_with_multiple_model_names():
