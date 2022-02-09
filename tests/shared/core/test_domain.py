@@ -1790,23 +1790,6 @@ def test_invalid_domain_dir_with_duplicates():
     assert error_message == warning[2].message.args[0]
 
 
-@pytest.mark.parametrize(
-    "domain_path",
-    [
-        "data/test_domains/duplicate_actions.yml",
-        "data/test_domains/duplicate_entities.yml",
-        "data/test_domains/duplicate_intents.yml",
-    ],
-)
-def test_invalid_domain_file_with_duplicates(domain_path):
-    """
-    Raises InvalidDomain if a domain is loaded from a file with
-    duplicated entities, actions and intents.
-    """
-    with pytest.raises(InvalidDomain):
-        Domain.from_file(domain_path)
-
-
 def test_domain_fingerprint_consistency_across_runs():
     domain_yaml = """
          version: "3.0"

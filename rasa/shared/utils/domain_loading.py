@@ -1,4 +1,4 @@
-from typing import Dict, Text, List, Any, NamedTuple
+from typing import Dict, Text, List, Any, NamedTuple, Tuple
 
 from rasa.shared.constants import (
     SESSION_CONFIG_KEY,
@@ -108,6 +108,47 @@ def merge_lists_of_dicts(
     return list(merged_dicts.values())
 
 
+def _merge_intents_and_entities(
+    combined: Dict, domain_dict: Dict, duplicates: Dict, override: bool = False
+) -> Tuple:
+    for key in [KEY_INTENTS, KEY_ENTITIES]:
+        if combined.get(key) or domain_dict.get(key):
+            duplicates[key] = extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
+            combined[key] = combined.get(key, [])
+            domain_dict[key] = domain_dict.get(key, [])
+            combined[key] = merge_lists_of_dicts(
+                combined[key], domain_dict[key], override
+            )
+    return combined, duplicates
+
+
+def _merge_actions_and_e2e_actions(
+    combined: Dict, domain_dict: Dict, duplicates: Dict
+) -> Tuple:
+    for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
+        duplicates[key] = extract_duplicates(
+            combined.get(key, []), domain_dict.get(key, [])
+        )
+        combined[key] = merge_lists(combined.get(key, []), domain_dict.get(key, []))
+
+    return combined, duplicates
+
+
+def _merge_forms_responses_slots(
+    combined: Dict, domain_dict: Dict, duplicates: Dict, override: bool = False
+) -> Tuple:
+    for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+        duplicates[key] = extract_duplicates(
+            combined.get(key, []), domain_dict.get(key, [])
+        )
+        combined[key] = merge_dicts(
+            combined.get(key, {}), domain_dict.get(key, {}), override
+        )
+    return combined, duplicates
+
+
 def combine_domain_dicts(
     domain_dict: Dict, combined: Dict, override: bool = False, is_dir: bool = False
 ) -> Dict:
@@ -129,35 +170,21 @@ def combine_domain_dicts(
 
     duplicates: Dict[Text, List[Text]] = {}
 
-    for key in [KEY_INTENTS, KEY_ENTITIES]:
-        if combined.get(key) or domain_dict.get(key):
-            duplicates[key] = extract_duplicates(
-                combined.get(key, []), domain_dict.get(key, [])
-            )
-            combined[key] = combined.get(key, [])
-            domain_dict[key] = domain_dict.get(key, [])
-            combined[key] = merge_lists_of_dicts(
-                combined[key], domain_dict[key], override
-            )
+    combined, duplicates = _merge_intents_and_entities(
+        combined, domain_dict, duplicates, override
+    )
 
     # remove existing forms from new actions
     for form in combined.get(KEY_FORMS, []):
         if form in domain_dict.get(KEY_ACTIONS, []):
             domain_dict[KEY_ACTIONS].remove(form)
 
-    for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
-        duplicates[key] = extract_duplicates(
-            combined.get(key, []), domain_dict.get(key, [])
-        )
-        combined[key] = merge_lists(combined.get(key, []), domain_dict.get(key, []))
-
-    for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
-        duplicates[key] = extract_duplicates(
-            combined.get(key, []), domain_dict.get(key, [])
-        )
-        combined[key] = merge_dicts(
-            combined.get(key, {}), domain_dict.get(key, {}), override
-        )
+    combined, duplicates = _merge_actions_and_e2e_actions(
+        combined, domain_dict, duplicates
+    )
+    combined, duplicates = _merge_forms_responses_slots(
+        combined, domain_dict, duplicates, override
+    )
 
     if duplicates:
         duplicates = clean_duplicates(duplicates)

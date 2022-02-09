@@ -1781,7 +1781,7 @@ class Domain:
 def warn_about_duplicates_found_during_domain_merging(
     duplicates: Dict[Text, List[Text]]
 ) -> None:
-    """Emits warning about found duplicates during the loading multiple domain paths."""
+    """Emits warning about found duplicates while loading multiple domain paths."""
     message = ""
     for key in [
         KEY_INTENTS,
