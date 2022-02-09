@@ -71,6 +71,7 @@ def get_model_name_and_weights_from_config(
 
 def instantiate_to_download(comp: LmfSpec) -> None:
     """Instantiates Auto class instances, but only to download."""
+
     _ = AutoTokenizer.from_pretrained(comp.model_weights, cache_dir=comp.cache_dir)
     logger.info("Done with AutoTokenizer, now doing TFAutoModel")
     _ = TFAutoModel.from_pretrained(comp.model_weights, cache_dir=comp.cache_dir)
