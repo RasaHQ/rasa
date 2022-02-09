@@ -528,22 +528,9 @@ async def test_train_model_checkpointing(
     create_train_load_and_process_diet(
         {EPOCHS: 2, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 10, CHECKPOINT_MODEL: True}
     )
-
     with default_model_storage.read_from(default_diet_resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
-
-        assert checkpoint_dir.is_dir()
-
-        """
-        Tricky to validate the *exact* number of files that should be there, however
-        there must be at least the following:
-            - metadata.json
-            - checkpoint
-            - component_1_CountVectorsFeaturizer (as per the pipeline above)
-            - component_2_DIETClassifier files (more than 1 file)
-        """
         all_files = list(model_dir.rglob("*.*"))
-        assert len(all_files) > 4
+        assert any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
 async def test_process_unfeaturized_input(
@@ -565,12 +552,11 @@ async def test_train_model_not_checkpointing(
     default_diet_resource: Resource,
     create_train_load_and_process_diet: Callable[..., Message],
 ):
-    create_train_load_and_process_diet({EPOCHS: 2, CHECKPOINT_MODEL: False})
+    create_train_load_and_process_diet({EPOCHS: 1, CHECKPOINT_MODEL: False})
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
-
-        assert not checkpoint_dir.is_dir()
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
 async def test_train_fails_with_zero_eval_num_epochs(
@@ -620,9 +606,8 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
     train_load_and_process_diet(classifier)
 
     with default_model_storage.read_from(default_diet_resource) as model_dir:
-        checkpoint_dir = model_dir / "checkpoints"
-
-        assert not checkpoint_dir.is_dir()
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
 
 @pytest.mark.parametrize(
