@@ -1052,6 +1052,83 @@ Intent classifiers assign one of the intents defined in the domain file to incom
   ```
 
 
+### LogisticRegressionClassifier
+
+* **Short**
+
+  Logistic regression intent classifier, using the [scikit-learn implementation](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
+
+
+
+* **Outputs**
+
+  `intent` and `intent_ranking`
+
+
+
+* **Requires** 
+
+  Either `sparse_features` or `dense_features` need to be present. 
+
+
+
+* **Output-Example** 
+
+```json
+{
+    "intent": {"name": "greet", "confidence": 0.780},
+    "intent_ranking": [
+        {
+            "confidence": 0.780,
+            "name": "greet"
+        },
+        {
+            "confidence": 0.140,
+            "name": "goodbye"
+        },
+        {
+            "confidence": 0.080,
+            "name": "restaurant_search"
+        }
+    ]
+}
+```
+
+
+* **Description**
+
+  This classifier uses scikit-learn's logistic regression implementation to perform intent classification.
+  It's able to use only sparse features, but will also pick up any dense features that are present. In general,
+  DIET should yield higher accuracy results, but this classifier should train faster and may be used as
+  a lightweight benchmark. Our implementation uses the base settings from scikit-learn, with the exception
+  of the `class_weight` parameter where we assume the `"balanced"` setting.
+
+
+
+* **Configuration**
+
+An example configuration with all the defaults can be found below.
+
+```yaml
+pipeline:
+- name: LogisticRegressionClassifier
+  max_iter: 100
+  solver: lbfgs
+  tol: 0.0001
+  random_state: 42
+```
+
+There configuration parameters are briefly explained below. 
+
+- `max_iter`: Maximum number of iterations taken for the solvers to converge.
+- `solver`: Solver to be used. For very small datasets you might consider `liblinear`.
+- `tol`: Tolerance for stopping criteria of the optimizer.
+- `random_state`: Used to shuffle the data before training.
+
+More details on the parameters can be found on the [scikit-learn documentation page](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
+
+
+
 ### SklearnIntentClassifier
 
 
