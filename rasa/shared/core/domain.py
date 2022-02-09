@@ -41,7 +41,12 @@ from rasa.shared.constants import (
 )
 import rasa.shared.core.constants
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE, MAPPING_CONDITIONS
-from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
+from rasa.shared.exceptions import (
+    RasaException,
+    YamlException,
+    YamlSyntaxException,
+    InvalidDomain,
+)
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
@@ -84,9 +89,7 @@ State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
 
-
-class InvalidDomain(RasaException):
-    """Exception that can be raised when domain is not valid."""
+InvalidDomain = InvalidDomain
 
 
 class ActionNotFoundException(ValueError, RasaException):
@@ -165,13 +168,14 @@ class Domain:
 
         Args:
             data: The serialized domain.
-            duplicates: A dictionary where keys are `intents`, `slots`, `forms` and
-                `responses` and values are lists of duplicated entries of a
-                corresponding type when the domain is built from multiple files.
 
         Returns:
             The instantiated `Domain` object.
         """
+        duplicates = data.get("duplicates", None)
+        if duplicates:
+            warn_about_duplicates_found_during_domain_merging(duplicates)
+
         responses = data.get(KEY_RESPONSES, {})
 
         domain_slots = data.get(KEY_SLOTS, {})
@@ -184,7 +188,6 @@ class Domain:
 
         forms = data.get(KEY_FORMS, {})
         _validate_forms(forms)
-        duplicates = data.get("duplicates", None)
 
         return cls(
             intents=intents,
@@ -195,7 +198,6 @@ class Domain:
             forms=data.get(KEY_FORMS, {}),
             action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
-            duplicates=duplicates,
             **additional_arguments,
         )
 
@@ -537,7 +539,6 @@ class Domain:
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
-        duplicates: Optional[Dict[Text, List[Text]]] = None,
     ) -> None:
         """Creates a `Domain`.
 
@@ -554,9 +555,6 @@ class Domain:
                 events for entities if there are slots with the same name as the entity.
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
-            duplicates: A dictionary where keys are `intents`, `slots`, `forms` and
-                `responses` and values are lists of duplicated entries of a
-                 corresponding type when the domain is built from multiple files.
         """
         self.entities, self.roles, self.groups = self.collect_entity_properties(
             entities
@@ -577,7 +575,6 @@ class Domain:
 
         self.action_texts = action_texts or []
         self.session_config = session_config
-        self.duplicates = duplicates
 
         self._custom_actions = action_names
 
@@ -1630,7 +1627,6 @@ class Domain:
             duplicates: List[Tuple[List[Text], Text]]
         ) -> Text:
             """Return a message given a list of duplicates."""
-
             message = ""
             for d, name in duplicates:
                 if d:
@@ -1780,6 +1776,35 @@ class Domain:
             f"{len(self.slots)} slots, "
             f"{len(self.entities)} entities, {len(self.form_names)} forms"
         )
+
+
+def warn_about_duplicates_found_during_domain_merging(
+    duplicates: Dict[Text, List[Text]]
+) -> None:
+    """Emits warning about found duplicates during the loading multiple domain paths."""
+    message = ""
+    for key in [
+        KEY_INTENTS,
+        KEY_FORMS,
+        KEY_ACTIONS,
+        KEY_E2E_ACTIONS,
+        KEY_RESPONSES,
+        KEY_SLOTS,
+        KEY_ENTITIES,
+    ]:
+        duplicates_per_key = duplicates.get(key)
+        if duplicates_per_key:
+            if message:
+                message += " \n"
+
+            duplicates_per_key_str = ", ".join(duplicates_per_key)
+            message += (
+                f"The following duplicated {key} have been found "
+                f"across multiple domain files: {duplicates_per_key_str}"
+            )
+
+    rasa.shared.utils.io.raise_warning(message, docs=DOCS_URL_DOMAINS)
+    return None
 
 
 def _validate_forms(forms: Union[Dict, List]) -> None:

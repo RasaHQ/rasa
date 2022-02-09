@@ -1773,63 +1773,38 @@ def test_domain_invalid_yml_in_folder():
         Domain.from_directory("data/test_domains/test_domain_from_directory/")
 
 
-def test_domain_with_duplicates():
+def test_invalid_domain_dir_with_duplicates():
     """
-    Check if a domain with duplicated slots, responses and intents in domain files
-    removes the duplications in the domain.
+    Raises InvalidDomain if a domain is loaded from a directory with duplicated slots,
+    responses and intents in domain files.
     """
-    domain = Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
-    expected_intents = [
-        "affirm",
-        "back",
-        "bot_challenge",
-        "deny",
-        "goodbye",
-        "greet",
-        "mood_great",
-        "mood_unhappy",
-        "nlu_fallback",
-        "out_of_scope",
-        "restart",
-        "session_start",
-        "test",
-    ]
-    expected_responses = {
-        "utter_greet": [{"text": "Hey! How are you?"}],
-        "utter_did_that_help": [{"text": "Did that help you?"}],
-        "utter_happy": [{"text": "Great, carry on!"}],
-        "utter_cheer_up": [
-            {
-                "text": "Here is something to cheer you up:",
-                "image": "https://i.imgur.com/nGF1K8f.jpg",
-            }
-        ],
-        "utter_goodbye": [{"text": "Bye"}],
-        "utter_iamabot": [{"text": "I am a bot, powered by Rasa."}],
-    }
-    assert domain.intents == expected_intents
-    assert domain.responses == expected_responses
-    assert domain.duplicates["slots"] == ["mood"]
-    assert domain.duplicates["responses"] == ["utter_did_that_help", "utter_greet"]
-    assert domain.duplicates["intents"] == ["greet"]
+    with pytest.warns(UserWarning) as warning:
+        Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
+
+    error_message = (
+        "The following duplicated intents have been found across multiple domain files: greet \n"
+        "The following duplicated responses have been found across multiple domain files: "
+        "utter_did_that_help, utter_greet \n"
+        "The following duplicated slots have been found across multiple domain files: mood"
+    )
+    assert error_message == warning[2].message.args[0]
 
 
-def test_domain_without_duplicates():
+@pytest.mark.parametrize(
+    "domain_path",
+    [
+        "data/test_domains/duplicate_actions.yml",
+        "data/test_domains/duplicate_entities.yml",
+        "data/test_domains/duplicate_intents.yml",
+    ],
+)
+def test_invalid_domain_file_with_duplicates(domain_path):
     """
-    Check if a domain without duplicated slots, responses and intents contains
-    nothing in `duplicates` field.
+    Raises InvalidDomain if a domain is loaded from a file with
+    duplicated entities, actions and intents.
     """
-    domain = Domain.from_directory("data/test_domains/test_domain_without_duplicates/")
-    assert domain.duplicates == {}
-
-
-def test_domain_duplicates_when_one_domain_file():
-    """
-    Check if a domain with duplicated slots, responses and intents contains
-    a correct information in `duplicates` field.
-    """
-    domain = Domain.from_file(path="data/test_domains/default.yml")
-    assert domain.duplicates is None
+    with pytest.raises(InvalidDomain):
+        Domain.from_file(domain_path)
 
 
 def test_domain_fingerprint_consistency_across_runs():
