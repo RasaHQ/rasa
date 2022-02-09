@@ -337,6 +337,7 @@ jobs:
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           DATASET_REPOSITORY_BRANCH: "main"
           TYPE: ${{ matrix.type }}
+          INDEX_REPETITION: ${{ matrix.index_repetition }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.ref }}
           PR_ID: "${{ github.event.number }}"
@@ -353,7 +354,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         uses: actions/upload-artifact@v2
         with:
-          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
           path: report.json
 
       - name: Stop Datadog Agent
@@ -531,7 +532,13 @@ jobs:
       - name: Analyse Performance 🔍
         id: performance
         run: |
+          set +e
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
+          if [ $? -ne 0 ]; then
+              echo "New template failed. Try with legacy template."
+              OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results_legacy.tmpl)"
+          fi
+          set -e
 
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
