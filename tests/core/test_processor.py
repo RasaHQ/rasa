@@ -1367,14 +1367,14 @@ def test_predict_next_action_raises_limit_reached_exception(
 
 
 async def test_processor_logs_text_tokens_in_tracker(
-    mood_agent: Agent, whitespace_tokenizer: WhitespaceTokenizer
+    default_agent: Agent, whitespace_tokenizer: WhitespaceTokenizer
 ):
     text = "Hello there"
     tokens = whitespace_tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [(t.start, t.end) for t in tokens]
 
     message = UserMessage(text)
-    processor = mood_agent.processor
+    processor = default_agent.processor
     tracker = await processor.log_message(message)
     event = tracker.get_last_event_for(event_type=UserUttered)
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
@@ -1382,20 +1382,20 @@ async def test_processor_logs_text_tokens_in_tracker(
     assert event_tokens == indices
 
 
-async def test_processor_valid_slot_setting(form_bot_agent: Agent):
-    processor = form_bot_agent.processor
+async def test_processor_valid_slot_setting(default_agent: Agent):
+    processor = default_agent.processor
     message = UserMessage(
-        "that's correct",
+        "Hiya Peter",
         CollectingOutputChannel(),
         "test",
         parse_data={
-            "intent": {"name": "affirm"},
-            "entities": [{"entity": "seating", "value": True}],
+            "intent": {"name": "greet"},
+            "entities": [{"entity": "name", "value": "Peter"}],
         },
     )
     await processor.handle_message(message)
     tracker = processor.get_tracker("test")
-    assert SlotSet("outdoor_seating", True) in tracker.events
+    assert SlotSet("name", "Peter") in tracker.events
 
 
 async def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
@@ -1491,8 +1491,8 @@ async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFi
     )
 
 
-async def test_model_name_is_available(trained_moodbot_path: Text):
-    processor = Agent.load(model_path=trained_moodbot_path).processor
+async def test_model_name_is_available(trained_rasa_model: Text):
+    processor = Agent.load(model_path=trained_rasa_model).processor
     assert len(processor.model_filename) > 0
     assert "/" not in processor.model_filename
 

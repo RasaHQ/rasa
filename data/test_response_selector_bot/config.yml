@@ -4,11 +4,7 @@ language: en
 pipeline:
   - name: "WhitespaceTokenizer"
   - name: "CountVectorsFeaturizer"
-  - name: "DIETClassifier"
-    entity_recognition: False
-    epochs: 8
-    learning_rate: 0.01
-    random_seed: 2021
+  - name: KeywordIntentClassifier
   - name: ResponseSelector
     epochs: 5
     learning_rate: 0.01
