@@ -80,7 +80,8 @@ if TYPE_CHECKING:
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
     ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()], SanicResponse  # noqa: F821
+        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        SanicResponse,
     ]
 
 
@@ -644,6 +645,15 @@ def create_app(
 
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:
+        # `sanic-jwt` depends on having an available event loop when making the call to
+        # `Initialize`. If there is none, the server startup will fail with
+        # `There is no current event loop in thread 'MainThread'`.
+        try:
+            _ = asyncio.get_running_loop()
+        except RuntimeError:
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+
         # since we only want to check signatures, we don't actually care
         # about the JWT method and set the passed secret as either symmetric
         # or asymmetric key. jwt lib will choose the right one based on method
