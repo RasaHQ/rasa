@@ -1,11 +1,14 @@
 import argparse
+import logging
 import time
 from typing import List, NamedTuple, Optional, Text
 
 from transformers import AutoTokenizer, TFAutoModel
 
 import rasa.shared.utils.io
-from rasa.nlu.utils.hugging_face.registry import model_weights_defaults
+from rasa.nlu.utils.hugging_face.registry import model_weights_defaults, model_class_dict
+
+logger = logging.getLogger(__name__)
 
 COMP_NAME = "LanguageModelFeaturizer"
 DEFAULT_MODEL_NAME = "bert"
@@ -30,13 +33,34 @@ def get_model_name_and_weights_from_config(
 
     lmf_specs = []
     for lmfeat_step in steps:
-        cache_dir = lmfeat_step.get("cache_dir", None)
+        print("lmfeat_step", lmfeat_step)
         if "model_name" not in lmfeat_step:
+            if "model_weights" in lmfeat_step:
+                model_weights = lmfeat_step["model_weights"]
+                raise KeyError(
+                    "When model_name is not given, then model_weights cannot be set. "
+                    f"Here, model_weigths is set to {model_weights}"
+                )
             model_name = DEFAULT_MODEL_NAME
             model_weights = model_weights_defaults[DEFAULT_MODEL_NAME]
         else:
             model_name = lmfeat_step["model_name"]
-            model_weights = lmfeat_step.get("model_weights", model_weights_defaults[model_name])
+
+            if model_name not in model_class_dict:
+                raise KeyError(
+                    f"'{model_name}' not a valid model name. Choose from "
+                    f"{str(list(model_class_dict.keys()))} or create"
+                    f"a new class inheriting from this class to support your model."
+                )
+
+            model_weights = lmfeat_step.get("model_weights")
+            if not model_weights:
+                logger.info(
+                    f"Model weights not specified. Will choose default model "
+                    f"weights: {model_weights_defaults[model_name]}"
+                )
+                model_weights = model_weights_defaults[model_name]
+        cache_dir = lmfeat_step.get("cache_dir", None)
         lmf_specs.append(LmfSpec(model_name, model_weights, cache_dir))
 
     return lmf_specs
@@ -49,8 +73,20 @@ def instantiate_to_download(comp: LmfSpec) -> None:
     _ = TFAutoModel.from_pretrained(comp.model_weights, cache_dir=comp.cache_dir)
 
 
+def validate_lmf_spec(lmf_spec: LmfSpec):
+    if lmf_spec.model_name not in model_class_dict:
+        raise KeyError(
+            f"'{lmf_spec.model_name}' not a valid model name. Choose from "
+            f"{str(list(model_class_dict.keys()))} or create"
+            f"a new class inheriting from this class to support your model."
+        )
+
+
 def download(config_path: str):
     lmf_specs = get_model_name_and_weights_from_config(config_path)
+
+    for lmf_spec in lmf_specs:
+        validate_lmf_spec
 
     if not lmf_specs:
         print(f"No {COMP_NAME} model_weights used for this config: Skipping download")
