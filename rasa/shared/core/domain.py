@@ -1793,7 +1793,6 @@ class Domain:
             duplicates: List[Tuple[List[Text], Text]]
         ) -> Text:
             """Return a message given a list of duplicates."""
-
             message = ""
             for d, name in duplicates:
                 if d:
