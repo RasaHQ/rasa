@@ -26,6 +26,7 @@ from rasa.utils.tensorflow.constants import (
     SENTENCE,
 )
 from rasa.utils.tensorflow import layers
+import rasa.shared.utils.io
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
@@ -810,6 +811,15 @@ class RasaSequenceLayer(RasaCustomLayer):
         if isinstance(transformer_units, dict):
             transformer_units = transformer_units[attribute]
         if transformer_layers > 0 and (not transformer_units or transformer_units < 1):
+            rasa.shared.utils.io.raise_warning(
+                f"`{TRANSFORMER_SIZE}` is set to "
+                f"`{transformer_layers}` for "
+                f"{attribute}, but a positive size is required when using "
+                f"`{NUM_TRANSFORMER_LAYERS} > 0`. {attribute} will proceed, using "
+                f"`{TRANSFORMER_SIZE}={DEFAULT_TRANSFORMER_SIZE}`. "
+                f"Alternatively, specify a different value in the component's config.",
+                category=UserWarning,
+            )
             transformer_units = DEFAULT_TRANSFORMER_SIZE
 
         return transformer_layers, transformer_units

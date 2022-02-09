@@ -90,6 +90,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_RANKING_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
+    DEFAULT_TRANSFORMER_SIZE,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -392,6 +393,7 @@ class ResponseSelector(DIETClassifier):
                 f"({self.retrieval_intent})" if self.retrieval_intent else ""
             )
             self._warn_about_transformer_and_hidden_layers_enabled(selector_name)
+            self.component_config[TRANSFORMER_SIZE] = DEFAULT_TRANSFORMER_SIZE
 
     def _check_config_parameters(self) -> None:
         """Checks that component configuration makes sense; corrects it where needed."""
