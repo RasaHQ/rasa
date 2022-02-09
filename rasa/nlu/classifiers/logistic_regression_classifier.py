@@ -154,8 +154,9 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
             intent_ranking = [
                 {"name": k, "confidence": v} for k, v in intent_info.items()
             ]
+            sorted_ranking = sorted(intent_ranking, key=lambda e: -e["confidence"])
             message.set("intent", intent, add_to_output=True)
-            message.set("intent_ranking", intent_ranking, add_to_output=True)
+            message.set("intent_ranking", sorted_ranking, add_to_output=True)
         return messages
 
     def persist(self) -> None:

@@ -52,8 +52,14 @@ def training_data():
     )
 
 
-def test_predictions_added(
-    training_data, tmpdir, featurizer_sparse):
+def is_sorted(ranking):
+    """Confirms if the ranking is sorted."""
+    for i in range(len(ranking) - 1):
+        assert ranking[i]["confidence"] >= ranking[i + 1]["confidence"]
+    return True
+
+
+def test_predictions_added(training_data, tmpdir, featurizer_sparse):
     """Checks if the sizes are appropriate."""
     # Set up classifier
     node_storage = LocalModelStorage(pathlib.Path(tmpdir))
@@ -85,6 +91,7 @@ def test_predictions_added(
         # Confidence should be between 0 and 1.
         assert 0 < conf < 1
         ranking = msg.get("intent_ranking")
+        assert is_sorted(ranking)
         assert {i["name"] for i in ranking} == {"greet", "goodbye"}
         # Confirm the sum of confidences is 1.0
         assert np.isclose(np.sum([i["confidence"] for i in ranking]), 1.0)
