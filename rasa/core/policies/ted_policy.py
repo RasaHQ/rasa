@@ -2,7 +2,6 @@ from __future__ import annotations
 import logging
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-import shutil
 from pathlib import Path
 from collections import defaultdict
 
@@ -914,8 +913,13 @@ class TEDPolicy(Policy):
 
             self.featurizer.persist(model_path)
 
-            if self.config[CHECKPOINT_MODEL]:
-                shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+            if self.config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
+                self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                # Save an empty file to flag that this model has been
+                # produced using checkpointing
+                checkpoint_marker = model_path / f"{model_filename}.from_checkpoint.pkl"
+                checkpoint_marker.touch()
+
             self.model.save(str(tf_model_file))
 
             self.persist_model_utilities(model_path)
