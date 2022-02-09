@@ -90,7 +90,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_RANKING_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
-    DEFAULT_TRANSFORMER_SIZE,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -382,27 +381,6 @@ class ResponseSelector(DIETClassifier):
                 category=UserWarning,
             )
 
-    def _warn_and_correct_transformer_size(self, selector_name: Text) -> None:
-        """Corrects transformer size so that training doesn't break; informs the user.
-
-        If a transformer is used, the default `transformer_size` breaks things.
-        We need to set a reasonable default value so that the model works fine.
-        """
-        if (
-            self.component_config[TRANSFORMER_SIZE] is None
-            or self.component_config[TRANSFORMER_SIZE] < 1
-        ):
-            rasa.shared.utils.io.raise_warning(
-                f"`{TRANSFORMER_SIZE}` is set to "
-                f"`{self.component_config[TRANSFORMER_SIZE]}` for "
-                f"{selector_name}, but a positive size is required when using "
-                f"`{NUM_TRANSFORMER_LAYERS} > 0`. {selector_name} will proceed, using "
-                f"`{TRANSFORMER_SIZE}={DEFAULT_TRANSFORMER_SIZE}`. "
-                f"Alternatively, specify a different value in the component's config.",
-                category=UserWarning,
-            )
-            self.component_config[TRANSFORMER_SIZE] = DEFAULT_TRANSFORMER_SIZE
-
     def _check_config_params_when_transformer_enabled(self) -> None:
         """Checks & corrects config parameters when the transformer is enabled.
 
@@ -414,7 +392,6 @@ class ResponseSelector(DIETClassifier):
                 f"({self.retrieval_intent})" if self.retrieval_intent else ""
             )
             self._warn_about_transformer_and_hidden_layers_enabled(selector_name)
-            self._warn_and_correct_transformer_size(selector_name)
 
     def _check_config_parameters(self) -> None:
         """Checks that component configuration makes sense; corrects it where needed."""
