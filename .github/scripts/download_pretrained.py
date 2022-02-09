@@ -1,6 +1,6 @@
 import argparse
 import time
-from typing import List, NamedTuple, Optional, Text, Tuple
+from typing import List, NamedTuple, Optional, Text
 
 from transformers import AutoTokenizer, TFAutoModel
 
@@ -11,8 +11,8 @@ COMP_NAME = "LanguageModelFeaturizer"
 DEFAULT_MODEL_NAME = "bert"
 
 
-class CompMetadata(NamedTuple):
-    """Holds information about component."""
+class LmfSpec(NamedTuple):
+    """Holds information about the LanguageModelFeaturizer."""
     model_name: Text
     model_weights: Text
     cache_dir: Optional[Text] = None
@@ -20,7 +20,7 @@ class CompMetadata(NamedTuple):
 
 def get_model_name_and_weights_from_config(
     config_path: str,
-) -> List[CompMetadata]:
+) -> List[LmfSpec]:
     config = rasa.shared.utils.io.read_config_file(config_path)
     print(config)
     steps = config.get("pipeline", [])
@@ -28,7 +28,7 @@ def get_model_name_and_weights_from_config(
     # Look for LanguageModelFeaturizer steps
     steps = list(filter(lambda x: x["name"] == COMP_NAME, steps))
 
-    name_weight_tuples = []
+    lmf_specs = []
     for lmfeat_step in steps:
         cache_dir = lmfeat_step.get("cache_dir", None)
         if "model_name" not in lmfeat_step:
@@ -37,12 +37,12 @@ def get_model_name_and_weights_from_config(
         else:
             model_name = lmfeat_step["model_name"]
             model_weights = lmfeat_step.get("model_weights", model_weights_defaults[model_name])
-        name_weight_tuples.append(CompMetadata(model_name, model_weights, cache_dir))
+        lmf_specs.append(LmfSpec(model_name, model_weights, cache_dir))
 
-    return name_weight_tuples
+    return lmf_specs
 
 
-def instantiate_to_download(comp: CompMetadata) -> None:
+def instantiate_to_download(comp: LmfSpec) -> None:
     """Instantiates Auto class instances, but only to download."""
     _ = AutoTokenizer.from_pretrained(comp.model_weights, cache_dir=comp.cache_dir)
     print("Done with AutoTokenizer, now doing TFAutoModel")
@@ -50,18 +50,18 @@ def instantiate_to_download(comp: CompMetadata) -> None:
 
 
 def download(config_path: str):
-    name_weight_tuples = get_model_name_and_weights_from_config(config_path)
+    lmf_specs = get_model_name_and_weights_from_config(config_path)
 
-    if not name_weight_tuples:
+    if not lmf_specs:
         print(f"No {COMP_NAME} model_weights used for this config: Skipping download")
         return
 
-    for name_weight_tuple in name_weight_tuples:
-        print(f"model_name: {name_weight_tuple.model_name}, "
-              f"model_weights: {name_weight_tuple.model_weights}")
+    for lmf_spec in lmf_specs:
+        print(f"model_name: {lmf_spec.model_name}, "
+              f"model_weights: {lmf_spec.model_weights}")
         start = time.time()
 
-        instantiate_to_download(name_weight_tuple)
+        instantiate_to_download(lmf_spec)
 
         duration_in_sec = time.time() - start
         print(f"Instantiating Auto classes takes {duration_in_sec:.2f}seconds")
