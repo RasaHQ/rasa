@@ -1,3 +1,3 @@
 {
-  "body": "```yml\r\ninclude:\r\n  - dataset: [\"Sara\", \"financial-demo\"]\r\n    config: [\"Sparse + DIET(bow) + ResponseSelector(bow)\", \"Rules + TED\"]\r\n```"
+  "body": "```yml\r\ninclude:\r\n  - dataset: [\"all\"]\r\n    config: [\"all\"]\r\n```"
 }
