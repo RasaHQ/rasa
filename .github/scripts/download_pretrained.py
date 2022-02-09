@@ -1,6 +1,6 @@
 import argparse
 import time
-from typing import Optional, Text, Tuple
+from typing import List, Optional, Text, Tuple
 
 from transformers import AutoTokenizer, TFAutoModel
 
@@ -13,30 +13,25 @@ DEFAULT_MODEL_NAME = "bert"
 
 def get_model_name_and_weights_from_config(
     config_path: str,
-) -> Tuple[Optional[Text], Optional[Text]]:
+) -> List[Tuple[Text, Text]]:
     config = rasa.shared.utils.io.read_config_file(config_path)
     print(config)
     steps = config.get("pipeline", [])
 
-    # Look for LanguageModelFeaturizer
+    # Look for LanguageModelFeaturizer steps
     steps = list(filter(lambda x: x["name"] == COMP_NAME, steps))
 
-    if len(steps) == 0:
-        print(f"No {COMP_NAME} found")
-        return None, None
-    elif len(steps) > 1:
-        print(f"Too many ({len(steps)}) {COMP_NAME}s found")
-        return None, None
+    name_weight_tuples = []
+    for lmfeat_step in steps:
+        if "model_name" not in lmfeat_step:
+            model_name = DEFAULT_MODEL_NAME
+            model_weights = model_weights_defaults[DEFAULT_MODEL_NAME]
+        else:
+            model_name = lmfeat_step["model_name"]
+            model_weights = lmfeat_step.get("model_weights", model_weights_defaults[model_name])
+        name_weight_tuples.append((model_name, model_weights))
 
-    lmfeat_step = steps[0]
-
-    if "model_name" not in lmfeat_step:
-        return DEFAULT_MODEL_NAME, model_weights_defaults[DEFAULT_MODEL_NAME]
-    model_name = lmfeat_step["model_name"]
-
-    model_weights = lmfeat_step.get("model_weights", model_weights_defaults[model_name])
-
-    return model_name, model_weights
+    return name_weight_tuples
 
 
 def instantiate_to_download(model_weights: Text) -> None:
@@ -47,18 +42,21 @@ def instantiate_to_download(model_weights: Text) -> None:
 
 
 def download(config_path: str):
-    model_name, model_weights = get_model_name_and_weights_from_config(config_path)
-    print(f"model_name: {model_name}, model_weights: {model_weights}")
+    name_weight_tuples = get_model_name_and_weights_from_config(config_path)
 
-    if not model_weights:
+    if not name_weight_tuples:
         print(f"No {COMP_NAME} model_weights used for this config: Skipping download")
         return
 
-    start = time.time()
-    instantiate_to_download(model_weights)
+    for name_weight_tuple in name_weight_tuples:
+        model_name, model_weights = name_weight_tuple
+        print(f"model_name: {model_name}, model_weights: {model_weights}")
+        start = time.time()
 
-    seconds = time.time() - start
-    print(f"Instantiating Auto classes takes {seconds:.2f}seconds")
+        instantiate_to_download(model_weights)
+
+        duration_in_sec = time.time() - start
+        print(f"Instantiating Auto classes takes {duration_in_sec:.2f}seconds")
 
 
 def create_argument_parser() -> argparse.ArgumentParser:

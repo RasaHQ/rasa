@@ -1,3 +1,4 @@
+from copy import deepcopy
 import sys
 import tempfile
 from pathlib import Path
@@ -11,9 +12,10 @@ CONFIG_FPATH = Path(__file__).parent / "test_data" / "bert_diet_response2t.yml"
 
 
 def test_download_pretrained_lmf_exists_without_params():
-    name, weights = download_pretrained.get_model_name_and_weights_from_config(
+    name_weight_tuples = download_pretrained.get_model_name_and_weights_from_config(
         CONFIG_FPATH
     )
+    name, weights = name_weight_tuples[0]
     assert name == "bert"
     assert weights == "rasa/LaBSE"
 
@@ -29,18 +31,35 @@ def test_download_pretrained_lmf_exists_with_model_name():
     with tempfile.NamedTemporaryFile("w+") as fp:
         yaml.dump(config, fp)
         fp.seek(0)
-        name, weights = download_pretrained.get_model_name_and_weights_from_config(
+        name_weight_tuples = download_pretrained.get_model_name_and_weights_from_config(
             fp.name
         )
+    name, weights = name_weight_tuples[0]
     assert name == "roberta"
     assert weights == "roberta-base"
 
 
-def test_download_pretrained_lmf_exists_with_model_weight():
-    name, weights = download_pretrained.get_model_name_and_weights_from_config(
-        CONFIG_FPATH
-    )
+def test_download_pretrained_lmf_exists_with_multiple_model_names():
+    yaml = YAML(typ="safe")
+    config = yaml.load(CONFIG_FPATH)
 
+    steps = config.get("pipeline", [])
+    step = list(filter(lambda x: x["name"] == download_pretrained.COMP_NAME, steps))[0]
+    step_new = deepcopy(step)
+    step_new["model_name"] = "roberta"
+    steps.append(step_new)
+
+    with tempfile.NamedTemporaryFile("w+") as fp:
+        yaml.dump(config, fp)
+        fp.seek(0)
+        name_weight_tuples = download_pretrained.get_model_name_and_weights_from_config(
+            fp.name
+        )
+    assert len(name_weight_tuples) == 2
+    assert name_weight_tuples[1][0] == "roberta"
+
+
+def test_download_pretrained_lmf_exists_with_model_weight():
     yaml = YAML(typ="safe")
     config = yaml.load(CONFIG_FPATH)
 
@@ -52,18 +71,15 @@ def test_download_pretrained_lmf_exists_with_model_weight():
     with tempfile.NamedTemporaryFile("w+") as fp:
         yaml.dump(config, fp)
         fp.seek(0)
-        name, weights = download_pretrained.get_model_name_and_weights_from_config(
+        name_weight_tuples = download_pretrained.get_model_name_and_weights_from_config(
             fp.name
         )
+    name, weights = name_weight_tuples[0]
     assert name == "roberta"
     assert weights == "abc"
 
 
 def test_download_pretrained_lmf_doesnt_exists():
-    name, weights = download_pretrained.get_model_name_and_weights_from_config(
-        CONFIG_FPATH
-    )
-
     yaml = YAML(typ="safe")
     config = yaml.load(CONFIG_FPATH)
 
@@ -74,9 +90,7 @@ def test_download_pretrained_lmf_doesnt_exists():
     with tempfile.NamedTemporaryFile("w+") as fp:
         yaml.dump(config, fp)
         fp.seek(0)
-        name, weights = download_pretrained.get_model_name_and_weights_from_config(
+        name_weight_tuples = download_pretrained.get_model_name_and_weights_from_config(
             fp.name
         )
-
-    assert name is None
-    assert weights is None
+    assert len(name_weight_tuples) == 0
