@@ -58,8 +58,7 @@ jobs:
 
     - name: Install Dependencies 📦
       run: |
-        poetry install --extras full
-        make install
+        make install-full
 
     - name: Lint Code 🎎
       run: |
