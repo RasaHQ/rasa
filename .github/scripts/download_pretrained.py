@@ -1,6 +1,6 @@
 import argparse
 import time
-from typing import List, Optional, Text, Tuple
+from typing import List, NamedTuple, Optional, Text, Tuple
 
 from transformers import AutoTokenizer, TFAutoModel
 
@@ -11,9 +11,15 @@ COMP_NAME = "LanguageModelFeaturizer"
 DEFAULT_MODEL_NAME = "bert"
 
 
+class CompMetadata(NamedTuple):
+    """Holds information about component."""
+    model_name: Optional[Text] = None
+    model_weights: Text = 0
+
+
 def get_model_name_and_weights_from_config(
     config_path: str,
-) -> List[Tuple[Text, Text]]:
+) -> List[CompMetadata]:
     config = rasa.shared.utils.io.read_config_file(config_path)
     print(config)
     steps = config.get("pipeline", [])
@@ -29,7 +35,7 @@ def get_model_name_and_weights_from_config(
         else:
             model_name = lmfeat_step["model_name"]
             model_weights = lmfeat_step.get("model_weights", model_weights_defaults[model_name])
-        name_weight_tuples.append((model_name, model_weights))
+        name_weight_tuples.append(CompMetadata(model_name, model_weights))
 
     return name_weight_tuples
 
@@ -49,11 +55,11 @@ def download(config_path: str):
         return
 
     for name_weight_tuple in name_weight_tuples:
-        model_name, model_weights = name_weight_tuple
-        print(f"model_name: {model_name}, model_weights: {model_weights}")
+        print(f"model_name: {name_weight_tuple.model_name}, "
+              f"model_weights: {name_weight_tuple.model_weights}")
         start = time.time()
 
-        instantiate_to_download(model_weights)
+        instantiate_to_download(name_weight_tuple.model_weights)
 
         duration_in_sec = time.time() - start
         print(f"Instantiating Auto classes takes {duration_in_sec:.2f}seconds")

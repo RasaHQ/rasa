@@ -15,9 +15,8 @@ def test_download_pretrained_lmf_exists_without_params():
     name_weight_tuples = download_pretrained.get_model_name_and_weights_from_config(
         CONFIG_FPATH
     )
-    name, weights = name_weight_tuples[0]
-    assert name == "bert"
-    assert weights == "rasa/LaBSE"
+    assert name_weight_tuples[0].model_name == "bert"
+    assert name_weight_tuples[0].model_weights == "rasa/LaBSE"
 
 
 def test_download_pretrained_lmf_exists_with_model_name():
@@ -34,9 +33,8 @@ def test_download_pretrained_lmf_exists_with_model_name():
         name_weight_tuples = download_pretrained.get_model_name_and_weights_from_config(
             fp.name
         )
-    name, weights = name_weight_tuples[0]
-    assert name == "roberta"
-    assert weights == "roberta-base"
+    assert name_weight_tuples[0].model_name == "roberta"
+    assert name_weight_tuples[0].model_weights == "roberta-base"
 
 
 def test_download_pretrained_lmf_exists_with_multiple_model_names():
@@ -56,7 +54,7 @@ def test_download_pretrained_lmf_exists_with_multiple_model_names():
             fp.name
         )
     assert len(name_weight_tuples) == 2
-    assert name_weight_tuples[1][0] == "roberta"
+    assert name_weight_tuples[1].model_name == "roberta"
 
 
 def test_download_pretrained_lmf_exists_with_model_weight():
@@ -74,9 +72,8 @@ def test_download_pretrained_lmf_exists_with_model_weight():
         name_weight_tuples = download_pretrained.get_model_name_and_weights_from_config(
             fp.name
         )
-    name, weights = name_weight_tuples[0]
-    assert name == "roberta"
-    assert weights == "abc"
+    assert name_weight_tuples[0].model_name == "roberta"
+    assert name_weight_tuples[0].model_weights == "abc"
 
 
 def test_download_pretrained_lmf_doesnt_exists():
