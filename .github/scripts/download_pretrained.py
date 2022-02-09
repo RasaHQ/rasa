@@ -6,7 +6,10 @@ from typing import List, NamedTuple, Optional, Text
 from transformers import AutoTokenizer, TFAutoModel
 
 import rasa.shared.utils.io
-from rasa.nlu.utils.hugging_face.registry import model_weights_defaults, model_class_dict
+from rasa.nlu.utils.hugging_face.registry import (
+    model_weights_defaults,
+    model_class_dict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +19,7 @@ DEFAULT_MODEL_NAME = "bert"
 
 class LmfSpec(NamedTuple):
     """Holds information about the LanguageModelFeaturizer."""
+
     model_name: Text
     model_weights: Text
     cache_dir: Optional[Text] = None
@@ -25,7 +29,7 @@ def get_model_name_and_weights_from_config(
     config_path: str,
 ) -> List[LmfSpec]:
     config = rasa.shared.utils.io.read_config_file(config_path)
-    print(config)
+    logger.info(config)
     steps = config.get("pipeline", [])
 
     # Look for LanguageModelFeaturizer steps
@@ -33,7 +37,6 @@ def get_model_name_and_weights_from_config(
 
     lmf_specs = []
     for lmfeat_step in steps:
-        print("lmfeat_step", lmfeat_step)
         if "model_name" not in lmfeat_step:
             if "model_weights" in lmfeat_step:
                 model_weights = lmfeat_step["model_weights"]
@@ -69,39 +72,31 @@ def get_model_name_and_weights_from_config(
 def instantiate_to_download(comp: LmfSpec) -> None:
     """Instantiates Auto class instances, but only to download."""
     _ = AutoTokenizer.from_pretrained(comp.model_weights, cache_dir=comp.cache_dir)
-    print("Done with AutoTokenizer, now doing TFAutoModel")
+    logger.info("Done with AutoTokenizer, now doing TFAutoModel")
     _ = TFAutoModel.from_pretrained(comp.model_weights, cache_dir=comp.cache_dir)
-
-
-def validate_lmf_spec(lmf_spec: LmfSpec):
-    if lmf_spec.model_name not in model_class_dict:
-        raise KeyError(
-            f"'{lmf_spec.model_name}' not a valid model name. Choose from "
-            f"{str(list(model_class_dict.keys()))} or create"
-            f"a new class inheriting from this class to support your model."
-        )
 
 
 def download(config_path: str):
     lmf_specs = get_model_name_and_weights_from_config(config_path)
 
-    for lmf_spec in lmf_specs:
-        validate_lmf_spec
-
     if not lmf_specs:
-        print(f"No {COMP_NAME} model_weights used for this config: Skipping download")
+        logger.info(
+            f"No {COMP_NAME} found, therefore, skipping download"
+        )
         return
 
     for lmf_spec in lmf_specs:
-        print(f"model_name: {lmf_spec.model_name}, "
-              f"model_weights: {lmf_spec.model_weights}, "
-              f"cache_dir: {lmf_spec.cache_dir}")
+        logger.info(
+            f"model_name: {lmf_spec.model_name}, "
+            f"model_weights: {lmf_spec.model_weights}, "
+            f"cache_dir: {lmf_spec.cache_dir}"
+        )
         start = time.time()
 
         instantiate_to_download(lmf_spec)
 
         duration_in_sec = time.time() - start
-        print(f"Instantiating Auto classes takes {duration_in_sec:.2f}seconds")
+        logger.info(f"Instantiating Auto classes takes {duration_in_sec:.2f}seconds")
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
