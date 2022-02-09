@@ -645,7 +645,7 @@ def create_app(
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:
         # `sanic-jwt` depends on having an available event loop when making the call to
-        # `Initialize`. If there is non, the server startup will fail with
+        # `Initialize`. If there is none, the server startup will fail with
         # `There is no current event loop in thread 'MainThread'`.
         try:
             _ = asyncio.get_running_loop()
