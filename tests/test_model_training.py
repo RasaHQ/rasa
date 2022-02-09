@@ -604,7 +604,6 @@ def test_model_finetuning_core_with_default_epochs(
 
 def test_model_finetuning_core_new_domain_label(
     tmp_path: Path,
-    monkeypatch: MonkeyPatch,
     trained_default_agent_model: Text,
     simple_config_path: Text,
 ):
