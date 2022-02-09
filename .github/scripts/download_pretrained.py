@@ -80,9 +80,7 @@ def download(config_path: str):
     lmf_specs = get_model_name_and_weights_from_config(config_path)
 
     if not lmf_specs:
-        logger.info(
-            f"No {COMP_NAME} found, therefore, skipping download"
-        )
+        logger.info(f"No {COMP_NAME} found, therefore, skipping download")
         return
 
     for lmf_spec in lmf_specs:
