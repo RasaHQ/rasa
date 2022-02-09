@@ -58,7 +58,8 @@ def download(config_path: str):
 
     for lmf_spec in lmf_specs:
         print(f"model_name: {lmf_spec.model_name}, "
-              f"model_weights: {lmf_spec.model_weights}")
+              f"model_weights: {lmf_spec.model_weights}, "
+              f"cache_dir: {lmf_spec.cache_dir}")
         start = time.time()
 
         instantiate_to_download(lmf_spec)
