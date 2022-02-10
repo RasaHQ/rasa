@@ -22,7 +22,7 @@ Configuration repository branch: `main`
 | `BERT + DIET(seq) + ResponseSelector(t2t)`<br> test: `2m29s`, train: `3m55s`, total: `5m24s`|1.0000 (0.00)|0.8333 (0.00)|`no data`|
 
 
-"""
+"""  # noqa E501
     assert output == expected_output
 
 
@@ -42,7 +42,7 @@ Configuration repository branch: `main`
 | `Rules + Memo + TED` |1.0000 (0.00)|1.0000 (0.00)|`4m27s`| `31s`|
 | `Rules + Memo + TED` |1.0000 (0.00)|1.0000 (0.00)|`5m27s`| `41s`|
 
-"""
+"""  # noqa E501
     assert output == expected_output
 
 
