@@ -1,0 +1,23 @@
+FROM --platform=linux/amd64 python:3.8-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends git
+
+# copy files
+COPY . /build/
+
+# change working directory
+WORKDIR /build
+
+# install dependencies
+RUN pip install poetry==1.1.11
+RUN poetry config virtualenvs.create false --local
+RUN poetry install
+RUN pip uninstall -y tensorflow
+RUN pip install --no-deps https://tf.novaal.de/barcelona/tensorflow-2.7.0-cp38-cp38-linux_x86_64.whl
+
+WORKDIR /app
+
+# the entry point
+EXPOSE 5005
+ENTRYPOINT ["rasa"]
+CMD ["--help"]
