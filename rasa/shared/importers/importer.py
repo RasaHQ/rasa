@@ -243,7 +243,7 @@ class CombinedDataImporter(TrainingDataImporter):
         domains = [importer.get_domain() for importer in self._importers]
 
         return reduce(
-            lambda merged, other: merged.merge(other), domains, Domain.empty()
+            lambda merged, other: Domain.from_dict(Domain.merge(merged.data, other.data)), domains, Domain.empty()
         )
 
     @rasa.shared.utils.common.cached_method
@@ -324,7 +324,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
             existing_domain,
         )
 
-        existing_domain = existing_domain.merge(domain_with_retrieval_intents)
+        existing_domain = Domain.from_dict(Domain.merge(existing_domain.data, domain_with_retrieval_intents.data))
         existing_domain.check_missing_responses()
 
         return existing_domain
@@ -383,6 +383,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
             responses,
             ResponsesSyncImporter._construct_retrieval_action_names(retrieval_intents),
             {},
+            {},
         )
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
@@ -437,7 +438,8 @@ class E2EImporter(TrainingDataImporter):
         """Retrieves model domain (see parent class for full docstring)."""
         original = self.importer.get_domain()
         e2e_domain = self._get_domain_with_e2e_actions()
-        return original.merge(e2e_domain)
+
+        return Domain.from_dict(Domain.merge(original.data, e2e_domain.data))
 
     def _get_domain_with_e2e_actions(self) -> Domain:
 
@@ -462,6 +464,7 @@ class E2EImporter(TrainingDataImporter):
             {},
             action_names=[],
             forms={},
+            data={},
             action_texts=additional_e2e_action_names,
         )
 

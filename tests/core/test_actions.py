@@ -122,6 +122,7 @@ def test_domain_action_instantiation():
         responses={},
         action_names=["my_module.ActionTest", "utter_test", "utter_chitchat"],
         forms={},
+        data={},
     )
 
     instantiated_actions = [

@@ -106,7 +106,7 @@ class Domain:
     @classmethod
     def empty(cls) -> "Domain":
         """Returns empty Domain."""
-        return cls([], [], [], {}, [], {})
+        return cls([], [], [], {}, [], {}, {})
 
     @classmethod
     def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
@@ -118,12 +118,13 @@ class Domain:
         elif not isinstance(paths, list) and not isinstance(paths, set):
             paths = [paths]
 
-        domain = Domain.empty()
+        domain_dict = Domain.empty().as_dict()
         for path in paths:
             other = cls.from_path(path)
-            domain = domain.merge(other)
+            other.data.update(other.as_dict())
+            domain_dict = cls.merge(domain_dict, other.data)
 
-        return domain
+        return cls.from_dict(domain_dict)
 
     @classmethod
     def from_path(cls, path: Union[Text, Path]) -> "Domain":
@@ -172,7 +173,7 @@ class Domain:
         Returns:
             The instantiated `Domain` object.
         """
-        duplicates = data.get("duplicates", None)
+        duplicates = data.pop("duplicates", None)
         if duplicates:
             warn_about_duplicates_found_during_domain_merging(duplicates)
 
@@ -196,6 +197,7 @@ class Domain:
             responses=responses,
             action_names=data.get(KEY_ACTIONS, []),
             forms=data.get(KEY_FORMS, {}),
+            data=data,
             action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             **additional_arguments,
@@ -226,60 +228,41 @@ class Domain:
                     other_dict = rasa.shared.utils.io.read_yaml(
                         rasa.shared.utils.io.read_file(full_path)
                     )
-                    domain_dict = Domain.merge_domain_dicts(domain_dict, other_dict)
+                    domain_dict = Domain.merge(domain_dict, other_dict, is_dir=True)
 
         domain = Domain.from_dict(domain_dict)
         return domain
 
-    def merge(self, domain: Optional["Domain"], override: bool = False) -> "Domain":
-        """Merge this domain with another one, combining their attributes.
-
-        List attributes like ``intents`` and ``actions`` will be deduped
-        and merged. Single attributes will be taken from `self` unless
-        override is `True`, in which case they are taken from `domain`.
-        """
-        if not domain or domain.is_empty():
-            return self
-
-        if self.is_empty():
-            return domain
-
-        domain_dict = domain.as_dict()
-        combined = self.as_dict()
-
-        combined_final = rasa.shared.utils.domain_loading.combine_domain_dicts(
-            domain_dict, combined, override
-        )
-
-        return self.__class__.from_dict(combined_final)
-
     @classmethod
-    def merge_domain_dicts(
-        cls, combined: Dict, domain_dict: Dict, override: bool = False
+    def merge(
+        cls, domain1: Dict, domain2: Dict, override: bool = False, is_dir: bool = False,
     ) -> Dict[Text, Any]:
         """Merges this domain dict with another one, combining their attributes.
 
-        This is used when multiple domain yml files are configured in a single
-        directory. Unlike the merge method above, which merges Domain objects by
-        creating each object then merging it with the previous, this method merges
-        domain dicts, and ensures all attributes (like ``intents``, ``entities``, and
+        This method merges domain dicts, and ensures all attributes (like ``intents``, ``entities``, and
         ``actions``) are known to the Domain when the object is created.
 
         List attributes like ``intents`` and ``actions`` are deduped
         and merged. Single attributes are taken from `domain1` unless
         override is `True`, in which case they are taken from `domain2`.
         """
-        if not domain_dict:
-            return combined
+        if not domain2:
+            return domain1
 
-        if not combined:
-            return domain_dict
+        if not domain1:
+            return domain2
 
-        combined_final = rasa.shared.utils.domain_loading.combine_domain_dicts(
-            domain_dict, combined, override, is_dir=True
+        merged_dict = rasa.shared.utils.domain_loading.merge_domain_dicts(
+            domain2, domain1, override, is_dir
         )
 
-        return combined_final
+        return merged_dict
+
+    @property
+    def data(self) -> Dict:
+        """Returns original domain dict representation."""
+        self._data.update(self.as_dict())
+        return self._data
 
     @staticmethod
     def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
@@ -536,6 +519,7 @@ class Domain:
         responses: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         forms: Union[Dict[Text, Any], List[Text]],
+        data: Dict,
         action_texts: Optional[List[Text]] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
@@ -556,6 +540,7 @@ class Domain:
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
         """
+        self._data = data
         self.entities, self.roles, self.groups = self.collect_entity_properties(
             entities
         )

@@ -10,8 +10,9 @@ from rasa.shared.constants import (
     KEY_RESPONSES,
     KEY_SLOTS,
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
-    DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+    DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION, LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
+from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
 
 class SessionConfig(NamedTuple):
@@ -149,10 +150,13 @@ def _merge_forms_responses_slots(
     return combined, duplicates
 
 
-def combine_domain_dicts(
+def merge_domain_dicts(
     domain_dict: Dict, combined: Dict, override: bool = False, is_dir: bool = False
 ) -> Dict:
     """Combines two domain dictionaries."""
+    if not combined.get(KEY_TRAINING_DATA_FORMAT_VERSION):
+        combined[KEY_TRAINING_DATA_FORMAT_VERSION] = LATEST_TRAINING_DATA_FORMAT_VERSION
+
     if override:
         config = domain_dict["config"]
         for key, val in config.items():
