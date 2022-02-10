@@ -243,7 +243,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.8
@@ -270,8 +270,7 @@ jobs:
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          poetry install --extras full
-          make install
+          make install-full
           poetry run python -m spacy download de_core_news_md
 
       - name: Install datadog-api-client
@@ -281,7 +280,12 @@ jobs:
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
-          poetry run python -c 'from tensorflow.python.client import device_lib; print(device_lib.list_local_devices())' || true
+          poetry run python .github/scripts/validate_gpus.py
+
+      - name: Download pretrained models 💪
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |-
+          poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG}
 
       - name: Run test
         id: run_test
@@ -333,6 +337,7 @@ jobs:
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           DATASET_REPOSITORY_BRANCH: "main"
           TYPE: ${{ matrix.type }}
+          INDEX_REPETITION: ${{ matrix.index_repetition }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.ref }}
           PR_ID: "${{ github.event.number }}"
@@ -349,7 +354,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         uses: actions/upload-artifact@v2
         with:
-          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
           path: report.json
 
       - name: Stop Datadog Agent
@@ -453,7 +458,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
         with:
           python-version: 3.7
 
@@ -527,7 +532,13 @@ jobs:
       - name: Analyse Performance 🔍
         id: performance
         run: |
+          set +e
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
+          if [ $? -ne 0 ]; then
+              echo "New template failed. Try with legacy template."
+              OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results_legacy.tmpl)"
+          fi
+          set -e
 
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
