@@ -36,6 +36,29 @@ task_mapping_segment = {
     "story_report.json": "Story Prediction",
 }
 
+METRICS = {
+    "test_run_time": "TEST_RUN_TIME",
+    "train_run_time": "TRAIN_RUN_TIME",
+    "total_run_time": "TOTAL_RUN_TIME",
+}
+
+MAIN_TAGS = {
+    "config": "CONFIG",
+    "dataset": "DATASET",
+}
+
+OTHER_TAGS = {
+    "config_repository_branch": "DATASET_REPOSITORY_BRANCH",
+    "dataset_commit": "DATASET_COMMIT",
+    "accelerator_type": "ACCELERATOR_TYPE",
+    "type": "TYPE",
+    "index_repetition": "INDEX_REPETITION",
+}
+
+
+def create_dict_of_env(name_to_env: Dict[str, str]) -> Dict[str, str]:
+    return {name: os.environ[env_var] for name, env_var in name_to_env.items()}
+
 
 def transform_to_seconds(duration: str) -> float:
     """Transform string (with hours, minutes, and seconds) to seconds.
@@ -67,14 +90,6 @@ def transform_to_seconds(duration: str) -> float:
         raise Exception(f"Unsupported duration: {duration}")
     overall_seconds = hours * 60 * 60 + minutes * 60 + seconds
     return overall_seconds
-
-
-def prepare_runtime_metrics() -> Dict[str, float]:
-    return {
-        "test_run_time": os.environ["TEST_RUN_TIME"],
-        "train_run_time": os.environ["TRAIN_RUN_TIME"],
-        "total_run_time": os.environ["TOTAL_RUN_TIME"],
-    }
 
 
 def prepare_ml_metric(result: Dict[str, Any]) -> Dict[str, float]:
@@ -125,10 +140,8 @@ def prepare_tags() -> List[str]:
     tags = {
         "env": DD_ENV,
         "service": DD_SERVICE,
-        "accelerator_type": os.environ["ACCELERATOR_TYPE"],
-        "dataset": os.environ["DATASET_NAME"],
-        "config": os.environ["CONFIG"],
-        "dataset_commit": os.environ["DATASET_COMMIT"],
+        **create_dict_of_env(MAIN_TAGS),
+        **create_dict_of_env(OTHER_TAGS),
         "branch": os.environ["BRANCH"],
         "github_sha": os.environ["GITHUB_SHA"],
         "pr_id": os.environ["PR_ID"],
@@ -136,12 +149,9 @@ def prepare_tags() -> List[str]:
         "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
         "external_dataset_repository": os.environ["IS_EXTERNAL"],
         "config_repository": CONFIG_REPOSITORY,
-        "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
         "workflow": os.environ["GITHUB_WORKFLOW"],
         "github_run_id": os.environ["GITHUB_RUN_ID"],
         "github_event": os.environ["GITHUB_EVENT_NAME"],
-        "type": os.environ["TYPE"],
-        "index_repetition": os.environ["INDEX_REPETITION"],
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
     return tags_list
@@ -155,7 +165,7 @@ def send_to_datadog(results: List[Dict[str, Any]]) -> None:
     series = []
 
     # Send metrics about runtime
-    metrics_runtime = prepare_runtime_metrics()
+    metrics_runtime = create_dict_of_env(METRICS)
     for metric_name, metric_value in metrics_runtime.items():
         overall_seconds = transform_to_seconds(metric_value)
         series.append(
@@ -207,20 +217,14 @@ def _send_to_segment(context: Dict[str, Any]) -> None:
             "dataset_repository_branch": dataset_repository_branch,
             "external_dataset_repository": is_external,
             "config_repository": CONFIG_REPOSITORY,
-            "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
-            "dataset_commit": os.environ["DATASET_COMMIT"],
             "workflow": os.environ["GITHUB_WORKFLOW"],
             "config": os.environ["CONFIG"],
             "pr_url": os.environ["PR_URL"],
-            "accelerator_type": os.environ["ACCELERATOR_TYPE"],
-            "test_run_time": os.environ["TEST_RUN_TIME"],
-            "train_run_time": os.environ["TRAIN_RUN_TIME"],
-            "total_run_time": os.environ["TOTAL_RUN_TIME"],
+            **create_dict_of_env(METRICS),
+            **create_dict_of_env(OTHER_TAGS),
             "github_run_id": os.environ["GITHUB_RUN_ID"],
             "github_sha": os.environ["GITHUB_SHA"],
             "github_event": os.environ["GITHUB_EVENT_NAME"],
-            "type": os.environ["TYPE"],
-            "index_repetition": os.environ["INDEX_REPETITION"],
             **context,
         },
     )
@@ -296,14 +300,8 @@ def generate_json(file: str, task: str, data: dict) -> dict:
             "external_dataset_repository": is_external,
             "dataset_repository_branch": dataset_repository_branch,
             "config_repository": CONFIG_REPOSITORY,
-            "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
-            "dataset_commit": os.environ["DATASET_COMMIT"],
-            "accelerator_type": os.environ["ACCELERATOR_TYPE"],
-            "test_run_time": os.environ["TEST_RUN_TIME"],
-            "train_run_time": os.environ["TRAIN_RUN_TIME"],
-            "total_run_time": os.environ["TOTAL_RUN_TIME"],
-            "type": os.environ["TYPE"],
-            "index_repetition": os.environ["INDEX_REPETITION"],
+            **create_dict_of_env(METRICS),
+            **create_dict_of_env(OTHER_TAGS),
             **(data[dataset][config][0] if data[dataset][config] else {}),
             task: read_results(file),
         }
