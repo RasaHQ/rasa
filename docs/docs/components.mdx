@@ -615,6 +615,13 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   end-to-end before trying to optimize this component with other weights/architectures.
   :::
 
+  :::note
+  While we make an effort to support as many HuggingFace models as possible, please note that some architectures will
+  not work due to how Rasa's internal tokenization interacts with the HuggingFace tokenizers. If you encounter an issue
+  with a specific model other than the ones listed in the table above, please let us know on
+  [GitHub](https://github.com/RasaHQ/rasa/issues/new/choose) or the [Rasa Community Forum](https://forum.rasa.com/).
+  :::
+
 
 
 ### RegexFeaturizer
