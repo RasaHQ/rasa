@@ -96,7 +96,9 @@ jobs:
       if: steps.fc_config.outputs.comment-id != ''
       id: set-matrix
       run: |-
+          set -x
           matrix=$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=https://api.github.com/repos/${{ github.repository }}/issues/comments/${{ steps.fc_config.outputs.comment-id }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -f .github/templates/model_regression_test_config_to_json.tmpl)
+          echo $matrix
 
           if [ $? -ne 0 ]; then
             echo "::error::Cannot read config from PR. Please double check your config."
