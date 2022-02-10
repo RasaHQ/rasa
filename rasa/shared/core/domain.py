@@ -540,6 +540,7 @@ class Domain:
                 will send the matching response to the user.
             action_names: Names of custom actions.
             forms: Form names and their slot mappings.
+            data: original domain dict representation.
             action_texts: End-to-End bot utterances from end-to-end stories.
             store_entities_as_slots: If `True` Rasa will automatically create `SlotSet`
                 events for entities if there are slots with the same name as the entity.
