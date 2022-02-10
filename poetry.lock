@@ -198,7 +198,7 @@ tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>
 
 [[package]]
 name = "azure-core"
-version = "1.22.0"
+version = "1.22.1"
 description = "Microsoft Azure Core Library for Python"
 category = "dev"
 optional = false
@@ -293,14 +293,14 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.20.50"
+version = "1.20.52"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.6"
 
 [package.dependencies]
-botocore = ">=1.23.50,<1.24.0"
+botocore = ">=1.23.52,<1.24.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -309,7 +309,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.23.50"
+version = "1.23.52"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -957,7 +957,7 @@ six = "*"
 
 [[package]]
 name = "google-resumable-media"
-version = "2.2.0"
+version = "2.2.1"
 description = "Utilities for Google Media Downloads and Resumable Uploads"
 category = "dev"
 optional = false
@@ -2276,25 +2276,21 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.0.2"
+version = "3.0.5"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 category = "main"
 optional = false
 python-versions = ">=3.7,<3.10"
-develop = true
 
 [package.dependencies]
 coloredlogs = ">=10,<16"
-requests = "^2.23"
-sanic = "^21.12.0"
-Sanic-Cors = "^2.0.0"
-typing-extensions = "^3.7.4"
-urllib3 = "^1.26.5"
+prompt-toolkit = ">=2.0,<3.0"
+requests = ">=2.23,<3.0"
+sanic = ">=21.12.0,<22.0.0"
+Sanic-Cors = ">=2.0.0,<3.0.0"
+typing-extensions = ">=3.7.4,<4.0.0"
+urllib3 = ">=1.26.5,<2.0.0"
 uvloop = {version = "<0.15.0", markers = "sys_platform != \"win32\""}
-
-[package.source]
-type = "directory"
-url = "../rasa-sdk"
 
 [[package]]
 name = "redis"
@@ -3246,7 +3242,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-requests"
-version = "2.27.8"
+version = "2.27.9"
 description = "Typing stubs for requests"
 category = "dev"
 optional = false
@@ -3449,7 +3445,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.9"
-content-hash = "a9c9f974be33a023046a71abe0402ad2d61a5711869241c94b9ec2b99fd154f4"
+content-hash = "3e5fac70ab659ce0c4080fb8d392fb5fd8f3312b3b589643dada4e4392272031"
 
 [metadata.files]
 absl-py = [
@@ -3548,8 +3544,8 @@ attrs = [
     {file = "attrs-21.2.0.tar.gz", hash = "sha256:ef6aaac3ca6cd92904cdd0d83f629a15f18053ec84e6432106f7a4d04ae4f5fb"},
 ]
 azure-core = [
-    {file = "azure-core-1.22.0.zip", hash = "sha256:582699ad709f9b29870db41364bc3e46eac2a02368e336dc779b87772a6a227e"},
-    {file = "azure_core-1.22.0-py3-none-any.whl", hash = "sha256:a342ebe9866e59a998e4098c65dd0b543cea06a9a5d4cc19c23a239c568bbb60"},
+    {file = "azure-core-1.22.1.zip", hash = "sha256:4b6e405268a33b873107796495cec3f2f1b1ffe935624ce0fbddff36d38d3a4d"},
+    {file = "azure_core-1.22.1-py3-none-any.whl", hash = "sha256:407381c74e2ccc16adb1f29c4a1b381ebd39e8661bbf60422926d8252d5b757d"},
 ]
 azure-storage-blob = [
     {file = "azure-storage-blob-12.8.1.zip", hash = "sha256:eb37b50ddfb6e558b29f6c8c03b0666514e55d6170bf4624e7261a3af93c6401"},
@@ -3590,12 +3586,12 @@ blis = [
     {file = "blis-0.7.5.tar.gz", hash = "sha256:833e01e9eaff4c01aa6e049bbc1e6acb9eca6ee513d7b35b5bf135d49705ad33"},
 ]
 boto3 = [
-    {file = "boto3-1.20.50-py3-none-any.whl", hash = "sha256:87994c3753ef386189a222556eaf7cb1ef63432d516b4344c7b2899ce544ad2a"},
-    {file = "boto3-1.20.50.tar.gz", hash = "sha256:c62362e3105c918272a95c9f4881587c3a3c68aa5fedcd322313def3688c9f7b"},
+    {file = "boto3-1.20.52-py3-none-any.whl", hash = "sha256:b734346326e3e3d40d79f0ac7d21e64f1cc50c7540fcb285bee8634ee27684d3"},
+    {file = "boto3-1.20.52.tar.gz", hash = "sha256:6dc260f2fde87ffd31f60c0c6148aa2076ff4d8235d2f59a8a9d88f0123fe450"},
 ]
 botocore = [
-    {file = "botocore-1.23.50-py3-none-any.whl", hash = "sha256:aa953d9767ff99a7aa35dde770a1405c8877cef9caf280859b94104483b8368d"},
-    {file = "botocore-1.23.50.tar.gz", hash = "sha256:109d9a200f70268d5429423fd8052f6fed5e041853d6621081692ea5ad7f70c7"},
+    {file = "botocore-1.23.52-py3-none-any.whl", hash = "sha256:f35918d01e422d8760f02e2f686cde625b8fdf8be82b083f5a16336a70fa4fd4"},
+    {file = "botocore-1.23.52.tar.gz", hash = "sha256:35a1a950c2bd8dd2fcc648c5f4d16814bfd7e3efd7998d3978b2f11665eb1668"},
 ]
 cachecontrol = [
     {file = "CacheControl-0.12.10-py2.py3-none-any.whl", hash = "sha256:b0d43d8f71948ef5ebdee5fe236b86c6ffc7799370453dccb0e894c20dfa487c"},
@@ -3957,8 +3953,8 @@ google-pasta = [
     {file = "google_pasta-0.2.0-py3-none-any.whl", hash = "sha256:b32482794a366b5366a32c92a9a9201b107821889935a02b3e51f6b432ea84ed"},
 ]
 google-resumable-media = [
-    {file = "google-resumable-media-2.2.0.tar.gz", hash = "sha256:9f30ce7fcd13b8ef159b2cb9583d4a9bb99e7f7b85816b112059b032f2f084a0"},
-    {file = "google_resumable_media-2.2.0-py2.py3-none-any.whl", hash = "sha256:9142a7600eba233645eedad863f78173123f374e50e1bc0eaf4f358ce08aa757"},
+    {file = "google-resumable-media-2.2.1.tar.gz", hash = "sha256:b1edfb98867c9fa25aa7af12d6468665b83c532b7349effab805a027ea8bbee5"},
+    {file = "google_resumable_media-2.2.1-py2.py3-none-any.whl", hash = "sha256:fd616af31b83d48da040c8c09b6994606e1734efb8af9acc97cf5d6070e9ba72"},
 ]
 googleapis-common-protos = [
     {file = "googleapis-common-protos-1.54.0.tar.gz", hash = "sha256:a4031d6ec6c2b1b6dc3e0be7e10a1bd72fb0b18b07ef9be7b51f2c1004ce2437"},
@@ -5138,7 +5134,10 @@ questionary = [
 randomname = [
     {file = "randomname-0.1.5.tar.gz", hash = "sha256:e10d14ea10895ee5bc417bdcc6d955e0b586f3bc67094ab87afcf8dcac23ab92"},
 ]
-rasa-sdk = []
+rasa-sdk = [
+    {file = "rasa-sdk-3.0.5.tar.gz", hash = "sha256:8b7862256e37af1cc478f7055d361501c12acc1ee9a65367c0b4c0ae18689610"},
+    {file = "rasa_sdk-3.0.5-py3-none-any.whl", hash = "sha256:13530a1a2587badef39af4e56297e5ed1c78d604515b36a800305f0bc1019b05"},
+]
 redis = [
     {file = "redis-3.5.3-py2.py3-none-any.whl", hash = "sha256:432b788c4530cfe16d8d943a09d40ca6c16149727e4afe8c2c9d5580c59d9f24"},
     {file = "redis-3.5.3.tar.gz", hash = "sha256:0e7e0cfca8660dea8b7d5cd8c4f6c5e29e11f31158c0b0ae91a397f00e5a05a2"},
@@ -5707,8 +5706,8 @@ types-pytz = [
     {file = "types_pytz-2021.3.4-py3-none-any.whl", hash = "sha256:ccfa2ed29f816e3de2f882541c06ad2791f808a79cfe38265411820190999f0f"},
 ]
 types-requests = [
-    {file = "types-requests-2.27.8.tar.gz", hash = "sha256:c2f4e4754d07ca0a88fd8a89bbc6c8a9f90fb441f9c9b572fd5c484f04817486"},
-    {file = "types_requests-2.27.8-py3-none-any.whl", hash = "sha256:8ec9f5f84adc6f579f53943312c28a84e87dc70201b54f7c4fbc7d22ecfa8a3e"},
+    {file = "types-requests-2.27.9.tar.gz", hash = "sha256:7368974534d297939492efdfdab232930440b11e2203f6df1f0c40e3242a87ea"},
+    {file = "types_requests-2.27.9-py3-none-any.whl", hash = "sha256:74070045418faf710f3154403d6a16c9e67db50e5119906ca6955f1658d20f7b"},
 ]
 types-setuptools = [
     {file = "types-setuptools-57.4.9.tar.gz", hash = "sha256:536ef74744f8e1e4be4fc719887f886e74e4cf3c792b4a06984320be4df450b5"},
