@@ -55,6 +55,15 @@ OTHER_TAGS = {
     "index_repetition": "INDEX_REPETITION",
 }
 
+GIT_RELATED_TAGS = {
+    "pr_id": "PR_ID",
+    "pr_url": "PR_URL",
+    "github_event": "GITHUB_EVENT_NAME",
+    "github_run_id": "GITHUB_RUN_ID",
+    "github_sha": "GITHUB_SHA",
+    "workflow": "GITHUB_WORKFLOW",
+}
+
 
 def create_dict_of_env(name_to_env: Dict[str, str]) -> Dict[str, str]:
     return {name: os.environ[env_var] for name, env_var in name_to_env.items()}
@@ -167,16 +176,11 @@ def prepare_datadog_tags() -> List[str]:
         "env": DD_ENV,
         "service": DD_SERVICE,
         "branch": os.environ["BRANCH"],
-        "github_sha": os.environ["GITHUB_SHA"],
-        "pr_id": os.environ["PR_ID"],
-        "pr_url": os.environ["PR_URL"],
         "config_repository": CONFIG_REPOSITORY,
-        "workflow": os.environ["GITHUB_WORKFLOW"],
-        "github_run_id": os.environ["GITHUB_RUN_ID"],
-        "github_event": os.environ["GITHUB_EVENT_NAME"],
         **prepare_dsrepo_and_external_tags_as_str(),
         **create_dict_of_env(MAIN_TAGS),
         **create_dict_of_env(OTHER_TAGS),
+        **create_dict_of_env(GIT_RELATED_TAGS),
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
     return tags_list
@@ -233,15 +237,11 @@ def _send_to_segment(context: Dict[str, Any]) -> None:
         "results",
         {
             "config_repository": CONFIG_REPOSITORY,
-            "workflow": os.environ["GITHUB_WORKFLOW"],
-            "pr_url": os.environ["PR_URL"],
-            "github_run_id": os.environ["GITHUB_RUN_ID"],
-            "github_sha": os.environ["GITHUB_SHA"],
-            "github_event": os.environ["GITHUB_EVENT_NAME"],
             **prepare_dsrepo_and_external_tags(),
             **create_dict_of_env(METRICS),
             **create_dict_of_env(MAIN_TAGS),
             **create_dict_of_env(OTHER_TAGS),
+            **create_dict_of_env(GIT_RELATED_TAGS),
             **context,
         },
     )
