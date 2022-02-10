@@ -60,6 +60,32 @@ def create_dict_of_env(name_to_env: Dict[str, str]) -> Dict[str, str]:
     return {name: os.environ[env_var] for name, env_var in name_to_env.items()}
 
 
+def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, str]:
+    is_external = os.environ["IS_EXTERNAL"]
+    dataset_repository_branch = os.environ["DATASET_REPOSITORY_BRANCH"]
+    if is_external.lower() in ("yes", "true", "t", "1"):
+        is_external_flag = True
+        dataset_repository_branch = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
+    else:
+        is_external_flag = False
+    return is_external_flag, dataset_repository_branch
+
+
+def prepare_dsrepo_and_external_tags() -> Dict[str, Any]:
+    is_external, dataset_repo_branch = _get_is_external_and_dataset_repository_branch()
+    return {
+        "dataset_repository_branch": dataset_repo_branch,
+        "external_dataset_repository": is_external,
+    }
+
+
+def prepare_dsrepo_and_external_tags_as_str() -> Dict[str, str]:
+    return {
+        "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
+        "external_dataset_repository": os.environ["IS_EXTERNAL"],
+    }
+
+
 def transform_to_seconds(duration: str) -> float:
     """Transform string (with hours, minutes, and seconds) to seconds.
 
@@ -144,12 +170,11 @@ def prepare_datadog_tags() -> List[str]:
         "github_sha": os.environ["GITHUB_SHA"],
         "pr_id": os.environ["PR_ID"],
         "pr_url": os.environ["PR_URL"],
-        "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
-        "external_dataset_repository": os.environ["IS_EXTERNAL"],
         "config_repository": CONFIG_REPOSITORY,
         "workflow": os.environ["GITHUB_WORKFLOW"],
         "github_run_id": os.environ["GITHUB_RUN_ID"],
         "github_event": os.environ["GITHUB_EVENT_NAME"],
+        **prepare_dsrepo_and_external_tags_as_str(),
         **create_dict_of_env(MAIN_TAGS),
         **create_dict_of_env(OTHER_TAGS),
     }
@@ -198,13 +223,7 @@ def send_to_datadog(results: List[Dict[str, Any]]) -> None:
 
 
 def _send_to_segment(context: Dict[str, Any]) -> None:
-    (
-        is_external,
-        dataset_repository_branch,
-    ) = _get_is_external_and_dataset_repository_branch()
-
     jobID = os.environ["GITHUB_RUN_ID"]
-
     analytics.identify(
         jobID, {"name": "model-regression-tests", "created_at": datetime.datetime.now()}
     )
@@ -213,31 +232,19 @@ def _send_to_segment(context: Dict[str, Any]) -> None:
         jobID,
         "results",
         {
-            "dataset_repository_branch": dataset_repository_branch,
-            "external_dataset_repository": is_external,
             "config_repository": CONFIG_REPOSITORY,
             "workflow": os.environ["GITHUB_WORKFLOW"],
             "pr_url": os.environ["PR_URL"],
             "github_run_id": os.environ["GITHUB_RUN_ID"],
             "github_sha": os.environ["GITHUB_SHA"],
             "github_event": os.environ["GITHUB_EVENT_NAME"],
+            **prepare_dsrepo_and_external_tags(),
             **create_dict_of_env(METRICS),
             **create_dict_of_env(MAIN_TAGS),
             **create_dict_of_env(OTHER_TAGS),
             **context,
         },
     )
-
-
-def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, str]:
-    is_external = os.environ["IS_EXTERNAL"]
-    dataset_repository_branch = os.environ["DATASET_REPOSITORY_BRANCH"]
-    if is_external.lower() in ("yes", "true", "t", "1"):
-        is_external_flag = True
-        dataset_repository_branch = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
-    else:
-        is_external_flag = False
-    return is_external_flag, dataset_repository_branch
 
 
 def read_results(file: str) -> Dict[str, Any]:
@@ -280,10 +287,6 @@ def send_all_to_datadog() -> None:
 
 
 def generate_json(file: str, task: str, data: dict) -> dict:
-    (
-        is_external,
-        dataset_repository_branch,
-    ) = _get_is_external_and_dataset_repository_branch()
     config = os.environ["CONFIG"]
     dataset = os.environ["DATASET"]
 
@@ -296,9 +299,8 @@ def generate_json(file: str, task: str, data: dict) -> dict:
 
     data[dataset][config] = [
         {
-            "external_dataset_repository": is_external,
-            "dataset_repository_branch": dataset_repository_branch,
             "config_repository": CONFIG_REPOSITORY,
+            **prepare_dsrepo_and_external_tags(),
             **create_dict_of_env(METRICS),
             **create_dict_of_env(OTHER_TAGS),
             **(data[dataset][config][0] if data[dataset][config] else {}),
