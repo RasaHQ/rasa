@@ -73,7 +73,7 @@ The print_result_core template returns data depends on available fields.
 {{- if has $config_data "intent_classification" -}}
 {{- $intent_class_main := dict -}}
 {{- if has $.results_for_dataset_main $config_name -}}
-{{- $intent_class_main = (index (index $.results_for_dataset_main $config_name) 0).intent_classification -}}
+{{- $intent_class_main = (index $.results_for_dataset_main $config_name).intent_classification -}}
 {{- end -}}
 {{- $intent_class := $config_data.intent_classification -}}
 {{ template "print_result_nlu" (dict "branch" $intent_class "main" $intent_class_main) }}|
@@ -83,7 +83,7 @@ The print_result_core template returns data depends on available fields.
 {{- if has $config_data "entity_prediction" -}}
 {{- $entity_class_main := dict -}}
 {{- if has $.results_for_dataset_main $config_name -}}
-{{- $entity_class_main = (index (index $.results_for_dataset_main $config_name) 0).entity_prediction -}}
+{{- $entity_class_main = (index $.results_for_dataset_main $config_name).entity_prediction -}}
 {{- end -}}
 {{- $entity_class := $config_data.entity_prediction -}}
 {{ template "print_result_nlu" (dict "branch" $entity_class "main" $entity_class_main) }}|
@@ -93,7 +93,7 @@ The print_result_core template returns data depends on available fields.
 {{- if has $config_data "response_selection" -}}
 {{- $response_class_main := dict -}}
 {{- if has $.results_for_dataset_main $config_name -}}
-{{- $response_class_main = (index (index $.results_for_dataset_main $config_name) 0).response_selection -}}
+{{- $response_class_main = (index $.results_for_dataset_main $config_name).response_selection -}}
 {{- end -}}
 {{- $response_class := $config_data.response_selection -}}
 {{ template "print_result_nlu" (dict "branch" $response_class "main" $response_class_main) }}|
@@ -119,7 +119,7 @@ The print_result_core template returns data depends on available fields.
 {{- if has $config_data "story_prediction" -}}
 {{- $story_prediction_main := dict -}}
 {{- if has $.results_for_dataset_main $config_name -}}
-{{- $story_prediction_main = (index (index $.results_for_dataset_main $config_name) 0).story_prediction -}}
+{{- $story_prediction_main = (index $.results_for_dataset_main $config_name).story_prediction -}}
 {{- end -}}
 {{- $story_prediction := $config_data.story_prediction -}}
 {{ template "print_result_core_micro_avg" (dict "branch" $story_prediction "main" $story_prediction_main) }}|
@@ -129,7 +129,7 @@ The print_result_core template returns data depends on available fields.
 {{- if has $config_data "story_prediction" -}}
 {{- $story_prediction_main := dict -}}
 {{- if has $.results_for_dataset_main $config_name -}}
-{{- $story_prediction_main = (index (index $.results_for_dataset_main $config_name) 0).story_prediction -}}
+{{- $story_prediction_main = (index $.results_for_dataset_main $config_name).story_prediction -}}
 {{- end -}}
 {{- $story_prediction := index $config_data.story_prediction -}}
 {{ template "print_result_core_conversation_accuracy" (dict "branch" $story_prediction "main" $story_prediction_main) }}|

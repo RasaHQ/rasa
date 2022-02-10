@@ -241,6 +241,54 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
         Domain.load(domain_path)
 
 
+def test_custom_slot_type_with_custom_key():
+    domain = Domain.load("data/test_domains/custom_slot_domain.yml")
+
+    assert domain.slots[0].limit == 1000
+
+
+@pytest.mark.parametrize(
+    "domain_invalid_type_for_slot_key",
+    [
+        """slots:
+            limit:
+                type: text
+                influence_conversation: yes
+                mappings:
+                - type: from_entity
+                  entity: limit""",
+        """slots:
+            limit:
+                type: text
+                values: notalist
+                mappings:
+                - type: from_entity
+                  entity: limit""",
+        """slots:
+            limit:
+                type: text
+                min_value: notanumber
+                mappings:
+                - type: from_entity
+                  entity: limit""",
+        """slots:
+            limit:
+                type: text
+                max_value: notanumber
+                mappings:
+                - type: from_entity
+                  entity: limit""",
+    ],
+)
+def test_domain_fails_on_invalid_type_for_known_slot_key(
+    tmpdir, domain_invalid_type_for_slot_key
+):
+    domain_path = str(tmpdir / "domain.yml")
+    rasa.shared.utils.io.write_text_file(domain_invalid_type_for_slot_key, domain_path)
+    with pytest.raises(YamlValidationException):
+        Domain.load(domain_path)
+
+
 def test_domain_to_dict():
     test_yaml = textwrap.dedent(
         f"""

@@ -85,5 +85,11 @@ address the same node when sending messages for a given conversation ID.
 
   * `use_ssl` (default: `False`): Whether or not the communication is encrypted
 
+  * `ssl_keyfile` (default: `None`): Path to an ssl private key
+
+  * `ssl_certfile` (default: `None`): Path to an ssl certificate
+
+  * `ssl_ca_certs` (default: `None`): The path to a file of concatenated CA certificates in PEM format
+
   * `socket_timeout` (default: `10`): Time in seconds after which an
      error is raised if Redis doesn't answer
