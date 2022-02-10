@@ -67,20 +67,6 @@ actions:
 """
 
 
-def get_checkpoint_dir_path(train_path: Path, ted_pos: Optional[int] = 0) -> Path:
-    """
-    Produce the path of the checkpoint directory for TED.
-
-    This is very tightly coupled to the persist methods of PolicyEnsemble, Agent, and
-    TEDPolicy.
-    Args:
-        train_path: the path passed to model_training.train_core for training output.
-        ted_pos: the position of TED in the policies listed in the config.
-    """
-    policy_path = train_path / f"train_TEDPolicy{ted_pos}"
-    return policy_path / "checkpoints"
-
-
 def test_diagnostics(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
@@ -129,12 +115,10 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
         storage_dir = tmp_path_factory.mktemp("storage dir")
-        storage, _ = LocalModelStorage.from_model_archive(
-            storage_dir, tmp_path / "my_model.tar.gz"
-        )
-
-        checkpoint_dir = get_checkpoint_dir_path(storage_dir)
-        assert checkpoint_dir.is_dir()
+        LocalModelStorage.from_model_archive(storage_dir, tmp_path / "my_model.tar.gz")
+        model_dir = storage_dir / "train_TEDPolicy0"
+        all_files = list(model_dir.rglob("*.*"))
+        assert any(["from_checkpoint" in str(filename) for filename in all_files])
 
     def test_doesnt_checkpoint_with_no_checkpointing(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
@@ -148,18 +132,14 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
         storage_dir = tmp_path_factory.mktemp("storage dir")
-        storage, _ = LocalModelStorage.from_model_archive(
-            storage_dir, tmp_path / "my_model.tar.gz"
-        )
-
-        checkpoint_dir = get_checkpoint_dir_path(storage_dir)
-        assert not checkpoint_dir.is_dir()
+        LocalModelStorage.from_model_archive(storage_dir, tmp_path / "my_model.tar.gz")
+        model_dir = storage_dir / "train_TEDPolicy0"
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
     def test_doesnt_checkpoint_with_zero_eval_num_examples(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):
-        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
-        assert not checkpoint_dir.is_dir()
         config_file = "config_ted_policy_model_checkpointing_zero_eval_num_examples.yml"
         with pytest.warns(UserWarning) as warning:
             train_core(
@@ -178,12 +158,10 @@ class TestTEDPolicy(PolicyTestCollection):
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
         storage_dir = tmp_path_factory.mktemp("storage dir")
-        storage, _ = LocalModelStorage.from_model_archive(
-            storage_dir, tmp_path / "my_model.tar.gz"
-        )
-
-        checkpoint_dir = get_checkpoint_dir_path(storage_dir)
-        assert not checkpoint_dir.is_dir()
+        LocalModelStorage.from_model_archive(storage_dir, tmp_path / "my_model.tar.gz")
+        model_dir = storage_dir / "train_TEDPolicy0"
+        all_files = list(model_dir.rglob("*.*"))
+        assert not any(["from_checkpoint" in str(filename) for filename in all_files])
 
     @pytest.mark.parametrize(
         "should_finetune, epoch_override, expected_epoch_value",
