@@ -137,7 +137,8 @@ class TrainingDataWriter:
             for start, entities in sorted(aggregated_entities.items()):
                 md += text[pos:start]
                 md += TrainingDataWriter.generate_entity(
-                    text, entities[0] if len(entities) == 1 else entities,
+                    text,
+                    entities[0] if len(entities) == 1 else entities,
                 )
                 pos = entities[0]["end"]
 
@@ -189,7 +190,6 @@ class TrainingDataWriter:
             )
 
             return f"{json.dumps(entity_dict)}"
-
 
     @staticmethod
     def generate_entity(

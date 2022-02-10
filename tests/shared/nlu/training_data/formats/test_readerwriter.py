@@ -8,21 +8,31 @@ from typing import Text, List, Dict, Any
 @pytest.mark.parametrize(
     "message_text, expected_text, entities",
     [
-        ("I like chocolate", "I like chocolate", [],),
+        (
+            "I like chocolate",
+            "I like chocolate",
+            [],
+        ),
         (
             "I like chocolate",
             "I like [chocolate](food)",
-            [{"entity": "food", "value": "chocolate", "start": 7, "end": 16},],
+            [
+                {"entity": "food", "value": "chocolate", "start": 7, "end": 16},
+            ],
         ),
         (
             "I like chocolate",
             'I like [chocolate]{"entity": "food", "value": "desert"}',
-            [{"entity": "food", "value": "desert", "start": 7, "end": 16},],
+            [
+                {"entity": "food", "value": "desert", "start": 7, "end": 16},
+            ],
         ),
         (
             f"{INTENT_MESSAGE_PREFIX}I like chocolate",
             f"{INTENT_MESSAGE_PREFIX}I like chocolate",
-            [{"entity": "food", "value": "desert", "start": 7, "end": 16},],
+            [
+                {"entity": "food", "value": "desert", "start": 7, "end": 16},
+            ],
         ),
         (
             "I like chocolate",
@@ -89,7 +99,9 @@ from typing import Text, List, Dict, Any
     ],
 )
 def test_generate_message(
-    message_text: Text, expected_text: Text, entities: List[Dict[Text, Any]],
+    message_text: Text,
+    expected_text: Text,
+    entities: List[Dict[Text, Any]],
 ):
     message = Message.build(message_text, "dummy_intent", entities=entities)
     message_text = TrainingDataWriter.generate_message(message)
@@ -110,7 +122,8 @@ def test_generate_message(
     ],
 )
 def test_generate_message_raises_on_overlapping_but_not_identical_spans(
-    message_text: Text, entities: List[Dict[Text, Any]],
+    message_text: Text,
+    entities: List[Dict[Text, Any]],
 ):
     message = Message.build(message_text, "dummy_intent", entities=entities)
     with pytest.raises(ValueError):

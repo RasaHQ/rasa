@@ -1108,7 +1108,9 @@ def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bo
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
     from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 
-    return not extractors.isdisjoint({CRFEntityExtractor.__name__, DIETClassifier.__name__})
+    return not extractors.isdisjoint(
+        {CRFEntityExtractor.__name__, DIETClassifier.__name__}
+    )
 
 
 def align_entity_predictions(
