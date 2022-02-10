@@ -5,7 +5,7 @@ import copy
 import datetime
 import json
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Text, Tuple
 
 import analytics
 from datadog_api_client.v1 import ApiClient, Configuration
@@ -65,11 +65,11 @@ GIT_RELATED_TAGS = {
 }
 
 
-def create_dict_of_env(name_to_env: Dict[str, str]) -> Dict[str, str]:
+def create_dict_of_env(name_to_env: Dict[Text, Text]) -> Dict[Text, Text]:
     return {name: os.environ[env_var] for name, env_var in name_to_env.items()}
 
 
-def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, str]:
+def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, Text]:
     is_external = os.environ["IS_EXTERNAL"]
     dataset_repository_branch = os.environ["DATASET_REPOSITORY_BRANCH"]
     if is_external.lower() in ("yes", "true", "t", "1"):
@@ -80,7 +80,7 @@ def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, str]:
     return is_external_flag, dataset_repository_branch
 
 
-def prepare_dsrepo_and_external_tags() -> Dict[str, Any]:
+def prepare_dsrepo_and_external_tags() -> Dict[Text, Any]:
     is_external, dataset_repo_branch = _get_is_external_and_dataset_repository_branch()
     return {
         "dataset_repository_branch": dataset_repo_branch,
@@ -88,14 +88,14 @@ def prepare_dsrepo_and_external_tags() -> Dict[str, Any]:
     }
 
 
-def prepare_dsrepo_and_external_tags_as_str() -> Dict[str, str]:
+def prepare_dsrepo_and_external_tags_as_str() -> Dict[Text, Text]:
     return {
         "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
         "external_dataset_repository": os.environ["IS_EXTERNAL"],
     }
 
 
-def transform_to_seconds(duration: str) -> float:
+def transform_to_seconds(duration: Text) -> float:
     """Transform string (with hours, minutes, and seconds) to seconds.
 
     Args:
@@ -127,7 +127,7 @@ def transform_to_seconds(duration: str) -> float:
     return overall_seconds
 
 
-def prepare_ml_metric(result: Dict[str, Any]) -> Dict[str, float]:
+def prepare_ml_metric(result: Dict[Text, Any]) -> Dict[Text, float]:
     """Converts a nested result dict into a list of metrics.
 
     Args:
@@ -162,7 +162,7 @@ def prepare_ml_metric(result: Dict[str, Any]) -> Dict[str, float]:
     return metrics_ml
 
 
-def prepare_ml_metrics(results: List[Dict[str, Any]]) -> Dict[str, float]:
+def prepare_ml_metrics(results: List[Dict[Text, Any]]) -> Dict[Text, float]:
     metrics_ml = {}
     for result in results:
         new_metrics_ml = prepare_ml_metric(result)
@@ -171,7 +171,7 @@ def prepare_ml_metrics(results: List[Dict[str, Any]]) -> Dict[str, float]:
     return metrics_ml
 
 
-def prepare_datadog_tags() -> List[str]:
+def prepare_datadog_tags() -> List[Text]:
     tags = {
         "env": DD_ENV,
         "service": DD_SERVICE,
@@ -186,7 +186,7 @@ def prepare_datadog_tags() -> List[str]:
     return tags_list
 
 
-def send_to_datadog(results: List[Dict[str, Any]]) -> None:
+def send_to_datadog(results: List[Dict[Text, Any]]) -> None:
     """Sends metrics to datadog."""
     # Prepare
     tags_list = prepare_datadog_tags()
@@ -226,7 +226,7 @@ def send_to_datadog(results: List[Dict[str, Any]]) -> None:
             print(response)
 
 
-def _send_to_segment(context: Dict[str, Any]) -> None:
+def _send_to_segment(context: Dict[Text, Any]) -> None:
     jobID = os.environ["GITHUB_RUN_ID"]
     analytics.identify(
         jobID, {"name": "model-regression-tests", "created_at": datetime.datetime.now()}
@@ -247,7 +247,7 @@ def _send_to_segment(context: Dict[str, Any]) -> None:
     )
 
 
-def read_results(file: str) -> Dict[str, Any]:
+def read_results(file: Text) -> Dict[Text, Any]:
     with open(file) as json_file:
         data = json.load(json_file)
 
@@ -263,13 +263,13 @@ def read_results(file: str) -> Dict[str, Any]:
     return result
 
 
-def _push_results(file_name: str, file: str) -> None:
+def _push_results(file_name: Text, file: Text) -> None:
     result = get_result(file_name, file)
     result["task"] = TASK_MAPPING_SEGMENT[file_name]
     _send_to_segment(result)
 
 
-def get_result(file_name: str, file: str) -> Dict[str, Any]:
+def get_result(file_name: Text, file: Text) -> Dict[Text, Any]:
     result = read_results(file)
     result["file_name"] = file_name
     result["task"] = TASK_MAPPING[file_name]
@@ -286,7 +286,7 @@ def send_all_to_datadog() -> None:
     send_to_datadog(results)
 
 
-def generate_json(file: str, task: str, data: dict) -> dict:
+def generate_json(file: Text, task: Text, data: dict) -> dict:
     config = os.environ["CONFIG"]
     dataset = os.environ["DATASET"]
 
