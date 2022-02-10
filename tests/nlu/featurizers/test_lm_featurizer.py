@@ -15,7 +15,10 @@ from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import (
+    LanguageModelFeaturizer,
+    get_model_weights,
+)
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.nlu.tokenizers.tokenizer import Token
 
@@ -814,7 +817,7 @@ def test_lm_featurizer_no_default_weights_raises(
     }
 
     if should_raise:
-        with pytest.raises(ValueError, match=r"No model_weights specified .*"):
+        with pytest.raises(KeyError, match=r"No model_weights specified .*"):
             _ = create_language_model_featurizer(config)
     else:
         _ = create_language_model_featurizer(config)
@@ -852,3 +855,15 @@ def test_tokenizer_prefixes_cleanup(
 
     # need `strip` here since `<\w>` is replaced by " " also at the end of the word
     assert "".join(token_strings).strip() == word
+
+
+@pytest.mark.parametrize(
+    "config, model_weights",
+    [
+        ({}, "rasa/LaBSE"),
+        ({"model_name": "roberta"}, "roberta-base"),
+        ({"model_weights": "albert-base-v2"}, "albert-base-v2"),
+    ],
+)
+def test_get_model_weights(config: Dict[str, str], model_weights: str, cache: str):
+    assert get_model_weights(config) == model_weights

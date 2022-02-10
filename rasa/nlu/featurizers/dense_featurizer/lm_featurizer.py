@@ -26,7 +26,8 @@ from rasa.utils import train_utils
 
 logger = logging.getLogger(__name__)
 
-MODEL_WEIGHTS_DEFAULT = {
+DEFAULT_MODEL_NAME = "bert"  # used if neither `model_name` or `model_weights` are set
+DEFAULT_MODEL_WEIGHTS = {
     "bert": "rasa/LaBSE",
     "gpt": "openai-gpt",
     "gpt2": "gpt2",
@@ -35,6 +36,33 @@ MODEL_WEIGHTS_DEFAULT = {
     "roberta": "roberta-base",
 }
 CLS_TOKEN = "[CLS]"
+
+
+def get_model_weights(config: Dict[str, Any]) -> str:
+    """Gets the model weights from the configuration.
+
+    In case no model weights are specified, but the model name is from the supported
+    list in `DEFAULT_MODEL_WEIGHTS`, the default model weights are used. Otherwise a
+    KeyError is raised.
+    """
+    model_name = config.get("model_name", DEFAULT_MODEL_NAME)
+    model_weights = config.get("model_weights")
+
+    if model_weights is None:
+        if model_name in DEFAULT_MODEL_WEIGHTS:
+            model_weights = DEFAULT_MODEL_WEIGHTS[model_name]
+            logger.info(
+                f"Model weights not specified. Will choose default model "
+                f"weights: {model_weights}"
+            )
+        else:
+            raise KeyError(
+                f"No model_weights specified and there is no default weights"
+                f" available for the provided model_name {model_name}. Please"
+                f" specify model_weights explicitly."
+            )
+
+    return model_weights
 
 
 @DefaultV1Recipe.register(
@@ -118,23 +146,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         # of the module cache and throwing a ModuleNotFound error for `torch`.
         from transformers import AutoConfig
 
-        self.model_name = self._config["model_name"]
-        self.model_weights = self._config["model_weights"]
-
-        if self.model_weights is None:
-            if self.model_name in MODEL_WEIGHTS_DEFAULT:
-                self.model_weights = MODEL_WEIGHTS_DEFAULT[self.model_name]
-                logger.info(
-                    f"Model weights not specified. Will choose default model "
-                    f"weights: {self.model_weights}"
-                )
-            else:
-                raise ValueError(
-                    f"No model_weights specified and there is no default weights"
-                    f" available for the provided model_name {self.model_name}. Please"
-                    f" specify model_weights explicitly."
-                )
-
+        self.model_weights = get_model_weights(self._config)
         self.cache_dir = self._config["cache_dir"]
         model_config = AutoConfig.from_pretrained(self.model_weights)
         self.max_model_sequence_length = model_config.max_position_embeddings
@@ -151,7 +163,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         # of the module cache and throwing a ModuleNotFound error for `torch`.
         from transformers import AutoTokenizer, TFAutoModel
 
-        logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
+        logger.debug(f"Loading Tokenizer and Model for {self.model_weights}")
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
@@ -584,7 +596,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
                     raise RuntimeError(
                         f"The sequence length of '{example.get(attribute)[:20]}...' "
                         f"is too long({sequence_length} tokens) for the "
-                        f"model chosen {self.model_name} which has a maximum "
+                        f"model chosen {self.model_weights} which has a maximum "
                         f"sequence length of {self.max_model_sequence_length} tokens. "
                         f"Either shorten the message or use a model which has no "
                         f"restriction on input sequence length like XLNet."
@@ -592,7 +604,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
                 logger.debug(
                     f"The sequence length of '{example.get(attribute)[:20]}...' "
                     f"is too long({sequence_length} tokens) for the "
-                    f"model chosen {self.model_name} which has a maximum "
+                    f"model chosen {self.model_weights} which has a maximum "
                     f"sequence length of {self.max_model_sequence_length} tokens. "
                     f"Downstream model predictions may be affected because of this."
                 )
