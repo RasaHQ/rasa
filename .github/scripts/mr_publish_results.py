@@ -20,7 +20,7 @@ METRIC_RUNTIME_PREFIX = "rasa.perf.benchmark."
 METRIC_ML_PREFIX = "rasa.perf.ml."
 CONFIG_REPOSITORY = "training-data"
 
-task_mapping = {
+TASK_MAPPING = {
     "intent_report.json": "intent_classification",
     "CRFEntityExtractor_report.json": "entity_prediction",
     "DIETClassifier_report.json": "entity_prediction",
@@ -28,7 +28,7 @@ task_mapping = {
     "story_report.json": "story_prediction",
 }
 
-task_mapping_segment = {
+TASK_MAPPING_SEGMENT = {
     "intent_report.json": "Intent Classification",
     "CRFEntityExtractor_report.json": "Entity Prediction",
     "DIETClassifier_report.json": "Entity Prediction",
@@ -265,14 +265,14 @@ def read_results(file: str) -> Dict[str, Any]:
 
 def _push_results(file_name: str, file: str) -> None:
     result = get_result(file_name, file)
-    result["task"] = task_mapping_segment[file_name]
+    result["task"] = TASK_MAPPING_SEGMENT[file_name]
     _send_to_segment(result)
 
 
 def get_result(file_name: str, file: str) -> Dict[str, Any]:
     result = read_results(file)
     result["file_name"] = file_name
-    result["task"] = task_mapping[file_name]
+    result["task"] = TASK_MAPPING[file_name]
     return result
 
 
@@ -280,7 +280,7 @@ def send_all_to_datadog() -> None:
     results = []
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
-            if any(f.endswith(valid_name) for valid_name in task_mapping.keys()):
+            if any(f.endswith(valid_name) for valid_name in TASK_MAPPING.keys()):
                 result = get_result(f, os.path.join(dirpath, f))
                 results.append(result)
     send_to_datadog(results)
@@ -315,7 +315,7 @@ def send_all_results_to_segment() -> None:
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
             if any(
-                f.endswith(valid_name) for valid_name in task_mapping_segment.keys()
+                f.endswith(valid_name) for valid_name in TASK_MAPPING_SEGMENT.keys()
             ):
                 _push_results(f, os.path.join(dirpath, f))
     analytics.flush()
@@ -325,10 +325,10 @@ def create_report_file() -> None:
     data = {}
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
-            if f not in task_mapping.keys():
+            if f not in TASK_MAPPING.keys():
                 continue
 
-            data = generate_json(os.path.join(dirpath, f), task_mapping[f], data)
+            data = generate_json(os.path.join(dirpath, f), TASK_MAPPING[f], data)
 
     with open(os.environ["SUMMARY_FILE"], "w") as f:
         json.dump(data, f, sort_keys=True, indent=2)
