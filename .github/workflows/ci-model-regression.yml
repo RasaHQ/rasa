@@ -710,7 +710,7 @@ jobs:
     needs:
       - model_regression_test_cpu
       - model_regression_test_gpu
-    if: ${{ always() && ((needs.model_regression_test_cpu.result != 'skipped') != (needs.model_regression_test_gpu.result != 'skipped')) }}
+    if: ${{ !((needs.model_regression_test_cpu.result == 'skipped') && (needs.model_regression_test_gpu.result == 'skipped')) }}
     outputs:
       success_status: ${{ steps.set-success-status.outputs.success_status }}
 
@@ -766,7 +766,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - combine_reports
-    if: ${{ always() && needs.combine_reports.result == 'success' }}
+    if: ${{ needs.combine_reports.result == 'success' }}
     steps:
       - name: Set return code
         run: |
@@ -783,7 +783,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - combine_reports
-    if: ${{ always() && needs.combine_reports.result == 'success' }}
+    if: ${{ needs.combine_reports.result == 'success' }}
 
     steps:
       - name: Checkout
