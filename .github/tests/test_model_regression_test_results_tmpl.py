@@ -48,7 +48,3 @@ Configuration repository branch: `main`
 
 """  # noqa E501
     assert output == expected_output
-
-
-if __name__ == "__main__":
-    test_comment_core()

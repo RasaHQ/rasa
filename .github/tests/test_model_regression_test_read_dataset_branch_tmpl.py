@@ -1,6 +1,7 @@
 import pathlib
 import subprocess
 import pytest
+from typing import Text
 
 TEMPLATE_FPATH = ".github/templates/model_regression_test_read_dataset_branch.tmpl"
 REPO_DIR = pathlib.Path("").absolute()
@@ -15,7 +16,7 @@ DEFAULT_DATASET_BRANCH = "main"
         ("comment_body_no_dataset_branch.json", DEFAULT_DATASET_BRANCH),
     ],
 )
-def test_read_dataset_branch(comment_body_file, expected_dataset_branch):
+def test_read_dataset_branch(comment_body_file: Text, expected_dataset_branch: Text):
     cmd = (
         "gomplate "
         f"-d github={TEST_DATA_DIR}/{comment_body_file} "
