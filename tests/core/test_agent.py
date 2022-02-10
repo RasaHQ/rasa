@@ -49,7 +49,7 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
         if model_hash == request.headers.get("If-None-Match"):
             return response.text("", 204)
 
-        app.number_of_model_requests += 1
+        app.ctx.number_of_model_requests += 1
 
         return await response.file_stream(
             location=model_path,
