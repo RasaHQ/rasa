@@ -80,7 +80,7 @@ def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, Text]:
     return is_external_flag, dataset_repository_branch
 
 
-def prepare_dsrepo_and_external_tags() -> Dict[Text, Any]:
+def prepare_datasetrepo_and_external_tags() -> Dict[Text, Any]:
     is_external, dataset_repo_branch = _get_is_external_and_dataset_repository_branch()
     return {
         "dataset_repository_branch": dataset_repo_branch,
@@ -237,7 +237,7 @@ def _send_to_segment(context: Dict[Text, Any]) -> None:
         "results",
         {
             "config_repository": CONFIG_REPOSITORY,
-            **prepare_dsrepo_and_external_tags(),
+            **prepare_datasetrepo_and_external_tags(),
             **create_dict_of_env(METRICS),
             **create_dict_of_env(MAIN_TAGS),
             **create_dict_of_env(OTHER_TAGS),
@@ -263,17 +263,17 @@ def read_results(file: Text) -> Dict[Text, Any]:
     return result
 
 
-def _push_results(file_name: Text, file: Text) -> None:
-    result = get_result(file_name, file)
-    result["task"] = TASK_MAPPING_SEGMENT[file_name]
-    _send_to_segment(result)
-
-
 def get_result(file_name: Text, file: Text) -> Dict[Text, Any]:
     result = read_results(file)
     result["file_name"] = file_name
     result["task"] = TASK_MAPPING[file_name]
     return result
+
+
+def _push_results_to_segment(file_name: Text, file: Text) -> None:
+    result = get_result(file_name, file)
+    result["task"] = TASK_MAPPING_SEGMENT[file_name]
+    _send_to_segment(result)
 
 
 def send_all_to_datadog() -> None:
@@ -284,6 +284,17 @@ def send_all_to_datadog() -> None:
                 result = get_result(f, os.path.join(dirpath, f))
                 results.append(result)
     send_to_datadog(results)
+
+
+def send_all_results_to_segment() -> None:
+    analytics.write_key = os.environ["SEGMENT_TOKEN"]
+    for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
+        for f in files:
+            if any(
+                f.endswith(valid_name) for valid_name in TASK_MAPPING_SEGMENT.keys()
+            ):
+                _push_results_to_segment(f, os.path.join(dirpath, f))
+    analytics.flush()
 
 
 def generate_json(file: Text, task: Text, data: dict) -> dict:
@@ -300,7 +311,7 @@ def generate_json(file: Text, task: Text, data: dict) -> dict:
     data[dataset][config] = [
         {
             "config_repository": CONFIG_REPOSITORY,
-            **prepare_dsrepo_and_external_tags(),
+            **prepare_datasetrepo_and_external_tags(),
             **create_dict_of_env(METRICS),
             **create_dict_of_env(OTHER_TAGS),
             **(data[dataset][config][0] if data[dataset][config] else {}),
@@ -308,17 +319,6 @@ def generate_json(file: Text, task: Text, data: dict) -> dict:
         }
     ]
     return data
-
-
-def send_all_results_to_segment() -> None:
-    analytics.write_key = os.environ["SEGMENT_TOKEN"]
-    for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
-        for f in files:
-            if any(
-                f.endswith(valid_name) for valid_name in TASK_MAPPING_SEGMENT.keys()
-            ):
-                _push_results(f, os.path.join(dirpath, f))
-    analytics.flush()
 
 
 def create_report_file() -> None:
