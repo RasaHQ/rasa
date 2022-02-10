@@ -110,6 +110,7 @@ class Domain:
 
     @classmethod
     def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
+        """Returns loaded Domain after merging all domain files."""
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -121,13 +122,13 @@ class Domain:
         domain_dict = Domain.empty().as_dict()
         for path in paths:
             other = cls.from_path(path)
-            other.data.update(other.as_dict())
             domain_dict = cls.merge(domain_dict, other.data)
 
         return cls.from_dict(domain_dict)
 
     @classmethod
     def from_path(cls, path: Union[Text, Path]) -> "Domain":
+        """Loads the `Domain` from a path."""
         path = os.path.abspath(path)
 
         if os.path.isfile(path):
@@ -235,12 +236,17 @@ class Domain:
 
     @classmethod
     def merge(
-        cls, domain1: Dict, domain2: Dict, override: bool = False, is_dir: bool = False,
+        cls,
+        domain1: Dict,
+        domain2: Dict,
+        override: bool = False,
+        is_dir: bool = False,
     ) -> Dict[Text, Any]:
         """Merges this domain dict with another one, combining their attributes.
 
-        This method merges domain dicts, and ensures all attributes (like ``intents``, ``entities``, and
-        ``actions``) are known to the Domain when the object is created.
+        This method merges domain dicts, and ensures all attributes (like ``intents``,
+        ``entities``, and ``actions``) are known to the Domain when the
+        object is created.
 
         List attributes like ``intents`` and ``actions`` are deduped
         and merged. Single attributes are taken from `domain1` unless

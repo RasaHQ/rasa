@@ -473,7 +473,9 @@ def test_merge_with_empty_domain():
         """
     )
     empty_domain = Domain.empty()
-    merged = Domain.from_dict(Domain.merge(empty_domain.data, domain.data, override=True))
+    merged = Domain.from_dict(
+        Domain.merge(empty_domain.data, domain.data, override=True)
+    )
     assert merged.data == domain.data
 
 

@@ -243,7 +243,11 @@ class CombinedDataImporter(TrainingDataImporter):
         domains = [importer.get_domain() for importer in self._importers]
 
         return reduce(
-            lambda merged, other: Domain.from_dict(Domain.merge(merged.data, other.data)), domains, Domain.empty()
+            lambda merged, other: Domain.from_dict(
+                Domain.merge(merged.data, other.data)
+            ),
+            domains,
+            Domain.empty(),
         )
 
     @rasa.shared.utils.common.cached_method
@@ -324,7 +328,9 @@ class ResponsesSyncImporter(TrainingDataImporter):
             existing_domain,
         )
 
-        existing_domain = Domain.from_dict(Domain.merge(existing_domain.data, domain_with_retrieval_intents.data))
+        existing_domain = Domain.from_dict(
+            Domain.merge(existing_domain.data, domain_with_retrieval_intents.data)
+        )
         existing_domain.check_missing_responses()
 
         return existing_domain
