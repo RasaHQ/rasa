@@ -136,12 +136,10 @@ def prepare_ml_metrics(results: List[Dict[str, Any]]) -> Dict[str, float]:
     return metrics_ml
 
 
-def prepare_tags() -> List[str]:
+def prepare_datadog_tags() -> List[str]:
     tags = {
         "env": DD_ENV,
         "service": DD_SERVICE,
-        **create_dict_of_env(MAIN_TAGS),
-        **create_dict_of_env(OTHER_TAGS),
         "branch": os.environ["BRANCH"],
         "github_sha": os.environ["GITHUB_SHA"],
         "pr_id": os.environ["PR_ID"],
@@ -152,6 +150,8 @@ def prepare_tags() -> List[str]:
         "workflow": os.environ["GITHUB_WORKFLOW"],
         "github_run_id": os.environ["GITHUB_RUN_ID"],
         "github_event": os.environ["GITHUB_EVENT_NAME"],
+        **create_dict_of_env(MAIN_TAGS),
+        **create_dict_of_env(OTHER_TAGS),
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
     return tags_list
@@ -160,7 +160,7 @@ def prepare_tags() -> List[str]:
 def send_to_datadog(results: List[Dict[str, Any]]) -> None:
     """Sends metrics to datadog."""
     # Prepare
-    tags_list = prepare_tags()
+    tags_list = prepare_datadog_tags()
     timestamp = datetime.datetime.now().timestamp()
     series = []
 
@@ -213,18 +213,17 @@ def _send_to_segment(context: Dict[str, Any]) -> None:
         jobID,
         "results",
         {
-            "dataset": os.environ["DATASET_NAME"],
             "dataset_repository_branch": dataset_repository_branch,
             "external_dataset_repository": is_external,
             "config_repository": CONFIG_REPOSITORY,
             "workflow": os.environ["GITHUB_WORKFLOW"],
-            "config": os.environ["CONFIG"],
             "pr_url": os.environ["PR_URL"],
-            **create_dict_of_env(METRICS),
-            **create_dict_of_env(OTHER_TAGS),
             "github_run_id": os.environ["GITHUB_RUN_ID"],
             "github_sha": os.environ["GITHUB_SHA"],
             "github_event": os.environ["GITHUB_EVENT_NAME"],
+            **create_dict_of_env(METRICS),
+            **create_dict_of_env(MAIN_TAGS),
+            **create_dict_of_env(OTHER_TAGS),
             **context,
         },
     )
