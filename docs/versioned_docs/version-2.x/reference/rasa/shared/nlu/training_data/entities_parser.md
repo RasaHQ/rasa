@@ -16,11 +16,11 @@ Attributes of an entity defined in markdown data.
 find_entities_in_training_example(example: Text) -> List[Dict[Text, Any]]
 ```
 
-Extracts entities from an intent example.
+Extracts entities from an annotated utterance.
 
 **Arguments**:
 
-- `example` - Intent example.
+- `example` - Annotated utterance.
   
 
 **Returns**:
