@@ -49,7 +49,7 @@ from rasa.shared.core.events import (
     LegacyFormValidation,
     format_message,
 )
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
 
 
@@ -552,6 +552,21 @@ def test_split_events(
                 ActionExecuted(ACTION_SESSION_START_NAME, timestamp=1),
                 SessionStarted(timestamp=2),
                 ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+            ],
+            True,
+        ),
+        # also a session start, but with metadata
+        (
+            [
+                ActionExecuted(
+                    ACTION_SESSION_START_NAME,
+                    timestamp=1,
+                    metadata={METADATA_MODEL_ID: "123"},
+                ),
+                SessionStarted(timestamp=2, metadata={METADATA_MODEL_ID: "123"}),
+                ActionExecuted(
+                    ACTION_LISTEN_NAME, timestamp=3, metadata={METADATA_MODEL_ID: "123"}
+                ),
             ],
             True,
         ),
