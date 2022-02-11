@@ -86,20 +86,62 @@ Generates text for a list item.
 
 Generates text for a message object.
 
+**Arguments**:
+
+- `message` - A message
+  
+
+**Returns**:
+
+  The text of the message, annotated with the entity data that is contained
+  in the message
+
+#### generate\_entity\_attributes
+
+```python
+ | @staticmethod
+ | generate_entity_attributes(text: Text, entity: Dict[Text, Any], short_allowed: bool = True) -> Text
+```
+
+Generates text for the entity attributes.
+
+**Arguments**:
+
+- `text` - The text that is annotated with the entity
+- `entity` - Entity data
+- `short_allowed` - If `True`, allow shorthand annotation with parenthesis
+  
+
+**Returns**:
+
+  The annotation text that should follow the given text
+
 #### generate\_entity
 
 ```python
  | @staticmethod
- | generate_entity(text: Text, entity: Dict[Text, Any]) -> Text
+ | generate_entity(text: Text, entity: Union[Dict[Text, Any], List[Dict[Text, Any]]]) -> Text
 ```
 
-Generates text for an entity object.
+Generates text for one or multiple entity objects.
+
+**Arguments**:
+
+- `text` - The un-annotated text
+- `entity` - One or multiple entity annotations for one part of this text
+  
+
+**Returns**:
+
+  Annotated part of the text
 
 ## JsonTrainingDataReader Objects
 
 ```python
 class JsonTrainingDataReader(TrainingDataReader)
 ```
+
+A class for reading JSON files.
 
 #### reads
 

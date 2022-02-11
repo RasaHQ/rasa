@@ -85,7 +85,7 @@ A session start sequence is a sequence of two events: an executed
 
 **Returns**:
 
-  Whether or not `events` begins with a session start sequence.
+  Whether `events` begins with a session start sequence.
 
 ## Event Objects
 
