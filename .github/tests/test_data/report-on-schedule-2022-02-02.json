@@ -1,0 +1,303 @@
+{
+  "RasaHQ/financial-demo": {
+    "BERT + DIET(bow) + ResponseSelector(bow)": [{
+      "accelerator_type": "GPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "52a3ad3eb5292d56542687e23b06703431f15ead",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "entity_prediction": {
+        "macro avg": {
+          "f1-score": 0.7333333333333333,
+          "precision": 0.8,
+          "recall": 0.7,
+          "support": 14
+        },
+        "micro avg": {
+          "f1-score": 0.8333333333333333,
+          "precision": 1.0,
+          "recall": 0.7142857142857143,
+          "support": 14
+        },
+        "weighted avg": {
+          "f1-score": 0.738095238095238,
+          "precision": 0.7857142857142857,
+          "recall": 0.7142857142857143,
+          "support": 14
+        }
+      },
+      "external_dataset_repository": true,
+      "intent_classification": {
+        "accuracy": 1.0,
+        "macro avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 28
+        },
+        "weighted avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 28
+        }
+      },
+      "test_run_time": "35s",
+      "total_run_time": "2m2s",
+      "train_run_time": "1m28s",
+      "type": "nlu"
+    }],
+    "BERT + DIET(seq) + ResponseSelector(t2t)": [{
+      "accelerator_type": "GPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "52a3ad3eb5292d56542687e23b06703431f15ead",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "entity_prediction": {
+        "macro avg": {
+          "f1-score": 0.7333333333333333,
+          "precision": 0.8,
+          "recall": 0.7,
+          "support": 14
+        },
+        "micro avg": {
+          "f1-score": 0.8333333333333333,
+          "precision": 1.0,
+          "recall": 0.7142857142857143,
+          "support": 14
+        },
+        "weighted avg": {
+          "f1-score": 0.738095238095238,
+          "precision": 0.7857142857142857,
+          "recall": 0.7142857142857143,
+          "support": 14
+        }
+      },
+      "external_dataset_repository": true,
+      "intent_classification": {
+        "accuracy": 1.0,
+        "macro avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 28
+        },
+        "weighted avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 28
+        }
+      },
+      "test_run_time": "55s",
+      "total_run_time": "2m8s",
+      "train_run_time": "1m14s",
+      "type": "nlu"
+    }],
+    "Rules + Memo + TED": [{
+      "accelerator_type": "GPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "52a3ad3eb5292d56542687e23b06703431f15ead",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "external_dataset_repository": true,
+      "story_prediction": {
+        "accuracy": 1.0,
+        "conversation_accuracy": {
+          "accuracy": 1.0,
+          "correct": 48,
+          "total": 48,
+          "with_warnings": 0
+        },
+        "macro avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 317
+        },
+        "weighted avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 317
+        }
+      },
+      "test_run_time": "51s",
+      "total_run_time": "8m15s",
+      "train_run_time": "7m24s",
+      "type": "core"
+    }]
+  },
+  "RasaHQ/retail-demo": {
+    "BERT + DIET(bow) + ResponseSelector(bow)": [{
+      "accelerator_type": "GPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "8226b51b4312aa4d3723098cf6d4028feea040b4",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "entity_prediction": {
+        "macro avg": {
+          "f1-score": 0.25,
+          "precision": 0.25,
+          "recall": 0.25,
+          "support": 6
+        },
+        "micro avg": {
+          "f1-score": 0.2857142857142857,
+          "precision": 1.0,
+          "recall": 0.16666666666666666,
+          "support": 6
+        },
+        "weighted avg": {
+          "f1-score": 0.16666666666666666,
+          "precision": 0.16666666666666666,
+          "recall": 0.16666666666666666,
+          "support": 6
+        }
+      },
+      "external_dataset_repository": true,
+      "intent_classification": {
+        "macro avg": {
+          "f1-score": 0.8,
+          "precision": 0.8,
+          "recall": 0.85,
+          "support": 16
+        },
+        "micro avg": {
+          "f1-score": 0.8387096774193549,
+          "precision": 0.8666666666666667,
+          "recall": 0.8125,
+          "support": 16
+        },
+        "weighted avg": {
+          "f1-score": 0.8125,
+          "precision": 0.875,
+          "recall": 0.8125,
+          "support": 16
+        }
+      },
+      "test_run_time": "29s",
+      "total_run_time": "1m16s",
+      "train_run_time": "47s",
+      "type": "nlu"
+    }],
+    "BERT + DIET(seq) + ResponseSelector(t2t)": [{
+      "accelerator_type": "GPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "8226b51b4312aa4d3723098cf6d4028feea040b4",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "entity_prediction": {
+        "macro avg": {
+          "f1-score": 0.25,
+          "precision": 0.25,
+          "recall": 0.25,
+          "support": 6
+        },
+        "micro avg": {
+          "f1-score": 0.2857142857142857,
+          "precision": 1.0,
+          "recall": 0.16666666666666666,
+          "support": 6
+        },
+        "weighted avg": {
+          "f1-score": 0.16666666666666666,
+          "precision": 0.16666666666666666,
+          "recall": 0.16666666666666666,
+          "support": 6
+        }
+      },
+      "external_dataset_repository": true,
+      "intent_classification": {
+        "accuracy": 0.875,
+        "macro avg": {
+          "f1-score": 0.8300000000000001,
+          "precision": 0.8166666666666667,
+          "recall": 0.85,
+          "support": 16
+        },
+        "weighted avg": {
+          "f1-score": 0.85,
+          "precision": 0.8333333333333333,
+          "recall": 0.875,
+          "support": 16
+        }
+      },
+      "test_run_time": "56s",
+      "total_run_time": "2m2s",
+      "train_run_time": "1m6s",
+      "type": "nlu"
+    }],
+    "Rules + Memo": [{
+      "accelerator_type": "GPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "8226b51b4312aa4d3723098cf6d4028feea040b4",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "external_dataset_repository": true,
+      "story_prediction": {
+        "conversation_accuracy": {
+          "accuracy": 0.8888888888888888,
+          "correct": 8,
+          "total": 9,
+          "with_warnings": 0
+        },
+        "macro avg": {
+          "f1-score": 0.9663698541747322,
+          "precision": 1.0,
+          "recall": 0.946007696007696,
+          "support": 67
+        },
+        "micro avg": {
+          "f1-score": 0.9692307692307692,
+          "precision": 1.0,
+          "recall": 0.9402985074626866,
+          "support": 67
+        },
+        "weighted avg": {
+          "f1-score": 0.9656317714563074,
+          "precision": 1.0,
+          "recall": 0.9402985074626866,
+          "support": 67
+        }
+      },
+      "test_run_time": "10s",
+      "total_run_time": "19s",
+      "train_run_time": "10s",
+      "type": "core"
+    }],
+    "Rules + Memo + TED": [{
+      "accelerator_type": "GPU",
+      "config_repository": "training-data",
+      "config_repository_branch": "main",
+      "dataset_commit": "8226b51b4312aa4d3723098cf6d4028feea040b4",
+      "dataset_repository_branch": "fix-model-regression-tests",
+      "external_dataset_repository": true,
+      "story_prediction": {
+        "accuracy": 1.0,
+        "conversation_accuracy": {
+          "accuracy": 1.0,
+          "correct": 9,
+          "total": 9,
+          "with_warnings": 0
+        },
+        "macro avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 67
+        },
+        "weighted avg": {
+          "f1-score": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 67
+        }
+      },
+      "test_run_time": "31s",
+      "total_run_time": "4m57s",
+      "train_run_time": "4m27s",
+      "type": "core"
+    }]
+  }
+}

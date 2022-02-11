@@ -10,7 +10,7 @@ from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitabl
 
 from google.oauth2 import id_token
 from sanic.response import HTTPResponse
-from sanic.exceptions import abort
+from sanic.exceptions import SanicException
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
@@ -279,9 +279,9 @@ class HangoutsInput(InputChannel):
                 certs_url=CERTS_URL,
             )
         except ValueError:
-            abort(401)
+            raise SanicException(status_code=401)
         if decoded_token["iss"] != "chat@system.gserviceaccount.com":
-            abort(401)
+            raise SanicException(status_code=401)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
