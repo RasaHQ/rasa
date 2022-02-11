@@ -410,13 +410,22 @@ not overlap.
 
   entity type
 
-#### do\_extractors\_support\_overlap
+#### do\_any\_extractors\_not\_support\_overlap
 
 ```python
-do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool
+do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bool
 ```
 
-Checks if extractors support overlapping entities
+Checks if any extractor does not support overlapping entities.
+
+**Arguments**:
+
+  Names of the entitiy extractors
+  
+
+**Returns**:
+
+  `True` if and only if CRFEntityExtractor or DIETClassifier is in `extractors`
 
 #### align\_entity\_predictions
 
