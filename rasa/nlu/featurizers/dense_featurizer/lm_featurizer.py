@@ -37,6 +37,35 @@ DEFAULT_MODEL_WEIGHTS = {
 }
 CLS_TOKEN = "[CLS]"
 
+# Those models are known to break the component as of transformers 4.13.0,
+# due to the tokenizer specific cleanup not working, the AutoConfig not providing
+# the necessary data, or since the models expect different input than just text.
+INCOMPATIBLE_MODELS = [
+    "Bartphor",
+    "Bertweet",
+    "BlenderbotSmall",
+    "ByT5",
+    "CTRL",
+    "LayoutLMv2",
+    "LayoutXLM",
+    "MBart50",
+    "Perceiver",
+    "Phobert",
+    "Reformer",
+    "Speech2Text",
+    "Speech2Text2",
+    "Tapas",
+    "TransfoXL",
+    "Wav2Vec2CTC",
+    "Wav2Vec2",
+    "XLMProphetNet",
+    "T5",
+    "BertGeneration",
+    "LED",
+    "Canine",
+    "CLIP",
+]
+
 
 def get_model_weights(config: Dict[str, Any]) -> str:
     """Gets the model weights from the configuration.
@@ -149,6 +178,16 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         self.model_weights = get_model_weights(self._config)
         self.cache_dir = self._config["cache_dir"]
         model_config = AutoConfig.from_pretrained(self.model_weights)
+
+        model_name = type(model_config).__name__.replace("Config", "")
+        if model_name in INCOMPATIBLE_MODELS:
+            raise ValueError(
+                f"You tried using a {model_name} model, which is not "
+                f"compatible with `LanguageModelFeaturizer`. Please "
+                f"consult the documentation on which models are "
+                f"supported."
+            )
+
         self.max_model_sequence_length = model_config.max_position_embeddings
 
     def _load_model_instance(self) -> None:
@@ -188,7 +227,8 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         # additionally to the existing tokens, whereas the UNK token can represent an
         # original token and should therefore not be filtered from the output.
         self.special_token_ids = self.tokenizer.all_special_ids.copy()
-        self.special_token_ids.remove(self.tokenizer.unk_token_id)
+        if self.tokenizer.unk_token_id in self.special_token_ids:
+            self.special_token_ids.remove(self.tokenizer.unk_token_id)
 
     def _lm_tokenize(self, text: Text) -> Tuple[List[int], List[Text]]:
         """Passes the text through the tokenizer of the language model.

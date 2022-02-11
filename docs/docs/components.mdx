@@ -617,9 +617,18 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   :::note
   While we make an effort to support as many HuggingFace models as possible, please note that some architectures will
-  not work due to how Rasa's internal tokenization interacts with the HuggingFace tokenizers. If you encounter an issue
-  with a specific model other than the ones listed in the table above, please let us know on
+  not work due to how Rasa's internal tokenization interacts with the HuggingFace tokenizers. The following models are
+  currently not supported:
+
+  BertGeneration, Bartphor, Bertweet, BlenderbotSmall, ByT5, Canine, CLIP, CTRL, LayoutLMv2, LayoutXLM, LED, MBart50,
+  Perceiver, Phobert, Reformer, Speech2Text, Speech2Text2, T5, Tapas, TransfoXL, Wav2Vec2CTC, Wav2Vec2, XLMProphetNet
+
+  If you encounter any issues with other models than the ones listed above, please let us know on
   [GitHub](https://github.com/RasaHQ/rasa/issues/new/choose) or the [Rasa Community Forum](https://forum.rasa.com/).
+  Typical errors would be the component failing to load, or the cleanup of subtoken delimiters not working, so that you
+  would see additional characters such as `@@` or `##` in extracted entities. You can also check the
+  `test_tokenizer_prefixes_cleanup` [unit test](https://github.com/RasaHQ/rasa/blob/main/tests/nlu/featurizers/test_lm_featurizer.py),
+  and extend it for the model weights you want to use.
   :::
 
 
