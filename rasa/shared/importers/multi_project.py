@@ -179,7 +179,11 @@ class MultiProjectImporter(TrainingDataImporter):
         """Retrieves model domain (see parent class for full docstring)."""
         domains = [Domain.load(path) for path in self._domain_paths]
         return reduce(
-            lambda merged, other: Domain.from_dict(Domain.merge(merged.data, other.data)), domains, Domain.empty()
+            lambda merged, other: Domain.from_dict(
+                Domain.merge(merged.data, other.data)
+            ),
+            domains,
+            Domain.empty(),
         )
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:

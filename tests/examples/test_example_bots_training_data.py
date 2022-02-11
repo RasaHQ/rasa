@@ -58,9 +58,12 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
     # this method is called because `importer.get_nlu_data`
     # calls `CombinedDataImporter.get_domain()` which uses `Domain.from_dict`
     assert len(record) == 5
-    assert all([
-        "Slot auto-fill has been removed in 3.0 and replaced with "
-        "a new explicit mechanism to set slots." in r.message.args[0] for r in record]
+    assert all(
+        [
+            "Slot auto-fill has been removed in 3.0 and replaced with "
+            "a new explicit mechanism to set slots." in r.message.args[0]
+            for r in record
+        ]
     )
 
 
