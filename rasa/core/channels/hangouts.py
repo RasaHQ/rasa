@@ -279,9 +279,9 @@ class HangoutsInput(InputChannel):
                 certs_url=CERTS_URL,
             )
         except ValueError:
-            SanicException(status_code=401)
+            raise SanicException(status_code=401)
         if decoded_token["iss"] != "chat@system.gserviceaccount.com":
-            SanicException(status_code=401)
+            raise SanicException(status_code=401)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]

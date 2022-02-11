@@ -5,7 +5,7 @@ import logging
 from asyncio import Queue, CancelledError
 from sanic import Blueprint, response
 from sanic.request import Request
-from sanic.response import HTTPResponse
+from sanic.response import HTTPResponse, ResponseStream
 from typing import Text, Dict, Any, Optional, Callable, Awaitable, NoReturn
 
 import rasa.utils.endpoints
@@ -97,7 +97,7 @@ class RestInput(InputChannel):
             return response.json({"status": "ok"})
 
         @custom_webhook.route("/webhook", methods=["POST"])
-        async def receive(request: Request) -> HTTPResponse:
+        async def receive(request: Request) -> ResponseStream | HTTPResponse:
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
             should_use_stream = rasa.utils.endpoints.bool_arg(
