@@ -2122,3 +2122,40 @@ async def test_update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append
     )
     assert list(fetched_tracker.events) == with_model_ids(expected_events, model_id)
+
+
+async def test_append_events_does_not_repeat_session_start(
+    rasa_app: SanicASGITestClient,
+):
+    session_start_events = [
+        {
+            "event": "action",
+            "timestamp": 1644577572.9639301,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "name": "action_session_start",
+            "policy": None,
+            "confidence": 1.0,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+        {
+            "event": "session_started",
+            "timestamp": 1644577572.963996,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+        },
+        {
+            "event": "action",
+            "timestamp": 1644577572.964009,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "name": "action_listen",
+            "policy": None,
+            "confidence": None,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+    ]
+    _, response = await rasa_app.post(
+        "/conversations/testid/tracker/events", json=session_start_events
+    )
+
+    assert response.json["events"] == session_start_events
