@@ -1749,8 +1749,7 @@ def test_get_output_channel(
     input_channels: List[Text], output_channel_to_use: Text, expected_channel: Type
 ):
     request = MagicMock()
-    app = MagicMock()
-    app.ctx = Namespace()
+    app = MagicMock(ctx=Namespace())
     app.ctx.input_channels = input_channels
     request.app = app
     request.args = {"output_channel": output_channel_to_use}
@@ -1770,8 +1769,7 @@ def test_get_output_channel(
 )
 def test_get_latest_output_channel(input_channels: List[Text], expected_channel: Type):
     request = MagicMock()
-    app = MagicMock()
-    app.ctx = Namespace()
+    app = MagicMock(ctx=Namespace())
     app.ctx.input_channels = input_channels
     request.app = app
     request.args = {"output_channel": "latest"}
