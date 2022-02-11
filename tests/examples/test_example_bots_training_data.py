@@ -82,10 +82,14 @@ def test_example_bot_training_on_initial_project(tmp_path: Path):
         importer.get_nlu_data()
         importer.get_stories()
 
-    # two for slot auto-fill removal
-    assert len(record) == 2
-    assert (
-        "Slot auto-fill has been removed in 3.0 and replaced with "
-        "a new explicit mechanism to set slots." in record[0].message.args[0]
+    # 5 for slot auto-fill removal warning raised in `Domain.from_dict`
+    # this method is called because `importer.get_nlu_data`
+    # calls `CombinedDataImporter.get_domain()` which uses `Domain.from_dict`
+    assert len(record) == 5
+    assert all(
+        [
+            "Slot auto-fill has been removed in 3.0 and replaced with "
+            "a new explicit mechanism to set slots." in r.message.args[0]
+            for r in record
+        ]
     )
-    assert record[0].message.args[0] == record[1].message.args[0]
