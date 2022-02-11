@@ -29,6 +29,7 @@ def _raise_on_same_start_and_different_end_positions(
     aggregated_entities: Dict[int, List[Dict[Text, Any]]],
 ) -> None:
     """Raises a ValueError iff two entities have overlapping but not identical spans.
+
     Args:
         aggregated_entities: Entities for each start position
     """
@@ -110,7 +111,6 @@ class TrainingDataWriter:
             The text of the message, annotated with the entity data that is contained
             in the message
         """
-
         md = ""
         text = message.get("text", "")
 
@@ -151,10 +151,12 @@ class TrainingDataWriter:
         text: Text, entity: Dict[Text, Any], short_allowed: bool = True
     ) -> Text:
         """Generates text for the entity attributes.
+
         Args:
             text: The text that is annotated with the entity
             entity: Entity data
             short_allowed: If `True`, allow shorthand annotation with parenthesis
+
         Returns:
             The annotation text that should follow the given text
         """
@@ -196,9 +198,11 @@ class TrainingDataWriter:
         text: Text, entity: Union[Dict[Text, Any], List[Dict[Text, Any]]]
     ) -> Text:
         """Generates text for one or multiple entity objects.
+
         Args:
             text: The un-annotated text
             entity: One or multiple entity annotations for one part of this text
+
         Returns:
             Annotated part of the text
         """

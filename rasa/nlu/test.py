@@ -1097,8 +1097,10 @@ def determine_entity_for_token(
 
 def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bool:
     """Checks if any extractor does not support overlapping entities.
+
     Args:
         Names of the entitiy extractors
+
     Returns:
         `True` if and only if CRFEntityExtractor or DIETClassifier is in `extractors`
     """
