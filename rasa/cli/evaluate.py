@@ -80,7 +80,7 @@ def add_subparser(
     marker_parser.set_defaults(func=_run_markers_cli)
 
 
-async def _run_markers_cli(args: argparse.Namespace) -> None:
+def _run_markers_cli(args: argparse.Namespace) -> None:
     """Run markers algorithm using parameters from CLI.
 
     Args:
@@ -91,7 +91,7 @@ async def _run_markers_cli(args: argparse.Namespace) -> None:
 
     stats_file_prefix = args.stats_file_prefix if args.stats else None
 
-    await _run_markers(
+    _run_markers(
         seed,
         count,
         args.endpoints,
@@ -103,7 +103,7 @@ async def _run_markers_cli(args: argparse.Namespace) -> None:
     )
 
 
-async def _run_markers(
+def _run_markers(
     seed: Optional[int],
     count: Optional[int],
     endpoint_config: Path,
@@ -176,12 +176,13 @@ async def _run_markers(
         return path.parent / (path.name + suffix) if path else None
 
     try:
-        await markers.evaluate_trackers(
+        import asyncio
+        asyncio.run(markers.evaluate_trackers(
             trackers=tracker_loader.load(),
             output_file=output_filename,
             session_stats_file=_append_suffix(stats_file_prefix, STATS_SESSION_SUFFIX),
             overall_stats_file=_append_suffix(stats_file_prefix, STATS_OVERALL_SUFFIX),
-        )
+        ))
     except (FileExistsError, NotADirectoryError) as e:
         rasa.shared.utils.cli.print_error_and_exit(message=str(e))
 
