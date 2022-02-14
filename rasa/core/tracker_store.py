@@ -3,7 +3,7 @@ import itertools
 import json
 import logging
 import os
-from inspect import isawaitable
+from inspect import isawaitable, iscoroutinefunction
 
 from time import sleep
 from typing import (
@@ -65,6 +65,19 @@ POSTGRESQL_DEFAULT_POOL_SIZE = 50
 DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 
+def check_if_tracker_store_async(tracker_store: "TrackerStore") -> bool:
+    """
+    Evaluates if a tracker store implementation is async based on async methods in base class
+    :param tracker_store: tracker store object we're evaluating
+    :return: boolean indicating if the tracker store correctly implemented all async methods
+    """
+    return all(iscoroutinefunction(getattr(tracker_store, method)) for method in get_async_tracker_store_methods())
+
+
+def get_async_tracker_store_methods() -> List[str]:
+    return [attribute for attribute in dir(TrackerStore) if iscoroutinefunction(getattr(TrackerStore, attribute))]
+
+
 class TrackerDeserialisationException(RasaException):
     """Raised when an error is encountered while deserialising a tracker."""
 
@@ -105,7 +118,16 @@ class TrackerStore:
         import sqlalchemy.exc
 
         try:
-            return AwaitableTrackerStore(_create_from_endpoint_config(obj, domain, event_broker))
+            tracker_store = _create_from_endpoint_config(obj, domain, event_broker)
+            if not check_if_tracker_store_async(tracker_store):
+                rasa.shared.utils.io.raise_warning(f"Tracker store implementation {tracker_store.__class__.__name__} "
+                                                   f"is not asynchronous. Non-asynchronous tracker stores "
+                                                   f"will be deprecated in a future release. "
+                                                   f"Please make the following methods async: "
+                                                   f"{get_async_tracker_store_methods()}",
+                                                   UserWarning)
+                tracker_store = AwaitableTrackerStore(tracker_store)
+            return tracker_store
         except (
             BotoCoreError,
             pymongo.errors.ConnectionFailure,

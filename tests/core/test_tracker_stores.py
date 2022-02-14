@@ -163,7 +163,7 @@ def test_create_tracker_store_from_endpoint_config(
         ssl_ca_certs="my-bundle.ca-bundle",
     )
 
-    assert isinstance(tracker_store, type(TrackerStore.create(store, domain)._tracker_store))
+    assert isinstance(tracker_store, type(TrackerStore.create(store, domain)))
 
 
 def test_redis_tracker_store_invalid_key_prefix(domain: Domain):
@@ -256,6 +256,14 @@ class HostExampleTrackerStore(RedisTrackerStore):
     pass
 
 
+class NonAsyncTrackerStore(TrackerStore):
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        pass
+
+    def save(self, tracker: DialogueStateTracker) -> None:
+        pass
+
+
 def test_tracker_store_with_host_argument_from_string(domain: Domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
@@ -266,7 +274,7 @@ def test_tracker_store_with_host_argument_from_string(domain: Domain):
 
     assert len(record) == 0
 
-    assert isinstance(tracker_store._tracker_store, HostExampleTrackerStore)
+    assert isinstance(tracker_store, HostExampleTrackerStore)
 
 
 def test_tracker_store_from_invalid_module(domain: Domain):
@@ -277,7 +285,7 @@ def test_tracker_store_from_invalid_module(domain: Domain):
     with pytest.warns(UserWarning):
         tracker_store = TrackerStore.create(store_config, domain)
 
-    assert isinstance(tracker_store, AwaitableTrackerStore)
+    assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
 def test_tracker_store_from_invalid_string(domain: Domain):
@@ -288,7 +296,7 @@ def test_tracker_store_from_invalid_string(domain: Domain):
     with pytest.warns(UserWarning):
         tracker_store = TrackerStore.create(store_config, domain)
 
-    assert isinstance(tracker_store._tracker_store, InMemoryTrackerStore)
+    assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
 async def _tracker_store_and_tracker_with_slot_set() -> Tuple[
@@ -944,3 +952,11 @@ def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
             domain,
         )
     assert "port '$DB_PORT' cannot be cast to integer." in str(error.value)
+
+
+def test_create_non_async_tracker_store(domain: Domain):
+    endpoint_config = EndpointConfig(type="tests.core.test_tracker_stores.NonAsyncTrackerStore")
+    with pytest.warns(UserWarning):
+        tracker_store = TrackerStore.create(endpoint_config)
+    assert isinstance(tracker_store, AwaitableTrackerStore)
+    assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
