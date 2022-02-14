@@ -111,7 +111,7 @@ class RasaChatInput(RestInput):
                         jwt_payload[JWT_USERNAME_KEY], req.json[CONVERSATION_ID_KEY]
                     )
                 )
-                SanicException(status_code=401)
+                raise SanicException(status_code=401)
 
         return jwt_payload[JWT_USERNAME_KEY]
 
