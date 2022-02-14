@@ -913,9 +913,7 @@ def test_models_not_retrained_if_only_new_responses(
     """
     domain_with_extra_response = Domain.from_yaml(domain_with_extra_response)
 
-    new_domain = Domain.from_dict(
-        Domain.merge(domain.data, domain_with_extra_response.data)
-    )
+    new_domain = domain.merge(domain_with_extra_response)
     new_domain_path = tmp_path / "domain.yml"
     rasa.shared.utils.io.write_yaml(new_domain.as_dict(), new_domain_path)
 
@@ -947,9 +945,7 @@ def test_models_not_retrained_if_only_new_action(
       - text: "Hi from Rasa"
     """
 
-    new_domain = Domain.from_dict(
-        Domain.merge(domain.data, Domain.from_yaml(domain_with_extra_response).data)
-    )
+    new_domain = domain.merge(Domain.from_yaml(domain_with_extra_response))
     new_domain_path = tmp_path / "domain.yml"
     rasa.shared.utils.io.write_yaml(new_domain.as_dict(), new_domain_path)
 
