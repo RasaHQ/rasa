@@ -391,7 +391,23 @@ class Domain:
     @property
     def data(self) -> Dict:
         """Returns original domain dict representation."""
-        self._data.update(self.as_dict())
+        # add the config, session_config and e2e_actions defaults
+        # if not included in the original domain dict
+        required_keys = ["config", SESSION_CONFIG_KEY, KEY_E2E_ACTIONS]
+
+        if any([key not in self._data for key in required_keys]):
+            defaults = {
+                "config": {"store_entities_as_slots": self.store_entities_as_slots},
+                SESSION_CONFIG_KEY: {
+                    SESSION_EXPIRATION_TIME_KEY: (
+                        self.session_config.session_expiration_time
+                    ),
+                    CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
+                },
+                KEY_E2E_ACTIONS: self.action_texts,
+            }
+            self._data.update(defaults)
+
         return self._data
 
     @staticmethod
