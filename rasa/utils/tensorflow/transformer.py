@@ -1,8 +1,12 @@
 from typing import Optional, Text, Tuple, Union
-import tensorflow as tf
-from tensorflow.python.layers.utils import smart_cond
-from tensorflow.keras import backend as K
+
 import numpy as np
+import tensorflow as tf
+
+# TODO: The following is not (yet) available via tf.keras
+from keras.utils.control_flow_util import smart_cond
+from tensorflow.keras import backend as K
+
 from rasa.utils.tensorflow.layers import RandomlyConnectedDense
 
 
