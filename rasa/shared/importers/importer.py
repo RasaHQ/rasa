@@ -243,9 +243,7 @@ class CombinedDataImporter(TrainingDataImporter):
         domains = [importer.get_domain() for importer in self._importers]
 
         return reduce(
-            lambda merged, other: Domain.from_dict(
-                Domain.merge(merged.data, other.data)
-            ),
+            lambda merged, other: merged.merge(other),
             domains,
             Domain.empty(),
         )
@@ -328,9 +326,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
             existing_domain,
         )
 
-        existing_domain = Domain.from_dict(
-            Domain.merge(existing_domain.data, domain_with_retrieval_intents.data)
-        )
+        existing_domain = existing_domain.merge(domain_with_retrieval_intents)
         existing_domain.check_missing_responses()
 
         return existing_domain
@@ -445,7 +441,7 @@ class E2EImporter(TrainingDataImporter):
         original = self.importer.get_domain()
         e2e_domain = self._get_domain_with_e2e_actions()
 
-        return Domain.from_dict(Domain.merge(original.data, e2e_domain.data))
+        return original.merge(e2e_domain)
 
     def _get_domain_with_e2e_actions(self) -> Domain:
 

@@ -939,9 +939,7 @@ def _write_domain_to_file(
         data={},
     )
 
-    Domain.from_dict(Domain.merge(old_domain.data, new_domain.data)).persist_clean(
-        domain_path
-    )
+    old_domain.merge(new_domain).persist_clean(domain_path)
 
 
 async def _predict_till_next_listen(

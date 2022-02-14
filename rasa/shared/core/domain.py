@@ -144,12 +144,12 @@ class Domain:
         elif not isinstance(paths, list) and not isinstance(paths, set):
             paths = [paths]
 
-        domain_dict = Domain.empty().as_dict()
+        domain = Domain.empty()
         for path in paths:
             other = cls.from_path(path)
-            domain_dict = cls.merge(domain_dict, other.data)
+            domain = domain.merge(other)
 
-        return cls.from_dict(domain_dict)
+        return domain
 
     @classmethod
     def from_path(cls, path: Union[Text, Path]) -> "Domain":
@@ -254,19 +254,19 @@ class Domain:
                     other_dict = rasa.shared.utils.io.read_yaml(
                         rasa.shared.utils.io.read_file(full_path)
                     )
-                    domain_dict = Domain.merge(domain_dict, other_dict, is_dir=True)
+                    domain_dict = Domain.merge_domain_dicts(
+                        other_dict, domain_dict, is_dir=True
+                    )
 
         domain = Domain.from_dict(domain_dict)
         return domain
 
-    @classmethod
     def merge(
-        cls,
-        domain1: Dict,
-        domain2: Dict,
+        self,
+        domain: Optional["Domain"],
         override: bool = False,
         is_dir: bool = False,
-    ) -> Dict[Text, Any]:
+    ) -> "Domain":
         """Merges this domain dict with another one, combining their attributes.
 
         This method merges domain dicts, and ensures all attributes (like ``intents``,
@@ -277,15 +277,17 @@ class Domain:
         and merged. Single attributes are taken from `domain1` unless
         override is `True`, in which case they are taken from `domain2`.
         """
-        if not domain2:
-            return domain1
+        if not domain or domain.is_empty():
+            return self
 
-        if not domain1:
-            return domain2
+        if self.is_empty():
+            return domain
 
-        merged_dict = cls.merge_domain_dicts(domain2, domain1, override, is_dir)
+        merged_dict = self.__class__.merge_domain_dicts(
+            domain.data, self.data, override, is_dir
+        )
 
-        return merged_dict
+        return Domain.from_dict(merged_dict)
 
     @staticmethod
     def _merge_intents_and_entities(
@@ -335,6 +337,12 @@ class Domain:
         domain_dict: Dict, combined: Dict, override: bool = False, is_dir: bool = False
     ) -> Dict:
         """Combines two domain dictionaries."""
+        if not domain_dict:
+            return combined
+
+        if not combined:
+            return domain_dict
+
         if not combined.get(KEY_TRAINING_DATA_FORMAT_VERSION):
             combined[
                 KEY_TRAINING_DATA_FORMAT_VERSION

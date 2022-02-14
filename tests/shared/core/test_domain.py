@@ -370,7 +370,7 @@ responses:
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
 
-    domain = Domain.from_dict(Domain.merge(domain_1.data, domain_2.data))
+    domain = domain_1.merge(domain_2)
 
     # single attribute should be taken from domain_1
     assert domain.store_entities_as_slots
@@ -387,7 +387,7 @@ responses:
     assert sorted(domain.user_actions) == sorted(["utter_greet", "utter_goodbye"])
     assert domain.session_config == SessionConfig(20, True)
 
-    domain = Domain.from_dict(Domain.merge(domain_1.data, domain_2.data, override=True))
+    domain = domain_1.merge(domain_2, override=True)
     # single attribute should be taken from domain_2
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
@@ -411,7 +411,7 @@ def test_merge_yaml_domains_with_default_intents(default_intent: Text):
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
 
-    domain = Domain.from_dict(Domain.merge(domain_1.data, domain_2.data))
+    domain = domain_1.merge(domain_2)
 
     # check that the default intents were merged correctly
     assert default_intent in domain.intents
@@ -440,10 +440,10 @@ session_config:
     domain1 = Domain.from_yaml(yaml1)
     domain2 = Domain.from_yaml(yaml2)
 
-    merged = Domain.from_dict(Domain.merge(domain1.data, domain2.data))
+    merged = domain1.merge(domain2)
     assert merged.session_config == SessionConfig(20, True)
 
-    merged = Domain.from_dict(Domain.merge(domain1.data, domain2.data, override=True))
+    merged = domain1.merge(domain2, override=True)
     assert merged.session_config == SessionConfig(40, True)
 
 
@@ -473,9 +473,7 @@ def test_merge_with_empty_domain():
         """
     )
     empty_domain = Domain.empty()
-    merged = Domain.from_dict(
-        Domain.merge(empty_domain.data, domain.data, override=True)
-    )
+    merged = empty_domain.merge(domain, override=True)
     assert merged.as_dict() == domain.as_dict()
 
 
@@ -506,12 +504,9 @@ def test_merge_with_empty_other_domain(other: Optional[Domain]):
         """
     )
 
-    if not other:
-        merged = Domain.merge(domain.data, {}, override=True)
-    else:
-        merged = Domain.merge(domain.data, other.data, override=True)
+    merged = domain.merge(other, override=True)
 
-    assert merged == domain.data
+    assert merged.as_dict() == domain.as_dict()
 
 
 def test_merge_domain_with_forms():
@@ -545,7 +540,7 @@ def test_merge_domain_with_forms():
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
 
-    domain = Domain.from_dict(Domain.merge(domain_1.data, domain_2.data))
+    domain = domain_1.merge(domain_2)
 
     expected_number_of_forms = 3
     assert len(domain.form_names) == expected_number_of_forms
@@ -1647,7 +1642,7 @@ slots:{slot_2}{slot_1}
 
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
-    domain_merged = Domain.from_dict(Domain.merge(domain_1.data, domain_2.data))
+    domain_merged = domain_1.merge(domain_2)
 
     assert domain_merged.as_yaml(clean_before_dump=True) == test_yaml_merged
 
