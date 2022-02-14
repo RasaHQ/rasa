@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import numpy as np
 import logging
 
@@ -25,6 +26,9 @@ from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
 from rasa.utils import train_utils
 
 logger = logging.getLogger(__name__)
+
+# Disable `tokenizers` warning (https://github.com/huggingface/transformers/issues/5486)
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 DEFAULT_MODEL_NAME = "bert"  # used if neither `model_name` or `model_weights` are set
 DEFAULT_MODEL_WEIGHTS = {
