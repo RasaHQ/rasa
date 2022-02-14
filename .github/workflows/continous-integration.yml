@@ -865,7 +865,7 @@ jobs:
     name: Notify Slack & Publish Release Notes
     runs-on: ubuntu-20.04
     # always run this job, which allows us to receive Slack messages on failure
-    if: always() && github.ref_type == 'tag' && github.repository == 'RasaHQ/rasa'
+    if: always() && github.repository == 'RasaHQ/rasa' # && github.ref_type == 'tag'
     needs:
       - deploy
 
