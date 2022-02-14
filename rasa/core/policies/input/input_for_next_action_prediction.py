@@ -1,4 +1,4 @@
-from typing import Tuple, List, Optional, Dict, Text, Any, Set
+from typing import Tuple, List, Optional, Dict, Text, Any, Set, Iterator
 import numpy as np
 from dataclasses import dataclass
 import logging
@@ -10,7 +10,7 @@ from rasa.core.turns.to_dataset.dataset_from_turn_sequence import (
     DatasetFeaturizer,
 )
 from rasa.core.turns.utils.trainable import Trainable
-from rasa.core.turns.state.state import ExtendedState
+from rasa.core.turns.state.state import ExtendedState, ExtendedStateParser
 from rasa.core.turns.state.label_from_state_sequence_extractor import (
     ExtractActionFromLastState,
     ExtractEntitiesFromLastUserState,
@@ -37,7 +37,6 @@ from rasa.core.turns.to_dataset.turn_sub_sequence_generator import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITY_TAGS
 from rasa.shared.nlu.training_data.features import Features
 
@@ -47,7 +46,7 @@ USE_TEXT_FOR_LAST_USER_INPUT = "use_text_for_last_user_input"
 
 
 @dataclass
-class InputStatesCreatorForNextActionPrediction(Trainable):
+class InputStatesCreatorForNextActionPrediction:
 
     max_history: Optional[int] = None
     ignore_duplicate_turn_label_pairs: bool = True
@@ -56,7 +55,21 @@ class InputStatesCreatorForNextActionPrediction(Trainable):
     rule_only_data: Optional[Dict[Text, Any]] = None
 
     def __post_init__(self):
-        self.mark_as_not_trained()
+
+        # Note: During inference, events that are the result of a rule data
+        # application will be tagged accordingly. We ignore such turns here,
+        # under the assumption that we did not see such turns during training.
+        # (Which is not really true).
+        self._inference_state_parser = ExtendedStateParser(
+            omit_unset_slots=False,
+            ignore_rule_only_turns=self.ignore_rule_only_turns,
+            rule_only_data=self.rule_only_data,
+        )
+        self._training_state_parser = ExtendedStateParser(
+            omit_unset_slots=False,
+            ignore_rule_only_turns=False,  # not done during training
+            rule_only_data=False,  # not done during training
+        )
 
         preprocessing = (
             [RemoveStatesWithPrevActionUnlikelyIntent()]
@@ -91,8 +104,8 @@ class InputStatesCreatorForNextActionPrediction(Trainable):
             ExtractActionFromLastState(name=ACTION_NAME, remove_last_turn=True),
         ]
 
-        self.dataset_generator = DatasetFromTurnSequenceGenerator(
-            turn_sequence_generator=turn_sequence_generator,
+        self._dataset_generator = DatasetFromTurnSequenceGenerator(
+            turn_sub_sequence_generator=turn_sequence_generator,
             label_extractors=extractor_pipeline,
         )
 
@@ -105,8 +118,59 @@ class InputStatesCreatorForNextActionPrediction(Trainable):
 
         """
         # TODO: There are no *unit tests* to test label extraction during training time.
-        #  but we can test this via RulePolicy.
-        pass
+        #  but we could test this via RulePolicy.
+        ...
+
+    def stream_training_turn_sequences(
+        self, trackers: List[DialogueStateTracker], domain: Domain
+    ) -> Iterator[Tuple[List[State], Text]]:
+
+        if self.ignore_duplicate_turn_label_pairs:
+            cache: Set[int] = set()
+            self._dataset_generator.ignore_duplicate_turn_label_pairs_during_training(
+                cache=cache,
+                label_name=ACTION_NAME,
+            )
+
+        for tracker in trackers:
+
+            # Note: During training, we assume that no rule only data / rule turns
+            # need to be removed.
+            dialogue_states = self._training_state_parser.parse(
+                tracker=tracker,
+                domain=domain,
+            )
+
+            yield from self._dataset_generator.apply_to(
+                turns=dialogue_states,
+                training=True,
+                context={USE_TEXT_FOR_LAST_USER_INPUT: True},
+            )
+
+        # Reminder: This cache needs clearing because it's attached to the generator.
+        if self.ignore_duplicate_turn_label_pairs:
+            cache.clear()
+
+    def create_inference_turn_sequence(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+    ) -> List[State]:
+        """
+
+        used by rule-policies during inference
+
+        """
+        turns = self._inference_state_parser.parse(tracker, domain)
+        modified_turns, _ = next(
+            self._dataset_generator.apply_to(
+                turns,
+                training=False,
+                context={USE_TEXT_FOR_LAST_USER_INPUT: use_text_for_last_user_input},
+            )
+        )
+        return modified_turns
 
     def create_inference_data(
         self,
@@ -119,26 +183,7 @@ class InputStatesCreatorForNextActionPrediction(Trainable):
         used by rule-policies during inference
 
         """
-
-        # Note: During inference, events that are the result of a rule data
-        # application will be tagged accordingly. We ignore such turns here,
-        # under the assumption that we did not see such turns during training.
-        # (Which is not really true).
-        stateful_turns = ExtendedState.parse(
-            tracker=tracker,
-            domain=domain,
-            omit_unset_slots=False,
-            ignore_rule_only_turns=self.ignore_rule_only_turns,
-            rule_only_data=self.rule_only_data,
-        )
-
-        modified_turns, _ = next(
-            self.dataset_generator.apply_to(
-                stateful_turns,
-                training=False,
-                context={USE_TEXT_FOR_LAST_USER_INPUT: use_text_for_last_user_input},
-            )
-        )
+        modified_turns = self.create_inference_turn_sequence(tracker, domain)
         return [turn.state for turn in modified_turns]
 
 
@@ -155,11 +200,14 @@ class InputFeaturesCreatorForNextActionPrediction(Trainable):
 
     def __post_init__(self) -> None:
         self.mark_as_not_trained()
-        input_states = InputStatesCreatorForNextActionPrediction(
+
+        self._input_states = InputStatesCreatorForNextActionPrediction(
             max_history=self.max_history,
             ignore_duplicate_turn_label_pairs=self.ignore_duplicate_turn_label_pairs,
             ignore_action_unlikely_intent=self.ignore_action_unlikely_intent,
         )
+        # TODO: fix this, needed for training the featurizers atm
+        self._dataset_generator = self._input_states._dataset_generator
 
         label_encoders = {
             ACTION_NAME: (
@@ -172,7 +220,6 @@ class InputFeaturesCreatorForNextActionPrediction(Trainable):
             ),
         }
 
-        self._dataset_generator = input_states.dataset_generator
         self._dataset_featurizer = DatasetFeaturizer(
             label_encoders=label_encoders,
             turn_featurizer=self.state_featurizer,
@@ -200,51 +247,32 @@ class InputFeaturesCreatorForNextActionPrediction(Trainable):
         Args:
           trackers:
           domain:
-          interpreter:
+          precomputations:
         """
         self.raise_if_not_trained()
         inputs = []
         labels_action = []
         labels_entities = []
 
-        if self.ignore_duplicate_turn_label_pairs:
-            cache: Set[int] = set()
-            self._dataset_generator.ignore_duplicate_turn_label_pairs_during_training(
-                cache=cache,
-                label_name=ACTION_NAME,
+        for (
+            input_states,
+            labels,
+        ) in self._input_states.stream_training_turn_sequences(
+            trackers=trackers,
+            domain=domain,
+        ):
+            featurized = self._dataset_featurizer.apply_to(
+                input_turns=input_states,
+                labels=labels,
+                precomputations=precomputations,
             )
+            inputs.append(featurized[0])
+            labels_action.append(featurized[2][ACTION_NAME])  # only indices
+            labels_entities.append(featurized[1][ENTITY_TAGS])  # only Features
 
-        for tracker in trackers:
-
-            # Note: During training, we assume that no rule only data / rule turns
-            # need to be removed.
-            dialogue_states = ExtendedState.parse(
-                tracker=tracker,
-                domain=domain,
-                omit_unset_slots=False,
-                ignore_rule_only_turns=False,  # not done during training
-                rule_only_data=False,  # not done during training
-            )
-
-            for (input_states, labels,) in self._dataset_generator.apply_to(
-                turns=dialogue_states,
-                training=True,
-                context={USE_TEXT_FOR_LAST_USER_INPUT: True},
-            ):
-                featurized = self._dataset_featurizer.apply_to(
-                    input_turns=input_states,
-                    labels=labels,
-                    precomputations=precomputations,
-                )
-                inputs.append(featurized[0])
-                labels_action.append(featurized[2][ACTION_NAME])  # only indices
-                labels_entities.append(featurized[1][ENTITY_TAGS])  # only Features
-
-        # Reminder: This cache needs clearing because it's attached to the generator.
-        if self.ignore_duplicate_turn_label_pairs:
-            cache.clear()
-
-        # TODO: we could just yield these one by one...
+        # TODO: we could just yield these one by one / make this an iterable or even
+        #  map-style torch-like data set (but it's out of scope for now / currently
+        #  everything expects these in memory)
         return inputs, np.array(labels_action), labels_entities
 
     def create_inference_data(
@@ -256,26 +284,10 @@ class InputFeaturesCreatorForNextActionPrediction(Trainable):
     ) -> Dict[Text, List[Features]]:
         self.raise_if_not_trained()
 
-        # Note: During inference, events that are the result of a rule data
-        # application will be tagged accordingly. We ignore such turns here,
-        # under the assumption that we did not see such turns during training.
-        # (Which is not really true).
-        stateful_turns = ExtendedState.parse(
+        input_states = self._input_states.create_inference_turn_sequence(
             tracker=tracker,
             domain=domain,
-            omit_unset_slots=False,
-            ignore_rule_only_turns=self.ignore_rule_only_turns,
-            rule_only_data=self.rule_only_data,
-        )
-
-        logger.debug(f"stateful_turns: {stateful_turns}")
-
-        (input_states, _,) = next(
-            self._dataset_generator.apply_to(
-                turns=stateful_turns,
-                training=False,
-                context={USE_TEXT_FOR_LAST_USER_INPUT: True},
-            )
+            use_text_for_last_user_input=use_text_for_last_user_input,
         )
         (input_features, _, _,) = self._dataset_featurizer.apply_to(
             input_turns=input_states, labels=None, precomputations=precomputations

@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 RawLabelType = TypeVar("RawLabelType")
 
+
 class TurnFeaturizer(Trainable, Generic[TurnType], ABC):
     """Featurize a single turn."""
 

@@ -93,5 +93,5 @@ class MultiLabelEncoder:
         """
         return np.array(
             [self.encode_as_index_array(inner_list) for inner_list in dimension_names],
-            dtype=int,
+            dtype=object,
         )

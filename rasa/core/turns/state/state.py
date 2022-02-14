@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Text, Any, ClassVar
 from dataclasses import dataclass
 
-from rasa.core.turns.turn import Turn
+from rasa.core.turns.turn import Turn, TurnParser
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import ActionExecuted, Event, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -23,6 +23,15 @@ class ExtendedState(Turn):
     BOT: ClassVar[str] = "bot"
     USER: ClassVar[str] = "user"
 
+    def __post_init__(self):
+        empty = [
+            sub_state_name
+            for sub_state_name, sub_state in self.state.items()
+            if not sub_state
+        ]
+        for sub_state_name in empty:
+            del self.state[sub_state_name]
+
     def __repr__(self) -> Text:
         optional = f":{self.events}" if self.events is not None else ""
         return f"{self.__class__.__name__}({self.get_type()}){optional}:{self.state}"
@@ -30,7 +39,7 @@ class ExtendedState(Turn):
     def __str__(self) -> Text:
         return f"{self.__class__.__name__}({self.get_type()}):{self.state}"
 
-    def get_type(self):
+    def get_type(self) -> str:
         return (
             self.USER
             if self.state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
@@ -38,14 +47,27 @@ class ExtendedState(Turn):
             else self.BOT
         )
 
-    @classmethod
+
+@dataclass
+class ExtendedStateParser(TurnParser):
+    """
+    Args:
+        omit_unset_slots: If `True` do not include the initial values of slots.
+        ignore_rule_only_turns: If set to `True`, we ignore `ActionExecuted` events
+           that are the result of the application of a rule and hence we also do
+           not create the corresponding turn.
+        rule_only_data: Slots and loops, which only occur in rules but not in
+          stories.
+    """
+
+    omit_unset_slots: bool = (False,)
+    ignore_rule_only_turns: bool = (False,)
+    rule_only_data: Optional[Dict[Text, Any]] = (None,)
+
     def parse(
-        cls,
+        self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        omit_unset_slots: bool = False,
-        ignore_rule_only_turns: bool = False,
-        rule_only_data: Optional[Dict[Text, Any]] = None,
     ):
         """Returns all `RuleStates` created from the trackers event history.
 
@@ -55,28 +77,21 @@ class ExtendedState(Turn):
         Args:
             tracker:
             domain: necessary evil needed until domain and state separated...
-            omit_unset_slots:
-            ignore_rule_only_turns:
-            rule_only_data:
         Returns:
             ...
         """
         past_states = tracker.past_states(
             domain=domain,
-            omit_unset_slots=omit_unset_slots,
-            ignore_rule_only_turns=ignore_rule_only_turns,
-            rule_only_data=rule_only_data,
+            omit_unset_slots=self.omit_unset_slots,
+            ignore_rule_only_turns=self.ignore_rule_only_turns,
+            rule_only_data=self.rule_only_data,
         )
         return [ExtendedState(state=state) for state in past_states]
 
-    @classmethod
     def parse_with_events(
-        cls,
+        self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        omit_unset_slots: bool = False,
-        ignore_rule_only_turns: bool = False,
-        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[ExtendedState]:
         """Returns all `RuleStates` from the trackers event history.
         NOTE: This could be a replacement for `domain.states_for_tracker_history` and
@@ -85,12 +100,6 @@ class ExtendedState(Turn):
         Args:
             tracker: Dialogue state tracker containing the dialogue so far.
             domain: the common domain
-            omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_rule_only_turns: If set to `True`, we ignore `ActionExecuted` events
-               that are the result of the application of a rule and hence we also do
-               not create the corresponding turn.
-            rule_only_data: Slots and loops, which only occur in rules but not in
-              stories.
         Return:
             ...
         """
@@ -105,7 +114,7 @@ class ExtendedState(Turn):
         # FIXME: Which settings are copied in this call that are crucial to get the
         #  correct results? Can we make this function take only (applied) events as
         #  input?
-        state_actor = cls.BOT
+        state_actor = self.BOT
         state_events = []
 
         events = tracker.applied_events()
@@ -122,7 +131,7 @@ class ExtendedState(Turn):
 
             # Update actor information
             if isinstance(current_event, UserUttered):
-                if not ignore_rule_only_turns and state_actor == cls.USER:
+                if not self.ignore_rule_only_turns and state_actor == self.USER:
                     raise RuntimeError(
                         "Found a `UserUttered` event that was possibly followed "
                         "by some events that were *not* `ActionExecutedEvents` "
@@ -152,7 +161,7 @@ class ExtendedState(Turn):
                 #         `events[h], ..., events[j-1]`
                 # Note that `events[j-1]` is an `ActionExecuted`.
 
-                if ignore_rule_only_turns:
+                if self.ignore_rule_only_turns:
 
                     # (1) Memorize the last non hidden action
                     # If the *last* turn was not hidden, then we should remember
@@ -195,12 +204,12 @@ class ExtendedState(Turn):
                 # Create a state using `events[0], ..., events[idx] = current_event`
                 # (ignoring hidden events).
                 turn_state = domain.get_active_state(
-                    replay_tracker, omit_unset_slots=omit_unset_slots
+                    replay_tracker, omit_unset_slots=self.omit_unset_slots
                 )
 
-                if ignore_rule_only_turns:
+                if self.ignore_rule_only_turns:
                     # Clean *every* state from only rule features
-                    domain._remove_rule_only_features(turn_state, rule_only_data)
+                    domain._remove_rule_only_features(turn_state, self.rule_only_data)
 
                     # The state that we just created does not capture an `ActionListen`,
                     # then:
@@ -218,30 +227,17 @@ class ExtendedState(Turn):
                         turn_state[PREVIOUS_ACTION] = last_non_hidden_action_executed
 
                     # Remove empty sub-states! (TODO: where is this needed downstream?)
-                    cls.remove_empty_sub_states(turn_state)
+                    self.remove_empty_sub_states(turn_state)
 
                 # Note: If the turn just captures an `ActionListen`. In this
                 # case, we attribute the turn to the user, even though the turn does
                 # not capture a new utterance to handle `ActionListen` consistently.
 
                 # Finish the turn
-                turn = ExtendedState(
-                    state=turn_state,
-                    events=state_events,
-                )
+                turn = ExtendedState(state=turn_state, events=state_events)
                 turns.append(turn)
 
                 # Reset
                 state_events = []
 
         return turns
-
-    @classmethod
-    def remove_empty_sub_states(cls, state: State) -> None:
-        empty = [
-            sub_state_name
-            for sub_state_name, sub_state in state.items()
-            if not sub_state
-        ]
-        for sub_state_name in empty:
-            del state[sub_state_name]

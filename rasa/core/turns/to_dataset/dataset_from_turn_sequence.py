@@ -46,10 +46,10 @@ class DatasetFromTurnSequenceGenerator(Generic[TurnType]):
 
     def __init__(
         self,
-        turn_sequence_generator: TurnSubSequenceGenerator[TurnType],
+        turn_sub_sequence_generator: TurnSubSequenceGenerator[TurnType],
         label_extractors: List[LabelFromTurnsExtractor[TurnType, Any]],
     ):
-        self._turn_sequence_generator = turn_sequence_generator
+        self._turn_sub_sequence_generator = turn_sub_sequence_generator
         self._label_extractors = label_extractors or []
         self._ignore_duplicate_turn_label_pairs_cache: Optional[Set[int]] = None
         self._ignore_duplicate_turn_label_pairs_with: Optional[str] = None
@@ -90,7 +90,7 @@ class DatasetFromTurnSequenceGenerator(Generic[TurnType]):
         context: Optional[Dict[str, Any]] = None,
     ) -> Iterator[Tuple[List[Turn], Optional[Dict[Text, Any]]]]:
 
-        for processed_turns in self._turn_sequence_generator.apply_to(
+        for processed_turns in self._turn_sub_sequence_generator.apply_to(
             turns=turns,
             training=training,
             context=context,

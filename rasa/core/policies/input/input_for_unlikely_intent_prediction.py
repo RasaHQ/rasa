@@ -23,7 +23,7 @@ from rasa.core.turns.to_dataset.dataset_from_turn_sequence import (
     DatasetFeaturizer,
 )
 from rasa.core.turns.to_dataset.featurizers import TurnFeaturizer
-from rasa.core.turns.state.state import ExtendedState
+from rasa.core.turns.state.state import ExtendedState, ExtendedStateParser
 from rasa.core.turns.state.label_from_state_sequence_extractor import (
     ExtractIntentFromLastUserState,
     ExtractEntitiesFromLastUserState,
@@ -69,6 +69,21 @@ class InputFeaturesCreatorForUnlikelyIntentActionPrediction(Trainable):
     def __post_init__(self) -> None:
         self.mark_as_not_trained()
 
+        # Note: During inference, events that are the result of a rule data
+        # application will be tagged accordingly. We ignore such turns here,
+        # under the assumption that we did not see such turns during training.
+        # (Which is not really true).
+        self._inference_state_parser = ExtendedStateParser(
+            omit_unset_slots=False,
+            ignore_rule_only_turns=self.ignore_rule_only_turns,
+            rule_only_data=self.rule_only_data,
+        )
+        self._training_state_parser = ExtendedStateParser(
+            omit_unset_slots=False,
+            ignore_rule_only_turns=False,  # not done during training
+            rule_only_data=False,  # not done during training
+        )
+
         preprocessing = (
             [RemoveStatesWithPrevActionUnlikelyIntent()]
             if self.ignore_action_unlikely_intent
@@ -109,7 +124,7 @@ class InputFeaturesCreatorForUnlikelyIntentActionPrediction(Trainable):
         ]
 
         self._dataset_generator = DatasetFromTurnSequenceGenerator(
-            turn_sequence_generator=turn_sequence_generator,
+            turn_sub_sequence_generator=turn_sequence_generator,
             label_extractors=extractor_pipeline,
         )
 
@@ -157,17 +172,12 @@ class InputFeaturesCreatorForUnlikelyIntentActionPrediction(Trainable):
 
         for tracker in trackers:
 
-            # Note: During training, we assume that no rule only data / rule turns
-            # need to be removed.
-            dialogue_states = ExtendedState.parse(
+            dialogue_states = self._training_state_parser.parse(
                 tracker=tracker,
                 domain=domain,
-                omit_unset_slots=False,
-                ignore_rule_only_turns=False,  # not done during training
-                rule_only_data=False,  # not done during training
             )
 
-            logger.debug(f"stateful_turns: {dialogue_states}")
+            logger.debug(f"states: {dialogue_states}")
 
             for (input_states, labels,) in self._dataset_generator.apply_to(
                 turns=dialogue_states,
@@ -250,18 +260,7 @@ class InputFeaturesCreatorForUnlikelyIntentActionPrediction(Trainable):
     ) -> Dict[Text, List[Features]]:
         self.raise_if_not_trained()
 
-        # Note: During inference, events that are the result of a rule data
-        # application will be tagged accordingly. We ignore such turns here,
-        # under the assumption that we did not see such turns during training.
-        # (Which is not really true).
-        states = ExtendedState.parse(
-            tracker=tracker,
-            domain=domain,
-            omit_unset_slots=False,
-            ignore_rule_only_turns=self.ignore_rule_only_turns,
-            rule_only_data=self.rule_only_data,
-        )
-
+        states = self._inference_state_parser.parse(tracker, domain)
         logger.debug(f"states: {states}")
 
         input_states, _ = next(
@@ -284,17 +283,10 @@ class InputFeaturesCreatorForUnlikelyIntentActionPrediction(Trainable):
         use_text_for_last_user_input: bool = False,
     ) -> List[State]:
         """This is not used in any policy. We just keep it alive for tests."""
-        stateful_turns = ExtendedState.parse(
-            tracker=tracker,
-            domain=domain,
-            omit_unset_slots=False,
-            ignore_rule_only_turns=self.ignore_rule_only_turns,
-            rule_only_data=self.rule_only_data,
-        )
-
+        turns = self._inference_state_parser.parse(tracker, domain)
         modified_turns, _ = next(
             self._dataset_generator.apply_to(
-                stateful_turns,
+                turns,
                 training=False,
                 context={USE_TEXT_FOR_LAST_USER_INPUT: use_text_for_last_user_input},
             )

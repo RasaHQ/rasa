@@ -16,6 +16,16 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class TurnParser:
+    @abstractmethod
+    def parse(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+    ) -> List[Turn]:
+        ...
+
+
 class Turn:
     @abstractmethod
     def get_type(self) -> str:
@@ -39,10 +49,3 @@ class Turn:
             ),
             None,
         )
-
-    @classmethod
-    @abstractmethod
-    def parse(
-        cls, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any
-    ) -> List[Turn]:
-        ...

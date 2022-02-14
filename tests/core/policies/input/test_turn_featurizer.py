@@ -15,9 +15,9 @@ def test_convert_action_labels_to_ids(domain: Domain):
     turn_featurizer.train(domain=domain)
 
     # TODO: replace this
-    actual_output = turn_featurizer._multihot_encoders[
+    actual_output = turn_featurizer._encoders[
         ACTION_NAME
-    ].encode_as_index_matrix(trackers_as_actions)
+    ].encode_as_array_of_index_arrays(trackers_as_actions)
 
     expected_output = np.array(
         [
