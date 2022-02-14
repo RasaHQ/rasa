@@ -13,6 +13,7 @@ METADATA = "metadata"
 METADATA_INTENT = "intent"
 METADATA_EXAMPLE = "example"
 METADATA_MODEL_ID = "model_id"
+METADATA_TIME_ZONE = "time_zone"
 INTENT_RANKING_KEY = "intent_ranking"
 PREDICTED_CONFIDENCE_KEY = "confidence"
 

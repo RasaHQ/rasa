@@ -381,7 +381,9 @@ class Agent:
         return self.tracker_store is not None and self.processor is not None
 
     @agent_must_be_ready
-    async def parse_message(self, message_data: Text) -> Dict[Text, Any]:
+    async def parse_message(
+        self, message_data: Text, message_metadata: Optional[Dict] = None
+    ) -> Dict[Text, Any]:
         """Handles message text and intent payload input messages.
 
         The return value of this function is parsed_data.
@@ -389,6 +391,7 @@ class Agent:
         Args:
             message_data (Text): Contain the received message in text or\
             intent payload format.
+            message_metadata (Dict): optional message metadatas
 
         Returns:
             The parsed message.
@@ -404,7 +407,7 @@ class Agent:
                 }
 
         """
-        message = UserMessage(message_data)
+        message = UserMessage(message_data, metadata=message_metadata)
         return await self.processor.parse_message(message)
 
     async def handle_message(
