@@ -12,7 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from pytest_sanic.utils import TestClient
 from sanic import Sanic, response
 from sanic.request import Request
-from sanic.response import StreamingHTTPResponse
+from sanic.response import ResponseStream
 
 import rasa.core
 from rasa.core.exceptions import AgentNotReady
@@ -39,17 +39,17 @@ from tests.conftest import with_model_ids
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
-    app = Sanic(__name__)
-    app.number_of_model_requests = 0
+    app = Sanic("test_agent")
+    app.ctx.number_of_model_requests = 0
 
     @app.route("/model", methods=["GET"])
-    async def model(request: Request) -> StreamingHTTPResponse:
+    async def model(request: Request) -> ResponseStream:
         """Simple HTTP model server responding with a trained model."""
 
         if model_hash == request.headers.get("If-None-Match"):
             return response.text("", 204)
 
-        app.number_of_model_requests += 1
+        app.ctx.number_of_model_requests += 1
 
         return await response.file_stream(
             location=model_path,
@@ -156,7 +156,7 @@ async def test_agent_with_model_server_in_thread(
     assert agent.domain.as_dict() == domain.as_dict()
     assert agent.processor.graph_runner
 
-    assert model_server.app.number_of_model_requests == 1
+    assert model_server.app.ctx.number_of_model_requests == 1
     jobs.kill_scheduler()
 
 
