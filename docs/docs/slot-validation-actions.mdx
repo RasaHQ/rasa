@@ -9,7 +9,7 @@ You can do custom extraction and validation of slot values by writing custom act
 
 :::note Extraction and Validation can work together
 
-You can have an `Action` and a `ValidationAction` separately and both of these actions will be called from Rasa. For example, you can use a normal `Action` to create several events and a `ValidationAction` to validate that slot values are correct.
+You can have an `Action` and a `ValidationAction` separately and both of these actions will be called from Rasa. For example, you can use a normal `Action` to create several events and a `ValidationAction` to validate that slot values are correct. In this scenario, `Action` will be called first and `ValidationAction` afterwards.
 
 :::
 
