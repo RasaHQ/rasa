@@ -16,6 +16,7 @@ from typing import (
     Union,
     TYPE_CHECKING,
     Iterable,
+    NamedTuple,
 )
 
 from rasa.shared.constants import (
@@ -50,12 +51,10 @@ from rasa.shared.exceptions import (
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
-import rasa.shared.utils.domain_loading
 import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.utils.domain_loading import SessionConfig
 from rasa.shared.constants import (
     RESPONSE_CONDITION,
     SESSION_CONFIG_KEY,
@@ -94,6 +93,32 @@ InvalidDomain = InvalidDomain
 
 class ActionNotFoundException(ValueError, RasaException):
     """Raised when an action name could not be found."""
+
+
+class SessionConfig(NamedTuple):
+    """The Session Configuration."""
+
+    session_expiration_time: float  # in minutes
+    carry_over_slots: bool
+
+    @staticmethod
+    def default() -> "SessionConfig":
+        """Returns the SessionConfig with the default values."""
+        return SessionConfig(
+            DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+            DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+        )
+
+    def are_sessions_enabled(self) -> bool:
+        """Returns a boolean value depending on the value of session_expiration_time."""
+        return self.session_expiration_time > 0
+
+    def as_dict(self) -> Dict:
+        """Return serialized `SessionConfig`."""
+        return {
+            "session_expiration_time": self.session_expiration_time,
+            "carry_over_slots_to_new_session": self.carry_over_slots,
+        }
 
 
 class Domain:
@@ -258,11 +283,102 @@ class Domain:
         if not domain1:
             return domain2
 
-        merged_dict = rasa.shared.utils.domain_loading.merge_domain_dicts(
-            domain2, domain1, override, is_dir
-        )
+        merged_dict = cls.merge_domain_dicts(domain2, domain1, override, is_dir)
 
         return merged_dict
+
+    @staticmethod
+    def _merge_intents_and_entities(
+        combined: Dict, domain_dict: Dict, duplicates: Dict, override: bool = False
+    ) -> Tuple:
+        for key in [KEY_INTENTS, KEY_ENTITIES]:
+            if combined.get(key) or domain_dict.get(key):
+                duplicates[key] = rasa.shared.utils.common.extract_duplicates(
+                    combined.get(key, []), domain_dict.get(key, [])
+                )
+                combined[key] = combined.get(key, [])
+                domain_dict[key] = domain_dict.get(key, [])
+                combined[key] = rasa.shared.utils.common.merge_lists_of_dicts(
+                    combined[key], domain_dict[key], override
+                )
+        return combined, duplicates
+
+    @staticmethod
+    def _merge_actions_and_e2e_actions(
+        combined: Dict, domain_dict: Dict, duplicates: Dict
+    ) -> Tuple:
+        for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
+            duplicates[key] = rasa.shared.utils.common.extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
+            combined[key] = rasa.shared.utils.common.merge_lists(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
+
+        return combined, duplicates
+
+    @staticmethod
+    def _merge_forms_responses_slots(
+        combined: Dict, domain_dict: Dict, duplicates: Dict, override: bool = False
+    ) -> Tuple:
+        for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            duplicates[key] = rasa.shared.utils.common.extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
+            combined[key] = rasa.shared.utils.common.merge_dicts(
+                combined.get(key, {}), domain_dict.get(key, {}), override
+            )
+        return combined, duplicates
+
+    @staticmethod
+    def merge_domain_dicts(
+        domain_dict: Dict, combined: Dict, override: bool = False, is_dir: bool = False
+    ) -> Dict:
+        """Combines two domain dictionaries."""
+        if not combined.get(KEY_TRAINING_DATA_FORMAT_VERSION):
+            combined[
+                KEY_TRAINING_DATA_FORMAT_VERSION
+            ] = LATEST_TRAINING_DATA_FORMAT_VERSION
+
+        if override:
+            config = domain_dict["config"]
+            for key, val in config.items():
+                combined["config"][key] = val
+
+        if (
+            override
+            or (
+                not is_dir
+                and combined.get(SESSION_CONFIG_KEY)
+                == SessionConfig.default().as_dict()
+            )
+            or (is_dir and domain_dict.get(SESSION_CONFIG_KEY))
+        ):
+            combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
+
+        duplicates: Dict[Text, List[Text]] = {}
+
+        combined, duplicates = Domain._merge_intents_and_entities(
+            combined, domain_dict, duplicates, override
+        )
+
+        # remove existing forms from new actions
+        for form in combined.get(KEY_FORMS, []):
+            if form in domain_dict.get(KEY_ACTIONS, []):
+                domain_dict[KEY_ACTIONS].remove(form)
+
+        combined, duplicates = Domain._merge_actions_and_e2e_actions(
+            combined, domain_dict, duplicates
+        )
+        combined, duplicates = Domain._merge_forms_responses_slots(
+            combined, domain_dict, duplicates, override
+        )
+
+        if duplicates:
+            duplicates = rasa.shared.utils.common.clean_duplicates(duplicates)
+            combined.update({"duplicates": duplicates})
+
+        return combined
 
     @property
     def data(self) -> Dict:

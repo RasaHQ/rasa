@@ -476,7 +476,7 @@ def test_merge_with_empty_domain():
     merged = Domain.from_dict(
         Domain.merge(empty_domain.data, domain.data, override=True)
     )
-    assert merged.data == domain.data
+    assert merged.as_dict() == domain.as_dict()
 
 
 @pytest.mark.parametrize("other", [Domain.empty(), None])
