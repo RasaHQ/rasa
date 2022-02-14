@@ -865,7 +865,7 @@ jobs:
     name: Notify Slack & Publish Release Notes
     runs-on: ubuntu-20.04
     # always run this job, which allows us to receive Slack messages on failure
-    if: always() && env.IS_TAG_BUILD == 'true'
+    if: always() && github.ref_type == 'tag' && github.repository == 'RasaHQ/rasa'
     needs:
       - deploy
 
@@ -876,4 +876,4 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }} # DEBUG: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
-          args: "⛔️ *Rasa Open Source* version `${{ env.GITHUB_TAG }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          args: "⛔️ *Rasa Open Source* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
