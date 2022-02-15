@@ -7,9 +7,9 @@ abstract: A slot validation action is a special type of custom action, designed 
 
 You can do custom extraction and validation of slot values by writing custom actions in three different ways.
 
-:::note Extraction and Validation can work together
+:::note Using different actions for extraction and validation
 
-You can have an `Action` and a `ValidationAction` separately and both of these actions will be called from Rasa. For example, you can use a normal `Action` to create several events and a `ValidationAction` to validate that slot values are correct. In this scenario, `Action` will be called first and `ValidationAction` afterwards.
+You can use both a regular custom action and `action_validate_slot_mappings` together to extract and validate a slot. For example, you can specify a regular custom action as the `action` for a `custom` slot mapping, and also add validation logic for the same slot to `action_validate_slot_mappings`. The custom action specified in the custom slot mapping will be called first, and `action_validate_slot_mappings` will be called afterwards.
 
 :::
 
