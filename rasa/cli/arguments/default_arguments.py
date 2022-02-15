@@ -46,6 +46,8 @@ def add_nlu_data_param(
     help_text: Text,
     default: Optional[Text] = DEFAULT_DATA_PATH,
 ) -> None:
+    # TODO: Remove all these defaults; we would like to differentiate between
+    # CLI and defaults in ProjectConfig.
     parser.add_argument("-u", "--nlu", type=str, default=default, help=help_text)
 
 
@@ -72,8 +74,11 @@ def add_config_param(
         "-c",
         "--config",
         type=str,
-        default=default,
-        help="The policy and NLU pipeline configuration of your bot.",
+        help=(
+            "The file path for policy and NLU pipeline configuration of your bot. "
+            "If missing, declaration in project.yml file is used and "
+            "if we cannot determine it, fallback path of config.yml is used instead."
+        ),
     )
 
 

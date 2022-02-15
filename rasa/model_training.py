@@ -226,7 +226,10 @@ def _train_graph(
             return _dry_run_result(fingerprint_status, force_full_training)
 
         model_name = _determine_model_name(fixed_model_name, training_type)
-        full_model_path = Path(output_path, model_name)
+        full_model_path = Path(
+            output_path,  # TODO: project_config.get('models') OR project_config['models']
+            model_name,
+        )
 
         with telemetry.track_model_training(
             file_importer, model_type=training_type.model_type

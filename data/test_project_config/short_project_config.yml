@@ -1,0 +1,19 @@
+version: "3.0"
+
+nlu: ['data/my_nlu_file.yml']  # array of single files
+# rules: ['data/rules.yml'] # array of single files
+# stories: ['data/stories.yml'] # array of single files
+# config: 'config.yml'  # config is always a single file
+domain: ['top_level_domain.yml'] # array of file(s) or folder(s)
+models: 'custom_models/'  # single file or folder
+actions: 'actions_dir/' # single folder
+# test_data is used for test stories, but our customers can put anything under this folder (cf. NIB)
+# test_data: ['tests/'] # array of folder(s)
+# train_test_split: 'train_test_split/' # single folder
+# results: 'results/' # single folder provided to --out arg
+
+importers:
+    - name: "module.CustomImporter"
+      parameter1: "value1"
+      parameter2: "value2"
+    - name: "RasaFileImporter"
