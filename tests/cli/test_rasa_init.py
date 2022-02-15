@@ -2,12 +2,14 @@ import argparse
 import os
 from pathlib import Path
 from typing import Callable
+
 from _pytest.pytester import RunResult
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.cli import scaffold
 from tests.conftest import enable_cache
 from tests.core.channels.test_cmdline import mock_stdin
+import rasa.shared.utils.io
 
 
 def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
@@ -100,3 +102,28 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
         scaffold.init_project(args, str(new_project_folder_path))
     assert os.getcwd() == str(new_project_folder_path)
     assert os.path.exists(".rasa/cache")
+
+
+def test_init_project_file_contains_defaults(run_with_stdin: Callable[..., RunResult]):
+    project = Path("./workspace")
+    project.mkdir()
+
+    run_with_stdin(
+        "init", "--quiet", "--init-dir", "./workspace", stdin=b"N"
+    )  # avoid training an initial model
+
+    assert Path("./workspace/project.yml").exists()
+    project_yaml = rasa.shared.utils.io.read_file(Path("./workspace/project.yml"))
+    project_content = rasa.shared.utils.io.read_yaml(project_yaml)
+
+    assert project_content["version"] == "3.0"
+    assert project_content["nlu"] == ["data/nlu.yml"]
+    assert project_content["rules"] == ["data/rules.yml"]
+    assert project_content["stories"] == ["data/stories.yml"]
+    assert project_content["config"] == "config.yml"
+    assert project_content["domain"] == ["domain.yml"]
+    assert project_content["models"] == "models/"
+    assert project_content["actions"] == "actions/"
+    assert project_content["test_data"] == ["tests/"]
+    assert project_content["train_test_split"] == "train_test_split/"
+    assert project_content["results"] == "results/"
