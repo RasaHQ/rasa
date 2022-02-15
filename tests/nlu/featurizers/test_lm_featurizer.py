@@ -823,69 +823,17 @@ def test_lm_featurizer_no_default_weights_raises(
         _ = create_language_model_featurizer(config)
 
 
-# Those two lists of model weights cover all
-# supported models as of transformers 4.13.0
-test_tokenizer_models = [
-    "rasa/LaBSE",
-    "bert-base-uncased",
-    "openai-gpt",
-    "gpt2",
-    "xlnet-base-cased",
-    "xlm-mlm-enfr-1024",
-    "distilbert-base-uncased",
-    "roberta-base",
-    "albert-base-v2",
-    "xlm-roberta-base",
-]
-
-# Do not test all of these on the CI!
-test_tokenizer_models_local = [
-    "microsoft/layoutlm-base-uncased",
-    "cl-tohoku/bert-base-japanese",
-    "YituTech/conv-bert-base",
-    "facebook/dpr-ctx_encoder-single-nq-base",
-    "facebook/dpr-question_encoder-single-nq-base",
-    "facebook/dpr-reader-single-nq-base",
-    "google/electra-small-generator",
-    "funnel-transformer/small",
-    "unc-nlp/lxmert-base-uncased",
-    "google/mobilebert-uncased",
-    "yjernite/retribert-base-uncased",
-    "squeezebert/squeezebert-uncased",
-    "facebook/bart-large-mnli",
-    "facebook/blenderbot-400M-distill",
-    "allenai/longformer-base-4096",
-    "studio-ousia/luke-base",
-    "microsoft/deberta-base",
-    "moussaKam/mbarthez",
-    "google/bigbird-roberta-base",
-    "camembert-base",
-    "TsinghuaAI/CPM-Generate",
-    "microsoft/deberta-v2-xlarge",
-    "flaubert/flaubert_small_cased",
-    "allegro/herbert-base-cased",
-    "google/fnet-base",
-    "stas/tiny-wmt19-en-de",
-    "facebook/mbart-large-50-one-to-many-mmt",
-    "facebook/m2m100_418M",
-    "sshleifer/tiny-marian-en-de",
-    "studio-ousia/mluke-large",
-    "microsoft/mpnet-base",
-    "google/pegasus-xsum",
-    "microsoft/prophetnet-large-uncased",
-    "google/rembert",
-    "junnyu/roformer_chinese_small",
-    "tau/splinter-base",
-]
-
-test_data = (
-    test_tokenizer_models
-    if bool(os.environ.get("CI"))
-    else test_tokenizer_models + test_tokenizer_models_local
+@pytest.mark.parametrize(
+    "model_weights",
+    [
+        "rasa/LaBSE",
+        "openai-gpt",
+        "gpt2",
+        "xlnet-base-cased",
+        "distilbert-base-uncased",
+        "roberta-base",
+    ],
 )
-
-
-@pytest.mark.parametrize("model_weights", test_data)
 def test_tokenizer_prefixes_cleanup(
     model_weights: Text,
     create_language_model_featurizer: Callable[
