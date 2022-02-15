@@ -226,12 +226,21 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
         events: The events to inspect.
 
     Returns:
-        Whether or not `events` begins with a session start sequence.
+        Whether `events` begins with a session start sequence.
     """
-    return len(events) > 1 and events[:2] == [
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-    ]
+    if len(events) < 2:
+        return False
+
+    first = events[0]
+    second = events[1]
+
+    # We are not interested in specific metadata or timestamps. Action name and event
+    # type are sufficient for this check
+    return (
+        isinstance(first, ActionExecuted)
+        and first.action_name == ACTION_SESSION_START_NAME
+        and isinstance(second, SessionStarted)
+    )
 
 
 class Event(ABC):
