@@ -66,6 +66,10 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     UTTER_PREFIX,
     DOCS_URL_POLICIES,
+    KEY_INTENTS,
+    KEY_ENTITIES,
+    KEY_RESPONSES,
+    KEY_ACTIONS,
 )
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
@@ -936,7 +940,12 @@ def _write_domain_to_file(
         responses=responses,
         action_names=collected_actions,
         forms={},
-        data={},
+        data={
+            KEY_INTENTS: list(_intents_from_messages(messages)),
+            KEY_ENTITIES: _entities_from_messages(messages),
+            KEY_RESPONSES: responses,
+            KEY_ACTIONS: collected_actions,
+        },
     )
 
     old_domain.merge(new_domain).persist_clean(domain_path)
