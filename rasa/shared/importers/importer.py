@@ -326,7 +326,9 @@ class ResponsesSyncImporter(TrainingDataImporter):
             existing_domain,
         )
 
-        existing_domain = existing_domain.merge(domain_with_retrieval_intents)
+        existing_domain = existing_domain.merge(
+            domain_with_retrieval_intents, override=True
+        )
         existing_domain.check_missing_responses()
 
         return existing_domain
@@ -378,14 +380,22 @@ class ResponsesSyncImporter(TrainingDataImporter):
             intent_properties[IS_RETRIEVAL_INTENT_KEY] = True
             retrieval_intent_properties.append({intent: intent_properties})
 
+        action_names = ResponsesSyncImporter._construct_retrieval_action_names(
+            retrieval_intents
+        )
+
         return Domain(
             retrieval_intent_properties,
             [],
             [],
             responses,
-            ResponsesSyncImporter._construct_retrieval_action_names(retrieval_intents),
+            action_names,
             {},
-            {},
+            {
+                rasa.shared.constants.KEY_INTENTS: retrieval_intent_properties,
+                rasa.shared.constants.KEY_RESPONSES: responses,
+                rasa.shared.constants.KEY_ACTIONS: action_names,
+            },
         )
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
@@ -466,7 +476,9 @@ class E2EImporter(TrainingDataImporter):
             {},
             action_names=[],
             forms={},
-            data={},
+            data={
+                rasa.shared.constants.KEY_E2E_ACTIONS: additional_e2e_action_names,
+            },
             action_texts=additional_e2e_action_names,
         )
 
