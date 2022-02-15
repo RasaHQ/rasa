@@ -26,6 +26,7 @@ def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
         "data/nlu.yml",
         "data/stories.yml",
         "data/rules.yml",
+        "project.yml",
     ]
     assert all((Path("workspace") / file).exists() for file in required_files)
 

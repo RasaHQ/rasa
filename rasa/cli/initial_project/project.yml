@@ -1,0 +1,19 @@
+version: "3.0"
+
+nlu: ['data/nlu.yml']  # array of single files
+rules: ['data/rules.yml'] # array of single files
+stories: ['data/stories.yml'] # array of single files
+config: 'config.yml'  # config is always a single file
+domain: ['domain.yml'] # array of file(s) or folder(s)
+models: 'models/'  # single file or folder, where single folder fetches the latest model - model name will be generated from bot name
+actions: 'actions/' # single folder
+# test_data is used primarily for test stories, however this can include other testing data too
+test_data: ['tests/'] # array of folder(s)
+train_test_split: 'train_test_split/' # single folder
+results: 'results/' # single folder provided to --out arg
+
+# # Rasa uses `RasaFileImporter` by default to import project files.
+# # If you'd like to customize importers, uncomment and adjust with your custom importer.
+# # See https://rasa.com/docs/rasa/training-data-importers for more information.
+# importers:
+#  - name: "RasaFileImporter"
