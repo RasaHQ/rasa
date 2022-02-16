@@ -1,23 +1,35 @@
-FROM --platform=linux/amd64 python:3.8-slim
+FROM python:3.8-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends git
+# Install linux requirements and poetry.
+RUN apt-get update
+RUN apt-get install -y gcc git build-essential libtool automake
+RUN pip install Cython
+RUN pip install poetry==1.1.11
+RUN poetry config virtualenvs.create false
 
-# copy files
-COPY . /build/
+# Copy dependency files.
+COPY pyproject.toml poetry.lock install_m1_missing_requirements.sh /build/
 
-# change working directory
 WORKDIR /build
 
-# install dependencies
-RUN pip install poetry==1.1.11
-RUN poetry config virtualenvs.create false --local
-RUN poetry install
-RUN pip uninstall -y tensorflow
-RUN pip install --no-deps https://tf.novaal.de/barcelona/tensorflow-2.7.0-cp38-cp38-linux_x86_64.whl
+# Install dependencies.
+# First install using poetry,
+# this will skip tensorflow et al. due to the markers "platform_machine!='aarch64'"
+RUN poetry install --no-root full
+# Install tensorflow and tensorflow_addons from binary wheels (without dependencies).
+RUN pip install --no-deps https://github.com/KumaTea/tensorflow-aarch64/releases/download/v2.7/tensorflow-2.7.0-cp38-cp38-linux_aarch64.whl
+RUN pip install --no-deps https://github.com/Qengineering/TensorFlow-Addons-Raspberry-Pi_64-bit/raw/main/tensorflow_addons-0.14.0.dev0-cp38-cp38-linux_aarch64.whl
+# Install the transitive tensorflow dependencies that were missed using poetry versions.
+RUN ./install_m1_missing_requirements.sh
+
+# Copy source files.
+COPY . /build
+# Install Rasa.
+RUN pip install --no-deps .
 
 WORKDIR /app
 
-# the entry point
+# Set Rasa as the entrypoint.
 EXPOSE 5005
 ENTRYPOINT ["rasa"]
 CMD ["--help"]
