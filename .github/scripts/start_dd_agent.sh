@@ -2,6 +2,7 @@
 
 DD_API_KEY=$1
 ACCELERATOR_TYPE=$2
+NVML_INTERVAL_IN_SEC=${3:-15}  # 15 seconds are the default interval
 
 # Install Datadog system agent
 DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY DD_SITE="datadoghq.eu" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
@@ -41,10 +42,15 @@ sudo chmod 666 $DATADOG_YAML_PATH
 sudo mv /etc/datadog-agent/conf.d/system_core.d/conf.yaml.example /etc/datadog-agent/conf.d/system_core.d/conf.yaml
 
 if [[ "${ACCELERATOR_TYPE}" == "GPU" ]]; then
-# Install and enable NVML integration
-sudo datadog-agent integration --allow-root install -t datadog-nvml==1.0.1
-sudo -u dd-agent -H /opt/datadog-agent/embedded/bin/pip3 install grpcio pynvml
-sudo mv /etc/datadog-agent/conf.d/nvml.d/conf.yaml.example /etc/datadog-agent/conf.d/nvml.d/conf.yaml
+    # Install and enable NVML integration
+    sudo datadog-agent integration --allow-root install -t datadog-nvml==1.0.1
+    sudo -u dd-agent -H /opt/datadog-agent/embedded/bin/pip3 install grpcio pynvml
+    NVML_CONF_FPATH="/etc/datadog-agent/conf.d/nvml.d/conf.yaml"
+    sudo mv "${NVML_CONF_FPATH}.example" ${NVML_CONF_FPATH}
+    if [[ "${NVML_INTERVAL_IN_SEC}" != 15 ]]; then
+        # Append a line to the NVML config file
+        sudo echo "    min_collection_interval: ${NVML_INTERVAL_IN_SEC}" | sudo tee -a ${NVML_CONF_FPATH} > /dev/null
+    fi
 fi
 
 # Apply changes
