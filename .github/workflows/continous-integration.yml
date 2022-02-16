@@ -108,7 +108,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -242,7 +242,7 @@ jobs:
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -374,7 +374,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
         with:
           python-version: 3.7
 
@@ -470,7 +470,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -805,7 +805,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: 3.7
 
@@ -859,3 +859,22 @@ jobs:
         pip install -U github3.py pep440-version-utils
         python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
+
+
+  send_slack_notification_for_release_on_failure:
+    name: Notify Slack & Publish Release Notes
+    runs-on: ubuntu-20.04
+    # run this job when the workflow is triggered by a tag push
+    if: always() && github.repository == 'RasaHQ/rasa' && github.ref_type == 'tag' 
+    needs:
+      - deploy
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'deploy' is skipped (previous needed job failed) or failed
+        if: needs.deploy.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Rasa Open Source* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -22,8 +22,13 @@ jobs:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
+    - name: Download gomplate
+      run: |-
+        sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
+        sudo chmod +x /usr/local/bin/gomplate
+
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -58,7 +63,7 @@ jobs:
 
     - name: Install Dependencies 📦
       run: |
-        make install
+        make install-full
 
     - name: Lint Code 🎎
       run: |

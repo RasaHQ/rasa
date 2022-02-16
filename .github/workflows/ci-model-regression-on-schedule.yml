@@ -243,7 +243,7 @@ jobs:
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
 
       - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.8
@@ -270,8 +270,7 @@ jobs:
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |
-          poetry install --extras full
-          make install
+          make install-full
           poetry run python -m spacy download de_core_news_md
 
       - name: Install datadog-api-client
@@ -282,6 +281,11 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         run: |-
           poetry run python .github/scripts/validate_gpus.py
+
+      - name: Download pretrained models 💪
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
+        run: |-
+          poetry run python .github/scripts/download_pretrained.py --config dataset/configs/${CONFIG}
 
       - name: Run test
         id: run_test
@@ -300,11 +304,11 @@ jobs:
           fi
 
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
-            poetry run rasa train nlu --quiet -u ${DATASET_DIR}/${DATASET}/${TRAIN_DIR} -c dataset/configs/${CONFIG} --out ${DATASET_DIR}/models/${DATASET}/${CONFIG}
+            poetry run rasa train nlu --quiet -u "${DATASET_DIR}/${DATASET}/${TRAIN_DIR}" -c "dataset/configs/${CONFIG}" --out "${DATASET_DIR}/models/${DATASET}/${CONFIG}"
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            poetry run rasa test nlu --quiet -u ${DATASET_DIR}/$DATASET/${TEST_DIR} -m ${DATASET_DIR}/models/$DATASET/$CONFIG --out ${{ github.workspace }}/results/$DATASET/$CONFIG
+            poetry run rasa test nlu --quiet -u "${DATASET_DIR}/$DATASET/${TEST_DIR}" -m "${DATASET_DIR}/models/$DATASET/$CONFIG" --out "${{ github.workspace }}/results/$DATASET/$CONFIG"
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
@@ -314,7 +318,7 @@ jobs:
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            poetry run rasa test core -s ${DATASET_DIR}/${DATASET}/${TEST_DIR} --out ${{ github.workspace }}/results/${{ matrix.dataset }}/${CONFIG}
+            poetry run rasa test core -s "${DATASET_DIR}/${DATASET}/${TEST_DIR}" --out "${{ github.workspace }}/results/${{ matrix.dataset }}/${{ matrix.config }}"
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
@@ -333,6 +337,7 @@ jobs:
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           DATASET_REPOSITORY_BRANCH: "main"
           TYPE: ${{ matrix.type }}
+          INDEX_REPETITION: ${{ matrix.index_repetition }}
           DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
           BRANCH: ${{ github.ref }}
           PR_ID: "${{ github.event.number }}"
@@ -349,8 +354,27 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         uses: actions/upload-artifact@v2
         with:
-          name: report-${{ matrix.dataset }}-${{ matrix.config }}
+          name: report-${{ matrix.dataset }}-${{ matrix.config }}-${{ matrix.index_repetition }}
           path: report.json
+
+      # Prepare diagnostic data for the configs which evaluate dialog policy performance
+      - name: Prepare diagnostic data
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == 'core'
+        run: |
+          # Create dummy files to preserve directory structure when uploading artifacts
+          # See: https://github.com/actions/upload-artifact/issues/174
+          touch "results/${{ matrix.dataset }}/.keep"
+          touch "results/${{ matrix.dataset }}/${{ matrix.config }}/.keep"
+
+      - name: Upload an artifact with diagnostic data
+        if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' && matrix.type == 'core'
+        uses: actions/upload-artifact@v2
+        with:
+          name: diagnostic_data
+          path: |
+            results/**/.keep
+            results/${{ matrix.dataset }}/${{ matrix.config }}/failed_test_stories.yml
+            results/${{ matrix.dataset }}/${{ matrix.config }}/story_confusion_matrix.png
 
       - name: Stop Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -358,7 +382,7 @@ jobs:
           sudo service datadog-agent stop
 
       - name: Check duplicate issue
-        if: failure()
+        if: failure() && github.event_name == 'schedule'
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
         id: issue-exists
         with:
@@ -387,7 +411,7 @@ jobs:
 
       - name: Create GitHub Issue 📬
         id: create-issue
-        if: failure() && steps.issue-exists.outputs.result == 'false'
+        if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
@@ -403,7 +427,7 @@ jobs:
             return issue.data.number
 
       - name: Notify Slack of Failure 😱
-        if: failure()  && steps.issue-exists.outputs.result == 'false'
+        if: failure()  && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
         uses: 8398a7/action-slack@a74b761b4089b5d730d813fbedcd2ec5d394f3af  # v3
         with:
           status: custom
@@ -453,7 +477,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
         with:
           python-version: 3.7
 
@@ -484,7 +508,7 @@ jobs:
   analyse_performance:
     name: Analyse Performance
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && github.event_name == 'schedule'
     needs:
       - model_regression_test_gpu
       - combine_reports
@@ -527,7 +551,13 @@ jobs:
       - name: Analyse Performance 🔍
         id: performance
         run: |
+          set +e
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
+          if [ $? -ne 0 ]; then
+              echo "New template failed. Try with legacy template."
+              OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results_legacy.tmpl)"
+          fi
+          set -e
 
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
