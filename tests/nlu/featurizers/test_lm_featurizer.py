@@ -354,7 +354,7 @@ class TestShapeValuesTrainAndProcess:
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
-        expected_shape: List[Tuple[int]],
+        expected_shape: List[Tuple[int, int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
         create_language_model_featurizer: Callable[
@@ -379,7 +379,7 @@ class TestShapeValuesTrainAndProcess:
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
-        expected_shape: List[Tuple[int]],
+        expected_shape: List[Tuple[int, int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
         create_language_model_featurizer: Callable[

@@ -1008,7 +1008,7 @@ class Domain:
     @staticmethod
     def _get_slots_sub_state(
         tracker: "DialogueStateTracker", omit_unset_slots: bool = False
-    ) -> Dict[Text, Union[Text, Tuple[float]]]:
+    ) -> Dict[Text, Union[Text, Tuple[float, ...]]]:
         """Sets all set slots with the featurization of the stored value.
 
         Args:
@@ -1018,7 +1018,7 @@ class Domain:
         Returns:
             a mapping of slot names to their featurization
         """
-        slots: Dict[Text, Union[Text, Tuple[float]]] = {}
+        slots: Dict[Text, Union[Text, Tuple[float, ...]]] = {}
         for slot_name, slot in tracker.slots.items():
             # If the slot doesn't influence conversations, slot.as_feature() will return
             # a result that evaluates to False, meaning that the slot shouldn't be
