@@ -70,7 +70,7 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
 
     loaded_metadata = ModelMetadata.from_dict(loaded_serialized)
 
-    assert loaded_metadata.domain.as_dict() == domain.as_dict()
+    assert loaded_metadata.domain.data == domain.data
     assert loaded_metadata.model_id == model_id
     assert loaded_metadata.rasa_open_source_version == rasa_version
     assert loaded_metadata.trained_at == trained_at

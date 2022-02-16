@@ -1356,7 +1356,8 @@ def create_app(
         """Get current domain in yaml or json format."""
         accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
         if accepts.endswith("json"):
-            domain = app.agent.domain.as_dict()
+            # domain = app.agent.domain.as_dict()
+            domain = app.agent.domain.data
             return response.json(domain)
         elif accepts.endswith("yml") or accepts.endswith("yaml"):
             domain_yaml = app.agent.domain.as_yaml()

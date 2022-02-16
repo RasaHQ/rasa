@@ -104,7 +104,7 @@ class FormAction(LoopAction):
 
         If None, map requested slot to an entity with the same name
         """
-        domain_slots = domain.as_dict().get(KEY_SLOTS)
+        domain_slots = domain.data.get(KEY_SLOTS)
         requested_slot_mappings = domain_slots.get(slot_to_fill).get("mappings")
 
         # check provided slot mappings
@@ -149,7 +149,7 @@ class FormAction(LoopAction):
         """
         unique_entity_slot_mappings = set()
         duplicate_entity_slot_mappings = set()
-        domain_slots = domain.as_dict().get(KEY_SLOTS)
+        domain_slots = domain.data.get(KEY_SLOTS)
         for slot in domain.required_slots_for_form(self.name()):
             for slot_mapping in domain_slots.get(slot).get(SLOT_MAPPINGS):
                 if slot_mapping.get(MAPPING_TYPE) == str(SlotMappingType.FROM_ENTITY):

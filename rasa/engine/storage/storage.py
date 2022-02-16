@@ -154,7 +154,7 @@ class ModelMetadata:
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serializable version of the `ModelMetadata`."""
         return {
-            "domain": self.domain.as_dict(),
+            "domain": self.domain.data,
             "trained_at": self.trained_at.isoformat(),
             "model_id": self.model_id,
             "rasa_open_source_version": self.rasa_open_source_version,

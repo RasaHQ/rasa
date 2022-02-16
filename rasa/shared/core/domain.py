@@ -393,21 +393,41 @@ class Domain:
         """Returns original domain dict representation."""
         # add the config, session_config and e2e_actions defaults
         # if not included in the original domain dict
-        required_keys = ["config", SESSION_CONFIG_KEY, KEY_E2E_ACTIONS]
+        if "config" not in self._data:
+            self._data.update(
+                {"config": {"store_entities_as_slots": self.store_entities_as_slots}}
+            )
 
-        if any([key not in self._data for key in required_keys]):
-            defaults = {
-                "config": {"store_entities_as_slots": self.store_entities_as_slots},
-                SESSION_CONFIG_KEY: {
-                    SESSION_EXPIRATION_TIME_KEY: (
-                        self.session_config.session_expiration_time
-                    ),
-                    CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
-                },
-                KEY_E2E_ACTIONS: self.action_texts,
-            }
-            self._data.update(defaults)
+        if SESSION_CONFIG_KEY not in self._data:
+            self._data.update(
+                {
+                    SESSION_CONFIG_KEY: {
+                        SESSION_EXPIRATION_TIME_KEY: (
+                            self.session_config.session_expiration_time
+                        ),
+                        CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
+                    }
+                }
+            )
 
+        if KEY_E2E_ACTIONS not in self._data:
+            self._data.update({KEY_E2E_ACTIONS: self.action_texts})
+
+        for intent in self._data.get(KEY_INTENTS, []):
+            if isinstance(intent, dict):
+                for intent_name, intent_property in intent.items():
+                    try:
+                        if not intent_property[
+                            USE_ENTITIES_KEY
+                        ]:  # this covers False, None and []
+                            intent_property[USE_ENTITIES_KEY] = []
+                            break
+                    except KeyError:
+                        break
+
+        self._data[KEY_INTENTS] = Domain._sort_intent_names_alphabetical_order(
+            intents=self._data.get(KEY_INTENTS, [])
+        )
         return self._data
 
     @staticmethod
@@ -744,7 +764,7 @@ class Domain:
         Returns:
             A deep copy of the current domain.
         """
-        domain_dict = self.as_dict()
+        domain_dict = self.data
         return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
 
     def count_conditional_response_variations(self) -> int:
@@ -809,14 +829,30 @@ class Domain:
         Returns:
             fingerprint of the domain
         """
-        self_as_dict = self.as_dict()
-        self_as_dict[
-            KEY_INTENTS
-        ] = rasa.shared.utils.common.sort_list_of_dicts_by_first_key(
-            self_as_dict[KEY_INTENTS]
-        )
+        self_as_dict = self.data
+        transformed_intents: List[Text] = []
+        for intent in self_as_dict[KEY_INTENTS]:
+            if isinstance(intent, dict):
+                transformed_intents.append(*intent.keys())
+            elif isinstance(intent, str):
+                transformed_intents.append(intent)
+
+        self_as_dict[KEY_INTENTS] = sorted(transformed_intents)
         self_as_dict[KEY_ACTIONS] = self.action_names_or_texts
         return rasa.shared.utils.io.get_dictionary_fingerprint(self_as_dict)
+
+    @staticmethod
+    def _sort_intent_names_alphabetical_order(
+        intents: List[Union[Text, Dict]]
+    ) -> List[Union[Text, Dict]]:
+        def sort(elem: Union[Text, Dict]) -> Union[Text, Dict]:
+            if isinstance(elem, dict):
+                return list(elem.keys())[0]
+            elif isinstance(elem, str):
+                return elem
+
+        sorted_intents = sorted(intents, key=sort)
+        return sorted_intents
 
     @rasa.shared.utils.common.lazy_property
     def user_actions_and_forms(self) -> List[Text]:
@@ -1520,22 +1556,26 @@ class Domain:
         Returns:
             A cleaned dictionary version of the domain.
         """
-        domain_data = self.as_dict()
+        domain_data = self.data
         # remove e2e actions from domain before we display it
         domain_data.pop(KEY_E2E_ACTIONS, None)
 
-        for idx, intent_info in enumerate(domain_data[KEY_INTENTS]):
-            for name, intent in intent_info.items():
-                if intent.get(USE_ENTITIES_KEY) is True:
-                    del intent[USE_ENTITIES_KEY]
-                if not intent.get(IGNORE_ENTITIES_KEY):
-                    intent.pop(IGNORE_ENTITIES_KEY, None)
-                if len(intent) == 0:
-                    domain_data[KEY_INTENTS][idx] = name
+        for idx, intent_info in enumerate(domain_data.get(KEY_INTENTS, [])):
+            if isinstance(intent_info, dict):
+                for name, intent in intent_info.items():
+                    if intent.get(USE_ENTITIES_KEY) is True:
+                        del intent[USE_ENTITIES_KEY]
+                    if not intent.get(IGNORE_ENTITIES_KEY):
+                        intent.pop(IGNORE_ENTITIES_KEY, None)
+                    if len(intent) == 0:
+                        domain_data[KEY_INTENTS][idx] = name
 
-        for slot in domain_data[KEY_SLOTS].values():
-            if slot["initial_value"] is None:
-                del slot["initial_value"]
+        for slot in domain_data.get(KEY_SLOTS, {}).values():
+            try:
+                if slot["initial_value"] is None:
+                    del slot["initial_value"]
+            except KeyError:
+                pass
             if slot["type"].startswith("rasa.shared.core.slots"):
                 slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 
@@ -1579,7 +1619,7 @@ class Domain:
         if clean_before_dump:
             domain_data.update(self.cleaned_domain())
         else:
-            domain_data.update(self.as_dict())
+            domain_data.update(self.data)
         if domain_data.get(KEY_RESPONSES, {}):
             domain_data[KEY_RESPONSES] = self.get_responses_with_multilines(
                 domain_data[KEY_RESPONSES]
@@ -1828,7 +1868,7 @@ class Domain:
 
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
-        return self.as_dict() == Domain.empty().as_dict()
+        return self.data == Domain.empty().data
 
     @staticmethod
     def is_domain_file(filename: Union[Text, Path]) -> bool:
