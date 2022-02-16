@@ -8,6 +8,14 @@ changes to the underlying tokenizer implementation that would break our integrat
 The model architectures that are not supported, as of `transformers` 4.13.0 are
 listed in the `LanguageModelFeaturizer.INCOMPATIBLE_MODELS` and explicitly checked
 when the component gets loaded.
+
+Note that new versions of `transformers` might introduce entirely new architectures
+that will not be captured by this test. In order to check which of these are
+supported, and which should be added to the list of `INCOMPATIBLE_MODELS` and the
+documentation, a manual run through
+`transformers.tokenization_utils_base.PretrainedTokenizer.__subclasses__()` is
+necessary. This will return the actual tokenizer classes, for which a model of
+pretrained weights has to be identified and added to the list below.
 """
 
 import sys

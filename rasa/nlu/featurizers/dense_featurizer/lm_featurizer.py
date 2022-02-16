@@ -186,10 +186,10 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         model_name = type(model_config).__name__.replace("Config", "")
         if model_name in INCOMPATIBLE_MODELS:
             raise ValueError(
-                f"You tried using a {model_name} model, which is not "
-                f"compatible with `LanguageModelFeaturizer`. Please "
-                f"consult the documentation on which models are "
-                f"supported."
+                f"You tried using a {model_name} model, which is not compatible with "
+                f"`LanguageModelFeaturizer`. Please consult the documentation under"
+                f"https://rasa.com/docs/rasa/components/#languagemodelfeaturizer on "
+                f"which models are supported."
             )
 
         self.max_model_sequence_length = model_config.max_position_embeddings
