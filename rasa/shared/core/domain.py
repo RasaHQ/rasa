@@ -410,11 +410,16 @@ class Domain:
                 }
             )
 
+        # KEY_E2E_ACTIONS, KEY_ACTIONS AND KEY_RESPONSES are required
+        # because they get added through the chaining of importers
         if KEY_E2E_ACTIONS not in self._data:
             self._data.update({KEY_E2E_ACTIONS: self.action_texts})
 
         if KEY_ACTIONS not in self._data:
             self._data.update({KEY_ACTIONS: []})
+
+        if KEY_RESPONSES not in self._data:
+            self._data.update({KEY_RESPONSES: {}})
 
         if "version" not in self._data:
             self._data.update({"version": LATEST_TRAINING_DATA_FORMAT_VERSION})

@@ -1159,6 +1159,7 @@ def test_clean_domain_for_file():
             "carry_over_slots_to_new_session": True,
             "session_expiration_time": DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
         },
+        "version": "3.0",
     }
 
     assert cleaned == expected
