@@ -56,7 +56,7 @@ def test_telegram_edit_message():
     )
 
     app = rasa.core.run.configure_app([input_channel], port=5004)
-    app.agent = Agent()
+    app.ctx.agent = Agent()
     _, res = app.test_client.post(
         "/webhooks/telegram/webhook", json=json.dumps(telegram_test_edited_message)
     )
