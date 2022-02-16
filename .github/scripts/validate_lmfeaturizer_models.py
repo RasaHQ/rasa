@@ -1,3 +1,15 @@
+"""
+This script tests if the model architectures from `transformers` that we load in
+`LanguageModelFeaturizer` work as expected. Particularly, if the tokenizer specific
+cleanup of delimiter tokens (e.g. `##`, `<\w>`, etc.) is successful.
+
+In case of updates to `transformers` it should be run to ensure that there were no
+changes to the underlying tokenizer implementation that would break our integration.
+The model architectures that are not supported, as of `transformers` 4.13.0 are
+listed in the `LanguageModelFeaturizer.INCOMPATIBLE_MODELS` and explicitly checked
+when the component gets loaded.
+"""
+
 import sys
 import logging
 import uuid
@@ -9,7 +21,7 @@ from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFea
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-# Those model weights cover all supported models as of transformers 4.13.0
+# Those model weights cover all supported model architectures as of transformers 4.13.0
 model_weights_list = [
     "rasa/LaBSE",
     "bert-base-uncased",
