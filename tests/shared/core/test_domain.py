@@ -1682,10 +1682,10 @@ slots:{slot_2}
 """
 
     test_yaml_merged = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+slots:{slot_2}{slot_1}
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true
-slots:{slot_2}{slot_1}
 """
 
     domain_1 = Domain.from_yaml(test_yaml_1)
