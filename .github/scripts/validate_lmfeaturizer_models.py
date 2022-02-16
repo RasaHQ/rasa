@@ -1,7 +1,7 @@
 """
 This script tests if the model architectures from `transformers` that we load in
 `LanguageModelFeaturizer` work as expected. Particularly, if the tokenizer specific
-cleanup of delimiter tokens (e.g. `##`, `<\w>`, etc.) is successful.
+cleanup of delimiter tokens (e.g. `##`) is successful.
 
 In case of updates to `transformers` it should be run to ensure that there were no
 changes to the underlying tokenizer implementation that would break our integration.
