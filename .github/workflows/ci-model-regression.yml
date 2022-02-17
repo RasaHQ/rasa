@@ -832,6 +832,17 @@ jobs:
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=result::$OUTPUT"
 
+          # Get time of current commit as start time
+          TIME_ISO_COMMIT=$(gomplate -d github=https://api.github.com/repos/rasaHQ/rasa/commits/${{ github.sha }} -i '{{ (ds "github").commit.author.date }}')  # Example "2022-02-17T14:06:38Z"
+          TIME_UNIX_COMMIT=$(date -d "${TIME_ISO_COMMIT}" +%s)  # Example: "1645106798"
+
+          # Get current time
+          TIME_ISO_NOW=$(gomplate -i '{{ (time.Now).UTC.Format time.RFC3339}}') # Example: "2022-02-17T14:50:54Z%"
+          TIME_UNIX_NOW=$(date -d "${TIME_ISO_NOW}" +%s)  # Example: "1645118083"
+
+          echo "::set-output name=from_ts::$TIME_UNIX_COMMIT"
+          echo "::set-output name=to_ts::$TIME_UNIX_NOW"
+
       - name: Publish results as a PR comment
         uses: marocchino/sticky-pull-request-comment@v2.2.0
         if: ${{ always() }}
@@ -843,6 +854,8 @@ jobs:
             Status of the run: ${{ needs.combine_reports.outputs.success_status }}
 
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            [Datadog dashboard link](https://app.datadoghq.eu/dashboard/mf4-2hu-x84?tpl_var_branch_baseline=${{ github.head_ref }}&from_ts=${{ steps.get_results.outputs.from_ts }}&to_ts=${{ steps.get_results.outputs.to_ts }}&live=false)
 
             ${{ steps.get_results.outputs.result }}
 
