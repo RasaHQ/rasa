@@ -404,7 +404,10 @@ class Domain:
 
     @staticmethod
     def _add_default_keys_to_domain_dict(
-        data: Dict, store_entities_as_slots, session_config, action_texts
+        data: Dict,
+        store_entities_as_slots: bool,
+        session_config: SessionConfig,
+        action_texts: Optional[List[Text]],
     ) -> Dict:
         # add the config, session_config and e2e_actions defaults
         # if not included in the original domain dict
@@ -754,11 +757,13 @@ class Domain:
 
         self.responses = responses
 
+        action_texts = action_texts if action_texts is not None else []
+        self.action_texts = action_texts
+
         self._data = self._preprocess_domain_dict(
             data, store_entities_as_slots, session_config, action_texts
         )
 
-        self.action_texts = action_texts or []
         self.session_config = session_config
 
         self._custom_actions = action_names
