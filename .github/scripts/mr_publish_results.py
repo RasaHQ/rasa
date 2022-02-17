@@ -86,7 +86,7 @@ def get_vm_type() -> Dict[Text, Text]:
             metadata_server + "machine-type", headers=metadata_flavor
         ).text
 
-    except ConnectionError:  # not a GCP instance
+    except requests.exceptions.ConnectionError:  # not a GCP instance
         hostname = socket.gethostname()
         if "-az-" in hostname:
             machine_type_full = "azure/Standard_DS2_v2"
