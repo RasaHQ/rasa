@@ -6,9 +6,10 @@ from pathlib import Path
 import pytest
 from ruamel.yaml import YAML
 
+from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import DEFAULT_MODEL_WEIGHTS
+
 sys.path.append(".github/scripts")
 import download_pretrained  # noqa: E402
-from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import DEFAULT_MODEL_WEIGHTS
 
 CONFIG_FPATH = Path(__file__).parent / "test_data" / "bert_diet_response2t.yml"
 
