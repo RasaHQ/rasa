@@ -284,7 +284,7 @@ class Domain:
             return domain
 
         merged_dict = self.__class__.merge_domain_dicts(
-            domain.data, self.data, override, is_dir
+            domain.as_dict(), self.as_dict(), override, is_dir
         )
 
         return Domain.from_dict(merged_dict)
@@ -388,43 +388,62 @@ class Domain:
 
         return combined
 
-    @property
-    def data(self) -> Dict:
-        """Returns original domain dict representation."""
+    def _preprocess_domain_dict(
+        self,
+        data: Dict,
+        store_entities_as_slots: bool,
+        session_config: SessionConfig,
+        action_texts: Optional[List[Text]],
+    ) -> Dict:
+        data = self._add_default_keys_to_domain_dict(
+            data, store_entities_as_slots, session_config, action_texts
+        )
+        data = self._sanitize_intents_in_domain_dict(data)
+
+        return data
+
+    @staticmethod
+    def _add_default_keys_to_domain_dict(
+        data: Dict, store_entities_as_slots, session_config, action_texts
+    ) -> Dict:
         # add the config, session_config and e2e_actions defaults
         # if not included in the original domain dict
-        if "config" not in self._data:
-            self._data.update(
-                {"config": {"store_entities_as_slots": self.store_entities_as_slots}}
+        if "config" not in data:
+            data.update(
+                {"config": {"store_entities_as_slots": store_entities_as_slots}}
             )
 
-        if SESSION_CONFIG_KEY not in self._data:
-            self._data.update(
+        if SESSION_CONFIG_KEY not in data:
+            data.update(
                 {
                     SESSION_CONFIG_KEY: {
                         SESSION_EXPIRATION_TIME_KEY: (
-                            self.session_config.session_expiration_time
+                            session_config.session_expiration_time
                         ),
-                        CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
+                        CARRY_OVER_SLOTS_KEY: session_config.carry_over_slots,
                     }
                 }
             )
 
         # KEY_E2E_ACTIONS, KEY_ACTIONS AND KEY_RESPONSES are required
         # because they get added through the chaining of importers
-        if KEY_E2E_ACTIONS not in self._data:
-            self._data.update({KEY_E2E_ACTIONS: self.action_texts})
+        if KEY_E2E_ACTIONS not in data:
+            data.update({KEY_E2E_ACTIONS: action_texts})
 
-        if KEY_ACTIONS not in self._data:
-            self._data.update({KEY_ACTIONS: []})
+        if KEY_ACTIONS not in data:
+            data.update({KEY_ACTIONS: []})
 
-        if KEY_RESPONSES not in self._data:
-            self._data.update({KEY_RESPONSES: {}})
+        if KEY_RESPONSES not in data:
+            data.update({KEY_RESPONSES: {}})
 
-        if "version" not in self._data:
-            self._data.update({"version": LATEST_TRAINING_DATA_FORMAT_VERSION})
+        if "version" not in data:
+            data.update({"version": LATEST_TRAINING_DATA_FORMAT_VERSION})
 
-        for intent in self._data.get(KEY_INTENTS, []):
+        return data
+
+    @staticmethod
+    def _sanitize_intents_in_domain_dict(data: Dict) -> Dict:
+        for intent in data.get(KEY_INTENTS, []):
             if isinstance(intent, dict):
                 for intent_name, intent_property in intent.items():
                     try:
@@ -436,10 +455,10 @@ class Domain:
                     except KeyError:
                         break
 
-        self._data[KEY_INTENTS] = Domain._sort_intent_names_alphabetical_order(
-            intents=self._data.get(KEY_INTENTS, [])
+        data[KEY_INTENTS] = Domain._sort_intent_names_alphabetical_order(
+            intents=data.get(KEY_INTENTS, [])
         )
-        return self._data
+        return data
 
     @staticmethod
     def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
@@ -718,7 +737,6 @@ class Domain:
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
         """
-        self._data = data
         self.entities, self.roles, self.groups = self.collect_entity_properties(
             entities
         )
@@ -735,6 +753,10 @@ class Domain:
         action_names += overridden_form_actions
 
         self.responses = responses
+
+        self._data = self._preprocess_domain_dict(
+            data, store_entities_as_slots, session_config, action_texts
+        )
 
         self.action_texts = action_texts or []
         self.session_config = session_config
@@ -775,7 +797,7 @@ class Domain:
         Returns:
             A deep copy of the current domain.
         """
-        domain_dict = self.data
+        domain_dict = self.as_dict()
         return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
 
     def count_conditional_response_variations(self) -> int:
@@ -840,7 +862,7 @@ class Domain:
         Returns:
             fingerprint of the domain
         """
-        self_as_dict = self.data
+        self_as_dict = self.as_dict()
         transformed_intents: List[Text] = []
         for intent in self_as_dict[KEY_INTENTS]:
             if isinstance(intent, dict):
@@ -1435,22 +1457,7 @@ class Domain:
 
     def as_dict(self) -> Dict[Text, Any]:
         """Return serialized `Domain`."""
-        return {
-            "config": {"store_entities_as_slots": self.store_entities_as_slots},
-            SESSION_CONFIG_KEY: {
-                SESSION_EXPIRATION_TIME_KEY: (
-                    self.session_config.session_expiration_time
-                ),
-                CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
-            },
-            KEY_INTENTS: self._transform_intents_for_file(),
-            KEY_ENTITIES: self._transform_entities_for_file(),
-            KEY_SLOTS: self._slot_definitions(),
-            KEY_RESPONSES: self.responses,
-            KEY_ACTIONS: self._custom_actions,
-            KEY_FORMS: self.forms,
-            KEY_E2E_ACTIONS: self.action_texts,
-        }
+        return self._data
 
     @staticmethod
     def get_responses_with_multilines(
@@ -1567,7 +1574,7 @@ class Domain:
         Returns:
             A cleaned dictionary version of the domain.
         """
-        domain_data = self.data
+        domain_data = self.as_dict()
         # remove e2e actions from domain before we display it
         domain_data.pop(KEY_E2E_ACTIONS, None)
 
@@ -1630,7 +1637,7 @@ class Domain:
         if clean_before_dump:
             domain_data.update(self.cleaned_domain())
         else:
-            domain_data.update(self.data)
+            domain_data.update(self.as_dict())
         if domain_data.get(KEY_RESPONSES, {}):
             domain_data[KEY_RESPONSES] = self.get_responses_with_multilines(
                 domain_data[KEY_RESPONSES]
@@ -1879,7 +1886,7 @@ class Domain:
 
     def is_empty(self) -> bool:
         """Check whether the domain is empty."""
-        return self.data == Domain.empty().data
+        return self.as_dict() == Domain.empty().as_dict()
 
     @staticmethod
     def is_domain_file(filename: Union[Text, Path]) -> bool:

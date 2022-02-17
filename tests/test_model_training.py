@@ -914,7 +914,7 @@ def test_models_not_retrained_if_only_new_responses(
 
     new_domain = domain.merge(domain_with_extra_response)
     new_domain_path = tmp_path / "domain.yml"
-    rasa.shared.utils.io.write_yaml(new_domain.data, new_domain_path)
+    rasa.shared.utils.io.write_yaml(new_domain.as_dict(), new_domain_path)
 
     result = rasa.train(
         str(new_domain_path),

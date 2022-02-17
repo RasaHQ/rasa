@@ -172,7 +172,7 @@ async def test_remote_action_runs(
         assert r
 
         assert json_of_latest_request(r) == {
-            "domain": domain.data,
+            "domain": domain.as_dict(),
             "next_action": "my_action",
             "sender_id": "my-sender",
             "version": rasa.__version__,
@@ -234,7 +234,7 @@ async def test_remote_action_logs_events(
         assert r
 
         assert json_of_latest_request(r) == {
-            "domain": domain.data,
+            "domain": domain.as_dict(),
             "next_action": "my_action",
             "sender_id": "my-sender",
             "version": rasa.__version__,

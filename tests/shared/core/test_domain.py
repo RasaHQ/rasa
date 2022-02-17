@@ -323,6 +323,7 @@ def test_domain_to_dict():
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
 
     assert domain_as_dict == {
+        "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
         KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
@@ -337,10 +338,8 @@ def test_domain_to_dict():
         "slots": {
             "some_slot": {
                 "values": ["high", "low"],
-                "influence_conversation": True,
-                "initial_value": None,
                 "mappings": [{"type": "from_text"}],
-                "type": "rasa.shared.core.slots.CategoricalSlot",
+                "type": "categorical",
             }
         },
     }
@@ -466,11 +465,7 @@ def test_merge_yaml_domains_with_default_intents(default_intent: Text):
     assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
 
     # ensure that the default intent is contain the domain's dictionary dump
-    domain_intents = []
-    for intent in domain.as_dict()["intents"]:
-        domain_intents.append(list(intent)[0])
-
-    assert default_intent in domain_intents
+    assert default_intent in domain.as_dict()[KEY_INTENTS]
 
 
 def test_merge_session_config_if_first_is_not_default():
@@ -1233,8 +1228,7 @@ def test_session_config(
 
 def test_domain_as_dict_with_session_config():
     session_config = SessionConfig(123, False)
-    domain = Domain.empty()
-    domain.session_config = session_config
+    domain = Domain([], [], [], {}, [], {}, {}, None, True, session_config)
 
     serialized = domain.as_dict()
     deserialized = Domain.from_dict(serialized)

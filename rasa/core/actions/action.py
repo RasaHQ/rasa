@@ -628,7 +628,7 @@ class RemoteAction(Action):
             "next_action": self._name,
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
-            "domain": domain.data,
+            "domain": domain.as_dict(),
             "version": rasa.__version__,
         }
 
