@@ -760,8 +760,9 @@ class Domain:
         action_texts = action_texts if action_texts is not None else []
         self.action_texts = action_texts
 
+        data_copy = copy.deepcopy(data)
         self._data = self._preprocess_domain_dict(
-            data, store_entities_as_slots, session_config, action_texts
+            data_copy, store_entities_as_slots, session_config, action_texts
         )
 
         self.session_config = session_config
