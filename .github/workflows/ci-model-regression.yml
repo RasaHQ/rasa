@@ -835,7 +835,7 @@ jobs:
           set -x
 
           # Get time of current commit as start time
-          TIME_ISO_COMMIT=$(gomplate -d github=https://api.github.com/repos/rasaHQ/rasa/commits/${{ github.sha }} -i '{{ (ds "github").commit.author.date }}')  # Example "2022-02-17T14:06:38Z"
+          TIME_ISO_COMMIT=$(gomplate -d github=https://api.github.com/repos/rasaHQ/rasa/commits/${{ github.sha }} -H 'github=Authorization:token ${{ secrets.GITHUB_TOKEN }}' -i '{{ (ds "github").commit.author.date }}')  # Example "2022-02-17T14:06:38Z"
           TIME_UNIX_COMMIT=$(date -d "${TIME_ISO_COMMIT}" +%s)  # Example: "1645106798"
 
           # Get current time
