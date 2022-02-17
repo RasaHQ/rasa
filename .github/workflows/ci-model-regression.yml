@@ -427,7 +427,6 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           SUMMARY_FILE: "./report.json"
-          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
           CONFIG: ${{ matrix.config }}
@@ -665,11 +664,10 @@ jobs:
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
 
-      - name: Generate a JSON file with a report / Publish results to Segment + Datadog
+      - name: Generate a JSON file with a report / Publish results to Datadog
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           SUMMARY_FILE: "./report.json"
-          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
           CONFIG: ${{ matrix.config }}

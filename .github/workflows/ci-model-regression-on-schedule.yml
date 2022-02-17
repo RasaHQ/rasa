@@ -328,7 +328,6 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           SUMMARY_FILE: "./report.json"
-          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
           CONFIG: ${{ matrix.config }}
