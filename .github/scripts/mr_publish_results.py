@@ -5,6 +5,8 @@ import copy
 import datetime
 import json
 import os
+import requests
+import socket
 from typing import Any, Dict, List, Text, Tuple
 
 import analytics
@@ -63,6 +65,40 @@ GIT_RELATED_TAGS = {
     "github_sha": "GITHUB_SHA",
     "workflow": "GITHUB_WORKFLOW",
 }
+
+
+def get_vm_type() -> Dict[Text, Text]:
+    """Find out which VM type the code runs on.
+
+    Returns:
+        Dict of different tags, e.g. 'machine_type'
+        Example:
+        {
+            'machine_type': n1-standard-4,
+            'machine_type_full': 'projects/129066000000/machineTypes/n1-standard-4',
+        }
+    """
+    try:
+        # Stolen from https://stackoverflow.com/a/31689692/5497962
+        metadata_server = "http://metadata/computeMetadata/v1/instance/"
+        metadata_flavor = {'Metadata-Flavor' : 'Google'}
+        machine_type_full = requests.get(metadata_server + 'machine-type',
+                                         headers = metadata_flavor).text
+
+    except ConnectionError:  # not a GCP instance
+        hostname = socket.gethostname()
+        if '-az-' in hostname:
+            machine_type_full = 'azure/Standard_DS2_v2'
+        else:  # neigther GCP nor Azure instance
+            machine_type_full = 'unknown'
+    except Exception as e:
+        print(e)
+        machine_type_full = 'unknown'
+
+    return {
+        'machine_type': machine_type_full.split('/')[-1],
+        'machine_type_full': machine_type_full,
+    }
 
 
 def create_dict_of_env(name_to_env: Dict[Text, Text]) -> Dict[Text, Text]:
@@ -177,6 +213,7 @@ def prepare_datadog_tags() -> List[Text]:
         "service": DD_SERVICE,
         "branch": os.environ["BRANCH"],
         "config_repository": CONFIG_REPOSITORY,
+        **get_vm_type(),
         **prepare_dsrepo_and_external_tags_as_str(),
         **create_dict_of_env(MAIN_TAGS),
         **create_dict_of_env(OTHER_TAGS),
