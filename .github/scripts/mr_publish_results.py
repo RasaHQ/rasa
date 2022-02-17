@@ -85,6 +85,9 @@ def get_vm_type() -> Dict[Text, Text]:
         machine_type_full = requests.get(
             metadata_server + "machine-type", headers=metadata_flavor
         ).text
+        print(f'machine_type_full: {machine_type_full}')
+        # Debug
+        print('gce_name', socket.gethostname())
 
     except requests.exceptions.ConnectionError:  # not a GCP instance
         print('This VM was identified as not being a GCP instance')
