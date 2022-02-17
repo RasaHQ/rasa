@@ -88,8 +88,8 @@ def get_vm_type() -> Dict[Text, Text]:
 
     except requests.exceptions.ConnectionError:  # not a GCP instance
         print('This VM was identified as not being a GCP instance')
-        print(f'hostname: {hostname}')
         hostname = socket.gethostname()
+        print(f'hostname: {hostname}')
         if "-az" in hostname:
             machine_type_full = "azure/Standard_DS2_v2"
         else:  # neigther GCP nor Azure instance
