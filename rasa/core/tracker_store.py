@@ -1310,7 +1310,7 @@ class AwaitableTrackerStore(TrackerStore):
         self._tracker_store.domain = domain
 
     @staticmethod
-    def create(obj: Union["TrackerStore", EndpointConfig, None],
+    def create(obj: Union[TrackerStore, EndpointConfig, None],
                domain: Optional[Domain] = None,
                event_broker: Optional[EventBroker] = None, ) -> Optional[TrackerStore]:
         if isinstance(obj, TrackerStore):
