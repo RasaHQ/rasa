@@ -83,7 +83,7 @@ def get_vm_type() -> Dict[Text, Text]:
         metadata_server = "http://metadata/computeMetadata/v1/instance/"
         metadata_flavor = {'Metadata-Flavor' : 'Google'}
         machine_type_full = requests.get(metadata_server + 'machine-type',
-                                         headers = metadata_flavor).text
+                                         headers=metadata_flavor).text
 
     except ConnectionError:  # not a GCP instance
         hostname = socket.gethostname()
