@@ -65,7 +65,7 @@ POSTGRESQL_DEFAULT_POOL_SIZE = 50
 DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 
-def check_if_tracker_store_async(tracker_store: "TrackerStore") -> bool:
+def check_if_tracker_store_async(tracker_store: TrackerStore) -> bool:
     """
     Evaluates if a tracker store implementation is async based on async methods in base class
     :param tracker_store: tracker store object we're evaluating
