@@ -63,6 +63,7 @@ IGNORE_ENTITIES_KEY = "ignore_entities"
 IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
 ENTITY_ROLES_KEY = "roles"
 ENTITY_GROUPS_KEY = "groups"
+ENTITY_FEATURIZATION_KEY = "influence_conversation"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -463,12 +464,13 @@ class Domain:
         entities: List[Text],
         roles: Dict[Text, List[Text]],
         groups: Dict[Text, List[Text]],
+        default_ignored_entities: List[Text],
     ) -> Dict[Text, Any]:
         """Transforms the intent's parameters in a format suitable for internal use.
 
         When an intent is retrieved from the `domain.yml` file, it contains two
-        parameters, the `use_entities` and the `ignore_entities` parameter. With
-        the values of these two parameters the Domain class is updated, a new
+        parameters, the `use_entities` and the `ignore_entities` parameter.
+        With the values of these two parameters the Domain class is updated, a new
         parameter is added to the intent called `used_entities` and the two
         previous parameters are deleted. This happens because internally only the
         parameter `used_entities` is needed to list all the entities that should be
@@ -480,6 +482,7 @@ class Domain:
             entities: All entities as provided by a domain file.
             roles: All roles for entities as provided by a domain file.
             groups: All groups for entities as provided by a domain file.
+            default_ignored_entities: Entities with `influence_conversation: false`.
 
         Returns:
             The intent with the new format thus having only one parameter called
@@ -502,7 +505,7 @@ class Domain:
                 f" when to use the ':' character after an intent's name."
             )
 
-        properties.setdefault(IGNORE_ENTITIES_KEY, [])
+        properties.setdefault(IGNORE_ENTITIES_KEY, default_ignored_entities)
         if not properties[USE_ENTITIES_KEY]:  # this covers False, None and []
             properties[USE_ENTITIES_KEY] = []
 
@@ -512,7 +515,7 @@ class Domain:
         # label with the corresponding role or group label to make sure roles and
         # groups can also influence the dialogue predictions
         if properties[USE_ENTITIES_KEY] is True:
-            included_entities = set(entities)
+            included_entities = set(entities) - set(default_ignored_entities)
             included_entities.update(Domain.concatenate_entity_labels(roles))
             included_entities.update(Domain.concatenate_entity_labels(groups))
         else:
@@ -562,7 +565,7 @@ class Domain:
     @classmethod
     def collect_entity_properties(
         cls, domain_entities: List[Union[Text, Dict[Text, Any]]]
-    ) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]:
+    ) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]], List[Text]]:
         """Get entity properties for a domain from what is provided by a domain file.
 
         Args:
@@ -576,6 +579,7 @@ class Domain:
         entities: List[Text] = []
         roles: Dict[Text, List[Text]] = {}
         groups: Dict[Text, List[Text]] = {}
+        default_ignored_entities: List[Text] = []
         for entity in domain_entities:
             if isinstance(entity, str):
                 entities.append(entity)
@@ -587,6 +591,11 @@ class Domain:
                             roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
                         if ENTITY_GROUPS_KEY in sub_labels:
                             groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
+                        if (
+                            ENTITY_FEATURIZATION_KEY in sub_labels
+                            and sub_labels[ENTITY_FEATURIZATION_KEY] is False
+                        ):
+                            default_ignored_entities.append(_entity)
                     else:
                         raise InvalidDomain(
                             f"In the `domain.yml` file, the entity '{_entity}' cannot"
@@ -606,7 +615,7 @@ class Domain:
                     f"not supported: '{type(entity).__name__}'"
                 )
 
-        return entities, roles, groups
+        return entities, roles, groups, default_ignored_entities
 
     @classmethod
     def collect_intent_properties(
@@ -615,6 +624,7 @@ class Domain:
         entities: List[Text],
         roles: Dict[Text, List[Text]],
         groups: Dict[Text, List[Text]],
+        default_ignored_entities: List[Text],
     ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
         """Get intent properties for a domain from what is provided by a domain file.
 
@@ -623,6 +633,7 @@ class Domain:
             entities: All entities as provided by a domain file.
             roles: The roles of entities as provided by a domain file.
             groups: The groups of entities as provided by a domain file.
+            default_ignored_entities: Entities which do not influence the conversation.
 
         Returns:
             The intent properties to be stored in the domain.
@@ -634,7 +645,7 @@ class Domain:
 
         for intent in intents:
             intent_name, properties = cls._intent_properties(
-                intent, entities, roles, groups
+                intent, entities, roles, groups, default_ignored_entities
             )
 
             if intent_name in intent_properties.keys():
@@ -649,7 +660,9 @@ class Domain:
                 f"Either rename or remove the duplicate ones."
             )
 
-        cls._add_default_intents(intent_properties, entities, roles, groups)
+        cls._add_default_intents(
+            intent_properties, entities, roles, groups, default_ignored_entities
+        )
 
         return intent_properties
 
@@ -660,17 +673,23 @@ class Domain:
         entities: List[Text],
         roles: Dict[Text, List[Text]],
         groups: Dict[Text, List[Text]],
+        default_ignored_entities: List[Text],
     ) -> Tuple[Text, Dict[Text, Any]]:
         if not isinstance(intent, dict):
             intent_name = intent
-            intent = {intent_name: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
+            intent = {
+                intent_name: {
+                    USE_ENTITIES_KEY: True,
+                    IGNORE_ENTITIES_KEY: default_ignored_entities,
+                }
+            }
         else:
             intent_name = list(intent.keys())[0]
 
         return (
             intent_name,
             cls._transform_intent_properties_for_internal_use(
-                intent, entities, roles, groups
+                intent, entities, roles, groups, default_ignored_entities
             ),
         )
 
@@ -681,11 +700,12 @@ class Domain:
         entities: List[Text],
         roles: Optional[Dict[Text, List[Text]]],
         groups: Optional[Dict[Text, List[Text]]],
+        default_ignored_entities: List[Text],
     ) -> None:
         for intent_name in rasa.shared.core.constants.DEFAULT_INTENTS:
             if intent_name not in intent_properties:
                 _, properties = cls._intent_properties(
-                    intent_name, entities, roles, groups
+                    intent_name, entities, roles, groups, default_ignored_entities
                 )
                 intent_properties.update(properties)
 
@@ -721,11 +741,18 @@ class Domain:
                 `responses` and values are lists of duplicated entries of a
                  corresponding type when the domain is built from multiple files.
         """
-        self.entities, self.roles, self.groups = self.collect_entity_properties(
-            entities
-        )
+        (
+            self.entities,
+            self.roles,
+            self.groups,
+            self.default_entity_featurization,
+        ) = self.collect_entity_properties(entities)
         self.intent_properties = self.collect_intent_properties(
-            intents, self.entities, self.roles, self.groups
+            intents,
+            self.entities,
+            self.roles,
+            self.groups,
+            self.default_entity_featurization,
         )
         self.overridden_default_intents = self._collect_overridden_default_intents(
             intents
@@ -1472,8 +1499,9 @@ class Domain:
         """Transform intent properties for displaying or writing into a domain file.
 
         Internally, there is a property `used_entities` that lists all entities to be
-        used. In domain files, `use_entities` or `ignore_entities` is used instead to
-        list individual entities to ex- or include, because this is easier to read.
+        used. In domain files, `use_entities` or `ignore_entities` on intents or
+        `influence_conversation` on entities is used instead to list individual entities
+        to ex- or include, because this is easier to read.
 
         Returns:
             The intent properties as they are used in domain files.
@@ -1489,7 +1517,7 @@ class Domain:
             ):
                 # Default intents should be not dumped with the domain
                 continue
-            # `use_entities` and `ignore_entities` in the domain file do not consider
+            # `use_entities`, `ignore_entities`, in the domain file do not consider
             # the role and group labels remove them from the list to make sure to not
             # put them into the domain file
             use_entities = set(
