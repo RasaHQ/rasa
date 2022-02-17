@@ -1,3 +1,4 @@
+from __future__ import annotations
 import contextlib
 import itertools
 import json
@@ -120,12 +121,12 @@ class TrackerStore:
         try:
             tracker_store = _create_from_endpoint_config(obj, domain, event_broker)
             if not check_if_tracker_store_async(tracker_store):
-                rasa.shared.utils.io.raise_warning(f"Tracker store implementation {tracker_store.__class__.__name__} "
-                                                   f"is not asynchronous. Non-asynchronous tracker stores "
-                                                   f"will be deprecated in a future release. "
-                                                   f"Please make the following methods async: "
-                                                   f"{get_async_tracker_store_methods()}",
-                                                   UserWarning)
+                rasa.shared.utils.io.raise_deprecation_warning(f"Tracker store implementation "
+                                                               f"{tracker_store.__class__.__name__} "
+                                                               f"is not asynchronous. Non-asynchronous tracker stores "
+                                                               f"are currently deprecated and will be removed in 4.0. "
+                                                               f"Please make the following methods async: "
+                                                               f"{get_async_tracker_store_methods()}")
                 tracker_store = AwaitableTrackerStore(tracker_store)
             return tracker_store
         except (

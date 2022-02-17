@@ -956,7 +956,7 @@ def test_sql_tracker_store_creation_with_invalid_port(domain: Domain):
 
 def test_create_non_async_tracker_store(domain: Domain):
     endpoint_config = EndpointConfig(type="tests.core.test_tracker_stores.NonAsyncTrackerStore")
-    with pytest.warns(UserWarning):
+    with pytest.warns(FutureWarning):
         tracker_store = TrackerStore.create(endpoint_config)
     assert isinstance(tracker_store, AwaitableTrackerStore)
     assert isinstance(tracker_store._tracker_store, NonAsyncTrackerStore)
