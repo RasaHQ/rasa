@@ -81,23 +81,24 @@ def get_vm_type() -> Dict[Text, Text]:
     try:
         # Stolen from https://stackoverflow.com/a/31689692/5497962
         metadata_server = "http://metadata/computeMetadata/v1/instance/"
-        metadata_flavor = {'Metadata-Flavor' : 'Google'}
-        machine_type_full = requests.get(metadata_server + 'machine-type',
-                                         headers=metadata_flavor).text
+        metadata_flavor = {"Metadata-Flavor": "Google"}
+        machine_type_full = requests.get(
+            metadata_server + "machine-type", headers=metadata_flavor
+        ).text
 
     except ConnectionError:  # not a GCP instance
         hostname = socket.gethostname()
-        if '-az-' in hostname:
-            machine_type_full = 'azure/Standard_DS2_v2'
+        if "-az-" in hostname:
+            machine_type_full = "azure/Standard_DS2_v2"
         else:  # neigther GCP nor Azure instance
-            machine_type_full = 'unknown'
+            machine_type_full = "unknown"
     except Exception as e:
         print(e)
-        machine_type_full = 'unknown'
+        machine_type_full = "unknown"
 
     return {
-        'machine_type': machine_type_full.split('/')[-1],
-        'machine_type_full': machine_type_full,
+        "machine_type": machine_type_full.split("/")[-1],
+        "machine_type_full": machine_type_full,
     }
 
 
