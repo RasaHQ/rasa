@@ -1456,11 +1456,6 @@ class Domain:
         else:
             return True
 
-    def _slot_definitions(self) -> Dict[Any, Dict[str, Any]]:
-        # Only persist slots defined by the user. We add the default slots on the
-        # fly when loading the domain.
-        return {slot.name: slot.persistence_info() for slot in self._user_slots}
-
     def as_dict(self) -> Dict[Text, Any]:
         """Return serialized `Domain`."""
         return self._data
@@ -1491,84 +1486,6 @@ class Domain:
                 ] = LiteralScalarString(response_text)
 
         return final_responses
-
-    def _transform_intents_for_file(
-        self,
-    ) -> List[Dict[Text, Dict[Text, Union[bool, List[Text]]]]]:
-        """Transform intent properties for displaying or writing into a domain file.
-
-        Internally, there is a property `used_entities` that lists all entities to be
-        used. In domain files, `use_entities` or `ignore_entities` is used instead to
-        list individual entities to ex- or include, because this is easier to read.
-
-        Returns:
-            The intent properties as they are used in domain files.
-        """
-        intent_properties = copy.deepcopy(self.intent_properties)
-        sorted_intent_properties = sorted(intent_properties.items())
-        intents_for_file = []
-
-        for intent_name, intent_props in sorted_intent_properties:
-            if (
-                intent_name in rasa.shared.core.constants.DEFAULT_INTENTS
-                and intent_name not in self.overridden_default_intents
-            ):
-                # Default intents should be not dumped with the domain
-                continue
-            # `use_entities` and `ignore_entities` in the domain file do not consider
-            # the role and group labels remove them from the list to make sure to not
-            # put them into the domain file
-            use_entities = set(
-                entity
-                for entity in intent_props[USED_ENTITIES_KEY]
-                if rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR not in entity
-            )
-            ignore_entities = set(self.entities) - use_entities
-            if len(use_entities) == len(self.entities):
-                intent_props[USE_ENTITIES_KEY] = True
-            elif len(use_entities) <= len(self.entities) / 2:
-                entities = list(use_entities)
-                entities.sort()
-                intent_props[USE_ENTITIES_KEY] = entities
-            else:
-                entities = list(ignore_entities)
-                entities.sort()
-                intent_props[IGNORE_ENTITIES_KEY] = entities
-            intent_props.pop(USED_ENTITIES_KEY)
-            intents_for_file.append({intent_name: intent_props})
-
-        return intents_for_file
-
-    def _transform_entities_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
-        """Transform entity properties for displaying or writing to a domain file.
-
-        Returns:
-            The entity properties as they are used in domain files.
-        """
-        entities_for_file: List[Union[Text, Dict[Text, Any]]] = []
-
-        for entity in self.entities:
-            if entity in self.roles and entity in self.groups:
-                entities_for_file.append(
-                    {
-                        entity: {
-                            ENTITY_GROUPS_KEY: self.groups[entity],
-                            ENTITY_ROLES_KEY: self.roles[entity],
-                        }
-                    }
-                )
-            elif entity in self.roles:
-                entities_for_file.append(
-                    {entity: {ENTITY_ROLES_KEY: self.roles[entity]}}
-                )
-            elif entity in self.groups:
-                entities_for_file.append(
-                    {entity: {ENTITY_GROUPS_KEY: self.groups[entity]}}
-                )
-            else:
-                entities_for_file.append(entity)
-
-        return entities_for_file
 
     def cleaned_domain(self) -> Dict[Text, Any]:
         """Fetch cleaned domain to display or write into a file.
@@ -1668,7 +1585,6 @@ class Domain:
 
         Excludes slots which aren't featurized.
         """
-
         return [slot.name for slot in self._user_slots if slot.influence_conversation]
 
     @property
@@ -1677,7 +1593,6 @@ class Domain:
 
         Includes user and form actions, but excludes those that are default actions.
         """
-
         return [
             action
             for action in self.user_actions_and_forms

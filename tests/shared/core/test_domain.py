@@ -1054,17 +1054,17 @@ def test_is_empty():
     assert Domain.empty().is_empty()
 
 
-def test_transform_intents_for_file_default():
+def test_load_intents_from_as_dict_representation():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_intents_for_file()
+    transformed = domain.as_dict().get(KEY_INTENTS)
 
     expected = [
         {"ask": {USE_ENTITIES_KEY: True}},
         {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
         {"goodbye": {USE_ENTITIES_KEY: []}},
         {"greet": {USE_ENTITIES_KEY: ["name"]}},
-        {"pure_intent": {USE_ENTITIES_KEY: True}},
+        "pure_intent",
         {"thank": {USE_ENTITIES_KEY: []}},
         {"why": {USE_ENTITIES_KEY: []}},
     ]
@@ -1072,19 +1072,19 @@ def test_transform_intents_for_file_default():
     assert transformed == expected
 
 
-def test_transform_intents_for_files_with_entities():
+def test_load_intents_with_entities_from_as_dict():
     domain_path = "data/test_domains/test_domain_from_directory_for_entities"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_intents_for_file()
+    transformed = domain.as_dict().get(KEY_INTENTS)
 
     expected = [
         {"certify": {USE_ENTITIES_KEY: True}},
         {"play": {USE_ENTITIES_KEY: ["ball", "chess"]}},
-        {"question": {USE_ENTITIES_KEY: True}},
+        "question",
         {"stow_away": {USE_ENTITIES_KEY: True}},
         {
             "support_encouraging": {
-                USE_ENTITIES_KEY: ["anti_freeze_blankets", "automatic_cupcakes"]
+                USE_ENTITIES_KEY: ["automatic_cupcakes", "anti_freeze_blankets"]
             }
         },
         {"vacationing": {"ignore_entities": ["tornadoes"]}},
@@ -1093,37 +1093,37 @@ def test_transform_intents_for_files_with_entities():
     assert transformed == expected
 
 
-def test_transform_intents_for_file_with_mapping():
+def test_load_intents_for_file_from_as_dict():
     domain_path = "data/test_domains/default_with_mapping.yml"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_intents_for_file()
+    transformed = domain.as_dict().get(KEY_INTENTS)
 
     expected = [
-        {"default": {"triggers": "utter_default", USE_ENTITIES_KEY: True}},
-        {"goodbye": {USE_ENTITIES_KEY: True}},
-        {"greet": {"triggers": "utter_greet", USE_ENTITIES_KEY: True}},
+        {"default": {"triggers": "utter_default"}},
+        "goodbye",
+        {"greet": {"triggers": "utter_greet"}},
     ]
 
     assert transformed == expected
 
 
-def test_transform_intents_for_file_with_entity_roles_groups():
+def test_load_intents_with_entity_roles_groups_from_as_dict():
     domain_path = "data/test_domains/travel_form.yml"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_intents_for_file()
+    transformed = domain.as_dict().get(KEY_INTENTS)
 
     expected = [
-        {"greet": {USE_ENTITIES_KEY: ["name"]}},
+        {"greet": {IGNORE_ENTITIES_KEY: ["GPE"]}},
         {"inform": {USE_ENTITIES_KEY: ["GPE"]}},
     ]
 
     assert transformed == expected
 
 
-def test_transform_entities_for_file_default():
+def test_load_entities_from_as_dict():
     domain_path = "data/test_domains/travel_form.yml"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_entities_for_file()
+    transformed = domain.as_dict().get(KEY_ENTITIES)
 
     expected = [{"GPE": {ENTITY_ROLES_KEY: ["destination", "origin"]}}, "name"]
 
