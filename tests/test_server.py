@@ -5,6 +5,7 @@ import time
 import urllib.parse
 import uuid
 import sys
+from argparse import Namespace
 from http import HTTPStatus
 from multiprocessing import Process, Manager
 from multiprocessing.managers import DictProxy
@@ -199,7 +200,7 @@ async def test_status_secured(rasa_secured_app: SanicASGITestClient):
 
 
 async def test_status_not_ready_agent(rasa_app: SanicASGITestClient):
-    rasa_app.sanic_app.agent = None
+    rasa_app.sanic_app.ctx.agent = None
     _, response = await rasa_app.get("/status")
     assert response.status == HTTPStatus.CONFLICT
 
@@ -938,7 +939,7 @@ async def test_evaluate_intent_with_model_server(
         agent_with_model_server = await load_agent(
             model_server=EndpointConfig(production_model_server_url)
         )
-        rasa_app.sanic_app.agent = agent_with_model_server
+        rasa_app.sanic_app.ctx.agent = agent_with_model_server
 
         _, response = await rasa_app.post(
             f"/model/test/intents?model={test_model_server_url}",
@@ -953,7 +954,7 @@ async def test_evaluate_intent_with_model_server(
         "response_selection_evaluation",
     }
 
-    production_model_server = rasa_app.sanic_app.agent.model_server
+    production_model_server = rasa_app.sanic_app.ctx.agent.model_server
     # Assert that the model server URL for the test didn't override the production
     # model server URL
     assert production_model_server.url == production_model_server_url
@@ -1203,7 +1204,7 @@ async def test_replace_events_empty_request_body(rasa_app: SanicASGITestClient):
 
 @freeze_time("2018-01-01")
 async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.sanic_app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     _, response = await rasa_app.get("/conversations/madeupid/tracker")
     content = response.json
     assert response.status == HTTPStatus.OK
@@ -1252,7 +1253,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
 
 @pytest.mark.parametrize("event", test_events)
 async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
-    model_id = rasa_app.sanic_app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1289,7 +1290,7 @@ async def test_pushing_event(rasa_app: SanicASGITestClient, event: Event):
 
 
 async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.sanic_app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     sender_id = str(uuid.uuid1())
     conversation = f"/conversations/{sender_id}"
 
@@ -1316,7 +1317,7 @@ async def test_pushing_event_with_existing_model_id(rasa_app: SanicASGITestClien
 
 
 async def test_push_multiple_events(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.sanic_app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     conversation_id = str(uuid.uuid1())
     conversation = f"/conversations/{conversation_id}"
 
@@ -1378,7 +1379,7 @@ async def test_pushing_event_while_executing_side_effects(
 
 
 async def test_post_conversation_id_with_slash(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.sanic_app.agent.model_id
+    model_id = rasa_app.sanic_app.ctx.agent.model_id
     conversation_id = str(uuid.uuid1())
     id_len = len(conversation_id) // 2
     conversation_id = conversation_id[:id_len] + "/+-_\\=" + conversation_id[id_len:]
@@ -1748,8 +1749,8 @@ def test_get_output_channel(
     input_channels: List[Text], output_channel_to_use: Text, expected_channel: Type
 ):
     request = MagicMock()
-    app = MagicMock()
-    app.input_channels = input_channels
+    app = MagicMock(ctx=Namespace())
+    app.ctx.input_channels = input_channels
     request.app = app
     request.args = {"output_channel": output_channel_to_use}
 
@@ -1768,8 +1769,8 @@ def test_get_output_channel(
 )
 def test_get_latest_output_channel(input_channels: List[Text], expected_channel: Type):
     request = MagicMock()
-    app = MagicMock()
-    app.input_channels = input_channels
+    app = MagicMock(ctx=Namespace())
+    app.ctx.input_channels = input_channels
     request.app = app
     request.args = {"output_channel": "latest"}
 
@@ -1786,6 +1787,7 @@ def test_app_when_app_has_no_input_channels():
     request = MagicMock()
 
     class NoInputChannels:
+        ctx = Namespace()
         pass
 
     request.app = NoInputChannels()
@@ -1959,9 +1961,9 @@ async def test_get_story(
 
     tracker_store.save(tracker)
 
-    monkeypatch.setattr(rasa_app.sanic_app.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
-        rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
     )
 
     url = f"/conversations/{conversation_id}/story?"
@@ -2003,7 +2005,7 @@ async def test_get_story_does_not_update_conversation_session(
         session_expiration_time=1 / 60, carry_over_slots=True
     )
 
-    monkeypatch.setattr(rasa_app.sanic_app.agent.processor, "domain", domain)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent.processor, "domain", domain)
 
     # conversation contains one session that has expired
     now = time.time()
@@ -2017,15 +2019,15 @@ async def test_get_story_does_not_update_conversation_session(
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
     # the conversation session has expired
-    assert rasa_app.sanic_app.agent.processor._has_session_expired(tracker)
+    assert rasa_app.sanic_app.ctx.agent.processor._has_session_expired(tracker)
 
     tracker_store = InMemoryTrackerStore(domain)
 
     tracker_store.save(tracker)
 
-    monkeypatch.setattr(rasa_app.sanic_app.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
     monkeypatch.setattr(
-        rasa_app.sanic_app.agent.processor, "tracker_store", tracker_store
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
     )
 
     _, response = await rasa_app.get(f"/conversations/{conversation_id}/story")
@@ -2108,7 +2110,7 @@ async def test_update_conversation_with_events(
     expected_events: List[Event],
 ):
     conversation_id = "some-conversation-ID"
-    agent = rasa_app.sanic_app.agent
+    agent = rasa_app.sanic_app.ctx.agent
     tracker_store = agent.tracker_store
     domain = agent.domain
     model_id = agent.model_id
@@ -2122,3 +2124,40 @@ async def test_update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append
     )
     assert list(fetched_tracker.events) == with_model_ids(expected_events, model_id)
+
+
+async def test_append_events_does_not_repeat_session_start(
+    rasa_app: SanicASGITestClient,
+):
+    session_start_events = [
+        {
+            "event": "action",
+            "timestamp": 1644577572.9639301,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "name": "action_session_start",
+            "policy": None,
+            "confidence": 1.0,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+        {
+            "event": "session_started",
+            "timestamp": 1644577572.963996,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+        },
+        {
+            "event": "action",
+            "timestamp": 1644577572.964009,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "name": "action_listen",
+            "policy": None,
+            "confidence": None,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+    ]
+    _, response = await rasa_app.post(
+        "/conversations/testid/tracker/events", json=session_start_events
+    )
+
+    assert response.json["events"] == session_start_events

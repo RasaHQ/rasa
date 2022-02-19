@@ -108,7 +108,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -225,12 +225,12 @@ jobs:
         - test-full-model-training
         - test-other-unit-tests
         - test-performance
-        os: [ ubuntu-latest, windows-latest ]
+        os: [ ubuntu-latest, windows-2019 ]
         python-version: [ 3.7, 3.8 ]
 
     steps:
     - name: Run DataDog Agent
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-2019')
       run: |
         docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
         docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
@@ -242,7 +242,7 @@ jobs:
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -295,7 +295,7 @@ jobs:
         make prepare-tests-ubuntu
 
     - name: Install Dependencies (Windows) 📦
-      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.os == 'windows-2019'
       # Restoring cache doesn't work properly on Windows due to symlinks.
       # We create symlinks for spacy models, that's why we need to clean them up
       # before caching the dependencies directory.
@@ -328,7 +328,7 @@ jobs:
       # see https://github.com/RasaHQ/rasa/issues/9734 for more information.
       # Once the memory issues have been addressed, all configurations should be run on
       # multiple threads
-      if: needs.changes.outputs.backend == 'true' && (matrix.os == 'windows-latest' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
+      if: needs.changes.outputs.backend == 'true' && (matrix.os == 'windows-2019' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
       env:
         JOBS: 1
         PYTHONIOENCODING: "utf-8"
@@ -340,7 +340,7 @@ jobs:
         poetry run coverage xml -o ${{ github.workspace }}/tests/${{ matrix.test }}-coverage.xml --include="rasa/*"
 
     - name: Test Code 🔍 (multithread)
-      if: needs.changes.outputs.backend == 'true' && !(matrix.os == 'windows-latest' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
+      if: needs.changes.outputs.backend == 'true' && !(matrix.os == 'windows-2019' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
@@ -374,7 +374,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
         with:
           python-version: 3.7
 
@@ -470,7 +470,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -805,7 +805,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up Python 3.7 🐍
-      uses: actions/setup-python@f38219332975fe8f9c04cca981d674bf22aea1d3
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: 3.7
 
@@ -859,3 +859,22 @@ jobs:
         pip install -U github3.py pep440-version-utils
         python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
+
+
+  send_slack_notification_for_release_on_failure:
+    name: Notify Slack & Publish Release Notes
+    runs-on: ubuntu-20.04
+    # run this job when the workflow is triggered by a tag push
+    if: always() && github.repository == 'RasaHQ/rasa' && github.ref_type == 'tag'
+    needs:
+      - deploy
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'deploy' is skipped (previous needed job failed) or failed
+        if: needs.deploy.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Rasa Open Source* version `${{ github.ref_name }}` could not be released 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
