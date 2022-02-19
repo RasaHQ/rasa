@@ -393,7 +393,6 @@ class ResponseSelector(DIETClassifier):
                 f"({self.retrieval_intent})" if self.retrieval_intent else ""
             )
             self._warn_about_transformer_and_hidden_layers_enabled(selector_name)
-            self.component_config[TRANSFORMER_SIZE] = DEFAULT_TRANSFORMER_SIZE
 
     def _check_config_parameters(self) -> None:
         """Checks that component configuration makes sense; corrects it where needed."""
