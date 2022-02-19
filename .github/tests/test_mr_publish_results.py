@@ -11,11 +11,14 @@ from mr_publish_results import (  # noqa: E402
     generate_json,
 )
 
+EXAMPLE_CONFIG = "Sparse + BERT + DIET(seq) + ResponseSelector(t2t)"
+EXAMPLE_DATASET = "financial-demo"
+
 ENV_VARS = {
     "IS_EXTERNAL": "false",
     "DATASET_REPOSITORY_BRANCH": "main",
-    "CONFIG": "Sparse + BERT + DIET(seq) + ResponseSelector(t2t)",
-    "DATASET": "financial-demo",
+    "CONFIG": EXAMPLE_CONFIG,
+    "DATASET": EXAMPLE_DATASET,
     "CONFIG_REPOSITORY_BRANCH": "main",
     "DATASET_COMMIT": "52a3ad3eb5292d56542687e23b06703431f15ead",
     "ACCELERATOR_TYPE": "CPU",
@@ -23,6 +26,7 @@ ENV_VARS = {
     "TRAIN_RUN_TIME": "4m4s",
     "TOTAL_RUN_TIME": "5m58s",
     "TYPE": "nlu",
+    "INDEX_REPETITION": "0",
 }
 
 
@@ -30,7 +34,20 @@ ENV_VARS = {
 def test_generate_json():
     f = Path(__file__).parent / "test_data" / "intent_report.json"
     result = generate_json(f, task="intent_classification", data={})
-    assert result["financial-demo"]["Sparse + BERT + DIET(seq) + ResponseSelector(t2t)"]
+    assert isinstance(result[EXAMPLE_DATASET][EXAMPLE_CONFIG], list)
+
+    actual = result[EXAMPLE_DATASET][EXAMPLE_CONFIG][0]["intent_classification"]
+    expected = {
+        "accuracy": 1.0,
+        "weighted avg": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1-score": 1.0,
+            "support": 28,
+        },
+        "macro avg": {"precision": 1.0, "recall": 1.0, "f1-score": 1.0, "support": 28},
+    }
+    assert expected == actual
 
 
 def test_transform_to_seconds():

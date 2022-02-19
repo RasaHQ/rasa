@@ -80,7 +80,8 @@ if TYPE_CHECKING:
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
     ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()], SanicResponse  # noqa: F821
+        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        SanicResponse,
     ]
 
 
@@ -146,7 +147,7 @@ def ensure_loaded_agent(
         @wraps(f)
         def decorated(*args: Any, **kwargs: Any) -> Any:
             # noinspection PyUnresolvedReferences
-            if not app.agent or not app.agent.is_ready():
+            if not app.ctx.agent or not app.ctx.agent.is_ready():
                 raise ErrorResponse(
                     HTTPStatus.CONFLICT,
                     "Conflict",
@@ -169,7 +170,7 @@ def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> "SanicResponse":
             conversation_id = kwargs["conversation_id"]
-            if request.app.agent.tracker_store.exists(conversation_id):
+            if request.app.ctx.agent.tracker_store.exists(conversation_id):
                 return f(request, *args, **kwargs)
             else:
                 raise ErrorResponse(
@@ -638,12 +639,21 @@ def create_app(
     endpoints: Optional[AvailableEndpoints] = None,
 ) -> Sanic:
     """Class representing a Rasa HTTP server."""
-    app = Sanic(__name__)
+    app = Sanic("rasa_server")
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
 
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:
+        # `sanic-jwt` depends on having an available event loop when making the call to
+        # `Initialize`. If there is none, the server startup will fail with
+        # `There is no current event loop in thread 'MainThread'`.
+        try:
+            _ = asyncio.get_running_loop()
+        except RuntimeError:
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+
         # since we only want to check signatures, we don't actually care
         # about the JWT method and set the passed secret as either symmetric
         # or asymmetric key. jwt lib will choose the right one based on method
@@ -656,10 +666,10 @@ def create_app(
             user_id="username",
         )
 
-    app.agent = agent
+    app.ctx.agent = agent
     # Initialize shared object of type unsigned int for tracking
     # the number of active training processes
-    app.active_training_processes = multiprocessing.Value("I", 0)
+    app.ctx.active_training_processes = multiprocessing.Value("I", 0)
 
     @app.exception(ErrorResponse)
     async def handle_error_response(
@@ -687,9 +697,9 @@ def create_app(
         """Respond with the model name and the fingerprint of that model."""
         return response.json(
             {
-                "model_file": app.agent.processor.model_filename,
-                "model_id": app.agent.model_id,
-                "num_active_training_jobs": app.active_training_processes.value,
+                "model_file": app.ctx.agent.processor.model_filename,
+                "model_id": app.ctx.agent.model_id,
+                "num_active_training_jobs": app.ctx.active_training_processes.value,
             }
         )
 
@@ -701,7 +711,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = await app.agent.processor.fetch_tracker_with_initial_session(
+        tracker = await app.ctx.agent.processor.fetch_tracker_with_initial_session(
             conversation_id
         )
 
@@ -729,12 +739,12 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            async with app.agent.lock_store.lock(conversation_id):
-                processor = app.agent.processor
+            async with app.ctx.agent.lock_store.lock(conversation_id):
+                processor = app.ctx.agent.processor
                 events = _get_events_from_request_body(request)
 
                 tracker = await update_conversation_with_events(
-                    conversation_id, processor, app.agent.domain, events
+                    conversation_id, processor, app.ctx.agent.domain, events
                 )
 
                 output_channel = _get_output_channel(request, tracker)
@@ -746,7 +756,7 @@ def create_app(
                         events, tracker, output_channel
                     )
 
-                app.agent.tracker_store.save(tracker)
+                app.ctx.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -790,13 +800,13 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            async with app.agent.lock_store.lock(conversation_id):
+            async with app.ctx.agent.lock_store.lock(conversation_id):
                 tracker = DialogueStateTracker.from_dict(
-                    conversation_id, request.json, app.agent.domain.slots
+                    conversation_id, request.json, app.ctx.agent.domain.slots
                 )
 
                 # will override an existing tracker with the same id!
-                app.agent.tracker_store.save(tracker)
+                app.ctx.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -820,7 +830,7 @@ def create_app(
 
         try:
             stories = get_test_stories(
-                app.agent.processor,
+                app.ctx.agent.processor,
                 conversation_id,
                 until_time,
                 fetch_all_sessions=fetch_all_sessions,
@@ -862,15 +872,15 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            async with app.agent.lock_store.lock(conversation_id):
+            async with app.ctx.agent.lock_store.lock(conversation_id):
                 tracker = await (
-                    app.agent.processor.fetch_tracker_and_update_session(
+                    app.ctx.agent.processor.fetch_tracker_and_update_session(
                         conversation_id
                     )
                 )
 
                 output_channel = _get_output_channel(request, tracker)
-                await app.agent.execute_action(
+                await app.ctx.agent.execute_action(
                     conversation_id,
                     action_to_execute,
                     output_channel,
@@ -915,20 +925,20 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
-            async with app.agent.lock_store.lock(conversation_id):
+            async with app.ctx.agent.lock_store.lock(conversation_id):
                 tracker = await (
-                    app.agent.processor.fetch_tracker_and_update_session(
+                    app.ctx.agent.processor.fetch_tracker_and_update_session(
                         conversation_id
                     )
                 )
                 output_channel = _get_output_channel(request, tracker)
-                if intent_to_trigger not in app.agent.domain.intents:
+                if intent_to_trigger not in app.ctx.agent.domain.intents:
                     raise ErrorResponse(
                         HTTPStatus.NOT_FOUND,
                         "NotFound",
                         f"The intent {trigger_intent} does not exist in the domain.",
                     )
-                await app.agent.trigger_intent(
+                await app.ctx.agent.trigger_intent(
                     intent_name=intent_to_trigger,
                     entities=entities,
                     output_channel=output_channel,
@@ -960,7 +970,7 @@ def create_app(
     async def predict(request: Request, conversation_id: Text) -> HTTPResponse:
         try:
             # Fetches the appropriate bot response in a json format
-            responses = await app.agent.predict_next_for_sender_id(conversation_id)
+            responses = await app.ctx.agent.predict_next_for_sender_id(conversation_id)
             responses["scores"] = sorted(
                 responses["scores"], key=lambda k: (-k["score"], k["action"])
             )
@@ -1004,15 +1014,15 @@ def create_app(
         user_message = UserMessage(message, None, conversation_id, parse_data)
 
         try:
-            async with app.agent.lock_store.lock(conversation_id):
+            async with app.ctx.agent.lock_store.lock(conversation_id):
                 # cf. processor.handle_message (ignoring prediction loop run)
-                tracker = await app.agent.processor.log_message(
+                tracker = await app.ctx.agent.processor.log_message(
                     user_message, should_save_tracker=False
                 )
-                tracker = await app.agent.processor.run_action_extract_slots(
+                tracker = await app.ctx.agent.processor.run_action_extract_slots(
                     user_message.output_channel, tracker
                 )
-                app.agent.processor.save_tracker(tracker)
+                app.ctx.agent.processor.save_tracker(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -1038,8 +1048,8 @@ def create_app(
         training_payload = _training_payload_from_yaml(request, temporary_directory)
 
         try:
-            with app.active_training_processes.get_lock():
-                app.active_training_processes.value += 1
+            with app.ctx.active_training_processes.get_lock():
+                app.ctx.active_training_processes.value += 1
 
             from rasa.model_training import train
 
@@ -1076,8 +1086,8 @@ def create_app(
                 f"An unexpected error occurred during training. Error: {e}",
             )
         finally:
-            with app.active_training_processes.get_lock():
-                app.active_training_processes.value -= 1
+            with app.ctx.active_training_processes.get_lock():
+                app.ctx.active_training_processes.value -= 1
 
     @app.post("/model/test/stories")
     @requires_auth(app, auth_token)
@@ -1099,7 +1109,7 @@ def create_app(
 
         try:
             evaluation = await test(
-                test_data, app.agent, e2e=e2e, disable_plotting=True
+                test_data, app.ctx.agent, e2e=e2e, disable_plotting=True
             )
             return response.json(evaluation)
         except Exception as e:
@@ -1168,10 +1178,10 @@ def create_app(
     ) -> Dict:
         logger.info("Starting model evaluation using test set.")
 
-        eval_agent = app.agent
+        eval_agent = app.ctx.agent
 
         if model_path:
-            model_server = app.agent.model_server
+            model_server = app.ctx.agent.model_server
             if model_server is not None:
                 model_server = model_server.copy()
                 model_server.url = model_path
@@ -1181,7 +1191,7 @@ def create_app(
             eval_agent = await _load_agent(
                 model_path=model_path,
                 model_server=model_server,
-                remote_storage=app.agent.remote_storage,
+                remote_storage=app.ctx.agent.remote_storage,
             )
 
         data_path = os.path.abspath(test_data_file)
@@ -1248,7 +1258,7 @@ def create_app(
         request_params = request.json
         try:
             tracker = DialogueStateTracker.from_dict(
-                DEFAULT_SENDER_ID, request_params, app.agent.domain.slots
+                DEFAULT_SENDER_ID, request_params, app.ctx.agent.domain.slots
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -1260,7 +1270,7 @@ def create_app(
             )
 
         try:
-            result = app.agent.predict_next_with_tracker(tracker, verbosity)
+            result = app.ctx.agent.predict_next_with_tracker(tracker, verbosity)
 
             return response.json(result)
         except Exception as e:
@@ -1286,7 +1296,7 @@ def create_app(
         try:
             data = emulator.normalise_request_json(request.json)
             try:
-                parsed_data = await app.agent.parse_message(data.get("text"))
+                parsed_data = await app.ctx.agent.parse_message(data.get("text"))
             except Exception as e:
                 logger.debug(traceback.format_exc())
                 raise ErrorResponse(
@@ -1333,8 +1343,8 @@ def create_app(
             remote_storage=remote_storage,
             endpoints=endpoints,
         )
-        new_agent.lock_store = app.agent.lock_store
-        app.agent = new_agent
+        new_agent.lock_store = app.ctx.agent.lock_store
+        app.ctx.agent = new_agent
 
         logger.debug(f"Successfully loaded model '{model_path}'.")
         return response.json(None, status=HTTPStatus.NO_CONTENT)
@@ -1342,9 +1352,9 @@ def create_app(
     @app.delete("/model")
     @requires_auth(app, auth_token)
     async def unload_model(request: Request) -> HTTPResponse:
-        model_file = app.agent.model_name
+        model_file = app.ctx.agent.model_name
 
-        app.agent = Agent(lock_store=app.agent.lock_store)
+        app.ctx.agent = Agent(lock_store=app.ctx.agent.lock_store)
 
         logger.debug(f"Successfully unloaded model '{model_file}'.")
         return response.json(None, status=HTTPStatus.NO_CONTENT)
@@ -1356,10 +1366,10 @@ def create_app(
         """Get current domain in yaml or json format."""
         accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
         if accepts.endswith("json"):
-            domain = app.agent.domain.as_dict()
+            domain = app.ctx.agent.domain.as_dict()
             return response.json(domain)
         elif accepts.endswith("yml") or accepts.endswith("yaml"):
-            domain_yaml = app.agent.domain.as_yaml()
+            domain_yaml = app.ctx.agent.domain.as_yaml()
             return response.text(
                 domain_yaml, status=HTTPStatus.OK, content_type=YAML_CONTENT_TYPE
             )
@@ -1400,7 +1410,7 @@ def _get_output_channel(
         requested_output_channel = tracker.get_latest_input_channel()
 
     # Interactive training does not set `input_channels`, hence we have to be cautious
-    registered_input_channels = getattr(request.app, "input_channels", None) or []
+    registered_input_channels = getattr(request.app.ctx, "input_channels", None) or []
     matching_channels = [
         channel
         for channel in registered_input_channels
