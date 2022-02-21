@@ -21,7 +21,9 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
+    DOCS_BASE_URL,
 )
+from rasa.shared.utils.schemas.project import PROJECT_SCHEMA
 
 logger = logging.getLogger(__name__)
 
@@ -287,3 +289,27 @@ def validate_training_data_format_version(
         docs=DOCS_URL_TRAINING_DATA,
     )
     return False
+
+
+def validate_project_file(project_json: Dict[Text, Any]) -> bool:
+    """Validate project file to ensure all key-value pairs were correctly customised.
+
+    Args:
+        project_json: the data to validate
+
+    Raises:
+        SchemaValidationError if validation fails.
+    """
+    from jsonschema import validate
+    from jsonschema import ValidationError
+
+    try:
+        validate(project_json, PROJECT_SCHEMA)
+        return True
+    except ValidationError as e:
+        e.message += (
+            f". Failed to validate project.yml, make sure your file "
+            f"is valid. For more information about the format visit "
+            f"{DOCS_BASE_URL}."
+        )
+        raise SchemaValidationError.create_from(e) from e
