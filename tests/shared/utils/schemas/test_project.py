@@ -97,3 +97,14 @@ def test_invalid_project_with_not_allowed_value_types(
         rasa.shared.utils.validation.validate_project_file(invalid_project_json)
 
     assert "Failed to validate project.yml, make sure your file is valid." in str(e)
+
+
+def test_valid_project_with_custom_importers(valid_project_json: Dict[Text, Any]):
+    valid_project_with_importers = copy.deepcopy(valid_project_json)
+    valid_project_with_importers["importers"] = [
+        {"name": "module.CustomImporter", "parameter1": "value"}
+    ]
+    assert (
+        rasa.shared.utils.validation.validate_project_file(valid_project_with_importers)
+        is True
+    )
