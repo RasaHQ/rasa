@@ -149,6 +149,7 @@ class QueueOutputChannel(CollectingOutputChannel):
 
     @classmethod
     def name(cls) -> Text:
+        """Name of QueueOutputChannel."""
         return "queue"
 
     # noinspection PyMissingConstructor

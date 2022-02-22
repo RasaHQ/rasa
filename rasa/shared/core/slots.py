@@ -284,6 +284,7 @@ class ListSlot(Slot):
 
     @property
     def value(self) -> Any:
+        """Gets the slot's value."""
         return super().value
 
     @value.setter

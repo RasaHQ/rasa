@@ -324,7 +324,6 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
 
 def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> int:
     """Calculate number of actions that two conversations have in common."""
-
     num_common_actions = 0
     t_cleaned = cast(
         List[Union[ActionExecuted, UserUttered]],

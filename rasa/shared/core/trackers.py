@@ -738,7 +738,6 @@ class DialogueStateTracker:
         Returns:
             event which matched the query or `None` if no event matched.
         """
-
         to_exclude = action_names_to_exclude or []
 
         def filter_function(e: Event) -> bool:
