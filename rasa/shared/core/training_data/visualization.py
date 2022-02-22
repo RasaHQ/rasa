@@ -395,19 +395,33 @@ def _add_message_edge(
 ) -> None:
     """Create an edge based on the user message."""
 
-    if message:
-        message_key = message.get("intent", {}).get("name", None)
+    if message and message.get("intent", {}).get("name", None):
+        # get the entities as \n separated values
+        ent_list_of_dicts = message.get("entities")
+        if ent_names := [
+            v for e in ent_list_of_dicts for k, v in e.items() if k == "entity"
+        ]:
+            newline = ",\n"
+            ent_str = f"{newline}({newline.join(ent_names)})"
+        else:
+            ent_str = ""
+
+        message_key = message.get("intent", {}).get("name", None) + ent_str
+        message_label = message_key  # message.get("text", None)
+    elif message and message.get("text"):
+
         message_label = message.get("text", None)
+        message_key = message.label
     else:
         message_key = None
         message_label = None
 
     _add_edge(
-        graph,
-        current_node,
-        next_node_idx,
-        message_key,
-        message_label,
+        graph=graph,
+        u=current_node,
+        v=next_node_idx,
+        key=message_key,
+        label=message_label,
         **{"class": "active" if is_current else ""},
     )
 
@@ -457,7 +471,7 @@ async def visualize_neighborhood(
                 next_node_idx += 1
                 graph.add_node(
                     next_node_idx,
-                    label=el.action_name,
+                    label=el.action_name or "Oops. Missing Action here",
                     fontsize=fontsize,
                     **{"class": "active" if is_current else ""},
                 )
@@ -509,7 +523,7 @@ async def visualize_neighborhood(
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
     await _replace_edge_labels_with_nodes(
-        graph, next_node_idx, interpreter, nlu_training_data
+        graph, next_node_idx, interpreter, None  # nlu_training_data
     )
 
     _remove_auxiliary_nodes(graph, special_node_idx)
