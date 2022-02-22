@@ -33,6 +33,7 @@ from rasa.shared.data import TrainingType
 
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import InvalidConfigException
@@ -963,7 +964,7 @@ def test_invalid_graph_schema(
 ):
     config = textwrap.dedent(
         """
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
 
     pipeline:
@@ -1003,7 +1004,7 @@ def test_fingerprint_changes_if_module_changes(
 
     config = textwrap.dedent(
         f"""
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     recipe: "default.v1"
 
     policies:

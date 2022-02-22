@@ -3,6 +3,8 @@ import shutil
 from pathlib import Path
 from typing import List, Dict, Text, Any, Tuple, Optional, Union
 
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
 from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
@@ -13,6 +15,7 @@ from rasa.shared.core.constants import (
     MAPPING_TYPE,
     SLOT_MAPPINGS,
 )
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import KEY_ENTITIES, KEY_SLOTS, KEY_FORMS, Domain
 from rasa.shared.exceptions import RasaException
 
@@ -172,7 +175,9 @@ def _assemble_new_domain(
         elif key == KEY_FORMS:
             new_domain.update({key: new_forms})
         elif key == "version":
-            new_domain.update({key: '"3.0"'})
+            new_domain.update(
+                {key: DoubleQuotedScalarString(LATEST_TRAINING_DATA_FORMAT_VERSION)}
+            )
         else:
             new_domain.update({key: value})
     return new_domain
@@ -226,7 +231,13 @@ def _migrate_domain_files(
 
         if KEY_SLOTS not in original_content and KEY_FORMS not in original_content:
             if isinstance(original_content, dict):
-                original_content.update({"version": '"3.0"'})
+                original_content.update(
+                    {
+                        "version": DoubleQuotedScalarString(
+                            LATEST_TRAINING_DATA_FORMAT_VERSION
+                        )
+                    }
+                )
 
             # this is done so that the other domain files can be moved
             # in the migrated directory
