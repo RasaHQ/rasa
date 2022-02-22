@@ -14,6 +14,7 @@ from rasa.core.featurizers.single_state_featurizer import (
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
@@ -138,8 +139,8 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     ):
         stories = tmp_path / "stories.yml"
         stories.write_text(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             stories:
             - story: test path
               steps:
