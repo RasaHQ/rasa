@@ -12,6 +12,7 @@ from typing import (
     Iterator,
     Generator,
     Type,
+    TypeVar,
     List,
     Deque,
     Iterable,
@@ -64,7 +65,7 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict
+    from typing_extensions import TypedDict, TypeAlias
 
     from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
@@ -81,6 +82,8 @@ if TYPE_CHECKING:
         },
         total=False,
     )
+
+    EventType: TypeAlias = TypeVar("EventType", Event)
 
 
 logger = logging.getLogger(__name__)
@@ -717,11 +720,11 @@ class DialogueStateTracker:
 
     def get_last_event_for(
         self,
-        event_type: Union[Type[Event], Tuple[Type, ...]],
+        event_type: Union[Type[EventType], Tuple[Type[EventType], ...]],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
         event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
-    ) -> Optional[Event]:
+    ) -> Optional[EventType]:
         """Gets the last event of a given type which was actually applied.
 
         Args:
