@@ -50,7 +50,7 @@
     "clsx": "^1.1.1",
     "core-js": "^3.15.1",
     "fibers": "^5.0.0",
-    "fs-extra": "^9.0.1",
+    "fs-extra": "^10.0.0",
     "globby": "^11.0.4",
     "mobx": "^4.3.1",
     "postcss-preset-env": "^6.7.0",
