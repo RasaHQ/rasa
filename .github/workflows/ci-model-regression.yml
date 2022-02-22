@@ -394,6 +394,8 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
+          set -x
+
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -636,6 +638,8 @@ jobs:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
         run: |-
+          set -x
+
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
