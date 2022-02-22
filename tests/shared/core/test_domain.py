@@ -327,9 +327,7 @@ def test_domain_to_dict():
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
         KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
-        "entities": [],
         "forms": {"some_form": {"required_slots": []}},
-        "intents": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
         "session_config": {
             "carry_over_slots_to_new_session": True,
@@ -347,7 +345,7 @@ def test_domain_to_dict():
 
 def test_domain_to_yaml():
     test_yaml = f"""
-version: '3.0'
+version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
 actions:
 - action_save_world
 config:
@@ -375,8 +373,22 @@ slots: {{}}
         in record[0].message.args[0]
     )
 
-    expected = rasa.shared.utils.io.read_yaml(test_yaml)
+    expected_yaml = f"""
+version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+actions:
+- action_save_world
+config:
+  store_entities_as_slots: true
+responses:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
+"""
+
     actual = rasa.shared.utils.io.read_yaml(actual_yaml)
+    expected = rasa.shared.utils.io.read_yaml(expected_yaml)
     assert actual == expected
 
 
@@ -1130,36 +1142,6 @@ def test_load_entities_from_as_dict():
     assert transformed == expected
 
 
-def test_clean_domain_for_file():
-    domain_path = "data/test_domains/default_unfeaturized_entities.yml"
-    cleaned = Domain.load(domain_path).cleaned_domain()
-
-    expected = {
-        "entities": ["name", "unrelated_recognized_entity", "other"],
-        "intents": [
-            {"ask": {USE_ENTITIES_KEY: True}},
-            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
-            {"goodbye": {USE_ENTITIES_KEY: []}},
-            {"greet": {USE_ENTITIES_KEY: ["name"]}},
-            "pure_intent",
-            {"thank": {USE_ENTITIES_KEY: []}},
-            {"why": {USE_ENTITIES_KEY: []}},
-        ],
-        "responses": {
-            "utter_default": [{"text": "default message"}],
-            "utter_goodbye": [{"text": "goodbye :("}],
-            "utter_greet": [{"text": "hey there!"}],
-        },
-        "session_config": {
-            "carry_over_slots_to_new_session": True,
-            "session_expiration_time": DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
-        },
-        "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
-    }
-
-    assert cleaned == expected
-
-
 def test_not_add_knowledge_base_slots():
     test_domain = Domain.empty()
 
@@ -1640,7 +1622,7 @@ slots:
 """
 
     domain = Domain.from_yaml(test_yaml)
-    assert domain.as_yaml(clean_before_dump=True) == test_yaml
+    assert domain.as_yaml() == test_yaml
 
 
 def test_slot_order_is_preserved_when_merging():
@@ -1687,7 +1669,7 @@ session_config:
     domain_2 = Domain.from_yaml(test_yaml_2)
     domain_merged = domain_1.merge(domain_2)
 
-    assert domain_merged.as_yaml(clean_before_dump=True) == test_yaml_merged
+    assert domain_merged.as_yaml() == test_yaml_merged
 
 
 def test_responses_text_multiline_is_preserved():
@@ -1708,7 +1690,7 @@ responses:
 """
 
     domain = Domain.from_yaml(test_yaml)
-    assert domain.as_yaml(clean_before_dump=True) == test_yaml
+    assert domain.as_yaml() == test_yaml
 
 
 def test_is_valid_domain_doesnt_raise_with_valid_domain(tmpdir: Path):

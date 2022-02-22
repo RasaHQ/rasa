@@ -146,7 +146,7 @@ class Domain:
     @classmethod
     def empty(cls) -> "Domain":
         """Returns empty Domain."""
-        return cls([], [], [], {}, [], {}, {})
+        return Domain.from_dict({})
 
     @classmethod
     def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
@@ -238,7 +238,7 @@ class Domain:
             responses=responses,
             action_names=data.get(KEY_ACTIONS, []),
             forms=data.get(KEY_FORMS, {}),
-            data=data,
+            data=Domain._cleaned_data(data),
             action_texts=data.get(KEY_E2E_ACTIONS, []),
             session_config=session_config,
             **additional_arguments,
@@ -316,7 +316,7 @@ class Domain:
             return domain_dict
 
         if override:
-            config = domain_dict["config"]
+            config = domain_dict.get("config", {})
             for key, val in config.items():
                 combined["config"][key] = val
 
@@ -373,10 +373,11 @@ class Domain:
         data: Dict,
         store_entities_as_slots: bool,
         session_config: SessionConfig,
-        action_texts: Optional[List[Text]],
     ) -> Dict:
         data = self._add_default_keys_to_domain_dict(
-            data, store_entities_as_slots, session_config, action_texts
+            data,
+            store_entities_as_slots,
+            session_config,
         )
         data = self._sanitize_intents_in_domain_dict(data)
 
@@ -387,11 +388,10 @@ class Domain:
         data: Dict,
         store_entities_as_slots: bool,
         session_config: SessionConfig,
-        action_texts: Optional[List[Text]],
     ) -> Dict:
-        # add the config, session_config and e2e_actions defaults
+        # add the config, session_config and training data version defaults
         # if not included in the original domain dict
-        if "config" not in data:
+        if "config" not in data and not store_entities_as_slots:
             data.update(
                 {"config": {"store_entities_as_slots": store_entities_as_slots}}
             )
@@ -420,22 +420,30 @@ class Domain:
         return data
 
     @staticmethod
-    def _sanitize_intents_in_domain_dict(data: Dict) -> Dict:
-        for intent in data.get(KEY_INTENTS, []):
+    def _sanitize_intents_in_domain_dict(data: Dict[Text, Any]) -> Dict[Text, Any]:
+        def reset_flags(item: Dict) -> None:
+            for intent_property in item.values():
+                try:
+                    if not intent_property[
+                        USE_ENTITIES_KEY
+                    ]:  # this covers False, None and []
+                        intent_property[USE_ENTITIES_KEY] = []
+                    if not intent_property[IGNORE_ENTITIES_KEY]:
+                        intent_property[IGNORE_ENTITIES_KEY] = []
+                except KeyError:
+                    break
+
+        if not data.get(KEY_INTENTS):
+            return data
+
+        for intent in data.get(KEY_INTENTS):
             if isinstance(intent, dict):
-                for intent_name, intent_property in intent.items():
-                    try:
-                        if not intent_property[
-                            USE_ENTITIES_KEY
-                        ]:  # this covers False, None and []
-                            intent_property[USE_ENTITIES_KEY] = []
-                            break
-                    except KeyError:
-                        break
+                reset_flags(intent)
 
         data[KEY_INTENTS] = Domain._sort_intent_names_alphabetical_order(
-            intents=data.get(KEY_INTENTS, [])
+            intents=data.get(KEY_INTENTS)
         )
+
         return data
 
     @staticmethod
@@ -732,12 +740,13 @@ class Domain:
 
         self.responses = responses
 
-        action_texts = action_texts if action_texts is not None else []
-        self.action_texts = action_texts
+        self.action_texts = action_texts if action_texts is not None else []
 
         data_copy = copy.deepcopy(data)
         self._data = self._preprocess_domain_dict(
-            data_copy, store_entities_as_slots, session_config, action_texts
+            data_copy,
+            store_entities_as_slots,
+            session_config,
         )
 
         self.session_config = session_config
@@ -1462,45 +1471,28 @@ class Domain:
 
         return final_responses
 
-    def cleaned_domain(self) -> Dict[Text, Any]:
-        """Fetch cleaned domain to display or write into a file.
+    @staticmethod
+    def _cleaned_data(data: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Remove empty and redundant keys from merged domain dict.
 
         Returns:
             A cleaned dictionary version of the domain.
         """
-        domain_data = self.as_dict()
-        # remove e2e actions from domain before we display it
-        domain_data.pop(KEY_E2E_ACTIONS, None)
-
-        if domain_data["config"]["store_entities_as_slots"]:
-            del domain_data["config"]["store_entities_as_slots"]
-
-        # clean empty keys
         return {
             key: val
-            for key, val in domain_data.items()
+            for key, val in data.items()
             if val != {} and val != [] and val is not None
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
         """Write domain to a file."""
-        as_yaml = self.as_yaml(clean_before_dump=False)
+        as_yaml = self.as_yaml()
         rasa.shared.utils.io.write_text_file(as_yaml, filename)
 
-    def persist_clean(self, filename: Union[Text, Path]) -> None:
-        """Write cleaned domain to a file."""
-        as_yaml = self.as_yaml(clean_before_dump=True)
-        rasa.shared.utils.io.write_text_file(as_yaml, filename)
-
-    def as_yaml(self, clean_before_dump: bool = False) -> Text:
+    def as_yaml(self) -> Text:
         """Dump the `Domain` object as a YAML string.
 
         This function preserves the orders of the keys in the domain.
-
-        Args:
-            clean_before_dump: When set to `True`, this method returns
-                               a version of the domain without internal
-                               information. Defaults to `False`.
 
         Returns:
             A string in YAML format representing the domain.
@@ -1513,10 +1505,9 @@ class Domain:
                 LATEST_TRAINING_DATA_FORMAT_VERSION
             )
         }
-        if clean_before_dump:
-            domain_data.update(self.cleaned_domain())
-        else:
-            domain_data.update(self.as_dict())
+
+        domain_data.update(self.as_dict())
+
         if domain_data.get(KEY_RESPONSES, {}):
             domain_data[KEY_RESPONSES] = self.get_responses_with_multilines(
                 domain_data[KEY_RESPONSES]
