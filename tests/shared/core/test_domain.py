@@ -686,6 +686,7 @@ def test_domain_from_multiple_files():
         "are_you_there",
         "back",
         "bot_challenge",
+        "chitchat",
         "cure_network",
         "delay",
         "deny",
