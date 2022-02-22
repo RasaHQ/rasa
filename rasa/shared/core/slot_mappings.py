@@ -54,7 +54,7 @@ class SlotMapping:
                 f"{DOCS_URL_SLOTS} for more information."
             )
 
-        validations = {
+        validations: Dict[SlotMappingType, List[Text]] = {
             SlotMappingType.FROM_ENTITY: ["entity"],
             SlotMappingType.FROM_INTENT: ["value"],
             SlotMappingType.FROM_TRIGGER_INTENT: ["value"],
