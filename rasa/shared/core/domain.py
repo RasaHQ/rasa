@@ -1508,6 +1508,7 @@ class Domain:
             clean_before_dump: When set to `True`, this method returns
                                a version of the domain without internal
                                information. Defaults to `False`.
+
         Returns:
             A string in YAML format representing the domain.
         """

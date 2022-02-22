@@ -50,7 +50,13 @@ from rasa.shared.core.constants import (
 from rasa.core import run, utils
 import rasa.core.train
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    Domain,
+    KEY_INTENTS,
+    KEY_ENTITIES,
+    KEY_RESPONSES,
+    KEY_ACTIONS,
+)
 import rasa.shared.core.events
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -66,10 +72,6 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     UTTER_PREFIX,
     DOCS_URL_POLICIES,
-    KEY_INTENTS,
-    KEY_ENTITIES,
-    KEY_RESPONSES,
-    KEY_ACTIONS,
 )
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
