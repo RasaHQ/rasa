@@ -83,7 +83,7 @@ if TYPE_CHECKING:
         total=False,
     )
 
-    EventType: TypeAlias = TypeVar("EventType", Event)
+    EventTypeAlias: TypeAlias = TypeVar("EventTypeAlias", Event)
 
 
 logger = logging.getLogger(__name__)
@@ -720,11 +720,11 @@ class DialogueStateTracker:
 
     def get_last_event_for(
         self,
-        event_type: Union[Type[EventType], Tuple[Type[EventType], ...]],
+        event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"], ...]],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
         event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
-    ) -> Optional[EventType]:
+    ) -> Optional["EventTypeAlias"]:
         """Gets the last event of a given type which was actually applied.
 
         Args:
