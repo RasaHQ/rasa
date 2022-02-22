@@ -62,7 +62,7 @@ class SlotMapping:
             SlotMappingType.CUSTOM: [],
         }
 
-        required_keys = validations.get(mapping_type)
+        required_keys = validations[mapping_type]
         for required_key in required_keys:
             if mapping.get(required_key) is None:
                 raise InvalidDomain(

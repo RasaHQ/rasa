@@ -282,7 +282,11 @@ class ListSlot(Slot):
             # we couldn't convert the value to a list - using default value
             return [0.0]
 
-    @Slot.value.setter
+    @property
+    def value(self) -> Any:
+        return super().value
+
+    @value.setter
     def value(self, value: Any) -> None:
         """Sets the slot's value."""
         if value and not isinstance(value, list):
@@ -290,7 +294,7 @@ class ListSlot(Slot):
             value = [value]
 
         # Call property setter of superclass
-        super(ListSlot, self.__class__).value.fset(self, value)
+        super().value.fset(self, value)
 
 
 class CategoricalSlot(Slot):

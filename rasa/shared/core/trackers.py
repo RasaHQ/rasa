@@ -843,6 +843,9 @@ class DialogueStateTracker:
 
         Returns: name of the previously executed action or text of e2e action
         """
+        if self.latest_action is None:
+            return None
+
         return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
             ACTION_TEXT
         )

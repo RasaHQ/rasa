@@ -54,8 +54,10 @@ class YamlSyntaxException(YamlException):
             exception_text = "Failed to read YAML."
 
         if self.underlying_yaml_exception:
-            self.underlying_yaml_exception.warn = None
-            self.underlying_yaml_exception.note = None
+            if hasattr(self.underlying_yaml_exception, "warn"):
+                self.underlying_yaml_exception.warn = None
+            if hasattr(self.underlying_yaml_exception, "note"):
+                self.underlying_yaml_exception.note = None
             exception_text += f" {self.underlying_yaml_exception}"
 
         if self.filename:
