@@ -1,7 +1,7 @@
 from collections import defaultdict, deque
 
 import random
-from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
+from typing import Any, Text, List, Dict, Optional, Set, TYPE_CHECKING, Union, cast
 
 import rasa.shared.utils.io
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
@@ -326,8 +326,14 @@ def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> in
     """Calculate number of actions that two conversations have in common."""
 
     num_common_actions = 0
-    t_cleaned = [e for e in this if e.type_name in {"user", "action"}]
-    o_cleaned = [e for e in other if e.type_name in {"user", "action"}]
+    t_cleaned = cast(
+        List[Union[ActionExecuted, UserUttered]],
+        [e for e in this if e.type_name in {"user", "action"}],
+    )
+    o_cleaned = cast(
+        List[Union[ActionExecuted, UserUttered]],
+        [e for e in other if e.type_name in {"user", "action"}],
+    )
 
     for i, e in enumerate(t_cleaned):
         if i == len(o_cleaned):
@@ -462,9 +468,10 @@ def visualize_neighborhood(
         # this can either be an ellipsis "...", the conversation end node
         # "END" or a "TMP" node if this is the active conversation
         if is_current:
+            event_idx = events[idx]
             if (
-                isinstance(events[idx], ActionExecuted)
-                and events[idx].action_name == ACTION_LISTEN_NAME
+                isinstance(event_idx, ActionExecuted)
+                and event_idx.action_name == ACTION_LISTEN_NAME
             ):
                 next_node_idx += 1
                 graph.add_node(

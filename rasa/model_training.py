@@ -134,8 +134,8 @@ def train(
         )
         return TrainingResult(code=1)
 
-    domain = file_importer.get_domain()
-    if domain.is_empty():
+    domain_object = file_importer.get_domain()
+    if domain_object.is_empty():
         rasa.shared.utils.cli.print_warning(
             "Core training was skipped because no valid domain file was found. "
             "Only an NLU-model was created. Please specify a valid domain using "
@@ -200,15 +200,10 @@ def _train_graph(
     config = file_importer.get_config()
     recipe = Recipe.recipe_for_name(config.get("recipe"))
     config, _missing_keys, _configured_keys = recipe.auto_configure(
-        file_importer.get_config_file_for_auto_config(),
-        config,
-        training_type,
+        file_importer.get_config_file_for_auto_config(), config, training_type,
     )
     model_configuration = recipe.graph_config_for_recipe(
-        config,
-        kwargs,
-        training_type=training_type,
-        is_finetuning=is_finetuning,
+        config, kwargs, training_type=training_type, is_finetuning=is_finetuning,
     )
     rasa.engine.validation.validate(model_configuration)
 

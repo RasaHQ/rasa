@@ -504,8 +504,8 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         logger.debug(f"Request next slot '{slot_name}'")
 
-        action_to_ask_for_next_slot = self._name_of_utterance(domain, slot_name)
-        if not action_to_ask_for_next_slot:
+        action_name_to_ask_for_next_slot = self._name_of_utterance(domain, slot_name)
+        if not action_name_to_ask_for_next_slot:
             # Use a debug log as the user might have asked as part of a custom action
             logger.debug(
                 f"There was no action found to ask for slot '{slot_name}' "
@@ -514,7 +514,7 @@ class FormAction(LoopAction):
             return []
 
         action_to_ask_for_next_slot = action.action_for_name_or_text(
-            action_to_ask_for_next_slot, domain, self.action_endpoint
+            action_name_to_ask_for_next_slot, domain, self.action_endpoint
         )
         return await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain
@@ -631,25 +631,22 @@ class FormAction(LoopAction):
         # We explicitly check only the last occurrences for each possible termination
         # event instead of doing `return event in events_so_far` to make it possible
         # to override termination events which were returned earlier.
-        return (
-            next(
-                (
-                    event
-                    for event in reversed(events_so_far)
-                    if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
-                ),
-                None,
-            )
-            == SlotSet(REQUESTED_SLOT, None)
-            or next(
-                (
-                    event
-                    for event in reversed(events_so_far)
-                    if isinstance(event, ActiveLoop)
-                ),
-                None,
-            )
-            == ActiveLoop(None)
+        return next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
+            ),
+            None,
+        ) == SlotSet(REQUESTED_SLOT, None) or next(
+            (
+                event
+                for event in reversed(events_so_far)
+                if isinstance(event, ActiveLoop)
+            ),
+            None,
+        ) == ActiveLoop(
+            None
         )
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:
