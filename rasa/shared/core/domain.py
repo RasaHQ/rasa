@@ -312,11 +312,6 @@ class Domain:
         if not combined:
             return domain_dict
 
-        if not combined.get(KEY_TRAINING_DATA_FORMAT_VERSION):
-            combined[
-                KEY_TRAINING_DATA_FORMAT_VERSION
-            ] = LATEST_TRAINING_DATA_FORMAT_VERSION
-
         if override:
             config = domain_dict["config"]
             for key, val in config.items():
@@ -421,8 +416,10 @@ class Domain:
         if KEY_RESPONSES not in data:
             data.update({KEY_RESPONSES: {}})
 
-        if "version" not in data:
-            data.update({"version": LATEST_TRAINING_DATA_FORMAT_VERSION})
+        if KEY_TRAINING_DATA_FORMAT_VERSION not in data:
+            data.update(
+                {KEY_TRAINING_DATA_FORMAT_VERSION: LATEST_TRAINING_DATA_FORMAT_VERSION}
+            )
 
         return data
 

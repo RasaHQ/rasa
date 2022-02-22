@@ -6,7 +6,13 @@ import rasa.shared.constants
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    Domain,
+    KEY_E2E_ACTIONS,
+    KEY_INTENTS,
+    KEY_RESPONSES,
+    KEY_ACTIONS,
+)
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
@@ -386,9 +392,9 @@ class ResponsesSyncImporter(TrainingDataImporter):
 
         return Domain.from_dict(
             {
-                rasa.shared.constants.KEY_INTENTS: retrieval_intent_properties,
-                rasa.shared.constants.KEY_RESPONSES: responses,
-                rasa.shared.constants.KEY_ACTIONS: action_names,
+                KEY_INTENTS: retrieval_intent_properties,
+                KEY_RESPONSES: responses,
+                KEY_ACTIONS: action_names,
             }
         )
 
@@ -463,9 +469,7 @@ class E2EImporter(TrainingDataImporter):
 
         additional_e2e_action_names = list(additional_e2e_action_names)
 
-        return Domain.from_dict(
-            {rasa.shared.constants.KEY_E2E_ACTIONS: additional_e2e_action_names}
-        )
+        return Domain.from_dict({KEY_E2E_ACTIONS: additional_e2e_action_names})
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves the stories that should be used for training.
