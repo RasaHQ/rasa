@@ -420,25 +420,26 @@ class Domain:
         return data
 
     @staticmethod
-    def _sanitize_intents_in_domain_dict(data: Dict[Text, Any]) -> Dict[Text, Any]:
-        def reset_flags(item: Dict) -> None:
-            for intent_property in item.values():
-                try:
-                    if not intent_property[
-                        USE_ENTITIES_KEY
-                    ]:  # this covers False, None and []
-                        intent_property[USE_ENTITIES_KEY] = []
-                    if not intent_property[IGNORE_ENTITIES_KEY]:
-                        intent_property[IGNORE_ENTITIES_KEY] = []
-                except KeyError:
-                    break
+    def _reset_intent_flags(intent: Dict[Text, Any]) -> None:
+        for intent_property in intent.values():
+            try:
+                if not intent_property[
+                    USE_ENTITIES_KEY
+                ]:  # this covers False, None and []
+                    intent_property[USE_ENTITIES_KEY] = []
+                if not intent_property[IGNORE_ENTITIES_KEY]:
+                    intent_property[IGNORE_ENTITIES_KEY] = []
+            except KeyError:
+                break
 
+    @staticmethod
+    def _sanitize_intents_in_domain_dict(data: Dict[Text, Any]) -> Dict[Text, Any]:
         if not data.get(KEY_INTENTS):
             return data
 
         for intent in data.get(KEY_INTENTS):
             if isinstance(intent, dict):
-                reset_flags(intent)
+                Domain._reset_intent_flags(intent)
 
         data[KEY_INTENTS] = Domain._sort_intent_names_alphabetical_order(
             intents=data.get(KEY_INTENTS)
@@ -854,7 +855,7 @@ class Domain:
         """
         self_as_dict = self.as_dict()
         transformed_intents: List[Text] = []
-        for intent in self_as_dict[KEY_INTENTS]:
+        for intent in self_as_dict.get(KEY_INTENTS, []):
             if isinstance(intent, dict):
                 transformed_intents.append(*intent.keys())
             elif isinstance(intent, str):
