@@ -173,8 +173,7 @@ class TrainingDataImporter:
             importer_config, importer_class
         )
 
-        # mypy ignore needed because RasaFileImporter and MultiFI have different args
-        return importer_class(  # type: ignore[call-arg]
+        return importer_class(
             config_path, domain_path, training_data_paths, **constructor_arguments
         )
 

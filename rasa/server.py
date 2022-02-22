@@ -80,8 +80,7 @@ if TYPE_CHECKING:
         response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]
     ]
     SanicView = Callable[
-        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
-        SanicResponse,
+        [Arg(Request, "request"), VarArg(), KwArg()], SanicResponse,  # noqa: F821
     ]
 
 
@@ -1364,7 +1363,8 @@ def create_app(
     @ensure_loaded_agent(app)
     async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
-        accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
+        # FIXME: this is a false positive mypy error after upgrading to 0.931
+        accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)  # type: ignore[call-overload]
         if accepts.endswith("json"):
             domain = app.ctx.agent.domain.as_dict()
             return response.json(domain)
