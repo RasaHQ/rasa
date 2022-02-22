@@ -408,17 +408,6 @@ class Domain:
                 }
             )
 
-        # KEY_E2E_ACTIONS, KEY_ACTIONS AND KEY_RESPONSES are required
-        # because they get added through the chaining of importers
-        if KEY_E2E_ACTIONS not in data:
-            data.update({KEY_E2E_ACTIONS: action_texts})
-
-        if KEY_ACTIONS not in data:
-            data.update({KEY_ACTIONS: []})
-
-        if KEY_RESPONSES not in data:
-            data.update({KEY_RESPONSES: {}})
-
         if KEY_TRAINING_DATA_FORMAT_VERSION not in data:
             data.update(
                 {
@@ -1571,15 +1560,16 @@ class Domain:
         domain_elements: Union[List[Text], Set[Text]],
         training_data_elements: Optional[Union[List[Text], Set[Text]]],
     ) -> Dict[Text, Set[Text]]:
-        """Get symmetric difference between a set of domain elements and a set of
-        training data elements.
+        """Gets the symmetric difference between two sets.
+
+        One set represents domain elements and the other one is a set of training
+        data elements.
 
         Returns a dictionary containing a list of items found in the `domain_elements`
         but not in `training_data_elements` at key `in_domain`, and a list of items
         found in `training_data_elements` but not in `domain_elements` at key
         `in_training_data_set`.
         """
-
         if training_data_elements is None:
             training_data_elements = set()
 
