@@ -422,15 +422,16 @@ class Domain:
     @staticmethod
     def _reset_intent_flags(intent: Dict[Text, Any]) -> None:
         for intent_property in intent.values():
-            try:
-                if not intent_property[
-                    USE_ENTITIES_KEY
-                ]:  # this covers False, None and []
-                    intent_property[USE_ENTITIES_KEY] = []
-                if not intent_property[IGNORE_ENTITIES_KEY]:
-                    intent_property[IGNORE_ENTITIES_KEY] = []
-            except KeyError:
-                break
+            if (
+                USE_ENTITIES_KEY in intent_property.keys()
+                and not intent_property[USE_ENTITIES_KEY]
+            ):
+                intent_property[USE_ENTITIES_KEY] = []
+            if (
+                IGNORE_ENTITIES_KEY in intent_property.keys()
+                and not intent_property[IGNORE_ENTITIES_KEY]
+            ):
+                intent_property[IGNORE_ENTITIES_KEY] = []
 
     @staticmethod
     def _sanitize_intents_in_domain_dict(data: Dict[Text, Any]) -> Dict[Text, Any]:
