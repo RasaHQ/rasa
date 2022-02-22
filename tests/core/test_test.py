@@ -248,8 +248,8 @@ async def test_action_unlikely_intent_warning(
 
     file_name = tmp_path / "test_action_unlikely_intent_1.yml"
     file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: unlikely path
             steps:
@@ -297,8 +297,8 @@ async def test_action_unlikely_intent_correctly_predicted(
 
     file_name = tmp_path / "test_action_unlikely_intent_2.yml"
     file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: unlikely path (with action_unlikely_intent)
             steps:
@@ -342,8 +342,8 @@ async def test_wrong_action_after_action_unlikely_intent(
 
     test_file_name = tmp_path / "test.yml"
     test_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -360,8 +360,8 @@ async def test_wrong_action_after_action_unlikely_intent(
 
     train_file_name = tmp_path / "train.yml"
     train_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -411,8 +411,8 @@ async def test_action_unlikely_intent_not_found(
 ):
     test_file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
     test_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -430,8 +430,8 @@ async def test_action_unlikely_intent_not_found(
 
     train_file_name = tmp_path / "train_without_action_unlikely_intent.yml"
     train_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -478,8 +478,8 @@ async def test_action_unlikely_intent_warning_and_story_error(
 
     test_file_name = tmp_path / "test.yml"
     test_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -496,8 +496,8 @@ async def test_action_unlikely_intent_warning_and_story_error(
 
     train_file_name = tmp_path / "train.yml"
     train_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: happy path
             steps:
@@ -545,8 +545,8 @@ async def test_fail_on_prediction_errors(
 
     file_name = tmp_path / "test_action_unlikely_intent_2.yml"
     file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
           - story: unlikely path (with action_unlikely_intent)
             steps:

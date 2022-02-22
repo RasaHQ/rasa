@@ -3,6 +3,7 @@ import textwrap
 from typing import Text
 from collections import OrderedDict
 import pytest
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
@@ -87,8 +88,8 @@ def test_yaml_writer_dumps_user_messages():
     assert (
         dump.strip()
         == textwrap.dedent(
-            """
-        version: "3.0"
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: default
           steps:
@@ -115,8 +116,8 @@ def test_yaml_writer_doesnt_dump_action_unlikely_intent():
     assert (
         dump.strip()
         == textwrap.dedent(
-            """
-    version: "3.0"
+            f"""
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     stories:
     - story: default
       steps:
@@ -139,8 +140,8 @@ def test_yaml_writer_avoids_dumping_not_existing_user_messages():
     assert (
         dump.strip()
         == textwrap.dedent(
-            """
-        version: "3.0"
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: default
           steps:
@@ -198,7 +199,7 @@ def test_yaml_writer_stories_to_yaml_with_null_entities(domain: Domain):
     writer = YAMLStoryWriter()
     stories = textwrap.dedent(
         """
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     stories:
     - story: happy path
       steps:
@@ -251,7 +252,7 @@ def test_writing_end_to_end_stories(domain: Domain):
         dump.strip()
         == textwrap.dedent(
             f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: {story_name}
           steps:
@@ -298,7 +299,7 @@ stories:
         dump.strip()
         == textwrap.dedent(
             f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: {story_name}
           steps:

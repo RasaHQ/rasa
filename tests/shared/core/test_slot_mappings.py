@@ -1,6 +1,7 @@
 from typing import Text
 
 import pytest
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActiveLoop
@@ -68,7 +69,7 @@ def test_slot_mapping_intent_is_desired(domain: Domain):
 def test_slot_mappings_ignored_intents_during_active_loop():
     domain = Domain.from_yaml(
         """
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     intents:
     - greet
     - chitchat
@@ -104,8 +105,8 @@ def test_slot_mappings_ignored_intents_during_active_loop():
 def test_missing_slot_mappings_raises():
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             slots:
               some_slot:
                 type: text
@@ -117,8 +118,8 @@ def test_missing_slot_mappings_raises():
 def test_slot_mappings_invalid_type_raises():
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             entities:
             - from_entity
             slots:
