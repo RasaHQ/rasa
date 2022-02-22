@@ -9,6 +9,7 @@ from typing import Callable, Text
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
 import rasa.shared.utils.io
@@ -156,7 +157,7 @@ def test_validate_files_action_not_found_invalid_domain(
     file_name = tmp_path / f"{file_type}.yml"
     file_name.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         {file_type}:
         - {data_type}: test path
           steps:
@@ -183,7 +184,7 @@ def test_validate_files_form_not_found_invalid_domain(
     file_name = tmp_path / f"{file_type}.yml"
     file_name.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         {file_type}:
         - {data_type}: test path
           steps:
@@ -202,11 +203,35 @@ def test_validate_files_form_not_found_invalid_domain(
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
 
+def test_validate_files_with_active_loop_null(tmp_path: Path):
+    file_name = tmp_path / "rules.yml"
+    file_name.write_text(
+        """
+        version: "3.0"
+        rules:
+        - rule: test path
+          steps:
+            - intent: request_restaurant
+            - action: restaurant_form
+            - active_loop: null
+        """
+    )
+    args = {
+        "domain": "data/test_restaurantbot/domain.yml",
+        "data": [file_name],
+        "max_history": None,
+        "config": None,
+        "fail_on_warnings": False,
+    }
+    with pytest.warns(None):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
 def test_validate_files_form_slots_not_matching(tmp_path: Path):
     domain_file_name = tmp_path / "domain.yml"
     domain_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         forms:
           name_form:
             required_slots:
@@ -266,7 +291,7 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
     slot_name = "started_booking_form"
     domain.write_text(
         f"""
-            version: "3.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intents:
             - activate_booking
             entities:
