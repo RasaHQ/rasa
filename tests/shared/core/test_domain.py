@@ -1154,7 +1154,7 @@ def test_clean_domain_for_file():
             "carry_over_slots_to_new_session": True,
             "session_expiration_time": DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
         },
-        "version": "3.0",
+        "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
     }
 
     assert cleaned == expected
@@ -1587,7 +1587,7 @@ def test_invalid_slots_raises_yaml_exception(domain_yaml: Text):
 
 
 def test_slot_order_is_preserved():
-    test_yaml = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    test_yaml = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true
@@ -1691,7 +1691,7 @@ session_config:
 
 
 def test_responses_text_multiline_is_preserved():
-    test_yaml = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    test_yaml = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true

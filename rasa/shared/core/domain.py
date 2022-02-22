@@ -40,7 +40,6 @@ from rasa.shared.exceptions import (
     RasaException,
     YamlException,
     YamlSyntaxException,
-    InvalidDomain,
 )
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
@@ -102,7 +101,9 @@ State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
 
-InvalidDomain = InvalidDomain
+
+class InvalidDomain(RasaException):
+    """Exception that can be raised when domain is not valid."""
 
 
 class ActionNotFoundException(ValueError, RasaException):
@@ -420,7 +421,11 @@ class Domain:
 
         if KEY_TRAINING_DATA_FORMAT_VERSION not in data:
             data.update(
-                {KEY_TRAINING_DATA_FORMAT_VERSION: LATEST_TRAINING_DATA_FORMAT_VERSION}
+                {
+                    KEY_TRAINING_DATA_FORMAT_VERSION: DoubleQuotedScalarString(
+                        LATEST_TRAINING_DATA_FORMAT_VERSION
+                    )
+                }
             )
 
         return data

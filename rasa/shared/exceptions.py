@@ -107,7 +107,3 @@ class ConnectionException(RasaException):
     It's used by our broker and tracker store classes, when
     they can't connect to services like postgres, dynamoDB, mongo.
     """
-
-
-class InvalidDomain(RasaException):
-    """Exception that can be raised when domain is not valid."""
