@@ -19,6 +19,8 @@ from typing import (
     Iterable,
 )
 
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
@@ -1636,7 +1638,9 @@ class Domain:
         # thanks to the `should_preserve_key_order` argument
         # of `dump_obj_as_yaml_to_string`
         domain_data: Dict[Text, Any] = {
-            KEY_TRAINING_DATA_FORMAT_VERSION: LATEST_TRAINING_DATA_FORMAT_VERSION
+            KEY_TRAINING_DATA_FORMAT_VERSION: DoubleQuotedScalarString(
+                LATEST_TRAINING_DATA_FORMAT_VERSION
+            )
         }
         if clean_before_dump:
             domain_data.update(self.cleaned_domain())

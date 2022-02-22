@@ -1,4 +1,5 @@
 import rasa.core
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -41,7 +42,7 @@ def test_session_start_is_not_serialised(domain: Domain):
         Story.from_events(tracker.events, "some-story01").story_steps
     )
 
-    expected = """version: "3.0"
+    expected = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: some-story01
   steps:
