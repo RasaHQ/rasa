@@ -204,9 +204,13 @@ class DenseForSparse(tf.keras.layers.Dense):
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
+        dense_input = tf.sparse.to_dense(inputs)
+
         # outputs will be 2D
-        outputs = tf.sparse.sparse_dense_matmul(
-            tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), self.kernel
+        outputs = tf.matmul(
+            tf.reshape(dense_input, [-1, tf.shape(dense_input)[-1]]),
+            self.kernel,
+            a_is_sparse=True,
         )
 
         if len(inputs.shape) == 3:
