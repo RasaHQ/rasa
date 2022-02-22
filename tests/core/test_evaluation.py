@@ -184,7 +184,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
 ):
     config = textwrap.dedent(
         f"""
-    version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     policies:
     - name: MemoizationPolicy
       max_history: 11

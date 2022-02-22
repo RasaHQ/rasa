@@ -25,7 +25,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -1378,7 +1378,7 @@ async def test_fill_slots_for_policy_entities():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "3.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             entities:
             - {nlu_entity}
             - {policy_entity}
