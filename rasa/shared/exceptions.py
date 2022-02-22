@@ -2,6 +2,11 @@ import json
 from typing import Optional, Text
 
 import jsonschema
+from ruamel.yaml.error import (
+    MarkedYAMLError,
+    MarkedYAMLWarning,
+    MarkedYAMLFutureWarning,
+)
 
 
 class RasaException(Exception):
@@ -54,10 +59,16 @@ class YamlSyntaxException(YamlException):
             exception_text = "Failed to read YAML."
 
         if self.underlying_yaml_exception:
-            if hasattr(self.underlying_yaml_exception, "warn"):
-                self.underlying_yaml_exception.warn = None
-            if hasattr(self.underlying_yaml_exception, "note"):
+            if isinstance(
+                self.underlying_yaml_exception,
+                (MarkedYAMLError, MarkedYAMLWarning, MarkedYAMLFutureWarning),
+            ):
                 self.underlying_yaml_exception.note = None
+            if isinstance(
+                self.underlying_yaml_exception,
+                (MarkedYAMLWarning, MarkedYAMLFutureWarning),
+            ):
+                self.underlying_yaml_exception.warn = None
             exception_text += f" {self.underlying_yaml_exception}"
 
         if self.filename:
