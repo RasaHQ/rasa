@@ -2,6 +2,7 @@ from typing import Text
 
 import pytest
 from _pytest.logging import LogCaptureFixture
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 from rasa.validator import Validator
 
@@ -110,8 +111,8 @@ def test_verify_bad_story_structure():
 def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: path 1
           steps:
@@ -309,8 +310,8 @@ def test_verify_there_is_not_example_repetition_in_intents():
 def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Text):
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: story path 1
           steps:
@@ -336,8 +337,8 @@ def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Te
 def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text):
     rules_file_name = tmp_path / "rules.yml"
     rules_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         rules:
         - rule: rule path 1
           steps:
@@ -362,8 +363,8 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
 def test_verify_form_slots_invalid_domain(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         forms:
           name_form:
             required_slots:
@@ -421,8 +422,8 @@ def test_valid_stories_rules_actions_in_domain(
 ):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - greet
         actions:
@@ -432,7 +433,7 @@ def test_valid_stories_rules_actions_in_domain(
     file_name = tmp_path / f"{file_name}.yml"
     file_name.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         {file_name}:
         - {data_type}: test path
           steps:
@@ -453,8 +454,8 @@ def test_valid_stories_rules_default_actions(
 ):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - greet
         """
@@ -462,7 +463,7 @@ def test_valid_stories_rules_default_actions(
     file_name = tmp_path / f"{file_name}.yml"
     file_name.write_text(
         f"""
-            version: "3.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             {file_name}:
             - {data_type}: test path
               steps:
@@ -478,8 +479,8 @@ def test_valid_stories_rules_default_actions(
 def test_valid_form_slots_in_domain(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         forms:
           name_form:
             required_slots:
@@ -506,7 +507,7 @@ def test_verify_slot_mappings_mapping_active_loop_not_in_forms(tmp_path: Path):
     slot_name = "some_slot"
     domain.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         entities:
         - some_entity
         slots:
@@ -542,7 +543,7 @@ def test_verify_slot_mappings_from_trigger_intent_mapping_slot_not_in_forms(
     slot_name = "started_booking_form"
     domain.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - activate_booking
         entities:
@@ -579,8 +580,8 @@ def test_verify_slot_mappings_from_trigger_intent_mapping_slot_not_in_forms(
 def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - activate_booking
         entities:
@@ -620,8 +621,8 @@ def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path:
 def test_verify_slot_mappings_valid(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - activate_booking
         entities:

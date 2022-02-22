@@ -27,7 +27,11 @@ from rasa.core.actions.action import (
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.shared.constants import UTTER_PREFIX, REQUIRED_SLOTS_KEY
+from rasa.shared.constants import (
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    UTTER_PREFIX,
+    REQUIRED_SLOTS_KEY,
+)
 from rasa.shared.core.domain import (
     ActionNotFoundException,
     SessionConfig,
@@ -1147,8 +1151,8 @@ async def test_action_extract_slots_predefined_mappings(
 ):
     domain = Domain.from_yaml(
         textwrap.dedent(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intents:
             - inform
             - greet
@@ -1230,8 +1234,8 @@ async def test_action_extract_slots_predefined_mappings(
 async def test_action_extract_slots_with_from_trigger_mappings():
     domain = Domain.from_yaml(
         textwrap.dedent(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intents:
             - greet
             - inform
@@ -1351,7 +1355,7 @@ async def test_action_extract_slots_with_list_slot(
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
     entities:
     - topping
@@ -1450,7 +1454,7 @@ async def test_action_extract_slots_with_matched_mapping_condition():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "3.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intent:
             - greet
             - inform
@@ -1503,7 +1507,7 @@ async def test_action_extract_slots_no_matched_mapping_conditions():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "3.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intent:
             - greet
             - inform
@@ -1747,7 +1751,7 @@ async def test_extract_other_list_slot_from_entity(
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
     entities:
     - topping
@@ -1966,8 +1970,8 @@ async def test_action_extract_slots_execute_validation_action(
     expected_events: List[Event],
 ):
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         intents:
         - greet
@@ -2030,8 +2034,8 @@ async def test_action_extract_slots_execute_validation_action(
 
 async def test_action_extract_slots_custom_action_and_predefined_slot_validation():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         intents:
         - inform
@@ -2097,8 +2101,8 @@ async def test_action_extract_slots_custom_action_and_predefined_slot_validation
 
 async def test_action_extract_slots_with_duplicate_custom_actions():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         intents:
         - inform
@@ -2169,8 +2173,8 @@ async def test_action_extract_slots_with_duplicate_custom_actions():
 
 async def test_action_extract_slots_disallowed_events(caplog: LogCaptureFixture):
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         slots:
           custom_slot_one:
@@ -2233,8 +2237,8 @@ async def test_action_extract_slots_warns_custom_action_exceptions(
     caplog: LogCaptureFixture, exception: Exception
 ):
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         slots:
           custom_slot_one:
@@ -2279,8 +2283,8 @@ async def test_action_extract_slots_warns_custom_action_exceptions(
 
 async def test_action_extract_slots_with_empty_conditions():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         entities:
         - city
@@ -2313,8 +2317,8 @@ async def test_action_extract_slots_with_empty_conditions():
 
 async def test_action_extract_slots_with_not_existing_entity():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         entities:
         - city
@@ -2351,8 +2355,8 @@ async def test_action_extract_slots_with_not_existing_entity():
 
 async def test_action_extract_slots_with_not_existing_intent():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         intents:
         - greet
@@ -2390,8 +2394,8 @@ async def test_action_extract_slots_with_not_existing_intent():
 
 async def test_action_extract_slots_with_none_value_predefined_mapping():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         entities:
         - some_entity
@@ -2431,8 +2435,8 @@ async def test_action_extract_slots_with_none_value_predefined_mapping():
 
 async def test_action_extract_slots_with_none_value_custom_mapping():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         slots:
           custom_slot:
@@ -2474,8 +2478,8 @@ async def test_action_extract_slots_with_none_value_custom_mapping():
 
 async def test_action_extract_slots_returns_bot_uttered():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         slots:
           custom_slot:
@@ -2522,8 +2526,8 @@ async def test_action_extract_slots_does_not_raise_disallowed_warning_for_slot_e
     caplog: LogCaptureFixture,
 ):
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         slots:
           custom_slot_a:
@@ -2591,8 +2595,8 @@ async def test_action_extract_slots_does_not_raise_disallowed_warning_for_slot_e
 
 async def test_action_extract_slots_non_required_form_slot_with_from_entity_mapping():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         intents:
         - form_start
