@@ -213,11 +213,12 @@ class YAMLStoryWriter(StoryWriter):
             for entity in user_utterance.entities:
                 if "value" in entity:
                     if hasattr(user_utterance, "inline_comment_for_entity"):
-                        # FIXME: to fix this type issue, WronglyClassifiedUserUtterance needs to
-                        # be imported but it's currently outside of `rasa.shared`
-                        for predicted in user_utterance.predicted_entities:  # type: ignore[attr-defined]
+                        # FIXME: to fix this type issue, WronglyClassifiedUserUtterance
+                        # needs to be imported but it's currently outside
+                        # of `rasa.shared`
+                        for predicted in user_utterance.predicted_entities:  # type: ignore[attr-defined] # noqa: E501
                             if predicted["start"] == entity["start"]:
-                                commented_entity = user_utterance.inline_comment_for_entity(  # type: ignore[attr-defined]
+                                commented_entity = user_utterance.inline_comment_for_entity(  # type: ignore[attr-defined] # noqa: E501
                                     predicted, entity
                                 )
                                 if commented_entity:
