@@ -1137,7 +1137,7 @@ def test_clean_domain_for_file():
     expected = {
         "entities": ["name", "unrelated_recognized_entity", "other"],
         "intents": [
-            "ask",
+            {"ask": {USE_ENTITIES_KEY: True}},
             {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
             {"goodbye": {USE_ENTITIES_KEY: []}},
             {"greet": {USE_ENTITIES_KEY: ["name"]}},

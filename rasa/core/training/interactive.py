@@ -933,19 +933,13 @@ def _write_domain_to_file(
         }
     )
 
-    new_domain = Domain(
-        intents=_intents_from_messages(messages),
-        entities=_entities_from_messages(messages),
-        slots=[],
-        responses=responses,
-        action_names=collected_actions,
-        forms={},
-        data={
+    new_domain = Domain.from_dict(
+        {
             KEY_INTENTS: list(_intents_from_messages(messages)),
             KEY_ENTITIES: _entities_from_messages(messages),
             KEY_RESPONSES: responses,
             KEY_ACTIONS: collected_actions,
-        },
+        }
     )
 
     old_domain.merge(new_domain).persist_clean(domain_path)

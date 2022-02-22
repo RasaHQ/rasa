@@ -17,6 +17,7 @@ from typing import (
     TYPE_CHECKING,
     Iterable,
     NamedTuple,
+    Callable,
 )
 
 from rasa.shared.constants import (
@@ -29,16 +30,7 @@ from rasa.shared.constants import (
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
-    SESSION_EXPIRATION_TIME_KEY,
-    CARRY_OVER_SLOTS_KEY,
-    USE_ENTITIES_KEY,
-    IGNORE_ENTITIES_KEY,
-    USED_ENTITIES_KEY,
-    IS_RETRIEVAL_INTENT_KEY,
-    ENTITY_ROLES_KEY,
-    ENTITY_GROUPS_KEY,
-    KEY_RESPONSES_TEXT,
-    ALL_DOMAIN_KEYS,
+    RESPONSE_CONDITION,
 )
 import rasa.shared.core.constants
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE, MAPPING_CONDITIONS
@@ -55,17 +47,6 @@ import rasa.shared.core.slot_mappings
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot, ListSlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.constants import (
-    RESPONSE_CONDITION,
-    SESSION_CONFIG_KEY,
-    KEY_INTENTS,
-    KEY_ENTITIES,
-    KEY_FORMS,
-    KEY_ACTIONS,
-    KEY_E2E_ACTIONS,
-    KEY_RESPONSES,
-    KEY_SLOTS,
-)
 from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
@@ -78,6 +59,37 @@ from rasa.shared.nlu.constants import (
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
+
+CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
+SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
+SESSION_CONFIG_KEY = "session_config"
+USED_ENTITIES_KEY = "used_entities"
+USE_ENTITIES_KEY = "use_entities"
+IGNORE_ENTITIES_KEY = "ignore_entities"
+IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
+ENTITY_ROLES_KEY = "roles"
+ENTITY_GROUPS_KEY = "groups"
+
+KEY_SLOTS = "slots"
+KEY_INTENTS = "intents"
+KEY_ENTITIES = "entities"
+KEY_RESPONSES = "responses"
+KEY_ACTIONS = "actions"
+KEY_FORMS = "forms"
+KEY_E2E_ACTIONS = "e2e_actions"
+KEY_RESPONSES_TEXT = "text"
+
+ALL_DOMAIN_KEYS = [
+    KEY_SLOTS,
+    KEY_FORMS,
+    KEY_ACTIONS,
+    KEY_ENTITIES,
+    KEY_INTENTS,
+    KEY_RESPONSES,
+    KEY_E2E_ACTIONS,
+]
+
+PREV_PREFIX = "prev_"
 
 # State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # representing the origin of a SubState;
@@ -290,49 +302,6 @@ class Domain:
         return Domain.from_dict(merged_dict)
 
     @staticmethod
-    def _merge_intents_and_entities(
-        combined: Dict, domain_dict: Dict, duplicates: Dict, override: bool = False
-    ) -> Tuple:
-        for key in [KEY_INTENTS, KEY_ENTITIES]:
-            if combined.get(key) or domain_dict.get(key):
-                duplicates[key] = rasa.shared.utils.common.extract_duplicates(
-                    combined.get(key, []), domain_dict.get(key, [])
-                )
-                combined[key] = combined.get(key, [])
-                domain_dict[key] = domain_dict.get(key, [])
-                combined[key] = rasa.shared.utils.common.merge_lists_of_dicts(
-                    combined[key], domain_dict[key], override
-                )
-        return combined, duplicates
-
-    @staticmethod
-    def _merge_actions_and_e2e_actions(
-        combined: Dict, domain_dict: Dict, duplicates: Dict
-    ) -> Tuple:
-        for key in [KEY_ACTIONS, KEY_E2E_ACTIONS]:
-            duplicates[key] = rasa.shared.utils.common.extract_duplicates(
-                combined.get(key, []), domain_dict.get(key, [])
-            )
-            combined[key] = rasa.shared.utils.common.merge_lists(
-                combined.get(key, []), domain_dict.get(key, [])
-            )
-
-        return combined, duplicates
-
-    @staticmethod
-    def _merge_forms_responses_slots(
-        combined: Dict, domain_dict: Dict, duplicates: Dict, override: bool = False
-    ) -> Tuple:
-        for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
-            duplicates[key] = rasa.shared.utils.common.extract_duplicates(
-                combined.get(key, []), domain_dict.get(key, [])
-            )
-            combined[key] = rasa.shared.utils.common.merge_dicts(
-                combined.get(key, {}), domain_dict.get(key, {}), override
-            )
-        return combined, duplicates
-
-    @staticmethod
     def merge_domain_dicts(
         domain_dict: Dict, combined: Dict, override: bool = False, is_dir: bool = False
     ) -> Dict:
@@ -364,23 +333,36 @@ class Domain:
         ):
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
-        duplicates: Dict[Text, List[Text]] = {}
-
-        combined, duplicates = Domain._merge_intents_and_entities(
-            combined, domain_dict, duplicates, override
-        )
-
         # remove existing forms from new actions
         for form in combined.get(KEY_FORMS, []):
             if form in domain_dict.get(KEY_ACTIONS, []):
                 domain_dict[KEY_ACTIONS].remove(form)
 
-        combined, duplicates = Domain._merge_actions_and_e2e_actions(
-            combined, domain_dict, duplicates
-        )
-        combined, duplicates = Domain._merge_forms_responses_slots(
-            combined, domain_dict, duplicates, override
-        )
+        duplicates: Dict[Text, List[Text]] = {}
+
+        merge_func_mappings: Dict[Text, Callable[..., Any]] = {
+            KEY_INTENTS: rasa.shared.utils.common.merge_lists_of_dicts,
+            KEY_ENTITIES: rasa.shared.utils.common.merge_lists_of_dicts,
+            KEY_ACTIONS: rasa.shared.utils.common.merge_lists,
+            KEY_E2E_ACTIONS: rasa.shared.utils.common.merge_lists,
+            KEY_FORMS: rasa.shared.utils.common.merge_dicts,
+            KEY_RESPONSES: rasa.shared.utils.common.merge_dicts,
+            KEY_SLOTS: rasa.shared.utils.common.merge_dicts,
+        }
+
+        for key, merge_func in merge_func_mappings.items():
+            duplicates[key] = rasa.shared.utils.common.extract_duplicates(
+                combined.get(key, []), domain_dict.get(key, [])
+            )
+
+            if key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+                default = {}
+            else:
+                default = []
+
+            combined[key] = merge_func(
+                combined.get(key, default), domain_dict.get(key, default), override
+            )
 
         if duplicates:
             duplicates = rasa.shared.utils.common.clean_duplicates(duplicates)
@@ -1490,35 +1472,12 @@ class Domain:
     def cleaned_domain(self) -> Dict[Text, Any]:
         """Fetch cleaned domain to display or write into a file.
 
-        The internal `used_entities` property is replaced by `use_entities` or
-        `ignore_entities` and redundant keys are replaced with default values
-        to make the domain easier readable.
-
         Returns:
             A cleaned dictionary version of the domain.
         """
         domain_data = self.as_dict()
         # remove e2e actions from domain before we display it
         domain_data.pop(KEY_E2E_ACTIONS, None)
-
-        for idx, intent_info in enumerate(domain_data.get(KEY_INTENTS, [])):
-            if isinstance(intent_info, dict):
-                for name, intent in intent_info.items():
-                    if intent.get(USE_ENTITIES_KEY) is True:
-                        del intent[USE_ENTITIES_KEY]
-                    if not intent.get(IGNORE_ENTITIES_KEY):
-                        intent.pop(IGNORE_ENTITIES_KEY, None)
-                    if len(intent) == 0:
-                        domain_data[KEY_INTENTS][idx] = name
-
-        for slot in domain_data.get(KEY_SLOTS, {}).values():
-            try:
-                if slot["initial_value"] is None:
-                    del slot["initial_value"]
-            except KeyError:
-                pass
-            if slot["type"].startswith("rasa.shared.core.slots"):
-                slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 
         if domain_data["config"]["store_entities_as_slots"]:
             del domain_data["config"]["store_entities_as_slots"]
@@ -1542,6 +1501,7 @@ class Domain:
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
         """Dump the `Domain` object as a YAML string.
+
         This function preserves the orders of the keys in the domain.
 
         Args:

@@ -384,18 +384,12 @@ class ResponsesSyncImporter(TrainingDataImporter):
             retrieval_intents
         )
 
-        return Domain(
-            retrieval_intent_properties,
-            [],
-            [],
-            responses,
-            action_names,
-            {},
+        return Domain.from_dict(
             {
                 rasa.shared.constants.KEY_INTENTS: retrieval_intent_properties,
                 rasa.shared.constants.KEY_RESPONSES: responses,
                 rasa.shared.constants.KEY_ACTIONS: action_names,
-            },
+            }
         )
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
@@ -469,17 +463,8 @@ class E2EImporter(TrainingDataImporter):
 
         additional_e2e_action_names = list(additional_e2e_action_names)
 
-        return Domain(
-            [],
-            [],
-            [],
-            {},
-            action_names=[],
-            forms={},
-            data={
-                rasa.shared.constants.KEY_E2E_ACTIONS: additional_e2e_action_names,
-            },
-            action_texts=additional_e2e_action_names,
+        return Domain.from_dict(
+            {rasa.shared.constants.KEY_E2E_ACTIONS: additional_e2e_action_names}
         )
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:

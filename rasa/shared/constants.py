@@ -99,34 +99,3 @@ DIAGNOSTIC_DATA = "diagnostic_data"
 
 RESPONSE_CONDITION = "condition"
 CHANNEL = "channel"
-
-CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
-SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
-SESSION_CONFIG_KEY = "session_config"
-USED_ENTITIES_KEY = "used_entities"
-USE_ENTITIES_KEY = "use_entities"
-IGNORE_ENTITIES_KEY = "ignore_entities"
-IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
-ENTITY_ROLES_KEY = "roles"
-ENTITY_GROUPS_KEY = "groups"
-
-KEY_SLOTS = "slots"
-KEY_INTENTS = "intents"
-KEY_ENTITIES = "entities"
-KEY_RESPONSES = "responses"
-KEY_ACTIONS = "actions"
-KEY_FORMS = "forms"
-KEY_E2E_ACTIONS = "e2e_actions"
-KEY_RESPONSES_TEXT = "text"
-
-ALL_DOMAIN_KEYS = [
-    KEY_SLOTS,
-    KEY_FORMS,
-    KEY_ACTIONS,
-    KEY_ENTITIES,
-    KEY_INTENTS,
-    KEY_RESPONSES,
-    KEY_E2E_ACTIONS,
-]
-
-PREV_PREFIX = "prev_"

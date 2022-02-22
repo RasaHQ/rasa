@@ -250,7 +250,7 @@ def merge_dicts(
     return merged_dicts
 
 
-def merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
+def merge_lists(list1: List[Any], list2: List[Any], override: bool) -> List[Any]:
     """Merges two lists."""
     return sorted(list(set(list1 + list2)))
 
