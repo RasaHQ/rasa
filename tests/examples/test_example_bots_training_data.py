@@ -54,8 +54,7 @@ def test_example_bot_training_data_raises_only_auto_fill_warning(
         importer.get_nlu_data()
         importer.get_stories()
 
-    # 2 for slot auto-fill removal warning
-    assert len(record) == 2
+    assert len(record) == 13
     assert all(
         [
             "Slot auto-fill has been removed in 3.0 and replaced with "
@@ -80,8 +79,7 @@ def test_example_bot_training_on_initial_project(tmp_path: Path):
         importer.get_nlu_data()
         importer.get_stories()
 
-    # 2 for slot auto-fill removal warning
-    assert len(record) == 2
+    assert len(record) == 13
     assert all(
         [
             "Slot auto-fill has been removed in 3.0 and replaced with "

@@ -283,19 +283,28 @@ def test_early_exit_on_invalid_domain():
         validator = Validator.from_importer(importer)
     validator.verify_domain_validity()
 
-    # two for non-unique domains, two for auto-fill removal
-    assert len(record) == 4
-    assert any(
-        [
-            f"Loading domain from '{domain_path}' failed. Using empty domain. "
-            "Error: 'Intents are not unique! Found multiple intents with name(s) "
-            "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
-            in warning.message.args[0]
-            for warning in record
-        ]
+    # two for non-unique domains, 6 for auto-fill removal
+    assert len(record) == 8
+
+    non_unique_warnings = list(
+        filter(
+            lambda warning: f"Loading domain from '{domain_path}' failed. "
+            f"Using empty domain. Error: 'Intents are not unique! "
+            f"Found multiple intents with name(s) ['default', 'goodbye']. "
+            f"Either rename or remove the duplicate ones.'" in warning.message.args[0],
+            record,
+        )
     )
-    assert record[0].message.args[0] == record[2].message.args[0]
-    assert record[1].message.args[0] == record[3].message.args[0]
+    assert len(non_unique_warnings) == 2
+
+    auto_fill_warnings = list(
+        filter(
+            lambda warning: "Slot auto-fill has been removed in 3.0"
+            in warning.message.args[0],
+            record,
+        )
+    )
+    assert len(auto_fill_warnings) == 6
 
 
 def test_verify_there_is_not_example_repetition_in_intents():

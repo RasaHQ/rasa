@@ -124,10 +124,13 @@ async def test_check_for_unseen_feature(default_processor: MessageProcessor):
     parsed = await default_processor.parse_message(message)
     with pytest.warns(UserWarning) as record:
         default_processor._check_for_unseen_features(parsed)
-    assert len(record) == 2
+    assert len(record) == 3
 
-    assert record[0].message.args[0].startswith("Parsed an intent 'greet'")
-    assert record[1].message.args[0].startswith("Parsed an entity 'name'")
+    assert (
+        record[0].message.args[0].startswith("Slot auto-fill has been removed in 3.0")
+    )
+    assert record[1].message.args[0].startswith("Parsed an intent 'greet'")
+    assert record[2].message.args[0].startswith("Parsed an entity 'name'")
 
     default_processor.domain = old_domain
 
@@ -138,9 +141,12 @@ async def test_default_intent_recognized(
 ):
     message = UserMessage(f"/{default_intent}")
     parsed = await default_processor.parse_message(message)
-    with pytest.warns(None) as record:
+    with pytest.warns(UserWarning) as record:
         default_processor._check_for_unseen_features(parsed)
-    assert len(record) == 0
+    assert len(record) == 1
+    assert (
+        record[0].message.args[0].startswith("Slot auto-fill has been removed in 3.0")
+    )
 
 
 async def test_http_parsing(trained_default_agent_model: Text, domain: Domain):
