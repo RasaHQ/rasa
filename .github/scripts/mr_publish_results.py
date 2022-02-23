@@ -252,7 +252,7 @@ def send_all_to_datadog() -> None:
 
 def generate_json(file: Text, task: Text, data: dict) -> dict:
     config = os.environ["CONFIG"]
-    dataset = os.environ["DATASET"]
+    dataset = os.environ["DATASET_NAME"]
 
     if dataset not in data:
         data = {dataset: {config: []}, **data}
