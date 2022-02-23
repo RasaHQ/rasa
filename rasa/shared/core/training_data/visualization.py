@@ -469,7 +469,6 @@ async def visualize_neighborhood(
                     message = el.parse_data
             elif isinstance(el, SlotSet):
                 slot = el.as_dict()
-                print(slot)
                 label = f'Slot: { slot["name"]}'
                 if slot["value"] is not None and slot["value"] != "":
                     label += "==" + str(slot["value"])
