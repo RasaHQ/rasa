@@ -804,7 +804,7 @@ jobs:
             | jq -r '.artifacts[] | select(.name == "report.json") | .archive_download_url')
 
           # Download the artifact
-          curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
+          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
 
           # Unzip and change name
           unzip report.json.zip && mv report.json report_main.json
