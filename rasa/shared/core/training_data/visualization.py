@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+import logging
 
 import random
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
@@ -31,6 +32,8 @@ END_NODE_ID = -1
 TMP_NODE_ID = -2
 
 VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
+
+logger = logging.getLogger(__name__)
 
 
 class UserMessageGenerator:
@@ -436,6 +439,7 @@ async def visualize_neighborhood(
     should_merge_nodes: bool = True,
     max_distance: int = 1,
     fontsize: int = 12,
+    domain: Optional[Domain] = None,
 ) -> "networkx.MultiDiGraph":
     """Given a set of event lists, visualizing the flows."""
     graph = _create_graph(fontsize)
@@ -444,6 +448,11 @@ async def visualize_neighborhood(
     next_node_idx = START_NODE_ID
     special_node_idx = -3
     path_ellipsis_ends = set()
+
+    if domain:
+        slot_defs = domain.as_dict()["slots"]
+    else:
+        slot_defs = {}
 
     for events in event_sequences:
         if current and max_distance:
@@ -462,33 +471,40 @@ async def visualize_neighborhood(
                 break
             if isinstance(el, UserUttered):
                 if message is not None:
-                    print("multiple messages or slots in a row!!")
+                    logger.error("multiple messages or slots in a row!!")
                 if not el.intent:
                     message = await interpreter.parse(el.text)
+                    # logger.debug(f"message parsed {message}")
                 else:
                     message = el.parse_data
+                    # logger.debug(f"message existed {message}")
             elif isinstance(el, SlotSet):
                 slot = el.as_dict()
-                label = f'Slot: { slot["name"]}'
-                if slot["value"] is not None and slot["value"] != "":
-                    label += "==" + str(slot["value"])
 
-                next_node_idx += 1
-                graph.add_node(
-                    next_node_idx,
-                    label=label,
-                    fontsize=fontsize,
-                    style="filled",
-                    **{"class": "slot"},
-                )
+                slot_def = slot_defs.get(slot["name"], {})
+                slot_ic = slot_def.get("influence_conversation", True)
+                if slot_ic:
+                    # ignore non conversation relevant slots
+                    label = f'Slot: { slot["name"]}'
+                    if slot["value"] is not None and slot["value"] != "":
+                        label += "==" + str(slot["value"])
 
-                _add_message_edge(
-                    graph, message, current_node, next_node_idx, is_current
-                )
-                current_node = next_node_idx
+                    next_node_idx += 1
+                    graph.add_node(
+                        next_node_idx,
+                        label=label,
+                        fontsize=fontsize,
+                        style="filled",
+                        **{"class": "slot"},
+                    )
 
-                message = None
-                prefix -= 1
+                    _add_message_edge(
+                        graph, message, current_node, next_node_idx, is_current
+                    )
+                    current_node = next_node_idx
+
+                    message = None
+                    prefix -= 1
             elif (
                 isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
@@ -636,5 +652,6 @@ async def visualize_stories(
         should_merge_nodes,
         max_distance=1,
         fontsize=fontsize,
+        domain=domain,
     )
     return graph
