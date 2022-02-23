@@ -6,7 +6,7 @@ from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted, Event
+from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted, Event
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
@@ -461,10 +461,35 @@ async def visualize_neighborhood(
                 idx -= 1
                 break
             if isinstance(el, UserUttered):
+                if message is not None:
+                    print("multiple messages or slots in a row!!")
                 if not el.intent:
                     message = await interpreter.parse(el.text)
                 else:
                     message = el.parse_data
+            elif isinstance(el, SlotSet):
+                slot = el.as_dict()
+                print(slot)
+                label = f'Slot: { slot["name"]}'
+                if slot["value"] is not None and slot["value"] != "":
+                    label += "==" + str(slot["value"])
+
+                next_node_idx += 1
+                graph.add_node(
+                    next_node_idx,
+                    label=label,
+                    fontsize=fontsize,
+                    style="filled",
+                    **{"class": "slot"},
+                )
+
+                _add_message_edge(
+                    graph, message, current_node, next_node_idx, is_current
+                )
+                current_node = next_node_idx
+
+                message = None
+                prefix -= 1
             elif (
                 isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
