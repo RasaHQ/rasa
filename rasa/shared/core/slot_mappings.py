@@ -114,7 +114,10 @@ class SlotMapping:
                 )
             )
 
-        intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        if tracker.latest_message:
+            intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        else:
+            intent = None
 
         intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
 
@@ -145,7 +148,10 @@ class SlotMapping:
             True, if slot should be filled, false otherwise.
         """
         slot_fulfils_entity_mapping = False
-        extracted_entities = tracker.latest_message.entities
+        if tracker.latest_message:
+            extracted_entities = tracker.latest_message.entities
+        else:
+            extracted_entities = []
 
         for entity in extracted_entities:
             if (

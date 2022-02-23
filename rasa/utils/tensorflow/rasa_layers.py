@@ -128,7 +128,7 @@ class RasaCustomLayer(tf.keras.layers.Layer):
         kernel = layer_to_replace.get_kernel().numpy()
         bias = layer_to_replace.get_bias()
         use_bias = False if bias is None else True
-        if use_bias:
+        if use_bias and bias:
             bias = bias.numpy()
         units = layer_to_replace.get_units()
         # split kernel by feature sizes to update the layer accordingly
