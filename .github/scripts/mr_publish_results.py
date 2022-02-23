@@ -35,7 +35,7 @@ METRICS = {
 
 MAIN_TAGS = {
     "config": "CONFIG",
-    "dataset": "DATASET",
+    "dataset": "DATASET_NAME",
 }
 
 OTHER_TAGS = {
