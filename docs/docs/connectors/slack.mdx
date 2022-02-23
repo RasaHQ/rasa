@@ -117,7 +117,7 @@ your bot and tell you about new messages. If you are running locally, you can
 
    <Image img={appHomeImg} caption="Messages Tab" alt="Allow users to send Slash commands and messages from the messages tab" max-width="500px"/>
 
-2. Configure the webhook by heading to **Event Subscriptions** and
+3. Configure the webhook by heading to **Event Subscriptions** and
    turning **Enable Events** on.
 
    As a request URL enter the public url of your bot and append `/webhooks/slack/webhook`, e.g.
@@ -128,7 +128,7 @@ your bot and tell you about new messages. If you are running locally, you can
 
    <Image img={requestUrlImg} caption="Request URL" alt="Request URL Screenshot" max-width="500px"/>
 
-3. As a last step, you'll need to **Subscribe to bot events** on the same page.
+4. As a last step, you'll need to **Subscribe to bot events** on the same page.
    You'll need to add the following events:
    - `message.channels`,
    - `message.groups`,
