@@ -9,16 +9,24 @@ from mr_publish_results import (  # noqa: E402
     prepare_ml_metrics,
     transform_to_seconds,
     generate_json,
+    prepare_datadog_tags,
 )
 
 EXAMPLE_CONFIG = "Sparse + BERT + DIET(seq) + ResponseSelector(t2t)"
-EXAMPLE_DATASET = "financial-demo"
+EXAMPLE_DATASET_NAME = "financial-demo"
 
 ENV_VARS = {
+    "BRANCH": "my-branch",
+    "PR_ID": "10927",
+    "PR_URL": "https://github.com/RasaHQ/rasa/pull/10856/",
+    "GITHUB_EVENT_NAME": "pull_request",
+    "GITHUB_RUN_ID": "1882718340",
+    "GITHUB_SHA": "11860108971985010af2e82042b72fed4c65817c",
+    "GITHUB_WORKFLOW": "CI - Model Regression",
     "IS_EXTERNAL": "false",
     "DATASET_REPOSITORY_BRANCH": "main",
     "CONFIG": EXAMPLE_CONFIG,
-    "DATASET": EXAMPLE_DATASET,
+    "DATASET_NAME": EXAMPLE_DATASET_NAME,
     "CONFIG_REPOSITORY_BRANCH": "main",
     "DATASET_COMMIT": "52a3ad3eb5292d56542687e23b06703431f15ead",
     "ACCELERATOR_TYPE": "CPU",
@@ -34,9 +42,9 @@ ENV_VARS = {
 def test_generate_json():
     f = Path(__file__).parent / "test_data" / "intent_report.json"
     result = generate_json(f, task="intent_classification", data={})
-    assert isinstance(result[EXAMPLE_DATASET][EXAMPLE_CONFIG], list)
+    assert isinstance(result[EXAMPLE_DATASET_NAME][EXAMPLE_CONFIG], list)
 
-    actual = result[EXAMPLE_DATASET][EXAMPLE_CONFIG][0]["intent_classification"]
+    actual = result[EXAMPLE_DATASET_NAME][EXAMPLE_CONFIG][0]["intent_classification"]
     expected = {
         "accuracy": 1.0,
         "weighted avg": {
@@ -115,3 +123,9 @@ def test_prepare_ml_model_perf_metrics_simple():
 
     key, value = "Intent Classification.weighted avg.f1-score", 1.0
     assert key in metrics_ml and value == metrics_ml[key]
+
+
+@mock.patch.dict(os.environ, ENV_VARS, clear=True)
+def test_prepare_datadog_tags():
+    tags_list = prepare_datadog_tags()
+    assert "dataset:financial-demo" in tags_list
