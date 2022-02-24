@@ -164,12 +164,7 @@ def prepare_ml_metrics(results: List[Dict[Text, Any]]) -> Dict[Text, float]:
 
 
 def prepare_datadog_tags() -> List[Text]:
-    import socket
-    hostname = socket.gethostname()
-    print("hostname", hostname)
-
     tags = {
-        "host": hostname,
         "env": DD_ENV,
         "service": DD_SERVICE,
         "branch": os.environ["BRANCH"],
