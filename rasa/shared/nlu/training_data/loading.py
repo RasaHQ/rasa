@@ -60,7 +60,10 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     elif len(data_sets) == 1:
         training_data = data_sets[0]
     else:
-        training_data = data_sets[0].merge(*data_sets[1:])
+        first_training_data_instance = data_sets[0]
+        if first_training_data_instance is None:
+            first_training_data_instance = TrainingData()
+        training_data = first_training_data_instance.merge(*data_sets[1:])
 
     return training_data
 

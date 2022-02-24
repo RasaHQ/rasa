@@ -34,8 +34,13 @@ class Dialogue:
             Deserialised `Dialogue`.
 
         """
+        parameter_events = parameters.get("events")
+        if parameter_events is not None:
+            events = [Event.from_parameters(evt) for evt in parameter_events]
+        else:
+            events = []
 
         return cls(
             parameters.get("name"),
-            [Event.from_parameters(evt) for evt in parameters.get("events")],
+            events,
         )
