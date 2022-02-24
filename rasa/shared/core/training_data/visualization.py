@@ -473,11 +473,18 @@ def visualize_neighborhood(
                 and event_idx.action_name == ACTION_LISTEN_NAME
             ):
                 next_node_idx += 1
+                if message is None:
+                    label = "  ?  "
+                else:
+                    intent = message.get("intent", {})
+                    label = (
+                        intent.get("name", "  ?  ")
+                        if isinstance(intent, dict)
+                        else "  ?  "
+                    )
                 graph.add_node(
                     next_node_idx,
-                    label="  ?  "
-                    if not message
-                    else message.get("intent", {}).get("name", "  ?  "),
+                    label=label,
                     shape="rect",
                     **{"class": "intent dashed active"},
                 )

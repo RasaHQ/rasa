@@ -164,6 +164,9 @@ class LocalModelStorage(ModelStorage):
             model_metadata = self._create_model_metadata(domain, model_configuration)
             self._persist_metadata(model_metadata, temporary_directory)
 
+            if isinstance(model_archive_path, str):
+                model_archive_path = Path(model_archive_path)
+
             if not model_archive_path.parent.exists():
                 model_archive_path.parent.mkdir(parents=True)
 

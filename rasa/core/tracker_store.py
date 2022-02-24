@@ -219,7 +219,10 @@ class TrackerStore:
         return self.retrieve(conversation_id)
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
-        """Streams events to a message broker"""
+        """Streams events to a message broker."""
+        if self.event_broker is None:
+            return
+
         offset = self.number_of_existing_events(tracker.sender_id)
         events = tracker.events
         for event in list(itertools.islice(events, offset, len(events))):
@@ -477,9 +480,12 @@ class DynamoTrackerStore(TrackerStore):
         # `float`s are stored as `Decimal` objects - we need to convert them back
         events_with_floats = core_utils.replace_decimals_with_floats(events)
 
-        return DialogueStateTracker.from_dict(
-            sender_id, events_with_floats, self.domain.slots
-        )
+        if self.domain is None:
+            slots = []
+        else:
+            slots = self.domain.slots
+
+        return DialogueStateTracker.from_dict(sender_id, events_with_floats, slots)
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the `DynamoTrackerStore`."""
@@ -649,7 +655,12 @@ class MongoTrackerStore(TrackerStore):
         if not events:
             return None
 
-        return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
+        if self.domain is None:
+            slots = []
+        else:
+            slots = self.domain.slots
+
+        return DialogueStateTracker.from_dict(sender_id, events, slots)
 
     def retrieve_full_tracker(
         self, conversation_id: Text
@@ -660,9 +671,12 @@ class MongoTrackerStore(TrackerStore):
         if not events:
             return None
 
-        return DialogueStateTracker.from_dict(
-            conversation_id, events, self.domain.slots
-        )
+        if self.domain is None:
+            slots = []
+        else:
+            slots = self.domain.slots
+
+        return DialogueStateTracker.from_dict(conversation_id, events, slots)
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store."""
