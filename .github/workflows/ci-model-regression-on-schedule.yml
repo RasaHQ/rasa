@@ -12,6 +12,7 @@ env:
   TF_FORCE_GPU_ALLOW_GROWTH: true
   GITHUB_ISSUE_LABELS: '["type:bug :bug:", "tool:model-regression-tests"]'
   PERFORMANCE_DROP_THRESHOLD: -0.05
+  NVML_INTERVAL_IN_SEC: 1
 
 jobs:
   read_test_configuration:
@@ -240,7 +241,7 @@ jobs:
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: "main"
         run: |
-          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}"
+          .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
@@ -324,11 +325,10 @@ jobs:
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
           fi
 
-      - name: Generate a JSON file with a report / Publish results to Segment + Datadog
+      - name: Generate a JSON file with a report / Publish results to Datadog
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           SUMMARY_FILE: "./report.json"
-          SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
           CONFIG: ${{ matrix.config }}
@@ -427,7 +427,7 @@ jobs:
             return issue.data.number
 
       - name: Notify Slack of Failure 😱
-        if: failure()  && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
+        if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
         uses: 8398a7/action-slack@a74b761b4089b5d730d813fbedcd2ec5d394f3af  # v3
         with:
           status: custom
@@ -524,16 +524,16 @@ jobs:
           # Get ID of last on-schedule workflow
           SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
-            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
+            | jq -r '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
 
-          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
+          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
 
           DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
-            | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
+            | jq -r '.artifacts[] | select(.name == "report.json") | .archive_download_url')
 
           # Download the artifact
-          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
+          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
 
           # Unzip and change name
           unzip report.json.zip && mv report.json report_main.json
@@ -551,14 +551,7 @@ jobs:
       - name: Analyse Performance 🔍
         id: performance
         run: |
-          set +e
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
-          if [ $? -ne 0 ]; then
-              echo "New template failed. Try with legacy template."
-              OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results_legacy.tmpl)"
-          fi
-          set -e
-
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           OUTPUT="$(echo $OUTPUT | sed 's|`|\\`|g')"
