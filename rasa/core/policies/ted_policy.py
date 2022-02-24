@@ -4,6 +4,7 @@ import logging
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from pathlib import Path
 from collections import defaultdict
+import os
 
 import numpy as np
 import tensorflow as tf
@@ -118,6 +119,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
     EPOCH_OVERRIDE,
+    USE_GPU
 )
 
 
@@ -340,6 +342,7 @@ class TEDPolicy(Policy):
             POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
+            USE_GPU: False,
         }
 
     def __init__(
@@ -357,11 +360,9 @@ class TEDPolicy(Policy):
         super().__init__(
             config, model_storage, resource, execution_context, featurizer=featurizer
         )
-
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             config[SPLIT_ENTITIES_BY_COMMA], SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-
         self._load_params(config)
 
         self.model = model
@@ -634,46 +635,89 @@ class TEDPolicy(Policy):
                 These may or may not be used by the function depending
                 on how the policy is trained.
         """
-        if not self.finetune_mode:
-            # This means the model wasn't loaded from a
-            # previously trained model and hence needs
-            # to be instantiated.
-            self.model = self.model_class()(
-                model_data.get_signature(),
-                self.config,
-                isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
-                self._label_data,
-                self._entity_tag_specs,
+        if(self.config[USE_GPU]):
+            if not self.finetune_mode:
+                # This means the model wasn't loaded from a
+                # previously trained model and hence needs
+                # to be instantiated.
+                self.model = self.model_class()(
+                    model_data.get_signature(),
+                    self.config,
+                    isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
+                    self._label_data,
+                    self._entity_tag_specs,
+                )
+                self.model.compile(
+                    optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+                )
+            (
+                data_generator,
+                validation_data_generator,
+            ) = rasa.utils.train_utils.create_data_generators(
+                model_data,
+                self.config[BATCH_SIZES],
+                self.config[EPOCHS],
+                self.config[BATCH_STRATEGY],
+                self.config[EVAL_NUM_EXAMPLES],
+                self.config[RANDOM_SEED],
             )
-            self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+            callbacks = rasa.utils.train_utils.create_common_callbacks(
+                self.config[EPOCHS],
+                self.config[TENSORBOARD_LOG_DIR],
+                self.config[TENSORBOARD_LOG_LEVEL],
+                self.tmp_checkpoint_dir,
             )
-        (
-            data_generator,
-            validation_data_generator,
-        ) = rasa.utils.train_utils.create_data_generators(
-            model_data,
-            self.config[BATCH_SIZES],
-            self.config[EPOCHS],
-            self.config[BATCH_STRATEGY],
-            self.config[EVAL_NUM_EXAMPLES],
-            self.config[RANDOM_SEED],
-        )
-        callbacks = rasa.utils.train_utils.create_common_callbacks(
-            self.config[EPOCHS],
-            self.config[TENSORBOARD_LOG_DIR],
-            self.config[TENSORBOARD_LOG_LEVEL],
-            self.tmp_checkpoint_dir,
-        )
-        self.model.fit(
-            data_generator,
-            epochs=self.config[EPOCHS],
-            validation_data=validation_data_generator,
-            validation_freq=self.config[EVAL_NUM_EPOCHS],
-            callbacks=callbacks,
-            verbose=False,
-            shuffle=False,  # we use custom shuffle inside data generator
-        )
+            self.model.fit(
+                data_generator,
+                epochs=self.config[EPOCHS],
+                validation_data=validation_data_generator,
+                validation_freq=self.config[EVAL_NUM_EPOCHS],
+                callbacks=callbacks,
+                verbose=False,
+                shuffle=False,  # we use custom shuffle inside data generator
+            )
+        else:
+            with tf.device('/cpu:0'):
+                if not self.finetune_mode:
+                # This means the model wasn't loaded from a
+                # previously trained model and hence needs
+                # to be instantiated.
+                    self.model = self.model_class()(
+                        model_data.get_signature(),
+                        self.config,
+                        isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
+                        self._label_data,
+                        self._entity_tag_specs,
+                    )
+                    self.model.compile(
+                        optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+                    )
+                (
+                    data_generator,
+                    validation_data_generator,
+                ) = rasa.utils.train_utils.create_data_generators(
+                    model_data,
+                    self.config[BATCH_SIZES],
+                    self.config[EPOCHS],
+                    self.config[BATCH_STRATEGY],
+                    self.config[EVAL_NUM_EXAMPLES],
+                    self.config[RANDOM_SEED],
+                )
+                callbacks = rasa.utils.train_utils.create_common_callbacks(
+                    self.config[EPOCHS],
+                    self.config[TENSORBOARD_LOG_DIR],
+                    self.config[TENSORBOARD_LOG_LEVEL],
+                    self.tmp_checkpoint_dir,
+                )
+                self.model.fit(
+                    data_generator,
+                    epochs=self.config[EPOCHS],
+                    validation_data=validation_data_generator,
+                    validation_freq=self.config[EVAL_NUM_EPOCHS],
+                    callbacks=callbacks,
+                    verbose=False,
+                    shuffle=False,  # we use custom shuffle inside data generator
+                )
 
     def train(
         self,
@@ -1173,6 +1217,18 @@ class TED(TransformerRasaModel):
             entity_tag_specs: the entity tag specifications
         """
         super().__init__("TED", config, data_signature, label_data)
+        try:
+            # Disable all GPUS
+            tf.config.set_visible_devices([], 'GPU')
+            visible_devices = tf.config.get_visible_devices()
+            for device in visible_devices:
+                assert device.device_type != 'GPU'
+        except:
+            # Invalid device or cannot modify virtual devices once initialized.
+            pass
+        import os
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+        import tensorflow as tf
 
         self.max_history_featurizer_is_used = max_history_featurizer_is_used
 
