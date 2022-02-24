@@ -66,7 +66,6 @@ Retrieves the configuration that should be used for the training.
 #### get\_config\_file\_for\_auto\_config
 
 ```python
- | @rasa.shared.utils.common.cached_method
  | get_config_file_for_auto_config() -> Optional[Text]
 ```
 

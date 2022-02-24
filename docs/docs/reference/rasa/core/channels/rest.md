@@ -24,3 +24,12 @@ Output channel that collects send messages in a list
 
 (doesn&#x27;t send them anywhere, just collects them).
 
+#### name
+
+```python
+ | @classmethod
+ | name(cls) -> Text
+```
+
+Name of QueueOutputChannel.
+
