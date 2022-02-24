@@ -35,6 +35,7 @@ ENV_VARS = {
     "TOTAL_RUN_TIME": "5m58s",
     "TYPE": "nlu",
     "INDEX_REPETITION": "0",
+    "HOST_NAME": "github-runner-2223039222-22df222fcd-2cn7d",
 }
 
 
