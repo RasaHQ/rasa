@@ -90,7 +90,6 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_RANKING_KEY,
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
-    DEFAULT_TRANSFORMER_SIZE,
 )
 from rasa.shared.nlu.constants import (
     TEXT,

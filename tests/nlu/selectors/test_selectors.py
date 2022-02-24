@@ -582,11 +582,17 @@ def test_sets_integer_transformer_size_when_needed(
 
     if should_set_default_transformer_size:
         assert len(records) > 0
+        # check that the specific warning was raised
+        assert any(warning_str in record.message.args[0] for record in records)
         # check that transformer size got set to the new default
         assert selector.component_config[TRANSFORMER_SIZE] == DEFAULT_TRANSFORMER_SIZE
     else:
         # check that the specific warning was not raised
         assert not any(warning_str in record.message.args[0] for record in records)
+        # check that transformer size was not changed
+        assert selector.component_config[TRANSFORMER_SIZE] == config.get(
+            TRANSFORMER_SIZE, None  # None is the default transformer size
+        )
 
 
 def test_transformer_size_gets_corrected(train_persist_load_with_different_settings):
