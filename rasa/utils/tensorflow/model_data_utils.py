@@ -458,25 +458,25 @@ def _extract_features(
                 attribute_mask[i] = 0
                 list_of_features = fake_features
 
-            for features in list_of_features:
+            for feature in list_of_features:
                 # in case of ENTITIES, if the attribute type matches either 'entity',
                 # 'role', or 'group' the features correspond to the tag ids of that
                 # entity type in order to distinguish later on between the different
                 # tag ids, we use the entity type as key
-                if attribute == ENTITIES and features.attribute in [
+                if attribute == ENTITIES and feature.attribute in [
                     ENTITY_ATTRIBUTE_TYPE,
                     ENTITY_ATTRIBUTE_GROUP,
                     ENTITY_ATTRIBUTE_ROLE,
                 ]:
-                    key = features.attribute
+                    key = feature.attribute
                 else:
-                    key = features.type
+                    key = feature.type
 
                 # all features should have the same types
-                if features.is_sparse():
-                    dialogue_sparse_features[key].append(features.features)
+                if feature.is_sparse():
+                    dialogue_sparse_features[key].append(feature.features)
                 else:
-                    dialogue_dense_features[key].append(features.features)
+                    dialogue_dense_features[key].append(feature.features)
 
         for key, value in dialogue_sparse_features.items():
             sparse_features[key].append(value)
