@@ -134,8 +134,8 @@ def train(
         )
         return TrainingResult(code=1)
 
-    domain = file_importer.get_domain()
-    if domain.is_empty():
+    domain_object = file_importer.get_domain()
+    if domain_object.is_empty():
         rasa.shared.utils.cli.print_warning(
             "Core training was skipped because no valid domain file was found. "
             "Only an NLU-model was created. Please specify a valid domain using "

@@ -21,7 +21,7 @@ ENV_VARS = {
     "PR_URL": "https://github.com/RasaHQ/rasa/pull/10856/",
     "GITHUB_EVENT_NAME": "pull_request",
     "GITHUB_RUN_ID": "1882718340",
-    "GITHUB_SHA": "11860108971985010af2e82042b72fed4c65817c",
+    "GITHUB_SHA": "abc",
     "GITHUB_WORKFLOW": "CI - Model Regression",
     "IS_EXTERNAL": "false",
     "DATASET_REPOSITORY_BRANCH": "main",
