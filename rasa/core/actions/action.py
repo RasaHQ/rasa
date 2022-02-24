@@ -387,10 +387,15 @@ class ActionRetrieveResponse(ActionBotResponse):
             Full retrieval name of the action if the last user utterance
             contains a response selector output, `None` otherwise.
         """
-        if RESPONSE_SELECTOR_PROPERTY_NAME not in tracker.latest_message.parse_data:
+        latest_message = tracker.latest_message
+
+        if latest_message is None:
             return None
 
-        response_selector_properties = tracker.latest_message.parse_data[
+        if RESPONSE_SELECTOR_PROPERTY_NAME not in latest_message.parse_data:
+            return None
+
+        response_selector_properties = latest_message.parse_data[
             RESPONSE_SELECTOR_PROPERTY_NAME
         ]
 
@@ -418,7 +423,12 @@ class ActionRetrieveResponse(ActionBotResponse):
         domain: "Domain",
     ) -> List[Event]:
         """Query the appropriate response and create a bot utterance with that."""
-        response_selector_properties = tracker.latest_message.parse_data[
+        latest_message = tracker.latest_message
+
+        if latest_message is None:
+            return []
+
+        response_selector_properties = latest_message.parse_data[
             RESPONSE_SELECTOR_PROPERTY_NAME
         ]
 
@@ -719,7 +729,7 @@ class RemoteAction(Action):
             logger.debug(
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
-            response = await self.action_endpoint.request(
+            response: Any = await self.action_endpoint.request(
                 json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
             )
 
@@ -1095,7 +1105,9 @@ class ActionExtractSlots(Action):
             event for event in extraction_events if isinstance(event, SlotSet)
         ]
 
-        slot_candidates = "\n".join([e.key for e in slot_events])
+        slot_candidates = "\n".join(
+            [e.key for e in slot_events if isinstance(e, SlotSet)]
+        )
         logger.debug(f"Validating extracted slots: {slot_candidates}")
 
         if ACTION_VALIDATE_SLOT_MAPPINGS not in domain.user_actions:
@@ -1117,7 +1129,9 @@ class ActionExtractSlots(Action):
         # candidate we assume that it was valid. The custom action has to return a
         # SlotSet(slot_name, None) event to mark a Slot as invalid.
         return validate_events + [
-            event for event in slot_events if event.key not in validated_slot_names
+            event
+            for event in slot_events
+            if isinstance(event, SlotSet) and event.key not in validated_slot_names
         ]
 
     def _fails_unique_entity_mapping_check(
@@ -1267,6 +1281,8 @@ def extract_slot_value_from_predefined_mapping(
     elif should_fill_intent_slot or should_fill_trigger_slot:
         value = [mapping.get("value")]
     elif should_fill_text_slot:
-        value = [tracker.latest_message.text]
+        value = [
+            tracker.latest_message.text if tracker.latest_message is not None else None
+        ]
 
     return value
