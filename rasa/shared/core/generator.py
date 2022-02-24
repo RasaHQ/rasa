@@ -61,7 +61,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         super().__init__(
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
-        self._states_for_hashing = None
+        self._states_for_hashing: Optional[Deque[FrozenState]] = None
         self.domain = domain
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented

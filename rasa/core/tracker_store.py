@@ -351,6 +351,7 @@ class RedisTrackerStore(TrackerStore):
             ssl_keyfile=ssl_keyfile,
             ssl_certfile=ssl_certfile,
             ssl_ca_certs=ssl_ca_certs,
+            decode_responses=True,
         )
         self.record_exp = record_exp
 
