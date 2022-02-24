@@ -5,7 +5,7 @@ import tempfile
 import warnings as pywarnings
 import typing
 from collections import defaultdict, namedtuple
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, cast
 
 from rasa import telemetry
 from rasa.core.constants import (
@@ -434,7 +434,7 @@ def _create_data_generator(
     from rasa.shared.core.generator import TrainingDataGenerator
 
     tmp_domain_path = Path(tempfile.mkdtemp()) / "domain.yaml"
-    agent.domain.persist(tmp_domain_path)
+    cast(Domain, agent.domain).persist(tmp_domain_path)
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[resource_name], domain_path=str(tmp_domain_path)
     )
@@ -822,15 +822,20 @@ async def _predict_tracker_actions(
     List[EntityEvaluationResult],
 ]:
 
-    processor = agent.processor
+    processor = cast(MessageProcessor, agent.processor)
     tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
 
+    if not isinstance(agent.domain, Domain):
+        slots = []
+    else:
+        slots = agent.domain.slots
+
     partial_tracker = DialogueStateTracker.from_events(
         tracker.sender_id,
         events[:1],
-        agent.domain.slots,
+        slots,
         sender_source=tracker.sender_source,
     )
     tracker_actions = []

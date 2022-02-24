@@ -498,6 +498,10 @@ class RulePolicy(MemoizationPolicy):
         # we need to remember which action should be predicted by the rule
         # in order to correctly output the names of the contradicting rules
         rule_name = tracker.sender_id
+
+        if prediction_source is None:
+            return None
+
         if prediction_source.startswith(DEFAULT_RULES) or prediction_source.startswith(
             LOOP_RULES
         ):

@@ -952,6 +952,9 @@ async def _predict_till_next_listen(
     listen = False
     while not listen:
         result = await request_prediction(endpoint, conversation_id)
+        if result is None:
+            result = {}
+
         predictions = result.get("scores") or []
         if not predictions:
             raise InvalidConfigException(
@@ -1473,7 +1476,12 @@ async def record_messages(
             )
             return
 
-        intents = [next(iter(i)) for i in (domain.get("intents") or [])]
+        if domain is None:
+            domain_intents = []
+        else:
+            domain_intents = domain.get("intents")
+
+        intents = [next(iter(i)) for i in domain_intents]
 
         num_messages = 0
 

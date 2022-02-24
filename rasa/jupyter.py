@@ -31,6 +31,9 @@ def chat(
     if model_path:
         agent = rasa.core.agent.load_agent(model_path=model_path, endpoints=endpoints)
 
+    if agent is None:
+        return None
+
     print("Your bot is ready to talk! Type your messages here or send '/stop'.")
     while True:
         message = input()

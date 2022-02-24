@@ -190,7 +190,9 @@ class Validator:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
                     continue
-                if not event.action_name.startswith(UTTER_PREFIX):
+
+                action_name = event.action_name if event.action_name is not None else ""
+                if not action_name.startswith(UTTER_PREFIX):
                     # we are only interested in utter actions
                     continue
 
@@ -259,7 +261,9 @@ class Validator:
                 if not isinstance(event, ActionExecuted):
                     continue
 
-                if not event.action_name.startswith("action_"):
+                action_name = event.action_name if event.action_name is not None else ""
+
+                if action_name.startswith("action_"):
                     continue
 
                 if event.action_name in visited:
