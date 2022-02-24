@@ -185,6 +185,8 @@ class TrackerWithCachedStates(DialogueStateTracker):
         if self._states_for_hashing is None:
             self._states_for_hashing = self.past_states_for_hashing(self.domain)
         else:
+            if self.domain is None:
+                return
             state = self.domain.get_active_state(self)
             frozen_state = self.freeze_current_state(state)
             self._states_for_hashing.append(frozen_state)
@@ -194,10 +196,13 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
 
-        if self._states_for_hashing is None and not skip_states:
-            # rest of this function assumes we have the previous state
-            # cached. let's make sure it is there.
-            self._states_for_hashing = self.past_states_for_hashing(self.domain)
+        if self._states_for_hashing is None:
+            if not skip_states:
+                # rest of this function assumes we have the previous state
+                # cached. let's make sure it is there.
+                self._states_for_hashing = self.past_states_for_hashing(self.domain)
+            else:
+                self._states_for_hashing = deque()
 
         super().update(event)
 

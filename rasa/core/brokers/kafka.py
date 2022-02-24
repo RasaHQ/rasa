@@ -210,7 +210,9 @@ class KafkaEventBroker(EventBroker):
         )
 
         if self.producer is not None:
-            self.producer.send(self.topic, value=event, key=partition_key, headers=headers)
+            self.producer.send(
+                self.topic, value=event, key=partition_key, headers=headers
+            )
 
     def _close(self) -> None:
         if self.producer is not None:
