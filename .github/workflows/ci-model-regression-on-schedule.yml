@@ -240,6 +240,7 @@ jobs:
           GITHUB_SHA: "${{ github.sha }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: "main"
+          INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 

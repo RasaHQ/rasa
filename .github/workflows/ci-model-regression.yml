@@ -338,6 +338,7 @@ jobs:
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
+          INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
@@ -579,6 +580,7 @@ jobs:
           PR_ID: "${{ github.event.number }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
