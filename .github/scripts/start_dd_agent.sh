@@ -31,6 +31,7 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "- github_run_id:${GITHUB_RUN_ID:-none}"
     echo "- github_event:${GITHUB_EVENT_NAME:-none}"
     echo "- index_repetition:${INDEX_REPETITION}"
+    echo "- host_name:${HOST_NAME}"
     echo ""
     echo "apm_config:"
     echo "    enabled: true"

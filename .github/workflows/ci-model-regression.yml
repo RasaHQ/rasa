@@ -310,6 +310,10 @@ jobs:
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
+          set -x
+          HOST_NAME=`hostname`
+          echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
+
       - name: Checkout dataset - external
         uses: actions/checkout@v2
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'

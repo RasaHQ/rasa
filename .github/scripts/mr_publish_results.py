@@ -44,6 +44,7 @@ OTHER_TAGS = {
     "accelerator_type": "ACCELERATOR_TYPE",
     "type": "TYPE",
     "index_repetition": "INDEX_REPETITION",
+    "host_name": "HOST_NAME",
 }
 
 GIT_RELATED_TAGS = {
