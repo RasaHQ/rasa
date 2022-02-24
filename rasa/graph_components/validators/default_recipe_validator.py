@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from typing import Iterable, List, Dict, Text, Any, Set, Type
+from typing import Iterable, List, Dict, Text, Any, Set, Type, cast
 
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
@@ -477,7 +477,7 @@ class DefaultV1RecipeValidator(GraphComponent):
             story_graph: a story graph (core training data)
         """
         consuming_rule_data = any(
-            policy_node.uses.supported_data()
+            cast(Policy, policy_node.uses).supported_data()
             in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
             for policy_node in self._policy_schema_nodes
         )

@@ -162,7 +162,10 @@ class GCSPersistor(Persistor):
     Fetches them when needed, instead of storing them on the local disk."""
 
     def __init__(self, bucket_name: Text) -> None:
-        from google.cloud import storage
+        """Initialise class with client and bucket."""
+        # there are no type hints in this repo for now
+        # https://github.com/googleapis/python-storage/issues/393
+        from google.cloud import storage  # type: ignore[attr-defined]
 
         super().__init__()
 

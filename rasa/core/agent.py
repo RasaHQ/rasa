@@ -19,7 +19,7 @@ from rasa.shared.core.domain import Domain
 from rasa.core.exceptions import AgentNotReady
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.core.lock_store import InMemoryLockStore, LockStore
-from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import FailSafeTrackerStore, InMemoryTrackerStore
@@ -363,7 +363,7 @@ class Agent:
 
         # update domain on all instances
         self.tracker_store.domain = self.domain
-        if hasattr(self.nlg, "responses"):
+        if isinstance(self.nlg, TemplatedNaturalLanguageGenerator):
             self.nlg.responses = self.domain.responses if self.domain else {}
 
     @property
