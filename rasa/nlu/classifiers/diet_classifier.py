@@ -666,6 +666,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[FeatureArray]:
+        if self._label_data is None:
+            return []
+
         feature_arrays: List[FeatureArray] = self._label_data.get(LABEL, SENTENCE)
         all_label_features = feature_arrays[0]
         return [
@@ -880,6 +883,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
+        if self.model is None:
+            self.model = self._instantiate_model_class(model_data)
+
         if not self.finetune_mode:
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
@@ -1057,9 +1063,11 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 model_path / f"{file_name}.sparse_feature_sizes.pkl",
                 self._sparse_feature_sizes,
             )
-            io_utils.pickle_dump(
-                model_path / f"{file_name}.label_data.pkl", dict(self._label_data.data)
-            )
+            if self._label_data is not None:
+                io_utils.pickle_dump(
+                    model_path / f"{file_name}.label_data.pkl",
+                    dict(self._label_data.data),
+                )
             io_utils.json_pickle(
                 model_path / f"{file_name}.index_label_id_mapping.json",
                 self.index_label_id_mapping,

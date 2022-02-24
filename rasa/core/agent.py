@@ -405,6 +405,10 @@ class Agent:
 
         """
         message = UserMessage(message_data)
+
+        if self.processor is None:
+            return {}
+
         return await self.processor.parse_message(message)
 
     async def handle_message(
@@ -415,6 +419,9 @@ class Agent:
             logger.info("Ignoring message as there is no agent to handle it.")
             return None
 
+        if self.processor is None:
+            return None
+
         async with self.lock_store.lock(message.sender_id):
             return await self.processor.handle_message(message)
 
@@ -423,6 +430,9 @@ class Agent:
         self, sender_id: Text
     ) -> Optional[Dict[Text, Any]]:
         """Predict the next action for a sender id."""
+        if self.processor is None:
+            return None
+
         return await self.processor.predict_next_for_sender_id(sender_id)
 
     @agent_must_be_ready
@@ -432,6 +442,9 @@ class Agent:
         verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART,
     ) -> Optional[Dict[Text, Any]]:
         """Predicts the next action."""
+        if self.processor is None:
+            return None
+
         return self.processor.predict_next_with_tracker(tracker, verbosity)
 
     @agent_must_be_ready
@@ -449,6 +462,9 @@ class Agent:
         confidence: Optional[float],
     ) -> Optional[DialogueStateTracker]:
         """Executes an action."""
+        if self.processor is None:
+            return None
+
         prediction = PolicyPrediction.for_action_name(
             self.domain, action, policy, confidence or 0.0
         )
@@ -465,6 +481,9 @@ class Agent:
         tracker: DialogueStateTracker,
     ) -> None:
         """Trigger a user intent, e.g. triggered by an external event."""
+        if self.processor is None:
+            return None
+
         await self.processor.trigger_external_user_uttered(
             intent_name, entities, tracker, output_channel
         )
