@@ -80,6 +80,7 @@ module.exports = {
       title: 'Rasa Open Source',
       items: [
         {
+          target: '_self',
           label: 'Rasa Open Source',
           to: path.join('/', BASE_URL),
           position: 'left',
