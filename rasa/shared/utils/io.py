@@ -302,7 +302,6 @@ def fix_yaml_loader() -> None:
 
     yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
-    yaml.allow_duplicate_keys = False
 
 
 def replace_environment_variables() -> None:

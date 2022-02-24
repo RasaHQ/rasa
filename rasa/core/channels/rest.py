@@ -151,8 +151,11 @@ class QueueOutputChannel(CollectingOutputChannel):
 
     (doesn't send them anywhere, just collects them)."""
 
+    messages: Queue
+
     @classmethod
     def name(cls) -> Text:
+        """Name of QueueOutputChannel."""
         return "queue"
 
     # noinspection PyMissingConstructor

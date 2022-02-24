@@ -12,6 +12,7 @@ from typing import (
     Iterator,
     Generator,
     Type,
+    TypeVar,
     List,
     Deque,
     Iterable,
@@ -64,7 +65,7 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict
+    from typing_extensions import TypedDict, TypeAlias
 
     from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
@@ -81,6 +82,8 @@ if TYPE_CHECKING:
         },
         total=False,
     )
+
+    EventTypeAlias: TypeAlias = TypeVar("EventTypeAlias", Event)
 
 
 logger = logging.getLogger(__name__)
@@ -719,11 +722,11 @@ class DialogueStateTracker:
 
     def get_last_event_for(
         self,
-        event_type: Union[Type[Event], Tuple[Type, ...]],
+        event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"], ...]],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
         event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
-    ) -> Optional[Event]:
+    ) -> Optional["EventTypeAlias"]:
         """Gets the last event of a given type which was actually applied.
 
         Args:
@@ -737,7 +740,6 @@ class DialogueStateTracker:
         Returns:
             event which matched the query or `None` if no event matched.
         """
-
         to_exclude = action_names_to_exclude or []
 
         def filter_function(e: Event) -> bool:
@@ -845,6 +847,9 @@ class DialogueStateTracker:
 
         Returns: name of the previously executed action or text of e2e action
         """
+        if self.latest_action is None:
+            return None
+
         return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
             ACTION_TEXT
         )

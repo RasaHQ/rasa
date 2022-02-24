@@ -54,7 +54,7 @@ class SlotMapping:
                 f"{DOCS_URL_SLOTS} for more information."
             )
 
-        validations = {
+        validations: Dict[SlotMappingType, List[Text]] = {
             SlotMappingType.FROM_ENTITY: ["entity"],
             SlotMappingType.FROM_INTENT: ["value"],
             SlotMappingType.FROM_TRIGGER_INTENT: ["value"],
@@ -62,7 +62,7 @@ class SlotMapping:
             SlotMappingType.CUSTOM: [],
         }
 
-        required_keys = validations.get(mapping_type)
+        required_keys = validations[mapping_type]
         for required_key in required_keys:
             if mapping.get(required_key) is None:
                 raise InvalidDomain(

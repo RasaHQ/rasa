@@ -93,15 +93,17 @@ class SlackBot(OutputChannel):
             )
             return await self.send_text_message(recipient, text, **kwargs)
 
-        button_block = {"type": "actions", "elements": []}
-        for button in buttons:
-            button_block["elements"].append(
+        button_block = {
+            "type": "actions",
+            "elements": [
                 {
                     "type": "button",
                     "text": {"type": "plain_text", "text": button["title"]},
                     "value": button["payload"],
                 }
-            )
+                for button in buttons
+            ],
+        }
 
         await self._post_message(
             channel=recipient,
