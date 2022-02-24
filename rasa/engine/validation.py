@@ -437,7 +437,7 @@ def _validate_needs(
                 f"See {DOCS_URL_GRAPH_COMPONENTS} for more information."
             )
 
-        required_type = available_args.get(param_name)
+        required_type = available_args[param_name]
         needs_passed_to_kwargs = has_kwargs and required_type is None
 
         if not needs_passed_to_kwargs:
