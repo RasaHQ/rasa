@@ -86,6 +86,7 @@ class RestInput(InputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
+        """Groups the collection of endpoints used by rest channel."""
         module_type = inspect.getmodule(self)
         if module_type is not None:
             module_name = module_type.__name__

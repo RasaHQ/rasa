@@ -54,7 +54,7 @@ class TicketLock:
     def from_dict(cls, data: Dict[Text, Any]) -> "TicketLock":
         """Create `TicketLock` from dictionary."""
 
-        tickets = [Ticket.from_dict(json.loads(d)) for d in data.get("tickets")]
+        tickets = [Ticket.from_dict(json.loads(d)) for d in data.get("tickets", [])]
         return cls(data.get("conversation_id"), deque(tickets))
 
     def dumps(self) -> Text:
