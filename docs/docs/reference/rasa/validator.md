@@ -116,18 +116,6 @@ Verifies that the bot behaviour in stories is deterministic.
 
 Runs all the validations on intents and utterances.
 
-#### verify\_domain\_duplicates
-
-```python
- | verify_domain_duplicates() -> bool
-```
-
-Verifies that there are no duplicated dictionaries in multiple domain files.
-
-**Returns**:
-
-  `True` if duplicates exist.
-
 #### verify\_form\_slots
 
 ```python

@@ -43,6 +43,14 @@ Returns the SessionConfig with the default values.
 
 Returns a boolean value depending on the value of session_expiration_time.
 
+#### as\_dict
+
+```python
+ | as_dict() -> Dict
+```
+
+Return serialized `SessionConfig`.
+
 ## Domain Objects
 
 ```python
@@ -53,6 +61,33 @@ The domain specifies the universe in which the bot&#x27;s policy acts.
 
 A Domain subclass provides the actions the bot can take, the intents
 and entities it can recognise.
+
+#### empty
+
+```python
+ | @classmethod
+ | empty(cls) -> "Domain"
+```
+
+Returns empty Domain.
+
+#### load
+
+```python
+ | @classmethod
+ | load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain"
+```
+
+Returns loaded Domain after merging all domain files.
+
+#### from\_path
+
+```python
+ | @classmethod
+ | from_path(cls, path: Union[Text, Path]) -> "Domain"
+```
+
+Loads the `Domain` from a path.
 
 #### from\_file
 
@@ -84,9 +119,6 @@ Deserializes and creates domain.
 **Arguments**:
 
 - `data` - The serialized domain.
-- `duplicates` - A dictionary where keys are `intents`, `slots`, `forms` and
-  `responses` and values are lists of duplicated entries of a
-  corresponding type when the domain is built from multiple files.
   
 
 **Returns**:
@@ -108,74 +140,24 @@ Loads and merges multiple domain files recursively from a directory tree.
  | merge(domain: Optional["Domain"], override: bool = False) -> "Domain"
 ```
 
-Merge this domain with another one, combining their attributes.
-
-List attributes like ``intents`` and ``actions`` will be deduped
-and merged. Single attributes will be taken from `self` unless
-override is `True`, in which case they are taken from `domain`.
-
-#### merge\_domain\_dicts
-
-```python
- | merge_domain_dicts(domain1: Dict, domain2: Dict, override: bool = False) -> Dict[Text, Any]
-```
-
 Merges this domain dict with another one, combining their attributes.
 
-This is used when multiple domain yml files are configured in a single
-directory. Unlike the merge method above, which merges Domain objects by
-creating each object then merging it with the previous, this method merges
-domain dicts, and ensures all attributes (like ``intents``, ``entities``, and
-``actions``) are known to the Domain when the object is created.
+This method merges domain dicts, and ensures all attributes (like ``intents``,
+``entities``, and ``actions``) are known to the Domain when the
+object is created.
 
 List attributes like ``intents`` and ``actions`` are deduped
 and merged. Single attributes are taken from `domain1` unless
 override is `True`, in which case they are taken from `domain2`.
 
-#### extract\_duplicates
+#### merge\_domain\_dicts
 
 ```python
  | @staticmethod
- | extract_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]
+ | merge_domain_dicts(domain_dict: Dict, combined: Dict, override: bool = False) -> Dict
 ```
 
-Extracts duplicates from two lists.
-
-#### clean\_duplicates
-
-```python
- | @staticmethod
- | clean_duplicates(dupes: Dict[Text, Any]) -> Dict[Text, Any]
-```
-
-Removes keys for empty values.
-
-#### merge\_dicts
-
-```python
- | @staticmethod
- | merge_dicts(tempDict1: Dict[Text, Any], tempDict2: Dict[Text, Any], override_existing_values: bool = False) -> Dict[Text, Any]
-```
-
-Merges two dicts.
-
-#### merge\_lists
-
-```python
- | @staticmethod
- | merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]
-```
-
-Merges two lists.
-
-#### merge\_lists\_of\_dicts
-
-```python
- | @staticmethod
- | merge_lists_of_dicts(dict_list1: List[Dict], dict_list2: List[Dict], override_existing_values: bool = False) -> List[Dict]
-```
-
-Merges two dict lists.
+Combines two domain dictionaries.
 
 #### collect\_slots
 
@@ -239,7 +221,7 @@ Get intent properties for a domain from what is provided by a domain file.
 #### \_\_init\_\_
 
 ```python
- | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default(), duplicates: Optional[Dict[Text, List[Text]]] = None) -> None
+ | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], data: Dict, action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
 ```
 
 Creates a `Domain`.
@@ -253,14 +235,12 @@ Creates a `Domain`.
   will send the matching response to the user.
 - `action_names` - Names of custom actions.
 - `forms` - Form names and their slot mappings.
+- `data` - original domain dict representation.
 - `action_texts` - End-to-End bot utterances from end-to-end stories.
 - `store_entities_as_slots` - If `True` Rasa will automatically create `SlotSet`
   events for entities if there are slots with the same name as the entity.
 - `session_config` - Configuration for conversation sessions. Conversations are
   restarted at the end of a session.
-- `duplicates` - A dictionary where keys are `intents`, `slots`, `forms` and
-  `responses` and values are lists of duplicated entries of a
-  corresponding type when the domain is built from multiple files.
 
 #### \_\_deepcopy\_\_
 
@@ -555,22 +535,6 @@ Returns `responses` with preserved multilines in the `text` key.
 
   `responses` with preserved multilines in the `text` key.
 
-#### cleaned\_domain
-
-```python
- | cleaned_domain() -> Dict[Text, Any]
-```
-
-Fetch cleaned domain to display or write into a file.
-
-The internal `used_entities` property is replaced by `use_entities` or
-`ignore_entities` and redundant keys are replaced with default values
-to make the domain easier readable.
-
-**Returns**:
-
-  A cleaned dictionary version of the domain.
-
 #### persist
 
 ```python
@@ -579,28 +543,15 @@ to make the domain easier readable.
 
 Write domain to a file.
 
-#### persist\_clean
-
-```python
- | persist_clean(filename: Union[Text, Path]) -> None
-```
-
-Write cleaned domain to a file.
-
 #### as\_yaml
 
 ```python
- | as_yaml(clean_before_dump: bool = False) -> Text
+ | as_yaml() -> Text
 ```
 
 Dump the `Domain` object as a YAML string.
+
 This function preserves the orders of the keys in the domain.
-
-**Arguments**:
-
-- `clean_before_dump` - When set to `True`, this method returns
-  a version of the domain without internal
-  information. Defaults to `False`.
 
 **Returns**:
 
@@ -727,4 +678,12 @@ Counts the total number of slot mappings and custom slot mappings.
 ```
 
 Returns text representation of object.
+
+#### warn\_about\_duplicates\_found\_during\_domain\_merging
+
+```python
+warn_about_duplicates_found_during_domain_merging(duplicates: Dict[Text, List[Text]]) -> None
+```
+
+Emits warning about found duplicates while loading multiple domain paths.
 
