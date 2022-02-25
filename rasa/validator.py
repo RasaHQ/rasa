@@ -191,8 +191,10 @@ class Validator:
                 if not isinstance(event, ActionExecuted):
                     continue
 
-                action_name = event.action_name if event.action_name is not None else ""
-                if not action_name.startswith(UTTER_PREFIX):
+                if not isinstance(event.action_name, str):
+                    continue
+
+                if not event.action_name.startswith(UTTER_PREFIX):
                     # we are only interested in utter actions
                     continue
 
@@ -261,9 +263,10 @@ class Validator:
                 if not isinstance(event, ActionExecuted):
                     continue
 
-                action_name = event.action_name if event.action_name is not None else ""
+                if not isinstance(event.action_name, str):
+                    continue
 
-                if action_name.startswith("action_"):
+                if not event.action_name.startswith("action_"):
                     continue
 
                 if event.action_name in visited:

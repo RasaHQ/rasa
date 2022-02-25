@@ -499,11 +499,9 @@ class RulePolicy(MemoizationPolicy):
         # in order to correctly output the names of the contradicting rules
         rule_name = tracker.sender_id
 
-        if prediction_source is None:
-            return None
-
-        if prediction_source.startswith(DEFAULT_RULES) or prediction_source.startswith(
-            LOOP_RULES
+        if isinstance(prediction_source, str) and (
+            prediction_source.startswith(DEFAULT_RULES)
+            or prediction_source.startswith(LOOP_RULES)
         ):
             # the real gold action contradict the one in the rules in this case
             gold_action_name = predicted_action_name
