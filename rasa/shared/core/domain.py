@@ -270,9 +270,7 @@ class Domain:
                     other_dict = rasa.shared.utils.io.read_yaml(
                         rasa.shared.utils.io.read_file(full_path)
                     )
-                    domain_dict = Domain.merge_domain_dicts(
-                        other_dict, domain_dict, is_dir=True
-                    )
+                    domain_dict = Domain.merge_domain_dicts(other_dict, domain_dict)
 
         domain = Domain.from_dict(domain_dict)
         return domain
@@ -281,7 +279,6 @@ class Domain:
         self,
         domain: Optional["Domain"],
         override: bool = False,
-        is_dir: bool = False,
     ) -> "Domain":
         """Merges this domain dict with another one, combining their attributes.
 
@@ -300,14 +297,16 @@ class Domain:
             return domain
 
         merged_dict = self.__class__.merge_domain_dicts(
-            domain.as_dict(), self.as_dict(), override, is_dir
+            domain.as_dict(), self.as_dict(), override
         )
 
         return Domain.from_dict(merged_dict)
 
     @staticmethod
     def merge_domain_dicts(
-        domain_dict: Dict, combined: Dict, override: bool = False, is_dir: bool = False
+        domain_dict: Dict,
+        combined: Dict,
+        override: bool = False,
     ) -> Dict:
         """Combines two domain dictionaries."""
         if not domain_dict:
@@ -323,13 +322,9 @@ class Domain:
 
         if (
             override
-            or (
-                not is_dir
-                and combined.get(SESSION_CONFIG_KEY)
-                == SessionConfig.default().as_dict()
-            )
-            or (is_dir and domain_dict.get(SESSION_CONFIG_KEY))
-        ):
+            or combined.get(SESSION_CONFIG_KEY) == SessionConfig.default().as_dict()
+            or combined.get(SESSION_CONFIG_KEY) is None
+        ) and domain_dict.get(SESSION_CONFIG_KEY):
             combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
         # remove existing forms from new actions
