@@ -24,11 +24,11 @@ DEFAULT_NEW_DOMAIN = "new_domain"
 YML_SUFFIX = ".yml"
 
 
-def _create_back_up(
-    domain_file: Path, backup_location: Path
-) -> Union[List[Any], Dict[Text, Any]]:
+def _create_back_up(domain_file: Path, backup_location: Path) -> Dict[Text, Any]:
     """Makes a backup and returns the content of the file."""
-    original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+    original_content = rasa.shared.utils.io.read_yaml(
+        rasa.shared.utils.io.read_file(domain_file)
+    )
     rasa.shared.utils.io.write_yaml(
         original_content, backup_location, should_preserve_key_order=True
     )
@@ -167,7 +167,9 @@ def _migrate_auto_fill_and_custom_slots(
 def _assemble_new_domain(
     domain_file: Path, new_forms: Dict[Text, Any], new_slots: Dict[Text, Any]
 ) -> Dict[Text, Any]:
-    original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+    original_content = rasa.shared.utils.io.read_yaml(
+        rasa.shared.utils.io.read_file(domain_file)
+    )
     new_domain: Dict[Text, Any] = {}
     for key, value in original_content.items():
         if key == KEY_SLOTS:
@@ -333,7 +335,10 @@ def migrate_domain_format(
     migrated_files = [
         file
         for file in original_files
-        if rasa.shared.utils.io.read_yaml_file(file).get("version") == "3.0"
+        if rasa.shared.utils.io.read_yaml(rasa.shared.utils.io.read_file(file)).get(
+            "version"
+        )
+        == "3.0"
     ]
     if migrated_files:
         raise RasaException(
