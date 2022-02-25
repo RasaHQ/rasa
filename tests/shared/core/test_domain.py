@@ -363,15 +363,8 @@ session_config:
 slots: {{}}
 """
 
-    with pytest.warns(UserWarning) as record:
-        domain = Domain.from_yaml(test_yaml)
-        actual_yaml = domain.as_yaml()
-
-    assert (
-        "Slot auto-fill has been removed in 3.0"
-        " and replaced with a new explicit mechanism to set slots. "
-        in record[0].message.args[0]
-    )
+    domain = Domain.from_yaml(test_yaml)
+    actual_yaml = domain.as_yaml()
 
     expected_yaml = f"""
 version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'

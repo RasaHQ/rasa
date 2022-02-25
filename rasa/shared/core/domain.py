@@ -221,7 +221,8 @@ class Domain:
         responses = data.get(KEY_RESPONSES, {})
 
         domain_slots = data.get(KEY_SLOTS, {})
-        rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots)
+        if domain_slots:
+            rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots)
         slots = cls.collect_slots(domain_slots)
 
         additional_arguments = data.get("config", {})
@@ -353,7 +354,7 @@ class Domain:
                 combined.get(key, []), domain_dict.get(key, [])
             )
 
-            if key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
+            if merge_func == rasa.shared.utils.common.merge_dicts:
                 default = {}
             else:
                 default = []

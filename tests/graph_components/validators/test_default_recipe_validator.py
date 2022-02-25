@@ -587,14 +587,9 @@ def test_nlu_warn_of_competition_with_regex_extractor(
         ):
             validator.validate(importer)
     else:
-        with pytest.warns(UserWarning) as records:
+        with pytest.warns(None) as records:
             validator.validate(importer)
-        assert all(
-            [
-                "Slot auto-fill has been removed in 3.0 " in warning.message.args[0]
-                for warning in records
-            ]
-        )
+        assert len(records) == 0
 
 
 @pytest.mark.parametrize(
