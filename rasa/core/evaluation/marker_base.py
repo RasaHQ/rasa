@@ -11,6 +11,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    TYPE_CHECKING,
     Union,
     Any,
 )
@@ -35,6 +36,9 @@ from rasa.shared.constants import DOCS_URL_MARKERS
 import logging
 import csv
 import os.path
+
+if TYPE_CHECKING:
+    from rasa.core.evaluation.marker import OrMarker
 
 logger = logging.getLogger(__name__)
 
@@ -273,9 +277,7 @@ class Marker(ABC):
         """Gets the maximum depth from this point in the marker tree."""
         ...
 
-    def evaluate_events(
-        self, events: List[Event], recursive: bool = False
-    ) -> List[SessionEvaluation]:
+    def evaluate_events(self, events: List[Event]) -> List[SessionEvaluation]:
         """Resets the marker, tracks all events, and collects some information.
 
         The collected information includes:
@@ -285,21 +287,15 @@ class Marker(ABC):
         If this marker is the special `ANY_MARKER` (identified by its name), then
         results will be collected for all (immediate) sub-markers.
 
-        If `recursive` is set to `True`, then all included markers are evaluated.
-
         Args:
             events: a list of events describing a conversation
-            recursive: set this to `True` to collect evaluations for all markers that
-               this marker consists of
         Returns:
             a list that contains, for each session contained in the tracker, a
             dictionary mapping that maps marker names to meta data of relevant
             events
         """
         # determine which marker to extract results from
-        if recursive:
-            markers_to_be_evaluated = [marker for marker in self]
-        elif isinstance(self, OperatorMarker) and self.name == Marker.ANY_MARKER:
+        if isinstance(self, OperatorMarker) and self.name == Marker.ANY_MARKER:
             markers_to_be_evaluated = self.sub_markers
         else:
             markers_to_be_evaluated = [self]
@@ -395,7 +391,7 @@ class Marker(ABC):
         return [idx for (idx, applies) in enumerate(self.history) if applies]
 
     @classmethod
-    def from_path(cls, path: Union[Path, Text]) -> Marker:
+    def from_path(cls, path: Union[Path, Text]) -> "OrMarker":
         """Loads markers from one config file or all config files in a directory tree.
 
         Each config file should contain a dictionary mapping marker names to the

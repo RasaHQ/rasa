@@ -946,6 +946,7 @@ class RulePolicy(MemoizationPolicy):
         active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
         should_predict_loop = (
             not active_loop_rejected
+            and tracker.latest_action
             and tracker.latest_action.get(ACTION_NAME) != active_loop_name
         )
         should_predict_listen = (

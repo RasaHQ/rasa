@@ -61,10 +61,9 @@ class TrainingDataImporter:
         """
         raise NotImplementedError()
 
-    @rasa.shared.utils.common.cached_method
     def get_config_file_for_auto_config(self) -> Optional[Text]:
         """Returns config file path for auto-config only if there is a single one."""
-        return self.config_file
+        raise NotImplementedError()
 
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves the NLU training data that should be used for training.
@@ -179,8 +178,7 @@ class TrainingDataImporter:
             importer_config, importer_class
         )
 
-        # mypy ignore needed because RasaFileImporter and MultiFI have different args
-        return importer_class(  # type: ignore[call-arg]
+        return importer_class(
             config_path, domain_path, training_data_paths, **constructor_arguments
         )
 
