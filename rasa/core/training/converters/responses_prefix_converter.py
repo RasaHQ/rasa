@@ -109,7 +109,7 @@ class DomainResponsePrefixConverter(TrainingDataConverter):
             output_path: Path to the output directory.
         """
         domain = Domain.from_path(source_path)
-        domain_dict = domain.cleaned_domain()
+        domain_dict = domain.as_dict()
         domain_dict["actions"] = [
             normalize_utter_action(action) for action in domain_dict["actions"]
         ]
@@ -118,4 +118,4 @@ class DomainResponsePrefixConverter(TrainingDataConverter):
         output_file = cls.generate_path_for_converted_training_data_file(
             source_path, output_path
         )
-        new_domain.persist_clean(output_file)
+        new_domain.persist(output_file)
