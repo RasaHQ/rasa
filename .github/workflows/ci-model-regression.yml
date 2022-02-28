@@ -160,6 +160,13 @@ jobs:
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
 
+      - name: Send warning if CUDA image tag for the latest TF version has not configured yet
+        if: env.GH_RUNNER_IMAGE_TAG == 'latest'
+        env:
+          TF_CUDA_FILE: ./github/config/tf-cuda.json
+        run: |-
+          echo "::warning file=${TF_CUDA_FILE},line=3,col=1,endColumn=3::Missing cuda config for tf ${{ env.TF_VERSION }}. If you are not sure how to config CUDA, please reach out to infrastructure."
+
       - name: Render deployment template
         run: |-
           export GH_RUNNER_IMAGE_TAG=${{ env.GH_RUNNER_IMAGE_TAG }}
