@@ -3,6 +3,7 @@ import typing
 from typing import Any, Dict, Optional, Text
 import asyncio
 
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_success
 import rasa.core.agent
 import rasa.utils.common
@@ -32,7 +33,10 @@ def chat(
         agent = rasa.core.agent.load_agent(model_path=model_path, endpoints=endpoints)
 
     if agent is None:
-        return None
+        raise RasaException(
+            "Either the provided model path could not load the agent "
+            "or no core agent was provided."
+        )
 
     print("Your bot is ready to talk! Type your messages here or send '/stop'.")
     while True:

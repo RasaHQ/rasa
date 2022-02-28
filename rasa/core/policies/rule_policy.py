@@ -499,7 +499,7 @@ class RulePolicy(MemoizationPolicy):
         # in order to correctly output the names of the contradicting rules
         rule_name = tracker.sender_id
 
-        if isinstance(prediction_source, str) and (
+        if prediction_source is not None and (
             prediction_source.startswith(DEFAULT_RULES)
             or prediction_source.startswith(LOOP_RULES)
         ):

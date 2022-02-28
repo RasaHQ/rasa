@@ -12,6 +12,7 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityTagSpec, EntityExtractorMixin
 import rasa.core.actions.action
@@ -675,7 +676,7 @@ class TEDPolicy(Policy):
         )
 
         if self.model is None:
-            return None
+            raise ModelNotFound("No model was detected prior to training.")
 
         self.model.fit(
             data_generator,
@@ -955,11 +956,10 @@ class TEDPolicy(Policy):
         rasa.utils.io.pickle_dump(
             model_path / f"{model_filename}.fake_features.pkl", self.fake_features
         )
-        if self._label_data is not None:
-            rasa.utils.io.pickle_dump(
-                model_path / f"{model_filename}.label_data.pkl",
-                dict(self._label_data.data),
-            )
+        rasa.utils.io.pickle_dump(
+            model_path / f"{model_filename}.label_data.pkl",
+            dict(self._label_data.data) if self._label_data is not None else {},
+        )
         entity_tag_specs = (
             [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
             if self._entity_tag_specs

@@ -1476,7 +1476,7 @@ async def record_messages(
             )
             return
 
-        domain_intents = domain.get("intents", []) if isinstance(domain, dict) else []
+        domain_intents = domain.get("intents", []) if domain is not None else []
 
         intents = [next(iter(i)) for i in domain_intents]
 

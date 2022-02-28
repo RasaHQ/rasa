@@ -85,7 +85,7 @@ class TrackerStore:
                 destination.
             kwargs: Additional kwargs.
         """
-        self.domain = domain
+        self.domain = domain or Domain.empty()
         self.event_broker = event_broker
         self.max_event_history = None
 
@@ -221,7 +221,7 @@ class TrackerStore:
     def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker."""
         if self.event_broker is None:
-            return
+            return None
 
         offset = self.number_of_existing_events(tracker.sender_id)
         events = tracker.events
@@ -655,12 +655,7 @@ class MongoTrackerStore(TrackerStore):
         if not events:
             return None
 
-        if self.domain is None:
-            slots = []
-        else:
-            slots = self.domain.slots
-
-        return DialogueStateTracker.from_dict(sender_id, events, slots)
+        return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
 
     def retrieve_full_tracker(
         self, conversation_id: Text
@@ -671,12 +666,9 @@ class MongoTrackerStore(TrackerStore):
         if not events:
             return None
 
-        if self.domain is None:
-            slots = []
-        else:
-            slots = self.domain.slots
-
-        return DialogueStateTracker.from_dict(conversation_id, events, slots)
+        return DialogueStateTracker.from_dict(
+            conversation_id, events, self.domain.slots
+        )
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store."""
@@ -693,7 +685,6 @@ def _create_sequence(table_name: Text) -> "Sequence":
 
     Returns: A `Sequence` object
     """
-
     from sqlalchemy.ext.declarative import declarative_base
 
     sequence_name = f"{table_name}_seq"

@@ -3,6 +3,8 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
+
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.featurizers.featurizer import Featurizer
 
 import numpy as np
@@ -883,9 +885,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
-        if self.model is None:
-            self.model = self._instantiate_model_class(model_data)
-
         if not self.finetune_mode:
             # No pre-trained model to load from. Create a new instance of the model.
             self.model = self._instantiate_model_class(model_data)
@@ -893,6 +892,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
         else:
+            if self.model is None:
+                raise ModelNotFound("Model could not be found. ")
+
             self.model.adjust_for_incremental_training(
                 data_example=self._data_example,
                 new_sparse_feature_sizes=model_data.get_sparse_feature_sizes(),
@@ -1063,11 +1065,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 model_path / f"{file_name}.sparse_feature_sizes.pkl",
                 self._sparse_feature_sizes,
             )
-            if self._label_data is not None:
-                io_utils.pickle_dump(
-                    model_path / f"{file_name}.label_data.pkl",
-                    dict(self._label_data.data),
-                )
+            io_utils.pickle_dump(
+                model_path / f"{file_name}.label_data.pkl",
+                dict(self._label_data.data) if self._label_data is not None else {},
+            )
             io_utils.json_pickle(
                 model_path / f"{file_name}.index_label_id_mapping.json",
                 self.index_label_id_mapping,

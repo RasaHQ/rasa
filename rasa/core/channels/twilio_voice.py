@@ -117,9 +117,9 @@ class TwilioVoiceInput(InputChannel):
         initial_prompt: Optional[Text],
         reprompt_fallback_phrase: Optional[Text],
         assistant_voice: Optional[Text],
-        speech_timeout: Optional[Text],
-        speech_model: Optional[Text],
-        enhanced: Optional[Text],
+        speech_timeout: Text = "5",
+        speech_model: Text = "default",
+        enhanced: Text = "false",
     ) -> None:
         """Creates a connection to Twilio voice.
 
@@ -148,26 +148,28 @@ class TwilioVoiceInput(InputChannel):
         try:
             int(self.speech_timeout)
         except ValueError:
-            if self.speech_timeout and self.speech_timeout.lower() != "auto":
+            if self.speech_timeout.lower() != "auto":
                 self._raise_invalid_speech_timeout_exception()
 
         if self.speech_model not in self.SUPPORTED_SPEECH_MODELS:
             self._raise_invalid_speech_model_exception()
 
-        if isinstance(self.enhanced, str) and self.enhanced.lower() not in [
+        if self.enhanced.lower() not in [
             "true",
             "false",
         ]:
             self._raise_invalid_enhanced_option_exception()
 
-        if (self.enhanced and self.enhanced.lower() == "true") and (
-            self.speech_model and self.speech_model.lower() != "phone_call"
+        if (
+            self.enhanced.lower() == "true"
+            and self.speech_model.lower() != "phone_call"
         ):
             self._raise_invalid_enhanced_speech_model_exception()
 
         if (
-            self.speech_model and self.speech_model.lower() != "numbers_and_commands"
-        ) and (self.speech_timeout and self.speech_timeout.lower() == "auto"):
+            self.speech_model.lower() != "numbers_and_commands"
+            and self.speech_timeout.lower() == "auto"
+        ):
             self._raise_invalid_speech_model_timeout_exception()
 
     def _raise_invalid_speech_model_timeout_exception(self) -> None:
