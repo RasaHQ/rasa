@@ -61,8 +61,8 @@ class TrackerWithCachedStates(DialogueStateTracker):
         super().__init__(
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
-        self._states_for_hashing: Optional[Deque[FrozenState]] = None
-        self.domain = domain
+        self._states_for_hashing: Deque[FrozenState] = deque()
+        self.domain = domain if domain is not None else Domain.empty()
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented
 
@@ -146,7 +146,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
     def clear_states(self) -> None:
         """Reset the states."""
-        self._states_for_hashing = None
+        self._states_for_hashing = deque()
 
     def init_copy(self) -> "TrackerWithCachedStates":
         """Create a new state tracker with the same initial values."""
@@ -185,8 +185,6 @@ class TrackerWithCachedStates(DialogueStateTracker):
         if self._states_for_hashing is None:
             self._states_for_hashing = self.past_states_for_hashing(self.domain)
         else:
-            if self.domain is None:
-                return
             state = self.domain.get_active_state(self)
             frozen_state = self.freeze_current_state(state)
             self._states_for_hashing.append(frozen_state)
@@ -195,14 +193,11 @@ class TrackerWithCachedStates(DialogueStateTracker):
         """Modify the state of the tracker according to an ``Event``."""
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
-
-        if self._states_for_hashing is None:
+        if not self._states_for_hashing:
             if not skip_states:
                 # rest of this function assumes we have the previous state
                 # cached. let's make sure it is there.
                 self._states_for_hashing = self.past_states_for_hashing(self.domain)
-            else:
-                self._states_for_hashing = deque()
 
         super().update(event)
 

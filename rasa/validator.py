@@ -191,7 +191,7 @@ class Validator:
                 if not isinstance(event, ActionExecuted):
                     continue
 
-                if not isinstance(event.action_name, str):
+                if not event.action_name:
                     continue
 
                 if not event.action_name.startswith(UTTER_PREFIX):
@@ -263,7 +263,7 @@ class Validator:
                 if not isinstance(event, ActionExecuted):
                     continue
 
-                if not isinstance(event.action_name, str):
+                if not event.action_name:
                     continue
 
                 if not event.action_name.startswith("action_"):
