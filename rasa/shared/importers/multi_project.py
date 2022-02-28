@@ -55,6 +55,10 @@ class MultiProjectImporter(TrainingDataImporter):
 
         mark_as_experimental_feature(feature_name="MultiProjectImporter")
 
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        """Returns config file path for auto-config only if there is a single one."""
+        return None
+
     def _init_from_path(self, path: Text) -> None:
         if os.path.isfile(path):
             self._init_from_file(path)
@@ -175,7 +179,9 @@ class MultiProjectImporter(TrainingDataImporter):
         """Retrieves model domain (see parent class for full docstring)."""
         domains = [Domain.load(path) for path in self._domain_paths]
         return reduce(
-            lambda merged, other: merged.merge(other), domains, Domain.empty()
+            lambda merged, other: merged.merge(other),
+            domains,
+            Domain.empty(),
         )
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:

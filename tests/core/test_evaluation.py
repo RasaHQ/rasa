@@ -184,7 +184,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
 ):
     config = textwrap.dedent(
         f"""
-    version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
     policies:
     - name: MemoizationPolicy
       max_history: 11
@@ -426,6 +426,7 @@ stories:
                     "f1-score": 0.0,
                     "support": 1,
                 },
+                "accuracy": 0.75,
                 "micro avg": {
                     "precision": 1.0,
                     "recall": 0.75,

@@ -2,7 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 import textwrap
-from typing import Text
+from typing import List, Text
 
 import pytest
 from _pytest.capture import CaptureFixture
@@ -32,6 +32,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_TEXT,
 )
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
@@ -114,7 +115,11 @@ def test_get_sanitized_model_directory_when_passing_other_input(
     ],
 )
 def test_get_evaluation_metrics(
-    targets, predictions, expected_precision, expected_fscore, expected_accuracy
+    targets: List[Text],
+    predictions: List[Text],
+    expected_precision: float,
+    expected_fscore: float,
+    expected_accuracy: float,
 ):
     from rasa.model_testing import get_evaluation_metrics
 
@@ -126,6 +131,195 @@ def test_get_evaluation_metrics(
     assert precision == expected_precision
     assert accuracy == expected_accuracy
     assert NO_ENTITY not in report
+
+
+@pytest.mark.parametrize(
+    "report_in,accuracy,report_out",
+    [
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+            },
+            0.8,
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+        ),
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+            0.8,
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 0.8,
+                    "recall": 0.8,
+                    "f1-score": 0.8,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+        ),
+    ],
+)
+def test_make_classification_report_complete(
+    report_in: dict, accuracy: float, report_out: dict
+):
+    from rasa.model_testing import make_classification_report_complete
+
+    report_out_actual = make_classification_report_complete(report_in, accuracy)
+    assert report_out == report_out_actual
+
+
+@pytest.mark.parametrize(
+    "report_in",
+    [
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "micro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "accuracy": 0.8,
+            },
+        ),
+        (
+            {
+                "location": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "macro avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+                "weighted avg": {
+                    "precision": 1.0,
+                    "recall": 0.5,
+                    "f1-score": 0.6666666666666666,
+                    "support": 2,
+                },
+            },
+        ),
+    ],
+)
+def test_make_classification_report_complete_raises_clf_report_exception(
+    report_in: dict,
+):
+    from rasa.model_testing import (
+        ClassificationReportException,
+        make_classification_report_complete,
+    )
+
+    with pytest.raises(ClassificationReportException):
+        make_classification_report_complete(report_in, accuracy=0.8)
 
 
 @pytest.mark.parametrize(
@@ -146,7 +340,7 @@ def test_get_evaluation_metrics(
         ([], None, []),
     ],
 )
-def test_get_label_set(targets, exclude_label, expected):
+def test_get_label_set(targets: List[Text], exclude_label: Text, expected: List[Text]):
     from rasa.model_testing import get_unique_labels
 
     actual = get_unique_labels(targets, exclude_label)
@@ -189,8 +383,8 @@ def test_write_classification_errors():
     assert (
         dump.strip()
         == textwrap.dedent(
-            """
-        version: "3.0"
+            f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: default
           steps:
@@ -331,7 +525,9 @@ def test_log_failed_stories(tmp_path: Path):
         ),
     ],
 )
-def test_evaluation_store_serialise(entity_predictions, entity_targets):
+def test_evaluation_store_serialise(
+    entity_predictions: List[dict], entity_targets: List[dict]
+):
     from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     store = EvaluationStore(
