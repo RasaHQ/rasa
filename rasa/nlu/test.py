@@ -1762,7 +1762,7 @@ async def compare_nlu(
     configs: List[Text],
     data: TrainingData,
     exclusion_percentages: List[int],
-    f_score_results: Dict[Text, Any],
+    f_score_results: Dict[Text, List[List[float]]],
     model_names: List[Text],
     output: Text,
     runs: int,

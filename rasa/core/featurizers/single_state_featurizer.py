@@ -39,9 +39,9 @@ class SingleStateFeaturizer:
 
     def __init__(self) -> None:
         """Initialize the single state featurizer."""
-        self._default_feature_states = {}
-        self.action_texts = []
-        self.entity_tag_specs = []
+        self._default_feature_states: Dict[Text, Any] = {}
+        self.action_texts: List[Text] = []
+        self.entity_tag_specs: List[EntityTagSpec] = []
 
     def _create_entity_tag_specs(
         self, bilou_tagging: bool = False

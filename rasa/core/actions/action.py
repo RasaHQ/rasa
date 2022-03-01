@@ -1159,7 +1159,7 @@ class ActionExtractSlots(Action):
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         slot_events: List[Event] = []
-        executed_custom_actions = set()
+        executed_custom_actions: Set[Text] = set()
 
         user_slots = [
             slot for slot in domain.slots if slot.name not in DEFAULT_SLOT_NAMES

@@ -33,7 +33,7 @@ class HangoutsOutput(OutputChannel):
 
     def __init__(self) -> None:
         """Starts messages as empty dictionary."""
-        self.messages = {}
+        self.messages: Dict[Text, Any] = {}
 
     @staticmethod
     def _text_card(message: Dict[Text, Any]) -> Dict:

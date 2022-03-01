@@ -4,7 +4,7 @@ import logging
 import os
 
 from async_generator import asynccontextmanager
-from typing import Text, Union, Optional, AsyncGenerator
+from typing import AsyncGenerator, Dict, Optional, Text, Union
 
 from rasa.shared.exceptions import RasaException, ConnectionException
 import rasa.shared.utils.common
@@ -274,7 +274,7 @@ class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
     def __init__(self) -> None:
-        self.conversation_locks = {}
+        self.conversation_locks: Dict[Text, TicketLock] = {}
         super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:

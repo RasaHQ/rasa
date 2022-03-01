@@ -114,7 +114,7 @@ OTHER_INTENT = uuid.uuid4().hex
 OTHER_ACTION = uuid.uuid4().hex
 NEW_ACTION = uuid.uuid4().hex
 
-NEW_RESPONSES = {}
+NEW_RESPONSES: Dict[Text, List[Dict[Text, Any]]] = {}
 
 MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
 
@@ -320,7 +320,7 @@ async def _ask_questions(
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
 
     should_retry = True
-    answers = {}
+    answers: Any = {}
 
     while should_retry:
         answers = questions.ask()
@@ -923,7 +923,7 @@ def _write_domain_to_file(
 
     messages = _collect_messages(events)
     actions = _collect_actions(events)
-    responses = NEW_RESPONSES  # type: Dict[Text, List[Dict[Text, Any]]]
+    responses = NEW_RESPONSES
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(

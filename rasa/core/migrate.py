@@ -210,9 +210,9 @@ def _migrate_domain_files(
         backup_location: where to backup all domain files
         out_path: location where to store the migrated files
     """
-    slots = {}
-    forms = {}
-    entities = []
+    slots: Dict[Text, Any] = {}
+    forms: Dict[Text, Any] = {}
+    entities: List[Any] = []
 
     domain_files = [
         file for file in domain_path.iterdir() if Domain.is_domain_file(file)

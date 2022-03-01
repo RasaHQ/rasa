@@ -330,7 +330,7 @@ class CollectingOutputChannel(OutputChannel):
     (doesn't send them anywhere, just collects them)."""
 
     def __init__(self) -> None:
-        self.messages = []
+        self.messages: List[Dict[Text, Any]] = []
 
     @classmethod
     def name(cls) -> Text:
