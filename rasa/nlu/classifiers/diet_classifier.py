@@ -946,7 +946,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
         label: Dict[Text, Any] = {"name": None, "confidence": 0.0}
-        label_ranking = []
+        label_ranking: List[Dict[Text, Any]] = []
 
         if predict_out is None:
             return label, label_ranking

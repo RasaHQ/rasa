@@ -1730,7 +1730,7 @@ async def compute_metrics(
         response_selection_results
     )
 
-    intent_metrics = {}
+    intent_metrics: IntentMetrics = {}
     if intent_results:
         intent_metrics = _compute_metrics(
             intent_results, "intent_target", "intent_prediction"
@@ -1740,7 +1740,7 @@ async def compute_metrics(
     if entity_results:
         entity_metrics = _compute_entity_metrics(entity_results)
 
-    response_selection_metrics = {}
+    response_selection_metrics: ResponseSelectionMetrics = {}
     if response_selection_results:
         response_selection_metrics = _compute_metrics(
             response_selection_results,
