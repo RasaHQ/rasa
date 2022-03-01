@@ -1,5 +1,8 @@
 from __future__ import annotations
+import logging
 from typing import Any, Dict, List, Optional, Text
+import subprocess
+import pathlib
 
 import regex
 
@@ -14,6 +17,9 @@ from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.training_data.message import Message
 
+REPO_DIR = pathlib.Path("").absolute()
+
+logger = logging.getLogger(__name__)
 
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=False
@@ -40,6 +46,14 @@ class WhitespaceTokenizer(Tokenizer):
 
     def __init__(self, config: Dict[Text, Any]) -> None:
         """Initialize the tokenizer."""
+        print("Investigation: WhitespaceTokenizer init")
+        logger.warn("Investigation: WhitespaceTokenizer init")
+
+        cmd = "nvidia-smi"
+        output = subprocess.check_output(cmd.split(" "), cwd=REPO_DIR)
+        print(output)
+        logger.warn(output)
+
         super().__init__(config)
         self.emoji_pattern = rasa.utils.io.get_emoji_regex()
 
