@@ -434,7 +434,7 @@ class Domain:
         if not data.get(KEY_INTENTS):
             return data
 
-        for intent in data.get(KEY_INTENTS):
+        for intent in data.get(KEY_INTENTS, []):
             if isinstance(intent, dict):
                 Domain._reset_intent_flags(intent)
 
