@@ -13,7 +13,7 @@ from rasa.engine.training.components import (
     FingerprintComponent,
     FingerprintStatus,
 )
-from rasa.engine.training.hooks import TrainingHook, LoggingHook
+from rasa.engine.training.hooks import TrainingHook, LoggingHook, DatadogHook
 from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
@@ -89,6 +89,10 @@ class GraphTrainer:
                 pruned_schema=pruned_training_schema,
             ),
         ]
+
+        #TODO if (not for unit tests)
+        if True:
+            hooks.append(DatadogHook(pruned_schema=pruned_training_schema))
 
         graph_runner = self._graph_runner_class.create(
             graph_schema=pruned_training_schema,

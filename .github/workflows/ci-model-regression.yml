@@ -186,7 +186,7 @@ jobs:
           GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
-          
+
           num_max_replicas=3
           matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
           if [[ $matrix_length -gt $num_max_replicas ]]; then
@@ -415,7 +415,22 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
+          SUMMARY_FILE: "./report.json"
+          DATASET_NAME: ${{ matrix.dataset }}
+          RESULT_DIR: "${{ github.workspace }}/results"
+          CONFIG: ${{ matrix.config }}
+          DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
+          TYPE: ${{ matrix.type }}
+          INDEX_REPETITION: ${{ matrix.index_repetition }}
+          DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
+          BRANCH: ${{ github.head_ref }}
+          GITHUB_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.eu
         run: |-
+          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           set -x
 
           poetry run rasa --version
@@ -662,7 +677,22 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
+          SUMMARY_FILE: "./report.json"
+          DATASET_NAME: ${{ matrix.dataset }}
+          RESULT_DIR: "${{ github.workspace }}/results"
+          CONFIG: ${{ matrix.config }}
+          DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
+          TYPE: ${{ matrix.type }}
+          INDEX_REPETITION: ${{ matrix.index_repetition }}
+          DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
+          BRANCH: ${{ github.head_ref }}
+          GITHUB_SHA: "${{ github.sha }}"
+          PR_ID: "${{ github.event.number }}"
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY_PERF_TEST }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.eu
         run: |-
+          export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           set -x
 
           poetry run rasa --version
