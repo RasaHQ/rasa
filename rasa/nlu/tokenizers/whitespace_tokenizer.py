@@ -46,12 +46,10 @@ class WhitespaceTokenizer(Tokenizer):
 
     def __init__(self, config: Dict[Text, Any]) -> None:
         """Initialize the tokenizer."""
-        print("Investigation: WhitespaceTokenizer init")
         logger.warn("Investigation: WhitespaceTokenizer init")
 
         cmd = "nvidia-smi"
-        output = subprocess.check_output(cmd.split(" "), cwd=REPO_DIR)
-        print(output)
+        output = subprocess.getoutput(cmd.split(" "))
         logger.warn(output)
 
         super().__init__(config)
