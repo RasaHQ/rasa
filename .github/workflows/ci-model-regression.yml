@@ -352,7 +352,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
-          CONFIG: "${{ matrix.config }}"
+          CONFIG_NAME: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
           GITHUB_SHA: "${{ github.sha }}"
@@ -418,7 +418,7 @@ jobs:
           SUMMARY_FILE: "./report.json"
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
-          CONFIG: ${{ matrix.config }}
+          CONFIG_NAME: ${{ matrix.config }}
           DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
           TYPE: ${{ matrix.type }}
           INDEX_REPETITION: ${{ matrix.index_repetition }}
@@ -469,7 +469,7 @@ jobs:
           SUMMARY_FILE: "./report.json"
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
-          CONFIG: ${{ matrix.config }}
+          CONFIG_NAME: ${{ matrix.config }}
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
@@ -614,7 +614,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
-          CONFIG: "${{ matrix.config }}"
+          CONFIG_NAME: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.head_ref }}
           GITHUB_SHA: "${{ github.sha }}"
@@ -680,7 +680,7 @@ jobs:
           SUMMARY_FILE: "./report.json"
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
-          CONFIG: ${{ matrix.config }}
+          CONFIG_NAME: ${{ matrix.config }}
           DATASET_REPOSITORY_BRANCH: ${{ needs.read_test_configuration.outputs.dataset_branch }}
           TYPE: ${{ matrix.type }}
           INDEX_REPETITION: ${{ matrix.index_repetition }}
@@ -731,7 +731,7 @@ jobs:
           SUMMARY_FILE: "./report.json"
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
-          CONFIG: ${{ matrix.config }}
+          CONFIG_NAME: ${{ matrix.config }}
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}

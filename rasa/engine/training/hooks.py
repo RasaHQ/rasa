@@ -22,7 +22,7 @@ METRIC_COMP_PREFIX = "rasa.graph.comp."
 CONFIG_REPOSITORY = "training-data"
 
 MAIN_TAGS = {
-    "config": "CONFIG",
+    "config": "CONFIG_NAME",
     "dataset": "DATASET_NAME",
 }
 

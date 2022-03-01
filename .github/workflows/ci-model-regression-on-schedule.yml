@@ -78,7 +78,7 @@ jobs:
           GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
-          
+
           num_max_replicas=3
           matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
           if [[ $matrix_length -gt $num_max_replicas ]]; then
@@ -255,7 +255,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
-          CONFIG: "${{ matrix.config }}"
+          CONFIG_NAME: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.ref }}
           GITHUB_SHA: "${{ github.sha }}"
@@ -353,7 +353,7 @@ jobs:
           SUMMARY_FILE: "./report.json"
           DATASET_NAME: ${{ matrix.dataset }}
           RESULT_DIR: "${{ github.workspace }}/results"
-          CONFIG: ${{ matrix.config }}
+          CONFIG_NAME: ${{ matrix.config }}
           TEST_RUN_TIME: ${{ steps.run_test.outputs.test_run_time }}
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}

@@ -16,7 +16,7 @@ sudo chmod 666 $DATADOG_YAML_PATH
     echo "- service:rasa"
     echo "- accelerator_type:${ACCELERATOR_TYPE}"
     echo "- dataset:${DATASET_NAME}"
-    echo "- config:${CONFIG}"
+    echo "- config:${CONFIG_NAME}"
     echo "- dataset_commit:${DATASET_COMMIT}"
     echo "- branch:${BRANCH}"
     echo "- github_sha:${GITHUB_SHA}"
