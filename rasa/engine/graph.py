@@ -352,6 +352,7 @@ class GraphNode:
             hooks: These are called before and after execution.
         """
         self._node_name: Text = node_name
+        logger.warn(f"GraphNode: {self._node_name} __init__")
         self._component_class: Type[GraphComponent] = component_class
         self._constructor_name: Text = constructor_name
         self._constructor_fn: Callable = getattr(
@@ -436,6 +437,8 @@ class GraphNode:
         Returns:
             The node name and its output.
         """
+        logger.warn(f"GraphNode: {self._node_name} __call__")
+
         received_inputs: Dict[Text, Any] = dict(inputs_from_previous_nodes)
 
         kwargs = {}
