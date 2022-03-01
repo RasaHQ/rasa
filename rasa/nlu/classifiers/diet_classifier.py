@@ -855,7 +855,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         # cmd = "nvidia-smi"
         # output = subprocess.getoutput(cmd.split(" "))
-        # logger.warn(output)
+        # logger.warning(output)
 
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():

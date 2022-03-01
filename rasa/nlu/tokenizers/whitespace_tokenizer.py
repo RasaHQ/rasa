@@ -46,11 +46,11 @@ class WhitespaceTokenizer(Tokenizer):
 
     def __init__(self, config: Dict[Text, Any]) -> None:
         """Initialize the tokenizer."""
-        logger.warn("Investigation: WhitespaceTokenizer init")
+        logger.warning("Investigation: WhitespaceTokenizer init")
 
         # cmd = "nvidia-smi"
         # output = subprocess.getoutput(cmd.split(" "))
-        # logger.warn(output)
+        # logger.warning(output)
 
         super().__init__(config)
         self.emoji_pattern = rasa.utils.io.get_emoji_regex()
