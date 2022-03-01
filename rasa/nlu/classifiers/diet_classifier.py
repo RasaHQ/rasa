@@ -853,9 +853,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         print("Investigation: DIETClassifier train")
         logger.info("Investigation: DIETClassifier train")
 
-        cmd = "nvidia-smi"
-        output = subprocess.getoutput(cmd.split(" "))
-        logger.warn(output)
+        # cmd = "nvidia-smi"
+        # output = subprocess.getoutput(cmd.split(" "))
+        # logger.warn(output)
 
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():
