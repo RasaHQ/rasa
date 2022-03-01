@@ -310,7 +310,6 @@ jobs:
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
-          set -x
           HOST_NAME=`hostname`
           echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
 
@@ -556,7 +555,6 @@ jobs:
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
-          set -x
           HOST_NAME=`hostname`
           echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
 
