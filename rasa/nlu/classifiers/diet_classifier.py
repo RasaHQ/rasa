@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 from pathlib import Path
 from rasa.nlu.featurizers.featurizer import Featurizer
+import subprocess
 
 import numpy as np
 import scipy.sparse
@@ -851,6 +852,11 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         """Train the embedding intent classifier on a data set."""
         print("Investigation: DIETClassifier train")
         logger.info("Investigation: DIETClassifier train")
+
+        cmd = "nvidia-smi"
+        output = subprocess.getoutput(cmd.split(" "))
+        logger.warn(output)
+
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():
             logger.debug(
