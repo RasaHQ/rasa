@@ -274,19 +274,23 @@ class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
     def __init__(self) -> None:
+        """Initialise dictionary of locks."""
         self.conversation_locks: Dict[Text, TicketLock] = {}
         super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
+        """Get lock for conversation if it exists."""
         return self.conversation_locks.get(conversation_id)
 
     def delete_lock(self, conversation_id: Text) -> None:
+        """Delete lock for conversation."""
         deleted_lock = self.conversation_locks.pop(conversation_id, None)
         self._log_deletion(
             conversation_id, deletion_successful=deleted_lock is not None
         )
 
     def save_lock(self, lock: TicketLock) -> None:
+        """Save lock in store."""
         self.conversation_locks[lock.conversation_id] = lock
 
 

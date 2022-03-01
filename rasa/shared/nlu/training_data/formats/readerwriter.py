@@ -81,7 +81,6 @@ class TrainingDataWriter:
         training_data: "TrainingData",
     ) -> Dict[Text, List[Union[Dict, Text]]]:
         """Pre-processes training data examples by removing not trainable entities."""
-
         import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
         training_examples: Dict[Text, List[Union[Dict, Text]]] = OrderedDict()

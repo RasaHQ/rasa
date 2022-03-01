@@ -29,7 +29,7 @@ class StoryStepBuilder:
         self.is_rule = is_rule
 
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
-
+        """Add a checkpoint to story steps."""
         # Depending on the state of the story part this
         # is either a start or an end check point
         if not self.current_steps:
