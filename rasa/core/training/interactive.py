@@ -50,7 +50,13 @@ from rasa.shared.core.constants import (
 from rasa.core import run, utils
 import rasa.core.train
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    Domain,
+    KEY_INTENTS,
+    KEY_ENTITIES,
+    KEY_RESPONSES,
+    KEY_ACTIONS,
+)
 import rasa.shared.core.events
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -929,16 +935,16 @@ def _write_domain_to_file(
         }
     )
 
-    new_domain = Domain(
-        intents=_intents_from_messages(messages),
-        entities=_entities_from_messages(messages),
-        slots=[],
-        responses=responses,
-        action_names=collected_actions,
-        forms={},
+    new_domain = Domain.from_dict(
+        {
+            KEY_INTENTS: list(_intents_from_messages(messages)),
+            KEY_ENTITIES: _entities_from_messages(messages),
+            KEY_RESPONSES: responses,
+            KEY_ACTIONS: collected_actions,
+        }
     )
 
-    old_domain.merge(new_domain).persist_clean(domain_path)
+    old_domain.merge(new_domain).persist(domain_path)
 
 
 async def _predict_till_next_listen(
