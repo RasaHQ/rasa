@@ -6,7 +6,13 @@ import rasa.shared.constants
 import rasa.shared.utils.common
 import rasa.shared.core.constants
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import (
+    Domain,
+    KEY_E2E_ACTIONS,
+    KEY_INTENTS,
+    KEY_RESPONSES,
+    KEY_ACTIONS,
+)
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.training_data.message import Message
@@ -241,7 +247,9 @@ class CombinedDataImporter(TrainingDataImporter):
         domains = [importer.get_domain() for importer in self._importers]
 
         return reduce(
-            lambda merged, other: merged.merge(other), domains, Domain.empty()
+            lambda merged, other: merged.merge(other),
+            domains,
+            Domain.empty(),
         )
 
     @rasa.shared.utils.common.cached_method
@@ -322,7 +330,9 @@ class ResponsesSyncImporter(TrainingDataImporter):
             existing_domain,
         )
 
-        existing_domain = existing_domain.merge(domain_with_retrieval_intents)
+        existing_domain = existing_domain.merge(
+            domain_with_retrieval_intents, override=True
+        )
         existing_domain.check_missing_responses()
 
         return existing_domain
@@ -374,13 +384,16 @@ class ResponsesSyncImporter(TrainingDataImporter):
             intent_properties[IS_RETRIEVAL_INTENT_KEY] = True
             retrieval_intent_properties.append({intent: intent_properties})
 
-        return Domain(
-            retrieval_intent_properties,
-            [],
-            [],
-            responses,
-            ResponsesSyncImporter._construct_retrieval_action_names(retrieval_intents),
-            {},
+        action_names = ResponsesSyncImporter._construct_retrieval_action_names(
+            retrieval_intents
+        )
+
+        return Domain.from_dict(
+            {
+                KEY_INTENTS: retrieval_intent_properties,
+                KEY_RESPONSES: responses,
+                KEY_ACTIONS: action_names,
+            }
         )
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
@@ -435,6 +448,7 @@ class E2EImporter(TrainingDataImporter):
         """Retrieves model domain (see parent class for full docstring)."""
         original = self.importer.get_domain()
         e2e_domain = self._get_domain_with_e2e_actions()
+
         return original.merge(e2e_domain)
 
     def _get_domain_with_e2e_actions(self) -> Domain:
@@ -453,15 +467,7 @@ class E2EImporter(TrainingDataImporter):
 
         additional_e2e_action_names = list(additional_e2e_action_names)
 
-        return Domain(
-            [],
-            [],
-            [],
-            {},
-            action_names=[],
-            forms={},
-            action_texts=additional_e2e_action_names,
-        )
+        return Domain.from_dict({KEY_E2E_ACTIONS: additional_e2e_action_names})
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves the stories that should be used for training.

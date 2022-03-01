@@ -1184,6 +1184,7 @@ async def test_logging_of_end_to_end_action(
         action_names=[],
         forms={},
         action_texts=[end_to_end_action],
+        data={},
     )
 
     default_processor.domain = new_domain
