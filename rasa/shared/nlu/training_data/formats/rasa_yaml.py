@@ -429,7 +429,7 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_synonyms(cls, training_data: "TrainingData") -> List[OrderedDict]:
-        inverted_synonyms = OrderedDict()
+        inverted_synonyms: Dict[Text, List[Dict]] = OrderedDict()
         for example, synonym in training_data.entity_synonyms.items():
             if not inverted_synonyms.get(synonym):
                 inverted_synonyms[synonym] = []
@@ -444,7 +444,7 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_regexes(cls, training_data: "TrainingData") -> List[OrderedDict]:
-        inverted_regexes = OrderedDict()
+        inverted_regexes: Dict[Text, List[Text]] = OrderedDict()
         for regex in training_data.regex_features:
             if not inverted_regexes.get(regex["name"]):
                 inverted_regexes[regex["name"]] = []

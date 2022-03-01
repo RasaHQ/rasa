@@ -182,7 +182,7 @@ def split_events(
         The split events.
     """
     sub_events = []
-    current = []
+    current: List["Event"] = []
 
     def event_fulfills_splitting_condition(evt: "Event") -> bool:
         # event does not have the correct type

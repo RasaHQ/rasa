@@ -482,7 +482,7 @@ class DialogueStateTracker:
             if isinstance(event, ActiveLoop) and event.name
         ]
 
-        applied_events = []
+        applied_events: List[Event] = []
 
         for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):

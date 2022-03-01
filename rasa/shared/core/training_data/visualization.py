@@ -1,7 +1,18 @@
 from collections import defaultdict, deque
 
 import random
-from typing import Any, Text, List, Dict, Optional, Set, TYPE_CHECKING, Union, cast
+from typing import (
+    Any,
+    Text,
+    List,
+    Deque,
+    Dict,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Union,
+    cast,
+)
 
 import rasa.shared.utils.io
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
@@ -88,7 +99,7 @@ def _fingerprint_node(
 
     # the candidate list contains all node paths that haven't been
     # extended till `max_history` length yet.
-    candidates = deque()
+    candidates: Deque = deque()
     candidates.append([node])
     continuations = []
     while len(candidates) > 0:

@@ -263,7 +263,7 @@ class TrainingDataGenerator:
             rand=random.Random(42),
         )
         # hashed featurization of all finished trackers
-        self.hashed_featurizations = set()
+        self.hashed_featurizations: Set[int] = set()
 
     @staticmethod
     def _phase_name(everything_reachable_is_reached: bool, phase: int) -> Text:
@@ -344,8 +344,8 @@ class TrainingDataGenerator:
             min_num_aug_phases = 0
 
         # placeholder to track gluing process of checkpoints
-        used_checkpoints = set()
-        previous_unused = set()
+        used_checkpoints: Set[Text] = set()
+        previous_unused: Set[Text] = set()
         everything_reachable_is_reached = False
 
         # we will continue generating data until we have reached all

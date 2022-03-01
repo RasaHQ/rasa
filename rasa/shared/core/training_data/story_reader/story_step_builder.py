@@ -23,9 +23,9 @@ class StoryStepBuilder:
     ) -> None:
         self.name = name
         self.source_name = source_name
-        self.story_steps = []
-        self.current_steps = []
-        self.start_checkpoints = []
+        self.story_steps: List[StoryStep] = []
+        self.current_steps: List[StoryStep] = []
+        self.start_checkpoints: List[Checkpoint] = []
         self.is_rule = is_rule
 
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:

@@ -25,7 +25,7 @@ class StoryReader:
             domain: Domain object.
             source_name: Name of the training data source.
         """
-        self.story_steps = []
+        self.story_steps: List[StoryStep] = []
         self.current_step_builder: Optional[StoryStepBuilder] = None
         self.domain = domain
         self.source_name = source_name
