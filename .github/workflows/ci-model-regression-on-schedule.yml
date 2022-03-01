@@ -148,7 +148,7 @@ jobs:
           path: 'dataset'
           ref: "main"
 
-      - name: Set DATASET and CONFIG variables
+      - name: Set env variables
         id: set_dataset_config_vars
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
@@ -212,6 +212,9 @@ jobs:
           else
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
+
+          HOST_NAME=`hostname`
+          echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
 
       - name: Checkout dataset - external
         uses: actions/checkout@v2
