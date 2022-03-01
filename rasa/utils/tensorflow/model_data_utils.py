@@ -52,7 +52,7 @@ def featurize_training_examples(
     output = []
 
     for example in training_examples:
-        attribute_to_features = {}
+        attribute_to_features: Dict[Text, List["Features"]] = {}
         for attribute in attributes:
             if attribute == ENTITIES:
                 attribute_to_features[attribute] = []
