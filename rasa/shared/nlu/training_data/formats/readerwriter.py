@@ -79,12 +79,12 @@ class TrainingDataWriter:
     @staticmethod
     def prepare_training_examples(
         training_data: "TrainingData",
-    ) -> OrderedDict[Text, List[Union[Dict, Text]]]:
+    ) -> Dict[Text, List[Union[Dict, Text]]]:
         """Pre-processes training data examples by removing not trainable entities."""
 
         import rasa.shared.nlu.training_data.util as rasa_nlu_training_data_utils
 
-        training_examples: OrderedDict[Text, List[Union[Dict, Text]]] = OrderedDict()
+        training_examples: Dict[Text, List[Union[Dict, Text]]] = OrderedDict()
 
         # Sort by intent while keeping basic intent order
         for example in [e.as_dict_nlu() for e in training_data.training_examples]:
