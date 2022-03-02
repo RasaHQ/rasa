@@ -716,7 +716,7 @@ class TEDPolicy(Policy):
         else:
             with tf.device('/cpu:0'):
                 self.run_training(model_data, label_ids)
-                
+
         self.persist()
 
         return self._resource
@@ -1178,15 +1178,6 @@ class TED(TransformerRasaModel):
             entity_tag_specs: the entity tag specifications
         """
         super().__init__("TED", config, data_signature, label_data)
-        try:
-            # Disable all GPUS
-            tf.config.set_visible_devices([], 'GPU')
-            visible_devices = tf.config.get_visible_devices()
-            for device in visible_devices:
-                assert device.device_type != 'GPU'
-        except:
-            # Invalid device or cannot modify virtual devices once initialized.
-            pass
 
         self.max_history_featurizer_is_used = max_history_featurizer_is_used
 
