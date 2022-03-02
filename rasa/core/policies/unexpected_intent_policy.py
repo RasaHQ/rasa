@@ -104,6 +104,7 @@ from rasa.utils.tensorflow.constants import (
     SEVERITY_KEY,
     QUERY_INTENT_KEY,
     NAME,
+    USE_GPU,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
@@ -285,6 +286,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             LOSS_TYPE: CROSS_ENTROPY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
+            USE_GPU: False,
         }
 
     def __init__(
