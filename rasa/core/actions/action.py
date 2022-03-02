@@ -1,7 +1,17 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING, Tuple, Set, Union
+from typing import (
+    List,
+    Text,
+    Optional,
+    Dict,
+    Any,
+    TYPE_CHECKING,
+    Tuple,
+    Set,
+    cast,
+)
 
 import aiohttp
 import rasa.core
@@ -1101,21 +1111,19 @@ class ActionExtractSlots(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        slot_events: List[Union[Event, SlotSet]] = [
+        slot_events: List[SlotSet] = [
             event for event in extraction_events if isinstance(event, SlotSet)
         ]
 
-        slot_candidates = "\n".join(
-            [e.key for e in slot_events if isinstance(e, SlotSet)]
-        )
+        slot_candidates = "\n".join([e.key for e in slot_events])
         logger.debug(f"Validating extracted slots: {slot_candidates}")
 
         if ACTION_VALIDATE_SLOT_MAPPINGS not in domain.user_actions:
-            return slot_events
+            return cast(List[Event], slot_events)
 
         _tracker = DialogueStateTracker.from_events(
             tracker.sender_id,
-            tracker.events_after_latest_restart() + slot_events,
+            tracker.events_after_latest_restart() + cast(List[Event], slot_events),
             slots=domain.slots,
         )
         validate_events = await self._run_custom_action(
@@ -1129,9 +1137,7 @@ class ActionExtractSlots(Action):
         # candidate we assume that it was valid. The custom action has to return a
         # SlotSet(slot_name, None) event to mark a Slot as invalid.
         return validate_events + [
-            event
-            for event in slot_events
-            if isinstance(event, SlotSet) and event.key not in validated_slot_names
+            event for event in slot_events if event.key not in validated_slot_names
         ]
 
     def _fails_unique_entity_mapping_check(

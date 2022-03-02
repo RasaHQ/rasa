@@ -444,7 +444,7 @@ class Agent:
     @agent_must_be_ready
     async def log_message(self, message: UserMessage) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
-        return await self.processor.log_message(message)
+        return await self.processor.log_message(message)  # type: ignore[union-attr]
 
     @agent_must_be_ready
     async def execute_action(
