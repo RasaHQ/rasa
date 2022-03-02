@@ -977,6 +977,7 @@ def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
         responses={},
         action_names=[],
         forms={},
+        data={},
     )
 
     # extract information
@@ -1068,6 +1069,7 @@ def test_process_warns_if_intent_or_entities_not_in_domain(
         responses={},
         action_names=[],
         forms={},
+        data={},
     )
 
     # expect a warning
@@ -1097,6 +1099,7 @@ async def test_unpack_regex_message_has_correct_entity_start_and_end():
         responses={},
         action_names=[],
         forms={},
+        data={},
     )
 
     message = YAMLStoryReader.unpack_regex_message(
