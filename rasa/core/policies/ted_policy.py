@@ -98,6 +98,7 @@ from rasa.utils.tensorflow.constants import (
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
+    TENSORBOARD_PROFILE_BATCH,
     CHECKPOINT_MODEL,
     ENCODING_DIMENSION,
     UNIDIRECTIONAL_ENCODER,
@@ -311,6 +312,10 @@ class TEDPolicy(Policy):
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'batch'
             TENSORBOARD_LOG_LEVEL: "epoch",
+            # Define for which batches profiling should be enabled. For more
+            # information take a look at the tensorflow API.
+            # Set to 0 for no profiling.
+            TENSORBOARD_PROFILE_BATCH: 0,
             # Perform model checkpointing
             CHECKPOINT_MODEL: False,
             # Only pick e2e prediction if the policy is confident enough
@@ -664,6 +669,7 @@ class TEDPolicy(Policy):
             self.config[TENSORBOARD_LOG_DIR],
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
+            profile_batch=self.config[TENSORBOARD_PROFILE_BATCH],
         )
         self.model.fit(
             data_generator,

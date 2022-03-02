@@ -70,6 +70,7 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     ENTITY_RECOGNITION,
     TENSORBOARD_LOG_DIR,
+    TENSORBOARD_PROFILE_BATCH,
     INTENT_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
@@ -256,6 +257,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'batch'
             TENSORBOARD_LOG_LEVEL: "epoch",
+            # Define for which batches profiling should be enabled. For more
+            # information take a look at the tensorflow API.
+            # Set to 0 for no profiling.
+            TENSORBOARD_PROFILE_BATCH: 0,
             # Perform model checkpointing
             CHECKPOINT_MODEL: False,
             # Specify what features to use as sequence and sentence features
@@ -907,6 +912,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             self.component_config[TENSORBOARD_LOG_DIR],
             self.component_config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
+            profile_batch=self.component_config[TENSORBOARD_PROFILE_BATCH],
         )
 
         self.model.fit(
