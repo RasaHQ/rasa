@@ -5,7 +5,7 @@ module.exports = {
         {
             type: 'category',
             label: 'Building Assistants',
-            collapsed: false,
+            collapsed: true,
             items: [
                 'installation',
                 'migrate-from',
@@ -46,7 +46,7 @@ module.exports = {
         {
             type: 'category',
             label: 'Concepts',
-            collapsed: false,
+            collapsed: true,
             items: [{
                     type: 'category',
                     label: 'Training Data',
@@ -118,7 +118,7 @@ module.exports = {
         },
         {
             type: 'category',
-            label: 'Deploying Your Assistant',
+            label: 'Deploying Assistants',
             collapsed: true,
             items: ['deploy/introduction', 'deploy/deploy-rasa', 'deploy/deploy-action-server', 'deploy/deploy-rasa-x'],
         },
