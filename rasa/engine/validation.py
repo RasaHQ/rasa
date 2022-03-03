@@ -438,9 +438,8 @@ def _validate_needs(
             )
 
         required_type = available_args.get(param_name)
-        needs_passed_to_kwargs = has_kwargs and required_type is None
 
-        if not needs_passed_to_kwargs:
+        if not has_kwargs and required_type is not None:
             parent = None
             if _is_placeholder_input(parent_name):
                 parent_return_type = RESERVED_PLACEHOLDERS[parent_name]

@@ -157,7 +157,7 @@ The default implementation uses `self.retrieve()`.
  | stream_events(tracker: DialogueStateTracker) -> None
 ```
 
-Streams events to a message broker
+Streams events to a message broker.
 
 #### number\_of\_existing\_events
 
@@ -206,7 +206,7 @@ Stores conversation history in memory
  | save(tracker: DialogueStateTracker) -> None
 ```
 
-Updates and saves the current conversation state
+Updates and saves the current conversation state.
 
 #### keys
 

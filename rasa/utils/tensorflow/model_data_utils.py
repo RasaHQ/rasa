@@ -50,6 +50,8 @@ def featurize_training_examples(
         A dictionary of attribute to feature sizes.
     """
     output = []
+    if not entity_tag_specs:
+        entity_tag_specs = []
 
     for example in training_examples:
         attribute_to_features = {}

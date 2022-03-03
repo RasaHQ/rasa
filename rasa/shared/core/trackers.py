@@ -404,6 +404,8 @@ class DialogueStateTracker:
         Returns:
             Entity values.
         """
+        if self.latest_message is None:
+            return iter([])
 
         return (
             x.get(ENTITY_ATTRIBUTE_VALUE)

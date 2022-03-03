@@ -18,17 +18,18 @@ from rasa.shared.core.constants import (
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import KEY_ENTITIES, KEY_SLOTS, KEY_FORMS, Domain
 from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 
 ORIGINAL_DOMAIN = "original_domain"  # not a default, fixed
 DEFAULT_NEW_DOMAIN = "new_domain"
 YML_SUFFIX = ".yml"
 
 
-def _create_back_up(
-    domain_file: Path, backup_location: Path
-) -> Union[List[Any], Dict[Text, Any]]:
+def _create_back_up(domain_file: Path, backup_location: Path) -> Dict[Text, Any]:
     """Makes a backup and returns the content of the file."""
-    original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+    original_content = rasa.shared.utils.io.read_yaml(
+        rasa.shared.utils.io.read_file(domain_file)
+    )
     rasa.shared.utils.io.write_yaml(
         original_content, backup_location, should_preserve_key_order=True
     )
@@ -167,7 +168,9 @@ def _migrate_auto_fill_and_custom_slots(
 def _assemble_new_domain(
     domain_file: Path, new_forms: Dict[Text, Any], new_slots: Dict[Text, Any]
 ) -> Dict[Text, Any]:
-    original_content = rasa.shared.utils.io.read_yaml_file(domain_file)
+    original_content = rasa.shared.utils.io.read_yaml(
+        rasa.shared.utils.io.read_file(domain_file)
+    )
     new_domain: Dict[Text, Any] = {}
     for key, value in original_content.items():
         if key == KEY_SLOTS:
@@ -326,15 +329,28 @@ def migrate_domain_format(
     # Note: we do not enforce that the version tag is 2.0 everywhere + validate that
     # migrate-able domain files are among these files later
     original_files = (
-        [file for file in domain_path.iterdir() if Domain.is_domain_file(file)]
+        {
+            file: rasa.shared.utils.io.read_yaml_file(file)
+            for file in domain_path.iterdir()
+            if Domain.is_domain_file(file)
+        }
         if domain_path.is_dir()
-        else [domain_path]
+        else {domain_path: rasa.shared.utils.io.read_yaml_file(domain_path)}
     )
-    migrated_files = [
-        file
-        for file in original_files
-        if rasa.shared.utils.io.read_yaml_file(file).get("version") == "3.0"
-    ]
+    migrated_files = []
+
+    for file, file_dict in original_files.items():
+        if not isinstance(file_dict, dict):
+            raise RasaException(
+                f"The file {file} could not be read "
+                f"as an eligible domain dictionary. "
+                f"Please make sure you have included "
+                f"only eligible domain files."
+            )
+
+        if file_dict.get(KEY_TRAINING_DATA_FORMAT_VERSION) == "3.0":
+            migrated_files.append(file)
+
     if migrated_files:
         raise RasaException(
             f"Some of the given files ({[file for file in migrated_files]}) "
