@@ -371,13 +371,14 @@ def override_defaults(
 
     if defaults is not None:
         keys_without_defaults = set(custom.keys()).difference(defaults.keys())
-        for key in set(custom.keys()).difference(keys_without_defaults):
-            sub_keys_without_defaults = set(custom[key].keys()).difference(
-                defaults[key].keys()
-            )
-            keys_without_defaults.update(
-                [(key, sub_key) for sub_key in sub_keys_without_defaults]
-            )
+        for key in custom:
+            if key not in keys_without_defaults and isinstance(config.get(key), dict):
+                sub_keys_without_defaults = set(custom[key].keys()).difference(
+                    defaults[key].keys()
+                )
+                keys_without_defaults.update(
+                    [(key, sub_key) for sub_key in sub_keys_without_defaults]
+                )
         if keys_without_defaults:
             raise InvalidConfigException(
                 f"Expected configurations only for arguments "

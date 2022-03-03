@@ -158,11 +158,12 @@ def test_override_defaults():
 @pytest.mark.parametrize(
     "defaults,custom",
     [
+        ({"key": 1}, {"wrong-key": 2}),
         (
-            {"nested-dict": {"key1": "value1", "key2": "value2"}},
-            {"nested-dict": {"key3": "override-value2"}},
+            {"other-key": 1, "same-key": {"sub-key": 1}},
+            {"other-key": 2, "same-key": {"wrong-sub-key": 3}},
         ),
-        ({"key1": 1, "key2": {"key3": 3}}, {"key3": 3}),
+        ({"key1": 1, "key2": {"wrong-level": 3}}, {"wrong-level": 3}),
     ],
 )
 def test_override_defaults_raises_if_unknown_keys_are_specified(
