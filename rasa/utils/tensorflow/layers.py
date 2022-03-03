@@ -1146,9 +1146,15 @@ class SingleLabelDotProductLoss(DotProductLoss):
                 [softmax_logits, sim_neg_ii, sim_neg_ll], axis=-1
             )
         # create label_ids for softmax
-        softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
-        softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=softmax_label_ids, logits=softmax_logits
+        label_ids = tf.concat(
+            [
+                tf.ones_like(softmax_logits[..., :1], tf.int32),
+                tf.zeros_like(softmax_logits[..., 1:], tf.int32),
+            ],
+            axis=-1,
+        )
+        softmax_loss = tf.nn.softmax_cross_entropy_with_logits(
+            labels=label_ids, logits=softmax_logits
         )
         return softmax_loss
 
