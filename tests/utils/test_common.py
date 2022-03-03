@@ -1,7 +1,7 @@
 import os
 import logging
 from pathlib import Path
-from typing import Any, Text, Type
+from typing import Any, Text, Type, Dict
 from unittest import mock
 
 import pytest
@@ -155,10 +155,19 @@ def test_override_defaults():
     assert updated_config == expected_config
 
 
-def test_override_defaults_raises_if_unknown_keys_are_specified():
-    defaults = {"nested-dict": {"key1": "value1", "key2": "value2"}}
-    custom = {"nested-dict": {"key3": "override-value2"}}
-
+@pytest.mark.parametrize(
+    "defaults,custom",
+    [
+        (
+            {"nested-dict": {"key1": "value1", "key2": "value2"}},
+            {"nested-dict": {"key3": "override-value2"}},
+        ),
+        ({"key1": 1, "key2": {"key3": 3}}, {"key3": 3}),
+    ],
+)
+def test_override_defaults_raises_if_unknown_keys_are_specified(
+    defaults: Dict[Text, Any], custom: Dict[Text, Any]
+):
     with pytest.raises(InvalidConfigException):
         rasa.utils.common.override_defaults(defaults, custom)
 
