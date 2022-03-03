@@ -215,7 +215,7 @@ class DenseForSparse(tf.keras.layers.Dense):
         )
 
         outputs = tf.nn.safe_embedding_lookup_sparse(
-            self.kernel, sp_ids, sparse_input, combiner="sum"
+            self.kernel, sp_ids, sparse_input, combiner="sum", max_norm=None
         )
 
         if len(inputs.shape) == 3:
