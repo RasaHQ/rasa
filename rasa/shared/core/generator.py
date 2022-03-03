@@ -193,11 +193,10 @@ class TrackerWithCachedStates(DialogueStateTracker):
         """Modify the state of the tracker according to an ``Event``."""
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
-        if not self._states_for_hashing:
-            if not skip_states:
-                # rest of this function assumes we have the previous state
-                # cached. let's make sure it is there.
-                self._states_for_hashing = self.past_states_for_hashing(self.domain)
+        if not self._states_for_hashing and not skip_states:
+            # rest of this function assumes we have the previous state
+            # cached. let's make sure it is there.
+            self._states_for_hashing = self.past_states_for_hashing(self.domain)
 
         super().update(event)
 

@@ -281,8 +281,7 @@ class InMemoryTrackerStore(TrackerStore):
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Updates and saves the current conversation state"""
-        if self.event_broker:
-            self.stream_events(tracker)
+        self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
@@ -357,8 +356,7 @@ class RedisTrackerStore(TrackerStore):
         self, tracker: DialogueStateTracker, timeout: Optional[float] = None
     ) -> None:
         """Saves the current conversation state."""
-        if self.event_broker:
-            self.stream_events(tracker)
+        self.stream_events(tracker)
 
         if not timeout and self.record_exp:
             timeout = self.record_exp
@@ -448,8 +446,7 @@ class DynamoTrackerStore(TrackerStore):
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
-        if self.event_broker:
-            self.stream_events(tracker)
+        self.stream_events(tracker)
         serialized = self.serialise_tracker(tracker)
 
         self.db.put_item(Item=serialized)
@@ -559,8 +556,7 @@ class MongoTrackerStore(TrackerStore):
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
-        if self.event_broker:
-            self.stream_events(tracker)
+        self.stream_events(tracker)
 
         additional_events = self._additional_events(tracker)
 
@@ -1071,9 +1067,7 @@ class SQLTrackerStore(TrackerStore):
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
-
-        if self.event_broker:
-            self.stream_events(tracker)
+        self.stream_events(tracker)
 
         with self.session_scope() as session:
             # only store recent events
