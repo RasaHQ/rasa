@@ -674,12 +674,12 @@ jobs:
 
           if [[ "${{ matrix.type }}" == "nlu" ]]; then
 
-            make test-nlu-predictors || true
+            JOBS=2 make test-nlu-predictors || true
             echo "::set-output name=train_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
 
             sleep 20
             export NOW_TEST=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
-            make test-other-unit-tests || true
+            JOBS=2 make test-other-unit-tests || true
 
             echo "::set-output name=test_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TEST") }}{{ (time.Since $t).Round (time.Second 1) }}')"
             echo "::set-output name=total_run_time::$(gomplate -i '{{ $t := time.Parse time.RFC3339 (getenv "NOW_TRAIN") }}{{ (time.Since $t).Round (time.Second 1) }}')"
