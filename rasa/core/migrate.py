@@ -264,7 +264,7 @@ def _migrate_domain_files(
 
         slots.update(original_content.get(KEY_SLOTS, {}))
         forms.update(original_content.get(KEY_FORMS, {}))
-        entities.extend(original_content.get(KEY_ENTITIES, {}))
+        entities.extend(original_content.get(KEY_ENTITIES, []))
 
     if not slots or not forms:
         raise RasaException(
