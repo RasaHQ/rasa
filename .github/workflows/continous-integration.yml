@@ -330,7 +330,7 @@ jobs:
       # multiple threads
       if: needs.changes.outputs.backend == 'true' && (matrix.os == 'windows-2019' && (matrix.test == 'test-nlu-predictors' || matrix.test == 'test-other-unit-tests'))
       env:
-        JOBS: 1
+        JOBS: 2
         PYTHONIOENCODING: "utf-8"
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
