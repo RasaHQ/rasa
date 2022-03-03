@@ -10,7 +10,11 @@ from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection, ActionExtractSlots
-from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
+from rasa.shared.constants import (
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    REQUIRED_SLOTS_KEY,
+    IGNORED_INTENTS,
+)
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
@@ -119,7 +123,7 @@ async def test_switch_forms_with_same_slot(default_agent: Agent):
     utter_ask_form_2 = f"Please provide the value for {slot_a} of form 2"
 
     domain = f"""
-version: "3.0"
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
 - intent: order_status
   examples: |
@@ -448,7 +452,7 @@ async def test_validate_slots(
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=events)
 
     domain = f"""
-    version: "3.0"
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
     entities:
     - num_tables
@@ -722,7 +726,7 @@ def test_temporary_tracker():
     sender_id = "test"
     domain = Domain.from_yaml(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         slots:
           {extra_slot}:
             type: any
@@ -1407,8 +1411,8 @@ async def test_extract_other_slots_with_matched_mapping_conditions():
 
     domain = Domain.from_yaml(
         textwrap.dedent(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intent:
             - greet
             - inform
@@ -1479,8 +1483,8 @@ async def test_extract_other_slots_raises_no_matched_conditions():
 
     domain = Domain.from_yaml(
         textwrap.dedent(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intent:
             - greet
             - inform
@@ -1549,8 +1553,8 @@ async def test_extract_other_slots_raises_no_matched_conditions():
 
 async def test_action_extract_slots_custom_mapping_with_condition():
     domain_yaml = textwrap.dedent(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 
         slots:
           custom_slot:
@@ -1613,8 +1617,8 @@ async def test_action_extract_slots_custom_mapping_with_condition():
 async def test_form_slots_empty_with_restart():
     domain = Domain.from_yaml(
         textwrap.dedent(
-            """
-            version: "3.0"
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             intent:
             - greet
             - inform

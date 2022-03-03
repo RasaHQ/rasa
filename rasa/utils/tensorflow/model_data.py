@@ -417,7 +417,7 @@ class RasaModelData:
         units = 0
         for features in self.data[key][sub_key]:
             if len(features) > 0:
-                units += features.units
+                units += features.units  # type: ignore[operator]
 
         return units
 

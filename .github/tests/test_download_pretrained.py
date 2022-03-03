@@ -13,9 +13,7 @@ CONFIG_FPATH = Path(__file__).parent / "test_data" / "bert_diet_response2t.yml"
 
 
 def test_download_pretrained_lmf_exists_no_params():
-    lmf_specs = download_pretrained.get_model_name_and_weights_from_config(
-        CONFIG_FPATH
-    )
+    lmf_specs = download_pretrained.get_model_name_and_weights_from_config(CONFIG_FPATH)
     assert lmf_specs[0].model_name == "bert"
     assert lmf_specs[0].model_weights == "rasa/LaBSE"
 
@@ -32,9 +30,7 @@ def test_download_pretrained_lmf_exists_with_model_name():
     with tempfile.NamedTemporaryFile("w+") as fp:
         yaml.dump(config, fp)
         fp.seek(0)
-        lmf_specs = download_pretrained.get_model_name_and_weights_from_config(
-            fp.name
-        )
+        lmf_specs = download_pretrained.get_model_name_and_weights_from_config(fp.name)
     assert lmf_specs[0].model_name == "roberta"
     assert lmf_specs[0].model_weights == "roberta-base"
     assert lmf_specs[0].cache_dir == "/this/dir"
@@ -68,9 +64,7 @@ def test_download_pretrained_multiple_model_names():
     with tempfile.NamedTemporaryFile("w+") as fp:
         yaml.dump(config, fp)
         fp.seek(0)
-        lmf_specs = download_pretrained.get_model_name_and_weights_from_config(
-            fp.name
-        )
+        lmf_specs = download_pretrained.get_model_name_and_weights_from_config(fp.name)
     assert len(lmf_specs) == 2
     assert lmf_specs[1].model_name == "roberta"
 
@@ -87,9 +81,7 @@ def test_download_pretrained_with_model_name_and_nondefault_weight():
     with tempfile.NamedTemporaryFile("w+") as fp:
         yaml.dump(config, fp)
         fp.seek(0)
-        lmf_specs = download_pretrained.get_model_name_and_weights_from_config(
-            fp.name
-        )
+        lmf_specs = download_pretrained.get_model_name_and_weights_from_config(fp.name)
     assert lmf_specs[0].model_name == "bert"
     assert lmf_specs[0].model_weights == "bert-base-uncased"
 
@@ -105,7 +97,5 @@ def test_download_pretrained_lmf_doesnt_exists():
     with tempfile.NamedTemporaryFile("w+") as fp:
         yaml.dump(config, fp)
         fp.seek(0)
-        lmf_specs = download_pretrained.get_model_name_and_weights_from_config(
-            fp.name
-        )
+        lmf_specs = download_pretrained.get_model_name_and_weights_from_config(fp.name)
     assert len(lmf_specs) == 0

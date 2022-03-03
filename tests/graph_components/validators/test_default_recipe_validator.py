@@ -1026,16 +1026,9 @@ def test_no_warnings_with_default_project(tmp_path: Path):
     )
     validator = DefaultV1RecipeValidator(graph_config.train_schema)
 
-    with pytest.warns(
-        UserWarning, match="Slot auto-fill has been removed in 3.0"
-    ) as records:
+    with pytest.warns(None) as records:
         validator.validate(importer)
-    assert all(
-        [
-            warn.message.args[0].startswith("Slot auto-fill has been removed")
-            for warn in records.list
-        ]
-    )
+    assert len(records) == 0
 
 
 def test_importer_with_invalid_model_config(tmp_path: Path):

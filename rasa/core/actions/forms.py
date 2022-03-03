@@ -504,8 +504,8 @@ class FormAction(LoopAction):
     ) -> List[Event]:
         logger.debug(f"Request next slot '{slot_name}'")
 
-        action_to_ask_for_next_slot = self._name_of_utterance(domain, slot_name)
-        if not action_to_ask_for_next_slot:
+        action_name_to_ask_for_next_slot = self._name_of_utterance(domain, slot_name)
+        if not action_name_to_ask_for_next_slot:
             # Use a debug log as the user might have asked as part of a custom action
             logger.debug(
                 f"There was no action found to ask for slot '{slot_name}' "
@@ -514,7 +514,7 @@ class FormAction(LoopAction):
             return []
 
         action_to_ask_for_next_slot = action.action_for_name_or_text(
-            action_to_ask_for_next_slot, domain, self.action_endpoint
+            action_name_to_ask_for_next_slot, domain, self.action_endpoint
         )
         return await action_to_ask_for_next_slot.run(
             output_channel, nlg, tracker, domain

@@ -93,6 +93,7 @@ def test_prepare_for_training():
         responses={},
         forms={},
         action_names=["utter_greet", "action_check_weather"],
+        data={},
     )
 
     f = SingleStateFeaturizer()
@@ -125,6 +126,7 @@ def test_encode_all_labels__encoded_all_action_names_and_texts():
         responses={},
         forms={},
         action_names=["a", "b", "c", "d"],
+        data={},
     )
 
     f = SingleStateFeaturizer()
@@ -452,6 +454,7 @@ def test_encode_entities__with_entity_roles_and_groups():
         responses={},
         forms={},
         action_names=[],
+        data={},
     )
     f = SingleStateFeaturizer()
     f.prepare_for_training(domain)
@@ -484,6 +487,7 @@ def test_encode_entities__with_bilou_entity_roles_and_groups():
         responses={},
         forms={},
         action_names=[],
+        data={},
     )
     f = SingleStateFeaturizer()
     f.prepare_for_training(domain, bilou_tagging=True)
