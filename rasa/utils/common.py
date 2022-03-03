@@ -32,6 +32,7 @@ from rasa.constants import (
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
 import rasa.shared.utils.io
+from rasa.shared.exceptions import InvalidConfigException
 
 logger = logging.getLogger(__name__)
 
@@ -353,6 +354,8 @@ def override_defaults(
 
     We cannot use `dict.update` method because configs contain nested dicts.
 
+    Caveat: This method only supports one level of nesting.
+
     Args:
         defaults: default config
         custom: user config containing new parameters
@@ -364,6 +367,22 @@ def override_defaults(
 
     if not custom:
         return config
+
+    if defaults is not None:
+        keys_without_defaults = set(custom.keys()).difference(defaults.keys())
+        for key in set(custom.keys()).difference(keys_without_defaults):
+            sub_keys_without_defaults = set(custom[key].keys()).difference(
+                defaults[key].keys()
+            )
+            keys_without_defaults.update(
+                [(key, sub_key) for sub_key in sub_keys_without_defaults]
+            )
+        if keys_without_defaults:
+            raise InvalidConfigException(
+                f"Expected configurations only for arguments "
+                f"for which there are default values defined, but the given "
+                f"configuration contains unknown keys: {keys_without_defaults}. "
+            )
 
     for key in custom.keys():
         if isinstance(config.get(key), dict):

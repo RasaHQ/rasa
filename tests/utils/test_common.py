@@ -9,6 +9,7 @@ import pytest
 from rasa.core.agent import Agent
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.utils.common
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.utils.common import (
     RepeatedLogFilter,
     find_unavailable_packages,
@@ -152,6 +153,14 @@ def test_override_defaults():
 
     expected_config = {"nested-dict": {"key1": "value1", "key2": "override-value2"}}
     assert updated_config == expected_config
+
+
+def test_override_defaults_raises_if_unknown_keys_are_specified():
+    defaults = {"nested-dict": {"key1": "value1", "key2": "value2"}}
+    custom = {"nested-dict": {"key3": "override-value2"}}
+
+    with pytest.raises(InvalidConfigException):
+        rasa.utils.common.override_defaults(defaults, custom)
 
 
 def test_cli_missing_log_level_default_used():
