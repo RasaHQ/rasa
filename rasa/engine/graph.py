@@ -357,8 +357,11 @@ class GraphNode:
         self._constructor_fn: Callable = getattr(
             self._component_class, self._constructor_name
         )
+        # FIXME: allow get_default_config() to return None to distinguish between
+        #   no restrictions vs restriction that no parameters are allowed
+        default_config = self._component_class.get_default_config() or None
         self._component_config: Dict[Text, Any] = rasa.utils.common.override_defaults(
-            self._component_class.get_default_config(), component_config
+            default_config, component_config
         )
         self._fn_name: Text = fn_name
         self._fn: Callable = getattr(self._component_class, self._fn_name)

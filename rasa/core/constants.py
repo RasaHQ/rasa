@@ -72,6 +72,7 @@ STORIES_WITH_WARNINGS_FILE = "stories_with_warnings.yml"
 POLICY_PRIORITY = "priority"
 POLICY_FEATURIZER = "featurizer"
 POLICY_MAX_HISTORY = "max_history"
+MAX_TRAINING_SAMPLES = "max_training_samples"
 
 DEFAULT_PROTOCOL = "UDP"
 DEFAULT_SYSLOG_HOST = "localhost"

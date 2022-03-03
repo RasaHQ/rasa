@@ -38,6 +38,7 @@ from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
     POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
+    MAX_TRAINING_SAMPLES,
 )
 from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
 import rasa.shared.utils.common
@@ -243,7 +244,7 @@ class Policy(GraphComponent):
             == SupportedData.ML_DATA,
         )
 
-        max_training_samples = kwargs.get("max_training_samples")
+        max_training_samples = kwargs.get(MAX_TRAINING_SAMPLES)
         if max_training_samples is not None:
             logger.debug(
                 "Limit training data to {} training samples."
