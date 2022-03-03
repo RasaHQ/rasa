@@ -280,7 +280,7 @@ class InMemoryTrackerStore(TrackerStore):
         super().__init__(domain, event_broker, **kwargs)
 
     def save(self, tracker: DialogueStateTracker) -> None:
-        """Updates and saves the current conversation state"""
+        """Updates and saves the current conversation state."""
         self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
