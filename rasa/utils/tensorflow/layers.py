@@ -204,9 +204,18 @@ class DenseForSparse(tf.keras.layers.Dense):
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
-        # outputs will be 2D
-        outputs = tf.sparse.sparse_dense_matmul(
-            tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), self.kernel
+        sparse_input = tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]])
+
+        sp_ids_values = sparse_input.indices[:, 1]
+
+        sp_ids = tf.SparseTensor(
+            indices=sparse_input.indices,
+            values=sp_ids_values,
+            dense_shape=sparse_input.dense_shape,
+        )
+
+        outputs = tf.nn.safe_embedding_lookup_sparse(
+            self.kernel, sp_ids, sparse_input, combiner="sum"
         )
 
         if len(inputs.shape) == 3:

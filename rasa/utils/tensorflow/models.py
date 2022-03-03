@@ -164,7 +164,9 @@ class RasaModel(TmpKerasModel):
                 # that don't have prediction gradient
                 gradients.append(
                     pred_grad
-                    + tf.where(pred_grad > 0, reg_grad, tf.zeros_like(reg_grad))
+                    + tf.where(
+                        pred_grad > tf.zeros(1), reg_grad, tf.zeros_like(reg_grad)
+                    )
                 )
             else:
                 gradients.append(pred_grad)
