@@ -91,6 +91,8 @@ class StoryReader:
 
     def _add_event(self, event_name: Text, parameters: Dict[Text, Any]) -> None:
         parsed_events = self._parse_events(event_name, parameters)
+        if parsed_events is None:
+            parsed_events = []
 
         if self.current_step_builder is None:
             raise StoryParseError(

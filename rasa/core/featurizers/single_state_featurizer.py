@@ -309,9 +309,11 @@ class SingleStateFeaturizer:
         ):
             # we cannot build a classifier with fewer than 2 classes
             return {}
-
-        message = precomputations.lookup_message(user_text=entity_data[TEXT])
-        message.data[ENTITIES] = entity_data[ENTITIES]
+        if precomputations is None:
+            message = None
+        else:
+            message = precomputations.lookup_message(user_text=entity_data[TEXT])
+            message.data[ENTITIES] = entity_data[ENTITIES]
 
         if not message:
             return {}

@@ -209,10 +209,14 @@ class KafkaEventBroker(EventBroker):
             f" key={partition_key!s}, headers={headers})"
         )
 
-        self.producer.send(self.topic, value=event, key=partition_key, headers=headers)
+        if self.producer is not None:
+            self.producer.send(
+                self.topic, value=event, key=partition_key, headers=headers
+            )
 
     def _close(self) -> None:
-        self.producer.close()
+        if self.producer is not None:
+            self.producer.close()
 
     @rasa.shared.utils.common.lazy_property
     def rasa_environment(self) -> Optional[Text]:

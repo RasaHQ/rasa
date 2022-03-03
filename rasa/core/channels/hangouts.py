@@ -297,7 +297,7 @@ class HangoutsInput(InputChannel):
         async def receive(request: Request) -> HTTPResponse:
 
             if self.project_id:
-                token = request.headers.get("Authorization").replace("Bearer ", "")
+                token = request.headers.get("Authorization", "").replace("Bearer ", "")
                 self._check_token(token)
 
             sender_id = self._extract_sender(request)

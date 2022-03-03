@@ -166,7 +166,7 @@ jobs:
           path: 'dataset'
           ref: "main"
 
-      - name: Set DATASET and CONFIG variables
+      - name: Set env variables
         id: set_dataset_config_vars
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
@@ -231,6 +231,9 @@ jobs:
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
+          HOST_NAME=`hostname`
+          echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
+
       - name: Checkout dataset - external
         uses: actions/checkout@v2
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'
@@ -251,13 +254,14 @@ jobs:
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
-          DATASET: "${{ matrix.dataset }}"
+          DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.ref }}
           GITHUB_SHA: "${{ github.sha }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: "main"
+          INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 

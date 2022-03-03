@@ -1,7 +1,17 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING, Tuple, Set, Union
+from typing import (
+    List,
+    Text,
+    Optional,
+    Dict,
+    Any,
+    TYPE_CHECKING,
+    Tuple,
+    Set,
+    cast,
+)
 
 import aiohttp
 import rasa.core
@@ -387,10 +397,15 @@ class ActionRetrieveResponse(ActionBotResponse):
             Full retrieval name of the action if the last user utterance
             contains a response selector output, `None` otherwise.
         """
-        if RESPONSE_SELECTOR_PROPERTY_NAME not in tracker.latest_message.parse_data:
+        latest_message = tracker.latest_message
+
+        if latest_message is None:
             return None
 
-        response_selector_properties = tracker.latest_message.parse_data[
+        if RESPONSE_SELECTOR_PROPERTY_NAME not in latest_message.parse_data:
+            return None
+
+        response_selector_properties = latest_message.parse_data[
             RESPONSE_SELECTOR_PROPERTY_NAME
         ]
 
@@ -418,7 +433,12 @@ class ActionRetrieveResponse(ActionBotResponse):
         domain: "Domain",
     ) -> List[Event]:
         """Query the appropriate response and create a bot utterance with that."""
-        response_selector_properties = tracker.latest_message.parse_data[
+        latest_message = tracker.latest_message
+
+        if latest_message is None:
+            return []
+
+        response_selector_properties = latest_message.parse_data[
             RESPONSE_SELECTOR_PROPERTY_NAME
         ]
 
@@ -719,7 +739,7 @@ class RemoteAction(Action):
             logger.debug(
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
-            response = await self.action_endpoint.request(
+            response: Any = await self.action_endpoint.request(
                 json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
             )
 
@@ -1091,7 +1111,7 @@ class ActionExtractSlots(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        slot_events: List[Union[Event, SlotSet]] = [
+        slot_events: List[SlotSet] = [
             event for event in extraction_events if isinstance(event, SlotSet)
         ]
 
@@ -1099,11 +1119,11 @@ class ActionExtractSlots(Action):
         logger.debug(f"Validating extracted slots: {slot_candidates}")
 
         if ACTION_VALIDATE_SLOT_MAPPINGS not in domain.user_actions:
-            return slot_events
+            return cast(List[Event], slot_events)
 
         _tracker = DialogueStateTracker.from_events(
             tracker.sender_id,
-            tracker.events_after_latest_restart() + slot_events,
+            tracker.events_after_latest_restart() + cast(List[Event], slot_events),
             slots=domain.slots,
         )
         validate_events = await self._run_custom_action(
@@ -1267,6 +1287,8 @@ def extract_slot_value_from_predefined_mapping(
     elif should_fill_intent_slot or should_fill_trigger_slot:
         value = [mapping.get("value")]
     elif should_fill_text_slot:
-        value = [tracker.latest_message.text]
+        value = [
+            tracker.latest_message.text if tracker.latest_message is not None else None
+        ]
 
     return value

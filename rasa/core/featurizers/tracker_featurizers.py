@@ -105,13 +105,16 @@ class TrackerFeaturizer:
         Returns:
             Featurized tracker states.
         """
-        return [
-            [
-                self.state_featurizer.encode_state(state, precomputations)
-                for state in tracker_states
+        if self.state_featurizer is None:
+            return [[{}]]
+        else:
+            return [
+                [
+                    self.state_featurizer.encode_state(state, precomputations)
+                    for state in tracker_states
+                ]
+                for tracker_states in trackers_as_states
             ]
-            for tracker_states in trackers_as_states
-        ]
 
     @staticmethod
     def _convert_labels_to_ids(
@@ -152,15 +155,18 @@ class TrackerFeaturizer:
         Returns:
             Trackers as entity features.
         """
-        return [
-            [
-                self.state_featurizer.encode_entities(
-                    entity_data, precomputations, bilou_tagging
-                )
-                for entity_data in trackers_entities
+        if self.state_featurizer is None:
+            return [[{}]]
+        else:
+            return [
+                [
+                    self.state_featurizer.encode_entities(
+                        entity_data, precomputations, bilou_tagging
+                    )
+                    for entity_data in trackers_entities
+                ]
+                for trackers_entities in trackers_as_entities
             ]
-            for trackers_entities in trackers_as_entities
-        ]
 
     @staticmethod
     def _entity_data(event: UserUttered) -> Dict[Text, Any]:
