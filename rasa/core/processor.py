@@ -705,9 +705,10 @@ class MessageProcessor:
 
     @staticmethod
     def _should_handle_message(tracker: DialogueStateTracker) -> bool:
-        return (
-            not tracker.is_paused()
-            or tracker.latest_message.intent.get(INTENT_NAME_KEY) == USER_INTENT_RESTART
+        return not tracker.is_paused() or (
+            tracker.latest_message is not None
+            and tracker.latest_message.intent.get(INTENT_NAME_KEY)
+            == USER_INTENT_RESTART
         )
 
     def is_action_limit_reached(

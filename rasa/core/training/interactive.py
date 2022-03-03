@@ -958,7 +958,10 @@ async def _predict_till_next_listen(
     listen = False
     while not listen:
         result = await request_prediction(endpoint, conversation_id)
-        predictions = result.get("scores") or []
+        if result is None:
+            result = {}
+
+        predictions = result.get("scores", [])
         if not predictions:
             raise InvalidConfigException(
                 "Cannot continue as no action was predicted by the dialogue manager. "
@@ -1479,7 +1482,9 @@ async def record_messages(
             )
             return
 
-        intents = [next(iter(i)) for i in (domain.get("intents") or [])]
+        domain_intents = domain.get("intents", []) if domain is not None else []
+
+        intents = [next(iter(i)) for i in domain_intents]
 
         num_messages = 0
 

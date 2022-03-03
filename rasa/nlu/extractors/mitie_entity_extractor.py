@@ -231,9 +231,12 @@ class MitieEntityExtractor(GraphComponent, EntityExtractorMixin):
 
         entities = []
         token_texts = [token.text for token in tokens]
-        mitie_entities = self._ner.extract_entities(
-            token_texts, mitie_model.word_feature_extractor
-        )
+        if self._ner is None:
+            mitie_entities = []
+        else:
+            mitie_entities = self._ner.extract_entities(
+                token_texts, mitie_model.word_feature_extractor
+            )
         for e in mitie_entities:
             if len(e[0]):
                 start = tokens[e[0][0]].start

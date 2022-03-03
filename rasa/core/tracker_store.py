@@ -85,7 +85,7 @@ class TrackerStore:
                 destination.
             kwargs: Additional kwargs.
         """
-        self.domain = domain
+        self.domain = domain or Domain.empty()
         self.event_broker = event_broker
         self.max_event_history = None
 
@@ -219,7 +219,10 @@ class TrackerStore:
         return self.retrieve(conversation_id)
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
-        """Streams events to a message broker"""
+        """Streams events to a message broker."""
+        if self.event_broker is None:
+            return None
+
         offset = self.number_of_existing_events(tracker.sender_id)
         events = tracker.events
         for event in list(itertools.islice(events, offset, len(events))):
@@ -277,9 +280,8 @@ class InMemoryTrackerStore(TrackerStore):
         super().__init__(domain, event_broker, **kwargs)
 
     def save(self, tracker: DialogueStateTracker) -> None:
-        """Updates and saves the current conversation state"""
-        if self.event_broker:
-            self.stream_events(tracker)
+        """Updates and saves the current conversation state."""
+        self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
@@ -354,8 +356,7 @@ class RedisTrackerStore(TrackerStore):
         self, tracker: DialogueStateTracker, timeout: Optional[float] = None
     ) -> None:
         """Saves the current conversation state."""
-        if self.event_broker:
-            self.stream_events(tracker)
+        self.stream_events(tracker)
 
         if not timeout and self.record_exp:
             timeout = self.record_exp
@@ -445,8 +446,7 @@ class DynamoTrackerStore(TrackerStore):
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
-        if self.event_broker:
-            self.stream_events(tracker)
+        self.stream_events(tracker)
         serialized = self.serialise_tracker(tracker)
 
         self.db.put_item(Item=serialized)
@@ -477,9 +477,12 @@ class DynamoTrackerStore(TrackerStore):
         # `float`s are stored as `Decimal` objects - we need to convert them back
         events_with_floats = core_utils.replace_decimals_with_floats(events)
 
-        return DialogueStateTracker.from_dict(
-            sender_id, events_with_floats, self.domain.slots
-        )
+        if self.domain is None:
+            slots = []
+        else:
+            slots = self.domain.slots
+
+        return DialogueStateTracker.from_dict(sender_id, events_with_floats, slots)
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the `DynamoTrackerStore`."""
@@ -553,8 +556,7 @@ class MongoTrackerStore(TrackerStore):
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
-        if self.event_broker:
-            self.stream_events(tracker)
+        self.stream_events(tracker)
 
         additional_events = self._additional_events(tracker)
 
@@ -679,7 +681,6 @@ def _create_sequence(table_name: Text) -> "Sequence":
 
     Returns: A `Sequence` object
     """
-
     from sqlalchemy.ext.declarative import declarative_base
 
     sequence_name = f"{table_name}_seq"
@@ -1066,9 +1067,7 @@ class SQLTrackerStore(TrackerStore):
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
-
-        if self.event_broker:
-            self.stream_events(tracker)
+        self.stream_events(tracker)
 
         with self.session_scope() as session:
             # only store recent events
