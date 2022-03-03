@@ -566,6 +566,9 @@ class RulePolicy(MemoizationPolicy):
         gold_action_name: Text,
         prediction_source: Optional[Text],
     ) -> List[Text]:
+        # FIXME: `predicted_action_name` and `prediction_source` are
+        # either None together or defined together. This could be improved
+        # by better typing in this class, but requires some refactoring
         if (
             not predicted_action_name
             or not prediction_source
