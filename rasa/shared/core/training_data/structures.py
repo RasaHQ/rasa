@@ -7,6 +7,7 @@ import typing
 from typing import (
     List,
     Text,
+    Deque,
     Dict,
     Optional,
     Tuple,
@@ -716,7 +717,7 @@ class StoryGraph:
         # noinspection PyPep8Naming
         GRAY, BLACK = 0, 1
 
-        ordered = deque()
+        ordered: Deque = deque()
         unprocessed = sorted(set(graph))
         visited_nodes = {}
 

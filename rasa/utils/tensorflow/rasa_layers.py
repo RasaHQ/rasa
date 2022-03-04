@@ -232,7 +232,7 @@ class ConcatenateSparseDenseFeatures(RasaCustomLayer):
         )
 
         # Prepare dropout and sparse-to-dense layers if any sparse tensors are expected
-        self._tf_layers = {}
+        self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
         if any([signature.is_sparse for signature in feature_type_signature]):
             self._prepare_layers_for_sparse_tensors(attribute, feature_type, config)
 
@@ -403,7 +403,7 @@ class RasaFeatureCombiningLayer(RasaCustomLayer):
 
         super().__init__(name=f"rasa_feature_combining_layer_{attribute}")
 
-        self._tf_layers = {}
+        self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
 
         # Prepare sparse-dense combining layers for each present feature type
         self._feature_types_present = self._get_present_feature_types(

@@ -147,8 +147,8 @@ class FormAction(LoopAction):
         Returns:
             A set of json dumps of unique mappings of type `from_entity`.
         """
-        unique_entity_slot_mappings = set()
-        duplicate_entity_slot_mappings = set()
+        unique_entity_slot_mappings: Set[Text] = set()
+        duplicate_entity_slot_mappings: Set[Text] = set()
         domain_slots = domain.as_dict().get(KEY_SLOTS, {})
         for slot in domain.required_slots_for_form(self.name()):
             for slot_mapping in domain_slots.get(slot, {}).get(SLOT_MAPPINGS, []):
@@ -360,7 +360,7 @@ class FormAction(LoopAction):
         events_since_last_user_uttered = FormAction._get_events_since_last_user_uttered(
             tracker
         )
-        slot_values = {}
+        slot_values: Dict[Text, Any] = {}
 
         required_slots = self._add_dynamic_slots_requested_by_dynamic_forms(
             tracker, domain

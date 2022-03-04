@@ -213,9 +213,9 @@ def _migrate_domain_files(
         backup_location: where to backup all domain files
         out_path: location where to store the migrated files
     """
-    slots = {}
-    forms = {}
-    entities = []
+    slots: Dict[Text, Any] = {}
+    forms: Dict[Text, Any] = {}
+    entities: List[Any] = []
 
     domain_files = [
         file for file in domain_path.iterdir() if Domain.is_domain_file(file)
@@ -264,7 +264,7 @@ def _migrate_domain_files(
 
         slots.update(original_content.get(KEY_SLOTS, {}))
         forms.update(original_content.get(KEY_FORMS, {}))
-        entities.extend(original_content.get(KEY_ENTITIES, {}))
+        entities.extend(original_content.get(KEY_ENTITIES, []))
 
     if not slots or not forms:
         raise RasaException(
