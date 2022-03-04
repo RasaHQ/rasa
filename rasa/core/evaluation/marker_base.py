@@ -489,7 +489,7 @@ class Marker(ABC):
 
     @staticmethod
     def _collect_configs_from_yaml_files(yaml_files: List[Text]) -> Dict[Text, Dict]:
-        marker_names = set()
+        marker_names: Set[Text] = set()
         loaded_configs: Dict[Text, Dict] = {}
         for yaml_file in yaml_files:
             loaded_config = rasa.shared.utils.io.read_yaml_file(yaml_file)

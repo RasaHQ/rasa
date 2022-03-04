@@ -12,6 +12,7 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityTagSpec, EntityExtractorMixin
 import rasa.core.actions.action
@@ -412,7 +413,11 @@ class TEDPolicy(Policy):
     ) -> Tuple[RasaModelData, List[Dict[Text, List[Features]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_labels(domain, precomputations)
+        encoded_all_labels = (
+            state_featurizer.encode_all_labels(domain, precomputations)
+            if state_featurizer is not None
+            else []
+        )
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -616,7 +621,11 @@ class TEDPolicy(Policy):
         )
 
         if self.config[ENTITY_RECOGNITION]:
-            self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
+            self._entity_tag_specs = (
+                self.featurizer.state_featurizer.entity_tag_specs
+                if self.featurizer.state_featurizer is not None
+                else []
+            )
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
@@ -665,6 +674,10 @@ class TEDPolicy(Policy):
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
         )
+
+        if self.model is None:
+            raise ModelNotFound("No model was detected prior to training.")
+
         self.model.fit(
             data_generator,
             epochs=self.config[EPOCHS],
@@ -876,7 +889,7 @@ class TEDPolicy(Policy):
 
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
-        text = tracker.latest_message.text
+        text = tracker.latest_message.text if tracker.latest_message is not None else ""
         if precomputations is not None:
             parsed_message = precomputations.lookup_message(user_text=text)
         else:
@@ -944,7 +957,8 @@ class TEDPolicy(Policy):
             model_path / f"{model_filename}.fake_features.pkl", self.fake_features
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.label_data.pkl", dict(self._label_data.data)
+            model_path / f"{model_filename}.label_data.pkl",
+            dict(self._label_data.data) if self._label_data is not None else {},
         )
         entity_tag_specs = (
             [tag_spec._asdict() for tag_spec in self._entity_tag_specs]

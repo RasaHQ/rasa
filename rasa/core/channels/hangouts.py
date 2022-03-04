@@ -33,7 +33,7 @@ class HangoutsOutput(OutputChannel):
 
     def __init__(self) -> None:
         """Starts messages as empty dictionary."""
-        self.messages = {}
+        self.messages: Dict[Text, Any] = {}
 
     @staticmethod
     def _text_card(message: Dict[Text, Any]) -> Dict:
@@ -297,7 +297,7 @@ class HangoutsInput(InputChannel):
         async def receive(request: Request) -> HTTPResponse:
 
             if self.project_id:
-                token = request.headers.get("Authorization").replace("Bearer ", "")
+                token = request.headers.get("Authorization", "").replace("Bearer ", "")
                 self._check_token(token)
 
             sender_id = self._extract_sender(request)

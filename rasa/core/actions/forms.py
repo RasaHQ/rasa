@@ -104,8 +104,8 @@ class FormAction(LoopAction):
 
         If None, map requested slot to an entity with the same name
         """
-        domain_slots = domain.as_dict().get(KEY_SLOTS)
-        requested_slot_mappings = domain_slots.get(slot_to_fill).get("mappings")
+        domain_slots = domain.as_dict().get(KEY_SLOTS, {})
+        requested_slot_mappings = domain_slots.get(slot_to_fill, {}).get("mappings", [])
 
         # check provided slot mappings
         for requested_slot_mapping in requested_slot_mappings:
@@ -147,11 +147,11 @@ class FormAction(LoopAction):
         Returns:
             A set of json dumps of unique mappings of type `from_entity`.
         """
-        unique_entity_slot_mappings = set()
-        duplicate_entity_slot_mappings = set()
-        domain_slots = domain.as_dict().get(KEY_SLOTS)
+        unique_entity_slot_mappings: Set[Text] = set()
+        duplicate_entity_slot_mappings: Set[Text] = set()
+        domain_slots = domain.as_dict().get(KEY_SLOTS, {})
         for slot in domain.required_slots_for_form(self.name()):
-            for slot_mapping in domain_slots.get(slot).get(SLOT_MAPPINGS):
+            for slot_mapping in domain_slots.get(slot, {}).get(SLOT_MAPPINGS, []):
                 if slot_mapping.get(MAPPING_TYPE) == str(SlotMappingType.FROM_ENTITY):
                     mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
                     if mapping_as_string in unique_entity_slot_mappings:
@@ -360,7 +360,7 @@ class FormAction(LoopAction):
         events_since_last_user_uttered = FormAction._get_events_since_last_user_uttered(
             tracker
         )
-        slot_values = {}
+        slot_values: Dict[Text, Any] = {}
 
         required_slots = self._add_dynamic_slots_requested_by_dynamic_forms(
             tracker, domain

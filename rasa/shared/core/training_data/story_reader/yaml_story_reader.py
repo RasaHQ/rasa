@@ -321,7 +321,8 @@ class YAMLStoryReader(StoryReader):
         else:
             self._validate_that_utterance_is_in_domain(utterance)
 
-        self.current_step_builder.add_user_messages([utterance])
+        if self.current_step_builder is not None:
+            self.current_step_builder.add_user_messages([utterance])
 
     def _validate_that_utterance_is_in_domain(self, utterance: UserUttered) -> None:
         intent_name = utterance.intent.get(INTENT_NAME_KEY)
@@ -347,7 +348,7 @@ class YAMLStoryReader(StoryReader):
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
         events: List = []
 
-        for item in step.get(KEY_OR):
+        for item in step.get(KEY_OR, []):
             if KEY_USER_INTENT in item.keys():
                 utterance = self._parse_raw_user_utterance(item)
                 if utterance:
@@ -385,7 +386,7 @@ class YAMLStoryReader(StoryReader):
                 )
                 return
 
-        if events:
+        if events and self.current_step_builder is not None:
             self.current_step_builder.add_events(events)
 
     def _user_intent_from_step(

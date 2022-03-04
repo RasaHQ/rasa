@@ -61,8 +61,8 @@ class TrackerWithCachedStates(DialogueStateTracker):
         super().__init__(
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
-        self._states_for_hashing: Optional[Deque[FrozenState]] = None
-        self.domain = domain
+        self._states_for_hashing: Deque[FrozenState] = deque()
+        self.domain = domain if domain is not None else Domain.empty()
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented
 
@@ -104,7 +104,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # if don't have it cached, we use the domain to calculate the states
         # from the events
         states_for_hashing = self._states_for_hashing
-        if states_for_hashing is None:
+        if not states_for_hashing:
             states = super().past_states(domain, omit_unset_slots=omit_unset_slots)
             states_for_hashing = deque(self.freeze_current_state(s) for s in states)
 
@@ -146,7 +146,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
     def clear_states(self) -> None:
         """Reset the states."""
-        self._states_for_hashing = None
+        self._states_for_hashing = deque()
 
     def init_copy(self) -> "TrackerWithCachedStates":
         """Create a new state tracker with the same initial values."""
@@ -193,8 +193,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         """Modify the state of the tracker according to an ``Event``."""
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
-
-        if self._states_for_hashing is None and not skip_states:
+        if not self._states_for_hashing and not skip_states:
             # rest of this function assumes we have the previous state
             # cached. let's make sure it is there.
             self._states_for_hashing = self.past_states_for_hashing(self.domain)
@@ -263,7 +262,7 @@ class TrainingDataGenerator:
             rand=random.Random(42),
         )
         # hashed featurization of all finished trackers
-        self.hashed_featurizations = set()
+        self.hashed_featurizations: Set[int] = set()
 
     @staticmethod
     def _phase_name(everything_reachable_is_reached: bool, phase: int) -> Text:
@@ -344,8 +343,8 @@ class TrainingDataGenerator:
             min_num_aug_phases = 0
 
         # placeholder to track gluing process of checkpoints
-        used_checkpoints = set()
-        previous_unused = set()
+        used_checkpoints: Set[Text] = set()
+        previous_unused: Set[Text] = set()
         everything_reachable_is_reached = False
 
         # we will continue generating data until we have reached all

@@ -261,7 +261,7 @@ class Domain:
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
         """Loads and merges multiple domain files recursively from a directory tree."""
-        domain_dict = {}
+        domain_dict: Dict[Text, Any] = {}
         for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
@@ -350,7 +350,7 @@ class Domain:
             )
 
             if merge_func == rasa.shared.utils.common.merge_dicts:
-                default = {}
+                default: Dict[Text, Any] = {}
             else:
                 default = []
 
@@ -434,7 +434,7 @@ class Domain:
         if not data.get(KEY_INTENTS):
             return data
 
-        for intent in data.get(KEY_INTENTS):
+        for intent in data.get(KEY_INTENTS, []):
             if isinstance(intent, dict):
                 Domain._reset_intent_flags(intent)
 
@@ -631,7 +631,7 @@ class Domain:
         """
         # make a copy to not alter the input argument
         intents = copy.deepcopy(intents)
-        intent_properties = {}
+        intent_properties: Dict[Text, Any] = {}
         duplicates = set()
 
         for intent in intents:
@@ -1318,7 +1318,7 @@ class Domain:
         Return:
             A list of states.
         """
-        states = []
+        states: List[State] = []
         last_ml_action_sub_state = None
         turn_was_hidden = False
         for tr, hide_rule_turn in tracker.generate_all_prior_trackers():

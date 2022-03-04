@@ -434,7 +434,8 @@ def _create_data_generator(
     from rasa.shared.core.generator import TrainingDataGenerator
 
     tmp_domain_path = Path(tempfile.mkdtemp()) / "domain.yaml"
-    agent.domain.persist(tmp_domain_path)
+    domain = agent.domain if agent.domain is not None else Domain.empty()
+    domain.persist(tmp_domain_path)
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[resource_name], domain_path=str(tmp_domain_path)
     )
@@ -823,14 +824,25 @@ async def _predict_tracker_actions(
 ]:
 
     processor = agent.processor
+    if agent.processor is not None:
+        processor = agent.processor
+    else:
+        raise RasaException(
+            "The agent's processor has not been instantiated. "
+            "The processor needs to be defined before running "
+            "prediction."
+        )
+
     tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
 
+    slots = agent.domain.slots if agent.domain is not None else []
+
     partial_tracker = DialogueStateTracker.from_events(
         tracker.sender_id,
         events[:1],
-        agent.domain.slots,
+        slots,
         sender_source=tracker.sender_source,
     )
     tracker_actions = []
