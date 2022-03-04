@@ -160,7 +160,6 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
             self.model = OVAutoModel.from_pretrained(  # type: ignore[no-untyped-call] # noqa: E501
                 self.model_weights, cache_dir=self.cache_dir, from_tf=True
             )
-            self.model.max_length = self._config.get("openvino_max_length", 0)
         else:
             self.model = model_class_dict[self.model_name].from_pretrained(  # type: ignore[no-untyped-call] # noqa: E501
                 self.model_weights, cache_dir=self.cache_dir

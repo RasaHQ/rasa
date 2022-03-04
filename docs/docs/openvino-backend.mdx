@@ -11,10 +11,6 @@ Intel OpenVINO is a library which brings optimized deep learning primitives for 
 
 ## Config options
 
-There are multiple config options related to OpenVINO backend:
+There is a config options related to OpenVINO backend:
 
 * `use_openvino` - `True` to enable OpenVINO backend. `False` to use default networks backend (TensorFlow)
-* `openvino_max_length` - an integer value which specifies fixed input sequence length.
-Extra input values will be zero-padded with no changes for the output.
-This is an optional parameter which is recommended for OpenVINO of version less than 2022.1 to achieve better efficiency.
-Starts form 2022.1 OpenVINO can efficiently process variable length inputs so you don't need specify this parameter.

@@ -71,7 +71,7 @@ install-mitie:
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
 
 install-openvino:
-	poetry run python -m pip install --no-deps defusedxml openvino-dev==2021.4.2
+	poetry run python -m pip install --no-deps defusedxml openvino-dev==2022.1.0
 
 install-full: install install-mitie install-openvino
 	poetry install -E full
