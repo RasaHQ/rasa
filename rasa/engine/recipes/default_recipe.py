@@ -395,7 +395,6 @@ class DefaultV1Recipe(Recipe):
                 EPOCHS, component.get_default_config()[EPOCHS]
             )
             epoch_fraction = cli_parameters.get("finetuning_epoch_fraction", 1.0)
-            config_from_cli["finetuning_epoch_fraction"] = epoch_fraction
             config_from_cli[EPOCHS] = math.ceil(
                 old_number_epochs * float(epoch_fraction)
             )
