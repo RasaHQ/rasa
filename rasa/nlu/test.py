@@ -1730,7 +1730,7 @@ async def compute_metrics(
         response_selection_results
     )
 
-    intent_metrics = {}
+    intent_metrics: IntentMetrics = {}
     if intent_results:
         intent_metrics = _compute_metrics(
             intent_results, "intent_target", "intent_prediction"
@@ -1740,7 +1740,7 @@ async def compute_metrics(
     if entity_results:
         entity_metrics = _compute_entity_metrics(entity_results)
 
-    response_selection_metrics = {}
+    response_selection_metrics: ResponseSelectionMetrics = {}
     if response_selection_results:
         response_selection_metrics = _compute_metrics(
             response_selection_results,
@@ -1762,7 +1762,7 @@ async def compare_nlu(
     configs: List[Text],
     data: TrainingData,
     exclusion_percentages: List[int],
-    f_score_results: Dict[Text, Any],
+    f_score_results: Dict[Text, List[List[float]]],
     model_names: List[Text],
     output: Text,
     runs: int,

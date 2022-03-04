@@ -182,7 +182,7 @@ def split_events(
         The split events.
     """
     sub_events = []
-    current = []
+    current: List["Event"] = []
 
     def event_fulfills_splitting_condition(evt: "Event") -> bool:
         # event does not have the correct type
@@ -735,6 +735,9 @@ class DefinePrevUserUtteredFeaturization(SkipEventInMDStoryMixin):
             # a user message is always followed by action listen
             return
 
+        if not tracker.latest_message:
+            return
+
         # update previous user message's featurization based on this event
         tracker.latest_message.use_text_for_featurization = (
             self.use_text_for_featurization
@@ -813,6 +816,9 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
         if tracker.latest_action_name != ACTION_LISTEN_NAME:
             # entities belong only to the last user message
             # a user message always comes after action listen
+            return
+
+        if not tracker.latest_message:
             return
 
         for entity in self.entities:

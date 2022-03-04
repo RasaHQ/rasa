@@ -357,7 +357,7 @@ class ResponseSelector(DIETClassifier):
             self.component_config[HIDDEN_LAYERS_SIZES]
             == default_config[HIDDEN_LAYERS_SIZES]
         )
-        config_for_disabling_hidden_layers = {
+        config_for_disabling_hidden_layers: Dict[Text, List[Any]] = {
             k: [] for k, _ in default_config[HIDDEN_LAYERS_SIZES].items()
         }
         # warn if the hidden layers aren't disabled
