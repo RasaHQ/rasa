@@ -8,7 +8,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Text, ContextManager, Tuple, Union
+from typing import Text, Generator, Tuple, Union
 
 import rasa.utils.common
 import rasa.shared.utils.io
@@ -112,7 +112,7 @@ class LocalModelStorage(ModelStorage):
         return ModelMetadata.from_dict(serialized_metadata)
 
     @contextmanager
-    def write_to(self, resource: Resource) -> ContextManager[Path]:
+    def write_to(self, resource: Resource) -> Generator[Path, None, None]:
         """Persists data for a resource (see parent class for full docstring)."""
         logger.debug(f"Resource '{resource.name}' was requested for writing.")
         directory = self._directory_for_resource(resource)
@@ -128,7 +128,7 @@ class LocalModelStorage(ModelStorage):
         return self._storage_path / resource.name
 
     @contextmanager
-    def read_from(self, resource: Resource) -> ContextManager[Path]:
+    def read_from(self, resource: Resource) -> Generator[Path, None, None]:
         """Provides the data of a `Resource` (see parent class for full docstring)."""
         logger.debug(f"Resource '{resource.name}' was requested for reading.")
         directory = self._directory_for_resource(resource)

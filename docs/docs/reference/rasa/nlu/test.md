@@ -600,7 +600,7 @@ extraction.
 #### compare\_nlu
 
 ```python
-async compare_nlu(configs: List[Text], data: TrainingData, exclusion_percentages: List[int], f_score_results: Dict[Text, Any], model_names: List[Text], output: Text, runs: int) -> List[int]
+async compare_nlu(configs: List[Text], data: TrainingData, exclusion_percentages: List[int], f_score_results: Dict[Text, List[List[float]]], model_names: List[Text], output: Text, runs: int) -> List[int]
 ```
 
 Trains and compares multiple NLU models.

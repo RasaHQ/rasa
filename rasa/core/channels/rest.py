@@ -67,7 +67,7 @@ class RestInput(InputChannel):
         metadata: Optional[Dict[Text, Any]],
     ) -> Callable[[Any], Awaitable[None]]:
         async def stream(resp: Any) -> None:
-            q = Queue()
+            q: Queue = Queue()
             task = asyncio.ensure_future(
                 self.on_message_wrapper(
                     on_new_message, text, q, sender_id, input_channel, metadata

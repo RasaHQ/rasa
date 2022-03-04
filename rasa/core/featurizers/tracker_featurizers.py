@@ -1062,7 +1062,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                     tracker_states[:label_index], self.max_history
                 )
                 label = [event.intent_name or event.text]
-                entities = [{}]
+                entities: List[Dict[Text, Any]] = [{}]
 
                 yield sliced_states, label, entities
 

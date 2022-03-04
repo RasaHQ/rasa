@@ -780,7 +780,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         if LABEL_PAD_ID in unique_label_ids:
             unique_label_ids.remove(LABEL_PAD_ID)
 
-        label_id_scores = {
+        label_id_scores: Dict[int, Dict[Text, List[float]]] = {
             label_id: {POSITIVE_SCORES_KEY: [], NEGATIVE_SCORES_KEY: []}
             for label_id in unique_label_ids
         }

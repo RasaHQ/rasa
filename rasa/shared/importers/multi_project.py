@@ -32,9 +32,9 @@ class MultiProjectImporter(TrainingDataImporter):
         else:
             self._domain_paths = []
         self._story_paths = []
-        self._e2e_story_paths = []
+        self._e2e_story_paths: List[Text] = []
         self._nlu_paths = []
-        self._imports = []
+        self._imports: List[Text] = []
         self._additional_paths = training_data_paths or []
         self._project_directory = project_directory or os.path.dirname(config_file)
 

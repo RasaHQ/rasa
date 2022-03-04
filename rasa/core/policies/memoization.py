@@ -104,7 +104,7 @@ class MemoizationPolicy(Policy):
         Returns:
             lookup dictionary
         """
-        lookup = {}
+        lookup: Dict[Text, Text] = {}
 
         if not trackers_as_states:
             return lookup
