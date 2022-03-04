@@ -71,6 +71,7 @@ class SpacyNLP(GraphComponent):
             # applications and models it makes sense to differentiate
             # between these two words, therefore setting this to `True`.
             "case_sensitive": False
+            "model" : None,
         }
 
     @staticmethod
@@ -113,7 +114,7 @@ class SpacyNLP(GraphComponent):
         execution_context: ExecutionContext,
     ) -> SpacyNLP:
         """Creates component (see parent class for full docstring)."""
-        spacy_model_name = config.get("model")
+        spacy_model_name = config["model"]
 
         logger.info(f"Trying to load SpaCy model with name '{spacy_model_name}'.")
 
@@ -160,7 +161,7 @@ class SpacyNLP(GraphComponent):
             # this example, but since we are processing in batch mode, it would
             # get complex to collect all processed and neglected examples.
             text = ""
-        if self._config.get("case_sensitive"):
+        if self._config["case_sensitive"]:
             return text
         else:
             return text.lower()
