@@ -119,7 +119,7 @@ class SocketIOOutput(OutputChannel):
 
         await self.sio.emit(self.bot_message_evt, **json_message)
 
-    async def send_attachment(
+    async def send_attachment(  # type: ignore[override]
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends an attachment to the user."""

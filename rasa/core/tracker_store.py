@@ -451,7 +451,10 @@ class DynamoTrackerStore(TrackerStore):
 
         self.db.put_item(Item=serialized)
 
-    def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
+    @staticmethod
+    def serialise_tracker(  # type: ignore[override]
+        tracker: "DialogueStateTracker",
+    ) -> Dict:
         """Serializes the tracker, returns object with decimal types."""
         d = tracker.as_dialogue().as_dict()
         d.update({"sender_id": tracker.sender_id})
@@ -1133,8 +1136,8 @@ class FailSafeTrackerStore(TrackerStore):
 
         super().__init__(tracker_store.domain, tracker_store.event_broker)
 
-    @property
-    def domain(self) -> Optional[Domain]:
+    @property  # type: ignore[override]
+    def domain(self) -> Domain:  # type: ignore[override]
         return self._tracker_store.domain
 
     @domain.setter

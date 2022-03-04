@@ -130,7 +130,7 @@ class PikaEventBroker(EventBroker):
         return [DEFAULT_QUEUE_NAME]
 
     @classmethod
-    async def from_endpoint_config(
+    async def from_endpoint_config(  # type: ignore[override]
         cls,
         broker_config: Optional["EndpointConfig"],
         event_loop: Optional[AbstractEventLoop] = None,

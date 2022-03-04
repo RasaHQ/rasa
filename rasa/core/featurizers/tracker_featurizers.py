@@ -502,7 +502,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Creates training data that uses each time output for prediction.
     """
 
-    def training_states_labels_and_entities(
+    def training_states_labels_and_entities(  # type: ignore[override]
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
