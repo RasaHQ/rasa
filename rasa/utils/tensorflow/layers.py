@@ -1148,14 +1148,26 @@ class SingleLabelDotProductLoss(DotProductLoss):
         # create label_ids for softmax
         label_ids = tf.concat(
             [
-                tf.ones_like(softmax_logits[..., :1], tf.int32),
-                tf.zeros_like(softmax_logits[..., 1:], tf.int32),
+                tf.ones_like(softmax_logits[..., :1], tf.float32),
+                tf.zeros_like(softmax_logits[..., 1:], tf.float32),
             ],
             axis=-1,
         )
-        softmax_loss = tf.nn.softmax_cross_entropy_with_logits(
-            labels=label_ids, logits=softmax_logits
+
+        input_logits = tf.nn.softmax(softmax_logits)
+
+        # rescale to nullify the effect of sigmoid(logits)
+        # that `weighted_cross_entropy_with_logits` would apply
+        rescaled_logits = tf.math.log(tf.maximum(input_logits, 1e-6)) - tf.math.log(
+            tf.maximum(1 - input_logits, 1e-6)
         )
+
+        softmax_loss = tf.nn.weighted_cross_entropy_with_logits(
+            labels=label_ids, logits=rescaled_logits, pos_weight=tf.constant(1.0)
+        )
+        # softmax_loss = tf.nn.softmax_cross_entropy_with_logits(
+        #     labels=label_ids, logits=softmax_logits
+        # )
         return softmax_loss
 
     @property
