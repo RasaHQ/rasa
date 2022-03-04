@@ -79,7 +79,7 @@ async def _create_from_endpoint_config(
 ) -> Optional["EventBroker"]:
     """Instantiate an event broker based on its configuration."""
     if endpoint_config is None:
-        broker = None
+        broker: Optional["EventBroker"] = None
     elif endpoint_config.type is None or endpoint_config.type.lower() == "pika":
         from rasa.core.brokers.pika import PikaEventBroker
 
