@@ -762,7 +762,7 @@ def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
 
 
 def ensure_schema_exists(session: "Session") -> None:
-    """Ensure that the requested PostgreSQL schema exists in the data if isinstance(obj, TrackerStore):base.
+    """Ensure that the requested PostgreSQL schema exists in the database.
 
     Args:
         session: Session used to inspect the database.
