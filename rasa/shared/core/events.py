@@ -983,11 +983,9 @@ class SlotSet(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(
-        cls, parameters: Dict[Text, Any]
-    ) -> Optional[List["SlotSet"]]:
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List["Event"]]:
 
-        slots = []
+        slots: List[Event] = []
         for slot_key, slot_val in parameters.items():
             slots.append(SlotSet(slot_key, slot_val))
 
@@ -1548,9 +1546,9 @@ class ActionExecuted(Event):
             self.action_name, self.policy, self.confidence
         )
 
-    def __str__(self) -> Optional[Text]:
+    def __str__(self) -> Text:
         """Returns event as human readable string."""
-        return self.action_name or self.action_text
+        return self.action_name or self.action_text or ""
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
@@ -1726,7 +1724,9 @@ class ActiveLoop(Event):
         return f"{ActiveLoop.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> List["ActiveLoop"]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> List[Union[Event, "ActiveLoop"]]:
         """Called to convert a parsed story line into an event."""
         return [
             ActiveLoop(
