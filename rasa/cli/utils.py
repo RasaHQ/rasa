@@ -3,17 +3,38 @@ import logging
 import os
 import sys
 from types import FrameType
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, overload
 
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:
     from questionary import Question
+    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 
 FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
+
+
+@overload
+def get_validated_path(
+    current: Optional[Text],
+    parameter: Text,
+    default: Optional[Text] = ...,
+    none_is_valid: "Literal[False]" = ...,
+) -> Text:
+    ...
+
+
+@overload
+def get_validated_path(
+    current: Optional[Text],
+    parameter: Text,
+    default: Optional[Text] = ...,
+    none_is_valid: "Literal[True]" = ...,
+) -> Optional[Text]:
+    ...
 
 
 def get_validated_path(

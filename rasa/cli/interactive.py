@@ -131,7 +131,6 @@ def get_provided_model(arg_model: Text) -> Optional[Text]:
         arg_model, "model", DEFAULT_MODELS_PATH
     )
 
-    if os.path.isdir(model_path):
-        model_path = model.get_latest_model(model_path)
-
-    return model_path
+    return (
+        model.get_latest_model(model_path) if os.path.isdir(model_path) else model_path
+    )
