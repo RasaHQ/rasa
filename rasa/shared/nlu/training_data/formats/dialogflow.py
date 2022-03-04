@@ -24,7 +24,9 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 
 class DialogflowReader(TrainingDataReader):
-    def read(self, fn: Text, **kwargs: Any) -> "TrainingData":
+    """Reader for NLU training data."""
+
+    def read(self, fn: Text, **kwargs: Any) -> "TrainingData":  # type: ignore[override]
         """Loads training data stored in the Dialogflow data format."""
         language = kwargs["language"]
         fformat = kwargs["fformat"]

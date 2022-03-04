@@ -5,7 +5,7 @@ import logging
 import random
 
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict, Tuple, Deque, Any
+from typing import Optional, List, Text, Set, Dict, Tuple, Deque, Any, Iterable
 
 from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.shared.core.constants import SHOULD_NOT_BE_SET
@@ -52,12 +52,13 @@ class TrackerWithCachedStates(DialogueStateTracker):
     def __init__(
         self,
         sender_id: Text,
-        slots: Optional[List[Slot]],
+        slots: Optional[Iterable[Slot]],
         max_event_history: Optional[int] = None,
         domain: Optional[Domain] = None,
         is_augmented: bool = False,
         is_rule_tracker: bool = False,
     ) -> None:
+        """Initializes a tracker with cached states."""
         super().__init__(
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
@@ -71,7 +72,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         cls,
         sender_id: Text,
         evts: List[Event],
-        slots: Optional[List[Slot]] = None,
+        slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
         domain: Optional[Domain] = None,
@@ -189,7 +190,9 @@ class TrackerWithCachedStates(DialogueStateTracker):
             frozen_state = self.freeze_current_state(state)
             self._states_for_hashing.append(frozen_state)
 
-    def update(self, event: Event, skip_states: bool = False) -> None:
+    def update(  # type: ignore[override]
+        self, event: Event, skip_states: bool = False
+    ) -> None:
         """Modify the state of the tracker according to an ``Event``."""
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
