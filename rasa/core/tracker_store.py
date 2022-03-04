@@ -1138,6 +1138,7 @@ class FailSafeTrackerStore(TrackerStore):
 
     @property  # type: ignore[override]
     def domain(self) -> Domain:  # type: ignore[override]
+        """Returns the domain of the primary tracker store."""
         return self._tracker_store.domain
 
     @domain.setter

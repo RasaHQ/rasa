@@ -70,6 +70,7 @@ class SlackBot(OutputChannel):
     async def send_attachment(  # type: ignore[override]
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
+        """Sends message with attachment."""
         recipient = self.slack_channel or recipient_id
         await self._post_message(
             channel=recipient, as_user=True, attachments=[attachment], **kwargs
