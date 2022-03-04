@@ -391,6 +391,8 @@ class DefaultV1Recipe(Recipe):
             and "finetuning_epoch_fraction" in cli_parameters
             and EPOCHS in component.get_default_config()
         ):
+            # FIXME: would be nicer if this was computed this inside components
+            #  and the original config would be kept intact to avoid confusion
             old_number_epochs = component_config.get(
                 EPOCHS, component.get_default_config()[EPOCHS]
             )
