@@ -328,7 +328,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         common.mark_as_experimental_feature("UnexpecTED Intent Policy")
 
-    def _standard_featurizer(self) -> TrackerFeaturizer:
+    def _standard_featurizer(self) -> IntentMaxHistoryTrackerFeaturizer:
         return IntentMaxHistoryTrackerFeaturizer(
             IntentTokenizerSingleStateFeaturizer(),
             max_history=self.config.get(POLICY_MAX_HISTORY),
@@ -561,7 +561,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         return metadata
 
-    def predict_action_probabilities(
+    def predict_action_probabilities(  # type: ignore[override]
         self,
         tracker: DialogueStateTracker,
         domain: Domain,

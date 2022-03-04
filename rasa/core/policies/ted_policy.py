@@ -688,7 +688,7 @@ class TEDPolicy(Policy):
             shuffle=False,  # we use custom shuffle inside data generator
         )
 
-    def train(
+    def train(  # type: ignore[override]
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
@@ -805,7 +805,7 @@ class TEDPolicy(Policy):
         )
         return confidences[0], self.only_e2e
 
-    def predict_action_probabilities(
+    def predict_action_probabilities(  # type: ignore[override]
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
