@@ -1154,7 +1154,11 @@ class SingleLabelDotProductLoss(DotProductLoss):
         #     axis=-1,
         # )
 
-        input_logits = tf.nn.softmax(softmax_logits)
+        # for numerical stability of softmax,
+        # see https://stackoverflow.com/a/49212689/3001665
+        input_logits = tf.nn.softmax(
+            softmax_logits - tf.math.reduce_max(softmax_logits, axis=-1, keepdims=True)
+        )
 
         loss = -tf.math.log(tf.math.maximum(input_logits[..., 0], 1e-6))
 

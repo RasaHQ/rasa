@@ -854,6 +854,10 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     def train(self, training_data: TrainingData) -> Resource:
         """Train the embedding intent classifier on a data set."""
+        print(
+            "num parallel threads",
+            tf.config.threading.get_intra_op_parallelism_threads(),
+        )
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():
             logger.debug(
