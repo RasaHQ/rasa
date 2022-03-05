@@ -286,7 +286,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             LOSS_TYPE: CROSS_ENTROPY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
-            USE_GPU: False,
+            USE_GPU: True,
         }
 
     def __init__(

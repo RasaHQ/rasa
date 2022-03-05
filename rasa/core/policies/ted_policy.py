@@ -342,7 +342,7 @@ class TEDPolicy(Policy):
             POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
             # Determines the importance of policies, higher values take precedence
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
-            USE_GPU: False,
+            USE_GPU: True,
         }
 
     def __init__(
@@ -711,7 +711,7 @@ class TEDPolicy(Policy):
             )
             return self._resource
 
-        if(self.config[USE_GPU]):
+        if self.config[USE_GPU]:
             self.run_training(model_data, label_ids)
         else:
             with tf.device('/cpu:0'):
