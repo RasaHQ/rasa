@@ -1168,9 +1168,9 @@ class FailSafeTrackerStore(TrackerStore):
     @property
     def fallback_tracker_store(self) -> TrackerStore:
         if not self._fallback_tracker_store:
-            self._fallback_tracker_store = AwaitableTrackerStore.create(InMemoryTrackerStore(
+            self._fallback_tracker_store = InMemoryTrackerStore(
                 self._tracker_store.domain, self._tracker_store.event_broker
-            ))
+            )
 
         return self._fallback_tracker_store
 
