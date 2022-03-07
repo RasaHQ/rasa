@@ -3,12 +3,14 @@ import logging
 import os
 import sys
 from types import FrameType
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, overload
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union, overload
 
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from questionary import Question
     from typing_extensions import Literal
 
@@ -19,30 +21,30 @@ FREE_TEXT_INPUT_PROMPT = "Type out your own message..."
 
 @overload
 def get_validated_path(
-    current: Optional[Text],
+    current: Optional[Union["Path", Text]],
     parameter: Text,
-    default: Optional[Text] = ...,
+    default: Optional[Union["Path", Text]] = ...,
     none_is_valid: "Literal[False]" = ...,
-) -> Text:
+) -> Union["Path", Text]:
     ...
 
 
 @overload
 def get_validated_path(
-    current: Optional[Text],
+    current: Optional[Union["Path", Text]],
     parameter: Text,
-    default: Optional[Text] = ...,
+    default: Optional[Union["Path", Text]] = ...,
     none_is_valid: "Literal[True]" = ...,
-) -> Optional[Text]:
+) -> Optional[Union["Path", Text]]:
     ...
 
 
 def get_validated_path(
-    current: Optional[Text],
+    current: Optional[Union["Path", Text]],
     parameter: Text,
-    default: Optional[Text] = None,
+    default: Optional[Union["Path", Text]] = None,
     none_is_valid: bool = False,
-) -> Optional[Text]:
+) -> Optional[Union["Path", Text]]:
     """Check whether a file path or its default value is valid and returns it.
 
     Args:
@@ -77,7 +79,9 @@ def get_validated_path(
     return current
 
 
-def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List[Text]:
+def missing_config_keys(
+    path: Union["Path", Text], mandatory_keys: List[Text]
+) -> List[Text]:
     import rasa.utils.io
 
     if not os.path.exists(path):
@@ -89,7 +93,9 @@ def missing_config_keys(path: Text, mandatory_keys: List[Text]) -> List[Text]:
 
 
 def cancel_cause_not_found(
-    current: Optional[Text], parameter: Text, default: Optional[Text]
+    current: Optional[Union["Path", Text]],
+    parameter: Text,
+    default: Optional[Union["Path", Text]],
 ) -> None:
     """Exits with an error because the given path was not valid.
 
