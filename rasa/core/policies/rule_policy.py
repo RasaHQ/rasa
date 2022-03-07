@@ -409,9 +409,9 @@ class RulePolicy(MemoizationPolicy):
                 )
 
         if error_messages:
-            error_messages = "\n".join(error_messages)
+            error_text = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nIncomplete rules found🚨\n\n{error_messages}\n"
+                f"\nIncomplete rules found🚨\n\n{error_text}\n"
                 f"Please note that if some slots or active loops should not be set "
                 f"during prediction you need to explicitly set them to 'null' in the "
                 f"rules."
@@ -494,7 +494,7 @@ class RulePolicy(MemoizationPolicy):
         self,
         tracker: TrackerWithCachedStates,
         predicted_action_name: Optional[Text],
-        gold_action_name: Text,
+        gold_action_name: Optional[Text],
         prediction_source: Text,
     ) -> None:
         # we need to remember which action should be predicted by the rule
@@ -721,9 +721,9 @@ class RulePolicy(MemoizationPolicy):
 
         logger.setLevel(logger_level)  # reset logger level
         if error_messages:
-            error_messages = "\n".join(error_messages)
+            error_text = "\n".join(error_messages)
             raise InvalidRule(
-                f"\nContradicting rules or stories found 🚨\n\n{error_messages}\n"
+                f"\nContradicting rules or stories found 🚨\n\n{error_text}\n"
                 f"Please update your stories and rules so that they don't contradict "
                 f"each other."
             )

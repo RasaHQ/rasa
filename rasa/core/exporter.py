@@ -1,7 +1,7 @@
 import itertools
 import logging
 import uuid
-from typing import Text, Optional, List, Set, Dict, Any
+from typing import Text, Optional, List, Set, Dict, Any, Iterable
 
 from tqdm import tqdm
 
@@ -257,7 +257,7 @@ class Exporter:
         return events_with_conversation_id
 
     def _sort_and_select_events_by_timestamp(
-        self, events: List[Dict[Text, Any]]
+        self, events: Iterable[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
         """Sort list of events by ascending timestamp, and select events within time
         range.

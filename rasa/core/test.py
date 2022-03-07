@@ -592,7 +592,7 @@ def emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None:
     """
     from rasa.shared.core.events import ActionExecutionRejected
 
-    rejected_action_name: Text = partial_tracker.active_loop_name
+    rejected_action_name = partial_tracker.active_loop_name
     partial_tracker.update(ActionExecutionRejected(rejected_action_name))
 
 

@@ -306,7 +306,7 @@ def _create_from_endpoint_config(
     ):
         # this is the default type if no lock store type is set
 
-        lock_store = InMemoryLockStore()
+        lock_store: "LockStore" = InMemoryLockStore()
     elif endpoint_config.type == "redis":
         lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
     else:

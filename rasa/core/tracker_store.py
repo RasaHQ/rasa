@@ -87,7 +87,7 @@ class TrackerStore:
         """
         self.domain = domain or Domain.empty()
         self.event_broker = event_broker
-        self.max_event_history = None
+        self.max_event_history: Optional[int] = None
 
     @staticmethod
     def create(
@@ -715,7 +715,7 @@ def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
     if not is_postgresql_url(url):
         return {}
 
-    kwargs = {}
+    kwargs: Dict[Text, Any] = {}
 
     schema_name = os.environ.get(POSTGRESQL_SCHEMA)
 
@@ -1134,11 +1134,11 @@ class FailSafeTrackerStore(TrackerStore):
         super().__init__(tracker_store.domain, tracker_store.event_broker)
 
     @property
-    def domain(self) -> Optional[Domain]:
+    def domain(self) -> Domain:
         return self._tracker_store.domain
 
     @domain.setter
-    def domain(self, domain: Optional[Domain]) -> None:
+    def domain(self, domain: Domain) -> None:
         self._tracker_store.domain = domain
 
         if self._fallback_tracker_store:
@@ -1197,7 +1197,7 @@ def _create_from_endpoint_config(
 
     if endpoint_config is None or endpoint_config.type is None:
         # default tracker store if no type is set
-        tracker_store = InMemoryTrackerStore(domain, event_broker)
+        tracker_store: "TrackerStore" = InMemoryTrackerStore(domain, event_broker)
     elif endpoint_config.type.lower() == "redis":
         tracker_store = RedisTrackerStore(
             domain=domain,
