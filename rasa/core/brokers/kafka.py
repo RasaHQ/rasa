@@ -89,7 +89,7 @@ class KafkaEventBroker(EventBroker):
         self.ssl_check_hostname = ssl_check_hostname
 
     @classmethod
-    async def from_endpoint_config(  # type: ignore[override]
+    async def from_endpoint_config(
         cls,
         broker_config: EndpointConfig,
         event_loop: Optional[AbstractEventLoop] = None,

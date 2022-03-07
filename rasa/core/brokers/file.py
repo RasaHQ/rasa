@@ -24,7 +24,7 @@ class FileEventBroker(EventBroker):
         self.event_logger = self._event_logger()
 
     @classmethod
-    async def from_endpoint_config(  # type: ignore[override]
+    async def from_endpoint_config(
         cls,
         broker_config: Optional["EndpointConfig"],
         event_loop: Optional[AbstractEventLoop] = None,

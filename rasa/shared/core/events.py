@@ -20,6 +20,7 @@ from typing import (
     Iterable,
     cast,
     Tuple,
+    TypeVar,
 )
 
 import rasa.shared.utils.common
@@ -243,6 +244,9 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
     )
 
 
+E = TypeVar("E", bound="Event")
+
+
 class Event(ABC):
     """Describes events in conversation and how the affect the conversation state.
 
@@ -305,7 +309,9 @@ class Event(ABC):
         return event_class._from_parameters(parameters)
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List["Event"]]:
+    def _from_story_string(
+        cls: Type[E], parameters: Dict[Text, Any]
+    ) -> Optional[List[E]]:
         """Called to convert a parsed story line into an event."""
         return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
@@ -605,7 +611,9 @@ class UserUttered(Event):
         return out
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["UserUttered"]]:
         try:
             return [
                 cls._from_parse_data(
@@ -983,9 +991,11 @@ class SlotSet(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List["Event"]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["SlotSet"]]:
 
-        slots: List[Event] = []
+        slots = []
         for slot_key, slot_val in parameters.items():
             slots.append(SlotSet(slot_key, slot_val))
 
@@ -1183,7 +1193,9 @@ class ReminderScheduled(Event):
         return d
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["ReminderScheduled"]]:
 
         trigger_date_time = parser.parse(parameters.get("date_time"))
 
@@ -1297,7 +1309,9 @@ class ReminderCancelled(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["ReminderCancelled"]]:
         return [
             ReminderCancelled(
                 parameters.get("name"),
@@ -1361,7 +1375,9 @@ class StoryExported(Event):
         return hash(32143124319)
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["StoryExported"]]:
         return [
             StoryExported(
                 parameters.get("path"),
@@ -1429,7 +1445,9 @@ class FollowupAction(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["FollowupAction"]]:
 
         return [
             FollowupAction(
@@ -1573,7 +1591,9 @@ class ActionExecuted(Event):
         return self.action_name
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["ActionExecuted"]]:
         return [
             ActionExecuted(
                 parameters.get("name"),
@@ -1724,9 +1744,7 @@ class ActiveLoop(Event):
         return f"{ActiveLoop.type_name}{props}"
 
     @classmethod
-    def _from_story_string(
-        cls, parameters: Dict[Text, Any]
-    ) -> List[Union[Event, "ActiveLoop"]]:
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> List["ActiveLoop"]:
         """Called to convert a parsed story line into an event."""
         return [
             ActiveLoop(
