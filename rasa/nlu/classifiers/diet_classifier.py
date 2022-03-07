@@ -335,8 +335,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self._sparse_feature_sizes = sparse_feature_sizes
 
         self._effective_epochs = train_utils.effective_number_of_epochs(
-            finetuning=self.finetune_mode,
-            epochs=self.config[EPOCHS],
+            during_finetuning=self.finetune_mode,
+            epochs=self.component_config[EPOCHS],
             finetuning_epoch_fraction=self.config[FINETUNING_EPOCH_FRACTION],
             epoch_overwrite=None,
         )

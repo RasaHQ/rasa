@@ -329,10 +329,7 @@ def test_epoch_fraction_cli_param():
 
     train_schema = model_config.train_schema
     for node_name, node in expected_train_schema.nodes.items():
-        try:
-            assert train_schema.nodes[node_name] == node
-        except:
-            breakpoint()
+        assert train_schema.nodes[node_name] == node
 
     assert train_schema == expected_train_schema
 

@@ -69,7 +69,6 @@ from rasa.utils.tensorflow.constants import (
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
-    FINETUNING_EPOCH_FRACTION,
     RANDOM_SEED,
     LEARNING_RATE,
     RANKING_LENGTH,
@@ -392,7 +391,7 @@ class TEDPolicy(Policy):
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
         self._effective_epochs = train_utils.effective_number_of_epochs(
-            finetuning=self.finetune_mode,
+            during_finetuning=self.finetune_mode,
             epochs=self.config[EPOCHS],
             finetuning_epoch_fraction=self.config[FINETUNING_EPOCH_FRACTION],
             epoch_overwrite=self.config[EPOCH_OVERRIDE],
@@ -1070,8 +1069,6 @@ class TEDPolicy(Policy):
         model_utilities = cls._load_model_utilities(model_path)
 
         config = cls._update_loaded_params(config)
-        if execution_context.is_finetuning and EPOCH_OVERRIDE in config:
-            config[EPOCHS] = config.get(EPOCH_OVERRIDE)
 
         (
             model_data_example,

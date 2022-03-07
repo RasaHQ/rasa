@@ -1,4 +1,6 @@
 from pathlib import Path
+
+import math
 import numpy as np
 from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 
@@ -41,14 +43,25 @@ if TYPE_CHECKING:
 
 
 def effective_number_of_epochs(
-    finetuning: bool,
     epochs: int,
+    during_finetuning: bool,
     finetuning_epoch_fraction: float,
     epoch_overwrite: Optional[int],
 ) -> int:
+    """Returns the number of epochs to be used according to the given settings.
+
+    Args:
+        epochs: the number of epochs specified e.g. in a config file
+        during_finetuning: whether we are in finetuning mode
+        finetuning_epoch_fraction: the fraction of the epochs to be used during
+          finetuning
+        epoch_overwrite: (optional) if this is specified, then this number of epochs
+          is used instead of any epoch number that would be derived from the
+          other settings
+    """
     if epoch_overwrite is not None:
         return epoch_overwrite
-    if finetuning:
+    if during_finetuning:
         return math.ceil(epochs * float(finetuning_epoch_fraction))
     return epochs
 
