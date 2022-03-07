@@ -38,10 +38,29 @@ module.exports = {
             'tuning-your-model',
             'testing-your-assistant',
             'setting-up-ci-cd',
-            'how-to-deploy',
           ],
         },
         "glossary",
+      ],
+    },
+    {
+        type: 'category',
+        label: 'Deploying Assistants',
+        collapsed: true,
+      items: [
+        'deploy/introduction',
+        'deploy/deploy-rasa',
+        'deploy/deploy-action-server',
+        'deploy/deploy-rasa-x',
+        {
+            type: 'category',
+            label: 'Deployment Tools',
+            collapsed: true,
+          items: [
+            'deploy/rei/using-rei'
+            
+          ],
+        }
       ],
     },
     {
