@@ -337,6 +337,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         self._effective_epochs = train_utils.effective_number_of_epochs(
             finetuning=self.finetune_mode,
             epochs=self.config[EPOCHS],
+            finetuning_epoch_fraction=self.config[FINETUNING_EPOCH_FRACTION],
             epoch_overwrite=None,
         )
 

@@ -392,7 +392,9 @@ class DefaultV1Recipe(Recipe):
         ):
             # FIXME: would be nicer if this was computed this inside components
             #  and the original config would be kept intact to avoid confusion
-            config_from_cli[FINETUNING_EPOCH_FRACTION] = cli_parameters[FINETUNING_EPOCH_FRACTION]
+            config_from_cli[FINETUNING_EPOCH_FRACTION] = cli_parameters[
+                FINETUNING_EPOCH_FRACTION
+            ]
 
         return config_from_cli
 
@@ -502,7 +504,8 @@ class DefaultV1Recipe(Recipe):
             component = self._from_registry(component_name)
 
             extra_config_from_cli = self._extra_config_from_cli(
-                cli_parameters, component.clazz,
+                cli_parameters,
+                component.clazz,
             )
 
             requires_end_to_end_data = self._use_end_to_end and (

@@ -69,6 +69,7 @@ from rasa.utils.tensorflow.constants import (
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
+    FINETUNING_EPOCH_FRACTION,
     RANDOM_SEED,
     LEARNING_RATE,
     RANKING_LENGTH,
@@ -119,6 +120,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
     EPOCH_OVERRIDE,
+    FINETUNING_EPOCH_FRACTION,
 )
 
 
@@ -235,6 +237,8 @@ class TEDPolicy(Policy):
             BATCH_STRATEGY: BALANCED,
             # Number of epochs to train
             EPOCHS: 1,
+            # Fraction of epoch number to be used during finetuning.
+            FINETUNING_EPOCH_FRACTION: 1.0,
             # Do not use. Used for unit tests only.
             EPOCH_OVERRIDE: None,
             # Set random seed to any 'int' to get reproducible results
@@ -390,6 +394,7 @@ class TEDPolicy(Policy):
         self._effective_epochs = train_utils.effective_number_of_epochs(
             finetuning=self.finetune_mode,
             epochs=self.config[EPOCHS],
+            finetuning_epoch_fraction=self.config[FINETUNING_EPOCH_FRACTION],
             epoch_overwrite=self.config[EPOCH_OVERRIDE],
         )
 

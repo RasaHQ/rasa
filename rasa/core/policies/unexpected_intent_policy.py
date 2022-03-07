@@ -104,7 +104,9 @@ from rasa.utils.tensorflow.constants import (
     THRESHOLD_KEY,
     SEVERITY_KEY,
     QUERY_INTENT_KEY,
-    NAME, EPOCH_OVERRIDE,
+    NAME,
+    EPOCH_OVERRIDE,
+    FINETUNING_EPOCH_FRACTION,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
@@ -196,6 +198,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             BATCH_STRATEGY: BALANCED,
             # Number of epochs to train
             EPOCHS: 1,
+            # Fraction of epoch number to be used during finetuning.
+            FINETUNING_EPOCH_FRACTION: 1.0,
             # Do not use. Used for unit tests only.
             EPOCH_OVERRIDE: None,
             # Set random seed to any 'int' to get reproducible results
