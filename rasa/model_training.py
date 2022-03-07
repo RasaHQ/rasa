@@ -177,7 +177,7 @@ def _train_graph(
     training_type: TrainingType,
     output_path: Text,
     fixed_model_name: Text,
-    model_to_finetune: Optional[Text] = None,
+    model_to_finetune: Optional[Union[Text, Path]] = None,
     force_full_training: bool = False,
     dry_run: bool = False,
     **kwargs: Any,
@@ -307,7 +307,7 @@ def train_core(
     file_importer = TrainingDataImporter.load_core_importer_from_config(
         config, domain, [stories]
     )
-    stories = file_importer.get_stories()
+    stories_data = file_importer.get_stories()
     nlu_data = file_importer.get_nlu_data()
     domain = file_importer.get_domain()
 
@@ -326,7 +326,7 @@ def train_core(
         )
         return None
 
-    if not stories:
+    if not stories_data:
         rasa.shared.utils.cli.print_error(
             "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."

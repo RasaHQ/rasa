@@ -50,8 +50,8 @@ class LocalModelStorage(ModelStorage):
                 f"empty model storage."
             )
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            temporary_directory = Path(temporary_directory)
+        with tempfile.TemporaryDirectory() as temporary_directory_path:
+            temporary_directory = Path(temporary_directory_path)
 
             cls._extract_archive_to_directory(model_archive_path, temporary_directory)
             logger.debug(f"Extracted model to '{temporary_directory}'.")
@@ -69,8 +69,8 @@ class LocalModelStorage(ModelStorage):
         cls, model_archive_path: Union[Text, Path]
     ) -> ModelMetadata:
         """Retrieves metadata from archive (see parent class for full docstring)."""
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            temporary_directory = Path(temporary_directory)
+        with tempfile.TemporaryDirectory() as temporary_directory_path:
+            temporary_directory = Path(temporary_directory_path)
 
             cls._extract_archive_to_directory(model_archive_path, temporary_directory)
             metadata = cls._load_metadata(temporary_directory)
@@ -86,7 +86,7 @@ class LocalModelStorage(ModelStorage):
         LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
 
     @staticmethod
-    def _assert_not_rasa2_archive(temporary_directory: Path) -> None:
+    def _assert_not_rasa2_archive(temporary_directory: Union[Text, Path]) -> None:
         fingerprint_file = Path(temporary_directory) / "fingerprint.json"
         if fingerprint_file.is_file():
             serialized_fingerprint = rasa.shared.utils.io.read_json_file(

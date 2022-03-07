@@ -442,7 +442,7 @@ def _validate_needs(
         if not has_kwargs and required_type is not None:
             parent = None
             if _is_placeholder_input(parent_name):
-                parent_return_type = RESERVED_PLACEHOLDERS[parent_name]
+                parent_return_type: TypeAnnotation = RESERVED_PLACEHOLDERS[parent_name]
             else:
                 parent = graph.nodes[parent_name]
                 _, parent_return_type = _get_parameter_information(
