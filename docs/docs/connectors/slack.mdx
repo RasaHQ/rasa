@@ -11,6 +11,7 @@ import interactivityImg from './img/slack-interactivity.png';
 import requestUrlImg from './img/slack-request-url.png';
 import scopesImg from './img/slack-scopes.png';
 import secretImg from './img/slack-secret.png';
+import appHomeImg from './img/slack-create-app.png';
 
 Connecting a bot to Slack requires you to configure it to send messages
 (using API credentials) and to receive messages (using a webhook).
@@ -110,7 +111,15 @@ your bot and tell you about new messages. If you are running locally, you can
    If you are running locally, make sure ngrok (or another tool to retrieve a public
    url) is running as well.
 
-2. Configure the webhook by heading to **Event Subscriptions** and
+2. To send messages directly to your bot using the slack UI, head to **App Home**,
+   scroll to the bottom and select the checkbox for
+   `Allow users to send Slash commands and messages from the messages tab.`
+
+   You might have to quit the Slack app and re-open it before your changes take effect.
+
+   <Image img={appHomeImg} caption="Messages Tab" alt="Allow users to send Slash commands and messages from the messages tab" max-width="500px"/>
+
+3. Configure the webhook by heading to **Event Subscriptions** and
    turning **Enable Events** on.
 
    As a request URL enter the public url of your bot and append `/webhooks/slack/webhook`, e.g.
@@ -121,7 +130,7 @@ your bot and tell you about new messages. If you are running locally, you can
 
    <Image img={requestUrlImg} caption="Request URL" alt="Request URL Screenshot" max-width="500px"/>
 
-3. As a last step, you'll need to **Subscribe to bot events** on the same page.
+4. As a last step, you'll need to **Subscribe to bot events** on the same page.
    You'll need to add the following events:
    - `message.channels`,
    - `message.groups`,

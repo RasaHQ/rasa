@@ -323,12 +323,11 @@ def test_domain_to_dict():
     domain_as_dict = Domain.from_yaml(test_yaml).as_dict()
 
     assert domain_as_dict == {
+        "version": LATEST_TRAINING_DATA_FORMAT_VERSION,
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
         KEY_E2E_ACTIONS: ["Hello, dear user", "what's up"],
-        "entities": [],
         "forms": {"some_form": {"required_slots": []}},
-        "intents": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
         "session_config": {
             "carry_over_slots_to_new_session": True,
@@ -337,10 +336,8 @@ def test_domain_to_dict():
         "slots": {
             "some_slot": {
                 "values": ["high", "low"],
-                "influence_conversation": True,
-                "initial_value": None,
                 "mappings": [{"type": "from_text"}],
-                "type": "rasa.shared.core.slots.CategoricalSlot",
+                "type": "categorical",
             }
         },
     }
@@ -348,7 +345,7 @@ def test_domain_to_dict():
 
 def test_domain_to_yaml():
     test_yaml = f"""
-version: '3.0'
+version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
 actions:
 - action_save_world
 config:
@@ -366,18 +363,25 @@ session_config:
 slots: {{}}
 """
 
-    with pytest.warns(UserWarning) as record:
-        domain = Domain.from_yaml(test_yaml)
-        actual_yaml = domain.as_yaml()
+    domain = Domain.from_yaml(test_yaml)
+    actual_yaml = domain.as_yaml()
 
-    assert (
-        "Slot auto-fill has been removed in 3.0"
-        " and replaced with a new explicit mechanism to set slots. "
-        in record[0].message.args[0]
-    )
+    expected_yaml = f"""
+version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
+actions:
+- action_save_world
+config:
+  store_entities_as_slots: true
+responses:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: {DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES}
+"""
 
-    expected = rasa.shared.utils.io.read_yaml(test_yaml)
     actual = rasa.shared.utils.io.read_yaml(actual_yaml)
+    expected = rasa.shared.utils.io.read_yaml(expected_yaml)
     assert actual == expected
 
 
@@ -417,7 +421,9 @@ responses:
 
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
+
     domain = domain_1.merge(domain_2)
+
     # single attribute should be taken from domain_1
     assert domain.store_entities_as_slots
     # conflicts should be taken from domain_1
@@ -456,6 +462,7 @@ def test_merge_yaml_domains_with_default_intents(default_intent: Text):
 
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
+
     domain = domain_1.merge(domain_2)
 
     # check that the default intents were merged correctly
@@ -463,11 +470,7 @@ def test_merge_yaml_domains_with_default_intents(default_intent: Text):
     assert domain.intents == sorted(["greet", *DEFAULT_INTENTS])
 
     # ensure that the default intent is contain the domain's dictionary dump
-    domain_intents = []
-    for intent in domain.as_dict()["intents"]:
-        domain_intents.append(list(intent)[0])
-
-    assert default_intent in domain_intents
+    assert default_intent in domain.as_dict()[KEY_INTENTS]
 
 
 def test_merge_session_config_if_first_is_not_default():
@@ -517,9 +520,8 @@ def test_merge_with_empty_domain():
           - text: hey you!
         """
     )
-
-    merged = Domain.empty().merge(domain)
-
+    empty_domain = Domain.empty()
+    merged = empty_domain.merge(domain, override=True)
     assert merged.as_dict() == domain.as_dict()
 
 
@@ -585,6 +587,7 @@ def test_merge_domain_with_forms():
 
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
+
     domain = domain_1.merge(domain_2)
 
     expected_number_of_forms = 3
@@ -978,6 +981,7 @@ def test_check_domain_sanity_on_invalid_domain():
             responses={},
             action_names=["random_name", "random_name"],
             forms={},
+            data={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -991,6 +995,7 @@ def test_check_domain_sanity_on_invalid_domain():
             responses={},
             action_names=[],
             forms={},
+            data={},
         )
 
     with pytest.raises(InvalidDomain):
@@ -1001,6 +1006,7 @@ def test_check_domain_sanity_on_invalid_domain():
             responses={},
             action_names=[],
             forms={},
+            data={},
         )
 
 
@@ -1063,10 +1069,10 @@ def test_is_empty():
     assert Domain.empty().is_empty()
 
 
-def test_transform_intents_for_file_default():
+def test_load_intents_from_as_dict_representation():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_intents_for_file()
+    transformed = domain.as_dict().get(KEY_INTENTS)
 
     expected = [
         {"ask": {IGNORE_ENTITIES_KEY: ["unused_entity"]}},
@@ -1088,19 +1094,19 @@ def test_transform_intents_for_file_default():
     assert transformed == expected
 
 
-def test_transform_intents_for_files_with_entities():
+def test_load_intents_with_entities_from_as_dict():
     domain_path = "data/test_domains/test_domain_from_directory_for_entities"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_intents_for_file()
+    transformed = domain.as_dict().get(KEY_INTENTS)
 
     expected = [
         {"certify": {USE_ENTITIES_KEY: True}},
         {"play": {USE_ENTITIES_KEY: ["ball", "chess"]}},
-        {"question": {USE_ENTITIES_KEY: True}},
+        "question",
         {"stow_away": {USE_ENTITIES_KEY: True}},
         {
             "support_encouraging": {
-                USE_ENTITIES_KEY: ["anti_freeze_blankets", "automatic_cupcakes"]
+                USE_ENTITIES_KEY: ["automatic_cupcakes", "anti_freeze_blankets"]
             }
         },
         {"vacationing": {"ignore_entities": ["tornadoes"]}},
@@ -1109,83 +1115,41 @@ def test_transform_intents_for_files_with_entities():
     assert transformed == expected
 
 
-def test_transform_intents_for_file_with_mapping():
+def test_load_intents_for_file_from_as_dict():
     domain_path = "data/test_domains/default_with_mapping.yml"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_intents_for_file()
+    transformed = domain.as_dict().get(KEY_INTENTS)
 
     expected = [
-        {"default": {"triggers": "utter_default", USE_ENTITIES_KEY: True}},
-        {"goodbye": {USE_ENTITIES_KEY: True}},
-        {"greet": {"triggers": "utter_greet", USE_ENTITIES_KEY: True}},
+        {"default": {"triggers": "utter_default"}},
+        "goodbye",
+        {"greet": {"triggers": "utter_greet"}},
     ]
 
     assert transformed == expected
 
 
-def test_transform_intents_for_file_with_entity_roles_groups():
+def test_load_intents_with_entity_roles_groups_from_as_dict():
     domain_path = "data/test_domains/travel_form.yml"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_intents_for_file()
+    transformed = domain.as_dict().get(KEY_INTENTS)
 
     expected = [
-        {"greet": {USE_ENTITIES_KEY: ["name"]}},
+        {"greet": {IGNORE_ENTITIES_KEY: ["GPE"]}},
         {"inform": {USE_ENTITIES_KEY: ["GPE"]}},
     ]
 
     assert transformed == expected
 
 
-def test_transform_entities_for_file_default():
+def test_load_entities_from_as_dict():
     domain_path = "data/test_domains/travel_form.yml"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_entities_for_file()
+    transformed = domain.as_dict().get(KEY_ENTITIES)
 
     expected = [{"GPE": {ENTITY_ROLES_KEY: ["destination", "origin"]}}, "name"]
 
     assert transformed == expected
-
-
-def test_clean_domain_for_file():
-    domain_path = "data/test_domains/default_unfeaturized_entities.yml"
-    cleaned = Domain.load(domain_path).cleaned_domain()
-
-    expected = {
-        "entities": [
-            "name",
-            "unrelated_recognized_entity",
-            "other",
-            "used_entity",
-            "unused_entity",
-        ],
-        "intents": [
-            {"ask": {IGNORE_ENTITIES_KEY: ["unused_entity"]}},
-            {
-                "default": {
-                    IGNORE_ENTITIES_KEY: [
-                        "unrelated_recognized_entity",
-                        "unused_entity",
-                    ]
-                }
-            },
-            {"goodbye": {USE_ENTITIES_KEY: []}},
-            {"greet": {USE_ENTITIES_KEY: ["name", "used_entity"]}},
-            {"pure_intent": {IGNORE_ENTITIES_KEY: ["unused_entity"]}},
-            {"thank": {USE_ENTITIES_KEY: []}},
-            {"why": {USE_ENTITIES_KEY: []}},
-        ],
-        "responses": {
-            "utter_default": [{"text": "default message"}],
-            "utter_goodbye": [{"text": "goodbye :("}],
-            "utter_greet": [{"text": "hey there!"}],
-        },
-        "session_config": {
-            "carry_over_slots_to_new_session": True,
-            "session_expiration_time": DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
-        },
-    }
-
-    assert cleaned == expected
 
 
 def test_not_add_knowledge_base_slots():
@@ -1256,8 +1220,7 @@ def test_session_config(
 
 def test_domain_as_dict_with_session_config():
     session_config = SessionConfig(123, False)
-    domain = Domain.empty()
-    domain.session_config = session_config
+    domain = Domain([], [], [], {}, [], {}, {}, None, True, session_config)
 
     serialized = domain.as_dict()
     deserialized = Domain.from_dict(serialized)
@@ -1616,7 +1579,7 @@ def test_invalid_slots_raises_yaml_exception(domain_yaml: Text):
 
 
 def test_slot_order_is_preserved():
-    test_yaml = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    test_yaml = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true
@@ -1669,7 +1632,7 @@ slots:
 """
 
     domain = Domain.from_yaml(test_yaml)
-    assert domain.as_yaml(clean_before_dump=True) == test_yaml
+    assert domain.as_yaml() == test_yaml
 
 
 def test_slot_order_is_preserved_when_merging():
@@ -1706,21 +1669,21 @@ slots:{slot_2}
 """
 
     test_yaml_merged = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+slots:{slot_2}{slot_1}
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true
-slots:{slot_2}{slot_1}
 """
 
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
     domain_merged = domain_1.merge(domain_2)
 
-    assert domain_merged.as_yaml(clean_before_dump=True) == test_yaml_merged
+    assert domain_merged.as_yaml() == test_yaml_merged
 
 
 def test_responses_text_multiline_is_preserved():
-    test_yaml = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    test_yaml = f"""version: '{LATEST_TRAINING_DATA_FORMAT_VERSION}'
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true
@@ -1737,7 +1700,7 @@ responses:
 """
 
     domain = Domain.from_yaml(test_yaml)
-    assert domain.as_yaml(clean_before_dump=True) == test_yaml
+    assert domain.as_yaml() == test_yaml
 
 
 def test_is_valid_domain_doesnt_raise_with_valid_domain(tmpdir: Path):
@@ -1851,63 +1814,21 @@ def test_domain_invalid_yml_in_folder():
         Domain.from_directory("data/test_domains/test_domain_from_directory/")
 
 
-def test_domain_with_duplicates():
+def test_invalid_domain_dir_with_duplicates():
     """
-    Check if a domain with duplicated slots, responses and intents in domain files
-    removes the duplications in the domain.
+    Raises InvalidDomain if a domain is loaded from a directory with duplicated slots,
+    responses and intents in domain files.
     """
-    domain = Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
-    expected_intents = [
-        "affirm",
-        "back",
-        "bot_challenge",
-        "deny",
-        "goodbye",
-        "greet",
-        "mood_great",
-        "mood_unhappy",
-        "nlu_fallback",
-        "out_of_scope",
-        "restart",
-        "session_start",
-        "test",
-    ]
-    expected_responses = {
-        "utter_greet": [{"text": "Hey! How are you?"}],
-        "utter_did_that_help": [{"text": "Did that help you?"}],
-        "utter_happy": [{"text": "Great, carry on!"}],
-        "utter_cheer_up": [
-            {
-                "text": "Here is something to cheer you up:",
-                "image": "https://i.imgur.com/nGF1K8f.jpg",
-            }
-        ],
-        "utter_goodbye": [{"text": "Bye"}],
-        "utter_iamabot": [{"text": "I am a bot, powered by Rasa."}],
-    }
-    assert domain.intents == expected_intents
-    assert domain.responses == expected_responses
-    assert domain.duplicates["slots"] == ["mood"]
-    assert domain.duplicates["responses"] == ["utter_did_that_help", "utter_greet"]
-    assert domain.duplicates["intents"] == ["greet"]
+    with pytest.warns(UserWarning) as warning:
+        Domain.from_directory("data/test_domains/test_domain_with_duplicates/")
 
-
-def test_domain_without_duplicates():
-    """
-    Check if a domain without duplicated slots, responses and intents contains
-    nothing in `duplicates` field.
-    """
-    domain = Domain.from_directory("data/test_domains/test_domain_without_duplicates/")
-    assert domain.duplicates == {}
-
-
-def test_domain_duplicates_when_one_domain_file():
-    """
-    Check if a domain with duplicated slots, responses and intents contains
-    a correct information in `duplicates` field.
-    """
-    domain = Domain.from_file(path="data/test_domains/default.yml")
-    assert domain.duplicates is None
+    error_message = (
+        "The following duplicated intents have been found across multiple domain files: greet \n"
+        "The following duplicated responses have been found across multiple domain files: "
+        "utter_did_that_help, utter_greet \n"
+        "The following duplicated slots have been found across multiple domain files: mood"
+    )
+    assert error_message == warning[2].message.args[0]
 
 
 def test_domain_fingerprint_consistency_across_runs():

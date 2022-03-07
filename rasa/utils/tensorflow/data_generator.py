@@ -367,7 +367,7 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         # actual batch size will be set inside `on_epoch_end`
         self._current_batch_size = 0
         # create separate data variable that will store modified data for each batch
-        self._data = {}
+        self._data: Data = {}
         self.on_epoch_end()
 
     def __len__(self) -> int:

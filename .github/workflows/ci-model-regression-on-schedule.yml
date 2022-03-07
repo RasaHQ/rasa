@@ -78,7 +78,7 @@ jobs:
           GH_RUNNER_IMAGE_TAG=$(jq -r 'if (.config | any(.TF == "${{ env.TF_VERSION }}" )) then (.config[] | select(.TF == "${{ env.TF_VERSION }}") | .IMAGE_TAG) else .default_image_tag end' .github/configs/tf-cuda.json)
           echo "GitHub runner image tag for TensorFlow ${{ env.TF_VERSION }} is ${GH_RUNNER_IMAGE_TAG}"
           echo GH_RUNNER_IMAGE_TAG=$GH_RUNNER_IMAGE_TAG >> $GITHUB_ENV
-
+          
           num_max_replicas=3
           matrix_length=${{ needs.read_test_configuration.outputs.matrix_length }}
           if [[ $matrix_length -gt $num_max_replicas ]]; then
@@ -87,6 +87,23 @@ jobs:
             NUM_REPLICAS=$matrix_length
           fi
           echo NUM_REPLICAS=$NUM_REPLICAS >> $GITHUB_ENV
+
+      - name: Send warning if the current TF version does not have CUDA image tags configured
+        if: env.GH_RUNNER_IMAGE_TAG == 'latest'
+        env:
+          TF_CUDA_FILE: ./github/config/tf-cuda.json
+        run: |-
+          echo "::warning file=${TF_CUDA_FILE},line=3,col=1,endColumn=3::Missing cuda config for tf ${{ env.TF_VERSION }}. If you are not sure how to config CUDA, please reach out to infrastructure."
+
+      - name: Notify slack on tf-cuda config updates
+        if: env.GH_RUNNER_IMAGE_TAG == 'latest'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
+        with:
+          channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+          status: WARNING
+          color: warning
 
       - name: Render deployment template
         run: |-
@@ -120,6 +137,7 @@ jobs:
           status: FAILED
           color: danger
 
+
   model_regression_test_gpu:
     name: Model Regression Tests - GPU
     continue-on-error: true
@@ -148,7 +166,7 @@ jobs:
           path: 'dataset'
           ref: "main"
 
-      - name: Set DATASET and CONFIG variables
+      - name: Set env variables
         id: set_dataset_config_vars
         env:
           DATASET_NAME: "${{ matrix.dataset }}"
@@ -213,6 +231,9 @@ jobs:
             echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
+          HOST_NAME=`hostname`
+          echo "HOST_NAME=${HOST_NAME}" >> $GITHUB_ENV
+
       - name: Checkout dataset - external
         uses: actions/checkout@v2
         if: steps.set_dataset_config_vars.outputs.is_external == 'true'
@@ -233,13 +254,14 @@ jobs:
       - name: Start Datadog Agent
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         env:
-          DATASET: "${{ matrix.dataset }}"
+          DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG: "${{ matrix.config }}"
           DATASET_COMMIT: "${{ steps.set-dataset-commit.outputs.dataset_commit }}"
           BRANCH: ${{ github.ref }}
           GITHUB_SHA: "${{ github.sha }}"
           TYPE: "${{ matrix.type }}"
           DATASET_REPOSITORY_BRANCH: "main"
+          INDEX_REPETITION: "${{ matrix.index_repetition }}"
         run: |
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
@@ -427,7 +449,7 @@ jobs:
             return issue.data.number
 
       - name: Notify Slack of Failure 😱
-        if: failure()  && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
+        if: failure() && steps.issue-exists.outputs.result == 'false' && github.event_name == 'schedule'
         uses: 8398a7/action-slack@a74b761b4089b5d730d813fbedcd2ec5d394f3af  # v3
         with:
           status: custom
@@ -524,16 +546,16 @@ jobs:
           # Get ID of last on-schedule workflow
           SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
-            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
+            | jq -r '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
 
-          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
+          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
 
           DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
-            | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
+            | jq -r '.artifacts[] | select(.name == "report.json") | .archive_download_url')
 
           # Download the artifact
-          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
+          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
 
           # Unzip and change name
           unzip report.json.zip && mv report.json report_main.json
@@ -551,14 +573,7 @@ jobs:
       - name: Analyse Performance 🔍
         id: performance
         run: |
-          set +e
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
-          if [ $? -ne 0 ]; then
-              echo "New template failed. Try with legacy template."
-              OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results_legacy.tmpl)"
-          fi
-          set -e
-
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           OUTPUT="$(echo $OUTPUT | sed 's|`|\\`|g')"
