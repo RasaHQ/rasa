@@ -14,9 +14,9 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core import constants
 from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
-from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, ActiveLoop
 from rasa.shared.core.events import UserUttered
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -184,6 +184,10 @@ class Validator:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
                     continue
+
+                if not event.action_name:
+                    continue
+
                 if not event.action_name.startswith(UTTER_PREFIX):
                     # we are only interested in utter actions
                     continue
@@ -226,6 +230,10 @@ class Validator:
                     # We've seen this loop before, don't alert on it twice
                     continue
 
+                if not event.name:
+                    # To support setting `active_loop` to `null`
+                    continue
+
                 if event.name not in self.domain.form_names:
                     rasa.shared.utils.io.raise_warning(
                         f"The form '{event.name}' is used in the "
@@ -247,6 +255,9 @@ class Validator:
         for story in self.story_graph.story_steps:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
+                    continue
+
+                if not event.action_name:
                     continue
 
                 if not event.action_name.startswith("action_"):

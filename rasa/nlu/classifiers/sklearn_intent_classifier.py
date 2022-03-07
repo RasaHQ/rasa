@@ -15,6 +15,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TEXT
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -63,7 +64,7 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
-        clf: "sklearn.model_selection.GridSearchCV" = None,
+        clf: Optional["sklearn.model_selection.GridSearchCV"] = None,
         le: Optional["sklearn.preprocessing.LabelEncoder"] = None,
     ) -> None:
         """Construct a new intent classifier using the sklearn framework."""
@@ -195,7 +196,7 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
     def process(self, messages: List[Message]) -> List[Message]:
         """Return the most likely intent and its probability for a message."""
         for message in messages:
-            if not self.clf or not message.features_present(
+            if self.clf is None or not message.features_present(
                 attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
             ):
                 # component is either not trained or didn't
@@ -240,6 +241,11 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
         :param X: bow of input text
         :return: vector of probabilities containing one entry for each label.
         """
+        if self.clf is None:
+            raise RasaException(
+                "Sklearn intent classifier has not been initialised and trained."
+            )
+
         return self.clf.predict_proba(X)
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

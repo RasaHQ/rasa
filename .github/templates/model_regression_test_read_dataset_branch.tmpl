@@ -1,0 +1,13 @@
+{{- /*
+
+The template reads a PR comment and gets the dataset branch for the training-data
+repository.
+
+ */ -}}
+{{- $config := ((datasource "github").body | regexp.Find "```(?s)(.*)```" | regexp.ReplaceLiteral "```.*|\r" "" | yaml | toJSON | json) -}}
+{{- $dataset_branch := "main" -}}
+{{- /* if a branch name for dataset repository is not defined use the main branch */ -}}
+{{- if has $config "dataset_branch" -}}
+{{- $dataset_branch = $config.dataset_branch -}}
+{{- end -}}
+export DATASET_BRANCH="{{ $dataset_branch }}"

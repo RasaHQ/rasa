@@ -5,6 +5,8 @@ import random
 from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Any
 
+from keras.utils import tf_utils
+
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -41,7 +43,6 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
 )
-from keras.utils import tf_utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
 
@@ -294,7 +295,7 @@ class RasaModel(TmpKerasModel):
         Returns:
             Model outputs corresponding to the inputs fed.
         """
-        outputs = {}
+        outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]] = {}
         (data_generator, _) = rasa.utils.train_utils.create_data_generators(
             model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False
         )

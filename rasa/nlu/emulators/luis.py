@@ -43,7 +43,7 @@ class LUISEmulator(Emulator):
         if ENTITIES not in data:
             return {}
 
-        entities = {"$instance": {}}
+        entities: Dict[Text, Dict[Text, List[Dict[Text, Any]]]] = {"$instance": {}}
         for e in data[ENTITIES]:
             # LUIS API v3 uses entity roles instead of entity names
             # (it's possible because its roles are unique):
