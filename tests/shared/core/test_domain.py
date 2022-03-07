@@ -655,10 +655,10 @@ def test_merge_domain_with_forms():
                 },
                 "goodbye",
             ],
-            ["entity", "other", "third"],
+            ["entity", "other", "third", "unused"],
             {"entity": ["role"], "other": ["role"]},
             {},
-            [],
+            ["unused"],
             {
                 "greet": {
                     "triggers": "utter_goodbye",
@@ -728,6 +728,23 @@ def test_collect_intent_properties(
         )
         == intent_properties
     )
+
+
+@pytest.mark.parametrize(
+    "entities, entity_properties",
+    [
+        (
+            ["plain_entity", {"ignored_entity": {"influence_conversation": False}}],
+            (["plain_entity", "ignored_entity"], {}, {}, ["ignored_entity"]),
+        ),
+    ],
+)
+def test_collect_entity_properties(
+    entities: List[Union[Text, Dict[Text, Any]]],
+    entity_properties: Dict[Text, Dict[Text, Union[bool, List]]],
+):
+
+    assert Domain.collect_entity_properties(entities) == entity_properties
 
 
 def test_load_domain_from_directory_tree():
@@ -1075,18 +1092,11 @@ def test_load_intents_from_as_dict_representation():
     transformed = domain.as_dict().get(KEY_INTENTS)
 
     expected = [
-        {"ask": {IGNORE_ENTITIES_KEY: ["unused_entity"]}},
-        {
-            "default": {
-                IGNORE_ENTITIES_KEY: [
-                    "unrelated_recognized_entity",
-                    "unused_entity",
-                ]
-            }
-        },
+        {"ask": {USE_ENTITIES_KEY: True}},
+        {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
         {"goodbye": {USE_ENTITIES_KEY: []}},
         {"greet": {USE_ENTITIES_KEY: ["name", "used_entity"]}},
-        {"pure_intent": {IGNORE_ENTITIES_KEY: ["unused_entity"]}},
+        "pure_intent",
         {"thank": {USE_ENTITIES_KEY: []}},
         {"why": {USE_ENTITIES_KEY: []}},
     ]
