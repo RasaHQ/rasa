@@ -228,7 +228,7 @@ async def send_action(
             if action_name in NEW_RESPONSES:
                 warning_questions = questionary.confirm(
                     f"WARNING: You have created a new action: '{action_name}', "
-                    f"with matching response: '{[*NEW_RESPONSES[action_name]][0]}'. "
+                    f"with matching response: '{NEW_RESPONSES[action_name][0][TEXT]}'. "
                     f"This action will not return its message in this session, "
                     f"but the new response will be saved to your domain file "
                     f"when you exit and save this session. "
@@ -700,7 +700,7 @@ async def _request_action_from_user(
             utter_message = await _request_free_text_utterance(
                 conversation_id, endpoint, action_name
             )
-            NEW_RESPONSES[action_name] = {utter_message: ""}
+            NEW_RESPONSES[action_name] = [{TEXT: utter_message}]
 
     elif action_name[:32] == OTHER_ACTION:
         # action was newly created in the session, but not this turn

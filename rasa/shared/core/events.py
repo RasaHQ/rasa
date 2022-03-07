@@ -87,6 +87,7 @@ if TYPE_CHECKING:
     NLUPredictionData = TypedDict(
         "NLUPredictionData",
         {
+            TEXT: Text,
             INTENT: IntentPrediction,
             INTENT_RANKING_KEY: List[IntentPrediction],
             ENTITIES: List[EntityPrediction],

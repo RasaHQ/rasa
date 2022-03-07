@@ -65,7 +65,7 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict, TypeAlias
+    from typing_extensions import TypedDict
 
     from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
@@ -83,7 +83,7 @@ if TYPE_CHECKING:
         total=False,
     )
 
-    EventTypeAlias: TypeAlias = TypeVar("EventTypeAlias", Event)
+    EventTypeAlias = TypeVar("EventTypeAlias", bound=Event)
 
 
 logger = logging.getLogger(__name__)

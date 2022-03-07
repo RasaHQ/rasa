@@ -76,7 +76,7 @@ def create_action_fingerprints(
             set(
                 event.name
                 for event in events_after_action
-                if isinstance(event, ActiveLoop)
+                if isinstance(event, ActiveLoop) and event.name is not None
             )
         )
 

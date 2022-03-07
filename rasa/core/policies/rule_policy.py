@@ -1,7 +1,7 @@
 from __future__ import annotations
 import functools
 import logging
-from typing import Any, List, Dict, Text, Optional, Set, Tuple
+from typing import Any, List, Dict, Text, Optional, Set, Tuple, cast
 
 from tqdm import tqdm
 import numpy as np
@@ -428,7 +428,10 @@ class RulePolicy(MemoizationPolicy):
         for states in trackers_as_states:
             for state in states:
                 slots.update(set(state.get(SLOTS, {}).keys()))
-                active_loop: Optional[Text] = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+                # FIXME: ideally we have better annotation for State, TypedDict
+                # could work but support in mypy is very limited. Dataclass are
+                # another option
+                active_loop = cast(Text, state.get(ACTIVE_LOOP, {}).get(LOOP_NAME))
                 if active_loop:
                     loops.add(active_loop)
         return slots, loops
