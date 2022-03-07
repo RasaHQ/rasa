@@ -57,7 +57,7 @@ module.exports = {
             label: 'Deployment Tools',
             collapsed: true,
           items: [
-            'deploy/rei/deploy-using-rei'
+            'deploy/rei/using-rei'
             
           ],
         }
