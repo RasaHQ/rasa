@@ -231,8 +231,8 @@ will block until the Rasa deployment is ready:
 
 ### 5. Access Rasa Open Source Assistant
 
-By default the Rasa deployment is exposed via the `rasa` (`<release name>`) service and accessible only within a Kubernetes cluster. You can get
-the IP address using this command:
+By default the Rasa deployment is exposed via the `rasa` (`<release name>`) service and accessible only within a Kubernetes cluster.
+To access Rasa Open Source Assistant by using `kubectl port-forward`, use these commands:
 
 <Tabs groupId="kubernetes-dist" values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
   <TabItem value="kubernetes">
@@ -254,6 +254,31 @@ the IP address using this command:
 </Tabs>
 
 You can then access the deployment on `http://127.0.0.1:${SERVICE_PORT}`
+
+The other option is to expose your deployment on `NodePort` and access it directly.
+
+1. Prepare configuration that switch the rasa service to `NodePort`.
+
+  ```yaml
+  # rasa-values.yaml
+  service:
+    type: "NodePort"
+  ```
+
+2. Upgrade deployment.
+
+  ```text
+  helm upgrade --namespace <NAMESPACE> --reuse-values -f rasa-values.yaml <RELEASE NAME> rasa/rasa
+  ```
+
+3. Get the node port and address for the rasa service
+
+  ```text
+  export NODE_PORT=$(kubectl get --namespace <NAMESPACE> -o jsonpath="{.spec.ports[0].nodePort}" services <RELEASE NAME>)
+
+  $ curl http://127.0.0.1:${NODE_PORT}
+  Hello from Rasa: 2.8.7
+  ```
 
 Visit [the Rasa helm chart README](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#exposing-the-rasa-deployment-to-the-public) to learn other ways to expose your deployment.
 

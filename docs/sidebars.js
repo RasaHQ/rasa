@@ -44,6 +44,26 @@ module.exports = {
       ],
     },
     {
+        type: 'category',
+        label: 'Deploying Assistants',
+        collapsed: true,
+      items: [
+        'deploy/introduction',
+        'deploy/deploy-rasa',
+        'deploy/deploy-action-server',
+        'deploy/deploy-rasa-x',
+        {
+            type: 'category',
+            label: 'Deployment Tools',
+            collapsed: true,
+          items: [
+            'deploy/rei/deploy-using-rei'
+            
+          ],
+        }
+      ],
+    },
+    {
       type: 'category',
       label: 'Concepts',
       collapsed: false,
@@ -116,12 +136,6 @@ module.exports = {
           ],
         },
       ],
-    },
-    {
-        type: 'category',
-        label: 'Deploying Assistants',
-        collapsed: true,
-        items: ['deploy/introduction', 'deploy/deploy-rasa', 'deploy/deploy-action-server', 'deploy/deploy-rasa-x'],
     },
     {
       type: 'category',
