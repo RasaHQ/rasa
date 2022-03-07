@@ -104,7 +104,7 @@ from rasa.utils.tensorflow.constants import (
     THRESHOLD_KEY,
     SEVERITY_KEY,
     QUERY_INTENT_KEY,
-    NAME,
+    NAME, EPOCH_OVERRIDE,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
@@ -196,6 +196,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             BATCH_STRATEGY: BALANCED,
             # Number of epochs to train
             EPOCHS: 1,
+            # Do not use. Used for unit tests only.
+            EPOCH_OVERRIDE: None,
             # Set random seed to any 'int' to get reproducible results
             RANDOM_SEED: None,
             # Initial learning rate for the optimizer

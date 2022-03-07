@@ -46,7 +46,7 @@ import rasa.shared.constants
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.shared.data import TrainingType
 
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.utils.tensorflow.constants import EPOCHS, FINETUNING_EPOCH_FRACTION
 from rasa.shared.utils.common import (
     class_from_module_path,
     transform_collection_to_sentence,
@@ -348,7 +348,7 @@ class DefaultV1Recipe(Recipe):
         config: Dict[Text, Any],
         cli_parameters: Dict[Text, Any],
     ) -> Text:
-        config_from_cli = self._extra_config_from_cli(cli_parameters, component, config)
+        config_from_cli = self._extra_config_from_cli(cli_parameters, component)
         model_provider_needs = self._get_model_provider_needs(train_nodes, component)
 
         train_node_name = f"train_{component_name}"
@@ -366,7 +366,6 @@ class DefaultV1Recipe(Recipe):
         self,
         cli_parameters: Dict[Text, Any],
         component: Type[GraphComponent],
-        component_config: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
         from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -388,18 +387,12 @@ class DefaultV1Recipe(Recipe):
 
         if (
             self._is_finetuning
-            and "finetuning_epoch_fraction" in cli_parameters
+            and FINETUNING_EPOCH_FRACTION in cli_parameters
             and EPOCHS in component.get_default_config()
         ):
             # FIXME: would be nicer if this was computed this inside components
             #  and the original config would be kept intact to avoid confusion
-            old_number_epochs = component_config.get(
-                EPOCHS, component.get_default_config()[EPOCHS]
-            )
-            epoch_fraction = cli_parameters["finetuning_epoch_fraction"] or 1.0
-            config_from_cli[EPOCHS] = math.ceil(
-                old_number_epochs * float(epoch_fraction)
-            )
+            config_from_cli[FINETUNING_EPOCH_FRACTION] = cli_parameters[FINETUNING_EPOCH_FRACTION]
 
         return config_from_cli
 
@@ -509,7 +502,7 @@ class DefaultV1Recipe(Recipe):
             component = self._from_registry(component_name)
 
             extra_config_from_cli = self._extra_config_from_cli(
-                cli_parameters, component.clazz, config
+                cli_parameters, component.clazz,
             )
 
             requires_end_to_end_data = self._use_end_to_end and (

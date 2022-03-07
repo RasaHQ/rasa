@@ -26,7 +26,7 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.data import TrainingType
 import rasa.engine.validation
 from rasa.shared.importers.rasa import RasaFileImporter
-
+from rasa.utils.tensorflow.constants import FINETUNING_EPOCH_FRACTION
 
 CONFIG_FOLDER = Path("data/test_config")
 
@@ -177,28 +177,17 @@ def test_generate_graphs(
         (
             {},
             "train_MitieIntentClassifier6",
-            {"num_threads": 200000, "finetuning_epoch_fraction": 0.75},
+            {"num_threads": 200000},
         ),
         (
             {"num_threads": None},
             "train_MitieIntentClassifier6",
-            {"num_threads": 200000, "finetuning_epoch_fraction": 0.75},
+            {"num_threads": 200000},
         ),
         (
             {"num_threads": 1},
             "train_MitieIntentClassifier6",
-            {"num_threads": 1, "finetuning_epoch_fraction": 0.75},
-        ),
-        (
-            {"num_threads": 1, "finetuning_epoch_fraction": 0.5},
-            "train_MitieIntentClassifier6",
-            # there is no `epochs` value specified so it doesn't get overridden
-            {"num_threads": 1, "finetuning_epoch_fraction": 0.75},
-        ),
-        (
-            {"finetuning_epoch_fraction": 0.5},
-            "train_DIETClassifier7",
-            {"epochs": 150, "num_threads": 200000, "finetuning_epoch_fraction": 0.5},
+            {"num_threads": 1},
         ),
     ],
 )
@@ -335,12 +324,15 @@ def test_epoch_fraction_cli_param():
 
     recipe = Recipe.recipe_for_name(DefaultV1Recipe.name)
     model_config = recipe.graph_config_for_recipe(
-        config, {"finetuning_epoch_fraction": 0.5}, is_finetuning=True
+        config, cli_parameters={FINETUNING_EPOCH_FRACTION: 0.5}, is_finetuning=True
     )
 
     train_schema = model_config.train_schema
     for node_name, node in expected_train_schema.nodes.items():
-        assert train_schema.nodes[node_name] == node
+        try:
+            assert train_schema.nodes[node_name] == node
+        except:
+            breakpoint()
 
     assert train_schema == expected_train_schema
 

@@ -12,7 +12,7 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 import rasa.shared.utils.io
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.utils.tensorflow.constants import EPOCHS, FINETUNING_EPOCH_FRACTION
 from rasa.graph_components.providers.domain_for_core_training_provider import (
     DomainForCoreTrainingProvider,
 )
@@ -237,7 +237,7 @@ class FinetuningValidator(GraphComponent):
         for node_name, node_dict in schema_as_dict["nodes"].items():
             config_copy = copy.deepcopy(node_dict["config"])
             config_copy.pop(EPOCHS, None)
-            config_copy.pop("finetuning_epoch_fraction", None)
+            config_copy.pop(FINETUNING_EPOCH_FRACTION, None)
             # ignore default values since they're filled in anyway later and can
             # end up in configs (or not) in mysterious ways
             defaults = graph_schema.nodes[node_name].uses.get_default_config()

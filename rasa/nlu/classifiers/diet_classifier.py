@@ -104,6 +104,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     SOFTMAX,
+    FINETUNING_EPOCH_FRACTION,
 )
 
 logger = logging.getLogger(__name__)
@@ -178,6 +179,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             BATCH_STRATEGY: BALANCED,
             # Number of epochs to train
             EPOCHS: 300,
+            # Fraction of epoch number to be used during finetuning.
+            FINETUNING_EPOCH_FRACTION: 1.0,
             # Set random seed to any 'int' to get reproducible results
             RANDOM_SEED: None,
             # Initial learning rate for the optimizer
@@ -330,6 +333,12 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         self.finetune_mode = self._execution_context.is_finetuning
         self._sparse_feature_sizes = sparse_feature_sizes
+
+        self._effective_epochs = train_utils.effective_number_of_epochs(
+            finetuning=self.finetune_mode,
+            epochs=self.config[EPOCHS],
+            epoch_overwrite=None,
+        )
 
     # init helpers
     def _check_masked_lm(self) -> None:
@@ -902,13 +911,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
             self.component_config[BATCH_SIZES],
-            self.component_config[EPOCHS],
+            self._effective_epochs,
             self.component_config[BATCH_STRATEGY],
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[RANDOM_SEED],
         )
         callbacks = train_utils.create_common_callbacks(
-            self.component_config[EPOCHS],
+            self._effective_epochs,
             self.component_config[TENSORBOARD_LOG_DIR],
             self.component_config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
@@ -917,7 +926,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         self.model.fit(
             data_generator,
-            epochs=self.component_config[EPOCHS],
+            epochs=self._effective_epochs,
             validation_data=validation_data_generator,
             validation_freq=self.component_config[EVAL_NUM_EPOCHS],
             callbacks=callbacks,

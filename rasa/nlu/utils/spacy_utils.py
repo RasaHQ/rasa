@@ -71,7 +71,7 @@ class SpacyNLP(GraphComponent):
             # applications and models it makes sense to differentiate
             # between these two words, therefore setting this to `True`.
             "case_sensitive": False,
-            "model" : None,
+            "model": None,
         }
 
     @staticmethod
@@ -161,7 +161,8 @@ class SpacyNLP(GraphComponent):
             # this example, but since we are processing in batch mode, it would
             # get complex to collect all processed and neglected examples.
             text = ""
-        if self._config["case_sensitive"]:
+        # TODO: following default will become unnecessary with #10464
+        if self._config.get("case_sensitive", False):
             return text
         else:
             return text.lower()

@@ -235,6 +235,8 @@ class TEDPolicy(Policy):
             BATCH_STRATEGY: BALANCED,
             # Number of epochs to train
             EPOCHS: 1,
+            # Do not use. Used for unit tests only.
+            EPOCH_OVERRIDE: None,
             # Set random seed to any 'int' to get reproducible results
             RANDOM_SEED: None,
             # Initial learning rate for the optimizer
@@ -384,6 +386,12 @@ class TEDPolicy(Policy):
         self.tmp_checkpoint_dir = None
         if self.config[CHECKPOINT_MODEL]:
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
+
+        self._effective_epochs = train_utils.effective_number_of_epochs(
+            finetuning=self.finetune_mode,
+            epochs=self.config[EPOCHS],
+            epoch_overwrite=self.config[EPOCH_OVERRIDE],
+        )
 
     @staticmethod
     def model_class() -> Type[TED]:
@@ -659,13 +667,13 @@ class TEDPolicy(Policy):
         ) = rasa.utils.train_utils.create_data_generators(
             model_data,
             self.config[BATCH_SIZES],
-            self.config[EPOCHS],
+            self._effective_epochs,
             self.config[BATCH_STRATEGY],
             self.config[EVAL_NUM_EXAMPLES],
             self.config[RANDOM_SEED],
         )
         callbacks = rasa.utils.train_utils.create_common_callbacks(
-            self.config[EPOCHS],
+            self._effective_epochs,
             self.config[TENSORBOARD_LOG_DIR],
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
@@ -673,7 +681,7 @@ class TEDPolicy(Policy):
         )
         self.model.fit(
             data_generator,
-            epochs=self.config[EPOCHS],
+            epochs=self._effective_epochs,
             validation_data=validation_data_generator,
             validation_freq=self.config[EVAL_NUM_EPOCHS],
             callbacks=callbacks,

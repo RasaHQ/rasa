@@ -40,6 +40,19 @@ if TYPE_CHECKING:
     from tensorflow.keras.callbacks import Callback
 
 
+def effective_number_of_epochs(
+    finetuning: bool,
+    epochs: int,
+    finetuning_epoch_fraction: float,
+    epoch_overwrite: Optional[int],
+) -> int:
+    if epoch_overwrite is not None:
+        return epoch_overwrite
+    if finetuning:
+        return math.ceil(epochs * float(finetuning_epoch_fraction))
+    return epochs
+
+
 def rank_and_mask(
     confidences: np.ndarray, ranking_length: int = 0, renormalize: bool = False
 ) -> Tuple[np.array, np.array]:
