@@ -85,7 +85,7 @@ class TrackerStore:
                 destination.
             kwargs: Additional kwargs.
         """
-        self.domain = domain or Domain.empty()
+        self._domain = domain or Domain.empty()
         self.event_broker = event_broker
         self.max_event_history = None
 
@@ -269,11 +269,11 @@ class TrackerStore:
     @property
     def domain(self) -> Domain:
         """Returns the domain of the tracker store."""
-        return self.domain
+        return self._domain
 
     @domain.setter
     def domain(self, domain: Optional[Domain]) -> None:
-        self.domain = domain or Domain.empty()
+        self._domain = domain or Domain.empty()
 
 
 class InMemoryTrackerStore(TrackerStore):
