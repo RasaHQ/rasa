@@ -35,7 +35,7 @@ METRICS = {
 
 MAIN_TAGS = {
     "config": "CONFIG",
-    "dataset": "DATASET",
+    "dataset": "DATASET_NAME",
 }
 
 OTHER_TAGS = {
@@ -44,6 +44,7 @@ OTHER_TAGS = {
     "accelerator_type": "ACCELERATOR_TYPE",
     "type": "TYPE",
     "index_repetition": "INDEX_REPETITION",
+    "host_name": "HOST_NAME",
 }
 
 GIT_RELATED_TAGS = {
@@ -252,7 +253,7 @@ def send_all_to_datadog() -> None:
 
 def generate_json(file: Text, task: Text, data: dict) -> dict:
     config = os.environ["CONFIG"]
-    dataset = os.environ["DATASET"]
+    dataset = os.environ["DATASET_NAME"]
 
     if dataset not in data:
         data = {dataset: {config: []}, **data}

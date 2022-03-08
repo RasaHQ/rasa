@@ -150,7 +150,7 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
             self.model_weights, cache_dir=self.cache_dir
         )
-        self.model = model_class_dict[self.model_name].from_pretrained(
+        self.model = model_class_dict[self.model_name].from_pretrained(  # type: ignore[no-untyped-call] # noqa: E501
             self.model_weights, cache_dir=self.cache_dir
         )
 
