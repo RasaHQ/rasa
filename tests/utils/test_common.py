@@ -164,6 +164,7 @@ def test_override_defaults():
             {"other-key": 2, "same-key": {"wrong-sub-key": 3}},
         ),
         ({"key1": 1, "key2": {"wrong-level": 3}}, {"wrong-level": 3}),
+        ({"key1": {"should-be-a-dict": 3}}, {"key1": "this-is-not-a-dict"}),
     ],
 )
 def test_override_defaults_raises_if_unknown_keys_are_specified(
