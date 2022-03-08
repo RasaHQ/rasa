@@ -688,11 +688,12 @@ class TEDPolicy(Policy):
             shuffle=False,  # we use custom shuffle inside data generator
         )
 
-    def train(  # type: ignore[override]
+    def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        **kwargs: Any,
     ) -> Resource:
         """Trains the policy (see parent class for full docstring)."""
         if not training_trackers:
@@ -805,12 +806,12 @@ class TEDPolicy(Policy):
         )
         return confidences[0], self.only_e2e
 
-    def predict_action_probabilities(  # type: ignore[override]
+    def predict_action_probabilities(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""

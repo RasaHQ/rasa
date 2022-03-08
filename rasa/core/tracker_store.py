@@ -266,9 +266,18 @@ class TrackerStore:
 
         return tracker
 
+    @property
+    def domain(self) -> Domain:
+        """Returns the domain of the tracker store."""
+        return self.domain
+
+    @domain.setter
+    def domain(self, domain: Optional[Domain]) -> None:
+        self.domain = domain or Domain.empty()
+
 
 class InMemoryTrackerStore(TrackerStore):
-    """Stores conversation history in memory"""
+    """Stores conversation history in memory."""
 
     def __init__(
         self,
@@ -276,6 +285,7 @@ class InMemoryTrackerStore(TrackerStore):
         event_broker: Optional[EventBroker] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
+        """Initializes the tracker store."""
         self.store: Dict[Text, Text] = {}
         super().__init__(domain, event_broker, **kwargs)
 
@@ -1136,8 +1146,8 @@ class FailSafeTrackerStore(TrackerStore):
 
         super().__init__(tracker_store.domain, tracker_store.event_broker)
 
-    @property  # type: ignore[override]
-    def domain(self) -> Domain:  # type: ignore[override]
+    @property
+    def domain(self) -> Domain:
         """Returns the domain of the primary tracker store."""
         return self._tracker_store.domain
 
