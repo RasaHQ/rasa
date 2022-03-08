@@ -369,20 +369,8 @@ def override_defaults(
        be filled in.
 
     3. If the custom configuration contains a key that maps to a dictionary and if
-       one of the default sub-keys (cf. 1.) is missing
-
-
-
-    If a configuration key maps to a non-dictionary, then a default value for this key
-    must be defined.
-
-    If a configuration key maps to a dictionary, then:
-    1. The default for this key must also be a dictionary.
-    2. There must be no sub-key for which no corresponding default sub-key exists.
-    3.
-
-    If there is a configuration key for which a default value is defined but nothing is
-    specified in the given config, then the default value will be used.
+       one of the default sub-keys is missing (which exist because of 1.), then default
+       values for the sub-keys will be filled in.
 
     Args:
         defaults: default config
