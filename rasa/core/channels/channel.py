@@ -330,10 +330,12 @@ class CollectingOutputChannel(OutputChannel):
     (doesn't send them anywhere, just collects them)."""
 
     def __init__(self) -> None:
-        self.messages = []
+        """Initialise list to collect messages."""
+        self.messages: List[Dict[Text, Any]] = []
 
     @classmethod
     def name(cls) -> Text:
+        """Name of the channel."""
         return "collector"
 
     @staticmethod

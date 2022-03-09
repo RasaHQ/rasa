@@ -244,6 +244,9 @@ class PikaEventBroker(EventBroker):
 
     def is_ready(self) -> bool:
         """Return `True` if a connection was established."""
+        if self._connection is None:
+            return False
+
         return not self._connection.is_closed
 
     def publish(
@@ -262,6 +265,9 @@ class PikaEventBroker(EventBroker):
     async def _publish(
         self, event: Dict[Text, Any], headers: Optional[Dict[Text, Text]] = None
     ) -> None:
+        if self._exchange is None:
+            return
+
         try:
             await self._exchange.publish(self._message(event, headers), "")
 

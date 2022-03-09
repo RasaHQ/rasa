@@ -986,10 +986,15 @@ def track_core_model_test(num_story_steps: int, e2e: bool, agent: "Agent") -> No
         e2e: indicator if tests running in end to end mode
         agent: Agent of the model getting tested
     """
+    if agent.processor is None:
+        project_fingerprint = ""
+    else:
+        project_fingerprint = agent.processor.model_metadata.project_fingerprint
+
     _track(
         TELEMETRY_TEST_CORE_EVENT,
         {
-            "project": agent.processor.model_metadata.project_fingerprint,
+            "project": project_fingerprint,
             "end_to_end": e2e,
             "num_story_steps": num_story_steps,
         },

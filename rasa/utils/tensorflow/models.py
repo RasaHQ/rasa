@@ -295,7 +295,7 @@ class RasaModel(TmpKerasModel):
         Returns:
             Model outputs corresponding to the inputs fed.
         """
-        outputs = {}
+        outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]] = {}
         (data_generator, _) = rasa.utils.train_utils.create_data_generators(
             model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False
         )

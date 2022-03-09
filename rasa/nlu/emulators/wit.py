@@ -35,7 +35,7 @@ class WitEmulator(Emulator):
             entity_name = entity[ENTITY_ATTRIBUTE_TYPE]
             role = entity.get(ENTITY_ATTRIBUTE_ROLE, entity_name)
             entity_name_including_role = f"{entity[ENTITY_ATTRIBUTE_TYPE]}:{role}"
-            normalized_entity = {
+            normalized_entity: Dict[Text, Any] = {
                 "confidence": entity.get("confidence_entity") or 1,
                 "name": entity_name,
                 "value": entity[ENTITY_ATTRIBUTE_VALUE],

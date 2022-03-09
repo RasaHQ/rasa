@@ -1,12 +1,12 @@
-from typing import Text, Any, Optional, List, Dict
+from typing import Text
 
 import pytest
 from _pytest.logging import LogCaptureFixture
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 from rasa.validator import Validator
 
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.core.domain import Domain
 from pathlib import Path
 
 
@@ -111,8 +111,8 @@ def test_verify_bad_story_structure():
 def test_verify_bad_e2e_story_structure_when_text_identical(tmp_path: Path):
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: path 1
           steps:
@@ -283,19 +283,28 @@ def test_early_exit_on_invalid_domain():
         validator = Validator.from_importer(importer)
     validator.verify_domain_validity()
 
-    # two for non-unique domains, two for auto-fill removal
+    # two for non-unique domains, 2 for auto-fill removal
     assert len(record) == 4
-    assert any(
-        [
-            f"Loading domain from '{domain_path}' failed. Using empty domain. "
-            "Error: 'Intents are not unique! Found multiple intents with name(s) "
-            "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
-            in warning.message.args[0]
-            for warning in record
-        ]
+
+    non_unique_warnings = list(
+        filter(
+            lambda warning: f"Loading domain from '{domain_path}' failed. "
+            f"Using empty domain. Error: 'Intents are not unique! "
+            f"Found multiple intents with name(s) ['default', 'goodbye']. "
+            f"Either rename or remove the duplicate ones.'" in warning.message.args[0],
+            record,
+        )
     )
-    assert record[0].message.args[0] == record[2].message.args[0]
-    assert record[1].message.args[0] == record[3].message.args[0]
+    assert len(non_unique_warnings) == 2
+
+    auto_fill_warnings = list(
+        filter(
+            lambda warning: "Slot auto-fill has been removed in 3.0"
+            in warning.message.args[0],
+            record,
+        )
+    )
+    assert len(auto_fill_warnings) == 2
 
 
 def test_verify_there_is_not_example_repetition_in_intents():
@@ -310,8 +319,8 @@ def test_verify_there_is_not_example_repetition_in_intents():
 def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Text):
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         stories:
         - story: story path 1
           steps:
@@ -337,8 +346,8 @@ def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Te
 def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text):
     rules_file_name = tmp_path / "rules.yml"
     rules_file_name.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         rules:
         - rule: rule path 1
           steps:
@@ -360,83 +369,11 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
     )
 
 
-@pytest.mark.parametrize(
-    "duplicates,is_valid,warning_type,messages",
-    [
-        (None, True, None, []),
-        ({}, True, None, []),
-        ({"responses": []}, True, None, []),
-        (
-            {"responses": ["some_response"]},
-            False,
-            UserWarning,
-            [
-                "The following duplicated responses has been found across "
-                "multiple domain files: some_response"
-            ],
-        ),
-        (
-            {"slots": ["some_slot"]},
-            False,
-            UserWarning,
-            [
-                "The following duplicated slots has been found across "
-                "multiple domain files: some_slot"
-            ],
-        ),
-        (
-            {"forms": ["form1", "form2"]},
-            False,
-            UserWarning,
-            [
-                "The following duplicated forms has been found across "
-                "multiple domain files: form1, form2"
-            ],
-        ),
-        (
-            {"forms": ["form1", "form2"], "slots": []},
-            False,
-            UserWarning,
-            [
-                "The following duplicated forms has been found across "
-                "multiple domain files: form1, form2"
-            ],
-        ),
-        (
-            {"forms": ["form1", "form2"], "slots": ["slot1", "slot2", "slot3"]},
-            False,
-            UserWarning,
-            [
-                "The following duplicated forms has been found across "
-                "multiple domain files: form1, form2",
-                "The following duplicated slots has been found across "
-                "multiple domain files: slot1, slot2, slot3",
-            ],
-        ),
-    ],
-)
-def test_verify_domain_with_duplicates(
-    duplicates: Optional[Dict[Text, List[Text]]],
-    is_valid: bool,
-    warning_type: Any,
-    messages: List[Text],
-):
-    domain = Domain([], [], [], {}, [], {}, duplicates=duplicates)
-    validator = Validator(domain, None, None, None)
-
-    with pytest.warns(warning_type) as warning:
-        assert validator.verify_domain_duplicates() is is_valid
-
-    assert len(warning) == len(messages)
-    for i in range(len(messages)):
-        assert messages[i] in warning[i].message.args[0]
-
-
 def test_verify_form_slots_invalid_domain(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         forms:
           name_form:
             required_slots:
@@ -494,8 +431,8 @@ def test_valid_stories_rules_actions_in_domain(
 ):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - greet
         actions:
@@ -505,7 +442,7 @@ def test_valid_stories_rules_actions_in_domain(
     file_name = tmp_path / f"{file_name}.yml"
     file_name.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         {file_name}:
         - {data_type}: test path
           steps:
@@ -526,8 +463,8 @@ def test_valid_stories_rules_default_actions(
 ):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - greet
         """
@@ -535,7 +472,7 @@ def test_valid_stories_rules_default_actions(
     file_name = tmp_path / f"{file_name}.yml"
     file_name.write_text(
         f"""
-            version: "3.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             {file_name}:
             - {data_type}: test path
               steps:
@@ -551,8 +488,8 @@ def test_valid_stories_rules_default_actions(
 def test_valid_form_slots_in_domain(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         forms:
           name_form:
             required_slots:
@@ -579,7 +516,7 @@ def test_verify_slot_mappings_mapping_active_loop_not_in_forms(tmp_path: Path):
     slot_name = "some_slot"
     domain.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         entities:
         - some_entity
         slots:
@@ -615,7 +552,7 @@ def test_verify_slot_mappings_from_trigger_intent_mapping_slot_not_in_forms(
     slot_name = "started_booking_form"
     domain.write_text(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - activate_booking
         entities:
@@ -652,8 +589,8 @@ def test_verify_slot_mappings_from_trigger_intent_mapping_slot_not_in_forms(
 def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - activate_booking
         entities:
@@ -693,8 +630,8 @@ def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path:
 def test_verify_slot_mappings_valid(tmp_path: Path):
     domain = tmp_path / "domain.yml"
     domain.write_text(
-        """
-        version: "3.0"
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - activate_booking
         entities:

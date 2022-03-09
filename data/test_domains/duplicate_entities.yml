@@ -2,8 +2,6 @@ intents:
  - greet
  - default
  - goodbye
- - default
- - goodbye
 
 slots:
   cuisine:
