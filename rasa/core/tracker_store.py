@@ -9,14 +9,16 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
+    Generic,
     Iterable,
     Iterator,
     List,
     Optional,
     Text,
+    TypeVar,
     Union,
     TYPE_CHECKING,
-    Generator,
 )
 
 from boto3.dynamodb.conditions import Key
@@ -66,6 +68,33 @@ DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 class TrackerDeserialisationException(RasaException):
     """Raised when an error is encountered while deserialising a tracker."""
+
+
+SerializationType = TypeVar("SerializationType")
+
+
+class TrackerSerialization(Generic[SerializationType]):
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> SerializationType:
+        ...
+
+
+class TrackerTextSerialization(TrackerSerialization[Text]):
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
+        """Serializes the tracker, returns representation of the tracker."""
+        dialogue = tracker.as_dialogue()
+
+        return json.dumps(dialogue.as_dict())
+
+
+class TrackerDictSerialization(TrackerSerialization[Dict]):
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> Dict:
+        """Serializes the tracker, returns representation of the tracker."""
+        d = tracker.as_dialogue().as_dict()
+        d.update({"sender_id": tracker.sender_id})
+        return d
 
 
 class TrackerStore:
@@ -144,7 +173,7 @@ class TrackerStore:
         """Returns a Dialogue State Tracker"""
         return DialogueStateTracker(
             sender_id,
-            self.domain.slots if self.domain else None,
+            self.domain.slots,
             max_event_history=self.max_event_history,
         )
 
@@ -240,13 +269,6 @@ class TrackerStore:
         """Returns the set of values for the tracker store's primary key"""
         raise NotImplementedError()
 
-    @staticmethod
-    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
-        """Serializes the tracker, returns representation of the tracker."""
-        dialogue = tracker.as_dialogue()
-
-        return json.dumps(dialogue.as_dict())
-
     def deserialise_tracker(
         self, sender_id: Text, serialised_tracker: Union[Text, bytes]
     ) -> Optional[DialogueStateTracker]:
@@ -276,7 +298,7 @@ class TrackerStore:
         self._domain = domain or Domain.empty()
 
 
-class InMemoryTrackerStore(TrackerStore):
+class InMemoryTrackerStore(TrackerStore, TrackerTextSerialization):
     """Stores conversation history in memory."""
 
     def __init__(
@@ -309,7 +331,7 @@ class InMemoryTrackerStore(TrackerStore):
         return self.store.keys()
 
 
-class RedisTrackerStore(TrackerStore):
+class RedisTrackerStore(TrackerStore, TrackerTextSerialization):
     """Stores conversation history in Redis"""
 
     def __init__(
@@ -398,7 +420,7 @@ class RedisTrackerStore(TrackerStore):
         return self.red.keys(self.key_prefix + "*")
 
 
-class DynamoTrackerStore(TrackerStore):
+class DynamoTrackerStore(TrackerStore, TrackerDictSerialization):
     """Stores conversation history in DynamoDB"""
 
     def __init__(
@@ -462,14 +484,16 @@ class DynamoTrackerStore(TrackerStore):
         self.db.put_item(Item=serialized)
 
     @staticmethod
-    def serialise_tracker(  # type: ignore[override]
+    def serialise_tracker(
         tracker: "DialogueStateTracker",
     ) -> Dict:
-        """Serializes the tracker, returns object with decimal types."""
-        d = tracker.as_dialogue().as_dict()
-        d.update({"sender_id": tracker.sender_id})
-        # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
-        return core_utils.replace_floats_with_decimals(d)
+        """Serializes the tracker, returns object with decimal types.
+
+        DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s.
+        """
+        return core_utils.replace_floats_with_decimals(
+            super().serialise_tracker(tracker)
+        )
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieve dialogues for a sender_id in reverse-chronological order.
@@ -512,7 +536,7 @@ class DynamoTrackerStore(TrackerStore):
         return sender_ids
 
 
-class MongoTrackerStore(TrackerStore):
+class MongoTrackerStore(TrackerStore, TrackerTextSerialization):
     """Stores conversation history in Mongo.
 
     Property methods:
@@ -791,7 +815,7 @@ def validate_port(port: Any) -> Optional[int]:
     return port
 
 
-class SQLTrackerStore(TrackerStore):
+class SQLTrackerStore(TrackerStore, TrackerTextSerialization):
     """Store which can save and retrieve trackers from an SQL database."""
 
     Base: DeclarativeMeta = declarative_base()
