@@ -105,6 +105,9 @@ class DaskGraphRunner(GraphRunner):
 
     @staticmethod
     def _add_inputs_to_graph(inputs: Optional[Dict[Text, Any]], graph: Any) -> None:
+        if inputs is None:
+            return
+
         for input_name, input_value in inputs.items():
             if isinstance(input_value, str) and input_value in graph.keys():
                 raise GraphRunError(

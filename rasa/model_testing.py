@@ -244,7 +244,7 @@ async def compare_nlu_models(
     bases = [os.path.basename(nlu_config) for nlu_config in configs]
     model_names = [os.path.splitext(base)[0] for base in bases]
 
-    f1_score_results = {
+    f1_score_results: Dict[Text, List[List[float]]] = {
         model_name: [[] for _ in range(runs)] for model_name in model_names
     }
 

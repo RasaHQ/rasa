@@ -1086,21 +1086,33 @@ def determine_entity_for_token(
     """
     if entities is None or len(entities) == 0:
         return None
-    if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
+    if do_any_extractors_not_support_overlap(extractors) and do_entities_overlap(
+        entities
+    ):
         raise ValueError("The possible entities should not overlap.")
 
     candidates = find_intersecting_entities(token, entities)
     return pick_best_entity_fit(token, candidates)
 
 
-def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
-    """Checks if extractors support overlapping entities"""
+def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bool:
+    """Checks if any extractor does not support overlapping entities.
+
+    Args:
+        Names of the entitiy extractors
+
+    Returns:
+        `True` if and only if CRFEntityExtractor or DIETClassifier is in `extractors`
+    """
     if extractors is None:
         return False
 
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+    from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 
-    return CRFEntityExtractor.__name__ not in extractors
+    return not extractors.isdisjoint(
+        {CRFEntityExtractor.__name__, DIETClassifier.__name__}
+    )
 
 
 def align_entity_predictions(
@@ -1718,7 +1730,7 @@ async def compute_metrics(
         response_selection_results
     )
 
-    intent_metrics = {}
+    intent_metrics: IntentMetrics = {}
     if intent_results:
         intent_metrics = _compute_metrics(
             intent_results, "intent_target", "intent_prediction"
@@ -1728,7 +1740,7 @@ async def compute_metrics(
     if entity_results:
         entity_metrics = _compute_entity_metrics(entity_results)
 
-    response_selection_metrics = {}
+    response_selection_metrics: ResponseSelectionMetrics = {}
     if response_selection_results:
         response_selection_metrics = _compute_metrics(
             response_selection_results,
@@ -1750,7 +1762,7 @@ async def compare_nlu(
     configs: List[Text],
     data: TrainingData,
     exclusion_percentages: List[int],
-    f_score_results: Dict[Text, Any],
+    f_score_results: Dict[Text, List[List[float]]],
     model_names: List[Text],
     output: Text,
     runs: int,

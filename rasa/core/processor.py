@@ -511,7 +511,7 @@ class MessageProcessor:
                 )
             else:
                 intent = reminder_event.intent
-                entities = reminder_event.entities or {}
+                entities: Union[List[Dict], Dict] = reminder_event.entities or {}
                 await self.trigger_external_user_uttered(
                     intent, entities, tracker, output_channel
                 )
@@ -705,9 +705,10 @@ class MessageProcessor:
 
     @staticmethod
     def _should_handle_message(tracker: DialogueStateTracker) -> bool:
-        return (
-            not tracker.is_paused()
-            or tracker.latest_message.intent.get(INTENT_NAME_KEY) == USER_INTENT_RESTART
+        return not tracker.is_paused() or (
+            tracker.latest_message is not None
+            and tracker.latest_message.intent.get(INTENT_NAME_KEY)
+            == USER_INTENT_RESTART
         )
 
     def is_action_limit_reached(

@@ -1,13 +1,12 @@
-# Send model regression test results to Segment and Datadog
+# Send model regression test results to Datadog
 # with a summary of all test results.
 # Also write them into a report file.
 import copy
 import datetime
 import json
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Text, Tuple
 
-import analytics
 from datadog_api_client.v1 import ApiClient, Configuration
 from datadog_api_client.v1.api.metrics_api import MetricsApi
 from datadog_api_client.v1.model.metrics_payload import MetricsPayload
@@ -20,7 +19,7 @@ METRIC_RUNTIME_PREFIX = "rasa.perf.benchmark."
 METRIC_ML_PREFIX = "rasa.perf.ml."
 CONFIG_REPOSITORY = "training-data"
 
-task_mapping = {
+TASK_MAPPING = {
     "intent_report.json": "intent_classification",
     "CRFEntityExtractor_report.json": "entity_prediction",
     "DIETClassifier_report.json": "entity_prediction",
@@ -28,16 +27,67 @@ task_mapping = {
     "story_report.json": "story_prediction",
 }
 
-task_mapping_segment = {
-    "intent_report.json": "Intent Classification",
-    "CRFEntityExtractor_report.json": "Entity Prediction",
-    "DIETClassifier_report.json": "Entity Prediction",
-    "response_selection_report.json": "Response Selection",
-    "story_report.json": "Story Prediction",
+METRICS = {
+    "test_run_time": "TEST_RUN_TIME",
+    "train_run_time": "TRAIN_RUN_TIME",
+    "total_run_time": "TOTAL_RUN_TIME",
+}
+
+MAIN_TAGS = {
+    "config": "CONFIG",
+    "dataset": "DATASET_NAME",
+}
+
+OTHER_TAGS = {
+    "config_repository_branch": "DATASET_REPOSITORY_BRANCH",
+    "dataset_commit": "DATASET_COMMIT",
+    "accelerator_type": "ACCELERATOR_TYPE",
+    "type": "TYPE",
+    "index_repetition": "INDEX_REPETITION",
+    "host_name": "HOST_NAME",
+}
+
+GIT_RELATED_TAGS = {
+    "pr_id": "PR_ID",
+    "pr_url": "PR_URL",
+    "github_event": "GITHUB_EVENT_NAME",
+    "github_run_id": "GITHUB_RUN_ID",
+    "github_sha": "GITHUB_SHA",
+    "workflow": "GITHUB_WORKFLOW",
 }
 
 
-def transform_to_seconds(duration: str) -> float:
+def create_dict_of_env(name_to_env: Dict[Text, Text]) -> Dict[Text, Text]:
+    return {name: os.environ[env_var] for name, env_var in name_to_env.items()}
+
+
+def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, Text]:
+    is_external = os.environ["IS_EXTERNAL"]
+    dataset_repository_branch = os.environ["DATASET_REPOSITORY_BRANCH"]
+    if is_external.lower() in ("yes", "true", "t", "1"):
+        is_external_flag = True
+        dataset_repository_branch = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
+    else:
+        is_external_flag = False
+    return is_external_flag, dataset_repository_branch
+
+
+def prepare_datasetrepo_and_external_tags() -> Dict[Text, Any]:
+    is_external, dataset_repo_branch = _get_is_external_and_dataset_repository_branch()
+    return {
+        "dataset_repository_branch": dataset_repo_branch,
+        "external_dataset_repository": is_external,
+    }
+
+
+def prepare_dsrepo_and_external_tags_as_str() -> Dict[Text, Text]:
+    return {
+        "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
+        "external_dataset_repository": os.environ["IS_EXTERNAL"],
+    }
+
+
+def transform_to_seconds(duration: Text) -> float:
     """Transform string (with hours, minutes, and seconds) to seconds.
 
     Args:
@@ -69,15 +119,7 @@ def transform_to_seconds(duration: str) -> float:
     return overall_seconds
 
 
-def prepare_runtime_metrics() -> Dict[str, float]:
-    return {
-        "test_run_time": os.environ["TEST_RUN_TIME"],
-        "train_run_time": os.environ["TRAIN_RUN_TIME"],
-        "total_run_time": os.environ["TOTAL_RUN_TIME"],
-    }
-
-
-def prepare_ml_metric(result: Dict[str, Any]) -> Dict[str, float]:
+def prepare_ml_metric(result: Dict[Text, Any]) -> Dict[Text, float]:
     """Converts a nested result dict into a list of metrics.
 
     Args:
@@ -112,7 +154,7 @@ def prepare_ml_metric(result: Dict[str, Any]) -> Dict[str, float]:
     return metrics_ml
 
 
-def prepare_ml_metrics(results: List[Dict[str, Any]]) -> Dict[str, float]:
+def prepare_ml_metrics(results: List[Dict[Text, Any]]) -> Dict[Text, float]:
     metrics_ml = {}
     for result in results:
         new_metrics_ml = prepare_ml_metric(result)
@@ -121,40 +163,30 @@ def prepare_ml_metrics(results: List[Dict[str, Any]]) -> Dict[str, float]:
     return metrics_ml
 
 
-def prepare_tags() -> List[str]:
+def prepare_datadog_tags() -> List[Text]:
     tags = {
         "env": DD_ENV,
         "service": DD_SERVICE,
-        "accelerator_type": os.environ["ACCELERATOR_TYPE"],
-        "dataset": os.environ["DATASET_NAME"],
-        "config": os.environ["CONFIG"],
-        "dataset_commit": os.environ["DATASET_COMMIT"],
         "branch": os.environ["BRANCH"],
-        "github_sha": os.environ["GITHUB_SHA"],
-        "pr_id": os.environ["PR_ID"],
-        "pr_url": os.environ["PR_URL"],
-        "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
-        "external_dataset_repository": os.environ["IS_EXTERNAL"],
         "config_repository": CONFIG_REPOSITORY,
-        "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
-        "workflow": os.environ["GITHUB_WORKFLOW"],
-        "github_run_id": os.environ["GITHUB_RUN_ID"],
-        "github_event": os.environ["GITHUB_EVENT_NAME"],
-        "type": os.environ["TYPE"],
+        **prepare_dsrepo_and_external_tags_as_str(),
+        **create_dict_of_env(MAIN_TAGS),
+        **create_dict_of_env(OTHER_TAGS),
+        **create_dict_of_env(GIT_RELATED_TAGS),
     }
     tags_list = [f"{k}:{v}" for k, v in tags.items()]
     return tags_list
 
 
-def send_to_datadog(results: List[Dict[str, Any]]) -> None:
+def send_to_datadog(results: List[Dict[Text, Any]]) -> None:
     """Sends metrics to datadog."""
     # Prepare
-    tags_list = prepare_tags()
+    tags_list = prepare_datadog_tags()
     timestamp = datetime.datetime.now().timestamp()
     series = []
 
     # Send metrics about runtime
-    metrics_runtime = prepare_runtime_metrics()
+    metrics_runtime = create_dict_of_env(METRICS)
     for metric_name, metric_value in metrics_runtime.items():
         overall_seconds = transform_to_seconds(metric_value)
         series.append(
@@ -186,56 +218,7 @@ def send_to_datadog(results: List[Dict[str, Any]]) -> None:
             print(response)
 
 
-def _send_to_segment(context: Dict[str, Any]) -> None:
-    (
-        is_external,
-        dataset_repository_branch,
-    ) = _get_is_external_and_dataset_repository_branch()
-
-    jobID = os.environ["GITHUB_RUN_ID"]
-
-    analytics.identify(
-        jobID, {"name": "model-regression-tests", "created_at": datetime.datetime.now()}
-    )
-
-    analytics.track(
-        jobID,
-        "results",
-        {
-            "dataset": os.environ["DATASET_NAME"],
-            "dataset_repository_branch": dataset_repository_branch,
-            "external_dataset_repository": is_external,
-            "config_repository": CONFIG_REPOSITORY,
-            "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
-            "dataset_commit": os.environ["DATASET_COMMIT"],
-            "workflow": os.environ["GITHUB_WORKFLOW"],
-            "config": os.environ["CONFIG"],
-            "pr_url": os.environ["PR_URL"],
-            "accelerator_type": os.environ["ACCELERATOR_TYPE"],
-            "test_run_time": os.environ["TEST_RUN_TIME"],
-            "train_run_time": os.environ["TRAIN_RUN_TIME"],
-            "total_run_time": os.environ["TOTAL_RUN_TIME"],
-            "github_run_id": os.environ["GITHUB_RUN_ID"],
-            "github_sha": os.environ["GITHUB_SHA"],
-            "github_event": os.environ["GITHUB_EVENT_NAME"],
-            "type": os.environ["TYPE"],
-            **context,
-        },
-    )
-
-
-def _get_is_external_and_dataset_repository_branch() -> Tuple[bool, str]:
-    is_external = os.environ["IS_EXTERNAL"]
-    dataset_repository_branch = os.environ["DATASET_REPOSITORY_BRANCH"]
-    if is_external.lower() in ("yes", "true", "t", "1"):
-        is_external_flag = True
-        dataset_repository_branch = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
-    else:
-        is_external_flag = False
-    return is_external_flag, dataset_repository_branch
-
-
-def read_results(file: str) -> Dict[str, Any]:
+def read_results(file: Text) -> Dict[Text, Any]:
     with open(file) as json_file:
         data = json.load(json_file)
 
@@ -251,16 +234,10 @@ def read_results(file: str) -> Dict[str, Any]:
     return result
 
 
-def _push_results(file_name: str, file: str) -> None:
-    result = get_result(file_name, file)
-    result["task"] = task_mapping_segment[file_name]
-    _send_to_segment(result)
-
-
-def get_result(file_name: str, file: str) -> Dict[str, Any]:
+def get_result(file_name: Text, file: Text) -> Dict[Text, Any]:
     result = read_results(file)
     result["file_name"] = file_name
-    result["task"] = task_mapping[file_name]
+    result["task"] = TASK_MAPPING[file_name]
     return result
 
 
@@ -268,63 +245,44 @@ def send_all_to_datadog() -> None:
     results = []
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
-            if any(f.endswith(valid_name) for valid_name in task_mapping.keys()):
+            if any(f.endswith(valid_name) for valid_name in TASK_MAPPING.keys()):
                 result = get_result(f, os.path.join(dirpath, f))
                 results.append(result)
     send_to_datadog(results)
 
 
-def generate_json(file: str, task: str, data: dict) -> dict:
-    (
-        is_external,
-        dataset_repository_branch,
-    ) = _get_is_external_and_dataset_repository_branch()
+def generate_json(file: Text, task: Text, data: dict) -> dict:
     config = os.environ["CONFIG"]
-    dataset = os.environ["DATASET"]
+    dataset = os.environ["DATASET_NAME"]
 
     if dataset not in data:
-        data = {dataset: {config: {}}, **data}
+        data = {dataset: {config: []}, **data}
     elif config not in data[dataset]:
-        data[dataset] = {config: {}, **data[dataset]}
+        data[dataset] = {config: [], **data[dataset]}
 
-    data[dataset][config] = {
-        "external_dataset_repository": is_external,
-        "dataset_repository_branch": dataset_repository_branch,
-        "config_repository": CONFIG_REPOSITORY,
-        "config_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
-        "dataset_commit": os.environ["DATASET_COMMIT"],
-        "accelerator_type": os.environ["ACCELERATOR_TYPE"],
-        "test_run_time": os.environ["TEST_RUN_TIME"],
-        "train_run_time": os.environ["TRAIN_RUN_TIME"],
-        "total_run_time": os.environ["TOTAL_RUN_TIME"],
-        "type": os.environ["TYPE"],
-        **data[dataset][config],
-    }
+    assert len(data[dataset][config]) <= 1
 
-    data[dataset][config][task] = {**read_results(file)}
-
+    data[dataset][config] = [
+        {
+            "config_repository": CONFIG_REPOSITORY,
+            **prepare_datasetrepo_and_external_tags(),
+            **create_dict_of_env(METRICS),
+            **create_dict_of_env(OTHER_TAGS),
+            **(data[dataset][config][0] if data[dataset][config] else {}),
+            task: read_results(file),
+        }
+    ]
     return data
-
-
-def send_all_results_to_segment() -> None:
-    analytics.write_key = os.environ["SEGMENT_TOKEN"]
-    for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
-        for f in files:
-            if any(
-                f.endswith(valid_name) for valid_name in task_mapping_segment.keys()
-            ):
-                _push_results(f, os.path.join(dirpath, f))
-    analytics.flush()
 
 
 def create_report_file() -> None:
     data = {}
     for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
-            if f not in task_mapping.keys():
+            if f not in TASK_MAPPING.keys():
                 continue
 
-            data = generate_json(os.path.join(dirpath, f), task_mapping[f], data)
+            data = generate_json(os.path.join(dirpath, f), TASK_MAPPING[f], data)
 
     with open(os.environ["SUMMARY_FILE"], "w") as f:
         json.dump(data, f, sort_keys=True, indent=2)
@@ -332,5 +290,4 @@ def create_report_file() -> None:
 
 if __name__ == "__main__":
     send_all_to_datadog()
-    send_all_results_to_segment()
     create_report_file()

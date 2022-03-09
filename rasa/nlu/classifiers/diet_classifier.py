@@ -3,6 +3,8 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
+
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.featurizers.featurizer import Featurizer
 
 import numpy as np
@@ -666,6 +668,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[FeatureArray]:
+        if self._label_data is None:
+            return []
+
         feature_arrays: List[FeatureArray] = self._label_data.get(LABEL, SENTENCE)
         all_label_features = feature_arrays[0]
         return [
@@ -887,6 +892,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
         else:
+            if self.model is None:
+                raise ModelNotFound("Model could not be found. ")
+
             self.model.adjust_for_incremental_training(
                 data_example=self._data_example,
                 new_sparse_feature_sizes=model_data.get_sparse_feature_sizes(),
@@ -946,7 +954,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
         label: Dict[Text, Any] = {"name": None, "confidence": 0.0}
-        label_ranking = []
+        label_ranking: List[Dict[Text, Any]] = []
 
         if predict_out is None:
             return label, label_ranking
@@ -1032,8 +1040,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     def persist(self) -> None:
         """Persist this model into the passed directory."""
-        import shutil
-
         if self.model is None:
             return None
 
@@ -1043,8 +1049,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
             rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
-            if self.component_config[CHECKPOINT_MODEL]:
-                shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+            if self.component_config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
+                self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                # Save an empty file to flag that this model has been
+                # produced using checkpointing
+                checkpoint_marker = model_path / f"{file_name}.from_checkpoint.pkl"
+                checkpoint_marker.touch()
+
             self.model.save(str(tf_model_file))
 
             io_utils.pickle_dump(
@@ -1055,7 +1066,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 self._sparse_feature_sizes,
             )
             io_utils.pickle_dump(
-                model_path / f"{file_name}.label_data.pkl", dict(self._label_data.data)
+                model_path / f"{file_name}.label_data.pkl",
+                dict(self._label_data.data) if self._label_data is not None else {},
             )
             io_utils.json_pickle(
                 model_path / f"{file_name}.index_label_id_mapping.json",
