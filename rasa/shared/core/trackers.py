@@ -136,13 +136,14 @@ class DialogueStateTracker:
         cls,
         sender_id: Text,
         events_as_dict: List[Dict[Text, Any]],
-        slots: Optional[List[Slot]] = None,
+        slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
     ) -> "DialogueStateTracker":
         """Create a tracker from dump.
 
         The dump should be an array of dumped events. When restoring
-        the tracker, these events will be replayed to recreate the state."""
+        the tracker, these events will be replayed to recreate the state.
+        """
         evts = events.deserialise_events(events_as_dict)
 
         return cls.from_events(sender_id, evts, slots, max_event_history)
