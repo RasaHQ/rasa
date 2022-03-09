@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 import typing
 from typing import List, Text, Optional
@@ -13,7 +14,6 @@ from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORE
 from rasa.exceptions import PublishingError
 from rasa.shared.exceptions import RasaException
 from rasa.core.brokers.pika import PikaEventBroker
-from rasa.utils.common import asyncio_run_workaround
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -173,7 +173,7 @@ def export_trackers(args: argparse.Namespace) -> None:
     Args:
         args: Command-line arguments to process.
     """
-    asyncio_run_workaround(_export_trackers(args))
+    asyncio.run(_export_trackers(args))
 
 
 async def _export_trackers(args: argparse.Namespace) -> None:

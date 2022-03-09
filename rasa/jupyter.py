@@ -1,3 +1,4 @@
+import asyncio
 import pprint as pretty_print
 import typing
 from typing import Any, Dict, Optional, Text
@@ -6,7 +7,6 @@ from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_success
 import rasa.core.agent
 import rasa.utils.common
-from rasa.utils.common import asyncio_run_workaround
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -44,7 +44,7 @@ def chat(
         if message == "/stop":
             break
 
-        responses = asyncio_run_workaround(agent.handle_text(message))
+        responses = asyncio.run(agent.handle_text(message))
         for response in responses:
             _display_bot_response(response)
 

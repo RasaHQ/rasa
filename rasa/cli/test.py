@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 import os
 from typing import List, Optional, Text, Dict, Union, Any
@@ -26,7 +27,6 @@ import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
 import rasa.utils.common
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.utils.common import asyncio_run_workaround
 
 logger = logging.getLogger(__name__)
 
@@ -244,7 +244,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     Args:
         args: the parsed CLI arguments for 'rasa test nlu'.
     """
-    asyncio_run_workaround(
+    asyncio.run(
         run_nlu_test_async(
             args.config,
             args.nlu,
@@ -266,7 +266,7 @@ def run_core_test(args: argparse.Namespace) -> None:
     Args:
         args: the parsed CLI arguments for 'rasa test core'.
     """
-    asyncio_run_workaround(run_core_test_async(args))
+    asyncio.run(run_core_test_async(args))
 
 
 def test(args: argparse.Namespace) -> None:
