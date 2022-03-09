@@ -20,8 +20,6 @@ from typing import (
     Callable,
 )
 from dataclasses import dataclass
-from xml.dom.minidom import Entity
-
 
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
