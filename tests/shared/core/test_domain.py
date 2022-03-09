@@ -1,9 +1,10 @@
 import copy
+from email.policy import default
 import json
 import textwrap
 from pathlib import Path
 import random
-from typing import Dict, List, Text, Any, Union, Set, Optional
+from typing import Dict, List, Text, Any, Union, Set, Optional, Tuple
 
 import pytest
 
@@ -29,6 +30,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import (
     InvalidDomain,
     SessionConfig,
+    EntityProperties,
     ENTITY_ROLES_KEY,
     USED_ENTITIES_KEY,
     USE_ENTITIES_KEY,
@@ -596,14 +598,16 @@ def test_merge_domain_with_forms():
 
 
 @pytest.mark.parametrize(
-    "intents, entities, roles, groups, default_ignored_entities, intent_properties",
+    "intents, entity_properties, intent_properties",
     [
         (
             ["greet", "goodbye"],
-            ["entity", "other", "third"],
-            {"entity": ["role-1", "role-2"]},
-            {},
-            [],
+            {
+                "entities": ["entity", "other", "third"],
+                "roles": {"entity": ["role-1", "role-2"]},
+                "groups": {},
+                "default_ignored_entities": [],
+            },
             {
                 "greet": {
                     USED_ENTITIES_KEY: [
@@ -627,10 +631,12 @@ def test_merge_domain_with_forms():
         ),
         (
             [{"greet": {USE_ENTITIES_KEY: []}}, "goodbye"],
-            ["entity", "other", "third"],
-            {},
-            {"other": ["1", "2"]},
-            [],
+            {
+                "entities": ["entity", "other", "third"],
+                "roles": {},
+                "groups": {"other": ["1", "2"]},
+                "default_ignored_entities": [],
+            },
             {
                 "greet": {USED_ENTITIES_KEY: []},
                 "goodbye": {
@@ -655,10 +661,12 @@ def test_merge_domain_with_forms():
                 },
                 "goodbye",
             ],
-            ["entity", "other", "third", "unused"],
-            {"entity": ["role"], "other": ["role"]},
-            {},
-            ["unused"],
+            {
+                "entities": ["entity", "other", "third", "unused"],
+                "roles": {"entity": ["role"], "other": ["role"]},
+                "groups": {},
+                "default_ignored_entities": ["unused"],
+            },
             {
                 "greet": {
                     "triggers": "utter_goodbye",
@@ -683,10 +691,12 @@ def test_merge_domain_with_forms():
                 {"greet": {"triggers": "utter_goodbye", USE_ENTITIES_KEY: None}},
                 {"goodbye": {USE_ENTITIES_KEY: [], IGNORE_ENTITIES_KEY: []}},
             ],
-            ["entity", "other", "third"],
-            {},
-            {},
-            [],
+            {
+                "entities": ["entity", "other", "third"],
+                "roles": {},
+                "groups": {},
+                "default_ignored_entities": [],
+            },
             {
                 "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye"},
                 "goodbye": {USED_ENTITIES_KEY: []},
@@ -698,10 +708,12 @@ def test_merge_domain_with_forms():
                 "goodbye",
                 {"chitchat": {"is_retrieval_intent": True, "use_entities": None}},
             ],
-            ["entity", "other", "third"],
-            {},
-            {},
-            [],
+            {
+                "entities": ["entity", "other", "third"],
+                "roles": {},
+                "groups": {},
+                "default_ignored_entities": [],
+            },
             {
                 "greet": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
                 "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
@@ -712,20 +724,14 @@ def test_merge_domain_with_forms():
 )
 def test_collect_intent_properties(
     intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
-    entities: List[Text],
-    roles: Dict[Text, List[Text]],
-    groups: Dict[Text, List[Text]],
-    default_ignored_entities: List[Text],
+    entity_properties: Dict[Text, Union[List[Text], Dict[Text, List[Text]]]],
     intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
 ):
-    Domain._add_default_intents(
-        intent_properties, entities, roles, groups, default_ignored_entities
-    )
+    entity_properties = EntityProperties(**entity_properties)
+    Domain._add_default_intents(intent_properties, entity_properties)
 
     assert (
-        Domain.collect_intent_properties(
-            intents, entities, roles, groups, default_ignored_entities
-        )
+        Domain.collect_intent_properties(intents, entity_properties)
         == intent_properties
     )
 
@@ -735,16 +741,21 @@ def test_collect_intent_properties(
     [
         (
             ["plain_entity", {"ignored_entity": {"influence_conversation": False}}],
-            (["plain_entity", "ignored_entity"], {}, {}, ["ignored_entity"]),
+            {
+                "entities": ["plain_entity", "ignored_entity"],
+                "roles": {},
+                "groups": {},
+                "default_ignored_entities": ["ignored_entity"],
+            },
         ),
     ],
 )
 def test_collect_entity_properties(
     entities: List[Union[Text, Dict[Text, Any]]],
-    entity_properties: Dict[Text, Dict[Text, Union[bool, List]]],
+    entity_properties: Dict[Text, Union[List[Text], Dict[Text, List[Text]]]],
 ):
-
-    assert Domain.collect_entity_properties(entities) == entity_properties
+    expected_entity_properties = EntityProperties(**entity_properties)
+    assert Domain.collect_entity_properties(entities) == expected_entity_properties
 
 
 def test_load_domain_from_directory_tree():
@@ -1076,10 +1087,10 @@ def test_load_domain_with_entity_roles_groups():
     assert domain.entities is not None
     assert "GPE" in domain.entities
     assert "name" in domain.entities
-    assert "name" not in domain.roles
-    assert "GPE" in domain.roles
-    assert "origin" in domain.roles["GPE"]
-    assert "destination" in domain.roles["GPE"]
+    assert "name" not in domain.entity_properties.roles
+    assert "GPE" in domain.entity_properties.roles
+    assert "origin" in domain.entity_properties.roles["GPE"]
+    assert "destination" in domain.entity_properties.roles["GPE"]
 
 
 def test_is_empty():
