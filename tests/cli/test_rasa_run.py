@@ -15,7 +15,9 @@ def test_run_does_not_start(run_in_simple_project: Callable[..., RunResult]):
     assert any(error in line for line in output.outlines)
 
 
-def test_run_help(run: Callable[..., RunResult],):
+def test_run_help(
+    run: Callable[..., RunResult],
+):
     output = run("run", "--help")
 
     if sys.version_info.minor >= 9:
@@ -53,7 +55,9 @@ def test_run_help(run: Callable[..., RunResult],):
         assert line in printed_help
 
 
-def test_run_action_help(run: Callable[..., RunResult],):
+def test_run_action_help(
+    run: Callable[..., RunResult],
+):
     output = run("run", "actions", "--help")
 
     if sys.version_info.minor >= 9:

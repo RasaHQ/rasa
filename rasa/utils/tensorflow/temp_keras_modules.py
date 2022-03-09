@@ -5,9 +5,6 @@ import numpy as np
 
 import tensorflow as tf
 
-from tensorflow.python.keras.engine import training_utils, data_adapter
-from tensorflow.python.keras.utils import tf_utils, version_utils
-
 # Note: the below is the same as `from keras.engine.training import Model`
 from tensorflow.keras import Model
 
@@ -302,14 +299,6 @@ class TmpKerasModel(Model):
                 "`verbose=1` is not allowed with `ParameterServerStrategy` for "
                 f"performance reasons. Received: `verbose`={verbose}"
             )
-
-        if verbose == "auto":
-            if (
-                self.distribute_strategy._should_use_with_coordinator
-            ):  # pylint: disable=protected-access
-                verbose = 2  # Default to epoch-level logging for PSStrategy.
-            else:
-                verbose = 1  # Default to batch-level logging otherwise.
 
         if validation_split:
             # Create the validation data using the training data. Only supported for
