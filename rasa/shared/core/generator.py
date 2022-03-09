@@ -67,7 +67,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         self.domain = domain if domain is not None else Domain.empty()
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented
-        self._skip_states = False
+        self.__skip_states = False
 
     @classmethod
     def from_events(
@@ -165,11 +165,11 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
     @contextmanager
     def _skip_states_manager(self) -> bool:
-        self._skip_states = True
+        self.__skip_states = True
         try:
-            yield self._skip_states
+            yield
         finally:
-            self._skip_states = False
+            self.__skip_states = False
 
     def copy(
         self, sender_id: Text = "", sender_source: Text = ""
@@ -209,14 +209,14 @@ class TrackerWithCachedStates(DialogueStateTracker):
         """Modify the state of the tracker according to an ``Event``."""
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
-        if not self._states_for_hashing and not self._skip_states:
+        if not self._states_for_hashing and not self.__skip_states:
             # rest of this function assumes we have the previous state
             # cached. let's make sure it is there.
             self._states_for_hashing = self.past_states_for_hashing(self.domain)
 
         super().update(event)
 
-        if not self._skip_states:
+        if not self.__skip_states:
             if isinstance(event, ActionExecuted):
                 pass
             elif isinstance(event, ActionReverted):
