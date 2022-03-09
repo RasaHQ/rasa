@@ -1,4 +1,5 @@
 # here is some comment
+recipe: default.v1
 language: en
 
 # another comment
@@ -25,6 +26,9 @@ policies: # even here
 # # See https://rasa.com/docs/rasa/policies for more information.
 #   - name: MemoizationPolicy
 #   - name: RulePolicy
+#   - name: UnexpecTEDIntentPolicy
+#     max_history: 5
+#     epochs: 100
 #   - name: TEDPolicy
 #     max_history: 5
 #     epochs: 100

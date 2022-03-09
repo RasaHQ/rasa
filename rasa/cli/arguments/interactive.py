@@ -55,7 +55,8 @@ def _add_common_params(parser: argparse.ArgumentParser) -> None:
 
     rasa.cli.arguments.default_arguments.add_endpoint_param(
         parser,
-        help_text="Configuration file for the model server and the connectors as a yml file.",
+        help_text="Configuration file for the model server "
+        "and the connectors as a yml file.",
     )
 
 

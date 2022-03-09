@@ -26,7 +26,7 @@ def test_hangouts_channel():
     s = rasa.core.run.configure_app([input_channel], port=5004)
 
     routes_list = utils.list_routes(s)
-    print(routes_list)
+
     assert routes_list.get("hangouts_webhook.health").startswith("/webhooks/hangouts")
     assert routes_list.get("hangouts_webhook.receive").startswith(
         "/webhooks/hangouts/webhook"
@@ -34,7 +34,7 @@ def test_hangouts_channel():
 
 
 def test_hangouts_extract_functions():
-    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#added_to_space # noqa: W505
+    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#added_to_space # noqa: E501, W505
     ADDED_EVENT = {
         "type": "ADDED_TO_SPACE",
         "eventTime": "2017-03-02T19:02:59.910959Z",
@@ -51,7 +51,7 @@ def test_hangouts_extract_functions():
         },
     }
 
-    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#removed_from_space # noqa: W505
+    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#removed_from_space # noqa: E501, W505
     REMOVED_EVENT = {
         "type": "REMOVED_FROM_SPACE",
         "eventTime": "2017-03-02T19:02:59.910959Z",
@@ -64,7 +64,7 @@ def test_hangouts_extract_functions():
         },
     }
 
-    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#message # noqa: W505
+    # from https://developers.google.com/hangouts/chat/reference/message-formats/events#message # noqa: E501, W505
     MESSAGE = {
         "type": "MESSAGE",
         "eventTime": "2017-03-02T19:02:59.910959Z",
@@ -134,7 +134,7 @@ def test_hangouts_extract_functions():
     def create_req(app):
         return Request(
             b"http://127.0.0.1:42101/webhooks/hangouts/webhook",
-            None,
+            [],
             None,
             "POST",
             None,

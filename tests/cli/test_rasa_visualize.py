@@ -6,8 +6,7 @@ def test_visualize_help(run: Callable[..., RunResult]):
     output = run("visualize", "--help")
 
     help_text = """usage: rasa visualize [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-s STORIES]
-                      [-c CONFIG] [--out OUT] [--max-history MAX_HISTORY]
-                      [-u NLU]"""
+                      [--out OUT] [--max-history MAX_HISTORY] [-u NLU]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

@@ -3,18 +3,16 @@ import functools
 import importlib
 import inspect
 import logging
-from typing import Text, Dict, Optional, Any, List, Callable, Collection
+from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
 
-import rasa.shared.utils.io
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
-
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
 
 def class_from_module_path(
     module_path: Text, lookup_path: Optional[Text] = None
-) -> Any:
+) -> Type:
     """Given the module name and path of a class, tries to retrieve the class.
 
     The loaded class can be used to instantiate new objects.
@@ -30,6 +28,7 @@ def class_from_module_path(
 
     Raises:
         ImportError, in case the Python class cannot be found.
+        RasaException, in case the imported result is something other than a class
     """
     klass = None
     if "." in module_path:
@@ -45,13 +44,10 @@ def class_from_module_path(
         raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
     if not inspect.isclass(klass):
-        rasa.shared.utils.io.raise_deprecation_warning(
+        raise RasaException(
             f"`class_from_module_path()` is expected to return a class, "
-            f"but {module_path} is not one. "
-            f"This warning will be converted "
-            f"into an exception in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS}."
+            f"but for {module_path} we got a {type(klass)}."
         )
-
     return klass
 
 
@@ -79,8 +75,8 @@ def lazy_property(function: Callable) -> Any:
 
     The result gets stored in a local var. Computation of the property
     will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property."""
-
+    succeeding calls will use the value stored in the private property.
+    """
     attr_name = "_lazy_" + function.__name__
 
     @property
@@ -205,3 +201,73 @@ def arguments_of(func: Callable) -> List[Text]:
     import inspect
 
     return list(inspect.signature(func).parameters.keys())
+
+
+def extract_duplicates(list1: List[Any], list2: List[Any]) -> List[Any]:
+    """Extracts duplicates from two lists."""
+    if list1:
+        dict1 = {
+            (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i for i in list1
+        }
+    else:
+        dict1 = {}
+
+    if list2:
+        dict2 = {
+            (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i for i in list2
+        }
+    else:
+        dict2 = {}
+
+    set1 = set(dict1.keys())
+    set2 = set(dict2.keys())
+    dupes = set1.intersection(set2)
+    return sorted(list(dupes))
+
+
+def clean_duplicates(dupes: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Removes keys for empty values."""
+    duplicates = dupes.copy()
+    for k in dupes:
+        if not dupes[k]:
+            duplicates.pop(k)
+
+    return duplicates
+
+
+def merge_dicts(
+    tempDict1: Dict[Text, Any],
+    tempDict2: Dict[Text, Any],
+    override_existing_values: bool = False,
+) -> Dict[Text, Any]:
+    """Merges two dicts."""
+    if override_existing_values:
+        merged_dicts, b = tempDict1.copy(), tempDict2.copy()
+
+    else:
+        merged_dicts, b = tempDict2.copy(), tempDict1.copy()
+    merged_dicts.update(b)
+    return merged_dicts
+
+
+def merge_lists(
+    list1: List[Any], list2: List[Any], override: bool = False
+) -> List[Any]:
+    """Merges two lists."""
+    return sorted(list(set(list1 + list2)))
+
+
+def merge_lists_of_dicts(
+    dict_list1: List[Dict],
+    dict_list2: List[Dict],
+    override_existing_values: bool = False,
+) -> List[Dict]:
+    """Merges two dict lists."""
+    dict1 = {
+        (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i for i in dict_list1
+    }
+    dict2 = {
+        (sorted(list(i.keys()))[0] if isinstance(i, dict) else i): i for i in dict_list2
+    }
+    merged_dicts = merge_dicts(dict1, dict2, override_existing_values)
+    return list(merged_dicts.values())

@@ -75,15 +75,15 @@ chat(model_path, endpoints)
 ## Evaluate your model against test data
 
 Rasa has a convenience function for getting your training data.
-Rasa's `get_core_nlu_directories` is a function which
-recursively finds all the stories and NLU data files in a directory
-and copies them into two temporary directories.
+Rasa's `get_core_directory` and `get_nlu_directory` are functions which
+recursively find all the stories or NLU data files
+and copies them into temporary directories.
 The return values are the paths to these newly created directories.
 
 ```bash
-import rasa.data as data
-nlu_data_directory = data.get_data_directories(training_files, data.is_nlu_file)
-stories_directory = data.get_data_directories(training_files, data.is_story_file)
+import rasa.shared.data as data
+nlu_data_directory = data.get_nlu_directory(training_files)
+stories_directory = data.get_core_directory(training_files)
 print(stories_directory, nlu_data_directory)
 ```
 To test your model, call the `test` function, passing in the path

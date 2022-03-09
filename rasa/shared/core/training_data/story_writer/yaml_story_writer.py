@@ -49,7 +49,7 @@ from rasa.shared.core.training_data.structures import (
 
 
 class YAMLStoryWriter(StoryWriter):
-    """Writes Core training data into a file in a YAML format. """
+    """Writes Core training data into a file in a YAML format."""
 
     def dumps(
         self,
@@ -66,6 +66,7 @@ class YAMLStoryWriter(StoryWriter):
                            the existing story file.
             is_test_story: Identifies if the stories should be exported in test stories
                            format.
+
         Returns:
             String with story steps in the YAML format.
         """
@@ -94,7 +95,6 @@ class YAMLStoryWriter(StoryWriter):
         result = self.stories_to_yaml(story_steps, is_test_story)
         if is_appendable and KEY_STORIES in result:
             result = result[KEY_STORIES]
-
         rasa.shared.utils.io.write_yaml(result, target, True)
 
     def stories_to_yaml(
@@ -142,7 +142,6 @@ class YAMLStoryWriter(StoryWriter):
         result = OrderedDict()
         result[KEY_STORY_NAME] = story_step.block_name
         steps = self.process_checkpoints(story_step.start_checkpoints)
-
         for event in story_step.events:
             if not self._filter_event(event):
                 continue
@@ -203,12 +202,55 @@ class YAMLStoryWriter(StoryWriter):
         """
         result = CommentedMap()
         if user_utterance.intent_name and not user_utterance.use_text_for_featurization:
-            result[KEY_USER_INTENT] = user_utterance.intent_name
+            result[KEY_USER_INTENT] = (
+                user_utterance.full_retrieval_intent_name
+                if user_utterance.full_retrieval_intent_name
+                else user_utterance.intent_name
+            )
+
+        entities = []
+        if len(user_utterance.entities) and not is_test_story:
+            for entity in user_utterance.entities:
+                if "value" in entity:
+                    if hasattr(user_utterance, "inline_comment_for_entity"):
+                        # FIXME: to fix this type issue, WronglyClassifiedUserUtterance
+                        # needs to be imported but it's currently outside
+                        # of `rasa.shared`
+                        for predicted in user_utterance.predicted_entities:  # type: ignore[attr-defined] # noqa: E501
+                            if predicted["start"] == entity["start"]:
+                                commented_entity = user_utterance.inline_comment_for_entity(  # type: ignore[attr-defined] # noqa: E501
+                                    predicted, entity
+                                )
+                                if commented_entity:
+                                    entity_map = CommentedMap(
+                                        [(entity["entity"], entity["value"])]
+                                    )
+                                    entity_map.yaml_add_eol_comment(
+                                        commented_entity, entity["entity"]
+                                    )
+                                    entities.append(entity_map)
+                                else:
+                                    entities.append(
+                                        OrderedDict(
+                                            [(entity["entity"], entity["value"])]
+                                        )
+                                    )
+                    else:
+                        entities.append(
+                            OrderedDict([(entity["entity"], entity["value"])])
+                        )
+                else:
+                    entities.append(entity["entity"])
+            result[KEY_ENTITIES] = entities
 
         if hasattr(user_utterance, "inline_comment"):
-            result.yaml_add_eol_comment(
-                user_utterance.inline_comment(), KEY_USER_INTENT
+            # FIXME: to fix this type issue, WronglyClassifiedUserUtterance needs to
+            # be imported but it's currently outside of `rasa.shared`
+            comment = user_utterance.inline_comment(  # type: ignore[attr-defined]
+                force_comment_generation=not entities
             )
+            if comment:
+                result.yaml_add_eol_comment(comment, KEY_USER_INTENT)
 
         if user_utterance.text and (
             # We only print the utterance text if it was an end-to-end prediction
@@ -223,15 +265,6 @@ class YAMLStoryWriter(StoryWriter):
                     user_utterance.entities,
                 )
             )
-
-        if len(user_utterance.entities) and not is_test_story:
-            entities = []
-            for entity in user_utterance.entities:
-                if "value" in entity:
-                    entities.append(OrderedDict([(entity["entity"], entity["value"])]))
-                else:
-                    entities.append(entity["entity"])
-            result[KEY_ENTITIES] = entities
 
         return result
 
@@ -255,24 +288,25 @@ class YAMLStoryWriter(StoryWriter):
             result[KEY_BOT_END_TO_END_MESSAGE] = action.action_text
 
         if hasattr(action, "inline_comment"):
-            if KEY_ACTION in result:
-                result.yaml_add_eol_comment(action.inline_comment(), KEY_ACTION)
-            elif KEY_BOT_END_TO_END_MESSAGE in result:
-                result.yaml_add_eol_comment(
-                    action.inline_comment(), KEY_BOT_END_TO_END_MESSAGE
-                )
+            # FIXME: to fix this type issue, WarningPredictedAction needs to
+            # be imported but it's currently outside of `rasa.shared`
+            comment = action.inline_comment()  # type: ignore[attr-defined]
+            if KEY_ACTION in result and comment:
+                result.yaml_add_eol_comment(comment, KEY_ACTION)
+            elif KEY_BOT_END_TO_END_MESSAGE in result and comment:
+                result.yaml_add_eol_comment(comment, KEY_BOT_END_TO_END_MESSAGE)
 
         return result
 
     @staticmethod
-    def process_slot(event: SlotSet) -> Dict[Text, List[Dict]]:
+    def process_slot(event: SlotSet) -> OrderedDict:
         """Converts a single `SlotSet` event into an ordered dict.
 
         Args:
             event: Original `SlotSet` event.
 
         Returns:
-            Dict with an `SlotSet` event.
+            OrderedDict with an `SlotSet` event.
         """
         return OrderedDict([(KEY_SLOT_NAME, [{event.key: event.value}])])
 
@@ -368,11 +402,13 @@ class YAMLStoryWriter(StoryWriter):
         if normal_steps:
             result[KEY_STEPS] = normal_steps
 
-        if len(normal_events) > 1 and (
-            isinstance(normal_events[len(normal_events) - 1], ActionExecuted)
-            and normal_events[len(normal_events) - 1].action_name
-            == rasa.shared.core.constants.RULE_SNIPPET_ACTION_NAME
-        ):
-            result[KEY_WAIT_FOR_USER_INPUT_AFTER_RULE] = False
+        if len(normal_events) > 1:
+            last_event = normal_events[len(normal_events) - 1]
+            if (
+                isinstance(last_event, ActionExecuted)
+                and last_event.action_name
+                == rasa.shared.core.constants.RULE_SNIPPET_ACTION_NAME
+            ):
+                result[KEY_WAIT_FOR_USER_INPUT_AFTER_RULE] = False
 
         return result

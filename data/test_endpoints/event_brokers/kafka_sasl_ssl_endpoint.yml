@@ -5,6 +5,7 @@ event_broker:
   url: localhost
   sasl_username: username
   sasl_password: password
+  sasl_mechanism: PLAIN
   ssl_cafile: CARoot.pem
   ssl_certfile: certificate.pem
   ssl_keyfile: key.pem

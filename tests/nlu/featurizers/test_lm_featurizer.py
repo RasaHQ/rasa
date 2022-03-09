@@ -1,26 +1,45 @@
 import os
-from typing import Text, List, Dict, Tuple
+from typing import Text, List, Dict, Tuple, Any, Callable
 
 import numpy as np
 import pytest
 import logging
 
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 
-from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    NUMBER_OF_SUB_TOKENS,
-    SEQUENCE_FEATURES,
-    SENTENCE_FEATURES,
-    LANGUAGE_MODEL_DOCS,
-)
-from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.resource import Resource
+from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
-from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.nlu.tokenizers.tokenizer import Token
+
+
+@pytest.fixture
+def resource_language_model_featurizer() -> Resource:
+    return Resource("LanguageModelFeaturizer")
+
+
+@pytest.fixture
+def create_language_model_featurizer(
+    default_model_storage: ModelStorage,
+    resource_language_model_featurizer,
+    default_execution_context: ExecutionContext,
+) -> Callable[[Dict[Text, Any]], LanguageModelFeaturizer]:
+    def inner(config: Dict[Text, Any]) -> LanguageModelFeaturizer:
+        return LanguageModelFeaturizer.create(
+            config={**LanguageModelFeaturizer.get_default_config(), **config},
+            model_storage=default_model_storage,
+            resource=resource_language_model_featurizer,
+            execution_context=default_execution_context,
+        )
+
+    return inner
 
 
 def skip_on_CI(model_name: Text, model_weights: Text) -> bool:
@@ -39,7 +58,7 @@ def skip_on_CI(model_name: Text, model_weights: Text) -> bool:
 def create_pretrained_transformers_config(
     model_name: Text, model_weights: Text
 ) -> Dict[Text, Text]:
-    """Create a config for LanguageModelFeaturizer.
+    """Creates a config for LanguageModelFeaturizer.
 
     If CI, skips model/model_weight combinations that are too large (bert with
     LaBSE).
@@ -59,39 +78,52 @@ def create_pretrained_transformers_config(
     return config
 
 
-def train_texts(
-    texts: List[Text], model_name: Text, model_weights: Text
+def process_training_text(
+    texts: List[Text],
+    model_name: Text,
+    model_weights: Text,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ) -> List[Message]:
+    """Creates a featurizer and process training data"""
     config = create_pretrained_transformers_config(model_name, model_weights)
-    whitespace_tokenizer = WhitespaceTokenizer()
-    lm_featurizer = LanguageModelFeaturizer(config)
+    lm_featurizer = create_language_model_featurizer(config)
 
     messages = [Message.build(text=text) for text in texts]
     td = TrainingData(messages)
 
-    whitespace_tokenizer.train(td)
-    lm_featurizer.train(td)
+    whitespace_tokenizer.process_training_data(td)
+    lm_featurizer.process_training_data(td)
     return messages
 
 
-def process_texts(
-    texts: List[Text], model_name: Text, model_weights: Text
+def process_messages(
+    texts: List[Text],
+    model_name: Text,
+    model_weights: Text,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ) -> List[Message]:
+    """Creates a featurizer and processes messages"""
     config = create_pretrained_transformers_config(model_name, model_weights)
-    whitespace_tokenizer = WhitespaceTokenizer()
-    lm_featurizer = LanguageModelFeaturizer(config)
+    lm_featurizer = create_language_model_featurizer(config)
 
     messages = []
     for text in texts:
         message = Message.build(text=text)
-        whitespace_tokenizer.process(message)
-        lm_featurizer.process(message)
+        whitespace_tokenizer.process([message])
         messages.append(message)
+    lm_featurizer.process(messages)
     return messages
 
 
 @pytest.mark.parametrize(
-    "model_name, model_weights, texts, expected_shape, expected_sequence_vec, expected_cls_vec",
+    "model_name, model_weights, texts, expected_shape, "
+    "expected_sequence_vec, expected_cls_vec",
     [
         (
             "bert",
@@ -127,29 +159,29 @@ def process_texts(
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
-                [-0.0630323737859726, 0.4029877185821533],
+                [-0.06324312090873718, 0.4072571396827698],
                 [
-                    0.8072432279586792,
-                    -0.08990508317947388,
-                    0.9985930919647217,
-                    -0.38779014348983765,
-                    0.08921952545642853,
+                    0.8041259050369263,
+                    -0.08877559006214142,
+                    0.9976294636726379,
+                    -0.38815218210220337,
+                    0.08530596643686295,
                 ],
             ],
             [
                 [
-                    0.16997766494750977,
-                    0.1493849903345108,
-                    0.39421725273132324,
-                    -0.5753618478775024,
-                    0.05096133053302765,
+                    0.1720070093870163,
+                    0.1511477530002594,
+                    0.39497435092926025,
+                    -0.5745484828948975,
+                    0.05334469676017761,
                 ],
                 [
-                    0.41056010127067566,
-                    -0.1169343888759613,
-                    -0.3019704818725586,
-                    -0.40207183361053467,
-                    0.6289798021316528,
+                    0.4095669686794281,
+                    -0.11725597828626633,
+                    -0.30236583948135376,
+                    -0.4023253917694092,
+                    0.6285617351531982,
                 ],
             ],
         ),
@@ -185,29 +217,29 @@ def process_texts(
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (9, 768)],
             [
-                [1.7612367868423462, 2.5819129943847656],
+                [1.7588920593261719, 2.578641176223755],
                 [
-                    0.784195065498352,
-                    0.7068007588386536,
-                    1.5883606672286987,
-                    1.891886591911316,
-                    2.5209126472473145,
+                    0.7821242213249207,
+                    0.6983698606491089,
+                    1.5819640159606934,
+                    1.891527533531189,
+                    2.511735200881958,
                 ],
             ],
             [
                 [
-                    2.171574831008911,
-                    -1.5377449989318848,
-                    -3.2671749591827393,
-                    0.22520869970321655,
-                    -1.598855972290039,
+                    2.168766498565674,
+                    -1.5277889966964722,
+                    -3.2499680519104004,
+                    0.23829853534698486,
+                    -1.603652000427246,
                 ],
                 [
-                    1.6516317129135132,
-                    0.021670114248991013,
-                    -2.5114030838012695,
-                    1.447351098060608,
-                    -2.5866634845733643,
+                    1.643880844116211,
+                    0.023089325055480003,
+                    -2.497927665710449,
+                    1.4621683359146118,
+                    -2.5919559001922607,
                 ],
             ],
         ),
@@ -273,7 +305,7 @@ def process_texts(
 )
 class TestShapeValuesTrainAndProcess:
     @staticmethod
-    def evaluate_message_shape_values(
+    def evaluate_message_shapes(
         messages: List[Message],
         expected_shape: List[tuple],
         expected_sequence_vec: List[List[float]],
@@ -316,7 +348,8 @@ class TestShapeValuesTrainAndProcess:
             assert intent_sequence_vec is None
             assert intent_sentence_vec is None
 
-    def test_lm_featurizer_shape_values_train(
+    @pytest.mark.timeout(120, func_only=True)
+    def test_lm_featurizer_shapes_in_process_training_data(
         self,
         model_name: Text,
         model_weights: Text,
@@ -324,13 +357,24 @@ class TestShapeValuesTrainAndProcess:
         expected_shape: List[Tuple[int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
+        create_language_model_featurizer: Callable[
+            [Dict[Text, Any]], LanguageModelFeaturizer
+        ],
+        whitespace_tokenizer: WhitespaceTokenizer,
     ):
-        messages = train_texts(texts, model_name, model_weights)
-        self.evaluate_message_shape_values(
+        messages = process_training_text(
+            texts,
+            model_name,
+            model_weights,
+            create_language_model_featurizer,
+            whitespace_tokenizer,
+        )
+        self.evaluate_message_shapes(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
 
-    def test_lm_featurizer_shape_values_process(
+    @pytest.mark.timeout(120, func_only=True)
+    def test_lm_featurizer_shapes_in_process_messages(
         self,
         model_name: Text,
         model_weights: Text,
@@ -338,9 +382,19 @@ class TestShapeValuesTrainAndProcess:
         expected_shape: List[Tuple[int]],
         expected_sequence_vec: List[List[float]],
         expected_cls_vec: List[List[float]],
+        create_language_model_featurizer: Callable[
+            [Dict[Text, Any]], LanguageModelFeaturizer
+        ],
+        whitespace_tokenizer: WhitespaceTokenizer,
     ):
-        messages = process_texts(texts, model_name, model_weights)
-        self.evaluate_message_shape_values(
+        messages = process_messages(
+            texts,
+            model_name,
+            model_weights,
+            create_language_model_featurizer,
+            whitespace_tokenizer,
+        )
+        self.evaluate_message_shapes(
             messages, expected_shape, expected_sequence_vec, expected_cls_vec
         )
 
@@ -495,8 +549,9 @@ class TestSubTokensTrainAndProcess:
         texts: List[Text],
         messages: List[Message],
         expected_number_of_sub_tokens: List[List[float]],
+        whitespace_tokenizer: WhitespaceTokenizer,
     ):
-        whitespace_tokenizer = WhitespaceTokenizer()
+        """Checks that we get the correct number of sub tokens"""
         for index, message in enumerate(messages):
             assert [
                 t.get(NUMBER_OF_SUB_TOKENS) for t in message.get(TOKENS_NAMES[TEXT])
@@ -505,25 +560,55 @@ class TestSubTokensTrainAndProcess:
                 whitespace_tokenizer.tokenize(Message.build(text=texts[index]), TEXT)
             )
 
-    def test_lm_featurizer_number_of_sub_tokens_train(
+    @pytest.mark.timeout(120, func_only=True)
+    def test_lm_featurizer_num_sub_tokens_process_training_data(
         self,
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
         expected_number_of_sub_tokens: List[List[float]],
+        create_language_model_featurizer: Callable[
+            [Dict[Text, Any]], LanguageModelFeaturizer
+        ],
+        whitespace_tokenizer: WhitespaceTokenizer,
     ):
-        messages = train_texts(texts, model_name, model_weights)
-        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
+        """Tests the number of sub tokens when calling the function
+        process training data"""
+        messages = process_training_text(
+            texts,
+            model_name,
+            model_weights,
+            create_language_model_featurizer,
+            whitespace_tokenizer,
+        )
+        self.check_subtokens(
+            texts, messages, expected_number_of_sub_tokens, whitespace_tokenizer
+        )
 
-    def test_lm_featurizer_number_of_sub_tokens_process(
+    @pytest.mark.timeout(120, func_only=True)
+    def test_lm_featurizer_num_sub_tokens_process_messages(
         self,
         model_name: Text,
         model_weights: Text,
         texts: List[Text],
         expected_number_of_sub_tokens: List[List[float]],
+        create_language_model_featurizer: Callable[
+            [Dict[Text, Any]], LanguageModelFeaturizer
+        ],
+        whitespace_tokenizer: WhitespaceTokenizer,
     ):
-        messages = process_texts(texts, model_name, model_weights)
-        self.check_subtokens(texts, messages, expected_number_of_sub_tokens)
+        """Tests the number of sub tokens when calling the function
+        process (messages)"""
+        messages = process_messages(
+            texts,
+            model_name,
+            model_weights,
+            create_language_model_featurizer,
+            whitespace_tokenizer,
+        )
+        self.check_subtokens(
+            texts, messages, expected_number_of_sub_tokens, whitespace_tokenizer
+        )
 
 
 @pytest.mark.parametrize(
@@ -531,11 +616,16 @@ class TestSubTokensTrainAndProcess:
     [(20, "bert", False), (1000, "bert", True), (1000, "xlnet", False)],
 )
 def test_sequence_length_overflow_train(
-    input_sequence_length: int, model_name: Text, should_overflow: bool
+    input_sequence_length: int,
+    model_name: Text,
+    should_overflow: bool,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
+    monkeypatch: MonkeyPatch,
 ):
-    component = LanguageModelFeaturizer(
-        {"model_name": model_name}, skip_model_load=True
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
+    component = create_language_model_featurizer({"model_name": model_name})
     message = Message.build(text=" ".join(["hi"] * input_sequence_length))
     if should_overflow:
         with pytest.raises(RuntimeError):
@@ -561,10 +651,13 @@ def test_long_sequences_extra_padding(
     actual_sequence_lengths: List[int],
     model_name: Text,
     padding_needed: bool,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
+    monkeypatch: MonkeyPatch,
 ):
-    component = LanguageModelFeaturizer(
-        {"model_name": model_name}, skip_model_load=True
-    )
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
+    component = create_language_model_featurizer({"model_name": model_name})
     modified_sequence_embeddings = component._add_extra_padding(
         sequence_embeddings, actual_sequence_lengths
     )
@@ -595,8 +688,13 @@ def test_input_padding(
     max_sequence_length_model: int,
     resulting_length: int,
     padding_added: bool,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
+    monkeypatch: MonkeyPatch,
 ):
-    component = LanguageModelFeaturizer({"model_name": "bert"}, skip_model_load=True)
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
+    component = create_language_model_featurizer({"model_name": "bert"})
     component.pad_token_id = 0
     padded_input = component._add_padding_to_batch(token_ids, max_sequence_length_model)
     assert len(padded_input[0]) == resulting_length
@@ -618,18 +716,21 @@ def test_log_longer_sequence(
     model_weights: Text,
     should_overflow: bool,
     caplog: LogCaptureFixture,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
+    whitespace_tokenizer: WhitespaceTokenizer,
 ):
     config = {"model_name": model_name, "model_weights": model_weights}
 
-    featurizer = LanguageModelFeaturizer(config)
+    featurizer = create_language_model_featurizer(config)
 
     text = " ".join(["hi"] * sequence_length)
-    tokenizer = WhitespaceTokenizer()
     message = Message.build(text=text)
     td = TrainingData([message])
-    tokenizer.train(td)
+    whitespace_tokenizer.process_training_data(td)
     caplog.set_level(logging.DEBUG)
-    featurizer.process(message)
+    featurizer.process([message])
     if should_overflow:
         assert "hi hi hi" in caplog.text
     assert len(message.features) >= 2
@@ -640,9 +741,16 @@ def test_log_longer_sequence(
     [(256, 512, 256), (700, 700, 700), (700, 512, 512)],
 )
 def test_attention_mask(
-    actual_sequence_length: int, max_input_sequence_length: int, zero_start_index: int
+    actual_sequence_length: int,
+    max_input_sequence_length: int,
+    zero_start_index: int,
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
+    monkeypatch: MonkeyPatch,
 ):
-    component = LanguageModelFeaturizer({"model_name": "bert"}, skip_model_load=True)
+    monkeypatch.setattr(LanguageModelFeaturizer, "_load_model_instance", lambda _: None)
+    component = create_language_model_featurizer({"model_name": "bert"})
 
     attention_mask = component._compute_attention_mask(
         [actual_sequence_length], max_input_sequence_length
@@ -652,52 +760,6 @@ def test_attention_mask(
 
     assert np.all(mask_ones == 1)
     assert np.all(mask_zeros == 0)
-
-
-def test_log_deprecation_warning_with_old_config(caplog: LogCaptureFixture):
-    message = Message.build("hi there")
-
-    transformers_nlp = HFTransformersNLP(
-        {"model_name": "bert", "model_weights": "bert-base-uncased"}
-    )
-    transformers_nlp.process(message)
-
-    caplog.set_level(logging.DEBUG)
-    lm_tokenizer = LanguageModelTokenizer()
-    lm_tokenizer.process(message)
-    lm_featurizer = LanguageModelFeaturizer(skip_model_load=True)
-    caplog.clear()
-    with caplog.at_level(logging.DEBUG):
-        lm_featurizer.process(message)
-
-    assert "deprecated component HFTransformersNLP" in caplog.text
-
-
-def test_preserve_sentence_and_sequence_features_old_config():
-    attribute = TEXT
-    message = Message.build("hi there")
-
-    transformers_nlp = HFTransformersNLP(
-        {"model_name": "bert", "model_weights": "bert-base-uncased"}
-    )
-    transformers_nlp.process(message)
-    lm_tokenizer = LanguageModelTokenizer()
-    lm_tokenizer.process(message)
-
-    lm_featurizer = LanguageModelFeaturizer({"model_name": "gpt2"})
-    lm_featurizer.process(message)
-
-    message.set(LANGUAGE_MODEL_DOCS[attribute], None)
-    lm_docs = lm_featurizer._get_docs_for_batch(
-        [message], attribute=attribute, inference_mode=True
-    )[0]
-    hf_docs = transformers_nlp._get_docs_for_batch(
-        [message], attribute=attribute, inference_mode=True
-    )[0]
-    assert not (message.features[0].features == lm_docs[SEQUENCE_FEATURES]).any()
-    assert not (message.features[1].features == lm_docs[SENTENCE_FEATURES]).any()
-    assert (message.features[0].features == hf_docs[SEQUENCE_FEATURES]).all()
-    assert (message.features[1].features == hf_docs[SENTENCE_FEATURES]).all()
 
 
 @pytest.mark.parametrize(
@@ -714,15 +776,14 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     text: Text,
     tokens: List[Tuple[Text, int]],
     expected_feature_tokens: List[Tuple[Text, int]],
+    create_language_model_featurizer: Callable[
+        [Dict[Text, Any]], LanguageModelFeaturizer
+    ],
 ):
-    from rasa.nlu.tokenizers.tokenizer import Token
 
-    config = {
-        "model_name": "bert",
-        "model_weights": "bert-base-chinese",
-    }
+    config = {"model_name": "bert", "model_weights": "bert-base-chinese"}
 
-    lm_featurizer = LanguageModelFeaturizer(config)
+    lm_featurizer = create_language_model_featurizer(config)
 
     message = Message.build(text=text)
     message.set(TOKENS_NAMES[TEXT], [Token(word, start) for (word, start) in tokens])

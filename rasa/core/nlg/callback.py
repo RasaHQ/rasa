@@ -36,10 +36,8 @@ def nlg_request_format(
     """Create the json body for the NLG json body for the request."""
     tracker_state = tracker.current_state(EventVerbosity.ALL)
 
-    # TODO: Remove `template` by Rasa Open Source 3.0.
     return {
         "response": utter_action,
-        "template": utter_action,
         "arguments": kwargs,
         "tracker": tracker_state,
         "channel": {"name": output_channel},
@@ -77,7 +75,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
             method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT
         )
 
-        if self.validate_response(response):
+        if isinstance(response, dict) and self.validate_response(response):
             return response
         else:
             raise RasaException("NLG web endpoint returned an invalid response.")

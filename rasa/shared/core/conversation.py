@@ -34,8 +34,7 @@ class Dialogue:
             Deserialised `Dialogue`.
 
         """
-
         return cls(
             parameters.get("name"),
-            [Event.from_parameters(evt) for evt in parameters.get("events")],
+            [Event.from_parameters(evt) for evt in parameters.get("events", [])],
         )

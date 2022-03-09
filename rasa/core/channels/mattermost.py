@@ -7,9 +7,6 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, Dict, Any, List, Callable, Awaitable, Optional
 
-import rasa.shared.utils.common
-import rasa.shared.utils.io
-from rasa.shared.constants import DOCS_URL_CONNECTORS
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
 
@@ -97,7 +94,7 @@ class MattermostBot(OutputChannel):
     ) -> None:
         """Sends buttons to the output."""
         # buttons are a list of objects: [(option_name, payload)]
-        # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons # noqa: W505
+        # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons # noqa: E501, W505
 
         actions = [
             {
@@ -129,19 +126,7 @@ class MattermostInput(InputChannel):
         if credentials is None:
             cls.raise_missing_credentials_exception()
 
-        if credentials.get("pw") is not None or credentials.get("user") is not None:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "Mattermost recently switched to bot accounts. 'user' and 'pw' "
-                "should not be used anymore, you should rather convert your "
-                "account to a bot account and use a token. Password based "
-                "authentication will be removed in a future Rasa Open Source version.",
-                docs=DOCS_URL_CONNECTORS + "mattermost/",
-            )
-            token = MattermostBot.token_from_login(
-                credentials.get("url"), credentials.get("user"), credentials.get("pw")
-            )
-        else:
-            token = credentials.get("token")
+        token = credentials.get("token")
 
         return cls(credentials.get("url"), token, credentials.get("webhook_url"))
 

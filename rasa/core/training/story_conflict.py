@@ -4,18 +4,19 @@ import json
 from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    PREVIOUS_ACTION,
+    ACTION_UNLIKELY_INTENT_NAME,
+    USER,
+)
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
 
-from rasa.nlu.model import Trainer
-from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
-import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class StoryConflict:
 
         self._sliced_states = sliced_states
         # A list of actions that all follow from the same state.
-        self._conflicting_actions = defaultdict(
+        self._conflicting_actions: defaultdict[Text, List[Text]] = defaultdict(
             list
         )  # {"action": ["story_1", ...], ...}
 
@@ -140,7 +141,6 @@ def find_story_conflicts(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int] = None,
-    nlu_config: Optional[RasaNLUModelConfig] = None,
 ) -> List[StoryConflict]:
     """Generates `StoryConflict` objects, describing conflicts in the given trackers.
 
@@ -148,7 +148,6 @@ def find_story_conflicts(
         trackers: Trackers in which to search for conflicts.
         domain: The domain.
         max_history: The maximum history length to be taken into account.
-        nlu_config: NLU config.
 
     Returns:
         StoryConflict objects.
@@ -160,58 +159,28 @@ def find_story_conflicts(
     else:
         logger.info("Considering all preceding turns for conflict analysis.")
 
-    tokenizer = _get_tokenizer_from_nlu_config(nlu_config)
-
     # We do this in two steps, to reduce memory consumption:
 
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
     conflicting_state_action_mapping = _find_conflicting_states(
-        trackers, domain, max_history, tokenizer
+        trackers, domain, max_history
     )
 
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = _build_conflicts_from_states(
-        trackers, domain, max_history, conflicting_state_action_mapping, tokenizer,
+        trackers, domain, max_history, conflicting_state_action_mapping
     )
 
     return conflicts
-
-
-def _get_tokenizer_from_nlu_config(
-    nlu_config: Optional[RasaNLUModelConfig] = None,
-) -> Optional[Tokenizer]:
-    """Extracts the first Tokenizer in the NLU pipeline.
-
-    Args:
-        nlu_config: NLU Config.
-
-    Returns:
-        The first Tokenizer in the NLU pipeline, if any.
-    """
-    if not nlu_config:
-        return None
-
-    pipeline: List[Component] = Trainer(nlu_config, skip_validation=True).pipeline
-    tokenizer: Optional[Tokenizer] = None
-    for component in pipeline:
-        if isinstance(component, Tokenizer):
-            if tokenizer:
-                rasa.shared.utils.io.raise_warning(
-                    "The pipeline contains more than one tokenizer. "
-                    "Only the first tokenizer will be used for story validation.",
-                )
-            tokenizer = component
-
-    return tokenizer
 
 
 def _find_conflicting_states(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int],
-    tokenizer: Optional[Tokenizer],
+    tokenizer: Optional[Tokenizer] = None,
 ) -> Dict[int, Optional[List[Text]]]:
     """Identifies all states from which different actions follow.
 
@@ -227,19 +196,42 @@ def _find_conflicting_states(
     """
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
-    state_action_mapping = defaultdict(list)
+    state_action_mapping: defaultdict[int, List[int]] = defaultdict(list)
+
     for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash
         current_hash = hash(element.event)
-        if current_hash not in state_action_mapping[hashed_state]:
+
+        if current_hash not in state_action_mapping[
+            hashed_state
+        ] or _unlearnable_action(element.event):
             state_action_mapping[hashed_state] += [current_hash]
 
     # Keep only conflicting `state_action_mapping`s
+    # or those mappings that contain `action_unlikely_intent`
+    action_unlikely_intent_hash = hash(
+        ActionExecuted(action_name=ACTION_UNLIKELY_INTENT_NAME)
+    )
     return {
         state_hash: actions
         for (state_hash, actions) in state_action_mapping.items()
-        if len(actions) > 1
+        if len(actions) > 1 or action_unlikely_intent_hash in actions
     }
+
+
+def _unlearnable_action(event: Event) -> bool:
+    """Identifies if the action cannot be learned by policies that use story data.
+
+    Args:
+        event: An event to be checked.
+
+    Returns:
+        `True` if the event can be learned, `False` otherwise.
+    """
+    return (
+        isinstance(event, ActionExecuted)
+        and event.action_name == ACTION_UNLIKELY_INTENT_NAME
+    )
 
 
 def _build_conflicts_from_states(
@@ -247,7 +239,7 @@ def _build_conflicts_from_states(
     domain: Domain,
     max_history: Optional[int],
     conflicting_state_action_mapping: Dict[int, Optional[List[Text]]],
-    tokenizer: Optional[Tokenizer],
+    tokenizer: Optional[Tokenizer] = None,
 ) -> List["StoryConflict"]:
     """Builds a list of `StoryConflict` objects for each given conflict.
 
@@ -274,7 +266,7 @@ def _build_conflicts_from_states(
                 conflicts[hashed_state] = StoryConflict(element.sliced_states)
 
             conflicts[hashed_state].add_conflicting_action(
-                action=str(element.event), story_name=element.tracker.sender_id,
+                action=str(element.event), story_name=element.tracker.sender_id
             )
 
     # Return list of conflicts that arise from unpredictable actions

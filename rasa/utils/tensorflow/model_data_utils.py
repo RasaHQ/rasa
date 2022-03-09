@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import scipy.sparse
 from collections import defaultdict, OrderedDict
-from typing import List, Optional, Text, Dict, Tuple, Union, Any
+from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
@@ -30,11 +30,13 @@ def featurize_training_examples(
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
-) -> List[Dict[Text, List["Features"]]]:
+) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]:
     """Converts training data into a list of attribute to features.
 
     Possible attributes are, for example, INTENT, RESPONSE, TEXT, ACTION_TEXT,
     ACTION_NAME or ENTITIES.
+    Also returns sparse feature sizes for each attribute. It could look like this:
+    {TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}.
 
     Args:
         training_examples: the list of training examples
@@ -45,11 +47,14 @@ def featurize_training_examples(
 
     Returns:
         A list of attribute to features.
+        A dictionary of attribute to feature sizes.
     """
     output = []
+    if not entity_tag_specs:
+        entity_tag_specs = []
 
     for example in training_examples:
-        attribute_to_features = {}
+        attribute_to_features: Dict[Text, List["Features"]] = {}
         for attribute in attributes:
             if attribute == ENTITIES:
                 attribute_to_features[attribute] = []
@@ -64,7 +69,44 @@ def featurize_training_examples(
                 )
         output.append(attribute_to_features)
 
-    return output
+    sparse_feature_sizes = {}
+    if output and training_examples:
+        sparse_feature_sizes = _collect_sparse_feature_sizes(
+            featurized_example=output[0],
+            training_example=training_examples[0],
+            featurizers=featurizers,
+        )
+    return output, sparse_feature_sizes
+
+
+def _collect_sparse_feature_sizes(
+    featurized_example: Dict[Text, List["Features"]],
+    training_example: Message,
+    featurizers: Optional[List[Text]] = None,
+) -> Dict[Text, Dict[Text, List[int]]]:
+    """Collects sparse feature sizes for all attributes that have sparse features.
+
+    Returns sparse feature sizes for each attribute. It could look like this:
+    {TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}.
+
+    Args:
+        featurized_example: a featurized example
+        training_example: a training example
+        featurizers: the featurizers to consider
+
+    Returns:
+        A dictionary of attribute to feature sizes.
+    """
+    sparse_feature_sizes = {}
+    sparse_attributes = []
+    for attribute, features in featurized_example.items():
+        if features and features[0].is_sparse():
+            sparse_attributes.append(attribute)
+    for attribute in sparse_attributes:
+        sparse_feature_sizes[attribute] = training_example.get_sparse_feature_sizes(
+            attribute=attribute, featurizers=featurizers
+        )
+    return sparse_feature_sizes
 
 
 def get_tag_ids(
@@ -101,7 +143,7 @@ def get_tag_ids(
 def _surface_attributes(
     features: List[List[Dict[Text, List["Features"]]]],
     featurizers: Optional[List[Text]] = None,
-) -> Dict[Text, List[List[List["Features"]]]]:
+) -> DefaultDict[Text, List[List[Optional[List["Features"]]]]]:
     """Restructure the input.
 
     "features" can, for example, be a dictionary of attributes (INTENT,
@@ -131,20 +173,21 @@ def _surface_attributes(
     )
 
     output = defaultdict(list)
-
     for list_of_attribute_to_features in features:
         intermediate_features = defaultdict(list)
         for attribute_to_features in list_of_attribute_to_features:
             for attribute in attributes:
-                features = attribute_to_features.get(attribute)
+                attribute_features = attribute_to_features.get(attribute)
                 if featurizers:
-                    features = _filter_features(features, featurizers)
+                    attribute_features = _filter_features(
+                        attribute_features, featurizers
+                    )
 
                 # if attribute is not present in the example, populate it with None
-                intermediate_features[attribute].append(features)
+                intermediate_features[attribute].append(attribute_features)
 
-        for key, value in intermediate_features.items():
-            output[key].append(value)
+        for key, collection_of_feature_collections in intermediate_features.items():
+            output[key].append(collection_of_feature_collections)
 
     return output
 
@@ -417,25 +460,25 @@ def _extract_features(
                 attribute_mask[i] = 0
                 list_of_features = fake_features
 
-            for features in list_of_features:
+            for feature in list_of_features:
                 # in case of ENTITIES, if the attribute type matches either 'entity',
                 # 'role', or 'group' the features correspond to the tag ids of that
                 # entity type in order to distinguish later on between the different
                 # tag ids, we use the entity type as key
-                if attribute == ENTITIES and features.attribute in [
+                if attribute == ENTITIES and feature.attribute in [
                     ENTITY_ATTRIBUTE_TYPE,
                     ENTITY_ATTRIBUTE_GROUP,
                     ENTITY_ATTRIBUTE_ROLE,
                 ]:
-                    key = features.attribute
+                    key = feature.attribute
                 else:
-                    key = features.type
+                    key = feature.type
 
                 # all features should have the same types
-                if features.is_sparse():
-                    dialogue_sparse_features[key].append(features.features)
+                if feature.is_sparse():
+                    dialogue_sparse_features[key].append(feature.features)
                 else:
-                    dialogue_dense_features[key].append(features.features)
+                    dialogue_dense_features[key].append(feature.features)
 
         for key, value in dialogue_sparse_features.items():
             sparse_features[key].append(value)

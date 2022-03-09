@@ -13,7 +13,7 @@ WORKDIR /build
 # install dependencies
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
-  pip install --no-cache-dir -U 'pip<20' && \
+  pip install --no-cache-dir -U "pip==21.*" && \
   poetry install --no-dev --no-root --no-interaction && \
   poetry build -f wheel -n && \
   pip install --no-deps dist/*.whl && \
@@ -28,9 +28,12 @@ COPY --from=builder /opt/venv /opt/venv
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# set HOME environment variable
+ENV HOME=/app
+
 # update permissions & change user to not run as root
 WORKDIR /app
-RUN chgrp -R 0 /app && chmod -R g=u /app
+RUN chgrp -R 0 /app && chmod -R g=u /app && chmod o+wr /app
 USER 1001
 
 # create a volume for temporary data

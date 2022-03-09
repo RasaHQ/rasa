@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3.0"
 
 session_config:
   session_expiration_time: 60
@@ -19,6 +19,9 @@ slots:
   PERSON:
     type: text
     influence_conversation: false
+    mappings:
+    - type: from_entity
+      entity: PERSON
 responses:
   utter_what_can_do:
   - text: What can I do for you?

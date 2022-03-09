@@ -6,3 +6,4 @@ event_broker:
   partition_by_sender: True
   sasl_username: username
   sasl_password: password
+  sasl_mechanism: PLAIN

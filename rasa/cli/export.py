@@ -2,6 +2,7 @@ import argparse
 import logging
 import typing
 from typing import List, Text, Optional
+import asyncio
 
 from rasa import telemetry
 from rasa.cli import SubParsersAction
@@ -172,7 +173,7 @@ def export_trackers(args: argparse.Namespace) -> None:
     Args:
         args: Command-line arguments to process.
     """
-    rasa.utils.common.run_in_loop(_export_trackers(args))
+    asyncio.run(_export_trackers(args))
 
 
 async def _export_trackers(args: argparse.Namespace) -> None:

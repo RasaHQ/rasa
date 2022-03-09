@@ -1,10 +1,12 @@
 import logging
+from typing import Dict, Text, Type
 
 # Explicitly set logging level for this module before any import
 # because otherwise it logs tensorflow/pytorch versions
 logging.getLogger("transformers.file_utils").setLevel(logging.WARNING)
 
 from transformers import (  # noqa: F401, E402
+    TFPreTrainedModel,
     TFBertModel,
     TFOpenAIGPTModel,
     TFGPT2Model,
@@ -12,6 +14,7 @@ from transformers import (  # noqa: F401, E402
     # TFXLMModel,
     TFDistilBertModel,
     TFRobertaModel,
+    PreTrainedTokenizer,
     BertTokenizer,
     OpenAIGPTTokenizer,
     GPT2Tokenizer,
@@ -20,7 +23,7 @@ from transformers import (  # noqa: F401, E402
     DistilBertTokenizer,
     RobertaTokenizer,
 )
-from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (  # noqa: F401, E402
+from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (  # noqa: F401, E402, E501
     bert_tokens_pre_processor,
     gpt_tokens_pre_processor,
     xlnet_tokens_pre_processor,
@@ -36,7 +39,7 @@ from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (  # no
 )
 
 
-model_class_dict = {
+model_class_dict: Dict[Text, Type[TFPreTrainedModel]] = {
     "bert": TFBertModel,
     "gpt": TFOpenAIGPTModel,
     "gpt2": TFGPT2Model,
@@ -46,7 +49,7 @@ model_class_dict = {
     "distilbert": TFDistilBertModel,
     "roberta": TFRobertaModel,
 }
-model_tokenizer_dict = {
+model_tokenizer_dict: Dict[Text, Type[PreTrainedTokenizer]] = {
     "bert": BertTokenizer,
     "gpt": OpenAIGPTTokenizer,
     "gpt2": GPT2Tokenizer,

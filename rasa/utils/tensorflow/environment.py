@@ -9,6 +9,8 @@ from rasa.constants import (
     ENV_CPU_INTER_OP_CONFIG,
     ENV_CPU_INTRA_OP_CONFIG,
 )
+from rasa.utils.tensorflow.constants import TF_DETERMINISTIC_OPS
+from rasa.shared.utils import io as shared_io_utils
 
 if typing.TYPE_CHECKING:
     from tensorflow import config as tf_config
@@ -85,15 +87,15 @@ def _parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
 
     # gpu_config is of format "gpu_id_1:gpu_id_1_memory, gpu_id_2: gpu_id_2_memory"
     # Parse it and store in a dictionary
-    parsed_gpu_config = {}
+    parsed_gpu_config: Dict[int, int] = {}
 
     try:
         for instance in gpu_memory_config.split(","):
             instance_gpu_id, instance_gpu_mem = instance.split(":")
-            instance_gpu_id = int(instance_gpu_id)
-            instance_gpu_mem = int(instance_gpu_mem)
+            parsed_instance_gpu_id = int(instance_gpu_id)
+            parsed_instance_gpu_mem = int(instance_gpu_mem)
 
-            parsed_gpu_config[instance_gpu_id] = instance_gpu_mem
+            parsed_gpu_config[parsed_instance_gpu_id] = parsed_instance_gpu_mem
     except ValueError:
         # Helper explanation of where the error comes from
         raise ValueError(
@@ -140,6 +142,18 @@ def _setup_cpu_environment() -> None:
 
 def setup_tf_environment() -> None:
     """Setup CPU and GPU related environment settings for TensorFlow."""
-
     _setup_cpu_environment()
     _setup_gpu_environment()
+
+
+def check_deterministic_ops() -> None:
+    """Warn user if they have set TF_DETERMINISTIC_OPS."""
+    if os.getenv(TF_DETERMINISTIC_OPS, False):
+        shared_io_utils.raise_warning(
+            f"You have set '{TF_DETERMINISTIC_OPS}' to 1. If you are "
+            f"using one or more GPU(s) and use any of 'SparseFeaturizer', "
+            f"'TEDPolicy', 'DIETClassifier', 'UnexpecTEDIntentPolicy', or "
+            f"'ResponseSelector' training and testing will fail as there are no "
+            f"deterministic GPU implementations of some underlying TF ops.",
+            category=UserWarning,
+        )

@@ -5,7 +5,6 @@ import sys
 from types import FrameType
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
-from rasa.shared.constants import DEFAULT_MODELS_PATH
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 
@@ -106,39 +105,8 @@ def parse_last_positional_argument_as_model_path() -> None:
         sys.argv[-2] = "--model"
 
 
-def create_output_path(
-    output_path: Text = DEFAULT_MODELS_PATH,
-    prefix: Text = "",
-    fixed_name: Optional[Text] = None,
-) -> Text:
-    """Creates an output path which includes the current timestamp.
-
-    Args:
-        output_path: The path where the model should be stored.
-        fixed_name: Name of the model.
-        prefix: A prefix which should be included in the output path.
-
-    Returns:
-        The generated output path, e.g. "20191201-103002.tar.gz".
-    """
-    import time
-
-    if output_path.endswith("tar.gz"):
-        return output_path
-    else:
-        if fixed_name:
-            name = fixed_name
-        else:
-            time_format = "%Y%m%d-%H%M%S"
-            name = time.strftime(time_format)
-            name = f"{prefix}{name}"
-        file_name = f"{name}.tar.gz"
-        return os.path.join(output_path, file_name)
-
-
 def button_to_string(button: Dict[Text, Any], idx: int = 0) -> Text:
     """Create a string representation of a button."""
-
     title = button.pop("title", "")
 
     if "payload" in button:

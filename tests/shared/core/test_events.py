@@ -9,8 +9,19 @@ from typing import Type, Optional, Text, List, Any, Dict
 
 import rasa.shared.utils.common
 import rasa.shared.core.events
+from rasa.core.test import (
+    WronglyClassifiedUserUtterance,
+    WarningPredictedAction,
+    WronglyPredictedAction,
+    EndToEndUserUtterance,
+    EvaluationStore,
+)
 from rasa.shared.exceptions import UnsupportedFeatureException
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
+)
 from rasa.shared.core.events import (
     Event,
     UserUttered,
@@ -29,9 +40,16 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
     AgentUttered,
     SessionStarted,
+    EntitiesAdded,
+    DefinePrevUserUtteredFeaturization,
+    ActiveLoop,
+    LegacyForm,
+    LoopInterrupted,
+    ActionExecutionRejected,
+    LegacyFormValidation,
     format_message,
 )
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
 
 
@@ -152,6 +170,20 @@ def test_json_parse_user():
         parse_data={"intent": {"name": "greet", "confidence": 0.9}, "entities": []},
         metadata={},
     )
+
+
+def test_json_parse_action_executed_with_no_hide_rule():
+    evt = {
+        "event": "action",
+        "name": "action_listen",
+        "policy": None,
+        "confidence": None,
+        "timestamp": None,
+    }
+    deserialised: ActionExecuted = Event.from_parameters(evt)
+    expected = ActionExecuted("action_listen")
+    assert deserialised == expected
+    assert deserialised.hide_rule_turn == expected.hide_rule_turn
 
 
 def test_json_parse_bot():
@@ -339,19 +371,19 @@ def test_md_format_message_using_short_entity_syntax():
 
 def test_md_format_message_using_short_entity_syntax_no_start_end():
     formatted = format_message(
-        "hello", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+        "hello", intent="location", entities=[{"entity": "city", "value": "Berlin"}]
     )
     assert formatted == "hello"
 
 
 def test_md_format_message_no_text():
-    formatted = format_message("", intent="location", entities=[],)
+    formatted = format_message("", intent="location", entities=[])
     assert formatted == ""
 
 
 def test_md_format_message_using_short_entity_syntax_no_start_end_or_text():
     formatted = format_message(
-        "", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+        "", intent="location", entities=[{"entity": "city", "value": "Berlin"}]
     )
     assert formatted == ""
 
@@ -372,8 +404,8 @@ def test_md_format_message_using_long_entity_syntax():
         ],
     )
     assert (
-        formatted
-        == """I am from [Berlin](city) in [Germany]{"entity": "country", "role": "destination"}."""
+        formatted == """I am from [Berlin](city) in [Germany]"""
+        """{"entity": "country", "role": "destination"}."""
     )
 
 
@@ -383,7 +415,7 @@ def test_md_format_message_using_long_entity_syntax_no_start_end():
         intent="location",
         entities=[
             {"start": 10, "end": 16, "entity": "city", "value": "Berlin"},
-            {"entity": "country", "value": "Germany", "role": "destination",},
+            {"entity": "country", "value": "Germany", "role": "destination"},
         ],
     )
     assert formatted == "I am from [Berlin](city)."
@@ -523,16 +555,31 @@ def test_split_events(
             ],
             True,
         ),
+        # also a session start, but with metadata
+        (
+            [
+                ActionExecuted(
+                    ACTION_SESSION_START_NAME,
+                    timestamp=1,
+                    metadata={METADATA_MODEL_ID: "123"},
+                ),
+                SessionStarted(timestamp=2, metadata={METADATA_MODEL_ID: "123"}),
+                ActionExecuted(
+                    ACTION_LISTEN_NAME, timestamp=3, metadata={METADATA_MODEL_ID: "123"}
+                ),
+            ],
+            True,
+        ),
         # providing a single `action_listen` is not a session start
-        ([ActionExecuted(ACTION_LISTEN_NAME, timestamp=3)], False,),
+        ([ActionExecuted(ACTION_LISTEN_NAME, timestamp=3)], False),
         # providing a single `action_session_start` is not a session start
-        ([ActionExecuted(ACTION_SESSION_START_NAME)], False,),
+        ([ActionExecuted(ACTION_SESSION_START_NAME)], False),
         # providing no events is not a session start
-        ([], False,),
+        ([], False),
     ],
 )
 def test_events_begin_with_session_start(
-    test_events: List[Event], begin_with_session_start: bool,
+    test_events: List[Event], begin_with_session_start: bool
 ):
     assert (
         rasa.shared.core.events.do_events_begin_with_session_start(test_events)
@@ -552,6 +599,198 @@ def test_events_begin_with_session_start(
         ),
     ],
 )
-def test_print_end_to_end_events_in_markdown(end_to_end_event: Event):
+def test_print_end_to_end_events(end_to_end_event: Event):
     with pytest.raises(UnsupportedFeatureException):
         end_to_end_event.as_story_string()
+
+
+@pytest.mark.parametrize(
+    "events,comparison_result",
+    [
+        (
+            [
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+            ],
+            True,
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+            ],
+            False,
+        ),
+        (
+            [
+                ActionExecuted(
+                    ACTION_UNLIKELY_INTENT_NAME, metadata={"test": {"data1": 1}}
+                ),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+            ],
+            False,
+        ),
+        (
+            [
+                ActionExecuted(
+                    ACTION_UNLIKELY_INTENT_NAME, metadata={"test": {"data1": 1}}
+                ),
+                ActionExecuted(
+                    ACTION_UNLIKELY_INTENT_NAME, metadata={"test": {"data1": 1}}
+                ),
+            ],
+            True,
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME, metadata={"test": {"data1": 1}}),
+                ActionExecuted(
+                    ACTION_UNLIKELY_INTENT_NAME, metadata={"test": {"data1": 1}}
+                ),
+            ],
+            False,
+        ),
+    ],
+)
+def test_event_executed_comparison(events: List[Event], comparison_result: bool):
+    result = all(event == events[0] for event in events)
+    assert result == comparison_result
+
+
+tested_events = [
+    EntitiesAdded(
+        entities=[
+            {
+                "entity": "city",
+                "value": "London",
+                "role": "destination",
+                "group": "test",
+            },
+            {"entity": "count", "value": 1},
+        ],
+        timestamp=None,
+    ),
+    DefinePrevUserUtteredFeaturization(
+        use_text_for_featurization=False, timestamp=None, metadata=None
+    ),
+    ReminderCancelled(timestamp=1621590172.3872123),
+    ReminderScheduled(timestamp=None, trigger_date_time=datetime.now(), intent="greet"),
+    ActionExecutionRejected(action_name="my_action"),
+    LegacyFormValidation(validate=True, timestamp=None),
+    LoopInterrupted(timestamp=None, is_interrupted=False),
+    ActiveLoop(name="loop"),
+    LegacyForm(name="my_form"),
+    AllSlotsReset(),
+    SlotSet(key="my_slot", value={}),
+    SlotSet(key="my slot", value=[]),
+    SlotSet(key="test", value=1),
+    SlotSet(key="test", value="text"),
+    ConversationResumed(),
+    ConversationPaused(),
+    FollowupAction(name="test"),
+    StoryExported(),
+    Restarted(),
+    ActionReverted(),
+    UserUtteranceReverted(),
+    BotUttered(text="Test bot utterance"),
+    UserUttered(
+        parse_data={
+            "entities": [],
+            "response_selector": {
+                "all_retrieval_intents": [],
+                "chitchat/ask_weather": {"response": {}, "ranking": []},
+            },
+        }
+    ),
+    UserUttered(
+        text="hello",
+        parse_data={
+            "intent": {"name": "greet", "confidence": 0.9604260921478271},
+            "entities": [
+                {"entity": "city", "value": "London"},
+                {"entity": "count", "value": 1},
+            ],
+            "text": "hi",
+            "message_id": "3f4c04602a4947098c574b107d3ccc50",
+            "metadata": {},
+            "intent_ranking": [
+                {"name": "greet", "confidence": 0.9604260921478271},
+                {"name": "goodbye", "confidence": 0.01835782080888748},
+                {"name": "deny", "confidence": 0.011255578137934208},
+                {"name": "bot_challenge", "confidence": 0.004019865766167641},
+                {"name": "affirm", "confidence": 0.002524246694520116},
+                {"name": "mood_great", "confidence": 0.002214624546468258},
+                {"name": "chitchat", "confidence": 0.0009614597074687481},
+                {"name": "mood_unhappy", "confidence": 0.00024030178610701114},
+            ],
+            "response_selector": {
+                "all_retrieval_intents": [],
+                "default": {
+                    "response": {
+                        "id": 11,
+                        "responses": [{"text": "chitchat/ask_name"}],
+                        "response_templates": [{"text": "chitchat/ask_name"}],
+                        "confidence": 0.9618658423423767,
+                        "intent_response_key": "chitchat/ask_name",
+                        "utter_action": "utter_chitchat/ask_name",
+                        "template_name": "utter_chitchat/ask_name",
+                    },
+                    "ranking": [
+                        {
+                            "id": 11,
+                            "confidence": 0.9618658423423767,
+                            "intent_response_key": "chitchat/ask_name",
+                        },
+                        {
+                            "id": 12,
+                            "confidence": 0.03813415765762329,
+                            "intent_response_key": "chitchat/ask_weather",
+                        },
+                    ],
+                },
+            },
+        },
+    ),
+    SessionStarted(),
+    ActionExecuted(action_name="action_listen"),
+    AgentUttered(),
+    EndToEndUserUtterance(),
+    WronglyClassifiedUserUtterance(
+        event=UserUttered(), eval_store=EvaluationStore(intent_targets=["test"])
+    ),
+    WronglyPredictedAction(
+        action_name_prediction="test",
+        action_name_target="demo",
+        action_text_target="example",
+    ),
+    WarningPredictedAction(action_name_prediction="test"),
+]
+
+
+@pytest.mark.parametrize("event", tested_events)
+def test_event_fingerprint_consistency(event: Event):
+    f1 = event.fingerprint()
+
+    event2 = copy.deepcopy(event)
+    f2 = event2.fingerprint()
+
+    assert f1 == f2
+
+
+@pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
+def test_event_subclasses_are_tested(event_class: Type[Event]):
+    subclasses = [event.__class__ for event in tested_events]
+    assert event_class in subclasses
+
+
+@pytest.mark.parametrize("event", tested_events)
+def test_event_fingerprint_uniqueness(event: Event):
+    f1 = event.fingerprint()
+    event.type_name = "test"
+    f2 = event.fingerprint()
+
+    assert f1 != f2
+
+
+def test_session_started_event_is_not_serialised():
+    assert SessionStarted().as_story_string() is None

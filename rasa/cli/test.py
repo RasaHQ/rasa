@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 from typing import List, Optional, Text, Dict, Union, Any
+import asyncio
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
@@ -9,6 +10,11 @@ from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
 from rasa.cli.arguments import test as arguments
+from rasa.core.constants import (
+    FAILED_STORIES_FILE,
+    SUCCESSFUL_STORIES_FILE,
+    STORIES_WITH_WARNINGS_FILE,
+)
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DEFAULT_E2E_TESTS_PATH,
@@ -16,7 +22,6 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
-    DEFAULT_DOMAIN_PATH,
 )
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
@@ -68,14 +73,32 @@ def add_subparser(
     test_parser.set_defaults(func=test, stories=DEFAULT_E2E_TESTS_PATH)
 
 
-def run_core_test(args: argparse.Namespace) -> None:
+def _print_core_test_execution_info(args: argparse.Namespace) -> None:
+    output = args.out or DEFAULT_RESULTS_PATH
+
+    if args.successes:
+        rasa.shared.utils.cli.print_info(
+            f"Successful stories written to "
+            f"'{os.path.join(output, SUCCESSFUL_STORIES_FILE)}'"
+        )
+    if not args.no_errors:
+        rasa.shared.utils.cli.print_info(
+            f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
+        )
+    if not args.no_warnings:
+        rasa.shared.utils.cli.print_info(
+            f"Stories with prediction warnings written to "
+            f"'{os.path.join(output, STORIES_WITH_WARNINGS_FILE)}'"
+        )
+
+
+async def run_core_test_async(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.model_testing import (
         test_core_models_in_directory,
         test_core,
         test_core_models,
     )
-    from rasa.core.test import FAILED_STORIES_FILE
 
     stories = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH
@@ -83,6 +106,7 @@ def run_core_test(args: argparse.Namespace) -> None:
 
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
+    args.warnings = not args.no_warnings
 
     rasa.shared.utils.io.create_directory(output)
 
@@ -91,7 +115,8 @@ def run_core_test(args: argparse.Namespace) -> None:
 
     if args.model is None:
         rasa.shared.utils.cli.print_error(
-            "No model provided. Please make sure to specify the model to test with '--model'."
+            "No model provided. Please make sure to specify "
+            "the model to test with '--model'."
         )
         return
 
@@ -101,11 +126,11 @@ def run_core_test(args: argparse.Namespace) -> None:
         )
 
         if args.evaluate_model_directory:
-            test_core_models_in_directory(
+            await test_core_models_in_directory(
                 args.model, stories, output, use_conversation_test_files=args.e2e
             )
         else:
-            test_core(
+            await test_core(
                 model=model_path,
                 stories=stories,
                 output=output,
@@ -114,13 +139,11 @@ def run_core_test(args: argparse.Namespace) -> None:
             )
 
     else:
-        test_core_models(
+        await test_core_models(
             args.model, stories, output, use_conversation_test_files=args.e2e
         )
 
-    rasa.shared.utils.cli.print_info(
-        f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
-    )
+    _print_core_test_execution_info(args)
 
 
 async def run_nlu_test_async(
@@ -132,6 +155,7 @@ async def run_nlu_test_async(
     percentages: List[int],
     runs: int,
     no_errors: bool,
+    domain_path: Text,
     all_args: Dict[Text, Any],
 ) -> None:
     """Runs NLU tests.
@@ -148,6 +172,7 @@ async def run_nlu_test_async(
                           or not.
         percentages: defines the exclusion percentage of the training data.
         runs: number of comparison runs to make.
+        domain_path: path to domain.
         no_errors: indicates if incorrect predictions should be written to a file
                    or not.
     """
@@ -159,9 +184,9 @@ async def run_nlu_test_async(
 
     data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
+        training_data_paths=[data_path], domain_path=domain_path
     )
-    nlu_data = await test_data_importer.get_nlu_data()
+    nlu_data = test_data_importer.get_nlu_data()
 
     output = output_dir or DEFAULT_RESULTS_PATH
     all_args["errors"] = not no_errors
@@ -181,7 +206,7 @@ async def run_nlu_test_async(
         for file in config:
             try:
                 validation_utils.validate_yaml_schema(
-                    rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE,
+                    rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE
                 )
                 config_files.append(file)
             except YamlException:
@@ -201,7 +226,10 @@ async def run_nlu_test_async(
         config = rasa.cli.utils.get_validated_path(
             config, "config", DEFAULT_CONFIG_PATH
         )
-        perform_nlu_cross_validation(config, nlu_data, output, all_args)
+        config_importer = TrainingDataImporter.load_from_dict(config_path=config)
+
+        config_dict = config_importer.get_config()
+        await perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
     else:
         model_path = rasa.cli.utils.get_validated_path(
             models_path, "model", DEFAULT_MODELS_PATH
@@ -216,7 +244,8 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     Args:
         args: the parsed CLI arguments for 'rasa test nlu'.
     """
-    rasa.utils.common.run_in_loop(
+
+    asyncio.run(
         run_nlu_test_async(
             args.config,
             args.nlu,
@@ -226,9 +255,19 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             args.percentages,
             args.runs,
             args.no_errors,
+            args.domain,
             vars(args),
         )
     )
+
+
+def run_core_test(args: argparse.Namespace) -> None:
+    """Runs Core tests.
+
+    Args:
+        args: the parsed CLI arguments for 'rasa test core'.
+    """
+    asyncio.run(run_core_test_async(args))
 
 
 def test(args: argparse.Namespace) -> None:

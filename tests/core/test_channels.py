@@ -21,6 +21,7 @@ from rasa.core.channels.rasa_chat import (
     INTERACTIVE_LEARNING_PERMISSION,
 )
 from rasa.core.channels.telegram import TelegramOutput
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
 
@@ -38,7 +39,8 @@ def noop(*args, **kwargs):
 async def test_send_response(default_channel, default_tracker):
     text_only_message = {"text": "hey"}
     multiline_text_message = {
-        "text": "This message should come first:  \n\nThis is message two  \nThis as well\n\n"
+        "text": "This message should come first:  \n\n"
+        "This is message two  \nThis as well\n\n"
     }
     image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
     text_and_image_message = {
@@ -123,29 +125,6 @@ async def test_console_input():
             b = json_of_latest_request(r)
 
             assert b == {"message": "Test Input", "sender": "default"}
-
-
-# USED FOR DOCS - don't rename without changing in the docs
-def test_facebook_channel():
-    # START DOC INCLUDE
-    from rasa.core.channels.facebook import FacebookInput
-
-    input_channel = FacebookInput(
-        fb_verify="YOUR_FB_VERIFY",
-        # you need tell facebook this token, to confirm your URL
-        fb_secret="YOUR_FB_SECRET",  # your app secret
-        fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"
-        # token for the page you subscribed to
-    )
-
-    s = rasa.core.run.configure_app([input_channel], port=5004)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    routes_list = utils.list_routes(s)
-
-    assert routes_list["fb_webhook.health"].startswith("/webhooks/facebook")
-    assert routes_list["fb_webhook.webhook"].startswith("/webhooks/facebook/webhook")
 
 
 # USED FOR DOCS - don't rename without changing in the docs
@@ -296,6 +275,24 @@ def test_telegram_channel():
     assert routes_list["telegram_webhook.message"].startswith(
         "/webhooks/telegram/webhook"
     )
+
+
+def test_telegram_channel_raise_rasa_exception_webhook_not_set():
+    from rasa.core.channels.telegram import TelegramInput
+
+    input_channel = TelegramInput(
+        # you get this when setting up a bot
+        access_token="123:YOUR_ACCESS_TOKEN",
+        # this is your bots username
+        verify="YOUR_TELEGRAM_BOT",
+        # the url your bot should listen for messages
+        webhook_url="",
+    )
+
+    with pytest.raises(RasaException) as e:
+        rasa.core.run.configure_app([input_channel], port=5004)
+
+    assert "Failed to set channel webhook:" in str(e.value)
 
 
 async def test_handling_of_integer_user_id():
@@ -572,11 +569,13 @@ def test_register_channel_without_route():
 
     input_channel = RestInput()
 
-    app = Sanic(__name__)
+    app = Sanic("test_channels")
     rasa.core.channels.channel.register([input_channel], app, route=None)
 
     routes_list = utils.list_routes(app)
-    assert routes_list["custom_webhook_RestInput.receive"].startswith("/webhook")
+    assert routes_list["test_channels.custom_webhook_RestInput.receive"].startswith(
+        "/webhook"
+    )
 
 
 def test_channel_registration_with_absolute_url_prefix_overwrites_route():
@@ -587,7 +586,7 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     test_route = "/absolute_route"
     input_channel.url_prefix = lambda: test_route
 
-    app = Sanic(__name__)
+    app = Sanic("test_channels")
     ignored_base_route = "/should_be_ignored"
     rasa.core.channels.channel.register(
         [input_channel], app, route="/should_be_ignored"
@@ -596,8 +595,12 @@ def test_channel_registration_with_absolute_url_prefix_overwrites_route():
     # Assure that an absolute url returned by `url_prefix` overwrites route parameter
     # given in `register`.
     routes_list = utils.list_routes(app)
-    assert routes_list["custom_webhook_RestInput.health"].startswith(test_route)
-    assert ignored_base_route not in routes_list.get("custom_webhook_RestInput.health")
+    assert routes_list["test_channels.custom_webhook_RestInput.health"].startswith(
+        test_route
+    )
+    assert ignored_base_route not in routes_list.get(
+        "test_channels.custom_webhook_RestInput.health"
+    )
 
 
 @pytest.mark.parametrize(

@@ -4,6 +4,7 @@ import os
 import re
 from typing import Any, Dict, Optional, Text, Match, List
 
+import scipy.sparse
 from rasa.shared.nlu.constants import (
     ENTITIES,
     EXTRACTOR,
@@ -79,10 +80,7 @@ def get_file_format_extension(resource_name: Text) -> Text:
     if not file_formats:
         return rasa.shared.data.yaml_file_extension()
 
-    known_file_formats = {
-        loading.MARKDOWN: rasa.shared.data.markdown_file_extension(),
-        loading.RASA_YAML: rasa.shared.data.yaml_file_extension(),
-    }
+    known_file_formats = {loading.RASA_YAML: rasa.shared.data.yaml_file_extension()}
     fformat = file_formats[0]
     if all(f == fformat for f in file_formats):
         return known_file_formats.get(fformat, rasa.shared.data.yaml_file_extension())
@@ -210,3 +208,18 @@ def build_entity(
 
     entity.update(kwargs)
     return entity
+
+
+def sparse_matrix_to_string(m: scipy.sparse.spmatrix) -> Text:
+    """Turns a sparse matrix into a string.
+
+    Will return a line "(i,j)  v" for each value in the matrix.
+
+    taken from official scipy source to operate on full sparse matrix to not have
+    to change the `maxprint` property in-place.
+    https://github.com/scipy/scipy/blob/v1.7.0/scipy/sparse/base.py#L258
+    """
+    # make sure sparse matrix is in COOrdinate format
+    m_coo = m.tocoo()
+    triples = zip(list(zip(m_coo.row, m_coo.col)), m_coo.data)
+    return "\n".join([("  %s\t%s" % t) for t in triples])

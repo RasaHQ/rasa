@@ -151,10 +151,18 @@ You can do this in Rasa using a form. In the code block below, we added the
 <AssistantBuilder.Code>
 
 ```yaml-rasa live noResult assistantBuilder name=forms
+slots:
+  email:
+    type: text
+    mappings:
+    - type: from_text
+      conditions:
+      - active_loop: newsletter_form
+        requested_slot: email
 forms:
   newsletter_form:
-    email:
-    - type: from_text
+    required_slots:
+    - email
 ```
 
 </AssistantBuilder.Code>

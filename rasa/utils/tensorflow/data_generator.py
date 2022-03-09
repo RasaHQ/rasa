@@ -3,7 +3,7 @@ from typing import List, Union, Text, Optional, Any, Tuple, Dict
 import logging
 import scipy.sparse
 import numpy as np
-import tensorflow as tf
+from tensorflow.keras.utils import Sequence
 
 from rasa.utils.tensorflow.constants import SEQUENCE, BALANCED
 from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
@@ -11,7 +11,7 @@ from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
 logger = logging.getLogger(__name__)
 
 
-class RasaDataGenerator(tf.keras.utils.Sequence):
+class RasaDataGenerator(Sequence):
     """Abstract data generator."""
 
     def __init__(
@@ -76,7 +76,7 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
         start: Optional[int] = None,
         end: Optional[int] = None,
         tuple_sizes: Optional[Dict[Text, int]] = None,
-    ) -> Tuple[Optional[np.ndarray]]:
+    ) -> Tuple[Optional[np.ndarray], ...]:
         """Slices model data into batch using given start and end value.
 
         Args:
@@ -365,9 +365,9 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         # set current epoch to `-1`, so that `on_epoch_end` will increase it to `0`
         self._current_epoch = -1
         # actual batch size will be set inside `on_epoch_end`
-        self._current_batch_size = None
+        self._current_batch_size = 0
         # create separate data variable that will store modified data for each batch
-        self._data = None
+        self._data: Data = {}
         self.on_epoch_end()
 
     def __len__(self) -> int:

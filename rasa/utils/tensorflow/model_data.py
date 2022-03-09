@@ -4,17 +4,7 @@ import numpy as np
 import scipy.sparse
 
 from sklearn.model_selection import train_test_split
-from typing import (
-    Optional,
-    Dict,
-    Text,
-    List,
-    Tuple,
-    Any,
-    Union,
-    NamedTuple,
-    ItemsView,
-)
+from typing import Optional, Dict, Text, List, Tuple, Any, Union, NamedTuple, ItemsView
 from collections import defaultdict, OrderedDict
 
 logger = logging.getLogger(__name__)
@@ -264,6 +254,7 @@ class RasaModelData:
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
+        self.sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]] = {}
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
@@ -330,7 +321,7 @@ class RasaModelData:
         Returns:
             The simplified data.
         """
-        out_data = {}
+        out_data: Data = {}
         for key, attribute_data in self.data.items():
             out_data[key] = {}
             for sub_key, features in attribute_data.items():
@@ -426,7 +417,7 @@ class RasaModelData:
         units = 0
         for features in self.data[key][sub_key]:
             if len(features) > 0:
-                units += features.units
+                units += features.units  # type: ignore[operator]
 
         return units
 
@@ -532,6 +523,30 @@ class RasaModelData:
             self.data[key][sub_key].extend([lengths])
             break
 
+    def add_sparse_feature_sizes(
+        self, sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]
+    ) -> None:
+        """Adds a dictionary of feature sizes for different attributes.
+
+        Args:
+            sparse_feature_sizes: a dictionary of attribute that has sparse
+                           features to a dictionary of a feature type
+                           to a list of different sparse feature sizes.
+        """
+        self.sparse_feature_sizes = sparse_feature_sizes
+
+    def get_sparse_feature_sizes(self) -> Dict[Text, Dict[Text, List[int]]]:
+        """Get feature sizes of the model.
+
+        sparse_feature_sizes is a dictionary of attribute that has sparse features to
+        a dictionary of a feature type to a list of different sparse feature sizes.
+
+        Returns:
+            A dictionary of key and sub-key to a list of feature signatures
+            (same structure as the data attribute).
+        """
+        return self.sparse_feature_sizes
+
     def split(
         self, number_of_test_examples: int, random_seed: int
     ) -> Tuple["RasaModelData", "RasaModelData"]:
@@ -554,7 +569,7 @@ class RasaModelData:
                 for data in attribute_data.values()
                 for v in data
             ]
-            solo_values = [
+            solo_values: List[Any] = [
                 []
                 for attribute_data in self.data.values()
                 for data in attribute_data.values()
@@ -680,7 +695,9 @@ class RasaModelData:
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: defaultdict[
+            Text, defaultdict[Text, List[List[FeatureArray]]]
+        ] = defaultdict(lambda: defaultdict(list))
 
         while min(num_data_cycles) == 0:
             if shuffle:
@@ -716,7 +733,7 @@ class RasaModelData:
                 if min(num_data_cycles) > 0:
                     break
 
-        final_data = defaultdict(lambda: defaultdict(list))
+        final_data: Data = defaultdict(lambda: defaultdict(list))
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
@@ -764,7 +781,7 @@ class RasaModelData:
         Returns:
             The filtered data
         """
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: Data = defaultdict(lambda: defaultdict(list))
 
         if data is None:
             return new_data
@@ -831,8 +848,12 @@ class RasaModelData:
         Returns:
             The test and train RasaModelData
         """
-        data_train = defaultdict(lambda: defaultdict(list))
-        data_val = defaultdict(lambda: defaultdict(list))
+        data_train: defaultdict[
+            Text, defaultdict[Text, List[FeatureArray]]
+        ] = defaultdict(lambda: defaultdict(list))
+        data_val: defaultdict[Text, defaultdict[Text, List[Any]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
 
         # output_values = x_train, x_val, y_train, y_val, z_train, z_val, etc.
         # order is kept, e.g. same order as model data keys

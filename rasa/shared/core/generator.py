@@ -61,8 +61,8 @@ class TrackerWithCachedStates(DialogueStateTracker):
         super().__init__(
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
-        self._states_for_hashing = None
-        self.domain = domain
+        self._states_for_hashing: Deque[FrozenState] = deque()
+        self.domain = domain if domain is not None else Domain.empty()
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented
 
@@ -85,7 +85,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         return tracker
 
     def past_states_for_hashing(
-        self, domain: Domain, omit_unset_slots: bool = False,
+        self, domain: Domain, omit_unset_slots: bool = False
     ) -> Deque[FrozenState]:
         """Generates and caches the past states of this tracker based on the history.
 
@@ -103,13 +103,14 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         # if don't have it cached, we use the domain to calculate the states
         # from the events
-        if self._states_for_hashing is None:
+        states_for_hashing = self._states_for_hashing
+        if not states_for_hashing:
             states = super().past_states(domain, omit_unset_slots=omit_unset_slots)
-            self._states_for_hashing = deque(
-                self.freeze_current_state(s) for s in states
-            )
+            states_for_hashing = deque(self.freeze_current_state(s) for s in states)
 
-        return self._states_for_hashing
+        self._states_for_hashing = states_for_hashing
+
+        return states_for_hashing
 
     @staticmethod
     def _unfreeze_states(frozen_states: Deque[FrozenState]) -> List[State]:
@@ -145,7 +146,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
     def clear_states(self) -> None:
         """Reset the states."""
-        self._states_for_hashing = None
+        self._states_for_hashing = deque()
 
     def init_copy(self) -> "TrackerWithCachedStates":
         """Create a new state tracker with the same initial values."""
@@ -189,12 +190,10 @@ class TrackerWithCachedStates(DialogueStateTracker):
             self._states_for_hashing.append(frozen_state)
 
     def update(self, event: Event, skip_states: bool = False) -> None:
-        """Modify the state of the tracker according to an ``Event``. """
-
+        """Modify the state of the tracker according to an ``Event``."""
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
-
-        if self._states_for_hashing is None and not skip_states:
+        if not self._states_for_hashing and not skip_states:
             # rest of this function assumes we have the previous state
             # cached. let's make sure it is there.
             self._states_for_hashing = self.past_states_for_hashing(self.domain)
@@ -218,12 +217,14 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
 
 # define types
-TrackerLookupDict = Dict[Optional[Text], List[TrackerWithCachedStates]]
+TrackerLookupDict = Dict[Text, List[TrackerWithCachedStates]]
 
 TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedStates]]
 
 
 class TrainingDataGenerator:
+    """Generates trackers from training data."""
+
     def __init__(
         self,
         story_graph: StoryGraph,
@@ -240,8 +241,8 @@ class TrainingDataGenerator:
         The different story parts can end and start with checkpoints
         and this generator will match start and end checkpoints to
         connect complete stories. Afterwards, duplicate stories will be
-        removed and the data is augmented (if augmentation is enabled)."""
-
+        removed and the data is augmented (if augmentation is enabled).
+        """
         self.story_graph = story_graph.with_cycles_removed()
         if debug_plots:
             self.story_graph.visualize("story_blocks_connections.html")
@@ -261,7 +262,7 @@ class TrainingDataGenerator:
             rand=random.Random(42),
         )
         # hashed featurization of all finished trackers
-        self.hashed_featurizations = set()
+        self.hashed_featurizations: Set[int] = set()
 
     @staticmethod
     def _phase_name(everything_reachable_is_reached: bool, phase: int) -> Text:
@@ -342,8 +343,8 @@ class TrainingDataGenerator:
             min_num_aug_phases = 0
 
         # placeholder to track gluing process of checkpoints
-        used_checkpoints = set()
-        previous_unused = set()
+        used_checkpoints: Set[Text] = set()
+        previous_unused: Set[Text] = set()
         everything_reachable_is_reached = False
 
         # we will continue generating data until we have reached all
@@ -641,7 +642,10 @@ class TrainingDataGenerator:
                 # we concatenate the story block names of the blocks that
                 # contribute to the trackers events
                 if tracker.sender_id:
-                    if step.block_name not in tracker.sender_id.split(" > "):
+                    if (
+                        step.block_name
+                        and step.block_name not in tracker.sender_id.split(" > ")
+                    ):
                         new_sender = tracker.sender_id + " > " + step.block_name
                     else:
                         new_sender = tracker.sender_id
@@ -657,8 +661,10 @@ class TrainingDataGenerator:
                 and event.action_text not in self.domain.action_texts
             ):
                 rasa.shared.utils.cli.print_warning(
-                    f"Test story '{step.block_name}' in '{step.source_name}' contains the bot utterance "
-                    f"'{event.action_text}', which is not part of the training data / domain."
+                    f"Test story '{step.block_name}' in "
+                    f"'{step.source_name}' contains the bot utterance "
+                    f"'{event.action_text}', which is not part "
+                    f"of the training data / domain."
                 )
             for tracker in trackers:
                 if isinstance(

@@ -12,6 +12,7 @@ from typing import (
     Iterator,
     Generator,
     Type,
+    TypeVar,
     List,
     Deque,
     Iterable,
@@ -31,6 +32,7 @@ from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
     ENTITIES,
+    METADATA_MODEL_ID,
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -57,15 +59,15 @@ from rasa.shared.core.events import (
     ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
-    EntitiesAdded,
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict
+    from typing_extensions import TypedDict, TypeAlias
 
+    from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 
@@ -80,6 +82,8 @@ if TYPE_CHECKING:
         },
         total=False,
     )
+
+    EventTypeAlias: TypeAlias = TypeVar("EventTypeAlias", Event)
 
 
 logger = logging.getLogger(__name__)
@@ -114,7 +118,7 @@ class AnySlotDict(dict):
     e.g. properly featurizing the slot."""
 
     def __missing__(self, key: Text) -> Slot:
-        value = self[key] = Slot(key)
+        value = self[key] = Slot(key, mappings=[])
         return value
 
     def __contains__(self, key: Text) -> bool:
@@ -220,6 +224,9 @@ class DialogueStateTracker:
         self._reset()
         self.active_loop: "TrackerActiveLoop" = {}
 
+        # Optional model_id to add to all events.
+        self.model_id: Optional[Text] = None
+
     ###
     # Public tracker interface
     ###
@@ -260,11 +267,14 @@ class DialogueStateTracker:
 
         return None
 
-    def _latest_message_data(self) -> Dict[Text, Any]:
+    def _latest_message_data(self) -> Optional["NLUPredictionData"]:
+        if not self.latest_message:
+            return None
+
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state["entities"] = self.latest_message.entities
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities
 
         return parse_data_with_nlu_state
 
@@ -330,34 +340,16 @@ class DialogueStateTracker:
         else:
             self.active_loop = {}
 
-    def change_form_to(self, form_name: Text) -> None:
-        rasa.shared.utils.io.raise_warning(
-            "`change_form_to` is deprecated and will be removed "
-            "in future versions. Please use `change_loop_to` "
-            "instead.",
-            category=DeprecationWarning,
-        )
-        self.change_loop_to(form_name)
-
     def interrupt_loop(self, is_interrupted: bool) -> None:
         """Interrupt loop and mark that we entered an unhappy path in the conversation.
+
         Args:
             is_interrupted: `True` if the loop was run after an unhappy path.
         """
         self.active_loop[LOOP_INTERRUPTED] = is_interrupted
 
-    def set_form_validation(self, validate: bool) -> None:
-        rasa.shared.utils.io.raise_warning(
-            "`set_form_validation` is deprecated and will be removed "
-            "in future versions. Please use `interrupt_loop` "
-            "instead.",
-            category=DeprecationWarning,
-        )
-        # `validate = True` means `is_interrupted = False`
-        self.interrupt_loop(not validate)
-
     def reject_action(self, action_name: Text) -> None:
-        """Notify active loop that it was rejected"""
+        """Notify active loop that it was rejected."""
         if action_name == self.active_loop_name:
             self.active_loop[LOOP_REJECTED] = True
 
@@ -412,6 +404,8 @@ class DialogueStateTracker:
         Returns:
             Entity values.
         """
+        if self.latest_message is None:
+            return iter([])
 
         return (
             x.get(ENTITY_ATTRIBUTE_VALUE)
@@ -490,7 +484,7 @@ class DialogueStateTracker:
             if isinstance(event, ActiveLoop) and event.name
         ]
 
-        applied_events = []
+        applied_events: List[Event] = []
 
         for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):
@@ -590,7 +584,7 @@ class DialogueStateTracker:
                 break
 
             if isinstance(
-                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization),
+                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization)
             ):
                 del done_events[-1 - offset]
             else:
@@ -651,25 +645,15 @@ class DialogueStateTracker:
         return Dialogue(self.sender_id, list(self.events))
 
     def update(self, event: Event, domain: Optional[Domain] = None) -> None:
-        """Modify the state of the tracker according to an ``Event``. """
+        """Modify the state of the tracker according to an ``Event``."""
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance of a subclass of Event.")
 
+        if self.model_id and METADATA_MODEL_ID not in event.metadata:
+            event.metadata = {**event.metadata, METADATA_MODEL_ID: self.model_id}
+
         self.events.append(event)
         event.apply_to(self)
-
-        if domain and isinstance(event, (UserUttered, EntitiesAdded)):
-            if isinstance(event, UserUttered):
-                # Rather get entities from `parse_data` as
-                # `DefinePrevUserUtteredEntities` might have already affected the
-                # `UserUttered.entities` attribute (this might e.g. happen when the
-                # `InMemoryTrackerStore` is used).
-                entities = event.parse_data[ENTITIES]
-            else:
-                entities = event.entities
-
-            for e in domain.slots_for_entities(entities):
-                self.update(e)
 
     def update_with_events(
         self,
@@ -717,12 +701,7 @@ class DialogueStateTracker:
         Returns:
             The dumped tracker as a string.
         """
-
-        # TODO: we need to revisit all usages of this, the caller needs to specify
-        #       the format. this likely points to areas where we are not properly
-        #       handling markdown vs yaml
         story = self.as_story(include_source)
-
         return writer.dumps(
             story.story_steps, is_appendable=should_append_stories, is_test_story=e2e
         )
@@ -743,11 +722,11 @@ class DialogueStateTracker:
 
     def get_last_event_for(
         self,
-        event_type: Union[Type[Event], Tuple[Type, ...]],
+        event_type: Union[Type["EventTypeAlias"], Tuple[Type["EventTypeAlias"], ...]],
         action_names_to_exclude: List[Text] = None,
         skip: int = 0,
         event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
-    ) -> Optional[Event]:
+    ) -> Optional["EventTypeAlias"]:
         """Gets the last event of a given type which was actually applied.
 
         Args:
@@ -761,7 +740,6 @@ class DialogueStateTracker:
         Returns:
             event which matched the query or `None` if no event matched.
         """
-
         to_exclude = action_names_to_exclude or []
 
         def filter_function(e: Event) -> bool:
@@ -869,12 +847,33 @@ class DialogueStateTracker:
 
         Returns: name of the previously executed action or text of e2e action
         """
+        if self.latest_action is None:
+            return None
+
         return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
             ACTION_TEXT
         )
 
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the tracker which is stable across python runs.
 
-def get_active_loop_name(state: State) -> Optional[Text]:
+        Returns:
+            fingerprint of the tracker
+        """
+        data: Dict[Text, Any] = {"sender_id": self.sender_id}
+
+        if self.slots:
+            data.update(self.slots)
+
+        if self.events:
+            data["events"] = list(self.events)
+
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
+
+
+def get_active_loop_name(
+    state: State,
+) -> Optional[Union[Text, Tuple[Union[float, Text]]]]:
     """Get the name of current active loop.
 
     Args:
@@ -887,7 +886,7 @@ def get_active_loop_name(state: State) -> Optional[Text]:
         not state.get(ACTIVE_LOOP)
         or state[ACTIVE_LOOP].get(LOOP_NAME) == SHOULD_NOT_BE_SET
     ):
-        return
+        return None
 
     return state[ACTIVE_LOOP].get(LOOP_NAME)
 

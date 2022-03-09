@@ -2,6 +2,11 @@ import json
 from typing import Optional, Text
 
 import jsonschema
+from ruamel.yaml.error import (
+    MarkedYAMLError,
+    MarkedYAMLWarning,
+    MarkedYAMLFutureWarning,
+)
 
 
 class RasaException(Exception):
@@ -22,10 +27,6 @@ class RasaXTermsError(RasaException):
 
 class InvalidParameterException(RasaException, ValueError):
     """Raised when an invalid parameter is used."""
-
-
-class MarkdownException(RasaException, ValueError):
-    """Raised if there is an error reading Markdown."""
 
 
 class YamlException(RasaException):
@@ -58,8 +59,16 @@ class YamlSyntaxException(YamlException):
             exception_text = "Failed to read YAML."
 
         if self.underlying_yaml_exception:
-            self.underlying_yaml_exception.warn = None
-            self.underlying_yaml_exception.note = None
+            if isinstance(
+                self.underlying_yaml_exception,
+                (MarkedYAMLError, MarkedYAMLWarning, MarkedYAMLFutureWarning),
+            ):
+                self.underlying_yaml_exception.note = None
+            if isinstance(
+                self.underlying_yaml_exception,
+                (MarkedYAMLWarning, MarkedYAMLFutureWarning),
+            ):
+                self.underlying_yaml_exception.warn = None
             exception_text += f" {self.underlying_yaml_exception}"
 
         if self.filename:

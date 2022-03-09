@@ -130,18 +130,16 @@ class DialogflowReader(TrainingDataReader):
 
         if entity["isRegexp"]:
             regex_features = DialogflowReader._extract_regex_features(entity, examples)
-            return TrainingData([], entity_synonyms, regex_features, [],)
+            return TrainingData([], entity_synonyms, regex_features, [])
         else:
             lookup_tables = DialogflowReader._extract_lookup_tables(entity, examples)
-            return TrainingData([], entity_synonyms, [], lookup_tables,)
+            return TrainingData([], entity_synonyms, [], lookup_tables)
 
     @staticmethod
     def _read_examples(
         fn: Text, language: Text, fformat: Text
     ) -> Optional[List[Dict[Text, Any]]]:
-        """Infer and load the example file based on the root
-        filename and root format."""
-
+        """Infer and load example file based on root filename and root format."""
         if fformat == DIALOGFLOW_INTENT:
             examples_type = "usersays"
         else:

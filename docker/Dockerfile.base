@@ -20,3 +20,6 @@ RUN apt-get update && apt-get dist-upgrade -y --no-install-recommends
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 100 \
    && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 100
+
+# Create rasa user and group
+RUN useradd -rm -d /app -s /sbin/nologin -g root -u 1001 rasa && groupadd -g 1001 rasa

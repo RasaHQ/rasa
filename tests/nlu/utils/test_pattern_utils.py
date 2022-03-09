@@ -36,7 +36,8 @@ from rasa.shared.nlu.training_data.message import Message
                 {"name": "zipcode", "pattern": "[0-9]{5}"},
                 {
                     "name": "plates",
-                    "pattern": "(\\btacos\\b|\\bbeef\\b|\\bmapo\\ tofu\\b|\\bburrito\\b|\\blettuce\\ wrap\\b)",
+                    "pattern": "(\\btacos\\b|\\bbeef\\b|\\bmapo\\ "
+                    "tofu\\b|\\bburrito\\b|\\blettuce\\ wrap\\b)",
                 },
             ],
         ),
@@ -131,7 +132,8 @@ def test_extract_patterns_use_only_entities_lookup_tables(
 
 
 @pytest.mark.parametrize(
-    "lookup_tables, regex_features, use_lookup_tables, use_regex_features, expected_patterns",
+    "lookup_tables, regex_features, use_lookup_tables, "
+    "use_regex_features, expected_patterns",
     [
         ({"name": "person", "elements": ["Max", "John"]}, {}, False, True, []),
         ({}, {}, True, True, []),
@@ -179,3 +181,40 @@ def test_extract_patterns_use_only_lookup_tables_or_regex_features(
     )
 
     assert actual_patterns == expected_patterns
+
+
+@pytest.mark.parametrize(
+    "lookup_tables, regex_features, use_lookup_tables, use_regex_features",
+    [
+        (
+            {"name": "person", "elements": ["Max", "John"]},
+            {"name": "zipcode", "pattern": "*[0-9]{5}"},
+            True,
+            True,
+        )
+    ],
+)
+def test_regex_validation(
+    lookup_tables: Dict[Text, List[Text]],
+    regex_features: Dict[Text, Text],
+    use_lookup_tables: bool,
+    use_regex_features: bool,
+):
+    """Tests if exception is raised when regex patterns are invalid."""
+
+    training_data = TrainingData()
+    if lookup_tables:
+        training_data.lookup_tables = [lookup_tables]
+    if regex_features:
+        training_data.regex_features = [regex_features]
+
+    with pytest.raises(Exception) as e:
+        pattern_utils.extract_patterns(
+            training_data,
+            use_lookup_tables=use_lookup_tables,
+            use_regexes=use_regex_features,
+        )
+
+    assert "Model training failed." in str(e.value)
+    assert "not a valid regex." in str(e.value)
+    assert "Please update your nlu training data configuration" in str(e.value)

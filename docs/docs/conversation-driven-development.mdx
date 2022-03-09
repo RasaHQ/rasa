@@ -59,6 +59,23 @@ Your test users had at least some instruction about what the bot was intended to
 
 *   Look at conversations where an “out_of_scope” intent or fallback behavior occurred. These could indicate a potential new skill, or just a misclassified user utterance.
 *   Look for user frustration, such as requests for transfer to a human.
+*   If the assistant was trained with [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy) included in the pipeline,
+    you can look for conversations where `action_unlikely_intent` is predicted at any conversation turn.
+    An `action_unlikely_intent` is predicted when the last intent expressed by the user is
+    unexpected in the current conversation context. You can also filter out such conversations by
+    running a [standalone script](https://gist.github.com/alwx/b426b7b573ff963c85c65ea6466528d7) which does the following:
+
+    - Fetch real conversations from a tracker store.
+    - Run `rasa test` on the fetched conversations and filter conversations containing `action_unlikely_intent`
+      in a separate warnings file. You can read more on [how to interpret these warnings](./testing-your-assistant.mdx#interpreting-the-generated-warnings).
+
+    Reviewing this subset of conversations can help you understand if real users have taken a
+    conversation path which is not present in the training data and hence "surprising"
+    for machine learning policies like `TEDPolicy`. Adding these conversation paths (with potential
+    corrections if `TEDPolicy` subsequently failed) as training stories will result in more robust action prediction
+    by policies such as `TEDPolicy`. Users are encouraged to [adjust the `tolerance` parameter of
+    `UnexpecTEDIntentPolicy`](./policies.mdx#tuning-the-tolerance-parameter) to control how
+    "surprising" a conversation should be to be included in the warnings file.
 
 ### Annotate
 

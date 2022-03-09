@@ -4,9 +4,9 @@ import logging
 import os
 
 from async_generator import asynccontextmanager
-from typing import Text, Union, Optional, AsyncGenerator
+from typing import AsyncGenerator, Dict, Optional, Text, Union
 
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, ConnectionException
 import rasa.shared.utils.common
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
@@ -43,8 +43,11 @@ class LockStore:
 
         if isinstance(obj, LockStore):
             return obj
-        else:
+
+        try:
             return _create_from_endpoint_config(obj)
+        except ConnectionError as error:
+            raise ConnectionException("Cannot connect to lock store.") from error
 
     @staticmethod
     def create_lock(conversation_id: Text) -> TicketLock:
@@ -246,7 +249,8 @@ class RedisLockStore(LockStore):
             self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
         else:
             logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
+                f"Using default '{self.key_prefix}' instead."
             )
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
@@ -255,7 +259,10 @@ class RedisLockStore(LockStore):
         if serialised_lock:
             return TicketLock.from_dict(json.loads(serialised_lock))
 
+        return None
+
     def delete_lock(self, conversation_id: Text) -> None:
+        """Deletes lock for conversation ID."""
         deletion_successful = self.red.delete(self.key_prefix + conversation_id)
         self._log_deletion(conversation_id, deletion_successful)
 
@@ -267,19 +274,23 @@ class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
     def __init__(self) -> None:
-        self.conversation_locks = {}
+        """Initialise dictionary of locks."""
+        self.conversation_locks: Dict[Text, TicketLock] = {}
         super().__init__()
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
+        """Get lock for conversation if it exists."""
         return self.conversation_locks.get(conversation_id)
 
     def delete_lock(self, conversation_id: Text) -> None:
+        """Delete lock for conversation."""
         deleted_lock = self.conversation_locks.pop(conversation_id, None)
         self._log_deletion(
             conversation_id, deletion_successful=deleted_lock is not None
         )
 
     def save_lock(self, lock: TicketLock) -> None:
+        """Save lock in store."""
         self.conversation_locks[lock.conversation_id] = lock
 
 

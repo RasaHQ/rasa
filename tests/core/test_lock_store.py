@@ -16,6 +16,7 @@ from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.lock import TicketLock
+import rasa.core.lock_store
 from rasa.core.lock_store import (
     InMemoryLockStore,
     LockError,
@@ -23,6 +24,8 @@ from rasa.core.lock_store import (
     RedisLockStore,
     DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
 )
+from rasa.shared.exceptions import ConnectionException
+from rasa.utils.endpoints import EndpointConfig
 
 
 class FakeRedisLockStore(RedisLockStore):
@@ -86,6 +89,17 @@ def test_create_lock_store(lock_store: LockStore):
     lock = lock_store.get_lock(conversation_id)
     assert lock
     assert lock.conversation_id == conversation_id
+
+
+def test_raise_connection_exception_redis_lock_store(monkeypatch: MonkeyPatch):
+    monkeypatch.setattr(
+        rasa.core.lock_store, "RedisLockStore", Mock(side_effect=ConnectionError())
+    )
+
+    with pytest.raises(ConnectionException):
+        LockStore.create(
+            EndpointConfig(username="username", password="password", type="redis")
+        )
 
 
 @pytest.mark.parametrize("lock_store", [InMemoryLockStore(), FakeRedisLockStore()])

@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
+import numpy as np
 from typing import Text, List, Dict, Any, Union, Optional, Tuple, Callable
 
 from rasa.shared.nlu.constants import TEXT
@@ -28,9 +28,145 @@ from rasa.utils.tensorflow.constants import (
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
 
 
-class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
+class RasaCustomLayer(tf.keras.layers.Layer):
+    """Parent class for all classes in `rasa_layers.py`.
+
+    Allows a shared implementation for adjusting `DenseForSparse`
+    layers during incremental training.
+
+    During fine-tuning, sparse feature sizes might change due to addition of new data.
+    If this happens, we need to adjust our `DenseForSparse` layers to a new size.
+    `ConcatenateSparseDenseFeatures`, `RasaSequenceLayer` and
+    `RasaFeatureCombiningLayer` all inherit from `RasaCustomLayer` and thus can
+    change their own `DenseForSparse` layers if it's needed.
+    """
+
+    def adjust_sparse_layers_for_incremental_training(
+        self,
+        new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        reg_lambda: float,
+    ) -> None:
+        """Finds and adjusts `DenseForSparse` layers during incremental training.
+
+        Recursively looks through the layers until it finds all the `DenseForSparse`
+        ones and adjusts those which have their sparse feature sizes increased.
+
+        This function heavily relies on the name of `DenseForSparse` layer being
+        in the following format - f"sparse_to_dense.{attribute}_{feature_type}" -
+        in order to correctly extract the attribute and feature type.
+
+        New and old sparse feature sizes could look like this:
+        {TEXT: {FEATURE_TYPE_SEQUENCE: [4, 24, 128], FEATURE_TYPE_SENTENCE: [4, 128]}}
+
+        Args:
+            new_sparse_feature_sizes: sizes of current sparse features.
+            old_sparse_feature_sizes: sizes of sparse features the model was
+                                      previously trained on.
+            reg_lambda: regularization constant.
+        """
+        for name, layer in self._tf_layers.items():
+            if isinstance(layer, RasaCustomLayer):
+                layer.adjust_sparse_layers_for_incremental_training(
+                    new_sparse_feature_sizes=new_sparse_feature_sizes,
+                    old_sparse_feature_sizes=old_sparse_feature_sizes,
+                    reg_lambda=reg_lambda,
+                )
+            elif isinstance(layer, layers.DenseForSparse):
+                attribute = layer.get_attribute()
+                feature_type = layer.get_feature_type()
+                if (
+                    attribute in new_sparse_feature_sizes
+                    and feature_type in new_sparse_feature_sizes[attribute]
+                ):
+                    new_feature_sizes = new_sparse_feature_sizes[attribute][
+                        feature_type
+                    ]
+                    old_feature_sizes = old_sparse_feature_sizes[attribute][
+                        feature_type
+                    ]
+                    if sum(new_feature_sizes) > sum(old_feature_sizes):
+                        self._tf_layers[name] = self._replace_dense_for_sparse_layer(
+                            layer_to_replace=layer,
+                            new_sparse_feature_sizes=new_feature_sizes,
+                            old_sparse_feature_sizes=old_feature_sizes,
+                            attribute=attribute,
+                            feature_type=feature_type,
+                            reg_lambda=reg_lambda,
+                        )
+
+    @staticmethod
+    def _replace_dense_for_sparse_layer(
+        layer_to_replace: layers.DenseForSparse,
+        new_sparse_feature_sizes: List[int],
+        old_sparse_feature_sizes: List[int],
+        attribute: Text,
+        feature_type: Text,
+        reg_lambda: float,
+    ) -> layers.DenseForSparse:
+        """Replaces a `DenseForSparse` layer with a new one.
+
+        Replaces an existing `DenseForSparse` layer with a new one
+        in order to adapt it to incremental training.
+
+        Args:
+            layer_to_replace: a `DenseForSparse` layer that is used to create a new one.
+            new_sparse_feature_sizes: sizes of sparse features that will be
+                                      the input of the layer.
+            old_sparse_feature_sizes: sizes of sparse features that used to be
+                                      the input of the layer.
+            attribute: an attribute of the data fed to the layer.
+            feature_type: a feature type of the data fed to the layer.
+            reg_lambda: regularization constant.
+
+        Returns:
+            New `DenseForSparse` layer.
+        """
+        kernel = layer_to_replace.get_kernel().numpy()
+        bias = layer_to_replace.get_bias()
+        if bias is not None:
+            bias = bias.numpy()
+        units = layer_to_replace.get_units()
+        # split kernel by feature sizes to update the layer accordingly
+        kernel_splits = []
+        splitting_index = 0
+        for size in old_sparse_feature_sizes:
+            kernel_splits.append(kernel[splitting_index : splitting_index + size, :])
+            splitting_index += size
+        additional_sizes = [
+            new_size - old_size
+            for new_size, old_size in zip(
+                new_sparse_feature_sizes, old_sparse_feature_sizes
+            )
+        ]
+        std, mean = np.std(kernel), np.mean(kernel)
+        additional_weights = [
+            np.random.normal(mean, std, size=(num_rows, units)).astype(np.float32)
+            for num_rows in additional_sizes
+        ]
+        merged_weights = [
+            np.vstack((existing, new))
+            for existing, new in zip(kernel_splits, additional_weights)
+        ]
+        # stack each merged weight to form a new weight tensor
+        new_weights = np.vstack(merged_weights)
+        kernel_init = tf.constant_initializer(new_weights)
+        bias_init = tf.constant_initializer(bias) if bias is not None else None
+        new_layer = layers.DenseForSparse(
+            name=f"sparse_to_dense.{attribute}_{feature_type}",
+            reg_lambda=reg_lambda,
+            units=units,
+            use_bias=bias is not None,
+            kernel_initializer=kernel_init,
+            bias_initializer=bias_init,
+        )
+        return new_layer
+
+
+class ConcatenateSparseDenseFeatures(RasaCustomLayer):
     """Combines multiple sparse and dense feature tensors into one dense tensor.
 
     This layer combines features from various featurisers into a single feature array
@@ -96,7 +232,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         )
 
         # Prepare dropout and sparse-to-dense layers if any sparse tensors are expected
-        self._tf_layers = {}
+        self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
         if any([signature.is_sparse for signature in feature_type_signature]):
             self._prepare_layers_for_sparse_tensors(attribute, feature_type, config)
 
@@ -116,7 +252,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
             )
 
     def _prepare_layers_for_sparse_tensors(
-        self, attribute: Text, feature_type: Text, config: Dict[Text, Any],
+        self, attribute: Text, feature_type: Text, config: Dict[Text, Any]
     ) -> None:
         """Sets up sparse tensor pre-processing before combining with dense ones."""
         # For optionally applying dropout to sparse tensors
@@ -202,7 +338,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         return tf.concat(dense_features, axis=-1)
 
 
-class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
+class RasaFeatureCombiningLayer(RasaCustomLayer):
     """Combines multiple dense or sparse feature tensors into one.
 
     This layer combines features by following these steps:
@@ -267,7 +403,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
 
         super().__init__(name=f"rasa_feature_combining_layer_{attribute}")
 
-        self._tf_layers = {}
+        self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
 
         # Prepare sparse-dense combining layers for each present feature type
         self._feature_types_present = self._get_present_feature_types(
@@ -540,7 +676,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         return features_to_return, mask_combined_sequence_sentence
 
 
-class RasaSequenceLayer(tf.keras.layers.Layer):
+class RasaSequenceLayer(RasaCustomLayer):
     """Creates an embedding from all features for a sequence attribute; facilitates MLM.
 
     This layer combines all features for an attribute and embeds them using a
@@ -662,6 +798,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
 
         The config can contain these directly (same for all attributes) or specified
         separately for each attribute.
+        If a transformer is used (e.i. if `number_of_transformer_layers` is positive),
+        the default `transformer_size` which is `None` breaks things. Thus,
+        we need to set a reasonable default value so that the model works fine.
         """
         transformer_layers = config[NUM_TRANSFORMER_LAYERS]
         if isinstance(transformer_layers, dict):
@@ -669,6 +808,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         transformer_units = config[TRANSFORMER_SIZE]
         if isinstance(transformer_units, dict):
             transformer_units = transformer_units[attribute]
+        if transformer_layers > 0 and (not transformer_units or transformer_units < 1):
+            transformer_units = DEFAULT_TRANSFORMER_SIZE
 
         return transformer_layers, transformer_units
 
@@ -763,6 +904,8 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 return tf.stop_gradient(
                     self._tf_layers[self.SPARSE_TO_DENSE_FOR_TOKEN_IDS](f)
                 )
+
+        return None
 
     def _create_mlm_tensors(
         self,
@@ -889,7 +1032,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             outputs, attention_weights = self._tf_layers[self.TRANSFORMER](
                 seq_sent_features_masked, mask_padding, training
             )
-            outputs = tfa.activations.gelu(outputs)
+            outputs = tf.nn.gelu(outputs)
         else:
             # tf.zeros((0,)) is an alternative to None
             outputs, attention_weights = seq_sent_features_masked, tf.zeros((0,))
