@@ -502,15 +502,13 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Creates training data that uses each time output for prediction.
     """
 
-    def training_states_labels_and_entities(  # type: ignore[override]
+    def training_states_labels_and_entities(
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
-    ) -> Tuple[
-        List[List[State]], List[List[Optional[Text]]], List[List[Dict[Text, Any]]]
-    ]:
+    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms trackers to states, action labels, and entity data.
 
         Args:
@@ -561,7 +559,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                 if not event.unpredictable:
                     # only actions which can be
                     # predicted at a stories start
-                    actions.append(event.action_name or event.action_text)
+                    action = event.action_name or event.action_text
+                    if action is not None:
+                        actions.append(action)
                     entities.append(entity_data)
                 else:
                     # unpredictable actions can be
