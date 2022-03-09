@@ -7,6 +7,7 @@ import typing
 from typing import (
     List,
     Text,
+    Deque,
     Dict,
     Optional,
     Tuple,
@@ -305,9 +306,9 @@ class StoryStep:
 
 
 class RuleStep(StoryStep):
-    """A Special type of StoryStep representing a Rule. """
+    """A Special type of StoryStep representing a Rule."""
 
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         block_name: Optional[Text] = None,
         start_checkpoints: Optional[List[Checkpoint]] = None,
@@ -351,8 +352,7 @@ class RuleStep(StoryStep):
         )
 
     def get_rules_condition(self) -> List[Event]:
-        """Returns a list of events forming a condition of the Rule. """
-
+        """Returns a list of events forming a condition of the Rule."""
         return [
             event
             for event_id, event in enumerate(self.events)
@@ -360,8 +360,7 @@ class RuleStep(StoryStep):
         ]
 
     def get_rules_events(self) -> List[Event]:
-        """Returns a list of events forming the Rule, that are not conditions. """
-
+        """Returns a list of events forming the Rule, that are not conditions."""
         return [
             event
             for event_id, event in enumerate(self.events)
@@ -600,7 +599,7 @@ class StoryGraph:
         unused_genr_cps = {
             cp_name
             for cp_name in unused_cps
-            if cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)
+            if cp_name is not None and cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)
         }
 
         k_to_remove = set()
@@ -718,7 +717,7 @@ class StoryGraph:
         # noinspection PyPep8Naming
         GRAY, BLACK = 0, 1
 
-        ordered = deque()
+        ordered: Deque = deque()
         unprocessed = sorted(set(graph))
         visited_nodes = {}
 

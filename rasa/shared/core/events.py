@@ -82,7 +82,7 @@ if TYPE_CHECKING:
     )
 
     IntentPrediction = TypedDict(
-        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float,},
+        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float}
     )
     NLUPredictionData = TypedDict(
         "NLUPredictionData",
@@ -182,7 +182,7 @@ def split_events(
         The split events.
     """
     sub_events = []
-    current = []
+    current: List["Event"] = []
 
     def event_fulfills_splitting_condition(evt: "Event") -> bool:
         # event does not have the correct type
@@ -226,12 +226,21 @@ def do_events_begin_with_session_start(events: List["Event"]) -> bool:
         events: The events to inspect.
 
     Returns:
-        Whether or not `events` begins with a session start sequence.
+        Whether `events` begins with a session start sequence.
     """
-    return len(events) > 1 and events[:2] == [
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-    ]
+    if len(events) < 2:
+        return False
+
+    first = events[0]
+    second = events[1]
+
+    # We are not interested in specific metadata or timestamps. Action name and event
+    # type are sufficient for this check
+    return (
+        isinstance(first, ActionExecuted)
+        and first.action_name == ACTION_SESSION_START_NAME
+        and isinstance(second, SessionStarted)
+    )
 
 
 class Event(ABC):
@@ -553,7 +562,7 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_sub_state(self,) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+    def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         """Turns a UserUttered event into features.
 
         The substate contains information about entities, intent and text of the
@@ -726,6 +735,9 @@ class DefinePrevUserUtteredFeaturization(SkipEventInMDStoryMixin):
             # a user message is always followed by action listen
             return
 
+        if not tracker.latest_message:
+            return
+
         # update previous user message's featurization based on this event
         tracker.latest_message.use_text_for_featurization = (
             self.use_text_for_featurization
@@ -804,6 +816,9 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
         if tracker.latest_action_name != ACTION_LISTEN_NAME:
             # entities belong only to the last user message
             # a user message always comes after action listen
+            return
+
+        if not tracker.latest_message:
             return
 
         for entity in self.entities:
@@ -1525,11 +1540,7 @@ class ActionExecuted(Event):
 
     def __members__(self) -> Tuple[Optional[Text], Optional[Text], Text]:
         meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
-        return (
-            self.action_name,
-            self.action_text,
-            jsonpickle.encode(meta_no_nones),
-        )
+        return (self.action_name, self.action_text, jsonpickle.encode(meta_no_nones))
 
     def __repr__(self) -> Text:
         """Returns event as string for debugging."""

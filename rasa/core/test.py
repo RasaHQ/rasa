@@ -434,7 +434,8 @@ def _create_data_generator(
     from rasa.shared.core.generator import TrainingDataGenerator
 
     tmp_domain_path = Path(tempfile.mkdtemp()) / "domain.yaml"
-    agent.domain.persist(tmp_domain_path)
+    domain = agent.domain if agent.domain is not None else Domain.empty()
+    domain.persist(tmp_domain_path)
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[resource_name], domain_path=str(tmp_domain_path)
     )
@@ -823,14 +824,25 @@ async def _predict_tracker_actions(
 ]:
 
     processor = agent.processor
+    if agent.processor is not None:
+        processor = agent.processor
+    else:
+        raise RasaException(
+            "The agent's processor has not been instantiated. "
+            "The processor needs to be defined before running "
+            "prediction."
+        )
+
     tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
 
+    slots = agent.domain.slots if agent.domain is not None else []
+
     partial_tracker = DialogueStateTracker.from_events(
         tracker.sender_id,
         events[:1],
-        agent.domain.slots,
+        slots,
         sender_source=tracker.sender_source,
     )
     tracker_actions = []
@@ -843,7 +855,7 @@ async def _predict_tracker_actions(
                 prediction,
                 entity_result,
             ) = await _collect_action_executed_predictions(
-                processor, partial_tracker, event, fail_on_prediction_errors,
+                processor, partial_tracker, event, fail_on_prediction_errors
             )
             if entity_result:
                 policy_entity_results.append(entity_result)
@@ -993,9 +1005,7 @@ async def _collect_story_predictions(
     else:
         accuracy = 0
 
-    _log_evaluation_table(
-        [1] * len(completed_trackers), "CONVERSATION", accuracy,
-    )
+    _log_evaluation_table([1] * len(completed_trackers), "CONVERSATION", accuracy)
 
     return (
         StoryEvaluation(
@@ -1095,11 +1105,10 @@ async def test(
 
         targets, predictions = evaluation_store.serialise()
 
+        report, precision, f1, action_accuracy = get_evaluation_metrics(
+            targets, predictions, output_dict=True
+        )
         if out_directory:
-            report, precision, f1, action_accuracy = get_evaluation_metrics(
-                targets, predictions, output_dict=True
-            )
-
             # Add conversation level accuracy to story report.
             num_failed = len(story_evaluation.failed_stories)
             num_correct = len(story_evaluation.successful_stories)
@@ -1116,11 +1125,6 @@ async def test(
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
             rasa.shared.utils.io.dump_obj_as_json_to_file(report_filename, report)
             logger.info(f"Stories report saved to {report_filename}.")
-
-        else:
-            report, precision, f1, action_accuracy = get_evaluation_metrics(
-                targets, predictions, output_dict=True
-            )
 
         evaluate_entities(
             entity_results,

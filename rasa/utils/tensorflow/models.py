@@ -3,15 +3,9 @@ import numpy as np
 import logging
 import random
 from collections import defaultdict
-from typing import (
-    List,
-    Text,
-    Dict,
-    Tuple,
-    Union,
-    Optional,
-    Any,
-)
+from typing import List, Text, Dict, Tuple, Union, Optional, Any
+
+from keras.utils import tf_utils
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.constants import (
@@ -49,7 +43,6 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
 )
-from tensorflow.python.keras.utils import tf_utils
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.exceptions import RasaException
 
@@ -277,7 +270,7 @@ class RasaModel(TmpKerasModel):
 
         # Once we take advantage of TF's distributed training, this is where
         # scheduled functions will be forced to execute and return actual values.
-        outputs = tf_utils.sync_to_numpy_or_python_type(self.predict_step(batch_in))
+        outputs = tf_utils.sync_to_numpy_or_python_type(self._tf_predict_step(batch_in))
         if DIAGNOSTIC_DATA in outputs:
             outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
                 outputs[DIAGNOSTIC_DATA]
@@ -302,9 +295,9 @@ class RasaModel(TmpKerasModel):
         Returns:
             Model outputs corresponding to the inputs fed.
         """
-        outputs = {}
-        (data_generator, _,) = rasa.utils.train_utils.create_data_generators(
-            model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False,
+        outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]] = {}
+        (data_generator, _) = rasa.utils.train_utils.create_data_generators(
+            model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False
         )
         data_iterator = iter(data_generator)
         while True:
@@ -554,9 +547,7 @@ class TransformerRasaModel(RasaModel):
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
         label_data: RasaModelData,
     ) -> None:
-        super().__init__(
-            name=name, random_seed=config[RANDOM_SEED],
-        )
+        super().__init__(name=name, random_seed=config[RANDOM_SEED])
 
         self.config = config
         self.data_signature = data_signature
@@ -744,9 +735,7 @@ class TransformerRasaModel(RasaModel):
 
     def _prepare_embed_layers(self, name: Text, prefix: Text = "embed") -> None:
         self._tf_layers[f"{prefix}.{name}"] = layers.Embed(
-            self.config[EMBEDDING_DIMENSION],
-            self.config[REGULARIZATION_CONSTANT],
-            name,
+            self.config[EMBEDDING_DIMENSION], self.config[REGULARIZATION_CONSTANT], name
         )
 
     def _prepare_ffnn_layer(
@@ -765,7 +754,7 @@ class TransformerRasaModel(RasaModel):
         )
 
     def _prepare_dot_product_loss(
-        self, name: Text, scale_loss: bool, prefix: Text = "loss",
+        self, name: Text, scale_loss: bool, prefix: Text = "loss"
     ) -> None:
         self._tf_layers[f"{prefix}.{name}"] = self.dot_product_loss_layer(
             self.config[NUM_NEG],
@@ -840,7 +829,7 @@ class TransformerRasaModel(RasaModel):
         return tf.zeros([batch_dim], dtype=tf.int32)
 
     def _get_sentence_feature_lengths(
-        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text,
+        self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text
     ) -> tf.Tensor:
         """Fetches the sequence lengths of sentence-level features per input example.
 

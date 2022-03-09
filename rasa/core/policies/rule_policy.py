@@ -15,11 +15,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_RULES
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
-from rasa.shared.core.events import (
-    LoopInterrupted,
-    UserUttered,
-    ActionExecuted,
-)
+from rasa.shared.core.events import LoopInterrupted, UserUttered, ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
@@ -156,14 +152,16 @@ class RulePolicy(MemoizationPolicy):
         config[POLICY_MAX_HISTORY] = None
 
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer, lookup,
+            config, model_storage, resource, execution_context, featurizer, lookup
         )
 
         self._fallback_action_name = config["core_fallback_action_name"]
         self._enable_fallback_prediction = config["enable_fallback_prediction"]
         self._check_for_contradictions = config["check_for_contradictions"]
 
-        self._rules_sources = defaultdict(list)
+        self._rules_sources: defaultdict[Text, List[Tuple[Text, Text]]] = defaultdict(
+            list
+        )
 
     @classmethod
     def raise_if_incompatible_with_domain(
@@ -194,7 +192,7 @@ class RulePolicy(MemoizationPolicy):
         return prev_action_name == RULE_SNIPPET_ACTION_NAME
 
     def _create_feature_key(self, states: List[State]) -> Optional[Text]:
-        new_states = []
+        new_states: List[State] = []
         for state in reversed(states):
             if self._is_rule_snippet_state(state):
                 # remove all states before RULE_SNIPPET_ACTION_NAME
@@ -497,13 +495,15 @@ class RulePolicy(MemoizationPolicy):
         tracker: TrackerWithCachedStates,
         predicted_action_name: Optional[Text],
         gold_action_name: Text,
-        prediction_source: Optional[Text],
+        prediction_source: Text,
     ) -> None:
         # we need to remember which action should be predicted by the rule
         # in order to correctly output the names of the contradicting rules
         rule_name = tracker.sender_id
-        if prediction_source.startswith(DEFAULT_RULES) or prediction_source.startswith(
-            LOOP_RULES
+
+        if prediction_source is not None and (
+            prediction_source.startswith(DEFAULT_RULES)
+            or prediction_source.startswith(LOOP_RULES)
         ):
             # the real gold action contradict the one in the rules in this case
             gold_action_name = predicted_action_name
@@ -568,7 +568,14 @@ class RulePolicy(MemoizationPolicy):
         gold_action_name: Text,
         prediction_source: Optional[Text],
     ) -> List[Text]:
-        if not predicted_action_name or predicted_action_name == gold_action_name:
+        # FIXME: `predicted_action_name` and `prediction_source` are
+        # either None together or defined together. This could be improved
+        # by better typing in this class, but requires some refactoring
+        if (
+            not predicted_action_name
+            or not prediction_source
+            or predicted_action_name == gold_action_name
+        ):
             return []
 
         if self._should_delete(prediction_source, tracker, predicted_action_name):
@@ -640,12 +647,13 @@ class RulePolicy(MemoizationPolicy):
                     running_tracker, domain, gold_action_name
                 )
                 if collect_sources:
-                    self._collect_sources(
-                        running_tracker,
-                        predicted_action_name,
-                        gold_action_name,
-                        prediction_source,
-                    )
+                    if prediction_source:
+                        self._collect_sources(
+                            running_tracker,
+                            predicted_action_name,
+                            gold_action_name,
+                            prediction_source,
+                        )
                 else:
                     # to be able to remove only rules turns from the dialogue history
                     # for ML policies,
@@ -950,6 +958,7 @@ class RulePolicy(MemoizationPolicy):
         active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
         should_predict_loop = (
             not active_loop_rejected
+            and tracker.latest_action
             and tracker.latest_action.get(ACTION_NAME) != active_loop_name
         )
         should_predict_listen = (
@@ -1236,9 +1245,7 @@ class RulePolicy(MemoizationPolicy):
             )
 
     def _metadata(self) -> Dict[Text, Any]:
-        return {
-            "lookup": self.lookup,
-        }
+        return {"lookup": self.lookup}
 
     @classmethod
     def _metadata_filename(cls) -> Text:

@@ -39,9 +39,9 @@ class SingleStateFeaturizer:
 
     def __init__(self) -> None:
         """Initialize the single state featurizer."""
-        self._default_feature_states = {}
-        self.action_texts = []
-        self.entity_tag_specs = []
+        self._default_feature_states: Dict[Text, Any] = {}
+        self.action_texts: List[Text] = []
+        self.entity_tag_specs: List[EntityTagSpec] = []
 
     def _create_entity_tag_specs(
         self, bilou_tagging: bool = False
@@ -84,9 +84,7 @@ class SingleStateFeaturizer:
             )
         ]
 
-    def prepare_for_training(
-        self, domain: Domain, bilou_tagging: bool = False,
-    ) -> None:
+    def prepare_for_training(self, domain: Domain, bilou_tagging: bool = False) -> None:
         """Gets necessary information for featurization from domain.
 
         Args:
@@ -258,7 +256,7 @@ class SingleStateFeaturizer:
             if state_type == PREVIOUS_ACTION:
                 state_features.update(
                     self._extract_state_features(
-                        sub_state, precomputations=precomputations, sparse=True,
+                        sub_state, precomputations=precomputations, sparse=True
                     )
                 )
             # featurize user only if it is "real" user input,
@@ -267,7 +265,7 @@ class SingleStateFeaturizer:
 
                 state_features.update(
                     self._extract_state_features(
-                        sub_state, precomputations=precomputations, sparse=True,
+                        sub_state, precomputations=precomputations, sparse=True
                     )
                 )
                 if sub_state.get(ENTITIES):
@@ -311,9 +309,11 @@ class SingleStateFeaturizer:
         ):
             # we cannot build a classifier with fewer than 2 classes
             return {}
-
-        message = precomputations.lookup_message(user_text=entity_data[TEXT])
-        message.data[ENTITIES] = entity_data[ENTITIES]
+        if precomputations is None:
+            message = None
+        else:
+            message = precomputations.lookup_message(user_text=entity_data[TEXT])
+            message.data[ENTITIES] = entity_data[ENTITIES]
 
         if not message:
             return {}

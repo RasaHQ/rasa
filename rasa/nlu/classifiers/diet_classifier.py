@@ -3,6 +3,8 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
+
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.featurizers.featurizer import Featurizer
 
 import numpy as np
@@ -31,7 +33,7 @@ from rasa.utils.tensorflow.model_data import (
     FeatureSignature,
     FeatureArray,
 )
-from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.constants import TOKENS_NAMES, DEFAULT_TRANSFORMER_SIZE
 from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     TEXT,
@@ -154,7 +156,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             # Whether to share the hidden layer weights between user message and labels.
             SHARE_HIDDEN_LAYERS: False,
             # Number of units in transformer
-            TRANSFORMER_SIZE: 256,
+            TRANSFORMER_SIZE: DEFAULT_TRANSFORMER_SIZE,
             # Number of transformer layers
             NUM_TRANSFORMER_LAYERS: 2,
             # Number of attention heads in transformer
@@ -666,6 +668,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[FeatureArray]:
+        if self._label_data is None:
+            return []
+
         feature_arrays: List[FeatureArray] = self._label_data.get(LABEL, SENTENCE)
         all_label_features = feature_arrays[0]
         return [
@@ -705,6 +710,14 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
             training_data = [
                 example for example in training_data if label_attribute in example.data
             ]
+
+        training_data = [
+            message
+            for message in training_data
+            if message.features_present(
+                attribute=TEXT, featurizers=self.component_config.get(FEATURIZERS)
+            )
+        ]
 
         if not training_data:
             # no training data are present to train
@@ -879,6 +892,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
         else:
+            if self.model is None:
+                raise ModelNotFound("Model could not be found. ")
+
             self.model.adjust_for_incremental_training(
                 data_example=self._data_example,
                 new_sparse_feature_sizes=model_data.get_sparse_feature_sizes(),
@@ -929,6 +945,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
+        if model_data.is_empty():
+            return None
         return self.model.run_inference(model_data)
 
     def _predict_label(
@@ -936,7 +954,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
         label: Dict[Text, Any] = {"name": None, "confidence": 0.0}
-        label_ranking = []
+        label_ranking: List[Dict[Text, Any]] = []
 
         if predict_out is None:
             return label, label_ranking
@@ -968,7 +986,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         ranking = [(idx, casted_message_sim[idx]) for idx in ranked_label_indices]
         label_ranking = [
-            {"name": self.index_label_id_mapping[label_idx], "confidence": score,}
+            {"name": self.index_label_id_mapping[label_idx], "confidence": score}
             for label_idx, score in ranking
         ]
 
@@ -1022,8 +1040,6 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
     def persist(self) -> None:
         """Persist this model into the passed directory."""
-        import shutil
-
         if self.model is None:
             return None
 
@@ -1033,8 +1049,13 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
             rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
-            if self.component_config[CHECKPOINT_MODEL]:
-                shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+            if self.component_config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
+                self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                # Save an empty file to flag that this model has been
+                # produced using checkpointing
+                checkpoint_marker = model_path / f"{file_name}.from_checkpoint.pkl"
+                checkpoint_marker.touch()
+
             self.model.save(str(tf_model_file))
 
             io_utils.pickle_dump(
@@ -1045,7 +1066,8 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
                 self._sparse_feature_sizes,
             )
             io_utils.pickle_dump(
-                model_path / f"{file_name}.label_data.pkl", dict(self._label_data.data)
+                model_path / f"{file_name}.label_data.pkl",
+                dict(self._label_data.data) if self._label_data is not None else {},
             )
             io_utils.json_pickle(
                 model_path / f"{file_name}.index_label_id_mapping.json",
@@ -1726,7 +1748,7 @@ class DIET(TransformerRasaModel):
             tf_batch_data, TEXT
         )
         sentence_feature_lengths = self._get_sentence_feature_lengths(
-            tf_batch_data, TEXT,
+            tf_batch_data, TEXT
         )
 
         text_transformed, _, _, _, _, attention_weights = self._tf_layers[

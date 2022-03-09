@@ -3,7 +3,7 @@ from typing import List, Union, Text, Optional, Any, Tuple, Dict
 import logging
 import scipy.sparse
 import numpy as np
-from tensorflow.python.keras.utils.data_utils import Sequence
+from tensorflow.keras.utils import Sequence
 
 from rasa.utils.tensorflow.constants import SEQUENCE, BALANCED
 from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
@@ -367,7 +367,7 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         # actual batch size will be set inside `on_epoch_end`
         self._current_batch_size = 0
         # create separate data variable that will store modified data for each batch
-        self._data = {}
+        self._data: Data = {}
         self.on_epoch_end()
 
     def __len__(self) -> int:

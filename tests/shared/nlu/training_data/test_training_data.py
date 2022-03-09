@@ -204,12 +204,7 @@ def test_composite_entities_data():
     assert len(td.intent_examples) == 29
     assert len(td.training_examples) == 29
     assert td.entity_synonyms == {"SF": "San Fransisco"}
-    assert td.intents == {
-        "order_pizza",
-        "book_flight",
-        "chitchat",
-        "affirm",
-    }
+    assert td.intents == {"order_pizza", "book_flight", "chitchat", "affirm"}
     assert td.entities == {"location", "topping", "size"}
     assert td.entity_groups == {"1", "2"}
     assert td.entity_roles == {"to", "from"}
@@ -442,10 +437,7 @@ def test_validate_number_of_examples_per_intent():
     )
     message_non_nlu_intent = Message(data={"intent": "subscribe"})
 
-    training_examples = [
-        message_intent,
-        message_non_nlu_intent,
-    ]
+    training_examples = [message_intent, message_non_nlu_intent]
     training_data = TrainingData(training_examples=training_examples)
 
     with pytest.warns(Warning) as w:
@@ -875,9 +867,7 @@ def test_fingerprint_is_different_when_lookup_table_has_changed(
 ):
     from rasa.shared.importers.utils import training_data_from_paths
 
-    files = [
-        "data/test/lookup_tables/lookup_table.json",
-    ]
+    files = ["data/test/lookup_tables/lookup_table.json"]
 
     td1 = training_data_from_paths(files, language="en")
     fingerprint1 = td1.fingerprint()

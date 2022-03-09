@@ -14,7 +14,7 @@ from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelMetadata
 from rasa.model import get_latest_model
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -155,7 +155,7 @@ class MessageProcessor:
         return None
 
     async def run_action_extract_slots(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker,
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ) -> DialogueStateTracker:
         """Run action to extract slots and update the tracker accordingly.
 
@@ -167,7 +167,7 @@ class MessageProcessor:
             the given (updated) tracker
         """
         action_extract_slots = rasa.core.actions.action.action_for_name_or_text(
-            ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint,
+            ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint
         )
         extraction_events = await action_extract_slots.run(
             output_channel, self.nlg, tracker, self.domain
@@ -511,7 +511,7 @@ class MessageProcessor:
                 )
             else:
                 intent = reminder_event.intent
-                entities = reminder_event.entities or {}
+                entities: Union[List[Dict], Dict] = reminder_event.entities or {}
                 await self.trigger_external_user_uttered(
                     intent, entities, tracker, output_channel
                 )
@@ -705,13 +705,14 @@ class MessageProcessor:
 
     @staticmethod
     def _should_handle_message(tracker: DialogueStateTracker) -> bool:
-        return (
-            not tracker.is_paused()
-            or tracker.latest_message.intent.get(INTENT_NAME_KEY) == USER_INTENT_RESTART
+        return not tracker.is_paused() or (
+            tracker.latest_message is not None
+            and tracker.latest_message.intent.get(INTENT_NAME_KEY)
+            == USER_INTENT_RESTART
         )
 
     def is_action_limit_reached(
-        self, tracker: DialogueStateTracker, should_predict_another_action: bool,
+        self, tracker: DialogueStateTracker, should_predict_another_action: bool
     ) -> bool:
         """Check whether the maximum number of predictions has been met.
 
@@ -738,7 +739,7 @@ class MessageProcessor:
         )
 
     async def _run_prediction_loop(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker,
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -988,7 +989,7 @@ class MessageProcessor:
             raise ValueError("Cannot predict next action if there is no core target.")
 
         results = self.graph_runner.run(
-            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target],
+            inputs={PLACEHOLDER_TRACKER: tracker}, targets=[target]
         )
         policy_prediction = results[target]
         return policy_prediction

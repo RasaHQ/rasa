@@ -3,11 +3,7 @@ import uuid
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
 import rasa.core.channels.channel
-from rasa.core.channels.channel import (
-    InputChannel,
-    OutputChannel,
-    UserMessage,
-)
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 import rasa.shared.utils.io
 from sanic import Blueprint, response, Sanic
 from sanic.request import Request
@@ -21,12 +17,23 @@ class SocketBlueprint(Blueprint):
     def __init__(
         self, sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any
     ) -> None:
-        self.sio = sio
-        self.socketio_path = socketio_path
+        """Creates a :class:`sanic.Blueprint` for routing socketio connenctions.
+
+        :param sio: Instance of :class:`socketio.AsyncServer` class
+        :param socketio_path: string indicating the route to accept requests on.
+        """
         super().__init__(*args, **kwargs)
+        self.ctx.sio = sio
+        self.ctx.socketio_path = socketio_path
 
     def register(self, app: Sanic, options: Dict[Text, Any]) -> None:
-        self.sio.attach(app, self.socketio_path)
+        """Attach the Socket.IO webserver to the given Sanic instance.
+
+        :param app: Instance of :class:`sanic.app.Sanic` class
+        :param options: Options to be used while registering the
+            blueprint into the app.
+        """
+        self.ctx.sio.attach(app, self.ctx.socketio_path)
         super().register(app, options)
 
 
@@ -76,14 +83,14 @@ class SocketIOOutput(OutputChannel):
         messages = [{"text": message, "quick_replies": []} for message in message_parts]
 
         # attach all buttons to the last text fragment
-        for button in buttons:
-            messages[-1]["quick_replies"].append(
-                {
-                    "content_type": "text",
-                    "title": button["title"],
-                    "payload": button["payload"],
-                }
-            )
+        messages[-1]["quick_replies"] = [
+            {
+                "content_type": "text",
+                "title": button["title"],
+                "payload": button["payload"],
+            }
+            for button in buttons
+        ]
 
         for message in messages:
             await self._send_message(recipient_id, message)
@@ -197,7 +204,7 @@ class SocketIOInput(InputChannel):
                 jwt_payload = None
                 if auth and auth.get("token"):
                     jwt_payload = rasa.core.channels.channel.decode_bearer_token(
-                        auth.get("token"), self.jwt_key, self.jwt_algorithm,
+                        auth.get("token"), self.jwt_key, self.jwt_algorithm
                     )
 
                 if jwt_payload:

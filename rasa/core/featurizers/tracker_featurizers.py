@@ -105,13 +105,16 @@ class TrackerFeaturizer:
         Returns:
             Featurized tracker states.
         """
-        return [
-            [
-                self.state_featurizer.encode_state(state, precomputations)
-                for state in tracker_states
+        if self.state_featurizer is None:
+            return [[{}]]
+        else:
+            return [
+                [
+                    self.state_featurizer.encode_state(state, precomputations)
+                    for state in tracker_states
+                ]
+                for tracker_states in trackers_as_states
             ]
-            for tracker_states in trackers_as_states
-        ]
 
     @staticmethod
     def _convert_labels_to_ids(
@@ -152,15 +155,18 @@ class TrackerFeaturizer:
         Returns:
             Trackers as entity features.
         """
-        return [
-            [
-                self.state_featurizer.encode_entities(
-                    entity_data, precomputations, bilou_tagging,
-                )
-                for entity_data in trackers_entities
+        if self.state_featurizer is None:
+            return [[{}]]
+        else:
+            return [
+                [
+                    self.state_featurizer.encode_entities(
+                        entity_data, precomputations, bilou_tagging
+                    )
+                    for entity_data in trackers_entities
+                ]
+                for trackers_entities in trackers_as_entities
             ]
-            for trackers_entities in trackers_as_entities
-        ]
 
     @staticmethod
     def _entity_data(event: UserUttered) -> Dict[Text, Any]:
@@ -256,7 +262,7 @@ class TrackerFeaturizer:
         )
 
     def prepare_for_featurization(
-        self, domain: Domain, bilou_tagging: bool = False,
+        self, domain: Domain, bilou_tagging: bool = False
     ) -> None:
         """Ensures that the featurizer is ready to be called during training.
 
@@ -1056,7 +1062,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                     tracker_states[:label_index], self.max_history
                 )
                 label = [event.intent_name or event.text]
-                entities = [{}]
+                entities: List[Dict[Text, Any]] = [{}]
 
                 yield sliced_states, label, entities
 

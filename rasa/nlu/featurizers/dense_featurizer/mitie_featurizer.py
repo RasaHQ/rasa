@@ -57,7 +57,7 @@ class MitieFeaturizer(DenseFeaturizer, GraphComponent):
         return ["mitie", "numpy"]
 
     def __init__(
-        self, config: Dict[Text, Any], execution_context: ExecutionContext,
+        self, config: Dict[Text, Any], execution_context: ExecutionContext
     ) -> None:
         """Instantiates a new `MitieFeaturizer` instance."""
         super().__init__(execution_context.node_name, config)

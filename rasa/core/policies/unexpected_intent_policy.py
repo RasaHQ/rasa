@@ -106,11 +106,7 @@ from rasa.utils.tensorflow.constants import (
     NAME,
 )
 from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.model_data import (
-    RasaModelData,
-    FeatureArray,
-    Data,
-)
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
 
 import rasa.utils.io as io_utils
 from rasa.core.exceptions import RasaCoreException
@@ -175,9 +171,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             # the dialogue transformer encoder.
             ENCODING_DIMENSION: 50,
             # Number of units in transformer encoders
-            TRANSFORMER_SIZE: {TEXT: 128, DIALOGUE: 128,},
+            TRANSFORMER_SIZE: {TEXT: 128, DIALOGUE: 128},
             # Number of layers in transformer encoders
-            NUM_TRANSFORMER_LAYERS: {TEXT: 1, DIALOGUE: 1,},
+            NUM_TRANSFORMER_LAYERS: {TEXT: 1, DIALOGUE: 1},
             # Number of attention heads in transformer
             NUM_HEADS: 4,
             # If 'True' use key relative embeddings in attention
@@ -373,7 +369,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
         label_data.add_lengths(
-            f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE,
+            f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE
         )
         label_ids = np.arange(len(domain.intents))
         label_data.add_features(
@@ -425,7 +421,11 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         # Hence, we first filter out the attributes inside `model_data`
         # to keep only those which should be present during prediction.
         model_prediction_data = self._prepare_data_for_prediction(model_data)
-        prediction_scores = self.model.run_bulk_inference(model_prediction_data)
+        prediction_scores = (
+            self.model.run_bulk_inference(model_prediction_data)
+            if self.model is not None
+            else {}
+        )
         label_id_scores = self._collect_label_id_grouped_scores(
             prediction_scores, label_ids
         )
@@ -523,7 +523,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         query_intent_index = domain.intents.index(query_intent)
 
         def _compile_metadata_for_label(
-            label_name: Text, similarity_score: float, threshold: Optional[float],
+            label_name: Text, similarity_score: float, threshold: Optional[float]
         ) -> "RankingCandidateMetadata":
             severity = float(threshold - similarity_score) if threshold else None
             return {
@@ -612,7 +612,12 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         sequence_similarities = all_similarities[:, -1, :]
 
         # Check for unlikely intent
-        query_intent = tracker.get_last_event_for(UserUttered).intent_name
+        last_user_uttered_event = tracker.get_last_event_for(UserUttered)
+        query_intent = (
+            last_user_uttered_event.intent_name
+            if last_user_uttered_event is not None
+            else ""
+        )
         is_unlikely_intent = self._check_unlikely_intent(
             domain, sequence_similarities, query_intent
         )
@@ -630,7 +635,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         )
 
     @staticmethod
-    def _should_skip_prediction(tracker: DialogueStateTracker, domain: Domain,) -> bool:
+    def _should_skip_prediction(tracker: DialogueStateTracker, domain: Domain) -> bool:
         """Checks if the policy should skip making a prediction.
 
         A prediction can be skipped if:
@@ -755,7 +760,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     @staticmethod
     def _collect_label_id_grouped_scores(
-        output_scores: Dict[Text, np.ndarray], label_ids: np.ndarray,
+        output_scores: Dict[Text, np.ndarray], label_ids: np.ndarray
     ) -> Dict[int, Dict[Text, List[float]]]:
         """Collects similarities predicted for each label id.
 
@@ -775,7 +780,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         if LABEL_PAD_ID in unique_label_ids:
             unique_label_ids.remove(LABEL_PAD_ID)
 
-        label_id_scores = {
+        label_id_scores: Dict[int, Dict[Text, List[float]]] = {
             label_id: {POSITIVE_SCORES_KEY: [], NEGATIVE_SCORES_KEY: []}
             for label_id in unique_label_ids
         }
@@ -925,7 +930,7 @@ class IntentTED(TED):
     """
 
     def _prepare_dot_product_loss(
-        self, name: Text, scale_loss: bool, prefix: Text = "loss",
+        self, name: Text, scale_loss: bool, prefix: Text = "loss"
     ) -> None:
         self._tf_layers[f"{prefix}.{name}"] = self.dot_product_loss_layer(
             self.config[NUM_NEG],

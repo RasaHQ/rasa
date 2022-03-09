@@ -28,6 +28,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
 
 
 class RasaCustomLayer(tf.keras.layers.Layer):
@@ -126,8 +127,7 @@ class RasaCustomLayer(tf.keras.layers.Layer):
         """
         kernel = layer_to_replace.get_kernel().numpy()
         bias = layer_to_replace.get_bias()
-        use_bias = False if bias is None else True
-        if use_bias:
+        if bias is not None:
             bias = bias.numpy()
         units = layer_to_replace.get_units()
         # split kernel by feature sizes to update the layer accordingly
@@ -154,12 +154,12 @@ class RasaCustomLayer(tf.keras.layers.Layer):
         # stack each merged weight to form a new weight tensor
         new_weights = np.vstack(merged_weights)
         kernel_init = tf.constant_initializer(new_weights)
-        bias_init = tf.constant_initializer(bias) if use_bias else None
+        bias_init = tf.constant_initializer(bias) if bias is not None else None
         new_layer = layers.DenseForSparse(
             name=f"sparse_to_dense.{attribute}_{feature_type}",
             reg_lambda=reg_lambda,
             units=units,
-            use_bias=use_bias,
+            use_bias=bias is not None,
             kernel_initializer=kernel_init,
             bias_initializer=bias_init,
         )
@@ -232,7 +232,7 @@ class ConcatenateSparseDenseFeatures(RasaCustomLayer):
         )
 
         # Prepare dropout and sparse-to-dense layers if any sparse tensors are expected
-        self._tf_layers = {}
+        self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
         if any([signature.is_sparse for signature in feature_type_signature]):
             self._prepare_layers_for_sparse_tensors(attribute, feature_type, config)
 
@@ -252,7 +252,7 @@ class ConcatenateSparseDenseFeatures(RasaCustomLayer):
             )
 
     def _prepare_layers_for_sparse_tensors(
-        self, attribute: Text, feature_type: Text, config: Dict[Text, Any],
+        self, attribute: Text, feature_type: Text, config: Dict[Text, Any]
     ) -> None:
         """Sets up sparse tensor pre-processing before combining with dense ones."""
         # For optionally applying dropout to sparse tensors
@@ -403,7 +403,7 @@ class RasaFeatureCombiningLayer(RasaCustomLayer):
 
         super().__init__(name=f"rasa_feature_combining_layer_{attribute}")
 
-        self._tf_layers = {}
+        self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
 
         # Prepare sparse-dense combining layers for each present feature type
         self._feature_types_present = self._get_present_feature_types(
@@ -798,6 +798,9 @@ class RasaSequenceLayer(RasaCustomLayer):
 
         The config can contain these directly (same for all attributes) or specified
         separately for each attribute.
+        If a transformer is used (e.i. if `number_of_transformer_layers` is positive),
+        the default `transformer_size` which is `None` breaks things. Thus,
+        we need to set a reasonable default value so that the model works fine.
         """
         transformer_layers = config[NUM_TRANSFORMER_LAYERS]
         if isinstance(transformer_layers, dict):
@@ -805,6 +808,8 @@ class RasaSequenceLayer(RasaCustomLayer):
         transformer_units = config[TRANSFORMER_SIZE]
         if isinstance(transformer_units, dict):
             transformer_units = transformer_units[attribute]
+        if transformer_layers > 0 and (not transformer_units or transformer_units < 1):
+            transformer_units = DEFAULT_TRANSFORMER_SIZE
 
         return transformer_layers, transformer_units
 

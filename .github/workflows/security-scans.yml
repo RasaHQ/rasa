@@ -50,7 +50,7 @@ jobs:
 
     - name: Set up Python 3.7 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
+      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
       with:
         python-version: 3.7
 

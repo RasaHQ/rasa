@@ -62,7 +62,7 @@ class EntitySynonymMapper(GraphComponent, EntityExtractorMixin):
         """Creates component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, synonyms)
 
-    def train(self, training_data: TrainingData,) -> Resource:
+    def train(self, training_data: TrainingData) -> Resource:
         """Trains the synonym lookup table."""
         for key, value in list(training_data.entity_synonyms.items()):
             self._add_entities_if_synonyms(key, value)

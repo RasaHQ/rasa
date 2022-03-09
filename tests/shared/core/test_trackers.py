@@ -25,7 +25,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -70,11 +70,7 @@ from tests.dialogues import (
     TEST_MOODBOT_DIALOGUE,
     TEST_DOMAINS_FOR_DIALOGUES,
 )
-from tests.core.utilities import (
-    tracker_from_dialogue,
-    user_uttered,
-    get_tracker,
-)
+from tests.core.utilities import tracker_from_dialogue, user_uttered, get_tracker
 
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
@@ -1382,7 +1378,7 @@ async def test_fill_slots_for_policy_entities():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "3.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             entities:
             - {nlu_entity}
             - {policy_entity}

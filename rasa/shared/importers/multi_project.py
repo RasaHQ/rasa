@@ -32,9 +32,9 @@ class MultiProjectImporter(TrainingDataImporter):
         else:
             self._domain_paths = []
         self._story_paths = []
-        self._e2e_story_paths = []
+        self._e2e_story_paths: List[Text] = []
         self._nlu_paths = []
-        self._imports = []
+        self._imports: List[Text] = []
         self._additional_paths = training_data_paths or []
         self._project_directory = project_directory or os.path.dirname(config_file)
 
@@ -54,6 +54,10 @@ class MultiProjectImporter(TrainingDataImporter):
         )
 
         mark_as_experimental_feature(feature_name="MultiProjectImporter")
+
+    def get_config_file_for_auto_config(self) -> Optional[Text]:
+        """Returns config file path for auto-config only if there is a single one."""
+        return None
 
     def _init_from_path(self, path: Text) -> None:
         if os.path.isfile(path):
@@ -175,13 +179,15 @@ class MultiProjectImporter(TrainingDataImporter):
         """Retrieves model domain (see parent class for full docstring)."""
         domains = [Domain.load(path) for path in self._domain_paths]
         return reduce(
-            lambda merged, other: merged.merge(other), domains, Domain.empty()
+            lambda merged, other: merged.merge(other),
+            domains,
+            Domain.empty(),
         )
 
-    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return utils.story_graph_from_paths(
-            self._story_paths, self.get_domain(), exclusion_percentage,
+            self._story_paths, self.get_domain(), exclusion_percentage
         )
 
     def get_conversation_tests(self) -> StoryGraph:

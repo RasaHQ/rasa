@@ -1,15 +1,7 @@
 import tempfile
 import time
 from pathlib import Path
-from typing import (
-    Text,
-    NamedTuple,
-    Optional,
-    List,
-    Union,
-    Dict,
-    Any,
-)
+from typing import Text, NamedTuple, Optional, List, Union, Dict, Any
 
 import randomname
 
@@ -21,7 +13,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.shared.importers.autoconfig import TrainingType
+from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa import telemetry
 from rasa.shared.core.domain import Domain
@@ -142,8 +134,8 @@ def train(
         )
         return TrainingResult(code=1)
 
-    domain = file_importer.get_domain()
-    if domain.is_empty():
+    domain_object = file_importer.get_domain()
+    if domain_object.is_empty():
         rasa.shared.utils.cli.print_warning(
             "Core training was skipped because no valid domain file was found. "
             "Only an NLU-model was created. Please specify a valid domain using "
@@ -164,9 +156,7 @@ def train(
         )
         training_type = TrainingType.CORE
 
-    with telemetry.track_model_training(
-        file_importer, model_type="rasa",
-    ):
+    with telemetry.track_model_training(file_importer, model_type="rasa"):
         return _train_graph(
             file_importer,
             training_type=training_type,
@@ -209,10 +199,17 @@ def _train_graph(
 
     config = file_importer.get_config()
     recipe = Recipe.recipe_for_name(config.get("recipe"))
-    model_configuration = recipe.graph_config_for_recipe(
-        config, kwargs, training_type=training_type, is_finetuning=is_finetuning
+    config, _missing_keys, _configured_keys = recipe.auto_configure(
+        file_importer.get_config_file_for_auto_config(),
+        config,
+        training_type,
     )
-
+    model_configuration = recipe.graph_config_for_recipe(
+        config,
+        kwargs,
+        training_type=training_type,
+        is_finetuning=is_finetuning,
+    )
     rasa.engine.validation.validate(model_configuration)
 
     with tempfile.TemporaryDirectory() as temp_model_dir:
@@ -232,7 +229,7 @@ def _train_graph(
         full_model_path = Path(output_path, model_name)
 
         with telemetry.track_model_training(
-            file_importer, model_type=training_type.model_type,
+            file_importer, model_type=training_type.model_type
         ):
             trainer.train(
                 model_configuration,

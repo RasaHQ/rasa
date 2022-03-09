@@ -23,12 +23,7 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
-    INTENT_RESPONSE_KEY,
-    ACTION_NAME,
-)
+from rasa.shared.nlu.constants import TEXT, INTENT, INTENT_RESPONSE_KEY, ACTION_NAME
 
 BUFFER_SLOTS_PREFIX = "buf_"
 
@@ -48,6 +43,8 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     to use the idea of Subword Semantic Hashing
     from https://arxiv.org/abs/1810.07150.
     """
+
+    OOV_words: List[Text]
 
     @classmethod
     def required_components(cls) -> List[Type]:
@@ -556,8 +553,8 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
         if not self.vectorizers.get(attribute):
             return [None], [None]
 
-        sequence_features = []
-        sentence_features = []
+        sequence_features: List[Optional[scipy.sparse.spmatrix]] = []
+        sentence_features: List[Optional[scipy.sparse.spmatrix]] = []
 
         for i, tokens in enumerate(all_tokens):
             if not tokens:
@@ -605,7 +602,7 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
             return [], []
 
     def train(
-        self, training_data: TrainingData, model: Optional[SpacyModel] = None,
+        self, training_data: TrainingData, model: Optional[SpacyModel] = None
     ) -> Resource:
         """Trains the featurizer.
 

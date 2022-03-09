@@ -590,7 +590,7 @@ async def test_update_tracker_session(
 
 
 async def test_update_tracker_session_with_metadata(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
+    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
     sender_id = uuid.uuid4().hex
@@ -607,7 +607,7 @@ async def test_update_tracker_session_with_metadata(
     events = list(tracker.events)
 
     assert events[0] == with_model_id(
-        SlotSet(SESSION_START_METADATA_SLOT, message_metadata,), model_id
+        SlotSet(SESSION_START_METADATA_SLOT, message_metadata), model_id
     )
     assert tracker.slots[SESSION_START_METADATA_SLOT].value == message_metadata
 
@@ -706,10 +706,7 @@ async def test_update_tracker_session_with_slots(
     assert events[2:7] == slot_set_events
 
     # the next two events are the session start sequence
-    assert events[7:9] == [
-        ActionExecuted(ACTION_SESSION_START_NAME),
-        SessionStarted(),
-    ]
+    assert events[7:9] == [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()]
     assert events[9:14] == slot_set_events
 
     # finally an action listen, this should also be the last event
@@ -876,7 +873,7 @@ async def test_handle_message_with_session_start(
             SlotSet(entity, slot_1[entity]),
             DefinePrevUserUtteredFeaturization(False),
             ActionExecuted("utter_greet"),
-            BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"},),
+            BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"}),
             ActionExecuted(ACTION_LISTEN_NAME),
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
@@ -932,7 +929,7 @@ async def test_should_predict_another_action(
 
 async def test_action_unlikely_intent_metadata(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
-        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME),],
+        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
     )
     domain = Domain.empty()
     metadata = {"key1": 1, "key2": "2"}
@@ -1002,7 +999,7 @@ async def test_restart_triggers_session_start(
             SlotSet(entity, slot_1[entity]),
             DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
             ActionExecuted("utter_greet"),
-            BotUttered("hey there name1!", metadata={"utter_action": "utter_greet"},),
+            BotUttered("hey there name1!", metadata={"utter_action": "utter_greet"}),
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered("/restart", {INTENT_NAME_KEY: "restart", "confidence": 1.0}),
             DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
@@ -1165,7 +1162,7 @@ async def test_policy_events_not_applied_if_rejected(
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(user_message, intent={"name": "greet"},),
+            UserUttered(user_message, intent={"name": "greet"}),
             ActionExecutionRejected(ACTION_LISTEN_NAME),
         ],
         model_id,
@@ -1175,7 +1172,7 @@ async def test_policy_events_not_applied_if_rejected(
 
 
 async def test_logging_of_end_to_end_action(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
+    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
     model_id = default_processor.model_metadata.model_id
     end_to_end_action = "hi, how are you?"
@@ -1187,6 +1184,7 @@ async def test_logging_of_end_to_end_action(
         action_names=[],
         forms={},
         action_texts=[end_to_end_action],
+        data={},
     )
 
     default_processor.domain = new_domain
@@ -1228,7 +1226,7 @@ async def test_logging_of_end_to_end_action(
             ActionExecuted(ACTION_SESSION_START_NAME),
             SessionStarted(),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(user_message, intent={"name": "greet"},),
+            UserUttered(user_message, intent={"name": "greet"}),
             ActionExecuted(action_text=end_to_end_action),
             BotUttered("hi, how are you?", {}, {}, 123),
             ActionExecuted(ACTION_LISTEN_NAME),
@@ -1250,7 +1248,7 @@ async def test_predict_next_action_with_hidden_rules(
     story_slot = "story_slot"
     domain_content = textwrap.dedent(
         f"""
-        version: "3.0"
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
         intents:
         - {rule_intent}
         - {story_intent}
@@ -1370,14 +1368,14 @@ def test_predict_next_action_raises_limit_reached_exception(
 
 
 async def test_processor_logs_text_tokens_in_tracker(
-    mood_agent: Agent, whitespace_tokenizer: WhitespaceTokenizer
+    default_agent: Agent, whitespace_tokenizer: WhitespaceTokenizer
 ):
     text = "Hello there"
     tokens = whitespace_tokenizer.tokenize(Message(data={"text": text}), "text")
     indices = [(t.start, t.end) for t in tokens]
 
     message = UserMessage(text)
-    processor = mood_agent.processor
+    processor = default_agent.processor
     tracker = await processor.log_message(message)
     event = tracker.get_last_event_for(event_type=UserUttered)
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
@@ -1385,20 +1383,20 @@ async def test_processor_logs_text_tokens_in_tracker(
     assert event_tokens == indices
 
 
-async def test_processor_valid_slot_setting(form_bot_agent: Agent):
-    processor = form_bot_agent.processor
+async def test_processor_valid_slot_setting(default_agent: Agent):
+    processor = default_agent.processor
     message = UserMessage(
-        "that's correct",
+        "Hiya Peter",
         CollectingOutputChannel(),
         "test",
         parse_data={
-            "intent": {"name": "affirm"},
-            "entities": [{"entity": "seating", "value": True}],
+            "intent": {"name": "greet"},
+            "entities": [{"entity": "name", "value": "Peter"}],
         },
     )
     await processor.handle_message(message)
     tracker = processor.get_tracker("test")
-    assert SlotSet("outdoor_seating", True) in tracker.events
+    assert SlotSet("name", "Peter") in tracker.events
 
 
 async def test_parse_message_nlu_only(trained_moodbot_nlu_path: Text):
@@ -1481,7 +1479,7 @@ def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
 
 async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFixture):
     processor = e2e_bot_agent.processor
-    message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test",)
+    message = UserMessage("I am feeling sad.", CollectingOutputChannel(), "test")
     with caplog.at_level(logging.DEBUG):
         await processor.handle_message(message)
 
@@ -1494,8 +1492,8 @@ async def test_processor_e2e_slot_set(e2e_bot_agent: Agent, caplog: LogCaptureFi
     )
 
 
-async def test_model_name_is_available(trained_moodbot_path: Text):
-    processor = Agent.load(model_path=trained_moodbot_path).processor
+async def test_model_name_is_available(trained_rasa_model: Text):
+    processor = Agent.load(model_path=trained_rasa_model).processor
     assert len(processor.model_filename) > 0
     assert "/" not in processor.model_filename
 
