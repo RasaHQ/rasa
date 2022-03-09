@@ -108,6 +108,7 @@ class Validator:
         nodes = dict()
         visited = dict()
         loops_cp = []
+        stories = []
         
         everything_is_alright = True
         
@@ -122,6 +123,7 @@ class Validator:
                     nodes[end_cp] = []
                     visited[end_cp] = False
                 nodes[start_cp].append(end_cp)
+                stories.append(story.block_name)
 
         if STORY_START in nodes:
             row.put(STORY_START)
@@ -130,14 +132,15 @@ class Validator:
             visited[x] = True
             for node in nodes[x]:
                 if visited[node]:
-                    loops_cp.append(f"{x} => {node}")
+                    loops_cp.append(f"'{x}' that is going to '{node}' repeatedly")
                     everything_is_alright = ignore_warnings and everything_is_alright
                 else:
                     row.put(node)
         
         if(len(loops_cp) > 0):
             rasa.shared.utils.io.raise_warning(
-                f"These checkpoints '{loops_cp}' is causing loop"
+                f"These stories '{stories}' "
+                f"with this checkpoint {loops_cp} is causing loop "
             )
         
         return everything_is_alright
