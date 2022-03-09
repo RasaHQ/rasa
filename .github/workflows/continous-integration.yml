@@ -35,7 +35,7 @@ env:
 
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
-  DEFAULT_PYTHON_VERSION: '3.7'
+  DEFAULT_PYTHON_VERSION: '3.9'
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
@@ -108,7 +108,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -242,7 +242,7 @@ jobs:
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -373,10 +373,10 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@v2
 
-      - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
@@ -470,7 +470,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -804,10 +804,10 @@ jobs:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
-    - name: Set up Python 3.7 🐍
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+    - name: Set up Python 3.9 🐍
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
-        python-version: 3.7
+        python-version: 3.9
 
     - name: Read Poetry Version 🔢
       run: |
