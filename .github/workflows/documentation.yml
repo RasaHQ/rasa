@@ -40,7 +40,7 @@ jobs:
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
@@ -68,7 +68,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Check if tag version is equal or higher than the latest tagged Rasa version
       id: rasa_get_version
@@ -137,7 +137,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python 3.9 🐍
       uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
@@ -228,7 +228,7 @@ jobs:
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.docs == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python 3.9 🐍
       if: needs.changes.outputs.docs == 'true'
@@ -322,7 +322,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Node 12.x 🦙
       uses: actions/setup-node@v2.3.0
