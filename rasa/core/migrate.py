@@ -348,7 +348,10 @@ def migrate_domain_format(
                 f"only eligible domain files."
             )
 
-        if file_dict.get(KEY_TRAINING_DATA_FORMAT_VERSION) == "3.0":
+        if (
+            file_dict.get(KEY_TRAINING_DATA_FORMAT_VERSION)
+            == LATEST_TRAINING_DATA_FORMAT_VERSION
+        ):
             migrated_files.append(file)
 
     if migrated_files:
