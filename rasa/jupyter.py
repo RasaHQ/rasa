@@ -1,7 +1,7 @@
+import asyncio
 import pprint as pretty_print
 import typing
 from typing import Any, Dict, Optional, Text
-import asyncio
 
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_success
