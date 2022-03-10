@@ -402,7 +402,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         if not any([nlu_items, training_data.responses]):
             return None
 
-        result = OrderedDict()
+        result: OrderedDict[Text, Any] = OrderedDict()
         result[KEY_TRAINING_DATA_FORMAT_VERSION] = DoubleQuotedScalarString(
             LATEST_TRAINING_DATA_FORMAT_VERSION
         )
@@ -419,9 +419,8 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_intents(cls, training_data: "TrainingData") -> List[OrderedDict]:
-        training_data = cls.prepare_training_examples(training_data)
         return RasaYAMLWriter.process_training_examples_by_key(
-            training_data,
+            cls.prepare_training_examples(training_data),
             KEY_INTENT,
             KEY_INTENT_EXAMPLES,
             TrainingDataWriter.generate_message,
@@ -514,7 +513,7 @@ class RasaYAMLWriter(TrainingDataWriter):
                 examples, example_extraction_predicate
             )
 
-            intent = OrderedDict()
+            intent: OrderedDict[Text, Any] = OrderedDict()
             intent[key_name] = intent_name
             if intent_metadata:
                 intent[KEY_METADATA] = intent_metadata
@@ -528,12 +527,13 @@ class RasaYAMLWriter(TrainingDataWriter):
             )
 
             if examples_have_metadata or example_texts_have_escape_chars:
-                rendered = RasaYAMLWriter._render_training_examples_as_objects(
+                intent[
+                    key_examples
+                ] = RasaYAMLWriter._render_training_examples_as_objects(converted)
+            else:
+                intent[key_examples] = RasaYAMLWriter._render_training_examples_as_text(
                     converted
                 )
-            else:
-                rendered = RasaYAMLWriter._render_training_examples_as_text(converted)
-            intent[key_examples] = rendered
 
             intents.append(intent)
 

@@ -1,5 +1,5 @@
 from functools import reduce
-from typing import Text, Optional, List, Dict, Set, Any, Tuple
+from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, cast
 import logging
 
 import rasa.shared.constants
@@ -164,7 +164,9 @@ class TrainingDataImporter:
         if module_path == RasaFileImporter.__name__:
             importer_class = RasaFileImporter
         elif module_path == MultiProjectImporter.__name__:
-            importer_class = MultiProjectImporter
+            # FIXME: we'd need to refactor the class hierarchy from
+            # `TrainingDataImporter` to remove this ignore statement
+            importer_class = MultiProjectImporter  # type: ignore[assignment]
         else:
             try:
                 importer_class = rasa.shared.utils.common.class_from_module_path(
@@ -465,9 +467,7 @@ class E2EImporter(TrainingDataImporter):
                 }
             )
 
-        additional_e2e_action_names = list(additional_e2e_action_names)
-
-        return Domain.from_dict({KEY_E2E_ACTIONS: additional_e2e_action_names})
+        return Domain.from_dict({KEY_E2E_ACTIONS: list(additional_e2e_action_names)})
 
     def get_stories(self, exclusion_percentage: Optional[int] = None) -> StoryGraph:
         """Retrieves the stories that should be used for training.
@@ -546,7 +546,7 @@ def _unique_events_from_stories(
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
     # sub state correctly encodes intent vs text
-    data = event.as_sub_state()
+    data = cast(Dict[Text, Any], event.as_sub_state())
     # sub state stores entities differently
     if data.get(ENTITIES) and event.entities:
         data[ENTITIES] = event.entities
