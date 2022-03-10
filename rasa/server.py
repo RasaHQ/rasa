@@ -1236,7 +1236,7 @@ def create_app(
             "response_selection_evaluation": response_selector_report,
         }
 
-        result: defaultdict[Text, Any] = defaultdict(dict)
+        result: Dict[Text, Any] = defaultdict(dict)
         for evaluation_name, evaluation in eval_name_mapping.items():
             report = evaluation.evaluation.get("report", {})
             averages = report.get("weighted avg", {})

@@ -65,7 +65,7 @@ def create_action_fingerprints(
 
     # take into account only featurized slots
     featurized_slots = {slot.name for slot in domain.slots if slot.has_features()}
-    action_fingerprints: defaultdict[Text, Dict[Text, List[Text]]] = defaultdict(dict)
+    action_fingerprints: Dict[Text, Dict[Text, List[Text]]] = defaultdict(dict)
     for action_name, events_after_action in events_after_actions.items():
         slots = list(
             set(

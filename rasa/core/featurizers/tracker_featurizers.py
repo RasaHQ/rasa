@@ -966,7 +966,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         hashed_examples = set()
         # Mapping of example state hash to set of
         # positive labels associated with the state.
-        state_hash_to_label_set: defaultdict[int, Set[Text]] = defaultdict(set)
+        state_hash_to_label_set: Dict[int, Set[Text]] = defaultdict(set)
 
         logger.debug(
             f"Creating states and {self.LABEL_NAME} label examples from "

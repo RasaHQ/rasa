@@ -245,7 +245,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
 
 # define types
-TrackerLookupDict = defaultdict[Text, List[TrackerWithCachedStates]]
+TrackerLookupDict = Dict[Text, List[TrackerWithCachedStates]]
 
 TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedStates]]
 
@@ -345,7 +345,7 @@ class TrainingDataGenerator:
             )
         self._mark_first_action_in_story_steps_as_unpredictable()
 
-        active_trackers = defaultdict(list)
+        active_trackers: Dict[Text, List[TrackerWithCachedStates]] = defaultdict(list)
 
         init_tracker = TrackerWithCachedStates(
             "",

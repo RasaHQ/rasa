@@ -710,9 +710,9 @@ class RasaModelData:
         # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
-        new_data: defaultdict[
-            Text, defaultdict[Text, List[List[FeatureArray]]]
-        ] = defaultdict(lambda: defaultdict(list))
+        new_data: Dict[Text, Dict[Text, List[List[FeatureArray]]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
 
         while min(num_data_cycles) == 0:
             if shuffle:

@@ -38,7 +38,7 @@ class StoryConflict:
 
         self._sliced_states = sliced_states
         # A list of actions that all follow from the same state.
-        self._conflicting_actions: defaultdict[Text, List[Text]] = defaultdict(
+        self._conflicting_actions: Dict[Text, List[Text]] = defaultdict(
             list
         )  # {"action": ["story_1", ...], ...}
 
@@ -196,7 +196,7 @@ def _find_conflicting_states(
     """
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
-    state_action_mapping: defaultdict[int, List[int]] = defaultdict(list)
+    state_action_mapping: Dict[int, List[int]] = defaultdict(list)
 
     for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash

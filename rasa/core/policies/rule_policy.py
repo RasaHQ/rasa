@@ -159,9 +159,7 @@ class RulePolicy(MemoizationPolicy):
         self._enable_fallback_prediction = config["enable_fallback_prediction"]
         self._check_for_contradictions = config["check_for_contradictions"]
 
-        self._rules_sources: defaultdict[Text, List[Tuple[Text, Text]]] = defaultdict(
-            list
-        )
+        self._rules_sources: Dict[Text, List[Tuple[Text, Text]]] = defaultdict(list)
 
     @classmethod
     def raise_if_incompatible_with_domain(
