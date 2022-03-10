@@ -1157,7 +1157,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
             )
 
     # noinspection PyMethodOverriding
-    def call(
+    def call(  # type: ignore[override]
         self,
         inputs_embed: tf.Tensor,
         labels_embed: tf.Tensor,
@@ -1256,7 +1256,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             model_confidence=model_confidence,
         )
 
-    def call(
+    def call(  # type: ignore[override]
         self,
         batch_inputs_embed: tf.Tensor,
         batch_labels_embed: tf.Tensor,

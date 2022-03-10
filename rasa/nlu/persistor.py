@@ -69,7 +69,7 @@ class Persistor(abc.ABC):
         self._copy(os.path.basename(tar_name), target_path)
 
     @abc.abstractmethod
-    def _retrieve_tar(self, filename: Text) -> Text:
+    def _retrieve_tar(self, filename: Text) -> None:
         """Downloads a model previously persisted to cloud storage."""
         raise NotImplementedError
 
