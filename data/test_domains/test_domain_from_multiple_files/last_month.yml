@@ -1,4 +1,4 @@
-version: "3.0"
+version: "3.1"
 session_config:
   session_expiration_time: 360
   carry_over_slots_to_new_session: True

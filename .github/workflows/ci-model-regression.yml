@@ -363,11 +363,11 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -386,7 +386,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -608,11 +608,11 @@ jobs:
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           .github/scripts/start_dd_agent.sh "${{ secrets.DD_API_KEY }}" "${{ env.ACCELERATOR_TYPE }}" ${{ env.NVML_INTERVAL_IN_SEC }}
 
-      - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Read Poetry Version 🔢
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -631,7 +631,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -756,10 +756,10 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@v2
 
-      - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Get reports
         uses: actions/download-artifact@v2
