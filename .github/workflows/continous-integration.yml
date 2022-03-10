@@ -52,7 +52,7 @@ jobs:
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
@@ -104,7 +104,7 @@ jobs:
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
@@ -192,7 +192,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
@@ -238,7 +238,7 @@ jobs:
 
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
@@ -371,7 +371,7 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python 3.9 🐍
         uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
@@ -466,7 +466,7 @@ jobs:
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
@@ -558,13 +558,13 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
     - name: Checkout pull request HEAD commit instead of merge commit 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name == 'pull_request'
       with:
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name != 'pull_request'
 
     - name: Read Poetry Version 🔢
@@ -718,13 +718,13 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
     - name: Checkout pull request HEAD commit instead of merge commit 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name == 'pull_request'
       with:
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name != 'pull_request'
 
     - name: Free disk space
@@ -802,7 +802,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python 3.9 🐍
       uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
