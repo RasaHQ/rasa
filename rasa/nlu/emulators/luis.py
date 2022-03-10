@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, Text
 
 from rasa.nlu.emulators.emulator import Emulator
 from rasa.shared.nlu.constants import (

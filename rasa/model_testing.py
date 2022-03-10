@@ -9,9 +9,7 @@ from typing import (
     Any,
     Iterable,
     Tuple,
-    TYPE_CHECKING,
     Union,
-    overload,
 )
 from pathlib import Path
 
@@ -29,8 +27,6 @@ from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.model
 
-if TYPE_CHECKING:
-    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 

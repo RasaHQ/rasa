@@ -1,5 +1,5 @@
 from functools import reduce
-from typing import Text, Optional, List, Dict, Set, Any, Tuple, Type, cast
+from typing import Text, Optional, List, Dict, Set, Any, Tuple, cast
 import logging
 
 import rasa.shared.constants

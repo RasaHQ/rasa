@@ -82,6 +82,15 @@ def get_validated_path(
 def missing_config_keys(
     path: Union["Path", Text], mandatory_keys: List[Text]
 ) -> List[Text]:
+    """Check wheter the config file at `path` contains the `mandatory_keys`.
+
+    Args:
+        path: The path to the config file.
+        mandatory_keys: A list of mandatory config keys.
+
+    Returns:
+        The list of missing config keys.
+    """
     import rasa.utils.io
 
     if not os.path.exists(path):
@@ -105,7 +114,6 @@ def cancel_cause_not_found(
         default: The default value of the parameter.
 
     """
-
     default_clause = ""
     if default:
         default_clause = f"use the default location ('{default}') or "
@@ -118,7 +126,6 @@ def cancel_cause_not_found(
 
 def parse_last_positional_argument_as_model_path() -> None:
     """Fixes the parsing of a potential positional model path argument."""
-
     if (
         len(sys.argv) >= 2
         # support relevant commands ...

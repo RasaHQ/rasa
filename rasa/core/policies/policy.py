@@ -12,7 +12,6 @@ from typing import (
     Text,
     Dict,
     Callable,
-    Union,
     Tuple,
     TypeVar,
     TYPE_CHECKING,

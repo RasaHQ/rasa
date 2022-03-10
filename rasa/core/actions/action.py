@@ -882,7 +882,7 @@ def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
     last_user_event = copy.deepcopy(last_user_event)
     # FIXME: better type annotation for `parse_data` would require
     # a larger refactoring (e.g. switch to dataclass)
-    last_user_event.parse_data["intent"]["confidence"] = 1.0  # type: ignore[typeddict-item]
+    last_user_event.parse_data["intent"]["confidence"] = 1.0  # type: ignore[typeddict-item]  # noqa: E501
 
     return revert_events + [last_user_event]
 

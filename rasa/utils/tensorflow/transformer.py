@@ -83,7 +83,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
     def _create_relative_embeddings(self) -> None:
         """Create relative embeddings."""
-
         relative_embedding_shape: Optional[
             Union[Tuple[int, int], Tuple[int, int, int]]
         ] = None

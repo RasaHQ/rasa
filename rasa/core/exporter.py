@@ -259,8 +259,7 @@ class Exporter:
     def _sort_and_select_events_by_timestamp(
         self, events: Iterable[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
-        """Sort list of events by ascending timestamp, and select events within time
-        range.
+        """Sort list of events by ascending timestamp, select events within time range.
 
         Args:
             events: List of serialized events to be sorted and selected from.

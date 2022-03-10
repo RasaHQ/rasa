@@ -421,6 +421,7 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_intents(cls, training_data: "TrainingData") -> List[OrderedDict]:
+        """Serializes the intents."""
         return RasaYAMLWriter.process_training_examples_by_key(
             cls.prepare_training_examples(training_data),
             KEY_INTENT,

@@ -216,7 +216,7 @@ class RasaDataGenerator(Sequence):
         # we need to make sure that the matrices are coo_matrices otherwise the
         # transformation does not work (e.g. you cannot access x.row, x.col)
         if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
-            array_of_sparse = [x.tocoo() for x in array_of_sparse]  # type: ignore[assignment]
+            array_of_sparse = [x.tocoo() for x in array_of_sparse]  # type: ignore[assignment]  # noqa: E501
 
         max_seq_len = max([x.shape[0] for x in array_of_sparse])
 

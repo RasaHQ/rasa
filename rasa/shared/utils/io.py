@@ -76,7 +76,6 @@ def raise_warning(
         line: Optional[Text] = None,
     ) -> Text:
         """Function to format a warning the standard way."""
-
         if not should_show_source_line():
             if docs:
                 line = f"More info at {docs}"

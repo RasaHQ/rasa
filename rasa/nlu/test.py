@@ -20,7 +20,6 @@ from typing import (
     Any,
     NamedTuple,
     TYPE_CHECKING,
-    cast,
 )
 
 from rasa import telemetry
