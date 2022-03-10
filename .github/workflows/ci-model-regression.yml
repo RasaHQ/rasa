@@ -510,8 +510,8 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
-          sudo chmod +x /usr/local/bin/gomplate
+          curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_windows-amd64.exe
+          # sudo chmod +x /usr/local/bin/gomplate
 
       - name: Set env variables
         id: set_dataset_config_vars
@@ -726,7 +726,7 @@ jobs:
       - name: Stop Datadog Agent
         if: ${{ always() && steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true' }}
         run: |
-          sudo service datadog-agent stop
+          service datadog-agent stop
 
   combine_reports:
     name: Combine reports
