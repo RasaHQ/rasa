@@ -217,16 +217,16 @@ jobs:
       fail-fast: false
       matrix:
         test:
-        - test-cli
-        - test-core-featurizers
-        - test-policies
-        - test-nlu-featurizers
-        - test-nlu-predictors
-        - test-full-model-training
+        # - test-cli
+        # - test-core-featurizers
+        # - test-policies
+        # - test-nlu-featurizers
+        # - test-nlu-predictors
+        # - test-full-model-training
         - test-other-unit-tests
-        - test-performance
-        os: [ ubuntu-latest, windows-2019 ]
-        python-version: [ 3.7, 3.8 ]
+        # - test-performance
+        os: [ windows-2019 ]
+        python-version: [ 3.7 ]
 
     steps:
     - name: Run DataDog Agent
