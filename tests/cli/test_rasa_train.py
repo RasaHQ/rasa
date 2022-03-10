@@ -1,5 +1,6 @@
 import os
 import tempfile
+import sys
 from pathlib import Path
 
 from _pytest.capture import CaptureFixture
@@ -451,7 +452,19 @@ def test_train_nlu_help(run: Callable[..., RunResult]):
 def test_train_core_help(run: Callable[..., RunResult]):
     output = run("train", "core", "--help")
 
-    help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
+    if sys.version_info.minor >= 9:
+        # This is required because `argparse` behaves differently on
+        # Python 3.9 and above. The difference is the changed formatting of help
+        # output for CLI arguments with `nargs="*"
+        help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
+                       [-c CONFIG [CONFIG ...]] [--out OUT]
+                       [--augmentation AUGMENTATION] [--debug-plots] [--force]
+                       [--fixed-model-name FIXED_MODEL_NAME]
+                       [--percentages [PERCENTAGES ...]] [--runs RUNS]
+                       [--finetune [FINETUNE]]
+                       [--epoch-fraction EPOCH_FRACTION]"""
+    else:
+        help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
                        [-c CONFIG [CONFIG ...]] [--out OUT]
                        [--augmentation AUGMENTATION] [--debug-plots] [--force]
                        [--fixed-model-name FIXED_MODEL_NAME]
