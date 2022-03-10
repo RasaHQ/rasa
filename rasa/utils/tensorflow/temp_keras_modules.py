@@ -15,7 +15,7 @@ from tensorflow.python.eager import context
 # Note: the following imports are  from keras directly since those are the imports
 # used by the reference implementation:
 # https://github.com/keras-team/keras/blob/v2.7.0/keras/engine/training.py#L30
-from keras.engine import training_utils, data_adapter
+from keras.engine import base_layer, training_utils, data_adapter
 from keras import callbacks as callbacks_module
 from keras.callbacks import Callback, History
 from keras.utils import traceback_utils, tf_utils, version_utils
@@ -279,6 +279,7 @@ class TmpKerasModel(Model):
             ValueError: In case of mismatch between the provided input data
                 and what the model expects or when the input data is empty.
         """
+        base_layer.keras_api_gauge.get_cell("fit").set(True)
         # Legacy graph support is contained in `training_v1.Model`.
         version_utils.disallow_legacy_graph("Model", "fit")
         self._assert_compile_was_called()
