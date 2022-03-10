@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import scipy.sparse
 from collections import defaultdict, OrderedDict
-from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict
+from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict, cast
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
@@ -300,7 +300,9 @@ def convert_to_data_format(
 
     # unify format of incoming features
     if isinstance(features[0], Dict):
-        features = [[dicts] for dicts in features]
+        features = cast(
+            List[List[Dict[Text, List["Features"]]]], [[dicts] for dicts in features]
+        )
 
     attribute_to_features = _surface_attributes(features, featurizers)
 
