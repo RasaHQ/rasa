@@ -36,7 +36,7 @@ it can be set in the tracker_store
 
 ```python
  | @classmethod
- | from_dict(cls, sender_id: Text, events_as_dict: List[Dict[Text, Any]], slots: Optional[List[Slot]] = None, max_event_history: Optional[int] = None) -> "DialogueStateTracker"
+ | from_dict(cls, sender_id: Text, events_as_dict: List[Dict[Text, Any]], slots: Optional[Iterable[Slot]] = None, max_event_history: Optional[int] = None) -> "DialogueStateTracker"
 ```
 
 Create a tracker from dump.

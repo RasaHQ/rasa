@@ -3,9 +3,21 @@ from collections import defaultdict, namedtuple, deque
 import copy
 import logging
 import random
+from contextlib import contextmanager
 
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict, Tuple, Deque, Any
+from typing import (
+    Optional,
+    List,
+    Text,
+    Set,
+    Dict,
+    Tuple,
+    Deque,
+    Any,
+    Iterable,
+    Generator,
+)
 
 from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.shared.core.constants import SHOULD_NOT_BE_SET
@@ -52,12 +64,13 @@ class TrackerWithCachedStates(DialogueStateTracker):
     def __init__(
         self,
         sender_id: Text,
-        slots: Optional[List[Slot]],
+        slots: Optional[Iterable[Slot]],
         max_event_history: Optional[int] = None,
         domain: Optional[Domain] = None,
         is_augmented: bool = False,
         is_rule_tracker: bool = False,
     ) -> None:
+        """Initializes a tracker with cached states."""
         super().__init__(
             sender_id, slots, max_event_history, is_rule_tracker=is_rule_tracker
         )
@@ -65,18 +78,20 @@ class TrackerWithCachedStates(DialogueStateTracker):
         self.domain = domain if domain is not None else Domain.empty()
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented
+        self.__skip_states = False
 
     @classmethod
     def from_events(
         cls,
         sender_id: Text,
         evts: List[Event],
-        slots: Optional[List[Slot]] = None,
+        slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
         domain: Optional[Domain] = None,
         is_rule_tracker: bool = False,
     ) -> "TrackerWithCachedStates":
+        """Initializes a tracker with given events."""
         tracker = cls(
             sender_id, slots, max_event_history, domain, is_rule_tracker=is_rule_tracker
         )
@@ -159,14 +174,22 @@ class TrackerWithCachedStates(DialogueStateTracker):
             self.is_rule_tracker,
         )
 
+    @contextmanager
+    def _skip_states_manager(self) -> Generator[None, None, None]:
+        self.__skip_states = True
+        try:
+            yield
+        finally:
+            self.__skip_states = False
+
     def copy(
         self, sender_id: Text = "", sender_source: Text = ""
     ) -> "TrackerWithCachedStates":
         """Creates a duplicate of this tracker.
 
         A new tracker will be created and all events
-        will be replayed."""
-
+        will be replayed.
+        """
         # This is an optimization, we could use the original copy, but
         # the states would be lost and we would need to recalculate them
 
@@ -174,8 +197,9 @@ class TrackerWithCachedStates(DialogueStateTracker):
         tracker.sender_id = sender_id
         tracker.sender_source = sender_source
 
-        for event in self.events:
-            tracker.update(event, skip_states=True)
+        with self._skip_states_manager():
+            for event in self.events:
+                tracker.update(event)
 
         tracker._states_for_hashing = copy.copy(self._states_for_hashing)
 
@@ -189,18 +213,22 @@ class TrackerWithCachedStates(DialogueStateTracker):
             frozen_state = self.freeze_current_state(state)
             self._states_for_hashing.append(frozen_state)
 
-    def update(self, event: Event, skip_states: bool = False) -> None:
+    def update(
+        self,
+        event: Event,
+        domain: Optional[Domain] = None,
+    ) -> None:
         """Modify the state of the tracker according to an ``Event``."""
         # if `skip_states` is `True`, this function behaves exactly like the
         # normal update of the `DialogueStateTracker`
-        if not self._states_for_hashing and not skip_states:
+        if not self._states_for_hashing and not self.__skip_states:
             # rest of this function assumes we have the previous state
             # cached. let's make sure it is there.
             self._states_for_hashing = self.past_states_for_hashing(self.domain)
 
         super().update(event)
 
-        if not skip_states:
+        if not self.__skip_states:
             if isinstance(event, ActionExecuted):
                 pass
             elif isinstance(event, ActionReverted):

@@ -85,7 +85,7 @@ Persist this model into the passed directory.
 
 ```python
  | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
 ```
 
 Loads trained component (see parent class for full docstring).
