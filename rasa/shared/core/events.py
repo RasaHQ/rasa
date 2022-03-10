@@ -1552,6 +1552,13 @@ class ActionExecuted(Event):
         self.action_text = action_text
         self.hide_rule_turn = hide_rule_turn
 
+        if self.action_name is None and self.action_text is None:
+            raise ValueError(
+                "Both the name of the action and the end-to-end "
+                "predicted text are missing. "
+                "The `ActionExecuted` event cannot be initialised."
+            )
+
         super().__init__(timestamp, metadata)
 
     def __members__(self) -> Tuple[Optional[Text], Optional[Text], Text]:
@@ -1566,7 +1573,7 @@ class ActionExecuted(Event):
 
     def __str__(self) -> Text:
         """Returns event as human readable string."""
-        return self.action_name or self.action_text or ""
+        return str(self.action_name) or str(self.action_text)
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""

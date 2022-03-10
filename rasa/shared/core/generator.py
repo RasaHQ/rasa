@@ -6,7 +6,18 @@ import random
 from contextlib import contextmanager
 
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict, Tuple, Deque, Any, Iterable
+from typing import (
+    Optional,
+    List,
+    Text,
+    Set,
+    Dict,
+    Tuple,
+    Deque,
+    Any,
+    Iterable,
+    Generator,
+)
 
 from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.shared.core.constants import SHOULD_NOT_BE_SET
@@ -164,7 +175,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         )
 
     @contextmanager
-    def _skip_states_manager(self) -> bool:
+    def _skip_states_manager(self) -> Generator[None, None, None]:
         self.__skip_states = True
         try:
             yield
@@ -177,7 +188,8 @@ class TrackerWithCachedStates(DialogueStateTracker):
         """Creates a duplicate of this tracker.
 
         A new tracker will be created and all events
-        will be replayed."""
+        will be replayed.
+        """
         # This is an optimization, we could use the original copy, but
         # the states would be lost and we would need to recalculate them
 
