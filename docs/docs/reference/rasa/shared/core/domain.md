@@ -51,6 +51,15 @@ Returns a boolean value depending on the value of session_expiration_time.
 
 Return serialized `SessionConfig`.
 
+## EntityProperties Objects
+
+```python
+@dataclass
+class EntityProperties()
+```
+
+Class for keeping track of the properties of entities in the domain.
+
 ## Domain Objects
 
 ```python
@@ -181,7 +190,7 @@ List retrieval intents present in the domain.
 
 ```python
  | @classmethod
- | collect_entity_properties(cls, domain_entities: List[Union[Text, Dict[Text, Any]]]) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]
+ | collect_entity_properties(cls, domain_entities: List[Union[Text, Dict[Text, Any]]]) -> EntityProperties
 ```
 
 Get entity properties for a domain from what is provided by a domain file.
@@ -193,15 +202,13 @@ Get entity properties for a domain from what is provided by a domain file.
 
 **Returns**:
 
-  A list of entity names.
-  A dictionary of entity names to roles.
-  A dictionary of entity names to groups.
+  An instance of EntityProperties.
 
 #### collect\_intent\_properties
 
 ```python
  | @classmethod
- | collect_intent_properties(cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text], roles: Dict[Text, List[Text]], groups: Dict[Text, List[Text]]) -> Dict[Text, Dict[Text, Union[bool, List]]]
+ | collect_intent_properties(cls, intents: List[Union[Text, Dict[Text, Any]]], entity_properties: EntityProperties) -> Dict[Text, Dict[Text, Union[bool, List]]]
 ```
 
 Get intent properties for a domain from what is provided by a domain file.
@@ -209,9 +216,7 @@ Get intent properties for a domain from what is provided by a domain file.
 **Arguments**:
 
 - `intents` - The intents as provided by a domain file.
-- `entities` - All entities as provided by a domain file.
-- `roles` - The roles of entities as provided by a domain file.
-- `groups` - The groups of entities as provided by a domain file.
+- `entity_properties` - Entity properties as provided by the domain file.
   
 
 **Returns**:
@@ -573,6 +578,15 @@ Return the configuration for an intent.
 ```
 
 Returns sorted list of intents.
+
+#### entities
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | entities() -> List[Text]
+```
+
+Returns sorted list of entities.
 
 #### domain\_warnings
 
