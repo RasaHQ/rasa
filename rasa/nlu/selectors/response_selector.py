@@ -662,7 +662,7 @@ class ResponseSelector(DIETClassifier):
         **kwargs: Any,
     ) -> ResponseSelector:
         """Loads the trained model from the provided directory."""
-        model: ResponseSelector = super().load(
+        model = super().load(
             config, model_storage, resource, execution_context, **kwargs
         )
 

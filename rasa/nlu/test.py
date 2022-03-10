@@ -20,6 +20,7 @@ from typing import (
     Any,
     NamedTuple,
     TYPE_CHECKING,
+    cast,
 )
 
 from rasa import telemetry
@@ -674,7 +675,7 @@ def _calculate_report(
     )
 
     if report_as_dict:
-        report = _add_confused_labels_to_report(
+        report = _add_confused_labels_to_report(  # type: ignore[assignment]
             report,
             confusion_matrix,
             labels,

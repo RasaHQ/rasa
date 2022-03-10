@@ -1,7 +1,18 @@
 import copy
 import logging
 import os
-from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
+from typing import (
+    Text,
+    Dict,
+    Optional,
+    List,
+    Any,
+    Iterable,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+    overload,
+)
 from pathlib import Path
 
 from rasa.core.agent import Agent
@@ -17,6 +28,9 @@ import rasa.shared.nlu.training_data.loading
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.model
+
+if TYPE_CHECKING:
+    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 
