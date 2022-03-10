@@ -121,7 +121,7 @@ class AnySlotDict(dict):
         value = self[key] = Slot(key, mappings=[])
         return value
 
-    def __contains__(self, key: Text) -> bool:  # type: ignore[override]
+    def __contains__(self, key: Any) -> bool:
         return True
 
 

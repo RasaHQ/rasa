@@ -32,7 +32,6 @@ def test_tracker_default(domain: Domain):
 
 def test_dialogue_from_parameters(domain: Domain):
     tracker = tracker_from_dialogue(TEST_DEFAULT_DIALOGUE, domain)
-    store = InMemoryTrackerStore(domain)
-    serialised_dialogue = store.serialise_tracker(tracker)
+    serialised_dialogue = InMemoryTrackerStore.serialise_tracker(tracker)
     deserialised_dialogue = Dialogue.from_parameters(json.loads(serialised_dialogue))
     assert tracker.as_dialogue().as_dict() == deserialised_dialogue.as_dict()

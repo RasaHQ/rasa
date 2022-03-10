@@ -76,7 +76,8 @@ SerializationType = TypeVar("SerializationType")
 class SerializedTrackerRepresentation(Generic[SerializationType]):
     """Mixin class for specifying different serialization methods per tracker store."""
 
-    def serialise_tracker(self, tracker: DialogueStateTracker) -> SerializationType:
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> SerializationType:
         """Requires implementation to return representation of tracker."""
         raise NotImplementedError()
 
@@ -84,7 +85,8 @@ class SerializedTrackerRepresentation(Generic[SerializationType]):
 class SerializedTrackerAsText(SerializedTrackerRepresentation[Text]):
     """Mixin class that returns the serialized tracker as string."""
 
-    def serialise_tracker(self, tracker: DialogueStateTracker) -> Text:
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> Text:
         """Serializes the tracker, returns representation of the tracker."""
         dialogue = tracker.as_dialogue()
 
@@ -94,7 +96,8 @@ class SerializedTrackerAsText(SerializedTrackerRepresentation[Text]):
 class SerializedTrackerAsDict(SerializedTrackerRepresentation[Dict]):
     """Mixin class that returns the serialized tracker as dictionary."""
 
-    def serialise_tracker(self, tracker: DialogueStateTracker) -> Dict:
+    @staticmethod
+    def serialise_tracker(tracker: DialogueStateTracker) -> Dict:
         """Serializes the tracker, returns representation of the tracker."""
         d = tracker.as_dialogue().as_dict()
         d.update({"sender_id": tracker.sender_id})
@@ -318,7 +321,7 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
     def save(self, tracker: DialogueStateTracker) -> None:
         """Updates and saves the current conversation state."""
         self.stream_events(tracker)
-        serialised = self.serialise_tracker(tracker)
+        serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
@@ -489,8 +492,8 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
 
         self.db.put_item(Item=serialized)
 
+    @staticmethod
     def serialise_tracker(
-        self,
         tracker: "DialogueStateTracker",
     ) -> Dict:
         """Serializes the tracker, returns object with decimal types.
@@ -498,7 +501,7 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s.
         """
         return core_utils.replace_floats_with_decimals(
-            super().serialise_tracker(tracker)
+            SerializedTrackerAsDict.serialise_tracker(tracker)
         )
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
