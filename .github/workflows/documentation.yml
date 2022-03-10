@@ -40,7 +40,7 @@ jobs:
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
@@ -68,7 +68,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Check if tag version is equal or higher than the latest tagged Rasa version
       id: rasa_get_version
@@ -137,12 +137,12 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
-    - name: Set up Python 3.7 🐍
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+    - name: Set up Python 3.9 🐍
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
-        python-version: 3.7
+        python-version: 3.9
 
     - name: Set up Node 12.x 🦙
       uses: actions/setup-node@v2.3.0
@@ -164,8 +164,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-3.7-non-full
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-3.9-non-full
 
     - name: Clear Poetry cache
       if: steps.cache-poetry.outputs.cache-hit == 'true'
@@ -228,13 +228,13 @@ jobs:
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.docs == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
-    - name: Set up Python 3.7 🐍
+    - name: Set up Python 3.9 🐍
       if: needs.changes.outputs.docs == 'true'
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
-        python-version: 3.7
+        python-version: 3.9
 
     - name: Set up Node 12.x 🦙
       if: needs.changes.outputs.docs == 'true'
@@ -260,8 +260,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-3.7-non-full
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.9-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-3.9-non-full
 
     - name: Clear Poetry cache
       if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.docs == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-preview-docs')
@@ -322,7 +322,7 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Node 12.x 🦙
       uses: actions/setup-node@v2.3.0

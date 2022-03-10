@@ -66,7 +66,7 @@ class TempDirectoryPath(str, ContextManager):
     def __exit__(
         self,
         _exc: Optional[Type[BaseException]],
-        _value: Optional[Exception],
+        _value: Optional[BaseException],
         _tb: Optional[TracebackType],
     ) -> None:
         if os.path.exists(self):
