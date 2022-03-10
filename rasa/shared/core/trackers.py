@@ -62,7 +62,7 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import AnySlot, Slot
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
@@ -118,7 +118,7 @@ class AnySlotDict(dict):
     e.g. properly featurizing the slot."""
 
     def __missing__(self, key: Text) -> Slot:
-        value = self[key] = Slot(key, mappings=[])
+        value = self[key] = AnySlot(key, mappings=[])
         return value
 
     def __contains__(self, key: Text) -> bool:
@@ -216,11 +216,11 @@ class DialogueStateTracker:
         # if tracker is paused, no actions should be taken
         self._paused = False
         # A deterministically scheduled action to be executed next
-        self.followup_action = ACTION_LISTEN_NAME
-        self.latest_action = None
+        self.followup_action: Optional[Text] = ACTION_LISTEN_NAME
+        self.latest_action: Optional[Dict[Text, Text]] = None
         # Stores the most recent message sent by the user
         self.latest_message: Optional[UserUttered] = None
-        self.latest_bot_utterance = None
+        self.latest_bot_utterance: Optional[BotUttered] = None
         self._reset()
         self.active_loop: "TrackerActiveLoop" = {}
 

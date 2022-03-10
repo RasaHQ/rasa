@@ -217,7 +217,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
 
 # define types
-TrackerLookupDict = Dict[Text, List[TrackerWithCachedStates]]
+TrackerLookupDict = defaultdict[Text, List[TrackerWithCachedStates]]
 
 TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedStates]]
 

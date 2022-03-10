@@ -18,6 +18,7 @@ from typing import (
     Iterable,
     NamedTuple,
     Callable,
+    cast,
 )
 
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
@@ -349,10 +350,9 @@ class Domain:
                 combined.get(key, []), domain_dict.get(key, [])
             )
 
-            if merge_func == rasa.shared.utils.common.merge_dicts:
-                default: Dict[Text, Any] = {}
-            else:
-                default = []
+            default: Union[List[Any], Dict[Text, Any]] = (
+                {} if merge_func == rasa.shared.utils.common.merge_dicts else []
+            )
 
             combined[key] = merge_func(
                 combined.get(key, default), domain_dict.get(key, default), override
@@ -1136,9 +1136,10 @@ class Domain:
         if not latest_message or latest_message.is_empty():
             return {}
 
-        sub_state: Dict[
-            Text, Union[None, Text, List[Optional[Text]], Tuple[str, ...]]
-        ] = latest_message.as_sub_state()
+        sub_state = cast(
+            Dict[Text, Union[None, Text, List[Optional[Text]], Tuple[str, ...]]],
+            latest_message.as_sub_state(),
+        )
 
         # Filter entities based on intent config. We need to convert the set into a
         # tuple because sub_state will be later transformed into a frozenset (so it can
@@ -1163,7 +1164,7 @@ class Domain:
     @staticmethod
     def _get_slots_sub_state(
         tracker: "DialogueStateTracker", omit_unset_slots: bool = False
-    ) -> Dict[Text, Union[Text, Tuple[float]]]:
+    ) -> Dict[Text, Union[Text, Tuple[float, ...]]]:
         """Sets all set slots with the featurization of the stored value.
 
         Args:
@@ -1173,7 +1174,7 @@ class Domain:
         Returns:
             a mapping of slot names to their featurization
         """
-        slots: Dict[Text, Union[Text, Tuple[float]]] = {}
+        slots: Dict[Text, Union[Text, Tuple[float, ...]]] = {}
         for slot_name, slot in tracker.slots.items():
             # If the slot doesn't influence conversations, slot.as_feature() will return
             # a result that evaluates to False, meaning that the slot shouldn't be
@@ -1216,8 +1217,9 @@ class Domain:
         """
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
-        active_loop: Optional[Text] = tracker.active_loop.get(
-            rasa.shared.core.constants.LOOP_NAME
+        active_loop = cast(
+            Optional[Text],
+            tracker.active_loop.get(rasa.shared.core.constants.LOOP_NAME),
         )
         if active_loop:
             return {rasa.shared.core.constants.LOOP_NAME: active_loop}
@@ -1350,9 +1352,12 @@ class Domain:
                     self._substitute_rule_only_user_input(state, states[-1])
                 # substitute previous rule action with last_ml_action_sub_state
                 if last_ml_action_sub_state:
-                    state[
-                        rasa.shared.core.constants.PREVIOUS_ACTION
-                    ] = last_ml_action_sub_state
+                    # FIXME: better type annotation for `State` would require
+                    # a larger refactoring (e.g. switch to dataclass)
+                    state[rasa.shared.core.constants.PREVIOUS_ACTION] = cast(
+                        Dict[Text, Union[Text, Tuple[Union[float, Text]]]],
+                        last_ml_action_sub_state,
+                    )
 
             states.append(self._clean_state(state))
 

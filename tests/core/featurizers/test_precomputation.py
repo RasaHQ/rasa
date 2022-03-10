@@ -400,7 +400,7 @@ def test_converter_for_training(input_converter: CoreFeaturizationInputConverter
         ),
         ActionExecuted(action_name="action_listen"),
     ]
-    story_graph = StoryGraph([StoryStep(events=events)])
+    story_graph = StoryGraph([StoryStep("name", events=events)])
     # convert!
     training_data = input_converter.convert_for_training(
         domain=domain, story_graph=story_graph

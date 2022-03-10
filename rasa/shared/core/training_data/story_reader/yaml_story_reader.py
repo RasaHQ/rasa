@@ -101,7 +101,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             `StoryStep`s read from `filename`.
         """
-        self.source_name = filename
+        self.source_name = str(filename)
         try:
             return self.read_from_string(
                 rasa.shared.utils.io.read_file(
@@ -110,7 +110,7 @@ class YAMLStoryReader(StoryReader):
                 skip_validation,
             )
         except YamlException as e:
-            e.filename = filename
+            e.filename = str(filename)
             raise e
 
     def read_from_string(

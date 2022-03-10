@@ -528,14 +528,14 @@ class UserUttered(Event):
         """Returns text representation of event."""
         entities = ""
         if self.entities:
-            entities = [
+            entities_list = [
                 f"{entity[ENTITY_ATTRIBUTE_VALUE]} "
                 f"(Type: {entity[ENTITY_ATTRIBUTE_TYPE]}, "
                 f"Role: {entity.get(ENTITY_ATTRIBUTE_ROLE)}, "
                 f"Group: {entity.get(ENTITY_ATTRIBUTE_GROUP)})"
                 for entity in self.entities
             ]
-            entities = f", entities: {', '.join(entities)}"
+            entities = f", entities: {', '.join(entities_list)}"
 
         return (
             f"UserUttered(text: {self.text}, intent: {self.intent_name}"

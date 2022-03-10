@@ -119,7 +119,7 @@ class StoryStep:
 
     def __init__(
         self,
-        block_name: Optional[Text] = None,
+        block_name: Text,
         start_checkpoints: Optional[List[Checkpoint]] = None,
         end_checkpoints: Optional[List[Checkpoint]] = None,
         events: Optional[List[Union[Event, List[Event]]]] = None,
