@@ -510,7 +510,7 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_windows-amd64.exe
+          curl.exe -o C:\Windows\system32\gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_windows-amd64.exe
           # sudo chmod +x /usr/local/bin/gomplate
 
       - name: Set env variables
