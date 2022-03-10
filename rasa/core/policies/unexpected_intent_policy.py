@@ -328,7 +328,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         common.mark_as_experimental_feature("UnexpecTED Intent Policy")
 
-    def _standard_featurizer(self) -> TrackerFeaturizer:
+    def _standard_featurizer(self) -> IntentMaxHistoryTrackerFeaturizer:
         return IntentMaxHistoryTrackerFeaturizer(
             IntentTokenizerSingleStateFeaturizer(),
             max_history=self.config.get(POLICY_MAX_HISTORY),
@@ -565,8 +565,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -574,9 +574,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         Args:
             tracker: Tracker containing past conversation events.
             domain: Domain of the assistant.
-            precomputations: Contains precomputed features and attributes.
             rule_only_data: Slots and loops which are specific to rules and hence
                 should be ignored by this policy.
+            precomputations: Contains precomputed features and attributes.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).

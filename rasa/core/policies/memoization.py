@@ -141,7 +141,10 @@ class MemoizationPolicy(Policy):
 
         return lookup
 
-    def _create_feature_key(self, states: List[State]) -> Text:
+    def _create_feature_key(self, states: List[State]) -> Optional[Text]:
+        if not states:
+            return None
+
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons

@@ -1,8 +1,8 @@
 import argparse
+import asyncio
 import logging
 import os
 from typing import List, Optional, Text, Dict, Union, Any
-import asyncio
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
@@ -246,7 +246,6 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     Args:
         args: the parsed CLI arguments for 'rasa test nlu'.
     """
-
     asyncio.run(
         run_nlu_test_async(
             args.config,

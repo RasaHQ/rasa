@@ -20,6 +20,7 @@ from typing import (
     Callable,
     cast,
 )
+from dataclasses import dataclass
 
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
@@ -71,6 +72,7 @@ IGNORE_ENTITIES_KEY = "ignore_entities"
 IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
 ENTITY_ROLES_KEY = "roles"
 ENTITY_GROUPS_KEY = "groups"
+ENTITY_FEATURIZATION_KEY = "influence_conversation"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -135,6 +137,16 @@ class SessionConfig(NamedTuple):
             "session_expiration_time": self.session_expiration_time,
             "carry_over_slots_to_new_session": self.carry_over_slots,
         }
+
+
+@dataclass
+class EntityProperties:
+    """Class for keeping track of the properties of entities in the domain."""
+
+    entities: List[Text]
+    roles: Dict[Text, List[Text]]
+    groups: Dict[Text, List[Text]]
+    default_ignored_entities: List[Text]
 
 
 class Domain:
@@ -461,16 +473,13 @@ class Domain:
 
     @staticmethod
     def _transform_intent_properties_for_internal_use(
-        intent: Dict[Text, Any],
-        entities: List[Text],
-        roles: Dict[Text, List[Text]],
-        groups: Dict[Text, List[Text]],
+        intent: Dict[Text, Any], entity_properties: EntityProperties
     ) -> Dict[Text, Any]:
         """Transforms the intent's parameters in a format suitable for internal use.
 
         When an intent is retrieved from the `domain.yml` file, it contains two
-        parameters, the `use_entities` and the `ignore_entities` parameter. With
-        the values of these two parameters the Domain class is updated, a new
+        parameters, the `use_entities` and the `ignore_entities` parameter.
+        With the values of these two parameters the Domain class is updated, a new
         parameter is added to the intent called `used_entities` and the two
         previous parameters are deleted. This happens because internally only the
         parameter `used_entities` is needed to list all the entities that should be
@@ -479,9 +488,7 @@ class Domain:
         Args:
             intent: The intent as retrieved from the `domain.yml` file thus having two
                 parameters, the `use_entities` and the `ignore_entities` parameter.
-            entities: All entities as provided by a domain file.
-            roles: All roles for entities as provided by a domain file.
-            groups: All groups for entities as provided by a domain file.
+            entity_properties: Entity properties as provided by the domain file.
 
         Returns:
             The intent with the new format thus having only one parameter called
@@ -504,7 +511,9 @@ class Domain:
                 f" when to use the ':' character after an intent's name."
             )
 
-        properties.setdefault(IGNORE_ENTITIES_KEY, [])
+        properties.setdefault(
+            IGNORE_ENTITIES_KEY, entity_properties.default_ignored_entities
+        )
         if not properties[USE_ENTITIES_KEY]:  # this covers False, None and []
             properties[USE_ENTITIES_KEY] = []
 
@@ -514,22 +523,32 @@ class Domain:
         # label with the corresponding role or group label to make sure roles and
         # groups can also influence the dialogue predictions
         if properties[USE_ENTITIES_KEY] is True:
-            included_entities = set(entities)
-            included_entities.update(Domain.concatenate_entity_labels(roles))
-            included_entities.update(Domain.concatenate_entity_labels(groups))
+            included_entities = set(entity_properties.entities) - set(
+                entity_properties.default_ignored_entities
+            )
+            included_entities.update(
+                Domain.concatenate_entity_labels(entity_properties.roles)
+            )
+            included_entities.update(
+                Domain.concatenate_entity_labels(entity_properties.groups)
+            )
         else:
             included_entities = set(properties[USE_ENTITIES_KEY])
             for entity in list(included_entities):
                 included_entities.update(
-                    Domain.concatenate_entity_labels(roles, entity)
+                    Domain.concatenate_entity_labels(entity_properties.roles, entity)
                 )
                 included_entities.update(
-                    Domain.concatenate_entity_labels(groups, entity)
+                    Domain.concatenate_entity_labels(entity_properties.groups, entity)
                 )
         excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
         for entity in list(excluded_entities):
-            excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
-            excluded_entities.update(Domain.concatenate_entity_labels(groups, entity))
+            excluded_entities.update(
+                Domain.concatenate_entity_labels(entity_properties.roles, entity)
+            )
+            excluded_entities.update(
+                Domain.concatenate_entity_labels(entity_properties.groups, entity)
+            )
         used_entities = list(included_entities - excluded_entities)
         used_entities.sort()
 
@@ -564,31 +583,36 @@ class Domain:
     @classmethod
     def collect_entity_properties(
         cls, domain_entities: List[Union[Text, Dict[Text, Any]]]
-    ) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]:
+    ) -> EntityProperties:
         """Get entity properties for a domain from what is provided by a domain file.
 
         Args:
             domain_entities: The entities as provided by a domain file.
 
         Returns:
-            A list of entity names.
-            A dictionary of entity names to roles.
-            A dictionary of entity names to groups.
+            An instance of EntityProperties.
         """
-        entities: List[Text] = []
-        roles: Dict[Text, List[Text]] = {}
-        groups: Dict[Text, List[Text]] = {}
+        entity_properties = EntityProperties([], {}, {}, [])
         for entity in domain_entities:
             if isinstance(entity, str):
-                entities.append(entity)
+                entity_properties.entities.append(entity)
             elif isinstance(entity, dict):
                 for _entity, sub_labels in entity.items():
-                    entities.append(_entity)
+                    entity_properties.entities.append(_entity)
                     if sub_labels:
                         if ENTITY_ROLES_KEY in sub_labels:
-                            roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
+                            entity_properties.roles[_entity] = sub_labels[
+                                ENTITY_ROLES_KEY
+                            ]
                         if ENTITY_GROUPS_KEY in sub_labels:
-                            groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
+                            entity_properties.groups[_entity] = sub_labels[
+                                ENTITY_GROUPS_KEY
+                            ]
+                        if (
+                            ENTITY_FEATURIZATION_KEY in sub_labels
+                            and sub_labels[ENTITY_FEATURIZATION_KEY] is False
+                        ):
+                            entity_properties.default_ignored_entities.append(_entity)
                     else:
                         raise InvalidDomain(
                             f"In the `domain.yml` file, the entity '{_entity}' cannot"
@@ -608,23 +632,19 @@ class Domain:
                     f"not supported: '{type(entity).__name__}'"
                 )
 
-        return entities, roles, groups
+        return entity_properties
 
     @classmethod
     def collect_intent_properties(
         cls,
         intents: List[Union[Text, Dict[Text, Any]]],
-        entities: List[Text],
-        roles: Dict[Text, List[Text]],
-        groups: Dict[Text, List[Text]],
+        entity_properties: EntityProperties,
     ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
         """Get intent properties for a domain from what is provided by a domain file.
 
         Args:
             intents: The intents as provided by a domain file.
-            entities: All entities as provided by a domain file.
-            roles: The roles of entities as provided by a domain file.
-            groups: The groups of entities as provided by a domain file.
+            entity_properties: Entity properties as provided by the domain file.
 
         Returns:
             The intent properties to be stored in the domain.
@@ -635,9 +655,7 @@ class Domain:
         duplicates = set()
 
         for intent in intents:
-            intent_name, properties = cls._intent_properties(
-                intent, entities, roles, groups
-            )
+            intent_name, properties = cls._intent_properties(intent, entity_properties)
 
             if intent_name in intent_properties.keys():
                 duplicates.add(intent_name)
@@ -651,28 +669,29 @@ class Domain:
                 f"Either rename or remove the duplicate ones."
             )
 
-        cls._add_default_intents(intent_properties, entities, roles, groups)
+        cls._add_default_intents(intent_properties, entity_properties)
 
         return intent_properties
 
     @classmethod
     def _intent_properties(
-        cls,
-        intent: Union[Text, Dict[Text, Any]],
-        entities: List[Text],
-        roles: Dict[Text, List[Text]],
-        groups: Dict[Text, List[Text]],
+        cls, intent: Union[Text, Dict[Text, Any]], entity_properties: EntityProperties
     ) -> Tuple[Text, Dict[Text, Any]]:
         if not isinstance(intent, dict):
             intent_name = intent
-            intent = {intent_name: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
+            intent = {
+                intent_name: {
+                    USE_ENTITIES_KEY: True,
+                    IGNORE_ENTITIES_KEY: entity_properties.default_ignored_entities,
+                }
+            }
         else:
             intent_name = list(intent.keys())[0]
 
         return (
             intent_name,
             cls._transform_intent_properties_for_internal_use(
-                intent, entities, roles, groups
+                intent, entity_properties
             ),
         )
 
@@ -680,15 +699,11 @@ class Domain:
     def _add_default_intents(
         cls,
         intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
-        entities: List[Text],
-        roles: Optional[Dict[Text, List[Text]]],
-        groups: Optional[Dict[Text, List[Text]]],
+        entity_properties: EntityProperties,
     ) -> None:
         for intent_name in rasa.shared.core.constants.DEFAULT_INTENTS:
             if intent_name not in intent_properties:
-                _, properties = cls._intent_properties(
-                    intent_name, entities, roles, groups
-                )
+                _, properties = cls._intent_properties(intent_name, entity_properties)
                 intent_properties.update(properties)
 
     def __init__(
@@ -721,11 +736,9 @@ class Domain:
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
         """
-        self.entities, self.roles, self.groups = self.collect_entity_properties(
-            entities
-        )
+        self.entity_properties = self.collect_entity_properties(entities)
         self.intent_properties = self.collect_intent_properties(
-            intents, self.entities, self.roles, self.groups
+            intents, self.entity_properties
         )
         self.overridden_default_intents = self._collect_overridden_default_intents(
             intents
@@ -1023,10 +1036,13 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available entity state strings."""
-
         entity_states = copy.deepcopy(self.entities)
-        entity_states.extend(Domain.concatenate_entity_labels(self.roles))
-        entity_states.extend(Domain.concatenate_entity_labels(self.groups))
+        entity_states.extend(
+            Domain.concatenate_entity_labels(self.entity_properties.roles)
+        )
+        entity_states.extend(
+            Domain.concatenate_entity_labels(self.entity_properties.groups)
+        )
 
         return entity_states
 
@@ -1528,6 +1544,11 @@ class Domain:
     def intents(self) -> List[Text]:
         """Returns sorted list of intents."""
         return sorted(self.intent_properties.keys())
+
+    @rasa.shared.utils.common.lazy_property
+    def entities(self) -> List[Text]:
+        """Returns sorted list of entities."""
+        return sorted(self.entity_properties.entities)
 
     @property
     def _slots_for_domain_warnings(self) -> List[Text]:

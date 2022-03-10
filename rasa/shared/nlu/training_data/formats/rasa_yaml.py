@@ -68,7 +68,9 @@ class RasaYAMLReader(TrainingDataReader):
             e.filename = self.filename
             raise e
 
-    def reads(self, string: Text, **kwargs: Any) -> "TrainingData":
+    def reads(  # type: ignore[override]
+        self, string: Text, **kwargs: Any
+    ) -> "TrainingData":
         """Reads TrainingData in YAML format from a string.
 
         Args:
