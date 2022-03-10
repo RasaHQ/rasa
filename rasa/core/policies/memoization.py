@@ -104,7 +104,7 @@ class MemoizationPolicy(Policy):
         Returns:
             lookup dictionary
         """
-        lookup = {}
+        lookup: Dict[Text, Text] = {}
 
         if not trackers_as_states:
             return lookup
@@ -213,7 +213,10 @@ class MemoizationPolicy(Policy):
     ) -> List[float]:
         result = self._default_predictions(domain)
         if action_name:
-            if self.config["use_nlu_confidence_as_score"]:
+            if (
+                self.config["use_nlu_confidence_as_score"]
+                and tracker.latest_message is not None
+            ):
                 # the memoization will use the confidence of NLU on the latest
                 # user message to set the confidence of the action
                 score = tracker.latest_message.intent.get("confidence", 1.0)

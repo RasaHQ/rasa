@@ -23,13 +23,11 @@ class Ticket:
 
     def dumps(self) -> Text:
         """Return json dump of `Ticket` as dictionary."""
-
         return json.dumps(self.as_dict())
 
     @classmethod
     def from_dict(cls, data: Dict[Text, Union[int, float]]) -> "Ticket":
         """Creates `Ticket` from dictionary."""
-
         return cls(number=data["number"], expires=data["expires"])
 
     def __repr__(self) -> Text:
@@ -53,13 +51,11 @@ class TicketLock:
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "TicketLock":
         """Create `TicketLock` from dictionary."""
-
-        tickets = [Ticket.from_dict(json.loads(d)) for d in data.get("tickets")]
+        tickets = [Ticket.from_dict(json.loads(d)) for d in data.get("tickets", [])]
         return cls(data.get("conversation_id"), deque(tickets))
 
     def dumps(self) -> Text:
         """Return json dump of `TicketLock`."""
-
         tickets = [ticket.dumps() for ticket in self.tickets]
         return json.dumps(dict(conversation_id=self.conversation_id, tickets=tickets))
 
@@ -69,12 +65,10 @@ class TicketLock:
         Returns:
              True if `now_serving` is not equal to `ticket`.
         """
-
         return self.now_serving != ticket_number
 
     def issue_ticket(self, lifetime: float) -> int:
         """Issue a new ticket and return its number."""
-
         self.remove_expired_tickets()
         number = self.last_issued + 1
         ticket = Ticket(number, time.time() + lifetime)
@@ -84,7 +78,6 @@ class TicketLock:
 
     def remove_expired_tickets(self) -> None:
         """Remove expired tickets."""
-
         # iterate over copy of self.tickets so we can remove items
         for ticket in list(self.tickets):
             if ticket.has_expired():
@@ -98,7 +91,6 @@ class TicketLock:
              Number of `Ticket` that was last added. `NO_TICKET_ISSUED` if no
              tickets exist.
         """
-
         ticket_number = self._ticket_number_for(-1)
 
         return ticket_number if ticket_number is not None else NO_TICKET_ISSUED
@@ -110,7 +102,6 @@ class TicketLock:
         Returns:
              Number of `Ticket` that is served next. 0 if no `Ticket` exists.
         """
-
         return self._ticket_number_for(0) or 0
 
     def _ticket_number_for(self, ticket_index: int) -> Optional[int]:
@@ -120,7 +111,6 @@ class TicketLock:
              Ticket number for `Ticket` with index `ticket_index`. None if there are no
              tickets, or if `ticket_index` is out of bounds of `self.tickets`.
         """
-
         self.remove_expired_tickets()
 
         try:
@@ -130,7 +120,6 @@ class TicketLock:
 
     def _ticket_for_ticket_number(self, ticket_number: int) -> Optional[Ticket]:
         """Return ticket for `ticket_number`."""
-
         self.remove_expired_tickets()
 
         return next((t for t in self.tickets if t.number == ticket_number), None)
@@ -141,12 +130,10 @@ class TicketLock:
         Returns:
              True if the `self.tickets` queue has length greater than 0.
         """
-
         return len(self.tickets) > 0
 
     def remove_ticket_for(self, ticket_number: int) -> None:
         """Remove `Ticket` for `ticket_number."""
-
         ticket = self._ticket_for_ticket_number(ticket_number)
         if ticket:
             self.tickets.remove(ticket)
