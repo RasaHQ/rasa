@@ -494,6 +494,7 @@ def create_common_callbacks(
                 write_graph=True,
                 write_images=True,
                 histogram_freq=10,
+                profile_batch="5,10",
             )
         )
 
