@@ -292,7 +292,7 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
         tokens = message.get(TOKENS_NAMES[TEXT])
         crf_tokens = self._convert_to_crf_tokens(message)
 
-        predictions = {}
+        predictions: Dict[Text, List[Dict[Text, float]]] = {}
         for tag_name, entity_tagger in self.entity_taggers.items():
             # use predicted entity tags as features for second level CRFs
             include_tag_features = tag_name != ENTITY_ATTRIBUTE_TYPE

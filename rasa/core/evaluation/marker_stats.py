@@ -72,7 +72,7 @@ class MarkerStatistics:
     def __init__(self) -> None:
         """Creates a new marker statistics object."""
         # to ensure consistency of processed rows
-        self._marker_names = []
+        self._marker_names: List[Text] = []
 
         # (1) For collecting the per-session analysis:
         # NOTE: we could stream / compute them later instead of collecting them...

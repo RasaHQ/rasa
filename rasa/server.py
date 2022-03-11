@@ -44,7 +44,8 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.constants import DEFAULT_RESPONSE_TIMEOUT, MINIMUM_COMPATIBLE_VERSION
+from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
@@ -848,6 +849,12 @@ def create_app(
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
     async def execute_action(request: Request, conversation_id: Text) -> HTTPResponse:
+        rasa.shared.utils.io.raise_warning(
+            'The "POST /conversations/<conversation_id>/execute"'
+            " endpoint is deprecated. Inserting actions to the tracker externally"
+            " should be avoided. Actions should be predicted by the policies only.",
+            category=FutureWarning,
+        )
         request_params = request.json
 
         action_to_execute = request_params.get("name", None)
@@ -1229,7 +1236,7 @@ def create_app(
             "response_selection_evaluation": response_selector_report,
         }
 
-        result = defaultdict(dict)
+        result: defaultdict[Text, Any] = defaultdict(dict)
         for evaluation_name, evaluation in eval_name_mapping.items():
             report = evaluation.evaluation.get("report", {})
             averages = report.get("weighted avg", {})
@@ -1357,7 +1364,10 @@ def create_app(
     @ensure_loaded_agent(app)
     async def get_domain(request: Request) -> HTTPResponse:
         """Get current domain in yaml or json format."""
-        accepts = request.headers.get("Accept", default=JSON_CONTENT_TYPE)
+        # FIXME: this is a false positive mypy error after upgrading to 0.931
+        accepts = request.headers.get(  # type: ignore[call-overload]
+            "Accept", default=JSON_CONTENT_TYPE
+        )
         if accepts.endswith("json"):
             domain = app.ctx.agent.domain.as_dict()
             return response.json(domain)

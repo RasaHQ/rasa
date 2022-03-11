@@ -125,8 +125,12 @@ def add_data_param(
 
 def add_logging_options(parser: argparse.ArgumentParser) -> None:
     """Add options to an argument parser to configure logging levels."""
-
-    logging_arguments = parser.add_argument_group("Python Logging Options")
+    logging_arguments = parser.add_argument_group(
+        "Python Logging Options",
+        "You can control level of log messages printed. "
+        "In addition to these arguments, a more fine grained configuration can be "
+        "achieved with environment variables. See online documentation for more info.",
+    )
 
     # arguments for logging configuration
     logging_arguments.add_argument(

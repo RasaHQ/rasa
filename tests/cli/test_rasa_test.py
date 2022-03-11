@@ -47,7 +47,7 @@ def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunR
     )
 
     simple_test_story_yaml = """
-version: "3.0"
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 stories:
 - story: unlikely path
   steps:
@@ -59,7 +59,7 @@ stories:
   - intent: affirm
   - action: utter_happy
 """
-    with open("tests/test_stories.yaml", "w") as f:
+    with open("tests/test_stories.yml", "w") as f:
         f.write(simple_test_story_yaml)
 
     run_in_simple_project_with_model("test", "core", "--no-warnings")
@@ -264,9 +264,10 @@ def test_test_help(run: Callable[..., RunResult]):
                  [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU]
-                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                 [--successes] [--no-errors] [--no-warnings] [--out OUT]
+                 [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                 [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--no-plot] [--successes] [--no-errors] [--no-warnings]
+                 [--out OUT]
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -280,9 +281,9 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                     [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                     [--successes] [--no-errors] [--no-warnings]"""
+                     [-c CONFIG [CONFIG ...]] [-d DOMAIN] [--cross-validation]
+                     [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                     [--no-plot] [--successes] [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output

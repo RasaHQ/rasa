@@ -25,7 +25,7 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.agent import Agent
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -1378,7 +1378,7 @@ async def test_fill_slots_for_policy_entities():
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
-            version: "3.0"
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
             entities:
             - {nlu_entity}
             - {policy_entity}
@@ -1541,7 +1541,7 @@ def test_tracker_fingerprint_story_reading(domain: Domain):
 def test_model_id_is_added_to_events():
     tracker = DialogueStateTracker("bloop", [])
     tracker.model_id = "some_id"
-    tracker.update(ActionExecuted())
+    tracker.update(ActionExecuted(action_name="test"))
     tracker.update_with_events([UserUttered(), SessionStarted()], None)
     assert all(e.metadata[METADATA_MODEL_ID] == "some_id" for e in tracker.events)
 
@@ -1549,5 +1549,7 @@ def test_model_id_is_added_to_events():
 def test_model_id_is_not_added_to_events_with_id():
     tracker = DialogueStateTracker("bloop", [])
     tracker.model_id = "some_id"
-    tracker.update(ActionExecuted(metadata={METADATA_MODEL_ID: "old_id"}))
+    tracker.update(
+        ActionExecuted(action_name="test", metadata={METADATA_MODEL_ID: "old_id"})
+    )
     assert tracker.events[-1].metadata[METADATA_MODEL_ID] == "old_id"

@@ -1,6 +1,6 @@
 import logging
 from asyncio import AbstractEventLoop
-from typing import Any, Dict, Text, Optional, Union
+from typing import Any, Dict, Text, Optional, Union, TypeVar, Type
 
 import aiormq
 
@@ -10,6 +10,9 @@ from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
+
+
+EB = TypeVar("EB", bound="EventBroker")
 
 
 class EventBroker:
@@ -39,10 +42,10 @@ class EventBroker:
 
     @classmethod
     async def from_endpoint_config(
-        cls,
+        cls: Type[EB],
         broker_config: EndpointConfig,
         event_loop: Optional[AbstractEventLoop] = None,
-    ) -> "EventBroker":
+    ) -> Optional[EB]:
         """Creates an `EventBroker` from the endpoint configuration.
 
         Args:
