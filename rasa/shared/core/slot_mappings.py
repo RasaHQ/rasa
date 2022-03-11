@@ -107,12 +107,12 @@ class SlotMapping:
 
         active_loop_name = tracker.active_loop_name
         if active_loop_name:
-            mapping_not_intents = [
+            mapping_not_intents = (
                 mapping_not_intents
                 + SlotMapping._get_active_loop_ignored_intents(
                     mapping, domain, active_loop_name
                 )
-            ]
+            )
 
         if tracker.latest_message:
             intent = tracker.latest_message.intent.get(INTENT_NAME_KEY)
