@@ -70,9 +70,9 @@ DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 def check_if_tracker_store_async(tracker_store: TrackerStore) -> bool:
     """
-    Evaluates if a tracker store implementation is async based on async methods in base class
+    Evaluates if a tracker store object is async based on implementation of methods
     :param tracker_store: tracker store object we're evaluating
-    :return: boolean indicating if the tracker store correctly implemented all async methods
+    :return: if the tracker store correctly implements all async methods
     """
     return all(
         iscoroutinefunction(getattr(tracker_store, method))
@@ -1384,7 +1384,8 @@ class AwaitableTrackerStore(TrackerStore):
             return AwaitableTrackerStore(obj)
         else:
             raise ValueError(
-                f"{type(obj).__name__} supplied but expected object of type {TrackerStore.__name__}."
+                f"{type(obj).__name__} supplied "
+                f"but expected object of type {TrackerStore.__name__}."
             )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
