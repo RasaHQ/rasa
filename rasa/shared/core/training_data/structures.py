@@ -7,6 +7,7 @@ import typing
 from typing import (
     List,
     Text,
+    Deque,
     Dict,
     Optional,
     Tuple,
@@ -598,7 +599,7 @@ class StoryGraph:
         unused_genr_cps = {
             cp_name
             for cp_name in unused_cps
-            if cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)
+            if cp_name is not None and cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)
         }
 
         k_to_remove = set()
@@ -716,7 +717,7 @@ class StoryGraph:
         # noinspection PyPep8Naming
         GRAY, BLACK = 0, 1
 
-        ordered = deque()
+        ordered: Deque = deque()
         unprocessed = sorted(set(graph))
         visited_nodes = {}
 

@@ -35,7 +35,7 @@ env:
 
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
-  DEFAULT_PYTHON_VERSION: '3.7'
+  DEFAULT_PYTHON_VERSION: '3.9'
 
   # for wait_for_xx jobs
   WAIT_TIMEOUT_SECS: 3000
@@ -52,7 +52,7 @@ jobs:
       docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
       docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
         # Run the normal filters if the all-tests-required label is not set
         id: changed-files
@@ -104,11 +104,11 @@ jobs:
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -192,7 +192,7 @@ jobs:
 
     steps:
       - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
@@ -226,11 +226,11 @@ jobs:
         - test-other-unit-tests
         - test-performance
         os: [ ubuntu-latest, windows-2019 ]
-        python-version: [ 3.7, 3.8 ]
+        python-version: [ 3.7, 3.8, 3.9 ]
 
     steps:
     - name: Run DataDog Agent
-      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-2019')
+      if: needs.changes.outputs.backend == 'true' && !((matrix.python-version == 3.8 || matrix.python-version == 3.9) && matrix.os == 'windows-2019')
       run: |
         docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
         docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
@@ -238,11 +238,11 @@ jobs:
 
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -371,12 +371,12 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Set up Python 3.7 🐍
-        uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      - name: Set up Python 3.9 🐍
+        uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Get backend coverage reports
         if: needs.changes.outputs.backend == 'true'
@@ -466,11 +466,11 @@ jobs:
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -558,13 +558,13 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
     - name: Checkout pull request HEAD commit instead of merge commit 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name == 'pull_request'
       with:
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name != 'pull_request'
 
     - name: Read Poetry Version 🔢
@@ -718,13 +718,13 @@ jobs:
       # to checkout HEAD commit for a pull request.
       # More details: https://github.com/actions/checkout/issues/299
     - name: Checkout pull request HEAD commit instead of merge commit 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name == 'pull_request'
       with:
         ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: github.event_name != 'pull_request'
 
     - name: Free disk space
@@ -802,12 +802,12 @@ jobs:
 
     steps:
     - name: Checkout git repository 🕝
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
-    - name: Set up Python 3.7 🐍
-      uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
+    - name: Set up Python 3.9 🐍
+      uses: actions/setup-python@0ebf233433c08fb9061af664d501c3f3ff0e9e20  # v3.0
       with:
-        python-version: 3.7
+        python-version: 3.9
 
     - name: Read Poetry Version 🔢
       run: |

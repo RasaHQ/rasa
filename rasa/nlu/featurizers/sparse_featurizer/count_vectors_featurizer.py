@@ -44,6 +44,8 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
     from https://arxiv.org/abs/1810.07150.
     """
 
+    OOV_words: List[Text]
+
     @classmethod
     def required_components(cls) -> List[Type]:
         """Components that should be included in the pipeline before this component."""
@@ -551,8 +553,8 @@ class CountVectorsFeaturizer(SparseFeaturizer, GraphComponent):
         if not self.vectorizers.get(attribute):
             return [None], [None]
 
-        sequence_features = []
-        sentence_features = []
+        sequence_features: List[Optional[scipy.sparse.spmatrix]] = []
+        sentence_features: List[Optional[scipy.sparse.spmatrix]] = []
 
         for i, tokens in enumerate(all_tokens):
             if not tokens:

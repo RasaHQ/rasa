@@ -184,6 +184,10 @@ class Validator:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
                     continue
+
+                if not event.action_name:
+                    continue
+
                 if not event.action_name.startswith(UTTER_PREFIX):
                     # we are only interested in utter actions
                     continue
@@ -251,6 +255,9 @@ class Validator:
         for story in self.story_graph.story_steps:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
+                    continue
+
+                if not event.action_name:
                     continue
 
                 if not event.action_name.startswith("action_"):

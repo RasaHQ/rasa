@@ -75,7 +75,7 @@ class GraphSchema:
         Returns:
             The graph schema in a format which can be dumped as JSON or other formats.
         """
-        serializable_graph_schema = {"nodes": {}}
+        serializable_graph_schema: Dict[Text, Dict[Text, Any]] = {"nodes": {}}
         for node_name, node in self.nodes.items():
             serializable = dataclasses.asdict(node)
 
